@@ -36,8 +36,8 @@ export function registerKeybindings() {
     // Add appropriate handler
     if (key === 'openVisibilityManager') {
       keybindingConfig.onDown = async () => {
-        const { openVisibilityManager } = await import('./api.js');
-        openVisibilityManager();
+        const { api } = await import('./api.js');
+        api.openVisibilityManager();
       };
     }
     

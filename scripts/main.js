@@ -34,11 +34,11 @@ class PerTokenVisibility {
     initializeDetectionWrapper();
 
     // Expose API globally for console access and other modules (lazy loaded)
-    const { PerTokenVisibilityAPI, compatibleAPI } = await import("./api.js");
-    window.PerTokenVisibility = PerTokenVisibilityAPI;
+    const { api } = await import("./api.js");
+    window.PerTokenVisibility = api;
 
     // Expose API for external modules
-    game.modules.get("pf2e-visioner").api = compatibleAPI;
+    game.modules.get("pf2e-visioner").api = api;
   }
 }
 

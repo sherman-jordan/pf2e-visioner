@@ -23,6 +23,7 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - Direct integration with PF2E visibility conditions
 - Option to automatically apply corresponding PF2E conditions
 - Supports all major detection states: Observed, Hidden, Undetected, Concealed, Invisible
+- **Automatic Off-Guard Conditions**: When hidden/undetected attackers make attacks, targets automatically become off-guard for both AC penalties and damage benefits (like sneak attack)
 
 ### ⚡ **Easy to Use**
 - Keyboard shortcut (`Ctrl+Shift+V`) to open the visibility manager
@@ -86,6 +87,29 @@ The module automatically integrates with PF2E conditions that affect visibility:
 - **Undetected**: Applies the actual PF2E Undetected condition with full mechanical effects and completely hides tokens from view
 - **Condition Integration**: Uses the PF2E system's native condition application for all visibility states methods for full mechanical compliance
 
+### Off-Guard Automation
+
+The module includes sophisticated automation for off-guard conditions when attackers are hidden or undetected:
+
+#### How It Works
+1. **Attack Detection**: When a hidden/undetected token makes an attack roll, the system automatically detects this
+2. **AC Penalty**: The target immediately becomes off-guard for the attack roll (AC penalty)
+3. **Damage Benefits**: The off-guard condition persists through damage rolls, enabling sneak attack and other benefits
+4. **Automatic Cleanup**: The temporary off-guard condition is automatically removed after damage processing
+
+#### Features
+- **Hybrid Approach**: Uses cloned actors for attack rolls and real conditions for damage rolls
+- **Reroll Support**: Properly handles rerolls without creating duplicate conditions
+- **Sneak Attack Integration**: Works seamlessly with rogue sneak attacks and similar features
+- **Clean State Management**: No permanent modifications to actors
+- **PF2E Remaster Compatible**: Designed for the current PF2E system architecture
+
+#### Technical Details
+- Uses libWrapper to intercept `game.pf2e.Check.roll` for attack detection
+- Applies temporary off-guard conditions with visibility context (e.g., "Off-Guard (Hidden)")
+- Automatically removes conditions after a 2-second delay to ensure damage processing completes
+- Stores attack data temporarily to coordinate between attack and damage phases
+
 ## Settings
 
 Access these settings in the module configuration:
@@ -119,6 +143,7 @@ Automatically apply corresponding PF2E conditions (Hidden, Undetected, etc.) whe
 ### Compatibility
 - **FoundryVTT**: v13.341+ (uses ApplicationV2, ESModules)
 - **PF2E System**: v6.0.0+
+- **Required Dependencies**: libWrapper (for off-guard automation)
 - **Modules**: Compatible with most other modules
 
 ### Performance
@@ -129,20 +154,62 @@ Automatically apply corresponding PF2E conditions (Hidden, Undetected, etc.) whe
 
 ## API for Developers
 
-The module exposes a global `PerTokenVisibility` object for integration:
+The module exposes an API through `game.modules.get("pf2e-visioner").api` for integration:
+
+### Core Functions
 
 ```javascript
-// Get visibility state between two tokens
-const state = PerTokenVisibility.getVisibilityBetween(observerToken, targetToken);
+const api = game.modules.get("pf2e-visioner").api;
+
+// Get visibility state between two tokens (using token IDs)
+const state = api.getVisibility(observerId, targetId);
+// Returns: 'observed', 'hidden', 'undetected', 'concealed', or null
 
 // Set visibility state between two tokens
-await PerTokenVisibility.setVisibilityBetween(observerToken, targetToken, 'hidden');
+const success = await api.setVisibility(observerId, targetId, 'hidden');
+// Returns: Promise<boolean> - true if successful
 
 // Open the visibility manager programmatically
-PerTokenVisibility.openVisibilityManager(observerToken);
+api.openVisibilityManager(observerToken); // Still requires Token object
 
 // Update all token visuals manually
-PerTokenVisibility.updateTokenVisuals();
+await api.updateTokenVisuals();
+
+// Get valid visibility states
+const validStates = api.getVisibilityStates();
+// Returns: ['observed', 'hidden', 'undetected', 'concealed']
+```
+
+### Rule Elements Integration
+
+```javascript
+// Get roll options for Rule Elements
+const rollOptions = api.getRollOptions(observerId, targetId);
+// Returns: Array of strings like ['per-token-visibility:target:hidden']
+
+// Add roll options to existing roll data
+api.addRollOptions(myRollOptions, observerId, targetId);
+// Modifies myRollOptions object in-place
+```
+
+### Usage Examples
+
+```javascript
+// Set multiple tokens as hidden from an observer
+const observerId = 'token123';
+const targetIds = ['token456', 'token789'];
+
+for (const targetId of targetIds) {
+  await api.setVisibility(observerId, targetId, 'hidden');
+}
+
+// Check if a token can see another
+const canSee = api.getVisibility(observerId, targetId) === 'observed';
+
+// Integration with custom Rule Elements
+const rollData = { options: {} };
+api.addRollOptions(rollData.options, attackerId, targetId);
+// rollData.options now contains visibility-based roll options
 ```
 
 ## Troubleshooting
@@ -161,6 +228,24 @@ PerTokenVisibility.updateTokenVisuals();
 - Enable "Auto-Apply PF2E Conditions" in module settings
 - Ensure the PF2E system is active and up-to-date
 - Check that the target token has an associated actor
+
+### Off-guard automation isn't working
+- Ensure libWrapper is installed and enabled (required dependency)
+- Check that tokens have proper visibility relationships set
+- Verify that the attacking token is set as "hidden" or "undetected" from the target's perspective
+- Check the browser console for any error messages
+- Make sure both attacker and target have associated actors
+
+### Sneak attack damage isn't applying
+- Verify the off-guard condition appears briefly on the target during the attack
+- Check that the rogue has sneak attack features properly configured
+- Ensure the attack is coming from a hidden/undetected position
+- Look for "Off-Guard (Hidden)" or "Off-Guard (Undetected)" condition on the target
+
+### Multiple off-guard conditions appearing
+- This should be automatically prevented by the module's duplicate detection
+- If it persists, try refreshing the scene or restarting Foundry
+- Check for conflicts with other modules that modify conditions
 
 ## Support
 

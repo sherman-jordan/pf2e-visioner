@@ -1,0 +1,76 @@
+/**
+ * Constants and configuration for PF2E Visioner
+ */
+
+export const MODULE_ID = 'pf2e-visioner';
+export const MODULE_TITLE = 'PF2E Visioner';
+
+/**
+ * Visibility states supported by the module - aligned with PF2E detection conditions
+ */
+export const VISIBILITY_STATES = {
+  observed: {
+    label: 'PF2E_VISIONER.VISIBILITY_STATES.observed',
+    pf2eCondition: null,
+    visible: true,
+    icon: 'fas fa-eye',
+    color: '#00ff00'
+  },
+  concealed: {
+    label: 'PF2E_VISIONER.VISIBILITY_STATES.concealed',
+    pf2eCondition: 'concealed',
+    visible: true,
+    icon: 'fas fa-cloud',
+    color: '#aaaaaa'
+  },
+  hidden: {
+    label: 'PF2E_VISIONER.VISIBILITY_STATES.hidden',
+    pf2eCondition: 'hidden',
+    visible: true,
+    icon: 'fas fa-eye-slash',
+    color: '#ffaa00'
+  },
+  undetected: {
+    label: 'PF2E_VISIONER.VISIBILITY_STATES.undetected',
+    pf2eCondition: 'undetected',
+    visible: false, // Hide completely like invisible used to
+    icon: 'fas fa-ghost',
+    color: '#ff4444'
+  }
+};
+
+/**
+ * Default module settings
+ */
+export const DEFAULT_SETTINGS = {
+  enableHoverTooltips: {
+    name: 'PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true
+  },
+
+  showOnlyEncounterTokens: {
+    name: 'PF2E_VISIONER.SETTINGS.SHOW_ONLY_ENCOUNTER_TOKENS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.SHOW_ONLY_ENCOUNTER_TOKENS.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  }
+};
+
+/**
+ * Keybinding configurations
+ */
+export const KEYBINDINGS = {
+  openVisibilityManager: {
+    name: 'Open Token Visibility Manager',
+    hint: 'Open the visibility manager for selected tokens',
+    editable: [
+      { key: 'KeyV', modifiers: ['Control', 'Shift'] }
+    ]
+  }
+};

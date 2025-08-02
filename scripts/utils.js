@@ -1,0 +1,157 @@
+/**
+ * Utility functions for PF2E Per-Token Visibility
+ */
+
+import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
+
+/**
+ * Get the visibility map for a token
+ * @param {Token} token - The token to get visibility data for
+ * @returns {Object} Visibility map object
+ */
+export function getVisibilityMap(token) {
+  return token?.document.getFlag(MODULE_ID, 'visibility') ?? {};
+}
+
+/**
+ * Set the visibility map for a token
+ * @param {Token} token - The token to set visibility data for
+ * @param {Object} visibilityMap - The visibility map to save
+ * @returns {Promise} Promise that resolves when flag is set
+ */
+export async function setVisibilityMap(token, visibilityMap) {
+  return token?.document.setFlag(MODULE_ID, 'visibility', visibilityMap);
+}
+
+/**
+ * Get visibility state between two tokens
+ * @param {Token} observer - The observing token
+ * @param {Token} target - The target token being observed
+ * @returns {string} Visibility state
+ */
+export function getVisibilityBetween(observer, target) {
+  const visibilityMap = getVisibilityMap(observer);
+  return visibilityMap[target.document.id] || 'observed';
+}
+
+/**
+ * Set visibility state between two tokens
+ * @param {Token} observer - The observing token
+ * @param {Token} target - The target token being observed
+ * @param {string} state - The visibility state to set
+ * @returns {Promise} Promise that resolves when visibility is set
+ */
+export async function setVisibilityBetween(observer, target, state) {
+  const visibilityMap = getVisibilityMap(observer);
+  visibilityMap[target.document.id] = state;
+  await setVisibilityMap(observer, visibilityMap);
+  
+
+}
+
+
+
+/**
+ * Create visibility indicator element
+ * @param {string} state - The visibility state
+ * @returns {HTMLElement} The indicator element
+ */
+export function createVisibilityIndicator(state) {
+  if (state === 'observed') return null;
+
+  const config = VISIBILITY_STATES[state];
+  if (!config) return null;
+
+  const indicator = document.createElement('div');
+  indicator.className = 'visibility-indicator';
+  indicator.innerHTML = `<i class="${config.icon}" style="color: ${config.color}"></i>`;
+  indicator.style.cssText = `
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    animation: visibilityPulse 2s ease-in-out infinite;
+  `;
+
+  return indicator;
+}
+
+/**
+ * Show a notification to the user
+ * @param {string} key - The localization key
+ * @param {string} type - The notification type (info, warn, error)
+ */
+export function showNotification(key, type = 'info') {
+  const message = game.i18n.localize(key);
+  ui.notifications[type](message);
+}
+
+/**
+ * Validate that a token is valid for visibility operations
+ * @param {Token} token - The token to validate
+ * @returns {boolean} Whether the token is valid
+ */
+export function isValidToken(token) {
+  // Don't use token.isVisible as it excludes undetected tokens
+  // Instead, check if the token exists and has a valid document
+  return token && token.document && token.actor;
+}
+
+/**
+ * Get all valid tokens in the scene excluding the observer
+ * @param {Token} observer - The observer token to exclude
+ * @returns {Token[]} Array of valid target tokens
+ */
+export function getSceneTargets(observer) {
+  const allTokens = canvas.tokens.placeables.filter(token => 
+    isValidToken(token) && token.document.id !== observer?.document.id
+  );
+  
+  // Check if there are any targeted tokens - if so, prioritize showing those
+  const targetedTokens = Array.from(game.user.targets).filter(token =>
+    isValidToken(token) && token.document.id !== observer?.document.id
+  );
+  
+  if (targetedTokens.length > 0) {
+    return targetedTokens;
+  }
+  
+  // Check if we should filter to only encounter tokens
+  const showOnlyEncounterTokens = game.settings.get(MODULE_ID, 'showOnlyEncounterTokens');
+  if (!showOnlyEncounterTokens) {
+    return allTokens;
+  }
+  
+  // Filter to only tokens that are in the current encounter
+  return allTokens.filter(token => {
+    // Check if there's an active encounter
+    if (!game.combat || !game.combat.combatants.size) {
+      return false; // No encounter active, so no tokens to show
+    }
+    
+    // Check if this token's actor is in the encounter
+    return game.combat.combatants.some(combatant => 
+      combatant.token?.id === token.document.id
+    );
+  });
+}
+
+/**
+ * Capitalize the first letter of a string
+ * @param {string} str - The string to capitalize
+ * @returns {string} The capitalized string
+ */
+export function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}

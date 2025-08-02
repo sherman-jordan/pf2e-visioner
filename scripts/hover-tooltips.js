@@ -1,0 +1,303 @@
+/**
+ * Hover tooltips for token visibility states
+ */
+
+import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
+import { getVisibilityMap } from './utils.js';
+
+/**
+ * Map FontAwesome CSS classes to Unicode characters
+ * @param {string} iconClass - FontAwesome class like 'fas fa-eye-slash'
+ * @returns {string} Unicode character for the icon
+ */
+function getFontAwesomeIcon(iconClass) {
+  // FontAwesome 6 Free Solid icons
+  const iconMap = {
+    'fas fa-eye': '\uf06e',        // Eye (observed)
+    'fas fa-eye-slash': '\uf070',  // Eye with slash (hidden)  
+    'fas fa-ghost': '\uf6e2',      // Ghost (undetected)
+    'fas fa-cloud': '\uf0c2'       // Cloud (concealed)
+  };
+  
+  const unicode = iconMap[iconClass];
+  if (!unicode) {
+    console.warn(`${MODULE_ID} | Unknown icon class: ${iconClass}, using default eye`);
+    return '\uf06e';
+  }
+  
+  return unicode;
+}
+
+let currentHoveredToken = null;
+let visibilityIndicators = new Map();
+let tokenEventHandlers = new Map(); // Store references to our specific event handlers
+
+/**
+ * Initialize hover tooltip system (GM only)
+ */
+export function initializeHoverTooltips() {
+  // Only initialize hover tooltips for GM
+  if (!game.user.isGM) return;
+  
+  // Add event listeners to canvas for token hover
+  canvas.tokens.placeables.forEach(token => {
+    const overHandler = () => onTokenHover(token);
+    const outHandler = () => onTokenHoverEnd(token);
+    
+    // Store handlers for later cleanup
+    tokenEventHandlers.set(token.id, { overHandler, outHandler });
+    
+    token.on('pointerover', overHandler);
+    token.on('pointerout', outHandler);
+  });
+}
+
+/**
+ * Handle token hover start
+ * @param {Token} hoveredToken - The token being hovered
+ */
+function onTokenHover(hoveredToken) {
+  // Only GM should see hover tooltips for visibility management
+  if (!game.user.isGM) return;
+  
+  // Double check GM status for safety
+  if (game.user.role < CONST.USER_ROLES.GAMEMASTER) return;
+  
+  if (currentHoveredToken === hoveredToken) return;
+  
+  currentHoveredToken = hoveredToken;
+  showVisibilityIndicators(hoveredToken);
+}
+
+/**
+ * Handle token hover end
+ * @param {Token} token - The token that was hovered
+ */
+function onTokenHoverEnd(token) {
+  if (currentHoveredToken === token) {
+    currentHoveredToken = null;
+    hideAllVisibilityIndicators();
+  }
+}
+
+/**
+ * Show visibility indicators on other tokens
+ * @param {Token} hoveredToken - The token being hovered
+ */
+function showVisibilityIndicators(hoveredToken) {
+  // Clear any existing indicators
+  hideAllVisibilityIndicators();
+  
+  // Get all other tokens in the scene
+  const otherTokens = canvas.tokens.placeables.filter(t => 
+    t !== hoveredToken && t.isVisible
+  );
+  
+  if (otherTokens.length === 0) return;
+  
+  // For each other token, check how the hovered token sees them
+  otherTokens.forEach(targetToken => {
+    const visibilityMap = getVisibilityMap(hoveredToken);
+    const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
+    
+    if (visibilityState !== 'observed') {
+      addVisibilityIndicator(targetToken, hoveredToken, visibilityState);
+    }
+  });
+}
+
+/**
+ * Add a visibility indicator to a token
+ * @param {Token} targetToken - The token to show the indicator on
+ * @param {Token} observerToken - The token that has the visibility perspective  
+ * @param {string} visibilityState - The visibility state
+ */
+function addVisibilityIndicator(targetToken, observerToken, visibilityState) {
+  const config = VISIBILITY_STATES[visibilityState];
+  if (!config) return;
+  
+  // Create a PIXI Graphics object for the indicator
+  const indicator = new PIXI.Container();
+  indicator.interactive = true;
+  indicator.buttonMode = true;
+  
+  // Create outer glow effect
+  const glow = new PIXI.Graphics();
+  glow.beginFill(parseInt(config.color.replace('#', ''), 16), 0.3);
+  glow.drawCircle(0, 0, 18);
+  glow.endFill();
+  
+  // Create background circle with gradient-like effect
+  const background = new PIXI.Graphics();
+  background.beginFill(0x000000, 0.9);
+  background.lineStyle(3, parseInt(config.color.replace('#', ''), 16), 1);
+  background.drawCircle(0, 0, 14);
+  background.endFill();
+  
+  // Create inner highlight
+  const highlight = new PIXI.Graphics();
+  highlight.beginFill(0xFFFFFF, 0.2);
+  highlight.drawCircle(-3, -3, 6);
+  highlight.endFill();
+  
+  // Use clear text labels for each visibility state
+  const stateLabels = {
+    'observed': 'Observed',
+    'hidden': 'Hidden', 
+    'concealed': 'Concealed',
+    'undetected': 'Undetected'
+  };
+  
+  const iconText = new PIXI.Text(stateLabels[visibilityState] || 'Observed', {
+    fontFamily: 'Arial, sans-serif',
+    fontSize: 24,
+    fill: 0xFFFFFF,
+    align: 'center',
+    fontWeight: 'bold'
+  });
+  iconText.anchor.set(0.5);
+  
+  // Calculate text dimensions for proper border sizing
+  const textWidth = iconText.width;
+  const textHeight = iconText.height;
+  const paddingX = 8;
+  const paddingY = 4;
+  const borderWidth = textWidth + paddingX * 2;
+  const borderHeight = textHeight + paddingY * 2;
+  
+  // Recreate glow with proper dimensions
+  glow.clear();
+  glow.beginFill(parseInt(config.color.replace('#', ''), 16), 0.3);
+  glow.drawRoundedRect(-borderWidth/2 - 2, -borderHeight/2 - 2, borderWidth + 4, borderHeight + 4, 8);
+  glow.endFill();
+  
+  // Recreate background with proper dimensions
+  background.clear();
+  background.beginFill(0x000000, 0.9);
+  background.lineStyle(2, parseInt(config.color.replace('#', ''), 16), 1);
+  background.drawRoundedRect(-borderWidth/2, -borderHeight/2, borderWidth, borderHeight, 6);
+  background.endFill();
+  
+  // Recreate highlight with proper dimensions
+  highlight.clear();
+  highlight.beginFill(0xFFFFFF, 0.2);
+  highlight.drawRoundedRect(-borderWidth/2 + 2, -borderHeight/2 + 2, borderWidth - 4, borderHeight - 4, 4);
+  highlight.endFill();
+  
+  indicator.addChild(glow);
+  indicator.addChild(background);
+  indicator.addChild(highlight);
+  indicator.addChild(iconText);
+  
+  // Position centered above the token
+  const tokenSize = targetToken.document.width * canvas.grid.size;
+  indicator.x = targetToken.x + (tokenSize / 2); // Center horizontally
+  indicator.y = targetToken.y - borderHeight / 2 - 8; // Above the token with some spacing
+  
+  // Static indicator - no animation
+  indicator.alpha = 1.0;
+  indicator.scale.set(1.0);
+  glow.alpha = 0.3;
+  
+  // Add hover tooltip functionality using Foundry's built-in tooltip system
+  const tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: 16px;">
+    <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
+  </div>
+  <div style="font-size: 14px; color: #ccc;">
+    ${observerToken.document.name} sees ${targetToken.document.name} as ${game.i18n.localize(config.label).toLowerCase()}
+  </div>`;
+  
+  indicator.on('pointerover', () => {
+    indicator.scale.set(1.2);
+    
+    // Get indicator position relative to screen
+    const bounds = indicator.getBounds();
+    const canvasRect = canvas.app.view.getBoundingClientRect();
+    
+    // Create a temporary anchor element for the tooltip
+    const anchor = document.createElement('div');
+    anchor.style.cssText = `
+      position: fixed;
+      left: ${canvasRect.left + bounds.x + bounds.width/2}px;
+      top: ${canvasRect.top + bounds.y}px;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+      z-index: -1;
+    `;
+    document.body.appendChild(anchor);
+    
+    // Store anchor reference for cleanup
+    indicator._tooltipAnchor = anchor;
+    
+    // Activate Foundry's tooltip system
+    game.tooltip.activate(anchor, {
+      content: tooltipText,
+      direction: game.tooltip.constructor.TOOLTIP_DIRECTIONS.UP,
+      cssClass: 'pf2e-visioner-tooltip'
+    });
+  });
+  
+  indicator.on('pointerout', () => {
+    indicator.scale.set(1.0);
+    
+    // Deactivate tooltip and cleanup anchor
+    game.tooltip.deactivate();
+    if (indicator._tooltipAnchor) {
+      indicator._tooltipAnchor.remove();
+      delete indicator._tooltipAnchor;
+    }
+  });
+  
+  // Add to canvas with proper layering
+  canvas.tokens.addChild(indicator);
+  
+  // Store reference for cleanup
+  visibilityIndicators.set(targetToken.id, indicator);
+}
+
+
+
+
+
+/**
+ * Hide all visibility indicators
+ */
+function hideAllVisibilityIndicators() {
+  // Deactivate any active tooltips
+  game.tooltip.deactivate();
+  
+  visibilityIndicators.forEach(indicator => {
+    // Clean up tooltip anchor if it exists
+    if (indicator._tooltipAnchor) {
+      indicator._tooltipAnchor.remove();
+      delete indicator._tooltipAnchor;
+    }
+    
+    if (indicator.parent) {
+      indicator.parent.removeChild(indicator);
+    }
+    indicator.destroy();
+  });
+  visibilityIndicators.clear();
+}
+
+/**
+ * Cleanup hover tooltips
+ */
+export function cleanupHoverTooltips() {
+  hideAllVisibilityIndicators();
+  currentHoveredToken = null;
+  
+  // Remove only our specific event listeners from tokens
+  tokenEventHandlers.forEach((handlers, tokenId) => {
+    const token = canvas.tokens.get(tokenId);
+    if (token) {
+      token.off('pointerover', handlers.overHandler);
+      token.off('pointerout', handlers.outHandler);
+    }
+  });
+  
+  // Clear the handlers map
+  tokenEventHandlers.clear();
+}

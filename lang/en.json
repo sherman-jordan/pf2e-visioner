@@ -1,0 +1,60 @@
+{
+  "PF2E_VISIONER": {
+    "MODULE_TITLE": "PF2E Visioner",
+    "VISIBILITY_MANAGER": {
+      "TITLE": "Token Visibility Manager",
+      "OBSERVER": "Observer Token",
+      "TARGET": "Target Token",
+      "VISIBILITY_STATE": "Visibility State",
+      "NO_TOKENS": "No tokens available in this scene",
+      "APPLY": "Apply Changes",
+      "CANCEL": "Cancel",
+      "RESET": "Reset All",
+      "BULK_ACTIONS": "Bulk Actions"
+    },
+    "VISIBILITY_STATES": {
+      "observed": "Observed",
+          "hidden": "Hidden",
+    "undetected": "Undetected", 
+    "concealed": "Concealed"
+    },
+    "VISUAL_EFFECTS": {
+      "HIDDEN_OVERLAY": "This token is hidden from your view",
+      "UNDETECTED_OVERLAY": "This token is undetected by you",
+      "CONCEALED_OVERLAY": "This token is concealed from you"
+    },
+    "MECHANICAL_EFFECTS": {
+      "HIDDEN_FLAT_CHECK": "DC 11 flat check required for targeting",
+      "CONCEALED_FLAT_CHECK": "DC 5 flat check required for targeting", 
+      "UNDETECTED_CONDITION": "Undetected condition applied with full mechanical effects",
+      "VISIBLE_NO_EFFECTS": "No targeting penalties or effects",
+      "HIDDEN_TOOLTIP": "Hidden: You are off-guard to the target, and you must succeed at a DC 11 flat check when targeting it with an attack, spell, or other effect",
+      "CONCEALED_TOOLTIP": "Concealed: You must succeed at a DC 5 flat check when targeting with an attack, spell, or other effect", 
+      "UNDETECTED_TOOLTIP": "Undetected: You don't know the target's location. You are off-guard to the target and you can't easily target it. Using the Seek action can help find an undetected creature",
+      "VISIBLE_TOOLTIP": "Visible: No penalties or effects",
+      "BLINDED_OVERRIDE": "All creatures appear Hidden due to Blinded condition",
+      "DAZZLED_OVERRIDE": "All creatures appear Concealed due to Dazzled condition"
+    },
+    "CONTEXT_MENU": {
+      "MANAGE_VISIBILITY": "Manage Token Visibility",
+      "QUICK_HIDDEN": "Set as Hidden",
+      "QUICK_UNDETECTED": "Set as Undetected",
+      "QUICK_CONCEALED": "Set as Concealed",
+      "QUICK_OBSERVED": "Set as Observed"
+    },
+    "NOTIFICATIONS": {
+      "NO_OBSERVER_SELECTED": "Please select an observer token first",
+      "MULTIPLE_OBSERVERS": "Multiple observer tokens selected - please select only one"
+    },
+    "SETTINGS": {
+      "ENABLE_HOVER_TOOLTIPS": {
+        "name": "Enable Hover Tooltips",
+        "hint": "Show visibility status tooltips when hovering over tokens (requires restart)"
+      },
+      "SHOW_ONLY_ENCOUNTER_TOKENS": {
+        "name": "Show Only Encounter Tokens",
+        "hint": "When enabled, the visibility manager will only display tokens that are part of the current encounter"
+      }
+    }
+  }
+}

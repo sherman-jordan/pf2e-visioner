@@ -1,0 +1,675 @@
+/*
+ * Modern styles for PF2E Per-Token Visibility Manager (FoundryVTT v13)
+ */
+
+/* Observer Information Section */
+.observer-info {
+  display: flex;
+  padding: 12px 16px;
+  background: var(--color-bg-option);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.observer-image {
+  width: 120px !important;
+  height: 120px !important;
+  min-width: 120px !important;
+  min-height: 120px !important;
+  max-width: 120px !important;
+  max-height: 120px !important;
+  border-radius: 6px !important;
+  border: 3px solid var(--color-border-highlight-alt);
+  flex-shrink: 0 !important;
+  background: var(--color-bg-option);
+  overflow: hidden !important;
+  position: relative;
+  aspect-ratio: 1 / 1 !important;
+}
+
+.observer-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 6px !important;
+}
+
+.observer-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.observer-details h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.observer-details .hint {
+  margin: 0;
+  color: var(--color-text-dark-secondary);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.observer-details .targeted-tokens-mode {
+  color: var(--color-border-highlight-alt) !important;
+  font-weight: 500 !important;
+  font-style: normal !important;
+  background: rgba(255, 152, 0, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 3px solid var(--color-border-highlight-alt);
+}
+
+/* Bulk Actions Section - Now positioned in observer info */
+.bulk-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.bulk-actions label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  font-size: 14px;
+  margin: 0;
+}
+
+.bulk-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: auto;
+  min-width: 200px;
+}
+
+.bulk-state {
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  border: 2px solid var(--color-border-light-primary, #666) !important;
+  border-radius: 6px !important;
+  background: var(--color-bg-option) !important;
+  color: var(--color-text-primary) !important;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  min-height: 36px !important;
+  text-align: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.bulk-state:hover {
+  background: var(--color-bg-option-active);
+  border-color: var(--color-border-highlight);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bulk-state i {
+  font-size: 12px;
+}
+
+/* Table Sections */
+.table-section {
+  margin-bottom: 20px;
+}
+
+.table-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px 0;
+  padding: 8px 12px;
+  background: var(--color-bg-option);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 6px 6px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.table-section-header i {
+  color: var(--color-border-highlight-alt);
+  font-size: 16px;
+}
+
+/* Visibility Table */
+.visibility-table-container {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.table-section:last-of-type .visibility-table-container {
+  margin-bottom: 20px;
+}
+
+.visibility-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.visibility-table thead {
+  background: var(--color-bg-option);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.visibility-table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-border-light-primary);
+}
+
+.visibility-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border-light-tertiary);
+  vertical-align: middle;
+}
+
+.token-row:nth-child(even) {
+  background: var(--color-bg-alt);
+}
+
+/* PC and NPC Row Styling */
+.pc-row {
+  border-left: 3px solid #4caf50; /* Green accent for PCs */
+}
+
+/* NPC Row Styling by Disposition */
+.npc-row.hostile-npc {
+  border-left: 3px solid #f44336; /* Red accent for opposition/hostile NPCs */
+}
+
+.npc-row.neutral-npc {
+  border-left: 3px solid #ff9800; /* Orange accent for neutral NPCs */
+}
+
+.npc-row.friendly-npc {
+  border-left: 3px solid #2196f3; /* Blue accent for friendly NPCs */
+}
+
+/* Fallback for NPCs without disposition class */
+.npc-row:not(.hostile-npc):not(.neutral-npc):not(.friendly-npc) {
+  border-left: 3px solid #ff9800; /* Default orange for unclassified NPCs */
+}
+
+.pc-row:nth-child(even) {
+  background: rgba(76, 175, 80, 0.05);
+}
+
+/* NPC even row backgrounds by disposition */
+.npc-row.hostile-npc:nth-child(even) {
+  background: rgba(
+    244,
+    67,
+    54,
+    0.05
+  ); /* Light red background for hostile NPCs */
+}
+
+.npc-row.neutral-npc:nth-child(even) {
+  background: rgba(
+    255,
+    152,
+    0,
+    0.05
+  ); /* Light orange background for neutral NPCs */
+}
+
+.npc-row.friendly-npc:nth-child(even) {
+  background: rgba(
+    33,
+    150,
+    243,
+    0.05
+  ); /* Light blue background for friendly NPCs */
+}
+
+/* Fallback for even rows without disposition class */
+.npc-row:not(.hostile-npc):not(.neutral-npc):not(.friendly-npc):nth-child(
+    even
+  ) {
+  background: rgba(255, 152, 0, 0.05); /* Default orange background */
+}
+
+/* Row hover background removed - only image hover now */
+
+/* Table Columns */
+.token-image {
+  width: 50px;
+  text-align: center;
+}
+
+.token-image img {
+  border-radius: 4px;
+  border: 1px solid var(--color-border-light-primary);
+}
+
+.token-name {
+  min-width: 120px;
+}
+
+.token-name strong {
+  color: var(--color-text-primary);
+}
+
+.visibility-state {
+  width: 180px;
+}
+
+.visibility-select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  background: var(--color-bg-option);
+  color: var(--color-text-primary);
+  font-size: 12px;
+}
+
+.visibility-select:focus {
+  outline: none;
+  border-color: var(--color-border-highlight);
+  box-shadow: 0 0 0 2px var(--color-shadow-highlight);
+}
+
+.current-state {
+  width: 120px;
+}
+
+.state-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.state-indicator i {
+  font-size: 10px;
+}
+
+/* No Targets Message */
+.no-targets {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-dark-secondary);
+  font-style: italic;
+}
+
+/* Footer Actions */
+.sheet-footer {
+  display: flex;
+  padding: 16px 0 0 0;
+  border-top: 1px solid var(--color-border-light-primary);
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.action-button {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  background: var(--color-bg-option);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  background: var(--color-bg-option-active);
+  border-color: var(--color-border-highlight);
+  border-width: 2px;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.action-button.apply {
+  background: var(--color-bg-btn-primary);
+  border-color: var(--color-border-highlight-alt);
+  color: var(--color-text-light-primary);
+}
+
+.action-button.apply:hover {
+  background: var(--color-bg-btn-primary-active);
+  border-color: var(--color-border-highlight);
+  border-width: 2px;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.action-button.reset {
+  background: var(--color-bg-btn-secondary);
+  border-color: var(--color-border-light-primary);
+}
+
+.action-button.cancel {
+  background: transparent;
+  border-color: var(--color-border-light-primary);
+}
+
+/* Visibility Indicators on Canvas */
+.visibility-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: visibilityPulse 2s ease-in-out infinite;
+}
+
+@keyframes visibilityPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Hover visibility indicators */
+@keyframes visibilityIndicatorPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.hover-visibility-indicator {
+  animation: visibilityIndicatorPulse 1.5s ease-in-out infinite;
+}
+
+/* PF2E Visioner Tooltip Styling for Foundry's built-in tooltip system */
+.tooltip.pf2e-visioner-tooltip {
+  background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.95)) !important;
+  border: 2px solid var(--color-border-highlight-alt) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 20px rgba(255, 152, 0, 0.3) !important;
+  font-size: 16px !important;
+  padding: 12px 16px !important;
+  max-width: 300px !important;
+  color: white !important;
+}
+
+.tooltip.pf2e-visioner-tooltip i {
+  margin-right: 6px;
+}
+
+.hover-visibility-tooltip {
+  transition: opacity 0.2s ease;
+}
+
+/* Error/Notification Styling */
+.notification.error {
+  background: var(--color-bg-btn-danger);
+  color: var(--color-text-light-primary);
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-danger);
+  margin-bottom: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 700px) {
+  .observer-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+    padding: 16px;
+    align-items: center;
+  }
+
+  .observer-image {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    min-height: 60px !important;
+    max-width: 60px !important;
+    max-height: 60px !important;
+  }
+
+  .bulk-actions {
+    align-items: center;
+    text-align: center;
+  }
+
+  .bulk-buttons {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    min-width: 280px;
+  }
+
+  .bulk-state {
+    padding: 8px 12px;
+    font-size: 12px;
+    border: 2px solid var(--color-border-light-primary, #666) !important;
+  }
+
+  .table-section-header {
+    font-size: 12px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .table-section-header i {
+    font-size: 14px;
+  }
+
+  .visibility-table-container {
+    max-height: 250px;
+  }
+
+  .visibility-table th,
+  .visibility-table td {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .token-image {
+    width: 40px;
+  }
+
+  .token-image img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .sheet-footer {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Token Highlighting Effects */
+.token-row {
+  transition: background-color 0.2s ease;
+}
+
+/* Token row hover removed - only image hover effects now */
+
+.token-image img {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.token-image img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(255, 255, 0, 0.3);
+}
+
+.token-image img {
+  border-radius: 4px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.token-image img:hover {
+  border-color: #ffff00;
+}
+
+/* Token name hover effects removed */
+
+/* Mechanical Effects Column */
+.mechanical-effects {
+  min-width: 150px;
+  font-size: 0.85em;
+}
+
+.effect-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.flat-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #d4af00;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(212, 175, 0, 0.1);
+  border: 1px solid rgba(212, 175, 0, 0.3);
+  border-radius: 3px;
+  cursor: help;
+}
+
+.flat-check:hover {
+  background: rgba(212, 175, 0, 0.2);
+}
+
+.concealed-effect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(108, 117, 125, 0.1);
+  border: 1px solid rgba(108, 117, 125, 0.3);
+  border-radius: 3px;
+  cursor: help;
+}
+
+.concealed-effect:hover {
+  background: rgba(108, 117, 125, 0.2);
+}
+
+.undetected-effect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #8b2635;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(139, 38, 53, 0.1);
+  border: 1px solid rgba(139, 38, 53, 0.3);
+  border-radius: 3px;
+  cursor: help;
+}
+
+.undetected-effect:hover {
+  background: rgba(139, 38, 53, 0.2);
+}
+
+.no-effect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #28a745;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: 3px;
+  cursor: help;
+}
+
+.no-effect:hover {
+  background: rgba(40, 167, 69, 0.2);
+}
+
+/* Enhanced Table Styling for PF2E Aesthetic */
+.visibility-table thead th {
+  background: var(--color-bg-header);
+  color: var(--color-text-header);
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-border-dark);
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.visibility-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Table row hover removed - only specific image hover effects */
+
+/* State Indicator Enhancements */
+.state-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid currentColor;
+}

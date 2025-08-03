@@ -4,7 +4,7 @@
 
 import { MODULE_TITLE } from './constants.js';
 import { updateTokenVisuals } from './effects-coordinator.js';
-import { cleanupHoverTooltips, initializeHoverTooltips } from './hover-tooltips.js';
+import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects, onKeyDown, onKeyUp } from './hover-tooltips.js';
 import { onRenderTokenHUD } from './token-hud.js';
 
 /**
@@ -18,10 +18,15 @@ export function registerHooks() {
   Hooks.on('renderTokenHUD', onRenderTokenHUD);
   Hooks.on('getTokenDirectoryEntryContext', onGetTokenDirectoryEntryContext);
   Hooks.on('canvasReady', onCanvasReady);
+  Hooks.on('highlightObjects', onHighlightObjects);
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
   Hooks.on('createToken', onTokenCreated);
   Hooks.on('deleteToken', onTokenDeleted);
   console.log('PF2E Visioner: All hooks registered, including renderTokenHUD');
+  
+  // Add O key event listeners for visibility tooltips
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
   
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();

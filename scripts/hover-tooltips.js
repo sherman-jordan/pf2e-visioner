@@ -32,6 +32,9 @@ let currentHoveredToken = null;
 let visibilityIndicators = new Map();
 let tokenEventHandlers = new Map(); // Store references to our specific event handlers
 let tooltipMode = 'observer'; // 'observer' (default) or 'target'
+let isShowingKeyTooltips = false; // Track if Alt/O key tooltips are active
+let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
+let isOKeyPressed = false; // Track if O key is currently pressed
 
 /**
  * Set the tooltip mode
@@ -72,6 +75,9 @@ export function initializeHoverTooltips() {
     token.on('pointerover', overHandler);
     token.on('pointerout', outHandler);
   });
+  
+  // Note: Alt key handled via highlightObjects hook registered in main hooks
+  // O key event listeners added globally in registerHooks
 }
 
 /**
@@ -99,6 +105,75 @@ function onTokenHoverEnd(token) {
   if (currentHoveredToken === token) {
     currentHoveredToken = null;
     hideAllVisibilityIndicators();
+  }
+}
+
+/**
+ * Handle highlightObjects hook (triggered by Alt key)
+ * @param {boolean} highlight - Whether objects should be highlighted
+ */
+export function onHighlightObjects(highlight) {
+  if (!game.user.isGM) return;
+  
+  if (highlight) {
+    showControlledTokenVisibility();
+  } else {
+    hideKeyTooltips();
+  }
+}
+
+/**
+ * Handle keydown events for O key
+ * @param {KeyboardEvent} event 
+ */
+export function onKeyDown(event) {
+  if (!game.user.isGM) return;
+  
+  // Check for O key
+  if (event.code === 'KeyO') {
+    // Only process if not typing in an input field
+    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA' && !event.target.isContentEditable) {
+      event.preventDefault();
+      
+      if (!isOKeyPressed) {
+        isOKeyPressed = true;
+        
+        // Switch to target mode for any active tooltips
+        const previousMode = tooltipMode;
+        setTooltipMode('target');
+        
+        // Refresh tooltips if they're currently showing
+        if (currentHoveredToken) {
+          showVisibilityIndicators(currentHoveredToken);
+        }
+        if (isShowingKeyTooltips) {
+          showControlledTokenVisibility();
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Handle keyup events for O key
+ * @param {KeyboardEvent} event 
+ */
+export function onKeyUp(event) {
+  if (!game.user.isGM) return;
+  
+  if (event.code === 'KeyO' && isOKeyPressed) {
+    isOKeyPressed = false;
+    
+    // Switch back to observer mode
+    setTooltipMode('observer');
+    
+    // Refresh tooltips if they're currently showing
+    if (currentHoveredToken) {
+      showVisibilityIndicators(currentHoveredToken);
+    }
+    if (isShowingKeyTooltips) {
+      showControlledTokenVisibility();
+    }
   }
 }
 
@@ -138,6 +213,87 @@ function showVisibilityIndicators(hoveredToken) {
       }
     });
   }
+}
+
+/**
+ * Show visibility indicators for a specific token (without clearing existing ones)
+ * @param {Token} observerToken - The token to show visibility indicators for
+ */
+function showVisibilityIndicatorsForToken(observerToken) {
+  // Get all other tokens in the scene
+  const otherTokens = canvas.tokens.placeables.filter(t => 
+    t !== observerToken && t.isVisible
+  );
+  
+  if (otherTokens.length === 0) return;
+  
+  if (tooltipMode === 'observer') {
+    // Default mode: Show how the observer token sees others
+    otherTokens.forEach(targetToken => {
+      const visibilityMap = getVisibilityMap(observerToken);
+      const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
+      
+      if (visibilityState !== 'observed') {
+        addVisibilityIndicator(targetToken, observerToken, visibilityState, 'observer');
+      }
+    });
+  } else {
+    // Target mode: Show how others see the observer token
+    otherTokens.forEach(otherToken => {
+      const visibilityMap = getVisibilityMap(otherToken);
+      const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
+      
+      if (visibilityState !== 'observed') {
+        addVisibilityIndicator(observerToken, otherToken, visibilityState, 'target');
+      }
+    });
+  }
+}
+
+/**
+ * Show visibility indicators for controlled tokens (simulates hovering over controlled tokens)
+ */
+function showControlledTokenVisibility() {
+  if (isShowingKeyTooltips) return;
+  
+  const controlledTokens = canvas.tokens.controlled;
+  if (controlledTokens.length === 0) {
+    console.log('PF2E Visioner: No controlled tokens for visibility tooltips');
+    return;
+  }
+  
+  isShowingKeyTooltips = true;
+  keyTooltipTokens.clear();
+  
+  // Clear any existing indicators first
+  hideAllVisibilityIndicators();
+  
+  // For each controlled token, show visibility indicators as if hovering over it
+  controlledTokens.forEach(controlledToken => {
+    keyTooltipTokens.add(controlledToken.id);
+    
+    // Use the existing showVisibilityIndicators logic
+    showVisibilityIndicatorsForToken(controlledToken);
+  });
+  
+  console.log('PF2E Visioner: Showing visibility tooltips for', controlledTokens.length, 'controlled tokens (simulating hover)');
+}
+
+/**
+ * Hide key-based tooltips
+ */
+function hideKeyTooltips() {
+  if (!isShowingKeyTooltips) return;
+  
+  isShowingKeyTooltips = false;
+  keyTooltipTokens.clear();
+  
+  // Only hide indicators if we're not currently hovering a token
+  if (!currentHoveredToken) {
+    hideAllVisibilityIndicators();
+  }
+  
+  console.log('PF2E Visioner: Hidden key-based visibility tooltips');
 }
 
 /**
@@ -335,6 +491,12 @@ function hideAllVisibilityIndicators() {
 export function cleanupHoverTooltips() {
   hideAllVisibilityIndicators();
   currentHoveredToken = null;
+  isShowingKeyTooltips = false;
+  keyTooltipTokens.clear();
+  isOKeyPressed = false;
+  
+  // Reset tooltip mode to default
+  setTooltipMode('observer');
   
   // Remove only our specific event listeners from tokens
   tokenEventHandlers.forEach((handlers, tokenId) => {
@@ -347,4 +509,6 @@ export function cleanupHoverTooltips() {
   
   // Clear the handlers map
   tokenEventHandlers.clear();
+  
+  // Note: O key event listeners are managed globally in hooks.js
 }

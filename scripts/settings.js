@@ -19,6 +19,12 @@ export function registerSettings() {
           world: true
         });
       };
+    } else if (key === 'useHudButton') {
+      settingConfig.onChange = () => {
+        SettingsConfig.reloadConfirm({
+          world: true
+        });
+      };
     }
     // The showOnlyEncounterTokens setting doesn't require restart - it takes effect immediately
     

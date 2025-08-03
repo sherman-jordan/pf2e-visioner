@@ -61,6 +61,14 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  useHudButton: {
+    name: 'PF2E_VISIONER.SETTINGS.USE_HUD_BUTTON.name',
+    hint: 'PF2E_VISIONER.SETTINGS.USE_HUD_BUTTON.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true
+  }
 
 };
 

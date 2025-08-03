@@ -5,6 +5,7 @@
 import { MODULE_TITLE } from './constants.js';
 import { updateTokenVisuals } from './effects-coordinator.js';
 import { cleanupHoverTooltips, initializeHoverTooltips } from './hover-tooltips.js';
+import { onRenderTokenHUD } from './token-hud.js';
 
 /**
  * Register all FoundryVTT hooks
@@ -14,12 +15,13 @@ export function registerHooks() {
   Hooks.on('ready', onReady);
   Hooks.on('controlToken', onControlToken);
   Hooks.on('getTokenHUDButtons', onGetTokenHUDButtons);
+  Hooks.on('renderTokenHUD', onRenderTokenHUD);
   Hooks.on('getTokenDirectoryEntryContext', onGetTokenDirectoryEntryContext);
   Hooks.on('canvasReady', onCanvasReady);
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
   Hooks.on('createToken', onTokenCreated);
   Hooks.on('deleteToken', onTokenDeleted);
-  console.log('PF2E Visioner: All hooks registered, including getTokenHUDButtons');
+  console.log('PF2E Visioner: All hooks registered, including renderTokenHUD');
   
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();
@@ -68,8 +70,10 @@ function onReady() {
   console.log('FoundryVTT Version:', game.version);
   console.log('PF2E System Version:', game.system.version);
   
-  // Add a fallback approach - add a floating button when tokens are selected
-  setupFallbackHUDButton();
+  // Add a fallback approach - add a floating button when tokens are selected (only if HUD button is disabled)
+  if (!game.settings.get('pf2e-visioner', 'useHudButton')) {
+    setupFallbackHUDButton();
+  }
 }
 
 /**
@@ -113,17 +117,18 @@ function setupFallbackHUDButton() {
   `;
   document.head.appendChild(style);
   
-  // Add button when tokens are controlled
+  // Add button when tokens are controlled (only if HUD button is disabled)
   Hooks.on('controlToken', (token, controlled) => {
     // Remove any existing buttons
     document.querySelectorAll('.pf2e-visioner-floating-button').forEach(btn => btn.remove());
     
-    if (controlled && game.user.isGM) {
+    // Only show floating button if HUD button is disabled
+    if (controlled && game.user.isGM && !game.settings.get('pf2e-visioner', 'useHudButton')) {
       console.log('PF2E Visioner: Adding floating button for controlled token');
       
       const button = document.createElement('div');
       button.className = 'pf2e-visioner-floating-button';
-      button.innerHTML = '<i class="fas fa-eye"></i>';
+      button.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
       button.title = 'Visibility Manager (Left: Target, Right: Observer) - Drag to move';
       
       // Add drag functionality

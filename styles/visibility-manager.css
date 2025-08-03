@@ -541,8 +541,13 @@
   vertical-align: middle;
 }
 
-.token-row:nth-child(even) {
-  background: var(--color-bg-alt);
+/* Alternating row backgrounds for both PC and NPC tables */
+.token-visibility-manager .visibility-table tbody tr:nth-child(even) {
+  background: var(--color-bg-alt, rgba(255, 255, 255, 0.05)) !important;
+}
+
+.token-visibility-manager .visibility-table tbody tr:nth-child(odd) {
+  background: transparent !important;
 }
 
 /* Form Controls */

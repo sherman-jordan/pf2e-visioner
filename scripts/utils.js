@@ -202,7 +202,7 @@ export function getSceneTargets(observer, encounterOnly = false) {
   return allTokens.filter(token => {
     // Check if there's an active encounter
     if (!game.combat || !game.combat.combatants.size) {
-      return false; // No encounter active, so no tokens to show
+      return true; // No encounter active, so no tokens to show
     }
     
     // Check if this token's actor is in the encounter

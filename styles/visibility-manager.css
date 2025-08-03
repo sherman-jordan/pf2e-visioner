@@ -196,13 +196,14 @@
 
 /* Visibility Legend */
 .visibility-legend {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
   gap: 2px;
   padding-right: var(--spacing-lg);
   font-size: 20px;
   flex-shrink: 0;
-  min-width: 70px;
+  min-width: 120px;
 }
 
 .legend-title {
@@ -211,6 +212,7 @@
   font-size: 15px;
   margin-bottom: 1px;
   text-align: center;
+  grid-column: 1 / -1;
 }
 
 .legend-item {

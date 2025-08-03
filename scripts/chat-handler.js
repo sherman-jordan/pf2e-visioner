@@ -4,8 +4,9 @@
  */
 
 import { MODULE_TITLE, MODULE_ID } from './constants.js';
-import { setVisibilityBetween, getVisibilityBetween } from './utils.js';
+import { getVisibilityBetween } from './utils.js';
 import { updateTokenVisuals } from './visual-effects.js';
+import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 
 // Cache for processed messages to prevent duplicate processing
 const processedMessages = new Set();
@@ -390,7 +391,7 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         const visibilityStates = {
             'observed': { icon: 'fas fa-eye', color: '#28a745', label: 'Observed' },
             'hidden': { icon: 'fas fa-eye-slash', color: '#ffc107', label: 'Hidden' },
-            'undetected': { icon: 'fas fa-question-circle', color: '#dc3545', label: 'Undetected' },
+            'undetected': { icon: 'fas fa-ghost', color: '#dc3545', label: 'Undetected' },
             'concealed': { icon: 'fas fa-cloud', color: '#6c757d', label: 'Concealed' }
         };
         
@@ -659,7 +660,21 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         const promises = changes.map(async (change) => {
             try {
                 console.log(`${MODULE_TITLE}: Applying change:`, change);
-                await setVisibilityBetween(seeker, change.target, change.newVisibility);
+                
+                // Update the visibility relationship in the visibility map
+                // Note: We don't use setVisibilityBetween here because it would apply effects to the seeker
+                // Instead, we handle visibility map and effects separately for proper seek automation
+                const { setVisibilityMap, getVisibilityMap } = await import('./utils.js');
+                const visibilityMap = getVisibilityMap(seeker);
+                visibilityMap[change.target.document.id] = change.newVisibility;
+                await setVisibilityMap(seeker, visibilityMap);
+                
+                // Apply ephemeral effects to the target token (like in visibility manager's Observer Mode)
+                // Target token gets the ephemeral effect that applies when targeting the seeker
+                // NOTE: We only manage ephemeral effects, not PF2E conditions - those should remain as originally set
+                console.log(`${MODULE_TITLE}: Applying ephemeral effects to ${change.target.name}`);
+                await updateEphemeralEffectsForVisibility(change.target, seeker, change.newVisibility);
+                
                 console.log(`${MODULE_TITLE}: Successfully applied change for ${change.target.name}`);
             } catch (error) {
                 console.error(`${MODULE_TITLE}: Failed to apply visibility change for ${change.target.name}:`, error);
@@ -668,13 +683,13 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         await Promise.all(promises);
         
-        // Update token visuals after changes
+        // Refresh token visuals to ensure all changes are displayed
         try {
-            console.log(`${MODULE_TITLE}: Updating token visuals...`);
+            console.log(`${MODULE_TITLE}: Refreshing token visuals...`);
             await updateTokenVisuals();
-            console.log(`${MODULE_TITLE}: Token visuals updated successfully`);
+            console.log(`${MODULE_TITLE}: Token visuals refreshed successfully`);
         } catch (error) {
-            console.warn(`${MODULE_TITLE}: Could not update token visuals:`, error);
+            console.warn(`${MODULE_TITLE}: Could not refresh token visuals:`, error);
         }
     }
     

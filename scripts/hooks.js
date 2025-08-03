@@ -6,8 +6,7 @@ import { MODULE_TITLE } from './constants.js';
 import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
 import { onRenderTokenHUD } from './token-hud.js';
 import { onRenderChatMessage, addSeekButtonStyles } from './chat-handler.js';
-
-
+import { updateTokenVisuals } from './visual-effects.js';
 
 /**
  * Register all FoundryVTT hooks

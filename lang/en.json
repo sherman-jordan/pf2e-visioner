@@ -59,10 +59,6 @@
         "name": "Use Token HUD Button",
         "hint": "When enabled, adds a visibility button to the token HUD. When disabled, uses a floating button when tokens are selected."
       },
-      "FILTER_IRRELEVANT_TOKENS": {
-        "name": "Filter Irrelevant Tokens",
-        "hint": "When enabled, excludes loot actors, vehicles, hazards, and other non-creature tokens from the visibility manager to reduce clutter in large dungeons."
-      },
       "OFF_GUARD_METHOD": {
         "name": "Off-Guard Automation Method",
         "hint": "Choose the method for applying off-guard conditions when attackers are hidden/undetected. Optimized (recommended) uses one consolidated effect per attacker with multiple rules. EphemeralEffect creates individual effects per target. Hybrid uses a combination of cloned actors and real conditions.",

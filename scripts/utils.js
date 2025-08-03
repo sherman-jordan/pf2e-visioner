@@ -117,14 +117,6 @@ export function isValidToken(token) {
     return false;
   }
   
-  // Check if filtering is enabled
-  const shouldFilter = game.settings.get(MODULE_ID, 'filterIrrelevantTokens');
-  
-  if (!shouldFilter) {
-    // If filtering is disabled, accept all tokens with basic validation
-    return true;
-  }
-  
   // Filter out irrelevant actor types that don't need visibility management
   const actorType = token.actor.type;
   
@@ -135,11 +127,6 @@ export function isValidToken(token) {
   
   // Exclude vehicles unless they have crew (vehicles are usually just objects)
   if (actorType === 'vehicle') {
-    return false;
-  }
-  
-  // Exclude hazards - they're environmental, not creatures with sight
-  if (actorType === 'hazard') {
     return false;
   }
   
@@ -168,7 +155,7 @@ export function isValidToken(token) {
   }
   
   // Include character and npc types (the main creature types)
-  if (actorType === 'character' || actorType === 'npc') {
+  if (actorType === 'character' || actorType === 'npc' || actorType === 'hazard') {
     return true;
   }
   

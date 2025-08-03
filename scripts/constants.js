@@ -68,17 +68,7 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: true
-  },
-
-  filterIrrelevantTokens: {
-    name: 'PF2E_VISIONER.SETTINGS.FILTER_IRRELEVANT_TOKENS.name',
-    hint: 'PF2E_VISIONER.SETTINGS.FILTER_IRRELEVANT_TOKENS.hint',
-    scope: 'world',
-    config: true,
-    type: Boolean,
-    default: true
   }
-
 };
 
 /**
@@ -90,13 +80,6 @@ export const KEYBINDINGS = {
     hint: 'Open the visibility manager for selected tokens',
     editable: [
       { key: 'KeyV', modifiers: ['Control', 'Shift'] }
-    ]
-  },
-  toggleTooltipMode: {
-    name: 'Toggle Tooltip Mode',
-    hint: 'Hold to show how others see the hovered token (instead of how the hovered token sees others)',
-    editable: [
-      { key: 'KeyO', modifiers: [] }
     ]
   }
 };

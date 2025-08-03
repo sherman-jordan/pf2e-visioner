@@ -5,40 +5,18 @@
 import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
 import { getVisibilityMap } from './utils.js';
 
-/**
- * Map FontAwesome CSS classes to Unicode characters
- * @param {string} iconClass - FontAwesome class like 'fas fa-eye-slash'
- * @returns {string} Unicode character for the icon
- */
-function getFontAwesomeIcon(iconClass) {
-  // FontAwesome 6 Free Solid icons
-  const iconMap = {
-    'fas fa-eye': '\uf06e',        // Eye (observed)
-    'fas fa-eye-slash': '\uf070',  // Eye with slash (hidden)  
-    'fas fa-ghost': '\uf6e2',      // Ghost (undetected)
-    'fas fa-cloud': '\uf0c2'       // Cloud (concealed)
-  };
-  
-  const unicode = iconMap[iconClass];
-  if (!unicode) {
-    console.warn(`${MODULE_ID} | Unknown icon class: ${iconClass}, using default eye`);
-    return '\uf06e';
-  }
-  
-  return unicode;
-}
 
 let currentHoveredToken = null;
 let visibilityIndicators = new Map();
 let tokenEventHandlers = new Map(); // Store references to our specific event handlers
-let tooltipMode = 'observer'; // 'observer' (default) or 'target'
+let tooltipMode = 'target'; // 'target' (default) or 'observer'
 let isShowingKeyTooltips = false; // Track if Alt/O key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 let isOKeyPressed = false; // Track if O key is currently pressed
 
 /**
  * Set the tooltip mode
- * @param {string} mode - 'observer' (how hovered token sees others) or 'target' (how others see hovered token)
+ * @param {string} mode - 'target' (default - how others see hovered token) or 'observer' (O key - how hovered token sees others)
  */
 export function setTooltipMode(mode) {
   if (mode !== 'observer' && mode !== 'target') {
@@ -48,8 +26,6 @@ export function setTooltipMode(mode) {
   
   const previousMode = tooltipMode;
   tooltipMode = mode;
-  
-  console.log(`PF2E Visioner: Tooltip mode changed from ${previousMode} to ${mode}`);
   
   // If we have a currently hovered token, refresh the indicators
   if (currentHoveredToken) {
@@ -116,9 +92,12 @@ export function onHighlightObjects(highlight) {
   if (!game.user.isGM) return;
   
   if (highlight) {
+    // Alt key always uses target mode (how others see controlled tokens)
+    // Note: Don't change global tooltipMode - Alt tooltips use forced target mode
     showControlledTokenVisibility();
   } else {
     hideKeyTooltips();
+    // Note: Don't change global tooltipMode - let hover tooltips keep their current mode
   }
 }
 
@@ -138,17 +117,9 @@ export function onKeyDown(event) {
       if (!isOKeyPressed) {
         isOKeyPressed = true;
         
-        // Switch to target mode for any active tooltips
-        const previousMode = tooltipMode;
-        setTooltipMode('target');
-        
-        // Refresh tooltips if they're currently showing
-        if (currentHoveredToken) {
-          showVisibilityIndicators(currentHoveredToken);
-        }
-        if (isShowingKeyTooltips) {
-          showControlledTokenVisibility();
-        }
+        // Switch to observer mode for hover tooltips only (not Alt key tooltips)
+        setTooltipMode('observer');
+        // Note: setTooltipMode automatically refreshes hover tooltips
       }
     }
   }
@@ -164,16 +135,9 @@ export function onKeyUp(event) {
   if (event.code === 'KeyO' && isOKeyPressed) {
     isOKeyPressed = false;
     
-    // Switch back to observer mode
-    setTooltipMode('observer');
-    
-    // Refresh tooltips if they're currently showing
-    if (currentHoveredToken) {
-      showVisibilityIndicators(currentHoveredToken);
-    }
-    if (isShowingKeyTooltips) {
-      showControlledTokenVisibility();
-    }
+    // Switch back to target mode (default for hover)
+    setTooltipMode('target');
+    // Note: setTooltipMode automatically refreshes hover tooltips
   }
 }
 
@@ -193,7 +157,7 @@ function showVisibilityIndicators(hoveredToken) {
   if (otherTokens.length === 0) return;
   
   if (tooltipMode === 'observer') {
-    // Default mode: Show how the hovered token sees others
+    // Observer mode (O key): Show how the hovered token sees others
     otherTokens.forEach(targetToken => {
       const visibilityMap = getVisibilityMap(hoveredToken);
       const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
@@ -203,13 +167,13 @@ function showVisibilityIndicators(hoveredToken) {
       }
     });
   } else {
-    // Target mode: Show how others see the hovered token
+    // Target mode (default): Show how others see the hovered token
     otherTokens.forEach(observerToken => {
       const visibilityMap = getVisibilityMap(observerToken);
       const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
       
       if (visibilityState !== 'observed') {
-        addVisibilityIndicator(observerToken, hoveredToken, visibilityState, 'target');
+        addVisibilityIndicator(observerToken, observerToken, visibilityState, 'target');
       }
     });
   }
@@ -218,8 +182,9 @@ function showVisibilityIndicators(hoveredToken) {
 /**
  * Show visibility indicators for a specific token (without clearing existing ones)
  * @param {Token} observerToken - The token to show visibility indicators for
+ * @param {string} forceMode - Optional mode to force ('observer' or 'target'), defaults to current tooltipMode
  */
-function showVisibilityIndicatorsForToken(observerToken) {
+function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   // Get all other tokens in the scene
   const otherTokens = canvas.tokens.placeables.filter(t => 
     t !== observerToken && t.isVisible
@@ -227,7 +192,10 @@ function showVisibilityIndicatorsForToken(observerToken) {
   
   if (otherTokens.length === 0) return;
   
-  if (tooltipMode === 'observer') {
+  // Use forced mode if provided, otherwise use current tooltipMode
+  const modeToUse = forceMode || tooltipMode;
+  
+  if (modeToUse === 'observer') {
     // Default mode: Show how the observer token sees others
     otherTokens.forEach(targetToken => {
       const visibilityMap = getVisibilityMap(observerToken);
@@ -244,7 +212,8 @@ function showVisibilityIndicatorsForToken(observerToken) {
       const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
       
       if (visibilityState !== 'observed') {
-        addVisibilityIndicator(observerToken, otherToken, visibilityState, 'target');
+        // Show indicator on the OTHER token, from the perspective of that token seeing the observer
+        addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target');
       }
     });
   }
@@ -272,11 +241,9 @@ function showControlledTokenVisibility() {
   controlledTokens.forEach(controlledToken => {
     keyTooltipTokens.add(controlledToken.id);
     
-    // Use the existing showVisibilityIndicators logic
-    showVisibilityIndicatorsForToken(controlledToken);
+    // Use the existing showVisibilityIndicators logic, force target mode for Alt key
+    showVisibilityIndicatorsForToken(controlledToken, 'target');
   });
-  
-  console.log('PF2E Visioner: Showing visibility tooltips for', controlledTokens.length, 'controlled tokens (simulating hover)');
 }
 
 /**
@@ -496,7 +463,7 @@ export function cleanupHoverTooltips() {
   isOKeyPressed = false;
   
   // Reset tooltip mode to default
-  setTooltipMode('observer');
+  setTooltipMode('target');
   
   // Remove only our specific event listeners from tokens
   tokenEventHandlers.forEach((handlers, tokenId) => {

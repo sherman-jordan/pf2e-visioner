@@ -7,6 +7,9 @@ import { updateTokenVisuals } from './effects-coordinator.js';
 import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects, onKeyDown, onKeyUp } from './hover-tooltips.js';
 import { onRenderTokenHUD } from './token-hud.js';
 
+// Flag to prevent duplicate event listener registration
+let keyListenersRegistered = false;
+
 /**
  * Register all FoundryVTT hooks
  */
@@ -24,9 +27,13 @@ export function registerHooks() {
   Hooks.on('deleteToken', onTokenDeleted);
   console.log('PF2E Visioner: All hooks registered, including renderTokenHUD');
   
-  // Add O key event listeners for visibility tooltips
-  document.addEventListener('keydown', onKeyDown);
-  document.addEventListener('keyup', onKeyUp);
+  // Add O key event listeners for visibility tooltips (only once)
+  if (!keyListenersRegistered) {
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+    keyListenersRegistered = true;
+    console.log('PF2E Visioner: O key event listeners registered');
+  }
   
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();

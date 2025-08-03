@@ -76,7 +76,7 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 3. **Always-Visible Controls**: Header and footer remain visible while token tables scroll
 3. **Visibility States**: Use the dropdown for each token to set how the observer sees them:
    - **🟢 Observed**: Normal visibility (default) - Green color
-   - **🟡 Concealed**: Token appears dimmed with DC 5 flat check - Yellow color
+   - **🟡 Concealed**: Token appears regular with DC 5 flat check - Yellow color
    - **🟠 Hidden**: Token appears semi-transparent with DC 11 flat check - Orange color
    - **🔴 Undetected**: Token location unknown - Red color
 

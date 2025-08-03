@@ -63,9 +63,9 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 2. Click the eye icon in the Token HUD
 3. The visibility manager will open with that token as the observer
 
-**Method 3: Context Menu**
-1. Right-click on a token in the token layer
-2. Select "Manage Token Visibility"
+**Method 3: Floating Menu**
+1. Left-click on a token in the token layer
+2. Select "Manage Token Visibility" floating button (movable)
 
 ### Setting Visibility States
 

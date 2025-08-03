@@ -156,7 +156,6 @@ export class Pf2eVisionerApi {
       await setVisibilityBetween(observerToken, targetToken, state);
       await updateTokenVisuals();
       
-      console.log(`Set visibility between ${observerToken.name} and ${targetToken.name} to: ${state}`);
       return true;
     } catch (error) {
       console.error('Error setting visibility:', error);

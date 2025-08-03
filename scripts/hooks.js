@@ -14,7 +14,6 @@ let keyListenersRegistered = false;
  * Register all FoundryVTT hooks
  */
 export function registerHooks() {
-  console.log('PF2E Visioner: Registering hooks...');
   Hooks.on('ready', onReady);
   Hooks.on('controlToken', onControlToken);
   Hooks.on('getTokenHUDButtons', onGetTokenHUDButtons);
@@ -25,14 +24,12 @@ export function registerHooks() {
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
   Hooks.on('createToken', onTokenCreated);
   Hooks.on('deleteToken', onTokenDeleted);
-  console.log('PF2E Visioner: All hooks registered, including renderTokenHUD');
   
   // Add O key event listeners for visibility tooltips (only once)
   if (!keyListenersRegistered) {
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
     keyListenersRegistered = true;
-    console.log('PF2E Visioner: O key event listeners registered');
   }
   
   // Try alternative HUD button approaches
@@ -46,7 +43,6 @@ function setupAlternativeHUDButton() {
   // Try approach 1: Hook into canvas token right-click
   Hooks.on('targetToken', (user, token, targeted) => {
     if (game.user.isGM && targeted) {
-      console.log('PF2E Visioner: Token targeted, could add HUD button here');
     }
   });
   
@@ -56,7 +52,6 @@ function setupAlternativeHUDButton() {
       canvas.stage.on('rightclick', (event) => {
         const token = canvas.tokens.get(event.target?.id);
         if (token && game.user.isGM) {
-          console.log('PF2E Visioner: Right-clicked on token:', token.name);
           // Could show a custom context menu here
         }
       });
@@ -68,7 +63,6 @@ function setupAlternativeHUDButton() {
     const originalGetData = window.TokenHUD.prototype.getData;
     window.TokenHUD.prototype.getData = function() {
       const data = originalGetData.call(this);
-      console.log('PF2E Visioner: TokenHUD getData called', data);
       return data;
     };
   }
@@ -78,9 +72,6 @@ function setupAlternativeHUDButton() {
  * Handle the ready hook
  */
 function onReady() {
-  console.log(`${MODULE_TITLE} | Ready`);
-  console.log('FoundryVTT Version:', game.version);
-  console.log('PF2E System Version:', game.system.version);
   
   // Add a fallback approach - add a floating button when tokens are selected (only if HUD button is disabled)
   if (!game.settings.get('pf2e-visioner', 'useHudButton')) {
@@ -136,8 +127,6 @@ function setupFallbackHUDButton() {
     
     // Only show floating button if HUD button is disabled
     if (controlled && game.user.isGM && !game.settings.get('pf2e-visioner', 'useHudButton')) {
-      console.log('PF2E Visioner: Adding floating button for controlled token');
-      
       const button = document.createElement('div');
       button.className = 'pf2e-visioner-floating-button';
       button.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
@@ -233,19 +222,16 @@ function setupFallbackHUDButton() {
       button.addEventListener('click', async (event) => {
         // Don't open menu if we just finished dragging
         if (hasDragged) {
-          console.log('PF2E Visioner: Click ignored - just finished dragging');
           event.preventDefault();
           event.stopPropagation();
           return;
         }
         
-        console.log('PF2E Visioner: Floating button clicked (left-click)');
         event.preventDefault();
         event.stopPropagation();
         
         try {
           const { openVisibilityManagerWithMode } = await import('./api.js');
-          console.log('PF2E Visioner: Opening visibility manager in target mode for token:', token.name);
           await openVisibilityManagerWithMode(token, 'target');
         } catch (error) {
           console.error('PF2E Visioner: Error opening visibility manager:', error);
@@ -255,19 +241,16 @@ function setupFallbackHUDButton() {
       button.addEventListener('contextmenu', async (event) => {
         // Don't open menu if we just finished dragging
         if (hasDragged) {
-          console.log('PF2E Visioner: Right-click ignored - just finished dragging');
           event.preventDefault();
           event.stopPropagation();
           return;
         }
         
-        console.log('PF2E Visioner: Floating button right-clicked');
         event.preventDefault();
         event.stopPropagation();
         
         try {
           const { openVisibilityManagerWithMode } = await import('./api.js');
-          console.log('PF2E Visioner: Opening visibility manager in observer mode for token:', token.name);
           await openVisibilityManagerWithMode(token, 'observer');
         } catch (error) {
           console.error('PF2E Visioner: Error opening visibility manager:', error);
@@ -297,29 +280,17 @@ async function onControlToken(token, controlled) {
  * @param {Token} token - The token
  */
 function onGetTokenHUDButtons(hud, buttons, token) {
-  console.log('PF2E Visioner: onGetTokenHUDButtons called', { isGM: game.user.isGM, buttons: buttons.length, token });
-  
-  if (!game.user.isGM) {
-    console.log('PF2E Visioner: Not GM, skipping button');
-    return;
-  }
-  
-  console.log('PF2E Visioner: Adding visibility button to HUD buttons array');
-  
   // Add the visibility button
   buttons.push({
     name: 'visibility',
     title: 'Visibility Manager (Left: Target Mode, Right: Observer Mode)',
     icon: 'fas fa-eye',
     onClick: async () => {
-      console.log('PF2E Visioner: Button clicked - opening in target mode');
       const { openVisibilityManagerWithMode } = await import('./api.js');
       await openVisibilityManagerWithMode(token, 'target');
     },
     button: true
   });
-  
-  console.log('PF2E Visioner: Button added to array, total buttons:', buttons.length);
 }
 
 /**

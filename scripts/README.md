@@ -20,7 +20,7 @@ This directory contains the modular JavaScript files for the PF2E Visioner modul
 - **`detection-wrapper.js`** - PF2E detection system integration
 - **`visibility-manager.js`** - Visibility management UI and controls
 - **`visibility-effects.js`** - Visibility state effects application
-- **`hover-tooltips.js`** - Hover tooltip functionality
+- **`hover-tooltips.js`** - Interactive visibility tooltips with hover and Alt/O key support
 - **`hooks.js`** - FoundryVTT hook registrations
 - **`api.js`** - Public API for other modules
 
@@ -36,6 +36,16 @@ The module follows a modular architecture where each file has a specific respons
 ## Key Features
 
 - **Off-Guard Automation**: Automatically applies off-guard conditions when attackers are hidden/undetected
+- **Interactive Tooltips**: Real-time visibility tooltips with hover and keyboard shortcuts (Alt/O keys)
 - **Visual Indicators**: Provides visual feedback for token visibility states
 - **PF2E Integration**: Deep integration with the PF2E system's detection mechanics
 - **Performance Optimized**: Minimal overhead with efficient visibility calculations
+
+### Tooltip System Details
+
+The `hover-tooltips.js` module provides:
+- **Hover Detection**: Token pointerover/pointerout event handling
+- **Mode Switching**: O key toggles between observer and target perspectives
+- **Alt Key Integration**: Uses FoundryVTT's highlightObjects hook for controlled token tooltips
+- **Dynamic Indicators**: Real-time visibility state labels with proper positioning
+- **Clean State Management**: Prevents mode conflicts and ensures proper cleanup

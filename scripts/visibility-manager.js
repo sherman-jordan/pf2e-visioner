@@ -527,8 +527,6 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         if (hiddenInput) {
           hiddenInput.value = newState;
         }
-        
-        console.log(`Updated visibility for token ${targetId} to ${newState}`);
       });
     });
   }

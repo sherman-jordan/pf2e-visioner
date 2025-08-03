@@ -8,7 +8,6 @@ import { getVisibilityMap } from './utils.js';
  * Initialize detection system wrappers
  */
 export function initializeDetectionWrapper() {
-  console.log('Per-Token Visibility: Initializing detection system wrappers...');
   
   // Check if libWrapper is available
   if (!game.modules.get('lib-wrapper')?.active) {
@@ -55,8 +54,6 @@ export function initializeDetectionWrapper() {
     canDetectWrapper(VISIBILITY_VALUES.undetected),
     'WRAPPER'
   );
-  
-  console.log('Per-Token Visibility: Detection system wrappers initialized');
 }
 
 /**

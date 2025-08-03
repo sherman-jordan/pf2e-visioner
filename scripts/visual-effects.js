@@ -12,8 +12,6 @@ export async function updateTokenVisuals() {
   
   // Check if Dice So Nice is currently animating to avoid interference
   if (isDiceSoNiceAnimating()) {
-    console.log('PF2E Visioner: Delaying token visual update due to active dice animation');
-    // Retry after a short delay to avoid interfering with dice
     setTimeout(() => updateTokenVisuals(), 500);
     return;
   }

@@ -22,6 +22,13 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - Optional visibility indicators for GMs
 - Smooth animations and modern styling
 
+### 🔍 **Interactive Visibility Tooltips**
+- **Hover Tooltips**: Hover over any token to see visibility states from different perspectives
+- **Alt Key Tooltips**: Hold Alt to see how others see your controlled tokens
+- **O Key Mode Switching**: Hold O while hovering to switch between observer and target perspectives
+- **Dynamic Indicators**: Real-time visibility state labels (Observed, Hidden, Concealed, Undetected)
+- **GM-Only Feature**: Tooltips only appear for Game Masters
+
 ### ⚔️ **PF2E Integration**
 - Direct integration with PF2E visibility conditions with full mechanical effects
 - **Traffic Light Color System**: Intuitive green → yellow → orange → red progression
@@ -33,6 +40,9 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - Keyboard shortcut (`Ctrl+Shift+V`) to open the visibility manager
 - Context menu integration on tokens
 - Token HUD button for quick access
+- **Hover tooltips**: Simply hover over tokens to see visibility states
+- **Alt key tooltips**: Hold Alt for instant controlled token visibility overview
+- **O key mode switching**: Hold O while hovering to switch perspectives
 
 ## Installation
 
@@ -78,6 +88,32 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - **Color-Coded Buttons**: Each button matches its visibility state color (green, yellow, orange, red)
 - **Targeted Control**: Apply bulk changes to just PCs or just NPCs independently
 - **Intuitive Icons**: Visual icons for each visibility state (eye, cloud, eye-slash, ghost)
+
+### Interactive Visibility Tooltips (GM Only)
+
+The module provides real-time visibility tooltips that help GMs understand token visibility relationships:
+
+#### Hover Tooltips
+- **Hover over any token** to see visibility indicators on other tokens
+- **Default Mode (Target)**: Shows how other tokens see the hovered token
+- **Observer Mode**: Hold **O key** while hovering to see how the hovered token sees others
+- **Dynamic Switching**: Release O to return to target mode
+
+#### Alt Key Tooltips
+- **Hold Alt** to see visibility indicators for all controlled tokens
+- **Always Target Mode**: Shows how other tokens see your controlled tokens
+- **Independent System**: Alt tooltips work independently of hover tooltips
+
+#### Tooltip Indicators
+- **🟢 Observed**: Normal visibility (no special indicator)
+- **🟡 Concealed**: Yellow "Concealed" label above token
+- **🟠 Hidden**: Orange "Hidden" label above token  
+- **🔴 Undetected**: Red "Undetected" label above token
+
+#### Usage Tips
+- **Perspective Understanding**: Use target mode to see "who can see this token" and observer mode to see "what can this token see"
+- **Quick Assessment**: Alt key provides instant overview of controlled token visibility
+- **Mode Clarity**: O key only affects hover tooltips, not Alt key tooltips
 
 ### Visual Feedback
 

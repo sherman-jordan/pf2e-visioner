@@ -53,7 +53,6 @@ function renderVisibilityButton(app, html) {
     event.stopPropagation();
     
     try {
-      console.log('PF2E Visioner: HUD button left-clicked - opening in target mode');
       await openVisibilityManagerWithMode(token, 'target');
     } catch (error) {
       console.error('PF2E Visioner: Error opening visibility manager in target mode:', error);
@@ -65,7 +64,6 @@ function renderVisibilityButton(app, html) {
     event.stopPropagation();
     
     try {
-      console.log('PF2E Visioner: HUD button right-clicked - opening in observer mode');
       await openVisibilityManagerWithMode(token, 'observer');
     } catch (error) {
       console.error('PF2E Visioner: Error opening visibility manager in observer mode:', error);
@@ -74,6 +72,4 @@ function renderVisibilityButton(app, html) {
 
   // Add the button to the column
   column.appendChild(buttonElement);
-  
-  console.log('PF2E Visioner: Added visibility button to token HUD for token:', token.name);
 }

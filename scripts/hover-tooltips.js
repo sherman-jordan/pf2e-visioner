@@ -226,10 +226,6 @@ function showControlledTokenVisibility() {
   if (isShowingKeyTooltips) return;
   
   const controlledTokens = canvas.tokens.controlled;
-  if (controlledTokens.length === 0) {
-    console.log('PF2E Visioner: No controlled tokens for visibility tooltips');
-    return;
-  }
   
   isShowingKeyTooltips = true;
   keyTooltipTokens.clear();
@@ -259,8 +255,6 @@ function hideKeyTooltips() {
   if (!currentHoveredToken) {
     hideAllVisibilityIndicators();
   }
-  
-  console.log('PF2E Visioner: Hidden key-based visibility tooltips');
 }
 
 /**

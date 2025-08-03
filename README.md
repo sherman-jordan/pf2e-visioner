@@ -122,39 +122,6 @@ When you control a token (as GM), other tokens will automatically adjust their a
 - All other tokens display according to their visibility state relative to the observer
 - Small indicators appear on tokens (if enabled in settings) to show their current state
 
-### PF2E Condition Integration
-
-The module automatically integrates with PF2E conditions that affect visibility:
-
-#### Mechanical Effects
-- **Hidden**: Applies the actual PF2E Hidden condition with DC 11 flat checks and proper red triangular indicators
-- **Concealed**: Applies the actual PF2E Concealed condition with DC 5 flat checks  
-- **Undetected**: Applies the actual PF2E Undetected condition with full mechanical effects and completely hides tokens from view
-- **Condition Integration**: Uses the PF2E system's native condition application for all visibility states methods for full mechanical compliance
-
-### Off-Guard Automation
-
-The module includes sophisticated automation for off-guard conditions when attackers are hidden or undetected:
-
-#### How It Works
-1. **Attack Detection**: When a hidden/undetected token makes an attack roll, the system automatically detects this
-2. **AC Penalty**: The target immediately becomes off-guard for the attack roll (AC penalty)
-3. **Damage Benefits**: The off-guard condition persists through damage rolls, enabling sneak attack and other benefits
-4. **Automatic Cleanup**: The temporary off-guard condition is automatically removed after damage processing
-
-#### Features
-- **Hybrid Approach**: Uses cloned actors for attack rolls and real conditions for damage rolls
-- **Reroll Support**: Properly handles rerolls without creating duplicate conditions
-- **Sneak Attack Integration**: Works seamlessly with rogue sneak attacks and similar features
-- **Clean State Management**: No permanent modifications to actors
-- **PF2E Remaster Compatible**: Designed for the current PF2E system architecture
-
-#### Technical Details
-- Uses libWrapper to intercept `game.pf2e.Check.roll` for attack detection
-- Applies temporary off-guard conditions with visibility context (e.g., "Off-Guard (Hidden)")
-- Automatically removes conditions after a 2-second delay to ensure damage processing completes
-- Stores attack data temporarily to coordinate between attack and damage phases
-
 ## Settings
 
 Access these settings in the module configuration:

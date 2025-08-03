@@ -15,31 +15,34 @@
       <img src="{{observer.img}}" alt="{{observer.name}}" />
     </div>
     <div class="observer-content">
-      <div class="observer-details">
-        <div class="mode-toggle-container">
-          <label class="mode-toggle-label">View Mode:</label>
-          <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" title="Click to switch between Observer and Target modes">
-            <div class="toggle-option {{#if isObserverMode}}active{{/if}}">
-              <i class="fas fa-eye"></i>
-              <span>Observer</span>
-            </div>
-            <div class="toggle-divider">|</div>
-            <div class="toggle-option {{#if isTargetMode}}active{{/if}}">
-              <i class="fas fa-user-secret"></i>
-              <span>Target</span>
-            </div>
-          </button>
-        </div>
-        <div class="observer-header">
-          <h3>{{observer.name}}</h3>
-        </div>
+      <div class="observer-main">
+        <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" title="Click to switch between Observer and Target modes">
+          <div class="toggle-option {{#if isObserverMode}}active{{/if}}">
+            <i class="fas fa-eye"></i>
+            <span>Observer</span>
+          </div>
+          <div class="toggle-divider">|</div>
+          <div class="toggle-option {{#if isTargetMode}}active{{/if}}">
+            <i class="fas fa-user-secret"></i>
+            <span>Target</span>
+          </div>
+        </button>
+        <h3 class="observer-name">{{observer.name}}</h3>
         {{#if isObserverMode}}
-          <p class="hint"><strong>Observer Mode:</strong> How <em>{{observer.name}}</em> sees other tokens.</p>
+          <p class="hint">How <em>{{observer.name}}</em> sees other tokens</p>
         {{else}}
-          <p class="hint"><strong>Target Mode:</strong> How other tokens see <em>{{observer.name}}</em>.</p>
+          <p class="hint">How other tokens see <em>{{observer.name}}</em></p>
         {{/if}}
       </div>
-
+      <div class="visibility-legend">
+        <div class="legend-title">Legend</div>
+        {{#each visibilityStates as |state|}}
+          <div class="legend-item" title="{{state.label}}">
+            <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+            <span>{{state.label}}</span>
+          </div>
+        {{/each}}
+      </div>
     </div>
   </div>
 

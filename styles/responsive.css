@@ -268,10 +268,6 @@
 
 /* Large screen optimizations */
 @media (min-width: 1200px) {
-  .observer-info {
-    padding: var(--spacing-lg) var(--spacing-xl);
-  }
-
   .observer-image {
     width: 140px !important;
     height: 140px !important;
@@ -387,5 +383,46 @@
 
   .mode-toggle:active {
     transform: none;
+  }
+}
+
+/* 1440p and higher resolution optimizations */
+@media (min-width: 2560px) {
+  .observer-name {
+    font-size: 16px;
+  }
+
+  .observer-main .hint {
+    font-size: 13px;
+  }
+
+  .mode-toggle {
+    font-size: 14px;
+    width: 100px;
+    height: 22px;
+  }
+
+  .toggle-option i {
+    font-size: 12px;
+  }
+
+  .toggle-option span {
+    font-size: 12px;
+  }
+
+  .legend-title {
+    font-size: 12px;
+  }
+
+  .legend-item {
+    font-size: 11px;
+  }
+
+  .legend-item i {
+    font-size: 11px;
+  }
+
+  .legend-item span {
+    font-size: 11px;
   }
 }

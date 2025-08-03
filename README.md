@@ -306,5 +306,5 @@ This module is licensed under the Apache License v2.0. See LICENSE file for deta
 ## Acknowledgments
 
 - Built for FoundryVTT v13 using modern ApplicationV2 framework
-- Inspired by the PF2E system's visibility mechanics
+- Inspired by the PF2E system's visibility mechanics and PF2E perception module
 - Thanks to the FoundryVTT and PF2E communities for feedback and testing

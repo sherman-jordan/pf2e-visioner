@@ -10,9 +10,8 @@ let currentHoveredToken = null;
 let visibilityIndicators = new Map();
 let tokenEventHandlers = new Map(); // Store references to our specific event handlers
 let tooltipMode = 'target'; // 'target' (default) or 'observer'
-let isShowingKeyTooltips = false; // Track if Alt/O key tooltips are active
+let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
-let isOKeyPressed = false; // Track if O key is currently pressed
 
 /**
  * Set the tooltip mode
@@ -98,46 +97,6 @@ export function onHighlightObjects(highlight) {
   } else {
     hideKeyTooltips();
     // Note: Don't change global tooltipMode - let hover tooltips keep their current mode
-  }
-}
-
-/**
- * Handle keydown events for O key
- * @param {KeyboardEvent} event 
- */
-export function onKeyDown(event) {
-  if (!game.user.isGM) return;
-  
-  // Check for O key
-  if (event.code === 'KeyO') {
-    // Only process if not typing in an input field
-    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'TEXTAREA' && !event.target.isContentEditable) {
-      event.preventDefault();
-      
-      if (!isOKeyPressed) {
-        isOKeyPressed = true;
-        
-        // Switch to observer mode for hover tooltips only (not Alt key tooltips)
-        setTooltipMode('observer');
-        // Note: setTooltipMode automatically refreshes hover tooltips
-      }
-    }
-  }
-}
-
-/**
- * Handle keyup events for O key
- * @param {KeyboardEvent} event 
- */
-export function onKeyUp(event) {
-  if (!game.user.isGM) return;
-  
-  if (event.code === 'KeyO' && isOKeyPressed) {
-    isOKeyPressed = false;
-    
-    // Switch back to target mode (default for hover)
-    setTooltipMode('target');
-    // Note: setTooltipMode automatically refreshes hover tooltips
   }
 }
 
@@ -454,7 +413,6 @@ export function cleanupHoverTooltips() {
   currentHoveredToken = null;
   isShowingKeyTooltips = false;
   keyTooltipTokens.clear();
-  isOKeyPressed = false;
   
   // Reset tooltip mode to default
   setTooltipMode('target');

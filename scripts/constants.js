@@ -76,10 +76,17 @@ export const DEFAULT_SETTINGS = {
  */
 export const KEYBINDINGS = {
   openVisibilityManager: {
-    name: 'Open Token Visibility Manager',
-    hint: 'Open the visibility manager for selected tokens',
+    name: 'PF2E_VISIONER.KEYBINDINGS.OPEN_VISIBILITY_MANAGER.name',
+    hint: 'PF2E_VISIONER.KEYBINDINGS.OPEN_VISIBILITY_MANAGER.hint',
     editable: [
       { key: 'KeyV', modifiers: ['Control', 'Shift'] }
+    ]
+  },
+  toggleObserverMode: {
+    name: 'PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.name',
+    hint: 'PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.hint',
+    editable: [
+      { key: 'KeyO', modifiers: [] }
     ]
   }
 };

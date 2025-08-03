@@ -68,6 +68,16 @@
           "hybrid": "Hybrid (Legacy)"
         }
       }
+    },
+    "KEYBINDINGS": {
+      "OPEN_VISIBILITY_MANAGER": {
+        "name": "Open Token Visibility Manager",
+        "hint": "Open the visibility manager for selected tokens"
+      },
+      "TOGGLE_OBSERVER_MODE": {
+        "name": "Toggle Observer Mode for Hover Tooltips",
+        "hint": "Hold this key to switch hover tooltips to observer mode (how hovered token sees others)"
+      }
     }
   }
 }

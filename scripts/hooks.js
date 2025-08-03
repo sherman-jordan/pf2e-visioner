@@ -4,11 +4,10 @@
 
 import { MODULE_TITLE } from './constants.js';
 import { updateTokenVisuals } from './effects-coordinator.js';
-import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects, onKeyDown, onKeyUp } from './hover-tooltips.js';
+import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
 import { onRenderTokenHUD } from './token-hud.js';
 
-// Flag to prevent duplicate event listener registration
-let keyListenersRegistered = false;
+
 
 /**
  * Register all FoundryVTT hooks
@@ -24,13 +23,6 @@ export function registerHooks() {
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
   Hooks.on('createToken', onTokenCreated);
   Hooks.on('deleteToken', onTokenDeleted);
-  
-  // Add O key event listeners for visibility tooltips (only once)
-  if (!keyListenersRegistered) {
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('keyup', onKeyUp);
-    keyListenersRegistered = true;
-  }
   
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();

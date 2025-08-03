@@ -1,0 +1,88 @@
+{{!--
+  ApplicationV2 template for Seek Results Preview Dialog
+  Matches the visibility manager's design and styling
+--}}
+
+<div class="seek-preview-content">
+  {{!-- Seeker Information Panel --}}
+  <div class="seeker-info">
+    <div class="seeker-image">
+      <img src="{{seeker.image}}" alt="{{seeker.name}}" />
+    </div>
+    <div class="seeker-details">
+      <h3 class="seeker-name">{{seeker.name}}</h3>
+      <p class="hint">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.PREVIEW_HINT"}}</p>
+    </div>
+  </div>
+
+  {{!-- Results Table --}}
+  <div class="results-table-container">
+    <table class="visibility-table seek-results-table">
+      <thead>
+        <tr>
+          <th class="token-image">Token</th>
+          <th class="token-name">Name</th>
+          <th class="roll-result">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ROLL_VS_DC"}}</th>
+          <th class="outcome">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.OUTCOME"}}</th>
+          <th class="visibility-change">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.VISIBILITY_CHANGE"}}</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each outcomes as |outcome|}}
+          <tr class="token-row" data-token-id="{{outcome.target.id}}">
+            <td class="token-image">
+              <img src="{{outcome.tokenImage}}" alt="{{outcome.target.name}}" width="28" height="28" />
+            </td>
+            <td class="token-name">
+              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+            </td>
+            <td class="roll-result">
+              <span class="roll-total">{{outcome.rollTotal}}</span> vs DC <span class="dc-value">{{outcome.dc}}</span>
+              <br><small class="margin">({{outcome.marginText}})</small>
+            </td>
+            <td class="outcome {{outcome.outcomeClass}}">
+              {{outcome.outcomeLabel}}
+            </td>
+            <td class="visibility-change">
+              {{#if outcome.changed}}
+                <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
+                →
+                <i class="{{outcome.newVisibilityState.icon}}" style="color: {{outcome.newVisibilityState.color}}" title="{{outcome.newVisibilityState.label}}"></i>
+              {{else}}
+                <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
+              {{/if}}
+            </td>
+            <td class="actions">
+              {{#if outcome.changed}}
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility">
+                  <i class="fas fa-undo"></i>
+                </button>
+              {{else}}
+                <span class="no-action">No change</span>
+              {{/if}}
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- Bulk Actions --}}
+  <div class="seek-preview-dialog-bulk-actions-header">
+    <div class="seek-preview-dialog-bulk-actions-info">
+      <span class="seek-preview-dialog-changes-count">{{changesCount}}</span> of <span class="seek-preview-dialog-total-count">{{totalCount}}</span> targets will have visibility changes.
+    </div>
+    <div class="seek-preview-dialog-bulk-actions-buttons">
+      <button type="button" class="seek-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+        <i class="fas fa-check-circle"></i> Apply All
+      </button>
+      <button type="button" class="seek-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state">
+        <i class="fas fa-undo"></i> Revert All
+      </button>
+    </div>
+  </div>
+</div>

@@ -34,6 +34,7 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - **Traffic Light Color System**: Intuitive green → yellow → orange → red progression
 - Supports all major detection states: Observed, Concealed, Hidden, Undetected
 - **Automatic Off-Guard Conditions**: When hidden/undetected attackers make attacks, targets automatically become off-guard for both AC penalties and damage benefits (like sneak attack)
+- **Seek Action Automation**: Automatically apply visibility changes when Seek actions are rolled - buttons appear in chat messages to instantly resolve results
 - **Visual Consistency**: All interface elements use consistent color coding throughout
 
 ### ⚡ **Easy to Use**

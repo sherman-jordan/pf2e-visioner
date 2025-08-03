@@ -46,6 +46,26 @@
       "NO_OBSERVER_SELECTED": "Please select an observer token first",
       "MULTIPLE_OBSERVERS": "Multiple observer tokens selected - please select only one"
     },
+    "SEEK_AUTOMATION": {
+      "BUTTON_APPLY": "Apply Seek Results",
+      "BUTTON_PREVIEW": "Preview Results",
+      "BUTTON_PROCESSED": "Results Applied",
+      "BUTTON_TOOLTIP": "Apply visibility changes based on Seek results",
+      "NO_UNDETECTED_TOKENS": "No hidden or undetected tokens found for {name}'s Seek action",
+      "NO_CHANGES": "No visibility changes needed for {name}'s Seek action",
+      "RESULTS_APPLIED": "Seek automation applied changes: {changes}",
+      "ERROR_PROCESSING": "Error applying Seek results. Check console for details.",
+      "PROCESSING": "Processing Seek results...",
+      "PREVIEW_TITLE": "Seek Results Preview",
+      "PREVIEW_HINT": "Seek action results analysis",
+      "ROLL_VS_DC": "Roll vs DC",
+      "OUTCOME": "Outcome",
+      "VISIBILITY_CHANGE": "Visibility Change",
+      "OPEN_RESULTS": "Open Seek Results",
+      "OPEN_RESULTS_TOOLTIP": "Open the Seek results dialog to apply individual or bulk visibility changes",
+      "SETTING_NAME": "Enable Seek Automation",
+      "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes"
+    },
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {
         "name": "Enable Hover Tooltips",
@@ -67,6 +87,10 @@
           "ephemeral": "EphemeralEffect",
           "hybrid": "Hybrid (Legacy)"
         }
+      },
+      "ENABLE_SEEK_AUTOMATION": {
+        "name": "Enable Seek Action Automation",
+        "hint": "When enabled, adds buttons to Seek action chat messages that automatically apply visibility changes based on the roll results vs target Stealth DCs."
       }
     },
     "KEYBINDINGS": {

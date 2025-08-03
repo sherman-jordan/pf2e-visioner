@@ -373,7 +373,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   }
 
   /**
-   * Bulk set visibility state for tokens (only changes dropdown values, doesn't apply immediately)
+   * Bulk set visibility state for tokens (updates icon selection and hidden inputs)
    * Now supports filtering by target type (PC/NPC)
    */
   static async bulkSetState(event, button) {
@@ -386,21 +386,35 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         return;
       }
       
-      // Update dropdown values in the form, filtered by target type
+      // Update icon selections in the form, filtered by target type
       const form = event.target.closest('form');
       if (form) {
-        let selector = 'select[name^="visibility."]';
+        let selector = '.icon-selection';
         
         // If target type is specified, filter to only that section
         if (targetType === 'pc') {
-          selector = '.table-section:has(.header-left .fa-users) select[name^="visibility."]';
+          selector = '.table-section:has(.header-left .fa-users) .icon-selection';
         } else if (targetType === 'npc') {
-          selector = '.table-section:has(.header-left .fa-dragon) select[name^="visibility."]';
+          selector = '.table-section:has(.header-left .fa-dragon) .icon-selection';
         }
         
-        const selects = form.querySelectorAll(selector);
-        selects.forEach(select => {
-          select.value = state;
+        const iconSelections = form.querySelectorAll(selector);
+        iconSelections.forEach(iconSelection => {
+          // Remove selected class from all icons in this selection
+          const icons = iconSelection.querySelectorAll('.state-icon');
+          icons.forEach(icon => icon.classList.remove('selected'));
+          
+          // Add selected class to the target state icon
+          const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
+          if (targetIcon) {
+            targetIcon.classList.add('selected');
+          }
+          
+          // Update the hidden input value
+          const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
+          if (hiddenInput) {
+            hiddenInput.value = state;
+          }
         });
       }
       
@@ -416,6 +430,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   _onRender(context, options) {
     super._onRender(context, options);
     this.addTokenHighlighting();
+    this.addIconClickHandlers();
   }
 
   /**
@@ -473,6 +488,48 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         // Add cursor pointer to indicate interactivity
         image.style.cursor = 'pointer';
       }
+    });
+  }
+
+  /**
+   * Add click handlers for icon-based visibility selection
+   */
+  addIconClickHandlers() {
+    const element = this.element;
+    if (!element) return;
+
+    // Find all state icon buttons
+    const stateIcons = element.querySelectorAll('.state-icon');
+    
+    stateIcons.forEach(icon => {
+      icon.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const targetId = icon.dataset.target;
+        const newState = icon.dataset.state;
+        
+        if (!targetId || !newState) return;
+        
+        // Find the parent icon selection container
+        const iconSelection = icon.closest('.icon-selection');
+        if (!iconSelection) return;
+        
+        // Remove selected class from all icons in this selection
+        const allIcons = iconSelection.querySelectorAll('.state-icon');
+        allIcons.forEach(i => i.classList.remove('selected'));
+        
+        // Add selected class to clicked icon
+        icon.classList.add('selected');
+        
+        // Update the hidden input value
+        const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
+        if (hiddenInput) {
+          hiddenInput.value = newState;
+        }
+        
+        console.log(`Updated visibility for token ${targetId} to ${newState}`);
+      });
     });
   }
 

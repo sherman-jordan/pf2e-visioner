@@ -786,3 +786,80 @@
   background: transparent;
   border-color: var(--color-border-light-primary);
 }
+
+/* Icon-based Selection Styling */
+.icon-selection {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.state-icon {
+  background: transparent;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  position: relative;
+}
+
+.state-icon:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: currentColor;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.state-icon.selected {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: currentColor;
+  border-width: 2px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), inset 0 0 4px rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.state-icon.selected::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+/* Specific state icon colors */
+.state-icon[data-state="observed"] {
+  color: #4caf50;
+}
+
+.state-icon[data-state="concealed"] {
+  color: #ffeb3b;
+}
+
+.state-icon[data-state="hidden"] {
+  color: #ff6600;
+}
+
+.state-icon[data-state="undetected"] {
+  color: #f44336;
+}
+
+/* Hide the hidden input */
+.icon-selection input[type="hidden"] {
+  display: none;
+}

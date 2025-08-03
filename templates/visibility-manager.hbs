@@ -85,13 +85,16 @@
                     <strong title="{{target.name}}">{{target.name}}</strong>
                   </td>
                   <td class="visibility-state">
-                    <select name="visibility.{{target.id}}" class="visibility-select" data-target="{{target.id}}">
+                    <div class="icon-selection" data-target="{{target.id}}">
                       {{#each target.states as |state|}}
-                        <option value="{{state.value}}" {{#if state.selected}}selected{{/if}} data-icon="{{state.icon}}" data-color="{{state.color}}">
-                          {{state.label}}
-                        </option>
+                        <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                data-state="{{state.value}}" data-target="{{target.id}}" 
+                                title="{{state.label}}" style="color: {{state.color}}">
+                          <i class="{{state.icon}}"></i>
+                        </button>
                       {{/each}}
-                    </select>
+                      <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentState}}" />
+                    </div>
                   </td>
                   <td class="current-state">
                     {{#each target.states as |state|}}
@@ -167,13 +170,16 @@
                     <strong title="{{target.name}}">{{target.name}}</strong>
                   </td>
                   <td class="visibility-state">
-                    <select name="visibility.{{target.id}}" class="visibility-select" data-target="{{target.id}}">
+                    <div class="icon-selection" data-target="{{target.id}}">
                       {{#each target.states as |state|}}
-                        <option value="{{state.value}}" {{#if state.selected}}selected{{/if}} data-icon="{{state.icon}}" data-color="{{state.color}}">
-                          {{state.label}}
-                        </option>
+                        <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                data-state="{{state.value}}" data-target="{{target.id}}" 
+                                title="{{state.label}}" style="color: {{state.color}}">
+                          <i class="{{state.icon}}"></i>
+                        </button>
                       {{/each}}
-                    </select>
+                      <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentState}}" />
+                    </div>
                   </td>
                   <td class="current-state">
                     {{#each target.states as |state|}}

@@ -68,6 +68,15 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: true
+  },
+
+  filterIrrelevantTokens: {
+    name: 'PF2E_VISIONER.SETTINGS.FILTER_IRRELEVANT_TOKENS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.FILTER_IRRELEVANT_TOKENS.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true
   }
 
 };

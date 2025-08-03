@@ -113,7 +113,72 @@ export function showNotification(key, type = 'info') {
 export function isValidToken(token) {
   // Don't use token.isVisible as it excludes undetected tokens
   // Instead, check if the token exists and has a valid document
-  return token && token.document && token.actor;
+  if (!token || !token.document || !token.actor) {
+    return false;
+  }
+  
+  // Check if filtering is enabled
+  const shouldFilter = game.settings.get(MODULE_ID, 'filterIrrelevantTokens');
+  
+  if (!shouldFilter) {
+    // If filtering is disabled, accept all tokens with basic validation
+    return true;
+  }
+  
+  // Filter out irrelevant actor types that don't need visibility management
+  const actorType = token.actor.type;
+  
+  // Exclude loot actors - they're just containers, not creatures
+  if (actorType === 'loot') {
+    return false;
+  }
+  
+  // Exclude vehicles unless they have crew (vehicles are usually just objects)
+  if (actorType === 'vehicle') {
+    return false;
+  }
+  
+  // Exclude hazards - they're environmental, not creatures with sight
+  if (actorType === 'hazard') {
+    return false;
+  }
+  
+  // Exclude party actors - they're organizational, not individual creatures
+  if (actorType === 'party') {
+    return false;
+  }
+  
+  // Additional filtering based on actor properties
+  const actor = token.actor;
+  
+  // Filter out tokens that are clearly non-creatures based on name patterns
+  const name = token.document.name?.toLowerCase() || '';
+  const excludePatterns = [
+    /\b(loot|treasure|chest|container|barrel|crate|sack)\b/,
+    /\b(door|gate|portal|entrance|exit)\b/,
+    /\b(light|torch|lantern|candle|fire)\b/,
+    /\b(trap|pressure.plate|trigger)\b/,
+    /\b(furniture|table|chair|bed|altar)\b/,
+    /\b(decoration|statue|pillar|column)\b/,
+    /\b(marker|waypoint|location|area)\b/
+  ];
+  
+  if (excludePatterns.some(pattern => pattern.test(name))) {
+    return false;
+  }
+  
+  // Include character and npc types (the main creature types)
+  if (actorType === 'character' || actorType === 'npc') {
+    return true;
+  }
+  
+  // For unknown actor types, be conservative and include them
+  // but exclude if they have no HP (likely not a creature)
+  if (actor.system?.attributes?.hp?.max === 0) {
+    return false;
+  }
+  
+  return true;
 }
 
 /**

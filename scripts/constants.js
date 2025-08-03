@@ -74,5 +74,12 @@ export const KEYBINDINGS = {
     editable: [
       { key: 'KeyV', modifiers: ['Control', 'Shift'] }
     ]
+  },
+  toggleTooltipMode: {
+    name: 'Toggle Tooltip Mode',
+    hint: 'Hold to show how others see the hovered token (instead of how the hovered token sees others)',
+    editable: [
+      { key: 'KeyO', modifiers: [] }
+    ]
   }
 };

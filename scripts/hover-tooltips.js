@@ -31,6 +31,28 @@ function getFontAwesomeIcon(iconClass) {
 let currentHoveredToken = null;
 let visibilityIndicators = new Map();
 let tokenEventHandlers = new Map(); // Store references to our specific event handlers
+let tooltipMode = 'observer'; // 'observer' (default) or 'target'
+
+/**
+ * Set the tooltip mode
+ * @param {string} mode - 'observer' (how hovered token sees others) or 'target' (how others see hovered token)
+ */
+export function setTooltipMode(mode) {
+  if (mode !== 'observer' && mode !== 'target') {
+    console.warn('PF2E Visioner: Invalid tooltip mode:', mode);
+    return;
+  }
+  
+  const previousMode = tooltipMode;
+  tooltipMode = mode;
+  
+  console.log(`PF2E Visioner: Tooltip mode changed from ${previousMode} to ${mode}`);
+  
+  // If we have a currently hovered token, refresh the indicators
+  if (currentHoveredToken) {
+    showVisibilityIndicators(currentHoveredToken);
+  }
+}
 
 /**
  * Initialize hover tooltip system (GM only)
@@ -95,15 +117,27 @@ function showVisibilityIndicators(hoveredToken) {
   
   if (otherTokens.length === 0) return;
   
-  // For each other token, check how the hovered token sees them
-  otherTokens.forEach(targetToken => {
-    const visibilityMap = getVisibilityMap(hoveredToken);
-    const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
-    
-    if (visibilityState !== 'observed') {
-      addVisibilityIndicator(targetToken, hoveredToken, visibilityState);
-    }
-  });
+  if (tooltipMode === 'observer') {
+    // Default mode: Show how the hovered token sees others
+    otherTokens.forEach(targetToken => {
+      const visibilityMap = getVisibilityMap(hoveredToken);
+      const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
+      
+      if (visibilityState !== 'observed') {
+        addVisibilityIndicator(targetToken, hoveredToken, visibilityState, 'observer');
+      }
+    });
+  } else {
+    // Target mode: Show how others see the hovered token
+    otherTokens.forEach(observerToken => {
+      const visibilityMap = getVisibilityMap(observerToken);
+      const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
+      
+      if (visibilityState !== 'observed') {
+        addVisibilityIndicator(observerToken, hoveredToken, visibilityState, 'target');
+      }
+    });
+  }
 }
 
 /**
@@ -111,8 +145,9 @@ function showVisibilityIndicators(hoveredToken) {
  * @param {Token} targetToken - The token to show the indicator on
  * @param {Token} observerToken - The token that has the visibility perspective  
  * @param {string} visibilityState - The visibility state
+ * @param {string} mode - 'observer' or 'target' mode
  */
-function addVisibilityIndicator(targetToken, observerToken, visibilityState) {
+function addVisibilityIndicator(targetToken, observerToken, visibilityState, mode = 'observer') {
   const config = VISIBILITY_STATES[visibilityState];
   if (!config) return;
   
@@ -200,12 +235,24 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState) {
   glow.alpha = 0.3;
   
   // Add hover tooltip functionality using Foundry's built-in tooltip system
-  const tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: 16px;">
-    <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
-  </div>
-  <div style="font-size: 14px; color: #ccc;">
-    ${observerToken.document.name} sees ${targetToken.document.name} as ${game.i18n.localize(config.label).toLowerCase()}
-  </div>`;
+  let tooltipText;
+  if (mode === 'observer') {
+    // Observer mode: "How [hovered token] sees [this token]"
+    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: 16px;">
+      <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
+    </div>
+    <div style="font-size: 14px; color: #ccc;">
+      ${observerToken.document.name} sees ${targetToken.document.name} as ${game.i18n.localize(config.label).toLowerCase()}
+    </div>`;
+  } else {
+    // Target mode: "How [this token] sees [hovered token]"
+    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: 16px;">
+      <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
+    </div>
+    <div style="font-size: 14px; color: #ccc;">
+      ${targetToken.document.name} sees ${observerToken.document.name} as ${game.i18n.localize(config.label).toLowerCase()}
+    </div>`;
+  }
   
   indicator.on('pointerover', () => {
     indicator.scale.set(1.2);

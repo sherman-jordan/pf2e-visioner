@@ -39,6 +39,15 @@ export function registerKeybindings() {
         const { api } = await import('./api.js');
         await api.openVisibilityManager();
       };
+    } else if (key === 'toggleTooltipMode') {
+      keybindingConfig.onDown = async () => {
+        const { setTooltipMode } = await import('./hover-tooltips.js');
+        setTooltipMode('target');
+      };
+      keybindingConfig.onUp = async () => {
+        const { setTooltipMode } = await import('./hover-tooltips.js');
+        setTooltipMode('observer');
+      };
     }
     
     game.keybindings.register(MODULE_ID, key, keybindingConfig);

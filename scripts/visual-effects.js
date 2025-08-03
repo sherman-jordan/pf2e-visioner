@@ -10,6 +10,12 @@
 export async function updateTokenVisuals() {
   if (!canvas?.tokens) return;
   
+  // Check if Dice So Nice is currently animating to avoid interference
+  if (isDiceSoNiceAnimating()) {
+    console.log('PF2E Visioner: Skipping token visual update due to active dice animation');
+    return;
+  }
+  
   // The detection wrapper handles most of the work now
   // We just need to refresh tokens to trigger the detection system
   for (const token of canvas.tokens.placeables) {
@@ -17,6 +23,30 @@ export async function updateTokenVisuals() {
       token.refresh();
     }
   }
+}
+
+/**
+ * Check if Dice So Nice is currently animating
+ * @returns {boolean} True if dice are currently animating
+ */
+function isDiceSoNiceAnimating() {
+  // Check if Dice So Nice module is active
+  if (!game.modules.get('dice-so-nice')?.active) {
+    return false;
+  }
+  
+  // Check if the dice box is currently rolling
+  if (game.dice3d?.box?.rolling) {
+    return true;
+  }
+  
+  // Check if the dice canvas is visible (indicating active animation)
+  const diceCanvas = document.getElementById('dice-box-canvas');
+  if (diceCanvas && diceCanvas.style.display !== 'none' && diceCanvas.offsetParent !== null) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**

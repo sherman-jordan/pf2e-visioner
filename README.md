@@ -225,7 +225,7 @@ const validStates = api.getVisibilityStates();
 // Returns: ['observed', 'hidden', 'undetected', 'concealed']
 ```
 
-### Rule Elements Integration
+### Rule Elements Integration - PLANNED
 
 ```javascript
 // Get roll options for Rule Elements

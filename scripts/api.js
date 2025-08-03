@@ -55,6 +55,44 @@ export class Pf2eVisionerApi {
   }
 
   /**
+   * Open the visibility manager with a specific mode
+   * @param {Token} observer - The observer token
+   * @param {string} mode - The mode to use ('observer' or 'target')
+   */
+  static async openVisibilityManagerWithMode(observer, mode = 'observer') {
+    if (!game.user.isGM) {
+      ui.notifications.warn('Only GMs can manage token visibility');
+      return;
+    }
+
+    if (!observer) {
+      showNotification('PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED', 'warn');
+      return;
+    }
+
+    // Check if there's already an open instance
+    if (TokenVisibilityManager.currentInstance) {
+      // If the observer is the same, update mode if different and bring to front
+      if (TokenVisibilityManager.currentInstance.observer === observer) {
+        if (TokenVisibilityManager.currentInstance.mode !== mode) {
+          TokenVisibilityManager.currentInstance.mode = mode;
+          TokenVisibilityManager.currentInstance.render({ force: true });
+        }
+        TokenVisibilityManager.currentInstance.bringToTop();
+        return TokenVisibilityManager.currentInstance;
+      }
+      // If different observer, update the existing dialog with new data and mode
+      TokenVisibilityManager.currentInstance.updateObserverWithMode(observer, mode);
+      TokenVisibilityManager.currentInstance.bringToTop();
+      return TokenVisibilityManager.currentInstance;
+    }
+    
+    const manager = new TokenVisibilityManager(observer, { mode });
+    manager.render({ force: true });
+    return manager;
+  }
+
+  /**
    * Get visibility state between two tokens
    * @param {string} observerId - The ID of the observing token
    * @param {string} targetId - The ID of the target token
@@ -189,6 +227,12 @@ export class Pf2eVisionerApi {
     return ['observed', 'hidden', 'undetected', 'concealed'];
   }
 }
+
+/**
+ * Standalone function exports for internal use
+ */
+export const openVisibilityManager = Pf2eVisionerApi.openVisibilityManager;
+export const openVisibilityManagerWithMode = Pf2eVisionerApi.openVisibilityManagerWithMode;
 
 /**
  * Main API export - this is what external modules should use

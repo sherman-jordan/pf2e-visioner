@@ -10,6 +10,7 @@ import { cleanupHoverTooltips, initializeHoverTooltips } from './hover-tooltips.
  * Register all FoundryVTT hooks
  */
 export function registerHooks() {
+  console.log('PF2E Visioner: Registering hooks...');
   Hooks.on('ready', onReady);
   Hooks.on('controlToken', onControlToken);
   Hooks.on('getTokenHUDButtons', onGetTokenHUDButtons);
@@ -18,6 +19,45 @@ export function registerHooks() {
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
   Hooks.on('createToken', onTokenCreated);
   Hooks.on('deleteToken', onTokenDeleted);
+  console.log('PF2E Visioner: All hooks registered, including getTokenHUDButtons');
+  
+  // Try alternative HUD button approaches
+  setupAlternativeHUDButton();
+}
+
+/**
+ * Setup alternative token HUD button approach
+ */
+function setupAlternativeHUDButton() {
+  // Try approach 1: Hook into canvas token right-click
+  Hooks.on('targetToken', (user, token, targeted) => {
+    if (game.user.isGM && targeted) {
+      console.log('PF2E Visioner: Token targeted, could add HUD button here');
+    }
+  });
+  
+  // Try approach 2: Listen for canvas right-clicks
+  Hooks.on('canvasReady', () => {
+    if (canvas?.stage) {
+      canvas.stage.on('rightclick', (event) => {
+        const token = canvas.tokens.get(event.target?.id);
+        if (token && game.user.isGM) {
+          console.log('PF2E Visioner: Right-clicked on token:', token.name);
+          // Could show a custom context menu here
+        }
+      });
+    }
+  });
+  
+  // Try approach 3: Patch the TokenHUD class
+  if (window.TokenHUD) {
+    const originalGetData = window.TokenHUD.prototype.getData;
+    window.TokenHUD.prototype.getData = function() {
+      const data = originalGetData.call(this);
+      console.log('PF2E Visioner: TokenHUD getData called', data);
+      return data;
+    };
+  }
 }
 
 /**
@@ -25,6 +65,201 @@ export function registerHooks() {
  */
 function onReady() {
   console.log(`${MODULE_TITLE} | Ready`);
+  console.log('FoundryVTT Version:', game.version);
+  console.log('PF2E System Version:', game.system.version);
+  
+  // Add a fallback approach - add a floating button when tokens are selected
+  setupFallbackHUDButton();
+}
+
+/**
+ * Setup fallback HUD button approach
+ */
+function setupFallbackHUDButton() {
+  // Add CSS for floating button
+  const style = document.createElement('style');
+  style.textContent = `
+    .pf2e-visioner-floating-button {
+      position: fixed;
+      top: 50%;
+      left: 10px;
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #4a90e2;
+      border-radius: 8px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: move;
+      z-index: 1000;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .pf2e-visioner-floating-button:hover {
+      background: rgba(0, 0, 0, 0.9);
+      border-color: #6bb6ff;
+      transform: scale(1.05);
+    }
+    .pf2e-visioner-floating-button.dragging {
+      cursor: grabbing;
+      transform: scale(1.1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      transition: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Add button when tokens are controlled
+  Hooks.on('controlToken', (token, controlled) => {
+    // Remove any existing buttons
+    document.querySelectorAll('.pf2e-visioner-floating-button').forEach(btn => btn.remove());
+    
+    if (controlled && game.user.isGM) {
+      console.log('PF2E Visioner: Adding floating button for controlled token');
+      
+      const button = document.createElement('div');
+      button.className = 'pf2e-visioner-floating-button';
+      button.innerHTML = '<i class="fas fa-eye"></i>';
+      button.title = 'Visibility Manager (Left: Target, Right: Observer) - Drag to move';
+      
+      // Add drag functionality
+      let isDragging = false;
+      let hasDragged = false;
+      let dragStartPos = { x: 0, y: 0 };
+      let dragOffset = { x: 0, y: 0 };
+      
+      button.addEventListener('mousedown', (event) => {
+        if (event.button === 0) { // Left mouse button
+          isDragging = true;
+          hasDragged = false;
+          dragStartPos.x = event.clientX;
+          dragStartPos.y = event.clientY;
+          
+          const rect = button.getBoundingClientRect();
+          dragOffset.x = event.clientX - rect.left;
+          dragOffset.y = event.clientY - rect.top;
+          
+          event.preventDefault();
+        }
+      });
+      
+      document.addEventListener('mousemove', (event) => {
+        if (isDragging) {
+          const dragDistance = Math.sqrt(
+            Math.pow(event.clientX - dragStartPos.x, 2) + 
+            Math.pow(event.clientY - dragStartPos.y, 2)
+          );
+          
+          // If moved more than 5 pixels, consider it a drag
+          if (dragDistance > 5 && !hasDragged) {
+            hasDragged = true;
+            button.classList.add('dragging');
+          }
+          
+          if (hasDragged) {
+            const x = event.clientX - dragOffset.x;
+            const y = event.clientY - dragOffset.y;
+            
+            // Keep button within viewport bounds
+            const maxX = window.innerWidth - button.offsetWidth;
+            const maxY = window.innerHeight - button.offsetHeight;
+            
+            button.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+            button.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+          }
+          
+          event.preventDefault();
+        }
+      });
+      
+      document.addEventListener('mouseup', (event) => {
+        if (isDragging) {
+          isDragging = false;
+          button.classList.remove('dragging');
+          
+          // Save position to localStorage if we actually dragged
+          if (hasDragged) {
+            localStorage.setItem('pf2e-visioner-button-pos', JSON.stringify({
+              left: button.style.left,
+              top: button.style.top
+            }));
+          }
+          
+          // Add a small delay to prevent click events after drag
+          if (hasDragged) {
+            setTimeout(() => {
+              hasDragged = false;
+            }, 100);
+          } else {
+            hasDragged = false;
+          }
+        }
+      });
+      
+      // Restore saved position
+      const savedPos = localStorage.getItem('pf2e-visioner-button-pos');
+      if (savedPos) {
+        try {
+          const pos = JSON.parse(savedPos);
+          if (pos.left) button.style.left = pos.left;
+          if (pos.top) button.style.top = pos.top;
+        } catch (e) {
+          console.warn('PF2E Visioner: Could not restore button position');
+        }
+      }
+      
+      // Add click handlers with debugging
+      button.addEventListener('click', async (event) => {
+        // Don't open menu if we just finished dragging
+        if (hasDragged) {
+          console.log('PF2E Visioner: Click ignored - just finished dragging');
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        
+        console.log('PF2E Visioner: Floating button clicked (left-click)');
+        event.preventDefault();
+        event.stopPropagation();
+        
+        try {
+          const { openVisibilityManagerWithMode } = await import('./api.js');
+          console.log('PF2E Visioner: Opening visibility manager in target mode for token:', token.name);
+          await openVisibilityManagerWithMode(token, 'target');
+        } catch (error) {
+          console.error('PF2E Visioner: Error opening visibility manager:', error);
+        }
+      });
+      
+      button.addEventListener('contextmenu', async (event) => {
+        // Don't open menu if we just finished dragging
+        if (hasDragged) {
+          console.log('PF2E Visioner: Right-click ignored - just finished dragging');
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        
+        console.log('PF2E Visioner: Floating button right-clicked');
+        event.preventDefault();
+        event.stopPropagation();
+        
+        try {
+          const { openVisibilityManagerWithMode } = await import('./api.js');
+          console.log('PF2E Visioner: Opening visibility manager in observer mode for token:', token.name);
+          await openVisibilityManagerWithMode(token, 'observer');
+        } catch (error) {
+          console.error('PF2E Visioner: Error opening visibility manager:', error);
+        }
+      });
+      
+      document.body.appendChild(button);
+    }
+  });
 }
 
 /**
@@ -45,18 +280,29 @@ async function onControlToken(token, controlled) {
  * @param {Token} token - The token
  */
 function onGetTokenHUDButtons(hud, buttons, token) {
-  if (!game.user.isGM) return;
+  console.log('PF2E Visioner: onGetTokenHUDButtons called', { isGM: game.user.isGM, buttons: buttons.length, token });
   
-  buttons.unshift({
+  if (!game.user.isGM) {
+    console.log('PF2E Visioner: Not GM, skipping button');
+    return;
+  }
+  
+  console.log('PF2E Visioner: Adding visibility button to HUD buttons array');
+  
+  // Add the visibility button
+  buttons.push({
     name: 'visibility',
-    title: game.i18n.localize('PF2E_VISIONER.CONTEXT_MENU.MANAGE_VISIBILITY'),
+    title: 'Visibility Manager (Left: Target Mode, Right: Observer Mode)',
     icon: 'fas fa-eye',
     onClick: async () => {
-      const { openVisibilityManager } = await import('./api.js');
-      await openVisibilityManager(token);
+      console.log('PF2E Visioner: Button clicked - opening in target mode');
+      const { openVisibilityManagerWithMode } = await import('./api.js');
+      await openVisibilityManagerWithMode(token, 'target');
     },
     button: true
   });
+  
+  console.log('PF2E Visioner: Button added to array, total buttons:', buttons.length);
 }
 
 /**

@@ -84,6 +84,20 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   }
 
   /**
+   * Update the observer with a specific mode and refresh the dialog content
+   * @param {Token} newObserver - The new observer token
+   * @param {string} mode - The mode to use ('observer' or 'target')
+   */
+  updateObserverWithMode(newObserver, mode) {
+    this.observer = newObserver;
+    this.visibilityData = getVisibilityMap(newObserver);
+    this.mode = mode;
+    
+    // Re-render the dialog with new data
+    this.render({ force: true });
+  }
+
+  /**
    * Prepare context data for the template
    */
   async _prepareContext(options) {

@@ -48,7 +48,7 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 
 1. Download the module files to your `Data/modules/pf2e-visioner/` directory
 2. Enable the module in your world's module settings
-3. Ensure you're using FoundryVTT v13.341+ and PF2E system v6.0.0+
+3. Ensure you're using FoundryVTT v13.341+ and PF2E system v7.1.0+
 
 ## Usage
 

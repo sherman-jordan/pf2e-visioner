@@ -194,16 +194,6 @@ const validStates = api.getVisibilityStates();
 
 ### Rule Elements Integration - PLANNED
 
-```javascript
-// Get roll options for Rule Elements
-const rollOptions = api.getRollOptions(observerId, targetId);
-// Returns: Array of strings like ['per-token-visibility:target:hidden']
-
-// Add roll options to existing roll data
-api.addRollOptions(myRollOptions, observerId, targetId);
-// Modifies myRollOptions object in-place
-```
-
 ### Usage Examples
 
 ```javascript

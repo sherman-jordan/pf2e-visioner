@@ -11,8 +11,11 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 
 ### 🎨 **Modern UI with ApplicationV2**
 - Clean, intuitive interface built with FoundryVTT v13's ApplicationV2 framework
-- Responsive design that adapts to different screen sizes
-- Bulk actions for quickly setting multiple tokens to the same state
+- **Compact & Efficient Layout**: Always-visible header and footer with scrollable token tables
+- **Traffic Light Color Schema**: Intuitive green → yellow → orange → red visibility progression
+- **Contextual Bulk Actions**: Separate bulk action buttons for PCs and NPCs in table headers
+- **Smart Sorting**: Tokens sorted by visibility status precedence (undetected → hidden → concealed → observed)
+- **Responsive Design**: Optimized window sizing and space-efficient layout
 
 ### 👁️ **Visual Effects & Indicators**
 - Real-time visual feedback on token visibility states
@@ -20,10 +23,11 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - Smooth animations and modern styling
 
 ### ⚔️ **PF2E Integration**
-- Direct integration with PF2E visibility conditions
-- Option to automatically apply corresponding PF2E conditions
-- Supports all major detection states: Observed, Hidden, Undetected, Concealed, Invisible
+- Direct integration with PF2E visibility conditions with full mechanical effects
+- **Traffic Light Color System**: Intuitive green → yellow → orange → red progression
+- Supports all major detection states: Observed, Concealed, Hidden, Undetected
 - **Automatic Off-Guard Conditions**: When hidden/undetected attackers make attacks, targets automatically become off-guard for both AC penalties and damage benefits (like sneak attack)
+- **Visual Consistency**: All interface elements use consistent color coding throughout
 
 ### ⚡ **Easy to Use**
 - Keyboard shortcut (`Ctrl+Shift+V`) to open the visibility manager
@@ -55,20 +59,25 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 
 ### Setting Visibility States
 
-1. **Observer Token**: The token at the top of the interface represents whose "point of view" you're managing
-2. **Target Tokens**: All other tokens in the scene are listed below
+1. **Observer Section**: Compact header with token image, name, and mode toggle
+   - **Observer Mode**: How the selected token sees others
+   - **Target Mode**: How others see the selected token
+2. **Token Tables**: Organized into separate PC and NPC sections with smart sorting
+3. **Always-Visible Controls**: Header and footer remain visible while token tables scroll
 3. **Visibility States**: Use the dropdown for each token to set how the observer sees them:
-   - **Observed**: Normal visibility (default)
-   - **Hidden**: Token appears semi-transparent
-   - **Undetected**: Token is barely visible
-   - **Concealed**: Token appears dimmed
-   - **Invisible**: Token is completely hidden
+   - **🟢 Observed**: Normal visibility (default) - Green color
+   - **🟡 Concealed**: Token appears dimmed with DC 5 flat check - Yellow color
+   - **🟠 Hidden**: Token appears semi-transparent with DC 11 flat check - Orange color
+   - **🔴 Undetected**: Token location unknown - Red color
 
 ### Bulk Actions
 
-Use the bulk action buttons at the top to quickly set all tokens to the same visibility state:
-- Click any visibility state button to apply it to all tokens at once
-- Great for setting up encounters where most enemies start hidden
+**Contextual Bulk Actions** are now integrated into each table header:
+- **PC Bulk Actions**: Located in the Player Characters table header
+- **NPC Bulk Actions**: Located in the NPCs table header  
+- **Color-Coded Buttons**: Each button matches its visibility state color (green, yellow, orange, red)
+- **Targeted Control**: Apply bulk changes to just PCs or just NPCs independently
+- **Intuitive Icons**: Visual icons for each visibility state (eye, cloud, eye-slash, ghost)
 
 ### Visual Feedback
 

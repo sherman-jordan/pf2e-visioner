@@ -53,7 +53,7 @@ function onGetTokenHUDButtons(hud, buttons, token) {
     icon: 'fas fa-eye',
     onClick: async () => {
       const { openVisibilityManager } = await import('./api.js');
-      openVisibilityManager(token);
+      await openVisibilityManager(token);
     },
     button: true
   });
@@ -75,7 +75,7 @@ function onGetTokenDirectoryEntryContext(html, options) {
       const token = canvas.tokens.get(tokenId);
       if (token) {
         const { openVisibilityManager } = await import('./api.js');
-        openVisibilityManager(token);
+        await openVisibilityManager(token);
       }
     }
   });

@@ -10,6 +10,9 @@ import { MODULE_ID } from './constants.js';
 
 export class TokenVisibilityManager extends foundry.applications.api.ApplicationV2 {
   
+  // Track the current instance to prevent multiple dialogs
+  static currentInstance = null;
+  
   static DEFAULT_OPTIONS = {
     tag: 'form',
     form: {
@@ -59,6 +62,25 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     // Otherwise, default to Observer Mode ("how I see others")
     const isControlledByUser = observer.actor?.hasPlayerOwner && observer.isOwner;
     this.mode = options.mode || (isControlledByUser ? 'target' : 'observer');
+    
+    // Set this as the current instance
+    TokenVisibilityManager.currentInstance = this;
+  }
+
+  /**
+   * Update the observer and refresh the dialog content
+   * @param {Token} newObserver - The new observer token
+   */
+  updateObserver(newObserver) {
+    this.observer = newObserver;
+    this.visibilityData = getVisibilityMap(newObserver);
+    
+    // Update mode based on new observer
+    const isControlledByUser = newObserver.actor?.hasPlayerOwner && newObserver.isOwner;
+    this.mode = isControlledByUser ? 'target' : 'observer';
+    
+    // Re-render the dialog with new data
+    this.render({ force: true });
   }
 
   /**
@@ -388,6 +410,12 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   async close(options = {}) {
     // Clean up any remaining token borders
     this.cleanupAllTokenBorders();
+    
+    // Clear the current instance reference
+    if (TokenVisibilityManager.currentInstance === this) {
+      TokenVisibilityManager.currentInstance = null;
+    }
+    
     return super.close(options);
   }
 

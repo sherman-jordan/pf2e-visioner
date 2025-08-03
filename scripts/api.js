@@ -15,7 +15,7 @@ export class Pf2eVisionerApi {
    * Open the visibility manager for a specific observer token
    * @param {Token} observer - The observer token (optional, uses controlled tokens if not provided)
    */
-  static openVisibilityManager(observer = null) {
+  static async openVisibilityManager(observer = null) {
     if (!game.user.isGM) {
       ui.notifications.warn('Only GMs can manage token visibility');
       return;
@@ -36,8 +36,22 @@ export class Pf2eVisionerApi {
       }
     }
 
+    // Check if there's already an open instance
+    if (TokenVisibilityManager.currentInstance) {
+      // If the observer is the same, just bring the existing dialog to front
+      if (TokenVisibilityManager.currentInstance.observer === observer) {
+        TokenVisibilityManager.currentInstance.bringToTop();
+        return TokenVisibilityManager.currentInstance;
+      }
+      // If different observer, update the existing dialog with new data
+      TokenVisibilityManager.currentInstance.updateObserver(observer);
+      TokenVisibilityManager.currentInstance.bringToTop();
+      return TokenVisibilityManager.currentInstance;
+    }
+    
     const manager = new TokenVisibilityManager(observer);
     manager.render({ force: true });
+    return manager;
   }
 
   /**

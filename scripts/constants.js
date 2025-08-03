@@ -14,28 +14,28 @@ export const VISIBILITY_STATES = {
     pf2eCondition: null,
     visible: true,
     icon: 'fas fa-eye',
-    color: '#00ff00'
+    color: '#4caf50'  // Green - safe/visible
   },
   concealed: {
     label: 'PF2E_VISIONER.VISIBILITY_STATES.concealed',
     pf2eCondition: 'concealed',
     visible: true,
     icon: 'fas fa-cloud',
-    color: '#aaaaaa'
+    color: '#ffc107'  // Yellow - caution
   },
   hidden: {
     label: 'PF2E_VISIONER.VISIBILITY_STATES.hidden',
     pf2eCondition: 'hidden',
     visible: true,
     icon: 'fas fa-eye-slash',
-    color: '#ffaa00'
+    color: '#ff6600'  // Bright orange - warning
   },
   undetected: {
     label: 'PF2E_VISIONER.VISIBILITY_STATES.undetected',
     pf2eCondition: 'undetected',
     visible: false, // Hide completely like invisible used to
     icon: 'fas fa-ghost',
-    color: '#ff4444'
+    color: '#f44336'  // Red - danger
   }
 };
 
@@ -59,7 +59,9 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: false
-  }
+  },
+
+
 };
 
 /**

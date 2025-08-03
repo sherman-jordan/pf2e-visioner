@@ -1,17 +1,245 @@
 /*
- * Modern styles for PF2E Per-Token Visibility Manager (FoundryVTT v13)
+ * Visibility Manager UI Components
+ * Main interface styling for the token visibility manager
  */
 
-/* Observer Information Section */
-.observer-info {
+/* Responsive Window Sizing */
+.token-visibility-manager {
+  width: auto;
+  min-width: 500px;
+  max-width: 800px;
   display: flex;
-  padding: 12px 16px;
-  background: var(--color-bg-option);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 6px;
-  margin-bottom: 12px;
-  gap: 20px;
+  flex-direction: column;
+  height: 100%;
+}
+
+.token-visibility-manager .window-content {
+  width: auto;
+  min-width: 500px;
+  max-width: 800px;
+  padding: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Tables content area that can scroll */
+.tables-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: var(--spacing-sm);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-light-primary) transparent;
+}
+
+/* Webkit scrollbar styling for tables content */
+.tables-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tables-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tables-content::-webkit-scrollbar-thumb {
+  background: var(--color-border-light-primary);
+  border-radius: 4px;
+}
+
+.tables-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-highlight);
+}
+
+/* Observer Information Section - always visible at top */
+.observer-info {
+  flex-shrink: 0;
+  background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.observer-image {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  min-height: 80px;
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border-light-primary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.observer-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.observer-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.observer-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.observer-header {
+  margin-bottom: var(--spacing-xs);
+}
+
+.observer-details h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.observer-details .hint {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Observer Top Row - Image and Details */
+.observer-top-row {
+  display: flex;
+  gap: var(--spacing-xl);
   align-items: flex-start;
+}
+
+/* Observer Header with Mode Toggle */
+.observer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+}
+
+.observer-header h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 16px;
+}
+
+/* Mode Toggle Container */
+.mode-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.mode-toggle-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--color-text-secondary);
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Mode Toggle Button - Toggle Switch Style */
+.mode-toggle {
+  background: var(--color-bg-option);
+  border: 2px solid var(--color-border-light-primary);
+  border-radius: 18px;
+  padding: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  position: relative;
+  min-width: 140px;
+  height: 32px;
+}
+
+.mode-toggle:hover {
+  border-color: var(--color-border-highlight);
+  box-shadow: var(--shadow-md);
+}
+
+.mode-toggle:active {
+  transform: scale(0.98);
+}
+
+/* Toggle Options */
+.toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  transition: all var(--transition-normal);
+  flex: 1;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  height: 24px;
+}
+
+.toggle-option.active {
+  background: var(--color-bg-btn);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+  transform: scale(1.05);
+}
+
+.toggle-option:not(.active) {
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.toggle-option i {
+  font-size: 12px;
+}
+
+.toggle-option span {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* Toggle Divider */
+.toggle-divider {
+  color: var(--color-border-light-primary);
+  font-weight: bold;
+  opacity: 0.4;
+  margin: 0 6px;
+  z-index: 1;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Active State Colors */
+.mode-toggle.observer-active .toggle-option:first-child {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  color: white;
+}
+
+.mode-toggle.target-active .toggle-option:last-child {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
 }
 
 .observer-image {
@@ -21,7 +249,7 @@
   min-height: 120px !important;
   max-width: 120px !important;
   max-height: 120px !important;
-  border-radius: 6px !important;
+  border-radius: var(--radius-lg) !important;
   border: 3px solid var(--color-border-highlight-alt);
   flex-shrink: 0 !important;
   background: var(--color-bg-option);
@@ -38,14 +266,14 @@
   position: absolute;
   top: 0;
   left: 0;
-  border-radius: 6px !important;
+  border-radius: var(--radius-lg) !important;
 }
 
 .observer-details {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
   min-width: 0;
 }
 
@@ -70,16 +298,16 @@
   font-weight: 500 !important;
   font-style: normal !important;
   background: rgba(255, 152, 0, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
   border-left: 3px solid var(--color-border-highlight-alt);
 }
 
-/* Bulk Actions Section - Now positioned in observer info */
+/* Bulk Actions Section */
 .bulk-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
   align-items: flex-start;
   flex-shrink: 0;
 }
@@ -94,41 +322,326 @@
 
 .bulk-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  width: auto;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+  width: 100%;
   min-width: 200px;
 }
 
 .bulk-state {
-  padding: 8px 12px !important;
-  font-size: 12px !important;
-  border: 2px solid var(--color-border-light-primary, #666) !important;
-  border-radius: 6px !important;
-  background: var(--color-bg-option) !important;
-  color: var(--color-text-primary) !important;
+  padding: var(--pf2e-visioner-spacing-xs) var(--pf2e-visioner-spacing-sm);
+  border: 1px solid var(--pf2e-visioner-border-color);
+  border-radius: var(--pf2e-visioner-border-radius);
+  background: var(--pf2e-visioner-surface-color);
+  color: var(--pf2e-visioner-text-primary);
   cursor: pointer;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  transition: all 0.2s ease !important;
-  font-weight: 500 !important;
-  white-space: nowrap !important;
-  min-height: 36px !important;
-  text-align: center !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all var(--pf2e-visioner-transition-fast);
+  min-width: auto;
+  white-space: nowrap;
 }
 
 .bulk-state:hover {
-  background: var(--color-bg-option-active);
   border-color: var(--color-border-highlight);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .bulk-state i {
   font-size: 12px;
+}
+
+/* Specific bulk state button styling */
+.bulk-state[data-state="observed"] {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: var(--visibility-observed);
+  color: var(--visibility-observed);
+}
+
+.bulk-state[data-state="observed"]:hover {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: var(--visibility-observed);
+}
+
+.bulk-state[data-state="concealed"] {
+  background: rgba(255, 235, 59, 0.1);
+  border-color: var(--visibility-concealed);
+  color: #b8860b;
+}
+
+.bulk-state[data-state="concealed"]:hover {
+  background: rgba(255, 235, 59, 0.2);
+  border-color: var(--visibility-concealed);
+}
+
+.bulk-state[data-state="hidden"] {
+  background: rgba(255, 152, 0, 0.1);
+  border-color: var(--visibility-hidden);
+  color: var(--visibility-hidden);
+}
+
+.bulk-state[data-state="hidden"]:hover {
+  background: rgba(255, 152, 0, 0.2);
+  border-color: var(--visibility-hidden);
+}
+
+.bulk-state[data-state="undetected"] {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: var(--visibility-undetected);
+  color: var(--visibility-undetected);
+}
+
+.bulk-state[data-state="undetected"]:hover {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: var(--visibility-undetected);
+}
+
+/* Table Sections */
+.table-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.table-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 4px 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-option);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.bulk-actions-header {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.bulk-state-header {
+  background: transparent;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulk-state-header:hover {
+  background: var(--color-bg-btn);
+  border-color: var(--color-border-highlight);
+  transform: translateY(-1px);
+}
+
+/* Specific bulk state header button styling - using direct hex colors */
+.bulk-actions-header .bulk-state-header[data-state="observed"],
+.bulk-actions-header .bulk-state-header[data-state="observed"] i {
+  color: #4caf50 !important;
+  border-color: #4caf50 !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="observed"]:hover,
+.bulk-actions-header .bulk-state-header[data-state="observed"]:hover i {
+  background: rgba(76, 175, 80, 0.15) !important;
+  border-color: #4caf50 !important;
+  color: #4caf50 !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="concealed"],
+.bulk-actions-header .bulk-state-header[data-state="concealed"] i {
+  color: #ffeb3b !important;
+  border-color: #ffeb3b !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="concealed"]:hover,
+.bulk-actions-header .bulk-state-header[data-state="concealed"]:hover i {
+  background: rgba(255, 235, 59, 0.15) !important;
+  border-color: #ffeb3b !important;
+  color: #ffeb3b !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="hidden"],
+.bulk-actions-header .bulk-state-header[data-state="hidden"] i {
+  color: #ff6600 !important;
+  border-color: #ff6600 !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="hidden"]:hover,
+.bulk-actions-header .bulk-state-header[data-state="hidden"]:hover i {
+  background: rgba(255, 102, 0, 0.15) !important;
+  border-color: #ff6600 !important;
+  color: #ff6600 !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="undetected"],
+.bulk-actions-header .bulk-state-header[data-state="undetected"] i {
+  color: #f44336 !important;
+  border-color: #f44336 !important;
+}
+
+.bulk-actions-header .bulk-state-header[data-state="undetected"]:hover,
+.bulk-actions-header .bulk-state-header[data-state="undetected"]:hover i {
+  background: rgba(244, 67, 54, 0.15) !important;
+  border-color: #f44336 !important;
+  color: #f44336 !important;
+}
+
+.table-section-header i {
+  color: var(--color-border-highlight-alt);
+  font-size: 16px;
+}
+
+.table-section-header .count {
+  background: var(--color-border-highlight-alt);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+/* Visibility Table Container */
+.visibility-table-container {
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-top: none;
+  background: var(--color-bg);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Visibility Table */
+.visibility-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  table-layout: fixed;
+}
+
+/* Specific column width controls */
+.visibility-table .token-image {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  padding: 4px;
+}
+
+.visibility-table .token-name {
+  width: 18%;
+  min-width: 80px;
+  max-width: 120px;
+}
+
+.token-name strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.visibility-table .visibility-state {
+  width: 28%;
+  min-width: 130px;
+}
+
+.visibility-table .current-state {
+  width: 26%;
+  min-width: 100px;
+}
+
+.visibility-table .mechanical-effects {
+  width: 28%;
+  min-width: 140px;
+}
+
+.visibility-table th,
+.visibility-table td {
+  padding: 4px var(--spacing-xs);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light-tertiary);
+  vertical-align: middle;
+}
+
+.token-row:nth-child(even) {
+  background: var(--color-bg-alt);
+}
+
+/* Form Controls */
+.visibility-table select {
+  background: var(--color-bg-option, #2a2a2a) !important;
+  color: var(--color-text-primary, #ffffff) !important;
+  border: 1px solid var(--color-border-light-primary, #666666) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  width: 100% !important;
+  max-width: 130px !important;
+  cursor: pointer !important;
+}
+
+.visibility-table select:hover {
+  border-color: var(--pf2e-visioner-primary) !important;
+  background: var(--color-bg-btn, #3a3a3a) !important;
+}
+
+.visibility-table select:focus {
+  outline: none !important;
+  border-color: var(--pf2e-visioner-primary) !important;
+  box-shadow: 0 0 0 2px rgba(255, 100, 0, 0.3) !important;
+}
+
+/* Select Options Styling */
+.visibility-table select option {
+  background: var(--color-bg-option, #2a2a2a) !important;
+  color: var(--color-text-primary, #ffffff) !important;
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  border: none !important;
+}
+
+.visibility-table select option:hover {
+  background: var(--color-bg-btn, #3a3a3a) !important;
+}
+
+/* Removed selected option highlighting - no need to show current state in dropdown */
+
+/* Enhanced visibility for different states */
+.visibility-table select option[value="observed"] {
+  color: var(--visibility-observed) !important;
+}
+
+.visibility-table select option[value="concealed"] {
+  color: var(--visibility-concealed) !important;
+}
+
+.visibility-table select option[value="hidden"] {
+  color: var(--visibility-hidden) !important;
+}
+
+.visibility-table select option[value="undetected"] {
+  color: var(--visibility-undetected) !important;
 }
 
 /* Table Sections */
@@ -155,146 +668,27 @@
   font-size: 16px;
 }
 
-/* Visibility Table */
+.table-section-header .count {
+  background: var(--color-bg-btn);
+  color: var(--color-text-btn);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* Visibility Table Container - no individual scrolling */
 .visibility-table-container {
-  max-height: 350px;
-  overflow-y: auto;
   border: 1px solid var(--color-border-light-primary);
   border-radius: 0 0 8px 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .table-section:last-of-type .visibility-table-container {
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
-.visibility-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.visibility-table thead {
-  background: var(--color-bg-option);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.visibility-table th {
-  padding: 10px 8px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  border-bottom: 2px solid var(--color-border-light-primary);
-}
-
-.visibility-table td {
-  padding: 8px;
-  border-bottom: 1px solid var(--color-border-light-tertiary);
-  vertical-align: middle;
-}
-
-.token-row:nth-child(even) {
-  background: var(--color-bg-alt);
-}
-
-/* PC and NPC Row Styling */
-.pc-row {
-  border-left: 3px solid #4caf50; /* Green accent for PCs */
-}
-
-/* NPC Row Styling by Disposition */
-.npc-row.hostile-npc {
-  border-left: 3px solid #f44336; /* Red accent for opposition/hostile NPCs */
-}
-
-.npc-row.neutral-npc {
-  border-left: 3px solid #ff9800; /* Orange accent for neutral NPCs */
-}
-
-.npc-row.friendly-npc {
-  border-left: 3px solid #2196f3; /* Blue accent for friendly NPCs */
-}
-
-/* Fallback for NPCs without disposition class */
-.npc-row:not(.hostile-npc):not(.neutral-npc):not(.friendly-npc) {
-  border-left: 3px solid #ff9800; /* Default orange for unclassified NPCs */
-}
-
-.pc-row:nth-child(even) {
-  background: rgba(76, 175, 80, 0.05);
-}
-
-/* NPC even row backgrounds by disposition */
-.npc-row.hostile-npc:nth-child(even) {
-  background: rgba(
-    244,
-    67,
-    54,
-    0.05
-  ); /* Light red background for hostile NPCs */
-}
-
-.npc-row.neutral-npc:nth-child(even) {
-  background: rgba(
-    255,
-    152,
-    0,
-    0.05
-  ); /* Light orange background for neutral NPCs */
-}
-
-.npc-row.friendly-npc:nth-child(even) {
-  background: rgba(
-    33,
-    150,
-    243,
-    0.05
-  ); /* Light blue background for friendly NPCs */
-}
-
-/* Fallback for even rows without disposition class */
-.npc-row:not(.hostile-npc):not(.neutral-npc):not(.friendly-npc):nth-child(
-    even
-  ) {
-  background: rgba(255, 152, 0, 0.05); /* Default orange background */
-}
-
-/* Row hover background removed - only image hover now */
-
-/* Table Columns */
-.token-image {
-  width: 50px;
-  text-align: center;
-}
-
-.token-image img {
-  border-radius: 4px;
-  border: 1px solid var(--color-border-light-primary);
-}
-
-.token-name {
-  min-width: 120px;
-}
-
-.token-name strong {
-  color: var(--color-text-primary);
-}
-
-.visibility-state {
-  width: 180px;
-}
-
-.visibility-select {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  background: var(--color-bg-option);
-  color: var(--color-text-primary);
-  font-size: 12px;
-}
 
 .visibility-select:focus {
   outline: none;
@@ -304,6 +698,11 @@
 
 .current-state {
   width: 120px;
+}
+
+.mechanical-effects {
+  min-width: 150px;
+  width: auto;
 }
 
 .state-indicator {
@@ -329,15 +728,20 @@
 /* Footer Actions */
 .sheet-footer {
   display: flex;
-  padding: 16px 0 0 0;
+  padding: 8px 0 0 0;
   border-top: 1px solid var(--color-border-light-primary);
-  gap: 12px;
+  gap: 8px;
   justify-content: flex-end;
-  margin-top: auto;
+  margin-top: 0;
+  flex-shrink: 0;
+  background: var(--color-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .action-button {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid var(--color-border-light-primary);
   border-radius: 4px;
   background: var(--color-bg-option);
@@ -345,8 +749,8 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 4px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
@@ -381,295 +785,4 @@
 .action-button.cancel {
   background: transparent;
   border-color: var(--color-border-light-primary);
-}
-
-/* Visibility Indicators on Canvas */
-.visibility-indicator {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  z-index: 100;
-  pointer-events: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  animation: visibilityPulse 2s ease-in-out infinite;
-}
-
-@keyframes visibilityPulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.1);
-  }
-}
-
-/* Hover visibility indicators */
-@keyframes visibilityIndicatorPulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
-
-.hover-visibility-indicator {
-  animation: visibilityIndicatorPulse 1.5s ease-in-out infinite;
-}
-
-/* PF2E Visioner Tooltip Styling for Foundry's built-in tooltip system */
-.tooltip.pf2e-visioner-tooltip {
-  background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.95)) !important;
-  border: 2px solid var(--color-border-highlight-alt) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 20px rgba(255, 152, 0, 0.3) !important;
-  font-size: 16px !important;
-  padding: 12px 16px !important;
-  max-width: 300px !important;
-  color: white !important;
-}
-
-.tooltip.pf2e-visioner-tooltip i {
-  margin-right: 6px;
-}
-
-.hover-visibility-tooltip {
-  transition: opacity 0.2s ease;
-}
-
-/* Error/Notification Styling */
-.notification.error {
-  background: var(--color-bg-btn-danger);
-  color: var(--color-text-light-primary);
-  padding: 12px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border-danger);
-  margin-bottom: 16px;
-}
-
-/* Responsive Design */
-@media (max-width: 700px) {
-  .observer-info {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
-    padding: 16px;
-    align-items: center;
-  }
-
-  .observer-image {
-    width: 60px !important;
-    height: 60px !important;
-    min-width: 60px !important;
-    min-height: 60px !important;
-    max-width: 60px !important;
-    max-height: 60px !important;
-  }
-
-  .bulk-actions {
-    align-items: center;
-    text-align: center;
-  }
-
-  .bulk-buttons {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    min-width: 280px;
-  }
-
-  .bulk-state {
-    padding: 8px 12px;
-    font-size: 12px;
-    border: 2px solid var(--color-border-light-primary, #666) !important;
-  }
-
-  .table-section-header {
-    font-size: 12px;
-    padding: 6px 10px;
-    gap: 6px;
-  }
-
-  .table-section-header i {
-    font-size: 14px;
-  }
-
-  .visibility-table-container {
-    max-height: 250px;
-  }
-
-  .visibility-table th,
-  .visibility-table td {
-    padding: 6px 4px;
-    font-size: 12px;
-  }
-
-  .token-image {
-    width: 40px;
-  }
-
-  .token-image img {
-    width: 24px;
-    height: 24px;
-  }
-
-  .sheet-footer {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .action-button {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-}
-
-/* Token Highlighting Effects */
-.token-row {
-  transition: background-color 0.2s ease;
-}
-
-/* Token row hover removed - only image hover effects now */
-
-.token-image img {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.token-image img:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(255, 255, 0, 0.3);
-}
-
-.token-image img {
-  border-radius: 4px;
-  border: 2px solid transparent;
-  transition: border-color 0.2s ease;
-}
-
-.token-image img:hover {
-  border-color: #ffff00;
-}
-
-/* Token name hover effects removed */
-
-/* Mechanical Effects Column */
-.mechanical-effects {
-  min-width: 150px;
-  font-size: 0.85em;
-}
-
-.effect-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.flat-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #d4af00;
-  font-weight: 500;
-  padding: 2px 6px;
-  background: rgba(212, 175, 0, 0.1);
-  border: 1px solid rgba(212, 175, 0, 0.3);
-  border-radius: 3px;
-  cursor: help;
-}
-
-.flat-check:hover {
-  background: rgba(212, 175, 0, 0.2);
-}
-
-.concealed-effect {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #6c757d;
-  font-weight: 500;
-  padding: 2px 6px;
-  background: rgba(108, 117, 125, 0.1);
-  border: 1px solid rgba(108, 117, 125, 0.3);
-  border-radius: 3px;
-  cursor: help;
-}
-
-.concealed-effect:hover {
-  background: rgba(108, 117, 125, 0.2);
-}
-
-.undetected-effect {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #8b2635;
-  font-weight: 500;
-  padding: 2px 6px;
-  background: rgba(139, 38, 53, 0.1);
-  border: 1px solid rgba(139, 38, 53, 0.3);
-  border-radius: 3px;
-  cursor: help;
-}
-
-.undetected-effect:hover {
-  background: rgba(139, 38, 53, 0.2);
-}
-
-.no-effect {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #28a745;
-  font-weight: 500;
-  padding: 2px 6px;
-  background: rgba(40, 167, 69, 0.1);
-  border: 1px solid rgba(40, 167, 69, 0.3);
-  border-radius: 3px;
-  cursor: help;
-}
-
-.no-effect:hover {
-  background: rgba(40, 167, 69, 0.2);
-}
-
-/* Enhanced Table Styling for PF2E Aesthetic */
-.visibility-table thead th {
-  background: var(--color-bg-header);
-  color: var(--color-text-header);
-  font-weight: 600;
-  border-bottom: 2px solid var(--color-border-dark);
-  text-align: left;
-  padding: 8px 12px;
-}
-
-.visibility-table tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-/* Table row hover removed - only specific image hover effects */
-
-/* State Indicator Enhancements */
-.state-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid currentColor;
 }

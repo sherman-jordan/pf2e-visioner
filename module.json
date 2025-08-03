@@ -15,7 +15,13 @@
   "esmodules": [
     "scripts/main.js"
   ],
-  "styles": ["styles/visibility-manager.css"],
+  "styles": [
+    "styles/base.css",
+    "styles/visibility-manager.css",
+    "styles/token-effects.css",
+    "styles/responsive.css",
+    "styles/tooltips.css"
+  ],
   "languages": [
     {
       "lang": "en",

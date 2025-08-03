@@ -4,9 +4,9 @@
  */
 
 import { VISIBILITY_STATES } from './constants.js';
-import { initializeOffGuardHandling } from './off-guard.js';
+import { initializeEphemeralOffGuardHandling } from './off-guard-ephemeral.js';
 import { initializeTargeting } from './targeting.js';
-import { applyPersistentVisibilityEffects, updateTokenVisuals } from './visual-effects.js';
+import { updateTokenVisuals } from './visual-effects.js';
 
 /**
  * Apply visual effect to token based on visibility state
@@ -89,14 +89,17 @@ export function resetTokenVisuals(token) {
  * This coordinates all the different effect systems
  */
 export function initializeMechanicalEffects() {
-  initializeOffGuardHandling();
+  // Initialize off-guard handling using individual ephemeral effects
+
+  initializeEphemeralOffGuardHandling();
+  
   initializeTargeting();
 }
 
 /**
  * Export for backwards compatibility
  */
-export { applyPersistentVisibilityEffects, updateTokenVisuals };
+export { updateTokenVisuals };
 
 export function resetTokenAppearance(token) {
   resetTokenVisuals(token);

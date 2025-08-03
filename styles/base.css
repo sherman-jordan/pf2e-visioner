@@ -1,0 +1,232 @@
+/*
+ * Base styles and variables for PF2E Visioner
+ * Core styling foundation used across all components
+ */
+
+/* CSS Custom Properties - Foundry VTT Integration */
+:root {
+  /* Module-specific color overrides if needed */
+  --pf2e-visioner-primary: var(--color-border-highlight, #ff6400);
+  --pf2e-visioner-success: #4caf50;
+  --pf2e-visioner-warning: #ff9800;
+  --pf2e-visioner-danger: #f44336;
+  --pf2e-visioner-info: #2196f3;
+  
+  /* Visibility state colors - Traffic light schema */
+  --visibility-observed: #4caf50;    /* Green - safe/visible */
+  --visibility-concealed: #ffc107;   /* Yellow - caution */
+  --visibility-hidden: #ff6600;      /* Bright orange - warning */
+  --visibility-undetected: #f44336;  /* Red - danger */
+  
+  /* Common spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  
+  /* Border radius */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.2);
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Foundry VTT fallback variables (in case they're not available) */
+  --color-bg-alt: rgba(0, 0, 0, 0.05);
+  --color-border-light-tertiary: rgba(0, 0, 0, 0.1);
+  --color-border-highlight-alt: var(--color-border-highlight, #ff6400);
+  --color-bg-btn-hover: var(--color-bg-option-active, #f0f0f0);
+  --pf2e-visioner-primary-hover: #e55a00;
+  --pf2e-visioner-danger-hover: #d32f2f;
+  
+  /* Additional Foundry variables used in original CSS */
+  --color-shadow-highlight: rgba(255, 100, 0, 0.3);
+  --color-text-dark-secondary: #999;
+  --color-bg-header: var(--color-bg-option);
+  --color-text-header: var(--color-text-primary);
+  --color-border-dark: var(--color-border-light-primary);
+  --color-bg-btn-primary: #ff6400;
+  --color-bg-btn-primary-active: #e55a00;
+  --color-text-light-primary: #ffffff;
+  --color-bg-btn-secondary: #6c757d;
+  --color-bg-btn-danger: #dc3545;
+  --color-border-danger: #dc3545;
+}
+
+/* Common utility classes */
+.pf2e-visioner-flex {
+  display: flex;
+}
+
+.pf2e-visioner-flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf2e-visioner-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pf2e-visioner-gap-sm {
+  gap: var(--spacing-sm);
+}
+
+.pf2e-visioner-gap-md {
+  gap: var(--spacing-md);
+}
+
+.pf2e-visioner-gap-lg {
+  gap: var(--spacing-lg);
+}
+
+.pf2e-visioner-text-primary {
+  color: var(--color-text-primary);
+}
+
+.pf2e-visioner-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.pf2e-visioner-bg-option {
+  background: var(--color-bg-option);
+}
+
+.pf2e-visioner-border {
+  border: 1px solid var(--color-border-light-primary);
+}
+
+.pf2e-visioner-border-radius {
+  border-radius: var(--radius-md);
+}
+
+/* Common button base styles */
+.pf2e-visioner-btn-base {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-option);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.pf2e-visioner-btn-base:hover {
+  border-color: var(--pf2e-visioner-primary);
+  background: var(--color-bg-btn);
+}
+
+.pf2e-visioner-btn-base:focus {
+  outline: none;
+  border-color: var(--pf2e-visioner-primary);
+  box-shadow: 0 0 0 2px rgba(255, 100, 0, 0.3);
+}
+
+/* Common form control styles */
+.pf2e-visioner-form-control {
+  background: var(--color-bg-option);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.pf2e-visioner-form-control:hover {
+  border-color: var(--pf2e-visioner-primary);
+}
+
+.pf2e-visioner-form-control:focus {
+  outline: none;
+  border-color: var(--pf2e-visioner-primary);
+  box-shadow: 0 0 0 2px rgba(255, 100, 0, 0.3);
+}
+
+/* Visibility state indicators */
+.visibility-state-observed {
+  color: var(--visibility-observed);
+}
+
+.visibility-state-concealed {
+  color: var(--visibility-concealed);
+}
+
+.visibility-state-hidden {
+  color: var(--visibility-hidden);
+}
+
+.visibility-state-undetected {
+  color: var(--visibility-undetected);
+}
+
+/* Common animation classes */
+.pf2e-visioner-fade-in {
+  animation: pf2eVisionerFadeIn var(--transition-normal);
+}
+
+.pf2e-visioner-scale-hover:hover {
+  transform: scale(1.05);
+  transition: transform var(--transition-fast);
+}
+
+@keyframes pf2eVisionerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Common text styles */
+.pf2e-visioner-text-xs {
+  font-size: 11px;
+}
+
+.pf2e-visioner-text-sm {
+  font-size: 12px;
+}
+
+.pf2e-visioner-text-md {
+  font-size: 13px;
+}
+
+.pf2e-visioner-text-lg {
+  font-size: 14px;
+}
+
+.pf2e-visioner-text-xl {
+  font-size: 16px;
+}
+
+.pf2e-visioner-font-bold {
+  font-weight: 600;
+}
+
+.pf2e-visioner-font-normal {
+  font-weight: 400;
+}
+
+/* Common spacing utilities */
+.pf2e-visioner-m-0 { margin: 0; }
+.pf2e-visioner-p-0 { padding: 0; }
+.pf2e-visioner-mt-sm { margin-top: var(--spacing-sm); }
+.pf2e-visioner-mb-sm { margin-bottom: var(--spacing-sm); }
+.pf2e-visioner-pt-sm { padding-top: var(--spacing-sm); }
+.pf2e-visioner-pb-sm { padding-bottom: var(--spacing-sm); }

@@ -9,39 +9,61 @@
   </div>
 {{else}}
   
-  {{!-- Observer Information with Bulk Actions --}}
-  <div class="observer-info flexrow">
+  {{!-- Observer Information with Mode Toggle - Always visible --}}
+  <div class="observer-info">
     <div class="observer-image">
       <img src="{{observer.img}}" alt="{{observer.name}}" />
     </div>
-    <div class="observer-details">
-      <h3>{{localize "PF2E_VISIONER.VISIBILITY_MANAGER.OBSERVER"}}: {{observer.name}}</h3>
-      {{#if showingTargetedTokens}}
-        <p class="hint targeted-tokens-mode">🎯 Showing {{targetedTokensCount}} targeted token{{#unless (eq targetedTokensCount 1)}}s{{/unless}} only</p>
-      {{else}}
-        <p class="hint">Select visibility states for how other tokens appear to this observer.</p>
-      {{/if}}
-    </div>
-    <div class="bulk-actions">
-      <label>{{localize "PF2E_VISIONER.VISIBILITY_MANAGER.BULK_ACTIONS"}}:</label>
-      <div class="bulk-buttons">
-        {{#each visibilityStates as |state|}}
-          <button type="button" class="bulk-state" data-action="bulk{{capitalize state.key}}" data-state="{{state.key}}" title="Set all tokens as {{state.label}}">
-            <i class="{{state.icon}}" style="color: {{state.color}}"></i>
-            {{state.label}}
+    <div class="observer-content">
+      <div class="observer-details">
+        <div class="mode-toggle-container">
+          <label class="mode-toggle-label">View Mode:</label>
+          <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" title="Click to switch between Observer and Target modes">
+            <div class="toggle-option {{#if isObserverMode}}active{{/if}}">
+              <i class="fas fa-eye"></i>
+              <span>Observer</span>
+            </div>
+            <div class="toggle-divider">|</div>
+            <div class="toggle-option {{#if isTargetMode}}active{{/if}}">
+              <i class="fas fa-user-secret"></i>
+              <span>Target</span>
+            </div>
           </button>
-        {{/each}}
+        </div>
+        <div class="observer-header">
+          <h3>{{observer.name}}</h3>
+        </div>
+        {{#if isObserverMode}}
+          <p class="hint"><strong>Observer Mode:</strong> How <em>{{observer.name}}</em> sees other tokens.</p>
+        {{else}}
+          <p class="hint"><strong>Target Mode:</strong> How other tokens see <em>{{observer.name}}</em>.</p>
+        {{/if}}
       </div>
+
     </div>
   </div>
 
-  {{!-- Token Visibility Tables Split by Type --}}
+  {{!-- Scrollable tables area --}}
+  <div class="tables-content">
+    {{!-- Token Visibility Tables Split by Type --}}
   {{#if hasTargets}}
     
     {{!-- Player Characters Table --}}
     {{#if hasPCs}}
       <div class="table-section">
-        <h3 class="table-section-header"><i class="fas fa-users"></i> Player Characters</h3>
+        <div class="table-section-header">
+          <div class="header-left">
+            <i class="fas fa-users"></i>
+            <span>Player Characters</span>
+          </div>
+          <div class="bulk-actions-header">
+            {{#each visibilityStates as |state|}}
+              <button type="button" class="bulk-state-header" data-action="bulkPC{{capitalize state.key}}" data-state="{{state.key}}" data-target-type="pc" title="Set all PCs as {{state.label}}">
+                <i class="{{state.icon}}"></i>
+              </button>
+            {{/each}}
+          </div>
+        </div>
         <div class="visibility-table-container">
           <table class="visibility-table">
             <thead>
@@ -57,10 +79,10 @@
               {{#each pcTargets as |target|}}
                 <tr class="token-row pc-row" data-token-id="{{target.id}}">
                   <td class="token-image">
-                    <img src="{{target.img}}" alt="{{target.name}}" width="36" height="36" />
+                    <img src="{{target.img}}" alt="{{target.name}}" width="28" height="28" />
                   </td>
                   <td class="token-name">
-                    <strong>{{target.name}}</strong>
+                    <strong title="{{target.name}}">{{target.name}}</strong>
                   </td>
                   <td class="visibility-state">
                     <select name="visibility.{{target.id}}" class="visibility-select" data-target="{{target.id}}">
@@ -111,7 +133,19 @@
     {{!-- NPCs Table --}}
     {{#if hasNPCs}}
       <div class="table-section">
-        <h3 class="table-section-header"><i class="fas fa-dragon"></i> NPCs</h3>
+        <div class="table-section-header">
+          <div class="header-left">
+            <i class="fas fa-dragon"></i>
+            <span>NPCs</span>
+          </div>
+          <div class="bulk-actions-header">
+            {{#each visibilityStates as |state|}}
+              <button type="button" class="bulk-state-header" data-action="bulkNPC{{capitalize state.key}}" data-state="{{state.key}}" data-target-type="npc" title="Set all NPCs as {{state.label}}">
+                <i class="{{state.icon}}"></i>
+              </button>
+            {{/each}}
+          </div>
+        </div>
         <div class="visibility-table-container">
           <table class="visibility-table">
             <thead>
@@ -127,10 +161,10 @@
               {{#each npcTargets as |target|}}
                 <tr class="token-row npc-row {{target.dispositionClass}}-npc" data-token-id="{{target.id}}">
                   <td class="token-image">
-                    <img src="{{target.img}}" alt="{{target.name}}" width="36" height="36" />
+                    <img src="{{target.img}}" alt="{{target.name}}" width="28" height="28" />
                   </td>
                   <td class="token-name">
-                    <strong>{{target.name}}</strong>
+                    <strong title="{{target.name}}">{{target.name}}</strong>
                   </td>
                   <td class="visibility-state">
                     <select name="visibility.{{target.id}}" class="visibility-select" data-target="{{target.id}}">
@@ -183,6 +217,7 @@
       <p>{{localize "PF2E_VISIONER.VISIBILITY_MANAGER.NO_TOKENS"}}</p>
     </div>
   {{/if}}
+  </div>
 
   {{!-- Action Buttons --}}
   <footer class="sheet-footer flexrow">

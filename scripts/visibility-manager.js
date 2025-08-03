@@ -4,6 +4,9 @@
 
 import { VISIBILITY_STATES } from './constants.js';
 import { getSceneTargets, getVisibilityMap, setVisibilityMap, showNotification } from './utils.js';
+import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
+
+import { MODULE_ID } from './constants.js';
 
 export class TokenVisibilityManager extends foundry.applications.api.ApplicationV2 {
   
@@ -20,17 +23,23 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       resizable: true
     },
     position: {
-      width: 600,
-      height: 'auto'
+      width: 545,
+      height: 600
     },
     actions: {
       apply: TokenVisibilityManager.applyChanges,
       reset: TokenVisibilityManager.resetAll,
-      bulkHidden: TokenVisibilityManager.bulkSetState,
-      bulkUndetected: TokenVisibilityManager.bulkSetState,
-      bulkConcealed: TokenVisibilityManager.bulkSetState,
-      bulkObserved: TokenVisibilityManager.bulkSetState,
-      bulkInvisible: TokenVisibilityManager.bulkSetState
+      toggleMode: TokenVisibilityManager.toggleMode,
+      // PC-specific bulk actions
+      bulkPCHidden: TokenVisibilityManager.bulkSetState,
+      bulkPCUndetected: TokenVisibilityManager.bulkSetState,
+      bulkPCConcealed: TokenVisibilityManager.bulkSetState,
+      bulkPCObserved: TokenVisibilityManager.bulkSetState,
+      // NPC-specific bulk actions
+      bulkNPCHidden: TokenVisibilityManager.bulkSetState,
+      bulkNPCUndetected: TokenVisibilityManager.bulkSetState,
+      bulkNPCConcealed: TokenVisibilityManager.bulkSetState,
+      bulkNPCObserved: TokenVisibilityManager.bulkSetState
     }
   };
 
@@ -44,6 +53,12 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     super(options);
     this.observer = observer;
     this.visibilityData = getVisibilityMap(observer);
+    
+    // Smart default mode selection
+    // If the token is controlled by current user, default to Target Mode ("how others see me")
+    // Otherwise, default to Observer Mode ("how I see others")
+    const isControlledByUser = observer.actor?.hasPlayerOwner && observer.isOwner;
+    this.mode = options.mode || (isControlledByUser ? 'target' : 'observer');
   }
 
   /**
@@ -56,6 +71,11 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       context.error = game.i18n.localize('PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED');
       return context;
     }
+
+    // Add mode information to context
+    context.mode = this.mode;
+    context.isObserverMode = this.mode === 'observer';
+    context.isTargetMode = this.mode === 'target';
 
     const sceneTokens = getSceneTargets(this.observer);
 
@@ -80,33 +100,85 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       img: getTokenImage(this.observer)
     };
 
-    // Prepare target data for each token
-    const allTargets = sceneTokens.map(token => {
-      const currentState = this.visibilityData[token.document.id] || 'observed';
-      
-      const disposition = token.document.disposition || 0; // 0 = neutral, -1 = hostile, 1 = friendly
-      
-      return {
-        id: token.document.id,
-        name: token.document.name,
-        img: getTokenImage(token),
-        currentState,
-        isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
-        disposition: disposition,
-        dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
-        states: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
-          value: key,
-          label: game.i18n.localize(config.label),
-          selected: currentState === key,
-          icon: config.icon,
-          color: config.color
-        }))
-      };
-    });
+    // Prepare target data based on mode
+    let allTargets;
+    
+    if (this.mode === 'observer') {
+      // Observer Mode: "How I see others"
+      allTargets = sceneTokens.map(token => {
+        const currentState = this.visibilityData[token.document.id] || 'observed';
+        
+        const disposition = token.document.disposition || 0;
+        
+        return {
+          id: token.document.id,
+          name: token.document.name,
+          img: getTokenImage(token),
+          currentState,
+          isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
+          disposition: disposition,
+          dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
+          states: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
+            value: key,
+            label: game.i18n.localize(config.label),
+            selected: currentState === key,
+            icon: config.icon,
+            color: config.color
+          }))
+        };
+      });
+    } else {
+      // Target Mode: "How others see me"
+      allTargets = sceneTokens.map(observerToken => {
+        // Get how this observer sees the selected token (reversed relationship)
+        const observerVisibilityData = getVisibilityMap(observerToken);
+        const currentState = observerVisibilityData[this.observer.document.id] || 'observed';
+        
+        const disposition = observerToken.document.disposition || 0;
+        
+        return {
+          id: observerToken.document.id,
+          name: observerToken.document.name,
+          img: getTokenImage(observerToken),
+          currentState,
+          isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === 'character',
+          disposition: disposition,
+          dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
+          states: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
+            value: key,
+            label: game.i18n.localize(config.label),
+            selected: currentState === key,
+            icon: config.icon,
+            color: config.color
+          }))
+        };
+      });
+    }
 
-    // Split targets into PCs and NPCs
-    context.pcTargets = allTargets.filter(target => target.isPC);
-    context.npcTargets = allTargets.filter(target => !target.isPC);
+    // Define status precedence for sorting (undetected > hidden > concealed > observed)
+    const statusPrecedence = {
+      'undetected': 0,
+      'hidden': 1,
+      'concealed': 2,
+      'observed': 3
+    };
+
+    // Sort function by status precedence, then by name
+    const sortByStatusAndName = (a, b) => {
+      const statusA = statusPrecedence[a.currentState] ?? 999;
+      const statusB = statusPrecedence[b.currentState] ?? 999;
+      
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+      
+      // If same status, sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    };
+
+    // Split targets into PCs and NPCs and sort each group
+    context.pcTargets = allTargets.filter(target => target.isPC).sort(sortByStatusAndName);
+    context.npcTargets = allTargets.filter(target => !target.isPC).sort(sortByStatusAndName);
     context.targets = allTargets; // Keep for backward compatibility
 
     context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
@@ -161,13 +233,53 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       }
     }
 
-    // Update the visibility map
-    await setVisibilityMap(app.observer, visibilityChanges);
+    // Handle visibility updates based on mode
+
+    
+    if (app.mode === 'observer') {
+      // Observer Mode: "How I see others" - update this observer's visibility map
+      await setVisibilityMap(app.observer, visibilityChanges);
+      
+      // Update off-guard effects: this observer gets effects for targets they see as hidden
+      for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
+        const targetToken = canvas.tokens.get(tokenId);
+        if (targetToken) {
+
+          
+          try {
+            // In Observer Mode: effect goes on the hidden token (targetToken) targeting the observer
+            await updateEphemeralEffectsForVisibility(targetToken, app.observer, newState);
+          } catch (error) {
+            console.error('Visibility Manager: Error updating off-guard effects:', error);
+          }
+        }
+      }
+    } else {
+      // Target Mode: "How others see me" - update each observer's visibility map
+      for (const [observerTokenId, newState] of Object.entries(visibilityChanges)) {
+        const observerToken = canvas.tokens.get(observerTokenId);
+        if (observerToken) {
+
+          
+          // Update the observer's visibility map to show how they see the selected token
+          const observerVisibilityData = getVisibilityMap(observerToken);
+          observerVisibilityData[app.observer.document.id] = newState;
+          await setVisibilityMap(observerToken, observerVisibilityData);
+          
+          // Update off-guard effects: in Target Mode, the selected token gets effects for observers who see them as hidden
+          try {
+            // In Target Mode: effect goes on the selected token (app.observer) targeting the observer
+            await updateEphemeralEffectsForVisibility(app.observer, observerToken, newState);
+          } catch (error) {
+            console.error('Visibility Manager: Error updating off-guard effects:', error);
+          }
+        }
+      }
+    }
     
     // Import and update visuals
     const { updateTokenVisuals } = await import('./effects-coordinator.js');
     await updateTokenVisuals();
-    
     
     return app.render();
   }
@@ -189,27 +301,68 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
    * Reset all visibility states to observed
    */
   static async resetAll(event, button) {
-    await setVisibilityMap(this.observer, {});
-    const { updateTokenVisuals } = await import('./effects-coordinator.js');
-    await updateTokenVisuals();
-    this.render();
+    const app = this;
+    
+    // Clear the visibility map
+    await setVisibilityMap(app.observer, {});
+    
+    return app.render();
   }
 
   /**
-   * Bulk set visibility state for all tokens (only changes dropdown values, doesn't apply immediately)
+   * Toggle between Observer and Target modes
+   */
+  static async toggleMode(event, button) {
+    const app = this;
+    
+    // Store current position and size to prevent jumping
+    const currentPosition = app.position;
+    
+    // Toggle the mode
+    app.mode = app.mode === 'observer' ? 'target' : 'observer';
+    
+
+    
+    // Re-render with preserved position
+    await app.render({ force: true });
+    
+    // Restore position after render to prevent jumping
+    if (currentPosition) {
+      app.setPosition({
+        left: currentPosition.left,
+        top: currentPosition.top,
+        width: currentPosition.width
+      });
+    }
+  }
+
+  /**
+   * Bulk set visibility state for tokens (only changes dropdown values, doesn't apply immediately)
+   * Now supports filtering by target type (PC/NPC)
    */
   static async bulkSetState(event, button) {
     try {
       const state = button.dataset.state;
+      const targetType = button.dataset.targetType; // 'pc' or 'npc'
+      
       if (!state) {
         console.warn('No state specified for bulk action');
         return;
       }
       
-      // Update all dropdown values in the form
+      // Update dropdown values in the form, filtered by target type
       const form = event.target.closest('form');
       if (form) {
-        const selects = form.querySelectorAll('select[name^="visibility."]');
+        let selector = 'select[name^="visibility."]';
+        
+        // If target type is specified, filter to only that section
+        if (targetType === 'pc') {
+          selector = '.table-section:has(.header-left .fa-users) select[name^="visibility."]';
+        } else if (targetType === 'npc') {
+          selector = '.table-section:has(.header-left .fa-dragon) select[name^="visibility."]';
+        }
+        
+        const selects = form.querySelectorAll(selector);
         selects.forEach(select => {
           select.value = state;
         });

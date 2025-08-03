@@ -54,6 +54,15 @@
       "SHOW_ONLY_ENCOUNTER_TOKENS": {
         "name": "Show Only Encounter Tokens",
         "hint": "When enabled, the visibility manager will only display tokens that are part of the current encounter"
+      },
+      "OFF_GUARD_METHOD": {
+        "name": "Off-Guard Automation Method",
+        "hint": "Choose the method for applying off-guard conditions when attackers are hidden/undetected. Optimized (recommended) uses one consolidated effect per attacker with multiple rules. EphemeralEffect creates individual effects per target. Hybrid uses a combination of cloned actors and real conditions.",
+        "choices": {
+          "optimized": "Optimized (Recommended)",
+          "ephemeral": "EphemeralEffect",
+          "hybrid": "Hybrid (Legacy)"
+        }
       }
     }
   }

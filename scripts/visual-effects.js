@@ -12,7 +12,9 @@ export async function updateTokenVisuals() {
   
   // Check if Dice So Nice is currently animating to avoid interference
   if (isDiceSoNiceAnimating()) {
-    console.log('PF2E Visioner: Skipping token visual update due to active dice animation');
+    console.log('PF2E Visioner: Delaying token visual update due to active dice animation');
+    // Retry after a short delay to avoid interfering with dice
+    setTimeout(() => updateTokenVisuals(), 500);
     return;
   }
   
@@ -35,14 +37,24 @@ function isDiceSoNiceAnimating() {
     return false;
   }
   
-  // Check if the dice box is currently rolling
+  // Primary check: dice box rolling status
   if (game.dice3d?.box?.rolling) {
     return true;
   }
   
-  // Check if the dice canvas is visible (indicating active animation)
+  // Secondary check: dice canvas visibility and animation state
   const diceCanvas = document.getElementById('dice-box-canvas');
-  if (diceCanvas && diceCanvas.style.display !== 'none' && diceCanvas.offsetParent !== null) {
+  if (diceCanvas) {
+    const isVisible = diceCanvas.style.display !== 'none' && diceCanvas.offsetParent !== null;
+    const hasOpacity = parseFloat(getComputedStyle(diceCanvas).opacity) > 0;
+    
+    if (isVisible && hasOpacity) {
+      return true;
+    }
+  }
+  
+  // Tertiary check: look for active dice animations in the scene
+  if (game.dice3d?.box?.scene?.children?.length > 0) {
     return true;
   }
   

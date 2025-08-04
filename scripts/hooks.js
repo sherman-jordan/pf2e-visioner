@@ -2,7 +2,6 @@
  * FoundryVTT hooks registration and handling
  */
 
-import { MODULE_TITLE } from './constants.js';
 import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
 import { onRenderTokenHUD } from './token-hud.js';
 import { onRenderChatMessage } from './chat/chat-processor.js';

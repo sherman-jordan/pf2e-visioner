@@ -248,7 +248,6 @@ function bindAutomationEvents(panel, message, actionData) {
         
         try {
             button.addClass('processing').prop('disabled', true);
-            console.log(`${MODULE_TITLE}: Button clicked - action: ${action}`, actionData);
             
             switch (action) {
                 case 'open-seek-results':

@@ -175,13 +175,6 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             };
         });
         
-        // Add debug logging for outcome processing
-        console.log(`${MODULE_TITLE}: Processed outcomes:`, processedOutcomes.map(o => ({
-            outcome: o.outcome,
-            outcomeClass: o.outcomeClass,
-            outcomeLabel: o.outcomeLabel
-        })));
-        
         // Update original outcomes with hasActionableChange for Apply All button logic
         processedOutcomes.forEach((processedOutcome, index) => {
             if (this.outcomes[index]) {
@@ -202,10 +195,8 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Add encounter filtering context - show checkbox whenever there's an active encounter
         const hasEncounter = hasActiveEncounter();
-        console.log(`${MODULE_TITLE}: hasActiveEncounter() returned:`, hasEncounter);
         context.showEncounterFilter = hasEncounter;
         context.encounterOnly = this.encounterOnly;
-        console.log(`${MODULE_TITLE}: Context showEncounterFilter:`, context.showEncounterFilter, 'encounterOnly:', context.encounterOnly);
         
         return context;
     }
@@ -233,7 +224,6 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             default: 
                 cssClass = '';
         }
-        console.log(`${MODULE_TITLE}: getOutcomeClass for '${outcome}' returning '${cssClass}'`);
         return cssClass;
     }
     
@@ -250,7 +240,6 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             // Only Seek outcomes should be handled here
             default: label = outcome.charAt(0).toUpperCase() + outcome.slice(1);
         }
-        console.log(`${MODULE_TITLE}: getOutcomeLabel for '${outcome}' returning '${label}'`);
         return label;
     }
     

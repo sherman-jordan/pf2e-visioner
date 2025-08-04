@@ -122,7 +122,6 @@ export function analyzeSeekOutcome(seekData, target) {
  * @param {Object} actionData - The Seek action data
  */
 export async function previewSeekResults(actionData) {
-    console.log(`${MODULE_TITLE}: previewSeekResults called with:`, actionData);
     
     // Validate actionData
     if (!actionData || !actionData.actor || !actionData.roll) {

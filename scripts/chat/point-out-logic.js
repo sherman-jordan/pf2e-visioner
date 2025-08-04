@@ -196,7 +196,6 @@ export function analyzePointOutOutcome(actionData, allyData) {
  * @param {Object} actionData - The Point Out action data
  */
 export async function previewPointOutResults(actionData) {
-    console.log(`${MODULE_TITLE}: previewPointOutResults called with:`, actionData);
     
     // Validate actionData
     if (!actionData || !actionData.actor) {

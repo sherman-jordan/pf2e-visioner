@@ -153,18 +153,11 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             // Check if there's an actionable change - either the outcome naturally changed OR user overrode the state
             const hasActionableChange = outcome.changed || (outcome.overrideState && outcome.overrideState !== outcome.oldVisibility);
             
-            // Format the outcome text properly - replace hyphens with spaces and capitalize words
-            let formattedOutcome = outcome.outcome;
-            if (typeof formattedOutcome === 'string' && formattedOutcome.includes('-')) {
-                formattedOutcome = formattedOutcome.split('-')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ');
-            }
-            
+            // Use getOutcomeLabel directly for consistent capitalization
             return {
                 ...outcome,
                 outcomeClass: this.getOutcomeClass(outcome.outcome),
-                outcomeLabel: formattedOutcome || this.getOutcomeLabel(outcome.outcome),
+                outcomeLabel: this.getOutcomeLabel(outcome.outcome),
                 oldVisibilityState: visibilityStates[outcome.oldVisibility || outcome.currentVisibility],
                 newVisibilityState: visibilityStates[outcome.newVisibility],
                 marginText: outcome.margin >= 0 ? `+${outcome.margin}` : `${outcome.margin}`,
@@ -233,10 +226,20 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
     getOutcomeLabel(outcome) {
         let label = '';
         switch(outcome) {
-            case 'criticalSuccess': label = 'Critical Success'; break;
-            case 'success': label = 'Success'; break;
-            case 'failure': label = 'Failure'; break;
-            case 'criticalFailure': label = 'Critical Failure'; break;
+            case 'criticalSuccess': 
+            case 'critical-success': 
+                label = 'Critical Success'; 
+                break;
+            case 'success': 
+                label = 'Success'; 
+                break;
+            case 'failure': 
+                label = 'Failure'; 
+                break;
+            case 'criticalFailure': 
+            case 'critical-failure': 
+                label = 'Critical Failure'; 
+                break;
             // Only Seek outcomes should be handled here
             default: label = outcome.charAt(0).toUpperCase() + outcome.slice(1);
         }

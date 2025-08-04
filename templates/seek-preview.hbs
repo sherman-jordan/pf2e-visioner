@@ -11,7 +11,7 @@
     </div>
     <div class="seeker-details">
       <h3 class="seeker-name">{{seeker.name}}</h3>
-      <p class="hint">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.PREVIEW_HINT"}}</p>
+      <p class="hint">{{seeker.actionLabel}}</p>
     </div>
   </div>
 
@@ -48,8 +48,13 @@
               <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
             </td>
             <td class="roll-result">
-              <span class="roll-total">{{outcome.rollTotal}}</span> vs DC <span class="dc-value">{{outcome.dc}}</span>
-              <br><small class="margin">({{outcome.marginText}})</small>
+              {{#if outcome.isPointOut}}
+                <span class="point-out-indicator">Point Out</span>
+                <br><small class="stealth-dc">Target DC {{outcome.dc}}</small>
+              {{else}}
+                <span class="roll-total">{{outcome.rollTotal}}</span> vs DC <span class="dc-value">{{outcome.dc}}</span>
+                <br><small class="margin">({{outcome.marginText}})</small>
+              {{/if}}
             </td>
             <td class="outcome {{outcome.outcomeClass}}">
               {{outcome.outcomeLabel}}

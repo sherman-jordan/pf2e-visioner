@@ -1,4 +1,3 @@
-console.log('PF2E Visioner: main.js file is being loaded!');
 
 // Import settings
 import { registerSettings, registerKeybindings } from "./settings.js";
@@ -15,29 +14,21 @@ import { registerHooks } from "./hooks.js";
 
 
 Hooks.once("init", async () => {
-  console.log('PF2E Visioner: Starting initialization...');
   
   try {
-    console.log('PF2E Visioner: Registering settings...');
     registerSettings();
     
-    console.log('PF2E Visioner: Registering keybindings...');
     registerKeybindings();
     
-    console.log('PF2E Visioner: Registering hooks...');
     registerHooks();
     
-    console.log('PF2E Visioner: Loading API...');
     const { api } = await import("./api.js");
     game.modules.get("pf2e-visioner").api = api;
     
-    console.log('PF2E Visioner: Initializing mechanical effects...');
     initializeMechanicalEffects();
     
-    console.log('PF2E Visioner: Initializing detection wrapper...');
     initializeDetectionWrapper();
     
-    console.log('PF2E Visioner: Initialization completed successfully!');
   } catch (error) {
     console.error('PF2E Visioner: Initialization failed at step:', error.message);
     console.error('PF2E Visioner: Full error details:', error);

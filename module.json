@@ -4,10 +4,10 @@
   "description": "Advanced per-token visibility management for Pathfinder 2E. PF2E Visioner allows GMs to set different visibility states (observed, concealed, hidden, undetected) for each token from each observer's perspective, with automatic PF2E condition integration and mechanical effects.",
   "authors": [
     {
-      "name": "Module Developer"
+      "name": "RoiLeaf"
     }
   ],
-  "version": "0.1.0",
+  "version": "#{VERSION}#",
   "compatibility": {
     "minimum": "13.341",
     "verified": "13.346"
@@ -63,7 +63,7 @@
       }
     ]
   },
-  "manifest": "",
-  "download": "",
-  "url": ""
+  "url": "#{URL}#",
+  "manifest": "#{MANIFEST}#",
+  "download": "#{DOWNLOAD}#"
 }

@@ -63,6 +63,7 @@
       "VISIBILITY_CHANGE": "Visibility Change",
       "OPEN_RESULTS": "Open Seek Results",
       "OPEN_RESULTS_TOOLTIP": "Open the Seek results dialog to apply individual or bulk visibility changes",
+      "ENCOUNTER_ONLY": "Show only encounter tokens",
       "SETTING_NAME": "Enable Seek Automation",
       "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes"
     },

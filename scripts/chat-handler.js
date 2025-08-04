@@ -211,11 +211,33 @@ function calculateTokenDistance(token1, token2) {
 }
 
 /**
+ * Check if there's an active encounter
+ * @returns {boolean} True if there's an active encounter with combatants
+ */
+function hasActiveEncounter() {
+    return !!(game.combat && game.combat.combatants.size > 0);
+}
+
+/**
+ * Check if a token is in the current encounter
+ * @param {Token} token - The token to check
+ * @returns {boolean} True if the token is in the encounter
+ */
+function isTokenInEncounter(token) {
+    if (!hasActiveEncounter()) return false;
+    
+    return game.combat.combatants.some(combatant => 
+        combatant.token?.id === token.document.id
+    );
+}
+
+/**
  * Discover valid Seek targets (undetected tokens)
  * @param {Token} seekerToken - The token performing the Seek
+ * @param {boolean} encounterOnly - Whether to filter to encounter tokens only
  * @returns {Array} Array of target objects with token, DC, and visibility data
  */
-function discoverSeekTargets(seekerToken) {
+function discoverSeekTargets(seekerToken, encounterOnly = false) {
     if (!seekerToken) return [];
     
     const targets = [];
@@ -224,6 +246,9 @@ function discoverSeekTargets(seekerToken) {
     for (const token of canvas.tokens.placeables) {
         if (token === seekerToken) continue;
         if (!token.actor) continue;
+        
+        // Check encounter filtering if requested
+        if (encounterOnly && !isTokenInEncounter(token)) continue;
         
         // Check current visibility state
         const currentVisibility = getVisibilityBetween(seekerToken, token);
@@ -258,8 +283,24 @@ function analyzeSeekOutcome(seekData, target) {
     const roll = seekData.roll;
     const dc = target.stealthDC;
     
-    // Use modern degree calculation approach
-    const outcome = determineOutcome(roll.total, roll.dice[0]?.total ?? 10, dc);
+    // Validate roll object
+    if (!roll || typeof roll.total !== 'number') {
+        console.warn('Invalid roll data in analyzeSeekOutcome:', roll);
+        return {
+            token: target.token,
+            currentVisibility: target.currentVisibility,
+            newVisibility: target.currentVisibility,
+            changed: false,
+            outcome: 'failure',
+            rollTotal: 0,
+            dc: dc,
+            margin: -dc
+        };
+    }
+    
+    // Use modern degree calculation approach - handle missing dice data
+    const dieResult = roll.dice?.[0]?.total ?? roll.terms?.[0]?.total ?? 10;
+    const outcome = determineOutcome(roll.total, dieResult, dc);
     
     // Apply official PF2e Seek rules based on current visibility and outcome
     let newVisibility = target.currentVisibility; // Default: no change
@@ -321,6 +362,13 @@ function determineOutcome(total, die, dc) {
  * @param {Object} seekData - The Seek action data
  */
 async function previewSeekResults(seekData) {
+    // Validate seekData
+    if (!seekData || !seekData.actor || !seekData.roll) {
+        console.error('Invalid seekData provided to previewSeekResults:', seekData);
+        ui.notifications.error(`${MODULE_TITLE}: Invalid seek data - cannot preview results`);
+        return;
+    }
+    
     const targets = discoverSeekTargets(seekData.actor);
     
     if (targets.length === 0) {
@@ -333,7 +381,7 @@ async function previewSeekResults(seekData) {
     const changes = outcomes.filter(outcome => outcome.changed);
     
     // Create and show ApplicationV2-based preview dialog
-    const previewDialog = new SeekPreviewDialog(seekData.actor, outcomes, changes);
+    const previewDialog = new SeekPreviewDialog(seekData.actor, outcomes, changes, seekData);
     currentSeekDialog = previewDialog; // Store reference for action handlers
     previewDialog.render(true);
 }
@@ -361,7 +409,8 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             applyAll: SeekPreviewDialog._onApplyAll,
             revertAll: SeekPreviewDialog._onRevertAll,
             applyChange: SeekPreviewDialog._onApplyChange,
-            revertChange: SeekPreviewDialog._onRevertChange
+            revertChange: SeekPreviewDialog._onRevertChange,
+            toggleEncounterFilter: SeekPreviewDialog._onToggleEncounterFilter
         }
     };
     
@@ -371,14 +420,18 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         }
     };
     
-    constructor(seekerToken, outcomes, changes, options = {}) {
+    constructor(seekerToken, outcomes, changes, seekData, options = {}) {
         super(options);
         this.seekerToken = seekerToken;
         this.outcomes = outcomes;
         this.changes = changes;
+        this.seekData = seekData; // Store seekData for re-analysis
         
         // Track bulk action states to prevent abuse
         this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
+        
+        // Track encounter filtering state
+        this.encounterOnly = false;
     }
     
     /**
@@ -397,13 +450,10 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Prepare outcomes for template
         const processedOutcomes = this.outcomes.map(outcome => {
-            const outcomeClass = this.getOutcomeClass(outcome.outcome);
-            const outcomeLabel = outcome.outcome.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-            
             return {
                 ...outcome,
-                outcomeClass,
-                outcomeLabel,
+                outcomeClass: this.getOutcomeClass(outcome.outcome),
+                outcomeLabel: outcome.outcome.charAt(0).toUpperCase() + outcome.outcome.slice(1).replace('-', ' '),
                 oldVisibilityState: visibilityStates[outcome.oldVisibility],
                 newVisibilityState: visibilityStates[outcome.newVisibility],
                 marginText: outcome.margin >= 0 ? `+${outcome.margin}` : `${outcome.margin}`,
@@ -418,6 +468,10 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         context.outcomes = processedOutcomes;
         context.changesCount = this.changes.length;
         context.totalCount = this.outcomes.length;
+        
+        // Add encounter filtering context - show checkbox whenever there's an active encounter
+        context.showEncounterFilter = hasActiveEncounter();
+        context.encounterOnly = this.encounterOnly;
         
         return context;
     }
@@ -449,6 +503,16 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
     _replaceHTML(result, content, options) {
         content.innerHTML = result;
         return content;
+    }
+    
+    /**
+     * Called after the application is rendered
+     */
+    _onRender(context, options) {
+        super._onRender(context, options);
+        
+        // Set initial button states
+        this.updateBulkActionButtons();
     }
     
     /**
@@ -757,9 +821,9 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         if (applyAllButton && revertAllButton) {
             switch (this.bulkActionState) {
                 case 'initial':
-                    // Both buttons available initially
+                    // Only Apply All available initially (nothing to revert yet)
                     applyAllButton.disabled = false;
-                    revertAllButton.disabled = false;
+                    revertAllButton.disabled = true;
                     applyAllButton.innerHTML = '<i class="fas fa-check-circle"></i> Apply All';
                     revertAllButton.innerHTML = '<i class="fas fa-undo"></i> Revert All';
                     break;
@@ -781,6 +845,41 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
                     break;
             }
         }
+    }
+    
+    /**
+     * Toggle encounter filtering and refresh results
+     */
+    static async _onToggleEncounterFilter(event, button) {
+        const app = currentSeekDialog;
+        if (!app) return;
+        
+        // Toggle the encounter filter state
+        app.encounterOnly = !app.encounterOnly;
+        
+        // Re-discover targets with new filter setting
+        const targets = discoverSeekTargets(app.seekerToken, app.encounterOnly);
+        
+        if (targets.length === 0) {
+            ui.notifications.info(`${MODULE_TITLE}: No ${app.encounterOnly ? 'encounter ' : ''}targets found for Seek action`);
+            // Reset to false if no targets found
+            app.encounterOnly = false;
+            return;
+        }
+        
+        // Re-analyze outcomes with new targets
+        const outcomes = targets.map(target => analyzeSeekOutcome(app.seekData, target));
+        const changes = outcomes.filter(outcome => outcome.changed);
+        
+        // Update dialog data
+        app.outcomes = outcomes;
+        app.changes = changes;
+        
+        // Reset bulk action state
+        app.bulkActionState = 'initial';
+        
+        // Re-render the dialog
+        app.render({ force: true });
     }
     
     /**
@@ -1030,6 +1129,32 @@ export function addSeekButtonStyles() {
             font-size: 12px;
         }
         
+        .encounter-filter-section {
+            margin-bottom: 16px;
+            padding: 8px 12px;
+            background: var(--color-bg-option, rgba(0, 0, 0, 0.1));
+            border-radius: 4px;
+            border: 1px solid var(--color-border-light, #666);
+        }
+        
+        .encounter-filter-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .encounter-filter-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        .encounter-filter-label {
+            color: var(--color-text-primary, #f0f0f0);
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
         .results-table-container {
             margin-bottom: 16px;
             border: 1px solid var(--color-border-light-primary, #555);
@@ -1225,6 +1350,22 @@ export function addSeekButtonStyles() {
             border-color: #ff9800;
         }
         
+        /* Disabled bulk action buttons */
+        .seek-preview-dialog-bulk-action-btn:disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+            background: #cccccc !important;
+            border-color: #cccccc !important;
+            color: #666666 !important;
+            transform: none !important;
+        }
+        
+        .seek-preview-dialog-bulk-action-btn:disabled:hover {
+            background: #cccccc !important;
+            border-color: #cccccc !important;
+            transform: none !important;
+        }
+        
         /* Table Actions Column */
         .seek-results-table .actions {
             width: 100px;
@@ -1274,9 +1415,18 @@ export function addSeekButtonStyles() {
         }
         
         .row-action-btn:disabled {
-            opacity: 0.6;
+            opacity: 0.8;
             cursor: not-allowed;
-            transform: none;
+            background: #cccccc !important;
+            border-color: #cccccc !important;
+            color: #666666 !important;
+            transform: none !important;
+        }
+        
+        .row-action-btn:disabled:hover {
+            background: #cccccc !important;
+            border-color: #cccccc !important;
+            transform: none !important;
         }
         
         .row-action-btn.applied {
@@ -1285,8 +1435,9 @@ export function addSeekButtonStyles() {
         }
         
         .row-action-btn.reverted {
-            background: rgba(255, 152, 0, 0.3);
-            border-color: #ff9800;
+            background: #cccccc !important;
+            border-color: #cccccc !important;
+            color: #666666 !important;
         }
         
         .no-action {

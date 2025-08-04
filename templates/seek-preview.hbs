@@ -15,6 +15,16 @@
     </div>
   </div>
 
+  {{!-- Encounter Filter --}}
+  {{#if showEncounterFilter}}
+  <div class="encounter-filter-section">
+    <label class="encounter-filter-checkbox">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ENCOUNTER_ONLY"}}</span>
+    </label>
+  </div>
+  {{/if}}
+
   {{!-- Results Table --}}
   <div class="results-table-container">
     <table class="visibility-table seek-results-table">
@@ -58,7 +68,7 @@
                 <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
                   <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility">
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility" disabled>
                   <i class="fas fa-undo"></i>
                 </button>
               {{else}}
@@ -80,7 +90,7 @@
       <button type="button" class="seek-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
         <i class="fas fa-check-circle"></i> Apply All
       </button>
-      <button type="button" class="seek-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state">
+      <button type="button" class="seek-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
         <i class="fas fa-undo"></i> Revert All
       </button>
     </div>

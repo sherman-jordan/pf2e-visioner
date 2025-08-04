@@ -506,25 +506,29 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     
     rows.forEach(row => {
       const tokenId = row.dataset.tokenId;
-      const token = canvas.tokens.get(tokenId);
+      if (!tokenId) return;
       
-      if (!token) return;
+      // Remove existing listeners to prevent duplicates
+      row.removeEventListener('mouseenter', row._hoverIn);
+      row.removeEventListener('mouseleave', row._hoverOut);
       
-      // Add highlighting only for token image
-      const image = row.querySelector('.token-image img');
+      // Add new listeners using Foundry's native token hover methods
+      row._hoverIn = () => {
+        const token = canvas.tokens.get(tokenId);
+        if (token) {
+          token._onHoverIn(new Event('mouseenter'), { hoverOutOthers: true });
+        }
+      };
       
-      if (image) {
-        image.addEventListener('mouseenter', () => {
-          this.highlightToken(token, true, true); // Strong highlight
-        });
-        
-        image.addEventListener('mouseleave', () => {
-          this.highlightToken(token, false);
-        });
-        
-        // Add cursor pointer to indicate interactivity
-        image.style.cursor = 'pointer';
-      }
+      row._hoverOut = () => {
+        const token = canvas.tokens.get(tokenId);
+        if (token) {
+          token._onHoverOut(new Event('mouseleave'));
+        }
+      };
+      
+      row.addEventListener('mouseenter', row._hoverIn);
+      row.addEventListener('mouseleave', row._hoverOut);
     });
   }
 

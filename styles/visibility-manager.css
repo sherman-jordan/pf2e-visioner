@@ -865,3 +865,10 @@
 .icon-selection input[type="hidden"] {
   display: none;
 }
+
+/* Token Row Hover Effects - consistent with dialogs */
+.token-visibility-manager .visibility-table tr[data-token-id]:hover {
+  background: rgba(255, 255, 0, 0.1) !important;
+  border-left: 3px solid #ffff00;
+  cursor: pointer;
+}

@@ -8,13 +8,9 @@ import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from './constants.js';
  * Register all module settings
  */
 export function registerSettings() {
-  console.log('PF2E Visioner: Starting settings registration...');
-  
   try {
     // Register each setting from the configuration
     Object.entries(DEFAULT_SETTINGS).forEach(([key, config]) => {
-      console.log(`PF2E Visioner: Registering setting: ${key}`);
-      
       const settingConfig = { ...config };
       
       // Add onChange handler for settings that require restart
@@ -35,16 +31,11 @@ export function registerSettings() {
       
       try {
         game.settings.register(MODULE_ID, key, settingConfig);
-        console.log(`PF2E Visioner: Successfully registered setting: ${key}`);
       } catch (settingError) {
-        console.error(`PF2E Visioner: Failed to register setting ${key}:`, settingError);
         throw settingError;
       }
     });
-    
-    console.log('PF2E Visioner: All settings registered successfully!');
   } catch (error) {
-    console.error('PF2E Visioner: Settings registration failed:', error);
     throw error;
   }
 }

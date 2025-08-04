@@ -58,7 +58,7 @@
   background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
   border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
   border-radius: var(--radius-lg);
-  padding: 4px 4px 2px 4px;
+  padding: 4px 4px 8px 4px;
   margin-bottom: -30px;
   display: flex;
   align-items: flex-start;
@@ -200,10 +200,10 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto auto;
   gap: 2px;
-  padding-right: var(--spacing-lg);
+  padding-right: 0;
   font-size: 20px;
   flex-shrink: 0;
-  min-width: 120px;
+  min-width: 75px;
 }
 
 .legend-title {
@@ -249,6 +249,50 @@
   background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
   color: white !important;
   box-shadow: var(--shadow-sm);
+}
+
+/* Encounter Filter Section */
+.token-visibility-manager .encounter-filter-section {
+  margin-top: 8px;
+  padding: 6px 0;
+  width: fit-content;
+  max-width: 200px;
+  flex-shrink: 1;
+}
+
+.token-visibility-manager .encounter-filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  user-select: none;
+}
+
+.token-visibility-manager .encounter-filter-checkbox input[type="checkbox"] {
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  width: auto;
+  height: auto;
+}
+
+.token-visibility-manager .encounter-filter-label {
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.token-visibility-manager
+  .encounter-filter-checkbox:hover
+  .encounter-filter-label {
+  color: var(--color-text-primary);
 }
 
 /* Bulk Actions Section */
@@ -820,4 +864,11 @@
 /* Hide the hidden input */
 .icon-selection input[type="hidden"] {
   display: none;
+}
+
+/* Token Row Hover Effects - consistent with dialogs */
+.token-visibility-manager .visibility-table tr[data-token-id]:hover {
+  background: rgba(255, 255, 0, 0.1) !important;
+  border-left: 3px solid #ffff00;
+  cursor: pointer;
 }

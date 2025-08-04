@@ -373,10 +373,6 @@
     animation: none !important;
   }
 
-  .token-image img:hover {
-    transform: none;
-  }
-
   .action-button:hover {
     transform: none;
   }

@@ -1,0 +1,97 @@
+<div class="point-out-preview-content">
+    <!-- Actor Info Section -->
+    <div class="actor-info">
+        <div class="actor-image">
+            <img src="{{actorImage}}" alt="{{actorName}}" />
+        </div>
+        <div class="actor-details">
+            <h3 class="actor-name">{{actorName}}</h3>
+            {{#if targetName}}
+            <p class="hint">Pointing out <strong>{{targetName}}</strong> {{#if targetDC}}(DC {{targetDC}}){{/if}} to allies who can't see it</p>
+            {{else}}
+            <p class="hint">Preview which allies will gain visibility of pointed-out targets</p>
+            {{/if}}
+        </div>
+    </div>
+
+    <!-- Encounter Filter Section -->
+    {{#if showEncounterFilter}}
+    <div class="encounter-filter-section">
+        <label class="encounter-filter-checkbox">
+            <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+            <span class="encounter-filter-label">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ENCOUNTER_ONLY"}}</span>
+        </label>
+    </div>
+    {{/if}}
+
+    <!-- Results Table -->
+    <div class="results-table-container">
+        <table class="point-out-results-table">
+            <thead>
+                <tr>
+                    <th class="token-image"></th>
+                    <th class="token-name">Ally</th>
+                    <th class="visibility-change">Visibility Change</th>
+                    <th class="actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each outcomes}}
+                <tr data-token-id="{{target.id}}" class="{{#if hasActionableChange}}actionable{{else}}no-change{{/if}}">
+                    <td class="token-image">
+                        {{#if tokenImage}}
+                        <img src="{{tokenImage}}" alt="{{target.name}}" />
+                        {{else}}
+                        <i class="fas fa-user"></i>
+                        {{/if}}
+                    </td>
+                    <td class="token-name">
+                        <strong title="{{target.name}}">{{target.name}}</strong>
+                    </td>
+                    <td class="visibility-change">
+                        <span class="state-icon" data-state="{{oldVisibility}}" title="{{oldVisibilityState.label}}">
+                            <i class="{{oldVisibilityState.icon}}"></i>
+                        </span>
+                        {{#if changed}}
+                        <i class="fas fa-arrow-right visibility-arrow"></i>
+                        <span class="state-icon" data-state="{{newVisibility}}" title="{{newVisibilityState.label}}">
+                            <i class="{{newVisibilityState.icon}}"></i>
+                        </span>
+                        {{else}}
+                        <span class="no-change-indicator">(No Change)</span>
+                        {{/if}}
+                    </td>
+                    <td class="actions">
+                        {{#if hasActionableChange}}
+                        <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{target.id}}" title="Apply this visibility change">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{target.id}}" title="Revert to original visibility" disabled>
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        {{else}}
+                        <span class="no-action">No change</span>
+                        {{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary and Bulk Actions -->
+    <div class="point-out-preview-dialog-bulk-actions-header">
+        <div class="point-out-preview-dialog-bulk-actions-info">
+            <span class="point-out-preview-dialog-changes-count">{{changesCount}}</span> of <span class="point-out-preview-dialog-total-count">{{totalCount}}</span> targets will have visibility changes.
+        </div>
+        
+        <div class="point-out-preview-dialog-bulk-actions-buttons">
+            <button type="button" class="point-out-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+                <i class="fas fa-check-circle"></i> Apply All
+            </button>
+            <button type="button" class="point-out-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+                <i class="fas fa-undo"></i> Revert All
+            </button>
+        </div>
+    </div>
+</div>

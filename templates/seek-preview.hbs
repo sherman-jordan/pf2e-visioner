@@ -11,9 +11,19 @@
     </div>
     <div class="seeker-details">
       <h3 class="seeker-name">{{seeker.name}}</h3>
-      <p class="hint">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.PREVIEW_HINT"}}</p>
+      <p class="hint">{{seeker.actionLabel}}</p>
     </div>
   </div>
+
+  {{!-- Encounter Filter --}}
+  {{#if showEncounterFilter}}
+  <div class="encounter-filter-section">
+    <label class="encounter-filter-checkbox">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+    </label>
+  </div>
+  {{/if}}
 
   {{!-- Results Table --}}
   <div class="results-table-container">
@@ -38,27 +48,45 @@
               <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
             </td>
             <td class="roll-result">
-              <span class="roll-total">{{outcome.rollTotal}}</span> vs DC <span class="dc-value">{{outcome.dc}}</span>
-              <br><small class="margin">({{outcome.marginText}})</small>
+              {{#if outcome.isPointOut}}
+                <span class="point-out-indicator">Point Out</span>
+                <br><small class="stealth-dc">Target DC {{outcome.dc}}</small>
+              {{else}}
+                <div class="roll-vs-dc">
+                  <div class="roll-dc-line">
+                    <span class="roll-total">{{outcome.rollTotal}}</span>
+                    <span class="vs-text">vs DC</span>
+                    <span class="dc-value">{{outcome.dc}}</span>
+                  </div>
+                  <div class="margin-display">({{outcome.marginText}})</div>
+                </div>
+              {{/if}}
             </td>
             <td class="outcome {{outcome.outcomeClass}}">
               {{outcome.outcomeLabel}}
             </td>
             <td class="visibility-change">
-              {{#if outcome.changed}}
+              <div class="visibility-change-with-override">
                 <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
                 →
-                <i class="{{outcome.newVisibilityState.icon}}" style="color: {{outcome.newVisibilityState.color}}" title="{{outcome.newVisibilityState.label}}"></i>
-              {{else}}
-                <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
-              {{/if}}
+                <div class="override-icons" data-target="{{outcome.target.id}}">
+                  {{#each outcome.availableStates as |state|}}
+                    <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
+                            data-state="{{state.value}}" data-target="{{outcome.target.id}}" 
+                            title="Override to {{state.label}}" style="color: {{state.color}}">
+                      <i class="{{state.icon}}"></i>
+                    </button>
+                  {{/each}}
+                  <input type="hidden" name="override.{{outcome.target.id}}" value="{{outcome.overrideState}}" />
+                </div>
+              </div>
             </td>
             <td class="actions">
-              {{#if outcome.changed}}
+              {{#if outcome.hasActionableChange}}
                 <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
                   <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility">
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility" disabled>
                   <i class="fas fa-undo"></i>
                 </button>
               {{else}}
@@ -80,7 +108,7 @@
       <button type="button" class="seek-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
         <i class="fas fa-check-circle"></i> Apply All
       </button>
-      <button type="button" class="seek-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state">
+      <button type="button" class="seek-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
         <i class="fas fa-undo"></i> Revert All
       </button>
     </div>

@@ -755,7 +755,6 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
     _addHoverListeners() {
         // Add hover listeners to token images and rows
         const tokenRows = this.element.querySelectorAll('.token-row, tr[data-token-id]');
-        console.log('Adding hover listeners to', tokenRows.length, 'token rows');
         
         tokenRows.forEach(row => {
             const tokenId = row.dataset.tokenId;
@@ -1509,7 +1508,6 @@ class PointOutPreviewDialog extends foundry.applications.api.ApplicationV2 {
     _addHoverListeners() {
         // Add hover listeners to token rows (Point Out template uses different structure)
         const tokenRows = this.element.querySelectorAll('tr[data-token-id]');
-        console.log('Adding hover listeners to', tokenRows.length, 'Point Out token rows');
         
         tokenRows.forEach(row => {
             const tokenId = row.dataset.tokenId;

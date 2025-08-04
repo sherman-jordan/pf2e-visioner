@@ -15,12 +15,14 @@
     </div>
 
     <!-- Encounter Filter Section -->
+    {{#if showEncounterFilter}}
     <div class="encounter-filter-section">
         <label class="encounter-filter-checkbox">
             <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
             <span class="encounter-filter-label">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ENCOUNTER_ONLY"}}</span>
         </label>
     </div>
+    {{/if}}
 
     <!-- Results Table -->
     <div class="results-table-container">
@@ -80,14 +82,14 @@
     <!-- Summary and Bulk Actions -->
     <div class="point-out-preview-dialog-bulk-actions-header">
         <div class="point-out-preview-dialog-bulk-actions-info">
-            <strong>{{changes.length}}</strong> targets will have visibility changes applied.
+            <span class="point-out-preview-dialog-changes-count">{{changesCount}}</span> of <span class="point-out-preview-dialog-total-count">{{totalCount}}</span> targets will have visibility changes.
         </div>
         
         <div class="point-out-preview-dialog-bulk-actions-buttons">
-            <button type="button" class="point-out-preview-dialog-bulk-action-btn" data-action="applyAll">
+            <button type="button" class="point-out-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
                 <i class="fas fa-check-circle"></i> Apply All
             </button>
-            <button type="button" class="point-out-preview-dialog-bulk-action-btn" data-action="revertAll" disabled>
+            <button type="button" class="point-out-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
                 <i class="fas fa-undo"></i> Revert All
             </button>
         </div>

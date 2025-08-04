@@ -52,8 +52,14 @@
                 <span class="point-out-indicator">Point Out</span>
                 <br><small class="stealth-dc">Target DC {{outcome.dc}}</small>
               {{else}}
-                <span class="roll-total">{{outcome.rollTotal}}</span> vs DC <span class="dc-value">{{outcome.dc}}</span>
-                <br><small class="margin">({{outcome.marginText}})</small>
+                <div class="roll-vs-dc">
+                  <div class="roll-dc-line">
+                    <span class="roll-total">{{outcome.rollTotal}}</span>
+                    <span class="vs-text">vs DC</span>
+                    <span class="dc-value">{{outcome.dc}}</span>
+                  </div>
+                  <div class="margin-display">({{outcome.marginText}})</div>
+                </div>
               {{/if}}
             </td>
             <td class="outcome {{outcome.outcomeClass}}">

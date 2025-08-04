@@ -5,7 +5,8 @@
 import { MODULE_TITLE } from './constants.js';
 import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
 import { onRenderTokenHUD } from './token-hud.js';
-import { onRenderChatMessage, addSeekButtonStyles } from './chat-handler.js';
+import { onRenderChatMessage } from './chat/chat-processor.js';
+import { injectChatAutomationStyles } from './chat/chat-automation-styles.js';
 import { updateTokenVisuals } from './visual-effects.js';
 
 /**
@@ -64,8 +65,8 @@ function setupAlternativeHUDButton() {
  * Handle the ready hook
  */
 function onReady() {
-  // Add CSS styles for chat buttons
-  addSeekButtonStyles();
+  // Add CSS styles for chat automation
+  injectChatAutomationStyles();
   
   // Add a fallback approach - add a floating button when tokens are selected (only if HUD button is disabled)
   if (!game.settings.get('pf2e-visioner', 'useHudButton')) {

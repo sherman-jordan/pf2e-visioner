@@ -7,7 +7,7 @@
   {{!-- Seeker Information Panel --}}
   <div class="seeker-info">
     <div class="seeker-image">
-      <img src="{{seeker.image}}" alt="{{seeker.name}}" />
+      <img src="{{seeker.image}}" data-tooltip="{{seeker.name}}" />
     </div>
     <div class="seeker-details">
       <h3 class="seeker-name">{{seeker.name}}</h3>
@@ -32,7 +32,7 @@
         {{#each outcomes as |outcome|}}
           <tr class="token-row" data-token-id="{{outcome.target.id}}">
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" alt="{{outcome.target.name}}" width="28" height="28" />
+              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
             </td>
             <td class="token-name">
               <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>

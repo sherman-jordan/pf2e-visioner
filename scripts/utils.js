@@ -169,27 +169,32 @@ export function isValidToken(token) {
 }
 
 /**
- * Get all valid tokens in the scene excluding the observer
- * @param {Token} observer - The observer token to exclude
- * @returns {Token[]} Array of valid target tokens
+ * Get all valid scene targets for the observer token
+ * @param {Token} observer - The observer token
+ * @param {boolean} encounterOnly - Whether to filter to encounter tokens only
+ * @returns {Array} Array of target tokens
  */
-export function getSceneTargets(observer) {
-  const allTokens = canvas.tokens.placeables.filter(token => 
-    isValidToken(token) && token.document.id !== observer?.document.id
-  );
+export function getSceneTargets(observer, encounterOnly = false) {
+  if (!observer) return [];
   
-  // Check if there are any targeted tokens - if so, prioritize showing those
-  const targetedTokens = Array.from(game.user.targets).filter(token =>
-    isValidToken(token) && token.document.id !== observer?.document.id
+  // Get all tokens except the observer
+  const allTokens = canvas.tokens.placeables.filter(token => {
+    return token !== observer && 
+           token.actor && 
+           isValidToken(token);
+  });
+  
+  // If there are targeted tokens, only return those (for targeted operations)
+  const targetedTokens = Array.from(game.user.targets).filter(token => 
+    token !== observer && token.actor && isValidToken(token)
   );
   
   if (targetedTokens.length > 0) {
     return targetedTokens;
   }
   
-  // Check if we should filter to only encounter tokens
-  const showOnlyEncounterTokens = game.settings.get(MODULE_ID, 'showOnlyEncounterTokens');
-  if (!showOnlyEncounterTokens) {
+  // Apply encounter filtering if requested
+  if (!encounterOnly) {
     return allTokens;
   }
   
@@ -205,6 +210,27 @@ export function getSceneTargets(observer) {
       combatant.token?.id === token.document.id
     );
   });
+}
+
+/**
+ * Check if there's an active encounter
+ * @returns {boolean} True if there's an active encounter with combatants
+ */
+export function hasActiveEncounter() {
+  return !!(game.combat && game.combat.combatants.size > 0);
+}
+
+/**
+ * Check if a token is in the current encounter
+ * @param {Token} token - The token to check
+ * @returns {boolean} True if the token is in the encounter
+ */
+export function isTokenInEncounter(token) {
+  if (!hasActiveEncounter()) return false;
+  
+  return game.combat.combatants.some(combatant => 
+    combatant.token?.id === token.document.id
+  );
 }
 
 /**

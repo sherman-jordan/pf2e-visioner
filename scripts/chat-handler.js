@@ -1100,7 +1100,7 @@ export function addSeekButtonStyles() {
         .seeker-info {
             display: flex;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 4px;
             padding: 12px;
             background: var(--color-bg-option, rgba(44, 90, 160, 0.15));
             border-radius: 6px;
@@ -1129,27 +1129,23 @@ export function addSeekButtonStyles() {
             font-size: 12px;
         }
         
-        .encounter-filter-section {
-            margin-bottom: 16px;
-            padding: 8px 12px;
-            background: var(--color-bg-option, rgba(0, 0, 0, 0.1));
-            border-radius: 4px;
-            border: 1px solid var(--color-border-light, #666);
+        .seek-preview-dialog .encounter-filter-section {
+            padding: 4px;
         }
         
-        .encounter-filter-checkbox {
+        .seek-preview-dialog .encounter-filter-checkbox {
             display: flex;
             align-items: center;
             cursor: pointer;
             user-select: none;
         }
         
-        .encounter-filter-checkbox input[type="checkbox"] {
+        .seek-preview-dialog .encounter-filter-checkbox input[type="checkbox"] {
             margin-right: 8px;
             cursor: pointer;
         }
         
-        .encounter-filter-label {
+        .seek-preview-dialog .encounter-filter-label {
             color: var(--color-text-primary, #f0f0f0);
             font-size: 14px;
             cursor: pointer;

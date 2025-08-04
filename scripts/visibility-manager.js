@@ -3,7 +3,7 @@
  */
 
 import { VISIBILITY_STATES } from './constants.js';
-import { getSceneTargets, getVisibilityMap, setVisibilityMap, showNotification } from './utils.js';
+import { getSceneTargets, getVisibilityMap, setVisibilityMap, showNotification, hasActiveEncounter } from './utils.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 
 import { MODULE_ID } from './constants.js';
@@ -33,6 +33,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       apply: TokenVisibilityManager.applyChanges,
       reset: TokenVisibilityManager.resetAll,
       toggleMode: TokenVisibilityManager.toggleMode,
+      toggleEncounterFilter: TokenVisibilityManager.toggleEncounterFilter,
       // PC-specific bulk actions
       bulkPCHidden: TokenVisibilityManager.bulkSetState,
       bulkPCUndetected: TokenVisibilityManager.bulkSetState,
@@ -63,6 +64,9 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     const isControlledByUser = observer.actor?.hasPlayerOwner && observer.isOwner;
     this.mode = options.mode || (isControlledByUser ? 'target' : 'observer');
     
+    // Initialize encounter filter state based on setting
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    
     // Set this as the current instance
     TokenVisibilityManager.currentInstance = this;
   }
@@ -79,6 +83,9 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     const isControlledByUser = newObserver.actor?.hasPlayerOwner && newObserver.isOwner;
     this.mode = isControlledByUser ? 'target' : 'observer';
     
+    // Reset encounter filter to default for new observer
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    
     // Re-render the dialog with new data
     this.render({ force: true });
   }
@@ -92,6 +99,9 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     this.observer = newObserver;
     this.visibilityData = getVisibilityMap(newObserver);
     this.mode = mode;
+    
+    // Reset encounter filter to default for new observer
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     
     // Re-render the dialog with new data
     this.render({ force: true });
@@ -113,7 +123,11 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     context.isObserverMode = this.mode === 'observer';
     context.isTargetMode = this.mode === 'target';
 
-    const sceneTokens = getSceneTargets(this.observer);
+    // Add encounter filtering context
+    context.showEncounterFilter = hasActiveEncounter();
+    context.encounterOnly = this.encounterOnly;
+
+    const sceneTokens = getSceneTargets(this.observer, this.encounterOnly);
 
     // Get proper avatar image - be more strict about what we accept
     const getTokenImage = (token) => {
@@ -370,6 +384,29 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         width: currentPosition.width
       });
     }
+  }
+
+  /**
+   * Toggle encounter filtering and refresh results
+   */
+  static async toggleEncounterFilter(event, button) {
+    const app = this;
+    
+    // Toggle the encounter filter state
+    app.encounterOnly = !app.encounterOnly;
+    
+    // Check if we have any tokens with the new filter
+    const newTargets = getSceneTargets(app.observer, app.encounterOnly);
+    
+    if (newTargets.length === 0 && app.encounterOnly) {
+      ui.notifications.info(`${MODULE_ID}: No encounter tokens found. Filter disabled.`);
+      // Reset to false if no targets found
+      app.encounterOnly = false;
+      return;
+    }
+    
+    // Re-render the dialog with new filter state
+    await app.render({ force: true });
   }
 
   /**

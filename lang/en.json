@@ -72,9 +72,9 @@
         "name": "Enable Hover Tooltips",
         "hint": "Show visibility status tooltips when hovering over tokens (requires restart)"
       },
-      "SHOW_ONLY_ENCOUNTER_TOKENS": {
-        "name": "Show Only Encounter Tokens",
-        "hint": "When enabled, the visibility manager will only display tokens that are part of the current encounter"
+      "DEFAULT_ENCOUNTER_FILTER": {
+        "name": "Default Encounter Filter State",
+        "hint": "When enabled, the encounter filter checkbox in dialogs will be checked by default when there's an active encounter"
       },
       "USE_HUD_BUTTON": {
         "name": "Use Token HUD Button",
@@ -93,6 +93,9 @@
         "name": "Enable Seek Action Automation",
         "hint": "When enabled, adds buttons to Seek action chat messages that automatically apply visibility changes based on the roll results vs target Stealth DCs."
       }
+    },
+    "UI": {
+      "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens"
     },
     "KEYBINDINGS": {
       "OPEN_VISIBILITY_MANAGER": {

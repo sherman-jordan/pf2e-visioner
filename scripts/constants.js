@@ -52,9 +52,9 @@ export const DEFAULT_SETTINGS = {
     default: true
   },
 
-  showOnlyEncounterTokens: {
-    name: 'PF2E_VISIONER.SETTINGS.SHOW_ONLY_ENCOUNTER_TOKENS.name',
-    hint: 'PF2E_VISIONER.SETTINGS.SHOW_ONLY_ENCOUNTER_TOKENS.hint',
+  defaultEncounterFilter: {
+    name: 'PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name',
+    hint: 'PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.hint',
     scope: 'world',
     config: true,
     type: Boolean,
@@ -77,6 +77,13 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true
   }
+};
+
+/**
+ * UI Constants
+ */
+export const UI_CONSTANTS = {
+  ENCOUNTER_FILTER_TEXT: 'PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT'
 };
 
 /**

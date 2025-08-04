@@ -12,7 +12,7 @@
   {{!-- Observer Information with Mode Toggle - Always visible --}}
   <div class="observer-info">
     <div class="observer-image">
-      <img src="{{observer.img}}" alt="{{observer.name}}" />
+      <img src="{{observer.img}}" data-tooltip="{{observer.name}}" />
     </div>
     <div class="observer-content">
       <div class="observer-main">
@@ -92,7 +92,7 @@
               {{#each pcTargets as |target|}}
                 <tr class="token-row pc-row" data-token-id="{{target.id}}">
                   <td class="token-image">
-                    <img src="{{target.img}}" alt="{{target.name}}" width="28" height="28" />
+                    <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                   </td>
                   <td class="token-name">
                     <strong title="{{target.name}}">{{target.name}}</strong>
@@ -177,7 +177,7 @@
               {{#each npcTargets as |target|}}
                 <tr class="token-row npc-row {{target.dispositionClass}}-npc" data-token-id="{{target.id}}">
                   <td class="token-image">
-                    <img src="{{target.img}}" alt="{{target.name}}" width="28" height="28" />
+                    <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                   </td>
                   <td class="token-name">
                     <strong title="{{target.name}}">{{target.name}}</strong>

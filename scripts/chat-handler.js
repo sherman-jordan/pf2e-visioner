@@ -410,7 +410,8 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             revertAll: SeekPreviewDialog._onRevertAll,
             applyChange: SeekPreviewDialog._onApplyChange,
             revertChange: SeekPreviewDialog._onRevertChange,
-            toggleEncounterFilter: SeekPreviewDialog._onToggleEncounterFilter
+            toggleEncounterFilter: SeekPreviewDialog._onToggleEncounterFilter,
+            overrideState: SeekPreviewDialog._onOverrideState
         }
     };
     
@@ -450,6 +451,28 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Prepare outcomes for template
         const processedOutcomes = this.outcomes.map(outcome => {
+            // Get current visibility state from the token
+            const currentVisibility = getVisibilityBetween(this.seekerToken, outcome.target) || outcome.oldVisibility;
+            
+            // Prepare available states for override (only hidden and observed for Seek)
+            const availableStates = [
+                {
+                    value: 'hidden',
+                    ...visibilityStates.hidden,
+                    selected: (outcome.overrideState || outcome.newVisibility) === 'hidden',
+                    calculatedOutcome: outcome.newVisibility === 'hidden'
+                },
+                {
+                    value: 'observed',
+                    ...visibilityStates.observed,
+                    selected: (outcome.overrideState || outcome.newVisibility) === 'observed',
+                    calculatedOutcome: outcome.newVisibility === 'observed'
+                }
+            ];
+            
+            const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+            const hasActionableChange = effectiveNewState !== currentVisibility;
+            
             return {
                 ...outcome,
                 outcomeClass: this.getOutcomeClass(outcome.outcome),
@@ -457,7 +480,10 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 oldVisibilityState: visibilityStates[outcome.oldVisibility],
                 newVisibilityState: visibilityStates[outcome.newVisibility],
                 marginText: outcome.margin >= 0 ? `+${outcome.margin}` : `${outcome.margin}`,
-                tokenImage: outcome.target.texture?.src || outcome.target.document?.texture?.src
+                tokenImage: outcome.target.texture?.src || outcome.target.document?.texture?.src,
+                availableStates: availableStates,
+                overrideState: outcome.overrideState || outcome.newVisibility,
+                hasActionableChange: hasActionableChange
             };
         });
         
@@ -513,6 +539,9 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Set initial button states
         this.updateBulkActionButtons();
+        
+        // Add icon click handlers
+        this.addIconClickHandlers();
     }
     
     /**
@@ -530,10 +559,10 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         }
         
         console.log(`${MODULE_TITLE}: App outcomes:`, app.outcomes);
-        const changedOutcomes = app.outcomes.filter(outcome => outcome.changed);
-        console.log(`${MODULE_TITLE}: Changed outcomes:`, changedOutcomes);
+        const actionableOutcomes = app.outcomes.filter(outcome => outcome.hasActionableChange);
+        console.log(`${MODULE_TITLE}: Actionable outcomes:`, actionableOutcomes);
         
-        if (changedOutcomes.length === 0) {
+        if (actionableOutcomes.length === 0) {
             ui.notifications.info(`${MODULE_TITLE}: No changes to apply`);
             return;
         }
@@ -544,10 +573,10 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             return;
         }
         
-        // Create proper change objects
-        const changes = changedOutcomes.map(outcome => ({
+        // Create proper change objects using override state
+        const changes = actionableOutcomes.map(outcome => ({
             target: outcome.target,
-            newVisibility: outcome.newVisibility,
+            newVisibility: outcome.overrideState || outcome.newVisibility,
             changed: true
         }));
         
@@ -558,7 +587,7 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             ui.notifications.info(`${MODULE_TITLE}: Applied ${changes.length} visibility changes. Dialog remains open for additional actions.`);
             
             // Update individual row buttons to show applied state
-            app.updateRowButtonsToApplied(changedOutcomes);
+            app.updateRowButtonsToApplied(actionableOutcomes);
             
             // Update bulk action state and buttons
             app.bulkActionState = 'applied';
@@ -618,15 +647,15 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         const tokenId = button.dataset.tokenId;
         const outcome = app.outcomes.find(o => o.target.id === tokenId);
         
-        if (!outcome || !outcome.changed) {
+        if (!outcome || !outcome.hasActionableChange) {
             ui.notifications.warn(`${MODULE_TITLE}: No change to apply for this token`);
             return;
         }
         
-        // Create proper change object
+        // Create proper change object using override state
         const change = {
             target: outcome.target,
-            newVisibility: outcome.newVisibility,
+            newVisibility: outcome.overrideState || outcome.newVisibility,
             changed: true
         };
         
@@ -762,7 +791,7 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
      */
     updateRowButtonsToApplied(outcomes) {
         outcomes.forEach(outcome => {
-            if (outcome.changed) {
+            if (outcome.hasActionableChange) {
                 const tokenId = outcome.target.id;
                 const applyButton = this.element.querySelector(`button[data-action="applyChange"][data-token-id="${tokenId}"]`);
                 const revertButton = this.element.querySelector(`button[data-action="revertChange"][data-token-id="${tokenId}"]`);
@@ -789,7 +818,7 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
      */
     updateRowButtonsToReverted(outcomes) {
         outcomes.forEach(outcome => {
-            if (outcome.changed) {
+            if (outcome.hasActionableChange) {
                 const tokenId = outcome.target.id;
                 const applyButton = this.element.querySelector(`button[data-action="applyChange"][data-token-id="${tokenId}"]`);
                 const revertButton = this.element.querySelector(`button[data-action="revertChange"][data-token-id="${tokenId}"]`);
@@ -880,6 +909,92 @@ class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Re-render the dialog
         app.render({ force: true });
+    }
+    
+    /**
+     * Add click handlers for state icon selection
+     */
+    addIconClickHandlers() {
+        const stateIcons = this.element.querySelectorAll('.state-icon');
+        stateIcons.forEach(icon => {
+            icon.addEventListener('click', (event) => {
+                const targetId = event.currentTarget.dataset.target;
+                const newState = event.currentTarget.dataset.state;
+                
+                // Update the selection visually
+                const overrideIcons = event.currentTarget.closest('.override-icons');
+                const allIcons = overrideIcons.querySelectorAll('.state-icon');
+                allIcons.forEach(i => i.classList.remove('selected'));
+                event.currentTarget.classList.add('selected');
+                
+                // Update the hidden input
+                const hiddenInput = overrideIcons.querySelector('input[type="hidden"]');
+                if (hiddenInput) {
+                    hiddenInput.value = newState;
+                }
+                
+                // Update the outcome data
+                const outcome = this.outcomes.find(o => o.target.id === targetId);
+                if (outcome) {
+                    outcome.overrideState = newState;
+                    
+                    // Get current visibility state to determine if there's an actionable change
+                    const currentVisibility = getVisibilityBetween(this.seekerToken, outcome.target) || outcome.oldVisibility;
+                    
+                    // Update both changed status and actionable change status
+                    outcome.changed = outcome.overrideState !== outcome.oldVisibility;
+                    outcome.hasActionableChange = outcome.overrideState !== currentVisibility;
+                    
+                    // Update button visibility if needed
+                    this.updateActionButtonsForToken(targetId, outcome.hasActionableChange);
+                }
+                
+                // Update the changes array
+                this.changes = this.outcomes.filter(outcome => outcome.changed);
+                
+                console.log(`${MODULE_TITLE}: Override state for ${targetId} set to ${newState}`);
+            });
+        });
+    }
+    
+    /**
+     * Update action buttons visibility for a specific token
+     */
+    updateActionButtonsForToken(tokenId, hasActionableChange) {
+        const row = this.element.querySelector(`tr[data-token-id="${tokenId}"]`);
+        if (!row) return;
+        
+        const actionsCell = row.querySelector('.actions');
+        if (!actionsCell) return;
+        
+        if (hasActionableChange) {
+            // Show buttons if there's an actionable change
+            actionsCell.innerHTML = `
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility" disabled>
+                    <i class="fas fa-undo"></i>
+                </button>
+            `;
+        } else {
+            // Show "No change" if there's no actionable change
+            actionsCell.innerHTML = '<span class="no-action">No change</span>';
+        }
+    }
+    
+    /**
+     * Handle state override action (for potential future use)
+     */
+    static async _onOverrideState(event, button) {
+        const app = currentSeekDialog;
+        if (!app) return;
+        
+        const targetId = button.dataset.target;
+        const newState = button.dataset.state;
+        
+        console.log(`${MODULE_TITLE}: Override state action for ${targetId} to ${newState}`);
+        // This method is available for future enhancements if needed
     }
     
     /**
@@ -1440,6 +1555,116 @@ export function addSeekButtonStyles() {
             color: var(--color-text-secondary, #b0b0b0);
             font-style: italic;
             font-size: 11px;
+        }
+        
+        /* Visibility Change with Override */
+        .visibility-change-with-override {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .override-icons {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            margin-left: 2px;
+        }
+        
+        /* Seek Dialog Icon Selection (scoped to prevent conflicts) */
+        .seek-preview-dialog .override-icons {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+        }
+        
+        .seek-preview-dialog .state-icon {
+            background: transparent;
+            border: 1px solid var(--color-border-light-primary);
+            border-radius: 4px;
+            padding: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            min-width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            position: relative;
+        }
+        
+        .seek-preview-dialog .state-icon:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: currentColor;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .seek-preview-dialog .state-icon.selected {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: currentColor;
+            border-width: 2px;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3),
+              inset 0 0 4px rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .seek-preview-dialog .state-icon.selected::after {
+            content: "";
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 6px;
+            height: 6px;
+            background: currentColor;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+        
+        /* Seek Dialog State Icon Colors */
+        .seek-preview-dialog .state-icon[data-state="observed"] {
+            color: #4caf50;
+        }
+        
+        .seek-preview-dialog .state-icon[data-state="concealed"] {
+            color: #ffeb3b;
+        }
+        
+        .seek-preview-dialog .state-icon[data-state="hidden"] {
+            color: #ff6600;
+        }
+        
+        .seek-preview-dialog .state-icon[data-state="undetected"] {
+            color: #f44336;
+        }
+        
+        /* Highlight calculated outcome */
+        .seek-preview-dialog .state-icon.calculated-outcome {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: currentColor;
+            border-width: 2px;
+            animation: pulse-subtle 2s infinite;
+        }
+        
+        @keyframes pulse-subtle {
+            0%, 100% { 
+                opacity: 0.8;
+            }
+            50% { 
+                opacity: 1;
+            }
+        }
+        
+        /* Hide the hidden input */
+        .seek-preview-dialog .override-icons input[type="hidden"] {
+            display: none;
         }
     `;
     document.head.appendChild(style);

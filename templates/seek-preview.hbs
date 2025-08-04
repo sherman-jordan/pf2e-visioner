@@ -55,16 +55,23 @@
               {{outcome.outcomeLabel}}
             </td>
             <td class="visibility-change">
-              {{#if outcome.changed}}
+              <div class="visibility-change-with-override">
                 <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
                 →
-                <i class="{{outcome.newVisibilityState.icon}}" style="color: {{outcome.newVisibilityState.color}}" title="{{outcome.newVisibilityState.label}}"></i>
-              {{else}}
-                <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
-              {{/if}}
+                <div class="override-icons" data-target="{{outcome.target.id}}">
+                  {{#each outcome.availableStates as |state|}}
+                    <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
+                            data-state="{{state.value}}" data-target="{{outcome.target.id}}" 
+                            title="Override to {{state.label}}" style="color: {{state.color}}">
+                      <i class="{{state.icon}}"></i>
+                    </button>
+                  {{/each}}
+                  <input type="hidden" name="override.{{outcome.target.id}}" value="{{outcome.overrideState}}" />
+                </div>
+              </div>
             </td>
             <td class="actions">
-              {{#if outcome.changed}}
+              {{#if outcome.hasActionableChange}}
                 <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
                   <i class="fas fa-check"></i>
                 </button>

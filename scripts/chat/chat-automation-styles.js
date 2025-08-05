@@ -1018,10 +1018,42 @@ function getChatAutomationCSS() {
             flex: 1;
         }
         
+        /* ===== UNIFIED BULK ACTIONS TEXT STYLING WITH THEME COLORS ===== */
+        
+        /* Base Styling for All Changes Count and Total Count */
+        .point-out-preview-dialog-changes-count,
+        .point-out-preview-dialog-total-count,
+        .sneak-preview-dialog .sneak-preview-dialog-changes-count,
+        .sneak-preview-dialog .sneak-preview-dialog-total-count,
+        .seek-preview-dialog-changes-count,
+        .seek-preview-dialog-total-count,
+        .hide-preview-dialog-changes-count,
+        .hide-preview-dialog-total-count {
+            font-weight: 700 !important;
+        }
+        
+        /* Point Out Dialog - Orange Theme */
         .point-out-preview-dialog-changes-count,
         .point-out-preview-dialog-total-count {
-            font-weight: 700;
-            color: #ff9800;
+            color: #ff9800 !important;
+        }
+        
+        /* Sneak Dialog - Gray Theme */
+        .sneak-preview-dialog .sneak-preview-dialog-changes-count,
+        .sneak-preview-dialog .sneak-preview-dialog-total-count {
+            color:rgb(123, 126, 129) !important;
+        }
+        
+        /* Seek Dialog - Blue Theme */
+        .seek-preview-dialog-changes-count,
+        .seek-preview-dialog-total-count {
+            color:rgb(78, 127, 199) !important;
+        }
+        
+        /* Hide Dialog - Purple Theme */
+        .hide-preview-dialog-changes-count,
+        .hide-preview-dialog-total-count {
+            color:rgb(175, 52, 209) !important;
         }
         
         .point-out-preview-dialog-bulk-actions-buttons {
@@ -1934,11 +1966,7 @@ function getChatAutomationCSS() {
             color: var(--color-text-primary, #f0f0f0);
         }
         
-        .sneak-preview-dialog .sneak-preview-dialog-changes-count,
-        .sneak-preview-dialog .sneak-preview-dialog-total-count {
-            font-weight: 700;
-            color: #4a9eff;
-        }
+        /* Sneak dialog changes count styles moved to unified section above */
         
         .sneak-preview-dialog .sneak-preview-dialog-bulk-actions-buttons {
             display: flex;

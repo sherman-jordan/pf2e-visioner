@@ -60,6 +60,12 @@
         "compatibility": {
           "minimum": "1.0.0"
         }
+      },
+      {
+        "id": "socketlib",
+        "type": "module",
+        "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json",
+        "compatibility": {}
       }
     ]
   },

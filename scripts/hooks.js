@@ -7,11 +7,13 @@ import { onRenderTokenHUD } from './token-hud.js';
 import { onRenderChatMessage } from './chat/chat-processor.js';
 import { injectChatAutomationStyles } from './chat/chat-automation-styles.js';
 import { updateTokenVisuals } from './visual-effects.js';
+import { registerSocket } from './socket.js';
 
 /**
  * Register all FoundryVTT hooks
  */
 export function registerHooks() {
+  Hooks.on('setup', onSetup);
   Hooks.on('ready', onReady);
   Hooks.on('controlToken', onControlToken);
   Hooks.on('getTokenHUDButtons', onGetTokenHUDButtons);
@@ -62,6 +64,13 @@ function setupAlternativeHUDButton() {
       return data;
     };
   }
+}
+
+/**
+ * Handle the setup hook
+ */
+function onSetup() {
+  registerSocket();
 }
 
 /**

@@ -1,7 +1,11 @@
-import { MODULE_TITLE } from '../constants.js';
+import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, setVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { discoverSneakObservers, analyzeSneakOutcome } from './sneak-logic.js';
+import { filterOutcomesByEncounter } from './shared-utils.js';
+
+// Store reference to current sneak dialog
+let currentSneakDialog = null;
 
 /**
  * Dialog for previewing and applying Sneak action results
@@ -36,18 +40,21 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         this.outcomes = outcomes;
         this.changes = changes;
         this.sneakData = sneakData;
-        this.encounterOnly = false;
+        this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
         this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
+        
+        // Set global reference
+        currentSneakDialog = this;
     }
 
     static DEFAULT_OPTIONS = {
         actions: {
-            applyChange: SneakPreviewDialog.prototype._onApplyChange,
-            revertChange: SneakPreviewDialog.prototype._onRevertChange,
-            applyAll: SneakPreviewDialog.prototype._onApplyAll,
-            revertAll: SneakPreviewDialog.prototype._onRevertAll,
-            toggleEncounterFilter: SneakPreviewDialog.prototype._onToggleEncounterFilter,
-            overrideState: SneakPreviewDialog.prototype._onOverrideState
+            applyChange: SneakPreviewDialog._onApplyChange,
+            revertChange: SneakPreviewDialog._onRevertChange,
+            applyAll: SneakPreviewDialog._onApplyAll,
+            revertAll: SneakPreviewDialog._onRevertAll,
+            toggleEncounterFilter: SneakPreviewDialog._onToggleEncounterFilter,
+            overrideState: SneakPreviewDialog._onOverrideState
         }
     };
 
@@ -60,6 +67,21 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
+        // Filter outcomes based on encounter filter
+        let filteredOutcomes = this.outcomes;
+        if (this.encounterOnly && hasActiveEncounter()) {
+            filteredOutcomes = this.outcomes.filter(outcome => 
+                isTokenInEncounter(outcome.token)
+            );
+            
+            // Auto-uncheck if no encounter tokens found
+            if (filteredOutcomes.length === 0) {
+                this.encounterOnly = false;
+                filteredOutcomes = this.outcomes;
+                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
+            }
+        }
+        
         // Prepare visibility states for icons
         const visibilityStates = {
             'observed': { icon: 'fas fa-eye', color: '#28a745', label: 'Observed' },
@@ -68,7 +90,7 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         };
         
         // Process outcomes to add additional properties
-        const processedOutcomes = this.outcomes.map(outcome => {
+        const processedOutcomes = filteredOutcomes.map(outcome => {
             // Get current visibility state - how this observer sees the sneaking token
             const currentVisibility = getVisibilityBetween(outcome.token, this.sneakingToken) || outcome.oldVisibility;
             
@@ -333,37 +355,29 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         return content;
     }
 
-    async _onToggleEncounterFilter(event) {
-        this.encounterOnly = !this.encounterOnly;
-        
-        // Re-discover observers with new filter
-        const observers = discoverSneakObservers(this.sneakingToken, this.encounterOnly);
-        
-        if (observers.length === 0 && this.encounterOnly) {
-            ui.notifications.warn(`${MODULE_TITLE}: No encounter observers found. Disabling encounter filter.`);
-            this.encounterOnly = false;
+    static async _onToggleEncounterFilter(event, target) {
+        const app = currentSneakDialog;
+        if (!app) {
+            console.warn('Sneak dialog not found for encounter filter toggle');
             return;
         }
-
-        // Re-analyze outcomes
-        this.outcomes = observers.map(observer => analyzeSneakOutcome(this.sneakData, observer))
-                                 .filter(outcome => outcome !== null);
-        this.changes = this.outcomes.filter(outcome => outcome.changed);
-
-        // Reset bulk action state
-        this.bulkActionState = 'initial';
-
-        // Re-render the dialog
-        this.render({ force: true });
         
-        ui.notifications.info(`${MODULE_TITLE}: ${this.encounterOnly ? 'Showing only encounter observers' : 'Showing all observers'}`);
+        // Toggle the filter state
+        app.encounterOnly = target.checked;
+        
+        // Reset bulk action state
+        app.bulkActionState = 'initial';
+        
+        // Re-render the dialog - _prepareContext will handle the filtering
+        app.render({ force: true });
     }
 
-    async _onApplyChange(event) {
-        // Use the actual clicked button element
-        const button = event.target.closest('.apply-change');
+    static async _onApplyChange(event, button) {
+        const app = currentSneakDialog;
+        if (!app) return;
+        
         const tokenId = button?.dataset.tokenId;
-        const outcome = this.outcomes.find(o => o.token.id === tokenId);
+        const outcome = app.outcomes.find(o => o.token.id === tokenId);
         
         if (!outcome) return;
 
@@ -371,103 +385,117 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         try {
             // Apply the visibility change
-            await setVisibilityBetween(outcome.token, this.sneakingToken, effectiveNewState);
-            
-            // For Sneak actions, apply ephemeral effects to the sneaking token, not the observer
-            await updateEphemeralEffectsForVisibility(this.sneakingToken, outcome.token, effectiveNewState);
-        } catch (error) {
+            // This also handles ephemeral effects through the setVisibilityBetween function
+            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
+            await setVisibilityBetween(app.sneakingToken, outcome.token, effectiveNewState);
+                    } catch (error) {
             console.warn('Error applying visibility changes:', error);
             // Continue execution even if visibility changes fail
         }
         
         // Update button states
-        this.updateRowButtonsToApplied(tokenId);
+        app.updateRowButtonsToApplied(tokenId);
         
-        ui.notifications.info(`${MODULE_TITLE}: Applied sneak result - ${outcome.token.name} sees ${this.sneakingToken.name} as ${effectiveNewState}`);
+        ui.notifications.info(`${MODULE_TITLE}: Applied sneak result - ${outcome.token.name} sees ${app.sneakingToken.name} as ${effectiveNewState}`);
     }
 
-    async _onRevertChange(event) {
-        // Use the actual clicked button element
-        const button = event.target.closest('.revert-change');
+    static async _onRevertChange(event, button) {
+        const app = currentSneakDialog;
+        if (!app) return;
+        
         const tokenId = button?.dataset.tokenId;
-        const outcome = this.outcomes.find(o => o.token.id === tokenId);
+        const outcome = app.outcomes.find(o => o.token.id === tokenId);
         
         if (!outcome) return;
 
         try {
             // Revert to original visibility
-            await setVisibilityBetween(outcome.token, this.sneakingToken, outcome.oldVisibility);
-            
-            // For Sneak actions, apply ephemeral effects to the sneaking token, not the observer
-            await updateEphemeralEffectsForVisibility(this.sneakingToken, outcome.token, outcome.oldVisibility);
-        } catch (error) {
+            // This also handles ephemeral effects through the setVisibilityBetween function
+            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
+            await setVisibilityBetween(app.sneakingToken, outcome.token, outcome.oldVisibility);
+                    } catch (error) {
             console.warn('Error reverting visibility changes:', error);
             // Continue execution even if visibility changes fail
         }
         
         // Update button states
-        this.updateRowButtonsToReverted(tokenId);
+        app.updateRowButtonsToReverted(tokenId);
         
-        ui.notifications.info(`${MODULE_TITLE}: Reverted sneak result - ${outcome.token.name} sees ${this.sneakingToken.name} as ${outcome.oldVisibility}`);
+        ui.notifications.info(`${MODULE_TITLE}: Reverted sneak result - ${outcome.token.name} sees ${app.sneakingToken.name} as ${outcome.oldVisibility}`);
     }
 
-    async _onApplyAll(event) {
-        if (this.bulkActionState === 'applied') {
+    static async _onApplyAll(event, button) {
+        const app = currentSneakDialog;
+        if (!app) return;
+        
+        if (app.bulkActionState === 'applied') {
             ui.notifications.warn(`${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`);
             return;
         }
 
-        const changedOutcomes = this.outcomes.filter(outcome => {
+        // Filter outcomes based on encounter filter using shared helper
+        const filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'token');
+        
+        // Only apply changes to filtered outcomes that have actual changes
+        const changedOutcomes = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         });
 
         for (const outcome of changedOutcomes) {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-            await setVisibilityBetween(outcome.token, this.sneakingToken, effectiveNewState);
             
-            // For Sneak actions, apply ephemeral effects to the sneaking token, not the observer
+            // Apply the visibility change
+            // This also handles ephemeral effects through the setVisibilityBetween function
+            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
             try {
-                await updateEphemeralEffectsForVisibility(this.sneakingToken, outcome.token, effectiveNewState);
+                await setVisibilityBetween(app.sneakingToken, outcome.token, effectiveNewState);
             } catch (error) {
-                console.warn('Error updating ephemeral effects for bulk apply:', error);
+                console.warn('Error applying visibility changes for bulk apply:', error);
                 // Continue with other outcomes even if one fails
             }
-            this.updateRowButtonsToApplied(outcome.token.id);
+            app.updateRowButtonsToApplied(outcome.token.id);
         }
 
-        this.bulkActionState = 'applied';
-        this.updateBulkActionButtons();
+        app.bulkActionState = 'applied';
+        app.updateBulkActionButtons();
         
         ui.notifications.info(`${MODULE_TITLE}: Applied all sneak results (${changedOutcomes.length} changes). Dialog remains open for further adjustments.`);
     }
 
-    async _onRevertAll(event) {
-        if (this.bulkActionState === 'reverted') {
+    static async _onRevertAll(event, button) {
+        const app = currentSneakDialog;
+        if (!app) return;
+        
+        if (app.bulkActionState === 'reverted') {
             ui.notifications.warn(`${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`);
             return;
         }
 
-        const changedOutcomes = this.outcomes.filter(outcome => {
+        // Filter outcomes based on encounter filter using shared helper
+        const filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'token');
+        
+        // Only revert changes to filtered outcomes that have actual changes
+        const changedOutcomes = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         });
 
         for (const outcome of changedOutcomes) {
-            await setVisibilityBetween(outcome.token, this.sneakingToken, outcome.oldVisibility);
-            
-            // For Sneak actions, apply ephemeral effects to the sneaking token, not the observer
+            // Revert to original visibility
+            // This also handles ephemeral effects through the setVisibilityBetween function
+            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
             try {
-                await updateEphemeralEffectsForVisibility(this.sneakingToken, outcome.token, outcome.oldVisibility);
+                await setVisibilityBetween(app.sneakingToken, outcome.token, outcome.oldVisibility);
             } catch (error) {
-                console.warn('Error updating ephemeral effects for bulk revert:', error);
+                console.warn('Error reverting visibility changes for bulk revert:', error);
                 // Continue with other outcomes even if one fails
             }
-            this.updateRowButtonsToReverted(outcome.token.id);
+            app.updateRowButtonsToReverted(outcome.token.id);
         }
 
-        this.bulkActionState = 'reverted';
-        this.updateBulkActionButtons();
+        app.bulkActionState = 'reverted';
+        app.updateBulkActionButtons();
         
         ui.notifications.info(`${MODULE_TITLE}: Reverted all sneak results (${changedOutcomes.length} changes). Dialog remains open for further adjustments.`);
     }
@@ -538,10 +566,15 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         }
     }
 
-    static async formHandler(event, form, formData) {
-        // Handle form submission if needed
-        console.log(`${MODULE_TITLE}: Sneak preview form submitted`);
+    static async _onOverrideState(event, button) {
+        // Override state method for consistency with other dialogs
+        const app = currentSneakDialog;
+        if (!app) return;
+        // This method is available for future enhancements if needed
     }
-
-
+    
+    close(options) {
+        currentSneakDialog = null;
+        return super.close(options);
+    }
 }

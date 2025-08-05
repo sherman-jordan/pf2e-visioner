@@ -7,7 +7,7 @@ import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, setVisibilityMap, getVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { hasActiveEncounter } from './shared-utils.js';
+import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
 import { getPointOutTarget, discoverPointOutAllies, analyzePointOutOutcome } from './point-out-logic.js';
 
 // Store reference to current dialog (shared with SeekPreviewDialog)
@@ -50,7 +50,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         this.changes = changes;
         this.actionData = actionData;
         this.bulkActionState = 'initial';
-        this.encounterOnly = false;
+        this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
         
         // Set global reference
         currentPointOutDialog = this;
@@ -104,12 +104,27 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
+        // Filter outcomes based on encounter filter
+        let filteredOutcomes = this.outcomes;
+        if (this.encounterOnly && hasActiveEncounter()) {
+            filteredOutcomes = this.outcomes.filter(outcome => 
+                isTokenInEncounter(outcome.target)
+            );
+            
+            // Auto-uncheck if no encounter tokens found
+            if (filteredOutcomes.length === 0) {
+                this.encounterOnly = false;
+                filteredOutcomes = this.outcomes;
+                ui.notifications.info(`${MODULE_TITLE}: No encounter allies found, showing all`);
+            }
+        }
+        
         const visibilityStates = {
             'hidden': { icon: 'fas fa-eye-slash', color: '#ffc107', label: 'Hidden' },
             'undetected': { icon: 'fas fa-ghost', color: '#dc3545', label: 'Undetected' }
         };
         
-        const processedOutcomes = this.outcomes.map(outcome => {
+        const processedOutcomes = filteredOutcomes.map(outcome => {
             const currentVisibility = getVisibilityBetween(this.actorToken, outcome.target) || outcome.oldVisibility;
             const availableStates = {
                 'hidden': {
@@ -195,7 +210,11 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         }
         
         try {
-            const changedOutcomes = app.changes.filter(change => change.hasActionableChange !== false);
+            // Filter outcomes based on encounter filter using shared helper
+            const filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
+            
+            // Only apply changes to filtered outcomes
+            const changedOutcomes = filteredOutcomes.filter(change => change.hasActionableChange !== false);
             await app.applyVisibilityChanges(app.actorToken, changedOutcomes);
             
             app.bulkActionState = 'applied';
@@ -219,7 +238,11 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         }
         
         try {
-            const changedOutcomes = app.changes.map(change => ({
+            // Filter outcomes based on encounter filter using shared helper
+            const filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
+            
+            // Only revert changes to filtered outcomes
+            const changedOutcomes = filteredOutcomes.map(change => ({
                 ...change,
                 newVisibility: change.oldVisibility || change.currentVisibility // Revert to original state
             }));

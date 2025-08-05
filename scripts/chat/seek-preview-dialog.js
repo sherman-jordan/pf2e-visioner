@@ -4,10 +4,10 @@
  */
 
 import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { getVisibilityBetween, setVisibilityMap, getVisibilityMap } from '../utils.js';
+import { setVisibilityBetween, getVisibilityBetween, getVisibilityMap, setVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { hasActiveEncounter } from './shared-utils.js';
+import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
 import { discoverSeekTargets, analyzeSeekOutcome } from './seek-logic.js';
 
 // Store reference to current seek dialog
@@ -62,7 +62,7 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
         
         // Track encounter filtering state
-        this.encounterOnly = false;
+        this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
         
         // Set global reference
         currentSeekDialog = this;
@@ -119,6 +119,21 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
+        // Filter outcomes based on encounter filter
+        let filteredOutcomes = this.outcomes;
+        if (this.encounterOnly && hasActiveEncounter()) {
+            filteredOutcomes = this.outcomes.filter(outcome => 
+                isTokenInEncounter(outcome.target)
+            );
+            
+            // Auto-uncheck if no encounter tokens found
+            if (filteredOutcomes.length === 0) {
+                this.encounterOnly = false;
+                filteredOutcomes = this.outcomes;
+                ui.notifications.info(`${MODULE_TITLE}: No encounter targets found, showing all`);
+            }
+        }
+        
         // Prepare visibility states for icons
         const visibilityStates = {
             'observed': { icon: 'fas fa-eye', color: '#28a745', label: 'Observed' },
@@ -127,7 +142,7 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         };
         
         // Prepare outcomes for template
-        const processedOutcomes = this.outcomes.map(outcome => {
+        const processedOutcomes = filteredOutcomes.map(outcome => {
             // Get current visibility state from the token
             const currentVisibility = getVisibilityBetween(this.actorToken, outcome.target) || outcome.oldVisibility;
             
@@ -284,7 +299,11 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             return;
         }
         
-        const actionableOutcomes = app.outcomes.filter(outcome => outcome.hasActionableChange);
+        // Filter outcomes based on encounter filter using shared helper
+        const filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
+        
+        // Only apply changes to filtered outcomes
+        const actionableOutcomes = filteredOutcomes.filter(outcome => outcome.hasActionableChange);
         
         if (actionableOutcomes.length === 0) {
             ui.notifications.info(`${MODULE_TITLE}: No changes to apply`);
@@ -328,21 +347,29 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         const app = currentSeekDialog;
         if (!app) return;
         
-        // Check if Revert All is allowed based on current state
-        if (app.bulkActionState === 'reverted') {
-            ui.notifications.warn(`${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`);
-            return;
-        }
-        
-        const revertChanges = app.outcomes.map(outcome => ({
-            target: outcome.target,
-            newVisibility: outcome.oldVisibility || outcome.currentVisibility,
-            changed: true
-        }));
-        
         try {
-            await app.applyVisibilityChanges(app.actorToken, revertChanges);
-            ui.notifications.info(`${MODULE_TITLE}: Reverted all tokens to original visibility. Dialog remains open for additional actions.`);
+            
+            // Get all outcomes that have been changed
+            const changedOutcomes = app.outcomes.filter(outcome => 
+                outcome.changed && outcome.hasActionableChange);
+                            
+            // Revert each outcome to its original visibility state
+            for (const outcome of changedOutcomes) {
+                try {                    
+                    // Revert to original visibility
+                    // This also handles ephemeral effects through the setVisibilityBetween function
+                    // For Seek: The target token is the observer (gets the effect), the seeker is the target
+                    await setVisibilityBetween(outcome.target, app.actorToken, outcome.oldVisibility);
+                    
+                    // Update token visuals
+                    await updateTokenVisuals(app.actorToken);
+                    await updateTokenVisuals(outcome.target);
+                    
+                } catch (error) {
+                    console.warn('Error reverting visibility changes for token:', error);
+                    // Continue with other outcomes even if one fails
+                }
+            }
             
             // Update individual row buttons to show reverted state
             app.updateRowButtonsToReverted(app.outcomes);
@@ -350,9 +377,10 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             // Update bulk action state and buttons
             app.bulkActionState = 'reverted';
             app.updateBulkActionButtons();
-            
+                        
             // Don't close dialog - allow user to continue working
         } catch (error) {
+            console.error(`${MODULE_TITLE}: Error reverting changes:`, error);
             ui.notifications.error(`${MODULE_TITLE}: Error reverting changes.`);
         }
     }
@@ -513,7 +541,8 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 await setVisibilityMap(seeker, visibilityMap);
                 
                 // Apply ephemeral effects to the target token (like in visibility manager's Observer Mode)
-                // Target token gets the ephemeral effect that applies when targeting the seeker
+                // For Seek, the target token (being sought) should be the observer (gets off-guard effect)
+                // And the seeker token should be the target
                 // NOTE: We only manage ephemeral effects, not PF2E conditions - those should remain as originally set
                 await updateEphemeralEffectsForVisibility(change.target, seeker, change.newVisibility);
                 

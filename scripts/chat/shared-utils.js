@@ -166,3 +166,21 @@ export function markPanelComplete(panel, changes) {
         console.error(`${MODULE_TITLE}: Error marking panel complete:`, error);
     }
 }
+
+/**
+ * Filter outcomes based on encounter filter setting
+ * @param {Array} outcomes - Array of outcomes to filter
+ * @param {boolean} encounterOnly - Whether to filter for encounter only
+ * @param {string} tokenProperty - The property name to check for token (e.g., 'target', 'token')
+ * @returns {Array} Filtered outcomes
+ */
+export function filterOutcomesByEncounter(outcomes, encounterOnly, tokenProperty = 'target') {
+    if (!encounterOnly || !hasActiveEncounter()) {
+        return outcomes;
+    }
+    
+    return outcomes.filter(outcome => {
+        const token = outcome[tokenProperty];
+        return isTokenInEncounter(token);
+    });
+}

@@ -1,0 +1,119 @@
+{{!--
+  ApplicationV2 template for Create a Diversion Results Preview Dialog
+  Matches the visibility manager's design and styling
+--}}
+
+<div class="create-a-diversion-preview-content">
+  {{!-- Diverting Token Information Panel --}}
+  <div class="diverter-info">
+    <div class="diverter-image">
+      <img src="{{divertingToken.image}}" data-tooltip="{{divertingToken.name}}" />
+    </div>
+    <div class="diverter-details">
+      <h3 class="diverter-name">{{divertingToken.name}}</h3>
+      <p class="hint">Create a Diversion action results</p>
+    </div>
+  </div>
+
+  {{!-- Encounter Filter --}}
+  {{#if showEncounterFilter}}
+  <div class="encounter-filter-section">
+    <label class="encounter-filter-checkbox">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+    </label>
+  </div>
+  {{/if}}
+
+  {{!-- Results Table --}}
+  <div class="results-table-container">
+    <table class="visibility-table create-a-diversion-results-table">
+      <thead>
+        <tr>
+          <th class="token-image">Token</th>
+          <th class="token-name">Name</th>
+          <th class="roll-result">{{localize "PF2E_VISIONER.CREATE_A_DIVERSION_AUTOMATION.ROLL_VS_DC"}}</th>
+          <th class="outcome">{{localize "PF2E_VISIONER.CREATE_A_DIVERSION_AUTOMATION.OUTCOME"}}</th>
+          <th class="visibility-change">{{localize "PF2E_VISIONER.CREATE_A_DIVERSION_AUTOMATION.VISIBILITY_CHANGE"}}</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each outcomes as |outcome|}}
+          <tr class="token-row" data-token-id="{{outcome.observer.id}}">
+            <td class="token-image">
+              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.observer.name}}" width="28" height="28" />
+            </td>
+            <td class="token-name">
+              <strong title="{{outcome.observer.name}}">{{outcome.observer.name}}</strong>
+            </td>
+            <td class="roll-result">
+              <div class="roll-vs-dc">
+                <div class="roll-dc-line">
+                  <span class="roll-total">{{outcome.rollTotal}}</span>
+                  <span class="vs-text">vs DC</span>
+                  <span class="dc-value">{{outcome.dc}}</span>
+                </div>
+                <div class="margin-display">({{../marginText outcome}})</div>
+              </div>
+            </td>
+            <td class="outcome {{../getOutcomeClass outcome}}">
+              {{../getOutcomeLabel outcome}}
+            </td>
+            <td class="visibility-change">
+              <div class="visibility-change-with-override">
+                <i class="fas fa-eye" style="color: #28a745" title="Observed"></i>
+                <i class="fas fa-arrow-right visibility-arrow"></i>
+                {{#if outcome.hasActionableChange}}
+                  <div class="state-selection">
+                    {{#each outcome.availableStates}}
+                      <button type="button" 
+                              class="state-icon {{#if selected}}selected{{/if}} {{#if calculatedOutcome}}calculated-outcome{{/if}}"
+                              data-action="overrideState"
+                              data-token-id="{{../outcome.observer.id}}"
+                              data-state="{{key}}"
+                              title="{{label}}">
+                        <i class="{{icon}}"></i>
+                      </button>
+                    {{/each}}
+                  </div>
+                {{else}}
+                  <span class="no-change">{{outcome.currentVisibility}}</span>
+                {{/if}}
+              </div>
+            </td>
+            <td class="actions">
+              <div class="row-actions" style="display: flex; justify-content: center;">
+                {{#if outcome.hasActionableChange}}
+                  <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.observer.id}}" title="Apply this visibility change">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.observer.id}}" title="Revert to original visibility" disabled>
+                    <i class="fas fa-undo"></i>
+                  </button>
+                {{else}}
+                  <span class="no-action">No change</span>
+                {{/if}}
+              </div>
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- Bulk Actions --}}
+  <div class="create-a-diversion-preview-dialog-bulk-actions-header">
+    <div class="create-a-diversion-preview-dialog-bulk-actions-info">
+      <span class="create-a-diversion-preview-dialog-changes-count">{{changesCount}}</span> of <span class="create-a-diversion-preview-dialog-total-count">{{totalCount}}</span> observers will have visibility changes.
+    </div>
+    <div class="create-a-diversion-preview-dialog-bulk-actions-buttons">
+      <button type="button" class="create-a-diversion-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+        <i class="fas fa-check-circle"></i> Apply All
+      </button>
+      <button type="button" class="create-a-diversion-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+        <i class="fas fa-undo"></i> Revert All
+      </button>
+    </div>
+  </div>
+</div>

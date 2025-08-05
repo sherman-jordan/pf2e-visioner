@@ -67,6 +67,13 @@ function getChatAutomationCSS() {
             box-shadow: 0 4px 8px rgba(108, 117, 125, 0.15);
         }
         
+        /* Create a Diversion Panel - Teal Theme */
+        .pf2e-visioner-automation-panel.create-a-diversion-panel {
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+            border: 2px solid #17a2b8;
+            box-shadow: 0 4px 8px rgba(23, 162, 184, 0.15);
+        }
+        
         .automation-header {
             display: flex;
             align-items: center;
@@ -121,6 +128,11 @@ function getChatAutomationCSS() {
         
         .visioner-btn-sneak {
             background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+        
+        .visioner-btn-create-a-diversion {
+            background: linear-gradient(135deg, #17a2b8, #0d7377);
             color: white;
         }
         
@@ -441,6 +453,7 @@ function getChatAutomationCSS() {
         .seek-results-table,
         .hide-results-table,
         .point-out-results-table,
+        .create-a-diversion-preview-dialog .results-table,
         .sneak-results-table {
             width: 100%;
             border-collapse: collapse;
@@ -453,6 +466,7 @@ function getChatAutomationCSS() {
         .seek-results-table thead,
         .hide-results-table thead,
         .point-out-results-table thead,
+        .create-a-diversion-preview-dialog .results-table thead,
         .sneak-results-table thead {
             background: var(--color-bg-option, rgba(255, 255, 255, 0.1));
         }
@@ -460,6 +474,7 @@ function getChatAutomationCSS() {
         .seek-results-table th,
         .hide-results-table th,
         .point-out-results-table th,
+        .create-a-diversion-preview-dialog .results-table th,
         .sneak-results-table th {
             padding: 8px 6px;
             text-align: center;
@@ -472,6 +487,7 @@ function getChatAutomationCSS() {
         .seek-results-table td,
         .hide-results-table td,
         .point-out-results-table td,
+        .create-a-diversion-preview-dialog .results-table td,
         .sneak-results-table td {
             padding: 8px 6px;
             text-align: center;
@@ -484,6 +500,7 @@ function getChatAutomationCSS() {
         .seek-results-table tbody tr:nth-child(even) td,
         .hide-results-table tbody tr:nth-child(even) td,
         .point-out-results-table tbody tr:nth-child(even) td,
+        .create-a-diversion-preview-dialog .results-table tbody tr:nth-child(even) td,
         .sneak-results-table tbody tr:nth-child(even) td {
             background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
         }
@@ -495,6 +512,7 @@ function getChatAutomationCSS() {
         .seek-results-table .token-image,
         .hide-results-table .token-image,
         .point-out-results-table .token-image,
+        .create-a-diversion-preview-dialog .results-table .token-image,
         .sneak-results-table .token-image {
             width: 50px;
             min-width: 50px;
@@ -509,6 +527,7 @@ function getChatAutomationCSS() {
         .point-out-results-table .token-image img,
         .sneak-results-table .token-image img,
         .visibility-table .token-image img,
+        .create-a-diversion-preview-dialog .visibility-table .token-image img,
         .visibility-table.sneak-results-table .token-image img {
             width: 32px !important;
             height: 32px !important;
@@ -650,6 +669,7 @@ function getChatAutomationCSS() {
         .seek-results-table tbody td.outcome.critical-success,
         .hide-results-table tbody td.outcome.critical-success,
         .point-out-results-table tbody td.outcome.critical-success,
+        .create-a-diversion-preview-dialog .results-table tbody td.outcome.critical-success,
         .sneak-results-table tbody td.outcome.critical-success {
             color: #00b050; /* Green */
         }
@@ -659,6 +679,7 @@ function getChatAutomationCSS() {
         .seek-results-table tbody td.outcome.success,
         .hide-results-table tbody td.outcome.success,
         .point-out-results-table tbody td.outcome.success,
+        .create-a-diversion-preview-dialog .results-table tbody td.outcome.success,
         .sneak-results-table tbody td.outcome.success {
             color: #4a9eff; /* Blue */
         }
@@ -668,6 +689,7 @@ function getChatAutomationCSS() {
         .seek-results-table tbody td.outcome.failure,
         .hide-results-table tbody td.outcome.failure,
         .point-out-results-table tbody td.outcome.failure,
+        .create-a-diversion-preview-dialog .results-table tbody td.outcome.failure,
         .sneak-results-table tbody td.outcome.failure {
             color: #ffc107; /* Yellow/orange */
         }
@@ -677,6 +699,7 @@ function getChatAutomationCSS() {
         .seek-results-table tbody td.outcome.critical-failure,
         .hide-results-table tbody td.outcome.critical-failure,
         .point-out-results-table tbody td.outcome.critical-failure,
+        .create-a-diversion-preview-dialog .results-table tbody td.outcome.critical-failure,
         .sneak-results-table tbody td.outcome.critical-failure {
             color: #f44336; /* Red */
         }
@@ -914,7 +937,8 @@ function getChatAutomationCSS() {
         .visibility-table .state-icon.calculated-outcome,
         .point-out-results-table .state-icon.calculated-outcome,
         .sneak-results-table .state-icon.calculated-outcome,
-        .override-icons .state-icon.calculated-outcome {
+        .override-icons .state-icon.calculated-outcome,
+        .create-a-diversion-preview-dialog .state-icon.calculated-outcome {
             background: rgba(255, 255, 255, 0.1) !important;
             border-color: currentColor !important;
             border-width: 2px !important;
@@ -1028,8 +1052,16 @@ function getChatAutomationCSS() {
         .seek-preview-dialog-changes-count,
         .seek-preview-dialog-total-count,
         .hide-preview-dialog-changes-count,
-        .hide-preview-dialog-total-count {
+        .hide-preview-dialog-total-count,
+        .create-a-diversion-preview-dialog-changes-count,
+        .create-a-diversion-preview-dialog-total-count {
             font-weight: 700 !important;
+        }
+
+        /* Create a Diversion - Cyan Theme */
+        .create-a-diversion-preview-dialog-changes-count,
+        .create-a-diversion-preview-dialog-total-count {
+            color: #20b2aa !important;
         }
         
         /* Point Out Dialog - Orange Theme */
@@ -2031,5 +2063,511 @@ function getChatAutomationCSS() {
         
         /* All Sneak dialog styles are now unified above */
         
+        /* ===== CREATE A DIVERSION DIALOG STYLES - TEAL THEME ===== */
+        
+        /* Create a Diversion Dialog Window Title */
+        .create-a-diversion-preview-dialog .window-header {
+            background: linear-gradient(135deg, #17a2b8, #0d7377);
+            border-bottom: 2px solid #0d7377;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog .window-title {
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .create-a-diversion-preview-dialog .window-header .window-controls .control {
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .create-a-diversion-preview-dialog .window-header .window-controls .control:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .create-a-diversion-preview-dialog .window-content {
+            padding: 0;
+            background: var(--color-bg-primary, #2a2a2a);
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        /* Create a Diversion Dialog Content Structure */
+        .create-a-diversion-preview-dialog .create-a-diversion-preview-content {
+            padding: 16px;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, #17a2b8, #0d7377);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .diverter-image img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid rgb(13, 201, 230);
+            margin-right: 12px;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-details {
+            flex: 1;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-name {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-details .hint {
+            margin: 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+        }
+        
+        .create-a-diversion-preview-dialog .token-image img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-details h3 {
+            margin: 0 0 4px 0;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .diverter-details .subtitle {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            font-style: italic;
+        }
+        
+        .create-a-diversion-preview-dialog .mode-toggle .mode-label {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .create-a-diversion-preview-dialog .encounter-filter-section {
+            padding: 12px 16px;
+            background: rgba(23, 162, 184, 0.1);
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        
+        /* Create a Diversion Table Styling */
+        .create-a-diversion-preview-dialog .results-table-container {
+            margin-bottom: 16px;
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-bg-secondary, #333);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table thead {
+            background: linear-gradient(135deg, #17a2b8, #0d7377);
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: white;
+            font-size: 13px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .create-a-diversion-preview-dialog .token-row:hover {
+            background: rgba(23, 162, 184, 0.1);
+        }
+        
+        .create-a-diversion-preview-dialog .token-image img {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .create-a-diversion-preview-dialog .roll-vs-dc {
+            font-family: monospace;
+        }
+        
+        .create-a-diversion-preview-dialog .roll-total {
+            font-weight: bold;
+            color: #17a2b8;
+        }
+        
+        .create-a-diversion-preview-dialog .dc-value {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        
+        .create-a-diversion-preview-dialog .margin-display {
+            font-size: 11px;
+            color: var(--color-text-secondary, #ccc);
+        }
+
+        .create-a-diversion-preview-dialog td {
+            text-align: center;
+        }
+        
+        /* Outcome styling */
+        .create-a-diversion-preview-dialog .outcome.critical-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .outcome.success {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .outcome.failure {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .outcome.critical-failure {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .state-icon {
+            background: none;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            padding: 4px;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .create-a-diversion-preview-dialog .state-icon.selected {
+            border-color: #17a2b8;
+            background: rgba(23, 162, 184, 0.2);
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn {
+            background: #17a2b8;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: white;
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s ease;
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn:hover {
+            background: #0d7377;
+            transform: translateY(-1px);
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .create-a-diversion-preview-dialog .encounter-filter-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--color-text-primary, #f0f0f0);
+            cursor: pointer;
+        }
+        
+        .create-a-diversion-preview-dialog .diversion-results-table {
+            margin-bottom: 16px;
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-bg-primary, #2a2a2a);
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: var(--color-text-primary, #f0f0f0);
+            border-bottom: 2px solid var(--color-border-light-primary, #555);
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.1));
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-table td {
+            padding: 8px 6px;
+            vertical-align: middle;
+            font-size: 12px;
+        }
+        
+        .create-a-diversion-preview-dialog .token-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .create-a-diversion-preview-dialog .token-image {
+            width: 40px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .create-a-diversion-preview-dialog .token-image img {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        
+        .create-a-diversion-preview-dialog .roll-info {
+            text-align: center;
+        }
+        
+        .create-a-diversion-preview-dialog .roll-vs-dc {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .create-a-diversion-preview-dialog .roll-total {
+            color: #4a9eff;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .dc-value {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .create-a-diversion-preview-dialog .margin {
+            font-size: 11px;
+            color: var(--color-text-secondary, #ccc);
+        }
+        
+        .create-a-diversion-preview-dialog .outcome-label {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        
+        .create-a-diversion-preview-dialog .visibility-transition {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .create-a-diversion-preview-dialog .current-state {
+            font-weight: bold;
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        .create-a-diversion-preview-dialog .action-buttons {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+        
+        .create-a-diversion-preview-dialog .apply-change {
+            background: #28a745;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog .apply-change:hover:not(:disabled) {
+            background: #218838;
+        }
+        
+        .create-a-diversion-preview-dialog .apply-change:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .create-a-diversion-preview-dialog .revert-change {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog .revert-change:hover:not(:disabled) {
+            background: #c82333;
+        }
+        
+        .create-a-diversion-preview-dialog .revert-change:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .create-a-diversion-preview-dialog .bulk-actions-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(23, 162, 184, 0.1);
+            border-radius: 8px;
+            border-top: 1px solid #0d7377;
+        }
+        
+        .create-a-diversion-preview-dialog .summary-text {
+            font-weight: bold;
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        .create-a-diversion-preview-dialog .bulk-action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .create-a-diversion-preview-dialog-bulk-action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog-bulk-action-btn.apply-all {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+        }
+        
+        .create-a-diversion-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
+            background: linear-gradient(135deg, #218838, #155724);
+            transform: translateY(-1px);
+        }
+        
+        .create-a-diversion-preview-dialog-bulk-action-btn.revert-all {
+            background: #ff9800;
+            border-color: #ff9800;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
+            background: #e68900;
+            border-color: #e68900;
+        }
+        
+        .create-a-diversion-preview-dialog-bulk-action-btn:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed;
+            transform: none;
+        }
+                    
+        .create-a-diversion-preview-dialog-bulk-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
+            border-top: 1px solid var(--color-border-light-primary, #555);
+            margin-top: 12px;
+        }
+
+        .create-a-diversion-preview-dialog-bulk-actions-info {
+            color: var(--color-text-primary, #f0f0f0);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .create-a-diversion-preview-dialog-bulk-actions-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        /* Row Action Button Styles */
+        .create-a-diversion-preview-dialog .row-action-btn {
+            background: rgba(108, 117, 125, 0.2);
+            color: var(--color-text-primary, #f0f0f0);
+            border: 1px solid #6c757d;
+            border-radius: 4px;
+            padding: 6px 8px;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn:hover:not(:disabled) {
+            background: rgba(108, 117, 125, 0.4);
+            border-color: #495057;
+            transform: translateY(-1px);
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn.apply-change {
+            background: #4caf50;
+            border-color: #4caf50;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn.apply-change:hover:not(:disabled) {
+            background: #45a049;
+            border-color: #45a049;
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn.revert-change {
+            background: #ff9800;
+            border-color: #ff9800;
+            color: white;
+        }
+        
+        .create-a-diversion-preview-dialog .row-action-btn.revert-change:hover:not(:disabled) {
+            background: #e68900;
+            border-color: #e68900;
+        }
+        
+        .create-a-diversion-preview-dialog .no-action {
+            font-style: italic;
+            color: var(--color-text-secondary, #ccc);
+            font-size: 12px;
+        }
     `;
 }

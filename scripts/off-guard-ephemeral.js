@@ -51,7 +51,6 @@ async function handleCheckRollEphemeral(wrapped, ...args) {
         type,
         token,
         target,
-        isReroll,
         viewOnly,
     } = context;
     
@@ -79,7 +78,6 @@ async function handleCheckRollEphemeral(wrapped, ...args) {
         
         if (["hidden", "undetected"].includes(targetVisibilityFromAttacker)) {
             // Create or update ephemeral effect on the attacker (who becomes off-guard)
-
             await createEphemeralOffGuardEffect(originToken.actor, targetActor, targetVisibilityFromAttacker);
         } else {
 
@@ -96,8 +94,11 @@ async function handleCheckRollEphemeral(wrapped, ...args) {
  * @param {Actor} observerActor - The observing actor (who gets the off-guard effect)
  * @param {Actor} hiddenActor - The hidden actor (who the observer is off-guard to)
  * @param {string} visibilityState - The visibility state ('hidden' or 'undetected')
+ * @param {Object} options - Optional configuration
+ * @param {boolean} options.initiative - Boolean (default: null)
+ * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  */
-async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibilityState) {
+async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibilityState, options = {}) {
 
     
     // Check if effect already exists to prevent duplicates
@@ -148,11 +149,16 @@ async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibil
             level: {
                 value: 1
             },
-            duration: {
-                value: 1,
-                unit: 'rounds',
-                expiry: 'turn-end',
-                sustained: false
+            duration: options.durationRounds >= 0 ? {
+                "value": options.durationRounds,
+                "unit": "rounds",
+                "expiry": "turn-end",
+                "sustained": false
+            } : {
+                "value": -1,
+                "unit": "unlimited",
+                "expiry": null,
+                "sustained": false
             },
             tokenIcon: {
                 show: false
@@ -160,7 +166,9 @@ async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibil
             unidentified: false,
             start: {
                 value: 0,
-                initiative: null
+                initiative: options.initiative 
+                ? game.combat?.getCombatantByToken(observerActor.id)?.initiative 
+                : null
             },
             badge: null,
             fromSpell: false,
@@ -243,8 +251,11 @@ export async function cleanupEphemeralEffectsForTarget(observerActor, hiddenActo
  * @param {Token} observerToken - The observing token
  * @param {Token} targetToken - The target token  
  * @param {string} newVisibilityState - The new visibility state
+ * @param {Object} options - Optional configuration
+ * @param {boolean} options.initiative - Boolean (default: null)
+ * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  */
-export async function updateEphemeralEffectsForVisibility(observerToken, targetToken, newVisibilityState) {
+export async function updateEphemeralEffectsForVisibility(observerToken, targetToken, newVisibilityState, options = {}) {
 
     
     if (!observerToken?.actor || !targetToken?.actor) {
@@ -254,15 +265,12 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
     
     // Clean up existing effects first
 
-    await cleanupEphemeralEffectsForTarget(observerToken.actor, targetToken.actor);
+    await cleanupEphemeralEffectsForTarget(observerToken.actor, targetToken.actor, options);
     
     // Create new effect if target is hidden/undetected
     // The OBSERVER gets the off-guard effect (because they are off-guard to the hidden target)
     if (["hidden", "undetected"].includes(newVisibilityState)) {
-
-        await createEphemeralOffGuardEffect(observerToken.actor, targetToken.actor, newVisibilityState);
-    } else {
-
+        await createEphemeralOffGuardEffect(observerToken.actor, targetToken.actor, newVisibilityState, options);
     }
 }
 

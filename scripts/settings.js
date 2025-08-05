@@ -26,8 +26,13 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'defaultEncounterFilter') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       }
-      // The showOnlyEncounterTokens setting doesn't require restart - it takes effect immediately
       
       try {
         game.settings.register(MODULE_ID, key, settingConfig);

@@ -93,10 +93,9 @@
       "BUTTON_PREVIEW": "Preview Results",
       "BUTTON_PROCESSED": "Results Applied",
       "BUTTON_TOOLTIP": "Apply visibility changes based on Sneak results",
-      "NO_OBSERVERS": "No observers found for {name}'s Sneak action",
-      "NO_CHANGES": "No visibility changes needed for {name}'s Sneak action",
-      "RESULTS_APPLIED": "Sneak automation applied changes: {changes}",
-      "ERROR_PROCESSING": "Error applying Sneak results. Check console for details.",
+      "NO_OBSERVERS": "No tokens can see {actor} - no sneak needed",
+      "NO_CHANGES": "Sneak had no effect on visibility",
+      "ERROR_PROCESSING": "Error processing Sneak results",
       "PROCESSING": "Processing Sneak results...",
       "PREVIEW_TITLE": "Sneak Results Preview",
       "PREVIEW_HINT": "Sneak action results analysis",
@@ -108,6 +107,24 @@
       "ENCOUNTER_ONLY": "Show only encounter tokens",
       "SETTING_NAME": "Enable Sneak Automation",
       "SETTING_HINT": "Automatically add buttons to Sneak chat messages for applying visibility changes"
+    },
+    "CREATE_A_DIVERSION_AUTOMATION": {
+      "BUTTON_APPLY": "Apply Diversion Results",
+      "BUTTON_TOOLTIP": "Apply visibility changes from Create a Diversion action",
+      "NO_OBSERVERS": "No tokens can see {actor} - no diversion needed",
+      "NO_CHANGES": "Create a Diversion had no effect on visibility",
+      "ERROR_PROCESSING": "Error processing Create a Diversion results",
+      "PROCESSING": "Processing Create a Diversion results...",
+      "PREVIEW_TITLE": "Create a Diversion Results Preview",
+      "PREVIEW_HINT": "Diversion action results analysis",
+      "ROLL_VS_DC": "Roll vs Perception DC",
+      "OUTCOME": "Outcome",
+      "VISIBILITY_CHANGE": "Visibility Change",
+      "OPEN_RESULTS": "Open Diversion Results",
+      "OPEN_RESULTS_TOOLTIP": "Open the Create a Diversion results dialog to apply individual or bulk visibility changes",
+      "ENCOUNTER_ONLY": "Show only encounter tokens",
+      "SETTING_NAME": "Enable Create a Diversion Automation",
+      "SETTING_HINT": "Automatically add buttons to Create a Diversion chat messages for applying visibility changes"
     },
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {

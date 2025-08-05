@@ -8,6 +8,7 @@ import { previewSeekResults } from './seek-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
 import { previewHideResults } from './hide-logic.js';
 import { previewSneakResults } from './sneak-logic.js';
+import { previewDiversionResults } from './create-a-diversion-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
 const processedMessages = new Set();
@@ -64,25 +65,31 @@ function extractActionData(message) {
                         context.slug === 'seek'
                     )) || message.flavor?.toLowerCase().includes('seek');
     
-    // Hide detection - check context for skill checks with Hide action
-    const isHideAction = (context?.type === 'skill-check' && (
+    // Create a Diversion detection - check context for skill checks with Create a Diversion action (check first to avoid conflicts)
+    const isCreateADiversionAction = (context?.type === 'skill-check' && (
+                        context.options?.some(option => option.startsWith('action:create-a-diversion')) || 
+                        context.slug === 'create-a-diversion'
+                    )) || message.flavor?.toLowerCase().includes('create a diversion');
+    
+    // Hide detection - check context for skill checks with Hide action (more specific to avoid false positives)
+    const isHideAction = !isCreateADiversionAction && ((context?.type === 'skill-check' && (
                         context.options?.includes('action:hide') || 
                         context.slug === 'hide'
-                    )) || message.flavor?.toLowerCase().includes('hide');
+                    )) || (message.flavor?.toLowerCase().includes('hide') && !message.flavor?.toLowerCase().includes('create a diversion')));
     
     // Sneak detection - check context for skill checks with Sneak action
-    const isSneakAction = (context?.type === 'skill-check' && (
+    const isSneakAction = !isCreateADiversionAction && ((context?.type === 'skill-check' && (
                         context.options?.includes('action:sneak') || 
                         context.slug === 'sneak'
-                    )) || message.flavor?.toLowerCase().includes('sneak');
+                    )) || (message.flavor?.toLowerCase().includes('sneak') && !message.flavor?.toLowerCase().includes('create a diversion')));
     
     // Early return if no supported action is detected
-    if (!isSeekAction && !isPointOutAction && !isHideAction && !isSneakAction) {
+    if (!isSeekAction && !isPointOutAction && !isHideAction && !isSneakAction && !isCreateADiversionAction) {
         return null;
     }
     
-    // For Seek, Hide, and Sneak, we need rolls and token (check both token.object and speaker.token)
-    if ((isSeekAction || isHideAction || isSneakAction) && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
+    // For Seek, Hide, Sneak, and Create a Diversion, we need rolls and token (check both token.object and speaker.token)
+    if ((isSeekAction || isHideAction || isSneakAction || isCreateADiversionAction) && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
     
     // For Point Out, we need token but not necessarily rolls
     if (isPointOutAction && !message?.token?.object && !message?.speaker?.token) return null;
@@ -109,6 +116,8 @@ function extractActionData(message) {
         actionType = 'hide';
     } else if (isSneakAction) {
         actionType = 'sneak';
+    } else if (isCreateADiversionAction) {
+        actionType = 'create-a-diversion';
     } else {
         return null;
     }
@@ -219,6 +228,7 @@ function buildAutomationPanel(actionData) {
     const isPointOut = actionData.actionType === 'point-out';
     const isHide = actionData.actionType === 'hide';
     const isSneak = actionData.actionType === 'sneak';
+    const isCreateADiversion = actionData.actionType === 'create-a-diversion';
     
     let label, tooltip, title, icon, actionName, buttonClass, panelClass;
     
@@ -254,6 +264,14 @@ function buildAutomationPanel(actionData) {
         actionName = 'open-sneak-results';
         buttonClass = 'visioner-btn-sneak';
         panelClass = 'sneak-panel';
+    } else if (isCreateADiversion) {
+        label = 'Open Diversion Results';
+        tooltip = 'Preview and apply Create a Diversion visibility changes';
+        title = 'Create a Diversion Results Available';
+        icon = 'fas fa-theater-masks';
+        actionName = 'open-diversion-results';
+        buttonClass = 'visioner-btn-create-a-diversion';
+        panelClass = 'create-a-diversion-panel';
     }
     
     return `
@@ -324,6 +342,8 @@ async function previewActionResults(actionData) {
         return await previewHideResults(actionData);
     } else if (actionData.actionType === 'sneak') {
         return await previewSneakResults(actionData);
+    } else if (actionData.actionType === 'create-a-diversion') {
+        return await previewDiversionResults(actionData);
     } else {
         console.warn('[Chat Processor] Unknown action type:', actionData.actionType);
     }

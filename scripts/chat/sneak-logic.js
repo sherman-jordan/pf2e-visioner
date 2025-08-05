@@ -15,8 +15,6 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
         return [];
     }
 
-    console.log(`${MODULE_TITLE}: Discovering sneak observers for token:`, sneakingToken.name);
-
     const observers = [];
     const allTokens = canvas.tokens.placeables;
 
@@ -38,14 +36,11 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
         // Only include tokens that the sneaking token is currently hidden or undetected from
         // Sneak action is used to maintain or improve stealth against these tokens
         if (!['hidden', 'undetected'].includes(currentVisibility)) {
-            console.log(`${MODULE_TITLE}: Skipping ${token.name} - sneaking token is not hidden/undetected from this observer (currently ${currentVisibility})`);
             continue;
         }
 
         // Get the observer's Perception DC
         const perceptionDC = token.actor.system.attributes?.perception?.dc?.value || 10;
-
-        console.log(`${MODULE_TITLE}: Including ${token.name} - currently ${currentVisibility} to sneaking token`);
         
         observers.push({
             token: token,
@@ -54,7 +49,6 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
         });
     }
 
-    console.log(`${MODULE_TITLE}: Found ${observers.length} potential sneak observers`);
     return observers;
 }
 
@@ -129,8 +123,7 @@ export function analyzeSneakOutcome(sneakData, observer) {
  * Shows the sneak results preview dialog
  * @param {Object} sneakData - The sneak action data
  */
-export function previewSneakResults(sneakData) {
-    console.log(`${MODULE_TITLE}: Previewing sneak results for:`, sneakData.actor?.name);
+export async function previewSneakResults(sneakData) {
 
     // Validate sneakData
     if (!sneakData || !sneakData.actor || !sneakData.roll) {

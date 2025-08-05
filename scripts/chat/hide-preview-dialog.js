@@ -3,11 +3,11 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_TITLE } from '../constants.js';
+import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { setVisibilityMap, getVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { hasActiveEncounter } from './shared-utils.js';
+import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
 import { discoverHideObservers, analyzeHideOutcome } from './hide-logic.js';
 
 // Store reference to current hide dialog
@@ -58,7 +58,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         this.outcomes = outcomes || [];
         this.changes = changes || [];
         this.actionData = actionData;
-        this.encounterOnly = false;
+        this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
         this.bulkActionState = 'initial'; // Track bulk action state
         
         // Store reference for singleton behavior
@@ -122,8 +122,23 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
+        // Filter outcomes based on encounter filter
+        let filteredOutcomes = this.outcomes;
+        if (this.encounterOnly && hasActiveEncounter()) {
+            filteredOutcomes = this.outcomes.filter(outcome => 
+                isTokenInEncounter(outcome.target)
+            );
+            
+            // Auto-uncheck if no encounter tokens found
+            if (filteredOutcomes.length === 0) {
+                this.encounterOnly = false;
+                filteredOutcomes = this.outcomes;
+                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
+            }
+        }
+        
         // Process outcomes to add additional properties needed by template
-        const processedOutcomes = this.outcomes.map(outcome => {
+        const processedOutcomes = filteredOutcomes.map(outcome => {
             const availableStates = this.getAvailableStatesForOutcome(outcome);
             const overrideState = outcome.overrideState || outcome.newVisibility; // Default to calculated result
             const hasActionableChange = outcome.newVisibility !== outcome.oldVisibility;
@@ -154,7 +169,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         return context;
     }
-    
+
     /**
      * Get available visibility states for an outcome based on Hide rules
      * Hide can only make you hidden from observers who can currently see you
@@ -430,8 +445,11 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             return;
         }
         
-        // Get all outcomes that have actionable changes
-        const changedOutcomes = app.outcomes.filter(outcome => {
+        // Filter outcomes based on encounter filter using shared helper
+        const filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
+        
+        // Get filtered outcomes that have actionable changes
+        const changedOutcomes = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         });
@@ -575,7 +593,10 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             return;
         }
         
-        const changedOutcomes = app.outcomes.filter(outcome => {
+        // Filter outcomes based on encounter filter using shared helper
+        const filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
+        
+        const changedOutcomes = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         });
@@ -637,29 +658,19 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     }
     
     static async _onToggleEncounterFilter(event, target) {
-        const app = target.closest('[data-appid]')?.application;
-        if (!app) return;
-        
-        // Toggle the filter state
-        app.encounterOnly = !app.encounterOnly;
-        
-        // Re-discover observers with new filter
-        const observers = discoverHideObservers(app.actorToken, app.encounterOnly);
-        
-        if (observers.length === 0 && app.encounterOnly) {
-            ui.notifications.info(`${MODULE_TITLE}: No encounter observers found. Unchecking encounter filter.`);
-            app.encounterOnly = false;
+        const app = currentHideDialog;
+        if (!app) {
+            console.warn('Hide dialog not found for encounter filter toggle');
             return;
         }
         
-        // Re-analyze outcomes
-        app.outcomes = observers.map(observer => analyzeHideOutcome(app.actionData, observer));
-        app.changes = app.outcomes.filter(outcome => outcome.changed);
+        // Toggle the filter state
+        app.encounterOnly = target.checked;
         
         // Reset bulk action state
         app.bulkActionState = 'initial';
         
-        // Re-render the dialog
+        // Re-render the dialog - _prepareContext will handle the filtering
         app.render({ force: true });
     }
     

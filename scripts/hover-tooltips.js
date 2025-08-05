@@ -231,6 +231,7 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
   const indicator = new PIXI.Container();
   indicator.interactive = true;
   indicator.buttonMode = true;
+  indicator.interactiveChildren = false; // Prevent child elements from being interactive
   
   // Create outer glow effect
   const glow = new PIXI.Graphics();
@@ -330,7 +331,10 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
     </div>`;
   }
   
-  indicator.on('pointerover', () => {
+  indicator.on('pointerover', (event) => {
+    // Stop event propagation to prevent interference with token events
+    event.stopPropagation();
+    
     indicator.scale.set(1.2);
     
     // Get indicator position relative to screen
@@ -353,21 +357,44 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
     // Store anchor reference for cleanup
     indicator._tooltipAnchor = anchor;
     
-    // Activate Foundry's tooltip system
-    game.tooltip.activate(anchor, {
-      content: tooltipText,
-      direction: game.tooltip.constructor.TOOLTIP_DIRECTIONS.UP,
-      cssClass: 'pf2e-visioner-tooltip'
-    });
+    // Activate Foundry's tooltip system with error handling
+    try {
+      game.tooltip.activate(anchor, {
+        content: tooltipText,
+        direction: game.tooltip.constructor.TOOLTIP_DIRECTIONS.UP,
+        cssClass: 'pf2e-visioner-tooltip'
+      });
+    } catch (error) {
+      console.warn('PF2E Visioner: Error activating tooltip:', error);
+      // Clean up anchor if tooltip activation fails
+      if (anchor.parentNode) {
+        anchor.parentNode.removeChild(anchor);
+      }
+      delete indicator._tooltipAnchor;
+    }
   });
   
-  indicator.on('pointerout', () => {
+  indicator.on('pointerout', (event) => {
+    // Stop event propagation to prevent interference with token events
+    event.stopPropagation();
+    
     indicator.scale.set(1.0);
     
-    // Deactivate tooltip and cleanup anchor
-    game.tooltip.deactivate();
+    // Deactivate tooltip and cleanup anchor with error handling
+    try {
+      game.tooltip.deactivate();
+    } catch (error) {
+      console.warn('PF2E Visioner: Error deactivating tooltip:', error);
+    }
+    
     if (indicator._tooltipAnchor) {
-      indicator._tooltipAnchor.remove();
+      try {
+        if (indicator._tooltipAnchor.parentNode) {
+          indicator._tooltipAnchor.parentNode.removeChild(indicator._tooltipAnchor);
+        }
+      } catch (error) {
+        console.warn('PF2E Visioner: Error removing tooltip anchor:', error);
+      }
       delete indicator._tooltipAnchor;
     }
   });

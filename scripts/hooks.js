@@ -24,6 +24,10 @@ export function registerHooks() {
   Hooks.on('createToken', onTokenCreated);
   Hooks.on('deleteToken', onTokenDeleted);
   
+  // Encounter hooks to reset dialog states
+  Hooks.on('updateCombat', onUpdateCombat);
+  Hooks.on('deleteCombat', onDeleteCombat);
+  
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();
 }
@@ -354,4 +358,82 @@ async function onTokenDeleted() {
       initializeHoverTooltips();
     }
   }, 100);
+}
+
+/**
+ * Handle combat updates - reset encounter filter when combat ends
+ */
+function onUpdateCombat(combat, updateData, options, userId) {
+  // Check if combat has ended (started: false)
+  if (updateData.hasOwnProperty('started') && updateData.started === false) {
+    console.log('[PF2E Visioner] Combat ended, resetting encounter filters in dialogs');
+    resetEncounterFiltersInDialogs();
+  }
+}
+
+/**
+ * Handle combat deletion - reset encounter filter
+ */
+function onDeleteCombat(combat, options, userId) {
+  console.log('[PF2E Visioner] Combat deleted, resetting encounter filters in dialogs');
+  resetEncounterFiltersInDialogs();
+}
+
+/**
+ * Reset encounter filters in all open dialogs
+ */
+function resetEncounterFiltersInDialogs() {
+  // Reset Hide dialog encounter filter
+  const hideDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'HidePreviewDialog');
+  hideDialogs.forEach(dialog => {
+    if (dialog.encounterOnly) {
+      console.log('[PF2E Visioner] Resetting encounter filter in Hide dialog');
+      dialog.encounterOnly = false;
+      
+      // Update the checkbox in the UI
+      const checkbox = dialog.element?.querySelector('input[data-action="toggleEncounterFilter"]');
+      if (checkbox) {
+        checkbox.checked = false;
+      }
+      
+      // Re-render the dialog to show all tokens
+      dialog.render({ force: true });
+    }
+  });
+  
+  // Reset Seek dialog encounter filter
+  const seekDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'SeekPreviewDialog');
+  seekDialogs.forEach(dialog => {
+    if (dialog.encounterOnly) {
+      console.log('[PF2E Visioner] Resetting encounter filter in Seek dialog');
+      dialog.encounterOnly = false;
+      
+      // Update the checkbox in the UI
+      const checkbox = dialog.element?.querySelector('input[data-action="toggleEncounterFilter"]');
+      if (checkbox) {
+        checkbox.checked = false;
+      }
+      
+      // Re-render the dialog to show all tokens
+      dialog.render({ force: true });
+    }
+  });
+  
+  // Reset Point Out dialog encounter filter if it exists
+  const pointOutDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'PointOutPreviewDialog');
+  pointOutDialogs.forEach(dialog => {
+    if (dialog.encounterOnly) {
+      console.log('[PF2E Visioner] Resetting encounter filter in Point Out dialog');
+      dialog.encounterOnly = false;
+      
+      // Update the checkbox in the UI
+      const checkbox = dialog.element?.querySelector('input[data-action="toggleEncounterFilter"]');
+      if (checkbox) {
+        checkbox.checked = false;
+      }
+      
+      // Re-render the dialog to show all tokens
+      dialog.render({ force: true });
+    }
+  });
 }

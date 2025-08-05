@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Sneak Action Dialog**: Complete automation for PF2E Sneak actions with preview and outcome management
+- **Create a Diversion Dialog**: Complete automation for PF2E Create a Diversion actions with preview and outcome management
 - **Token hover highlighting**: Hover over token rows in dialogs to highlight tokens on canvas
 - **Enhanced error handling**: Graceful handling of ephemeral effect cleanup errors
+- **Initiative-based effects**: Support for ephemeral effects that track combat initiative
 
 ### Improved
 - **Dialog styling consistency**: Unified text sizes, spacing, and layout across all action dialogs
@@ -18,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UI responsiveness**: Optimized dialog width and column sizing for better proportions
 - **Button state management**: Dynamic enabling/disabling based on actual changes from original state
 - **Visual feedback**: Enhanced state icons and selection indicators for better user experience
+- **Create a Diversion outcomes**: Fixed token images, centered action buttons, and added proper outcome text coloring
+- **Perception DC calculation**: Improved DC retrieval with multiple fallback paths for different PF2e system versions
 
 ### Technical
 - **ApplicationV2 compliance**: Proper use of built-in action system instead of manual event binding

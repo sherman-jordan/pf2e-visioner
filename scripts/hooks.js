@@ -13,7 +13,6 @@ import { registerSocket } from './socket.js';
  * Register all FoundryVTT hooks
  */
 export function registerHooks() {
-  Hooks.on('setup', onSetup);
   Hooks.on('ready', onReady);
   Hooks.on('controlToken', onControlToken);
   Hooks.on('getTokenHUDButtons', onGetTokenHUDButtons);
@@ -67,13 +66,6 @@ function setupAlternativeHUDButton() {
 }
 
 /**
- * Handle the setup hook
- */
-function onSetup() {
-  registerSocket();
-}
-
-/**
  * Handle the ready hook
  */
 function onReady() {
@@ -84,6 +76,8 @@ function onReady() {
   if (!game.settings.get('pf2e-visioner', 'useHudButton')) {
     setupFallbackHUDButton();
   }
+
+  registerSocket();
 }
 
 /**

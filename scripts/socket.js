@@ -1,8 +1,16 @@
-import { MODULE_ID } from "./constants";
+import { MODULE_ID } from "./constants.js";
+import { showNotification } from "./utils.js";
 
 let socket = null;
 
 export function registerSocket() {
+  if (typeof socketlib === "undefined") {
+    showNotification(
+      "PF2E_VISIONER.NOTIFICATIONS.NO_SOCKETLIB_INSTALLED",
+      "warn",
+    );
+    return;
+  }
   socket = socketlib.registerModule(MODULE_ID);
   socket.register("RefreshPerception", refreshLocalPerception);
 }
@@ -24,5 +32,5 @@ export function refreshLocalPerception() {
  * (will call refreshLocalPerception on local client)
  */
 export function refreshEveryonesPerception() {
-  socket.executeForEveryone("RefreshPerception");
+  if (socket) socket.executeForEveryone("RefreshPerception");
 }

@@ -4,6 +4,7 @@
 
 import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
+import { refreshEveryonesPerception } from './socket.js';
 
 /**
  * Get the visibility map for a token
@@ -60,6 +61,9 @@ export async function setVisibilityBetween(observer, target, state, options = {s
   } catch (error) {
     console.error('PF2E Visioner: Error updating off-guard effects:', error);
   }
+
+  // Tell everyone to refresh
+  refreshEveryonesPerception();
 }
 
 

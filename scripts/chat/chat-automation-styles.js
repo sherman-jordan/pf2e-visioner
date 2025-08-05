@@ -999,6 +999,39 @@ function getChatAutomationCSS() {
             color: white !important;
         }
         
+        /* Point Out Dialog Bulk Actions Header */
+        .point-out-preview-dialog-bulk-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255, 152, 0, 0.1);
+            border-radius: 6px;
+            border-top: 1px solid #ff9800;
+            gap: 20px;
+        }
+        
+        .point-out-preview-dialog-bulk-actions-info {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-primary, #f0f0f0);
+            flex: 1;
+        }
+        
+        .point-out-preview-dialog-changes-count,
+        .point-out-preview-dialog-total-count {
+            font-weight: 700;
+            color: #ff9800;
+        }
+        
+        .point-out-preview-dialog-bulk-actions-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: nowrap;
+            align-items: center;
+            margin-left: 20px;
+        }
+        
         /* Seek Dialog Table Headers - Blue Theme Override */
         .seek-results-table th {
             background: linear-gradient(135deg, #2c5aa0, #1e3a6f) !important;

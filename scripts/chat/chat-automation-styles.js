@@ -2107,7 +2107,7 @@ function getChatAutomationCSS() {
             background: linear-gradient(135deg, #17a2b8, #0d7377);
             border-radius: 8px;
             margin-bottom: 16px;
-            border-left: 4px solidrgb(37, 244, 251);
+            border-left: 4px solid rgb(37, 244, 251);
         }
         
         .diverter-image img {

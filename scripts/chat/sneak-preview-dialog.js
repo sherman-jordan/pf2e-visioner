@@ -1,7 +1,5 @@
 import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, setVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
-import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { discoverSneakObservers, analyzeSneakOutcome } from './sneak-logic.js';
 import { filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current sneak dialog

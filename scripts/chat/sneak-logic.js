@@ -39,8 +39,13 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
             continue;
         }
 
-        // Get the observer's Perception DC
-        const perceptionDC = token.actor.system.attributes?.perception?.dc?.value || 10;
+        // Get the observer's Perception DC - using robust path checking for different PF2e versions
+        const perceptionDC = token.actor?.system?.perception?.dc?.value || 
+                           token.actor?.system?.perception?.dc ||
+                           token.actor?.system?.attributes?.perception?.dc || 
+                           token.actor?.data?.data?.perception?.dc?.value || 
+                           token.actor?.data?.data?.attributes?.perception?.dc || 
+                           Math.floor(10 + token.actor?.system?.abilities?.wis?.mod || 0);
         
         observers.push({
             token: token,

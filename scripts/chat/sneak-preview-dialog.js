@@ -1,5 +1,6 @@
 import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, setVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
+import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current sneak dialog
@@ -382,11 +383,15 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         const effectiveNewState = outcome.overrideState || outcome.newVisibility;
         
         try {
-            // Apply the visibility change
-            // This also handles ephemeral effects through the setVisibilityBetween function
-            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
-            await setVisibilityBetween(app.sneakingToken, outcome.token, effectiveNewState);
-                    } catch (error) {
+            // Apply the visibility change - observer sees sneaking token with new state
+            await setVisibilityBetween(outcome.token, app.sneakingToken, effectiveNewState, {skipEphemeralUpdate: true});
+            
+            // For Sneak actions, also apply ephemeral effects where sneaking token gets effects against observers
+            // This matches Create a Diversion logic where the acting token gets effects against observers
+            if (['hidden', 'undetected'].includes(effectiveNewState)) {
+                await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, effectiveNewState, { durationRounds: 1 });
+            }
+        } catch (error) {
             console.warn('Error applying visibility changes:', error);
             // Continue execution even if visibility changes fail
         }
@@ -407,11 +412,12 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         if (!outcome) return;
 
         try {
-            // Revert to original visibility
-            // This also handles ephemeral effects through the setVisibilityBetween function
-            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
-            await setVisibilityBetween(app.sneakingToken, outcome.token, outcome.oldVisibility);
-                    } catch (error) {
+            // Revert to original visibility - observer sees sneaking token with original state
+            await setVisibilityBetween(outcome.token, app.sneakingToken, outcome.oldVisibility, {skipEphemeralUpdate: true});
+            
+            // Clean up ephemeral effects on the sneaking token by reverting its visibility of the observer
+            await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, outcome.oldVisibility, { durationRounds: 1 });
+        } catch (error) {
             console.warn('Error reverting visibility changes:', error);
             // Continue execution even if visibility changes fail
         }
@@ -443,11 +449,14 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         for (const outcome of changedOutcomes) {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             
-            // Apply the visibility change
-            // This also handles ephemeral effects through the setVisibilityBetween function
-            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
+            // Apply the visibility change - observer sees sneaking token with new state
             try {
-                await setVisibilityBetween(app.sneakingToken, outcome.token, effectiveNewState);
+                await setVisibilityBetween(outcome.token, app.sneakingToken, effectiveNewState, {skipEphemeralUpdate: true});
+                
+                // For Sneak actions, also apply ephemeral effects where sneaking token gets effects against observers
+                if (['hidden', 'undetected'].includes(effectiveNewState)) {
+                    await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, effectiveNewState, { durationRounds: 1 });
+                }
             } catch (error) {
                 console.warn('Error applying visibility changes for bulk apply:', error);
                 // Continue with other outcomes even if one fails
@@ -480,11 +489,12 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         });
 
         for (const outcome of changedOutcomes) {
-            // Revert to original visibility
-            // This also handles ephemeral effects through the setVisibilityBetween function
-            // For Sneak: The sneaking token (Adept) is the observer, the token in the row (test) is the target
+            // Revert to original visibility - observer sees sneaking token with original state
             try {
-                await setVisibilityBetween(app.sneakingToken, outcome.token, outcome.oldVisibility);
+                await setVisibilityBetween(outcome.token, app.sneakingToken, outcome.oldVisibility, {skipEphemeralUpdate: true});
+                
+                // Clean up ephemeral effects on the sneaking token
+                await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, outcome.oldVisibility, { durationRounds: 1 });
             } catch (error) {
                 console.warn('Error reverting visibility changes for bulk revert:', error);
                 // Continue with other outcomes even if one fails

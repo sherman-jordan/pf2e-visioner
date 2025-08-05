@@ -45,7 +45,7 @@ export function getVisibilityBetween(observer, target) {
  * @param {boolean} options.initiative - Boolean (default: null)
  * @returns {Promise} Promise that resolves when visibility is set
  */
-export async function setVisibilityBetween(observer, target, state, options = {}) {
+export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false}) {
   const visibilityMap = getVisibilityMap(observer);
   visibilityMap[target.document.id] = state;
   await setVisibilityMap(observer, visibilityMap);
@@ -54,7 +54,9 @@ export async function setVisibilityBetween(observer, target, state, options = {}
   
   // Update off-guard effects using ephemeral approach
   try {
-    await updateEphemeralEffectsForVisibility(observer, target, state, options);
+    if (!options.skipEphemeralUpdate) {
+      await updateEphemeralEffectsForVisibility(observer, target, state, options);
+    }
   } catch (error) {
     console.error('PF2E Visioner: Error updating off-guard effects:', error);
   }

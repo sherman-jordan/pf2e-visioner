@@ -78,7 +78,14 @@ function extractActionData(message) {
                     )) || (message.flavor?.toLowerCase().includes('hide') && !message.flavor?.toLowerCase().includes('create a diversion')));
     
     // Sneak detection - check context for skill checks with Sneak action
-    const isSneakAction = !isCreateADiversionAction && ((context?.type === 'skill-check' && (
+    // Exclude Avoid Notice which mentions Sneak but isn't a Sneak roll
+    const isAvoidNoticeAction = origin?.rollOptions?.includes('origin:item:avoid-notice') ||
+                               origin?.rollOptions?.includes('origin:item:slug:avoid-notice') ||
+                               context?.options?.includes('action:avoid-notice') ||
+                               message.content?.includes('Avoid Notice') ||
+                               message.flavor?.toLowerCase().includes('avoid notice');
+    
+    const isSneakAction = !isCreateADiversionAction && !isAvoidNoticeAction && ((context?.type === 'skill-check' && (
                         context.options?.includes('action:sneak') || 
                         context.slug === 'sneak'
                     )) || (message.flavor?.toLowerCase().includes('sneak') && !message.flavor?.toLowerCase().includes('create a diversion')));

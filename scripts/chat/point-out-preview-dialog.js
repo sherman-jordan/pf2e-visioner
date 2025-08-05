@@ -9,6 +9,7 @@ import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
 import { getPointOutTarget, discoverPointOutAllies, analyzePointOutOutcome } from './point-out-logic.js';
+import { refreshEveryonesPerception } from '../socket.js';
 
 // Store reference to current dialog (shared with SeekPreviewDialog)
 let currentPointOutDialog = null;
@@ -537,6 +538,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         } catch (error) { 
             console.warn(`${MODULE_TITLE}: Could not refresh token visuals:`, error); 
         }
+        refreshEveryonesPerception();
     }
     
     updateAllRowButtonsToApplied() {

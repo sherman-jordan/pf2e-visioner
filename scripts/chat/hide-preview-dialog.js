@@ -9,6 +9,7 @@ import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
 import { discoverHideObservers, analyzeHideOutcome } from './hide-logic.js';
+import { refreshEveryonesPerception } from '../socket.js';
 
 // Store reference to current hide dialog
 let currentHideDialog = null;
@@ -554,6 +555,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         // Update token visuals
         updateTokenVisuals(this.actorToken, [outcome.target]);
         updateEphemeralEffectsForVisibility(this.actorToken, [outcome.target]);
+        refreshEveryonesPerception();
         
         // Reset override state
         outcome.overrideState = null;
@@ -713,6 +715,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
                     updateTokenVisuals(change.target);
                 }
             });
+            refreshEveryonesPerception();
             
         } catch (error) {
             console.error(`${MODULE_TITLE}: Error applying hide visibility changes:`, error);

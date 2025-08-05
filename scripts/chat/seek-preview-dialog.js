@@ -9,6 +9,7 @@ import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
 import { discoverSeekTargets, analyzeSeekOutcome } from './seek-logic.js';
+import { refreshEveryonesPerception } from '../socket.js';
 
 // Store reference to current seek dialog
 let currentSeekDialog = null;
@@ -377,6 +378,7 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             // Update bulk action state and buttons
             app.bulkActionState = 'reverted';
             app.updateBulkActionButtons();
+            refreshEveryonesPerception();
                         
             // Don't close dialog - allow user to continue working
         } catch (error) {
@@ -559,6 +561,7 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         } catch (error) {
             ui.notifications.error(`${MODULE_TITLE}: Error refreshing token visuals.`);
         }
+        refreshEveryonesPerception();
     }
     
     /**

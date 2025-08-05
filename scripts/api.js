@@ -3,6 +3,7 @@
  */
 
 import { updateTokenVisuals } from './effects-coordinator.js';
+import { refreshEveryonesPerception } from './socket.js';
 import { getVisibilityBetween, setVisibilityBetween, showNotification } from './utils.js';
 import { TokenVisibilityManager } from './visibility-manager.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
@@ -214,6 +215,13 @@ export class Pf2eVisionerApi {
       console.error('Error updating ephemeral effects:', error);
       return false;
     }
+  }
+  
+  /**
+   * Request clients to refresh their canvas
+   */
+  static refreshEveryonesPerception() {
+    refreshEveryonesPerception();
   }
 
   /**

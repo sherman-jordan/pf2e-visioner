@@ -1,0 +1,111 @@
+{{!--
+  ApplicationV2 template for Hide Results Preview Dialog
+  Matches the visibility manager's design and styling
+--}}
+
+<div class="hide-preview-content">
+  {{!-- Hiding Token Information Panel --}}
+  <div class="hider-info">
+    <div class="hider-image">
+      <img src="{{actorToken.document.texture.src}}" alt="{{actorToken.name}}" />
+    </div>
+    <div class="hider-details">
+      <h3 class="hider-name">{{actorToken.name}}</h3>
+      <p class="hint">Attempting to hide from observers</p>
+    </div>
+  </div>
+
+  {{!-- Encounter Filter --}}
+  {{#if showEncounterFilter}}
+  <div class="encounter-filter-section">
+    <label class="encounter-filter-checkbox">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+    </label>
+  </div>
+  {{/if}}
+
+  {{!-- Results Table --}}
+  <div class="results-table-container">
+    <table class="visibility-table hide-results-table">
+      <thead>
+        <tr>
+          <th class="token-image">Token</th>
+          <th class="token-name">Name</th>
+          <th class="roll-result">Roll vs Perception DC</th>
+          <th class="outcome">Outcome</th>
+          <th class="visibility-change">Visibility Change</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each outcomes as |outcome|}}
+          <tr class="token-row" data-token-id="{{outcome.target.id}}">
+            <td class="token-image">
+              <img src="{{outcome.tokenImage}}" alt="{{outcome.target.name}}" width="28" height="28" />
+            </td>
+            <td class="token-name">
+              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+            </td>
+            <td class="roll-result">
+              <div class="roll-vs-dc">
+                <div class="roll-dc-line">
+                  <span class="roll-total">{{outcome.rollTotal}}</span>
+                  <span class="vs-text">vs DC</span>
+                  <span class="dc-value">{{outcome.dc}}</span>
+                </div>
+                <div class="margin-display">({{#if (gt outcome.margin 0)}}+{{/if}}{{outcome.margin}})</div>
+              </div>
+            </td>
+            <td class="outcome {{outcome.outcomeClass}}">
+              {{outcome.outcomeLabel}}
+            </td>
+            <td class="visibility-change">
+              <div class="visibility-change-inline">
+                <span class="state-icon" data-state="{{outcome.oldVisibility}}" title="{{outcome.oldVisibility}}">
+                  <i class="fas {{#if (eq outcome.oldVisibility "observed")}}fa-eye{{else if (eq outcome.oldVisibility "concealed")}}fa-cloud{{else if (eq outcome.oldVisibility "hidden")}}fa-eye-slash{{else}}fa-question{{/if}}" 
+                     style="color: {{#if (eq outcome.oldVisibility "observed")}}#4CAF50{{else if (eq outcome.oldVisibility "concealed")}}#FFC107{{else if (eq outcome.oldVisibility "hidden")}}#FF9800{{else}}#9E9E9E{{/if}}"></i>
+                </span>
+                <i class="fas fa-arrow-right visibility-arrow"></i>
+                <div class="override-icons">
+                  {{#each outcome.availableStates as |state|}}
+                    <span class="state-icon {{#if (eq state.value outcome.overrideState)}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
+                          data-state="{{state.value}}" data-token-id="{{../outcome.target.id}}" title="{{state.label}}">
+                      <i class="fas {{#if (eq state.value "observed")}}fa-eye{{else if (eq state.value "concealed")}}fa-cloud{{else if (eq state.value "hidden")}}fa-eye-slash{{else if (eq state.value "undetected")}}fa-ghost{{else}}fa-question{{/if}}" 
+                         style="color: {{#if (eq state.value "observed")}}#4CAF50{{else if (eq state.value "concealed")}}#FFC107{{else if (eq state.value "hidden")}}#FF9800{{else if (eq state.value "undetected")}}#F44336{{else}}#9E9E9E{{/if}}"></i>
+                    </span>
+                  {{/each}}
+                </div>
+              </div>
+            </td>
+            <td class="actions">
+              <div class="row-actions" style="display: flex;">
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility" disabled>
+                  <i class="fas fa-undo"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- Bulk Actions --}}
+  <div class="hide-preview-dialog-bulk-actions-header">
+    <div class="hide-preview-dialog-bulk-actions-info">
+      <span class="hide-preview-dialog-changes-count">{{changesCount}}</span> of <span class="hide-preview-dialog-total-count">{{totalCount}}</span> observers will have visibility changes.
+    </div>
+    <div class="hide-preview-dialog-bulk-actions-buttons">
+      <button type="button" class="hide-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+        <i class="fas fa-check-circle"></i> Apply All
+      </button>
+      <button type="button" class="hide-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+        <i class="fas fa-undo"></i> Revert All
+      </button>
+    </div>
+  </div>
+</div>

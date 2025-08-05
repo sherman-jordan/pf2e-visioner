@@ -68,14 +68,6 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: true
-  },
-  enableSeekAutomation: {
-    name: 'PF2E_VISIONER.SEEK_AUTOMATION.SETTING_NAME',
-    hint: 'PF2E_VISIONER.SEEK_AUTOMATION.SETTING_HINT',
-    scope: 'world',
-    config: true,
-    type: Boolean,
-    default: true
   }
 };
 

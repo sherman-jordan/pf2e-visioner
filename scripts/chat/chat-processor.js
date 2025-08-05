@@ -6,6 +6,7 @@
 import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { previewSeekResults } from './seek-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
+import { previewHideResults } from './hide-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
 const processedMessages = new Set();
@@ -18,14 +19,19 @@ const processedMessages = new Set();
  */
 export function onRenderChatMessage(message, html) {
     // Early returns for optimization
-    if (!game.user.isGM || !game.settings.get(MODULE_ID, 'enableSeekAutomation')) return;
-    
-    // Use modern message detection approach - check for both Seek and Point Out
+    if (!game.user.isGM) return;
+        
+    // Use modern message detection approach - check for Seek, Point Out, and Hide
     const actionData = extractActionData(message);
-    if (!actionData) return;
+    if (!actionData) {
+        return;
+    }
+    
     
     // Prevent duplicate processing using cache
-    if (processedMessages.has(message.id)) return;
+    if (processedMessages.has(message.id)) {
+        return;
+    }
     
     // Create and inject the automation interface
     injectAutomationUI(message, html, actionData);
@@ -33,7 +39,7 @@ export function onRenderChatMessage(message, html) {
 
 /**
  * Modern approach to extract action data from chat messages
- * Supports both Seek and Point Out actions
+ * Supports Seek, Point Out, and Hide actions
  * @param {ChatMessage} message - The chat message to analyze
  * @returns {Object|null} Action data or null if not a supported action
  */
@@ -57,11 +63,19 @@ function extractActionData(message) {
                         context.slug === 'seek'
                     )) || message.flavor?.toLowerCase().includes('seek');
     
-    // Early return if neither action is detected
-    if (!isSeekAction && !isPointOutAction) return null;
+    // Hide detection - check context for skill checks with Hide action
+    const isHideAction = (context?.type === 'skill-check' && (
+                        context.options?.includes('action:hide') || 
+                        context.slug === 'hide'
+                    )) || message.flavor?.toLowerCase().includes('hide');
     
-    // For Seek, we need rolls and token (check both token.object and speaker.token)
-    if (isSeekAction && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
+    // Early return if no supported action is detected
+    if (!isSeekAction && !isPointOutAction && !isHideAction) {
+        return null;
+    }
+    
+    // For Seek and Hide, we need rolls and token (check both token.object and speaker.token)
+    if ((isSeekAction || isHideAction) && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
     
     // For Point Out, we need token but not necessarily rolls
     if (isPointOutAction && !message?.token?.object && !message?.speaker?.token) return null;
@@ -84,6 +98,8 @@ function extractActionData(message) {
         actionType = 'seek';
     } else if (isPointOutAction) {
         actionType = 'point-out';
+    } else if (isHideAction) {
+        actionType = 'hide';
     } else {
         return null;
     }
@@ -185,15 +201,16 @@ function injectAutomationUI(message, html, actionData) {
 
 /**
  * Modern automation panel builder with enhanced UX
- * Creates accessible, feature-rich interface for Seek and Point Out
+ * Creates accessible, feature-rich interface for Seek, Point Out, and Hide
  * @param {Object} actionData - The action data
  * @returns {string} Complete automation panel HTML
  */
 function buildAutomationPanel(actionData) {
     const isSeek = actionData.actionType === 'seek';
     const isPointOut = actionData.actionType === 'point-out';
+    const isHide = actionData.actionType === 'hide';
     
-    let label, tooltip, title, icon, actionName;
+    let label, tooltip, title, icon, actionName, buttonClass, panelClass;
     
     if (isSeek) {
         label = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS');
@@ -201,23 +218,35 @@ function buildAutomationPanel(actionData) {
         title = 'Seek Results Available';
         icon = 'fas fa-search';
         actionName = 'open-seek-results';
+        buttonClass = 'visioner-btn-seek';
+        panelClass = 'seek-panel';
     } else if (isPointOut) {
         label = 'Open Point Out Results';
         tooltip = 'Preview and apply Point Out visibility changes';
         title = 'Point Out Results Available';
         icon = 'fas fa-hand-point-right';
         actionName = 'open-point-out-results';
+        buttonClass = 'visioner-btn-point-out';
+        panelClass = 'point-out-panel';
+    } else if (isHide) {
+        label = 'Open Hide Results';
+        tooltip = 'Preview and apply Hide visibility changes';
+        title = 'Hide Results Available';
+        icon = 'fas fa-eye-slash';
+        actionName = 'open-hide-results';
+        buttonClass = 'visioner-btn-hide';
+        panelClass = 'hide-panel';
     }
     
     return `
-        <div class="pf2e-visioner-automation-panel" data-message-id="${actionData.messageId}" data-action-type="${actionData.actionType}">
+        <div class="pf2e-visioner-automation-panel ${panelClass}" data-message-id="${actionData.messageId}" data-action-type="${actionData.actionType}">
             <div class="automation-header">
-                <i class="fas fa-search-location"></i>
+                <i class="${icon}"></i>
                 <span class="automation-title">${title}</span>
             </div>
             <div class="automation-actions">
                 <button type="button" 
-                        class="visioner-btn visioner-btn-primary" 
+                        class="visioner-btn ${buttonClass}" 
                         data-action="${actionName}"
                         title="${tooltip}">
                     <i class="${icon}"></i> ${label}
@@ -235,6 +264,7 @@ function buildAutomationPanel(actionData) {
  * @param {Object} actionData - The action data
  */
 function bindAutomationEvents(panel, message, actionData) {
+    
     // Use event delegation for better performance
     panel.on('click', '[data-action]', async (event) => {
         event.preventDefault();
@@ -243,20 +273,15 @@ function bindAutomationEvents(panel, message, actionData) {
         const action = event.currentTarget.dataset.action;
         const button = $(event.currentTarget);
         
+        
         // Prevent double-clicks
-        if (button.hasClass('processing')) return;
+        if (button.hasClass('processing')) {
+            return;
+        }
         
         try {
             button.addClass('processing').prop('disabled', true);
-            
-            switch (action) {
-                case 'open-seek-results':
-                    await previewActionResults(actionData);
-                    break;
-                case 'open-point-out-results':
-                    await previewActionResults(actionData);
-                    break;
-            }
+            await previewActionResults(actionData);
         } catch (error) {
             console.error(`${MODULE_TITLE}: Automation error:`, error);
             ui.notifications.error(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.ERROR_PROCESSING')}`);
@@ -267,15 +292,20 @@ function bindAutomationEvents(panel, message, actionData) {
 }
 
 /**
- * Unified preview function for both Seek and Point Out results
+ * Unified preview function for Seek, Point Out, and Hide results
  * Shows a dialog with potential outcomes
  * @param {Object} actionData - The action data
  */
 async function previewActionResults(actionData) {
+    
     if (actionData.actionType === 'seek') {
         return await previewSeekResults(actionData);
     } else if (actionData.actionType === 'point-out') {
         return await previewPointOutResults(actionData);
+    } else if (actionData.actionType === 'hide') {
+        return await previewHideResults(actionData);
+    } else {
+        console.warn('[Chat Processor] Unknown action type:', actionData.actionType);
     }
 }
 

@@ -366,7 +366,6 @@ async function onTokenDeleted() {
 function onUpdateCombat(combat, updateData, options, userId) {
   // Check if combat has ended (started: false)
   if (updateData.hasOwnProperty('started') && updateData.started === false) {
-    console.log('[PF2E Visioner] Combat ended, resetting encounter filters in dialogs');
     resetEncounterFiltersInDialogs();
   }
 }
@@ -375,7 +374,6 @@ function onUpdateCombat(combat, updateData, options, userId) {
  * Handle combat deletion - reset encounter filter
  */
 function onDeleteCombat(combat, options, userId) {
-  console.log('[PF2E Visioner] Combat deleted, resetting encounter filters in dialogs');
   resetEncounterFiltersInDialogs();
 }
 
@@ -387,7 +385,6 @@ function resetEncounterFiltersInDialogs() {
   const hideDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'HidePreviewDialog');
   hideDialogs.forEach(dialog => {
     if (dialog.encounterOnly) {
-      console.log('[PF2E Visioner] Resetting encounter filter in Hide dialog');
       dialog.encounterOnly = false;
       
       // Update the checkbox in the UI
@@ -405,7 +402,6 @@ function resetEncounterFiltersInDialogs() {
   const seekDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'SeekPreviewDialog');
   seekDialogs.forEach(dialog => {
     if (dialog.encounterOnly) {
-      console.log('[PF2E Visioner] Resetting encounter filter in Seek dialog');
       dialog.encounterOnly = false;
       
       // Update the checkbox in the UI
@@ -423,7 +419,6 @@ function resetEncounterFiltersInDialogs() {
   const pointOutDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'PointOutPreviewDialog');
   pointOutDialogs.forEach(dialog => {
     if (dialog.encounterOnly) {
-      console.log('[PF2E Visioner] Resetting encounter filter in Point Out dialog');
       dialog.encounterOnly = false;
       
       // Update the checkbox in the UI

@@ -58,7 +58,7 @@
       "PROCESSING": "Processing Seek results...",
       "PREVIEW_TITLE": "Seek Results Preview",
       "PREVIEW_HINT": "Seek action results analysis",
-      "ROLL_VS_DC": "Roll vs DC",
+      "ROLL_VS_DC": "Roll vs Stealth DC",
       "OUTCOME": "Outcome",
       "VISIBILITY_CHANGE": "Visibility Change",
       "OPEN_RESULTS": "Open Seek Results",
@@ -66,6 +66,27 @@
       "ENCOUNTER_ONLY": "Show only encounter tokens",
       "SETTING_NAME": "Enable Seek Automation",
       "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes"
+    },
+    "HIDE_AUTOMATION": {
+      "BUTTON_APPLY": "Apply Hide Results",
+      "BUTTON_PREVIEW": "Preview Results",
+      "BUTTON_PROCESSED": "Results Applied",
+      "BUTTON_TOOLTIP": "Apply visibility changes based on Hide results",
+      "NO_OBSERVERS": "No observers found for {name}'s Hide action",
+      "NO_CHANGES": "No visibility changes needed for {name}'s Hide action",
+      "RESULTS_APPLIED": "Hide automation applied changes: {changes}",
+      "ERROR_PROCESSING": "Error applying Hide results. Check console for details.",
+      "PROCESSING": "Processing Hide results...",
+      "PREVIEW_TITLE": "Hide Results Preview",
+      "PREVIEW_HINT": "Hide action results analysis",
+      "ROLL_VS_DC": "Roll vs Perception DC",
+      "OUTCOME": "Outcome",
+      "VISIBILITY_CHANGE": "Visibility Change",
+      "OPEN_RESULTS": "Open Hide Results",
+      "OPEN_RESULTS_TOOLTIP": "Open the Hide results dialog to apply individual or bulk visibility changes",
+      "ENCOUNTER_ONLY": "Show only encounter tokens",
+      "SETTING_NAME": "Enable Hide Automation",
+      "SETTING_HINT": "Automatically add buttons to Hide chat messages for applying visibility changes"
     },
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {
@@ -79,19 +100,6 @@
       "USE_HUD_BUTTON": {
         "name": "Use Token HUD Button",
         "hint": "When enabled, adds a visibility button to the token HUD. When disabled, uses a floating button when tokens are selected."
-      },
-      "OFF_GUARD_METHOD": {
-        "name": "Off-Guard Automation Method",
-        "hint": "Choose the method for applying off-guard conditions when attackers are hidden/undetected. Optimized (recommended) uses one consolidated effect per attacker with multiple rules. EphemeralEffect creates individual effects per target. Hybrid uses a combination of cloned actors and real conditions.",
-        "choices": {
-          "optimized": "Optimized (Recommended)",
-          "ephemeral": "EphemeralEffect",
-          "hybrid": "Hybrid (Legacy)"
-        }
-      },
-      "ENABLE_SEEK_AUTOMATION": {
-        "name": "Enable Seek Action Automation",
-        "hint": "When enabled, adds buttons to Seek action chat messages that automatically apply visibility changes based on the roll results vs target Stealth DCs."
       }
     },
     "UI": {

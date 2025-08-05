@@ -30,16 +30,34 @@ export function injectChatAutomationStyles() {
  */
 function getChatAutomationCSS() {
     return `
-        /* Automation Panel Styles */
+        /* Automation Panel Styles - Base */
         .pf2e-visioner-automation-panel {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border: 2px solid #007bff;
             border-radius: 8px;
             margin: 12px 0 8px 0;
             padding: 12px;
-            box-shadow: 0 4px 8px rgba(0,123,255,0.15);
             position: relative;
             z-index: 10;
+        }
+        
+        /* Seek Panel - Blue Theme */
+        .pf2e-visioner-automation-panel.seek-panel {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 2px solid #2c5aa0;
+            box-shadow: 0 4px 8px rgba(44, 90, 160, 0.15);
+        }
+        
+        /* Point Out Panel - Orange Theme */
+        .pf2e-visioner-automation-panel.point-out-panel {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border: 2px solid #ff9800;
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.15);
+        }
+        
+        /* Hide Panel - Purple Theme */
+        .pf2e-visioner-automation-panel.hide-panel {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+            border: 2px solid #8e24aa;
+            box-shadow: 0 4px 8px rgba(142, 36, 170, 0.15);
         }
         
         .automation-header {
@@ -78,6 +96,22 @@ function getChatAutomationCSS() {
             color: white;
         }
         
+        /* Action-Specific Button Styles */
+        .visioner-btn-seek {
+            background: linear-gradient(135deg, #2c5aa0, #1e3a6f);
+            color: white;
+        }
+        
+        .visioner-btn-point-out {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+        }
+        
+        .visioner-btn-hide {
+            background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+            color: white;
+        }
+        
         .visioner-btn:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -107,6 +141,240 @@ function getChatAutomationCSS() {
             padding: 0;
             background: var(--color-bg-primary, #2a2a2a);
             color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        /* Hide Preview Dialog Styles */
+        .hide-preview-dialog {
+            min-width: 600px;
+        }
+        
+        .hide-preview-dialog .window-header {
+            background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
+            color: white;
+            border-bottom: 2px solid #6a1b9a;
+        }
+        
+        .hide-preview-dialog .window-header .window-title {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .hide-preview-dialog .window-header .header-button {
+            color: white;
+        }
+        
+        .hide-preview-dialog .window-content {
+            padding: 0;
+            background: var(--color-bg-primary, #2a2a2a);
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        .hide-preview-content {
+            padding: 12px;
+            background: var(--color-bg-primary, #2a2a2a);
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        .hider-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            padding: 12px;
+            background: var(--color-bg-option, rgba(142, 36, 170, 0.15));
+            border-radius: 6px;
+            border-left: 4px solid #8e24aa;
+        }
+        
+        .hider-image img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #8e24aa;
+            margin-right: 12px;
+        }
+        
+        .hider-details {
+            flex: 1;
+        }
+        
+        .hider-name {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #8e24aa;
+        }
+        
+        .hide-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        .hide-results-table th {
+            background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .hide-results-table td {
+            padding: 12px 8px;
+            background: var(--color-bg-primary, #2a2a2a);
+            vertical-align: middle;
+        }
+        
+        .hide-results-table tr:nth-child(even) td {
+            background: var(--color-bg-option, rgba(142, 36, 170, 0.05));
+        }
+
+        
+        /* Hide Dialog Visibility Change Column */
+        .hide-results-table .visibility-change {
+            text-align: center;
+            width: 115px;
+            min-width: 115px;
+            padding: 8px 12px;
+        }
+        
+        /* Hide Dialog Actions Column */
+        .hide-results-table .actions {
+            text-align: center;
+            width: 100px;
+            padding: 12px;
+        }
+        
+        .hide-results-table .row-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        
+        /* Hide Dialog Outcome Styling */
+        .hide-results-table .outcome {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .hide-results-table thead .outcome {
+            color: inherit; /* Use default header text color */
+        }
+        
+        .hide-results-table tbody td.outcome.critical-success {
+            color: #00b050; /* Green */
+        }
+        
+        .hide-results-table tbody td.outcome.success {
+            color: #4a9eff; /* Blue */
+        }
+        
+        .hide-results-table tbody td.outcome.failure {
+            color: #ffc107; /* Yellow/orange */
+        }
+        
+        .hide-results-table tbody td.outcome.critical-failure {
+            color: #f44336; /* Red */
+        }
+        
+        /* Hide Dialog Roll vs DC Styling */
+        .hide-results-table .roll-vs-dc {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .hide-results-table .roll-result {
+            text-align: center;
+        }
+        
+        .hide-results-table .roll-dc-line {
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .hide-results-table .vs-text {
+            color: var(--color-text-primary, #f0f0f0);
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .hide-results-table .margin-display {
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 2px;
+            display: block;
+            line-height: 1.2;
+        }
+        
+        /* Hide Dialog Roll Total Styling - Blue like Seek */
+        .hide-results-table .roll-total {
+            color: #29b6f6 !important;
+            font-weight: bold !important;
+            font-size: 16px;
+            line-height: 1.2;
+        }
+        
+        /* Hide Dialog DC Number Styling - Red like Seek */
+        .hide-results-table .dc-value {
+            color: #f44336 !important;
+            font-weight: bold !important;
+            font-size: 16px;
+            line-height: 1.2;
+        }
+        
+        /* Hide Dialog Bulk Action Buttons */
+        .hide-preview-dialog-bulk-action-btn {
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            border-radius: 4px !important;
+            font-weight: 500 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.apply-all {
+            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+            color: white !important;
+            border: 1px solid #1e7e34 !important;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
+            background: linear-gradient(135deg, #218838, #1c7430) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.revert-all {
+            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            color: white !important;
+            border: 1px solid #5a6268 !important;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5a6268, #545b62) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3) !important;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.revert-all:disabled {
+            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
         }
         
         .seek-preview-content {
@@ -170,7 +438,8 @@ function getChatAutomationCSS() {
         
         .seek-results-table th {
             padding: 8px 6px;
-            text-align: left;
+            text-align: center;
+            width: 80px;
             font-weight: bold;
             color: var(--color-text-primary, #f0f0f0);
             border-bottom: 2px solid var(--color-border-light-primary, #555);
@@ -179,6 +448,7 @@ function getChatAutomationCSS() {
         
         .seek-results-table td {
             padding: 6px;
+            text-align: center;
             border-bottom: 1px solid var(--color-border-light-tertiary, #444);
             vertical-align: middle;
             background: var(--color-bg-primary, #2a2a2a);
@@ -453,11 +723,25 @@ function getChatAutomationCSS() {
         
         .point-out-results-table {
             width: 100%;
+            margin: 0px;
             border-collapse: collapse;
             font-size: 11px;
             background: var(--color-bg-primary, #2a2a2a);
             color: var(--color-text-primary, #f0f0f0);
             table-layout: fixed;
+        }
+
+        .point-out-results-table th {
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--color-text-primary, #f0f0f0);
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.1));
+        }
+        
+        .point-out-results-table td {
+            vertical-align: middle;
+            text-align: center;
         }
         
         /* Point Out Dialog Visibility Change Layout */
@@ -837,6 +1121,222 @@ function getChatAutomationCSS() {
         
         .encounter-filter-checkbox:hover .encounter-filter-label {
             color: var(--color-text-highlight, #ffffff);
+        }
+        
+        /* Hide Preview Dialog Styles - Purple Theme */
+        .hide-preview-dialog {
+            min-width: 600px;
+        }
+        
+        .hide-preview-dialog .window-header {
+            background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
+            color: white;
+            border-bottom: 2px solid #6a1b9a;
+        }
+        
+        .hide-preview-dialog .window-header .window-title {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .hide-preview-dialog .window-header .header-button {
+            color: white;
+        }
+        
+        .hide-preview-dialog .window-content {
+            padding: 0;
+            background: var(--color-bg-primary, #2a2a2a);
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        .hide-preview-content {
+            padding: 12px;
+            background: var(--color-bg-primary, #2a2a2a);
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        .hider-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            padding: 12px;
+            background: var(--color-bg-option, rgba(142, 36, 170, 0.15));
+            border-radius: 6px;
+            border-left: 4px solid #8e24aa;
+        }
+        
+        .hider-image img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #8e24aa;
+            margin-right: 12px;
+        }
+        
+        .hiding-name {
+            margin: 0 0 4px 0;
+            color: var(--color-text-primary, #f0f0f0);
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .hide-results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-bg-primary, #2a2a2a);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--color-border-light-primary, #555);
+        }
+        
+        .hide-results-table th {
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.1));
+            color: var(--color-text-primary, #f0f0f0);
+            padding: 8px 6px;
+            width: 80px;
+            min-width: 80px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            border-bottom: 1px solid var(--color-border-light-primary, #555);
+        }
+        
+        .hide-results-table td {
+            padding: 6px;
+            border-bottom: 1px solid var(--color-border-light-tertiary, #444);
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .hide-results-table tr:hover {
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
+        }
+        
+        /* Hide Dialog Visibility Change Inline Layout */
+        .visibility-change-inline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .visibility-change-inline .visibility-arrow {
+            color: #9e9e9e;
+            margin: 0 4px;
+        }
+        
+        .visibility-change-inline .no-change-indicator {
+            color: #9e9e9e;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        
+        .visibility-change-inline .override-icons {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .visibility-change-inline .state-icon {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+        
+        .visibility-change-inline .state-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .visibility-change-inline .state-icon.selected {
+            opacity: 1;
+            transform: scale(1.1);
+            text-shadow: 0 0 8px currentColor;
+        }
+        
+        /* Hide Dialog Bulk Action Buttons */
+        .hide-preview-dialog-bulk-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
+            border-top: 1px solid var(--color-border-light-primary, #555);
+            margin-top: 12px;
+        }
+        
+        .hide-preview-dialog-bulk-actions-info {
+            color: var(--color-text-primary, #f0f0f0);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .hide-preview-dialog-changes-count {
+            font-weight: bold;
+            color: var(--color-text-highlight, #ffffff);
+        }
+        
+        .hide-preview-dialog-total-count {
+            font-weight: bold;
+        }
+        
+        .hide-preview-dialog-bulk-actions-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn {
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.1));
+            color: var(--color-text-primary, #f0f0f0);
+            border: 1px solid var(--color-border-light-primary, #555);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 100px;
+            justify-content: center;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn:hover:not(:disabled) {
+            background: var(--color-bg-btn-hover, rgba(255, 255, 255, 0.2));
+            border-color: var(--color-border-highlight, #777);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .hide-preview-dialog-bulk-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--color-bg-disabled, #444);
+            border-color: var(--color-border-disabled, #666);
+            color: var(--color-text-disabled, #888);
+            transform: none;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.apply-all {
+            background: #8e24aa;
+            border-color: #8e24aa;
+            color: white;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
+            background: #7b1fa2;
+            border-color: #7b1fa2;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.revert-all {
+            background: #ff9800;
+            border-color: #ff9800;
+            color: white;
+        }
+        
+        .hide-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
+            background: #e68900;
+            border-color: #e68900;
         }
     `;
 }

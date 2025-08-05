@@ -5,7 +5,26 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2025-01-31
+## [0.2.0] - 2025-08-05
+
+### Added
+- **Sneak Action Dialog**: Complete automation for PF2E Sneak actions with preview and outcome management
+- **Token hover highlighting**: Hover over token rows in dialogs to highlight tokens on canvas
+- **Enhanced error handling**: Graceful handling of ephemeral effect cleanup errors
+
+### Improved
+- **Dialog styling consistency**: Unified text sizes, spacing, and layout across all action dialogs
+- **Token image presentation**: Removed unnecessary tooltips and borders from token images in tables
+- **UI responsiveness**: Optimized dialog width and column sizing for better proportions
+- **Button state management**: Dynamic enabling/disabling based on actual changes from original state
+- **Visual feedback**: Enhanced state icons and selection indicators for better user experience
+
+### Technical
+- **ApplicationV2 compliance**: Proper use of built-in action system instead of manual event binding
+- **Error resilience**: Try-catch blocks around visibility operations to prevent dialog crashes
+- **Code organization**: Improved separation of concerns between dialog logic and template rendering
+
+## [0.1.x] - 2025-01-31
 
 ### Fixed
 - Resolved circular dependency issue causing "Cannot use import statement outside a module" error

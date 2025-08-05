@@ -378,8 +378,8 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     }
     
     updateBulkActionButtons() {
-        const applyAllButton = this.element.querySelector('.hide-preview-dialog-bulk-action-btn[data-action="applyAll"]');
-        const revertAllButton = this.element.querySelector('.hide-preview-dialog-bulk-action-btn[data-action="revertAll"]');
+        const applyAllButton = this.element.querySelector('.bulk-action-btn[data-action="applyAll"]');
+        const revertAllButton = this.element.querySelector('.bulk-action-btn[data-action="revertAll"]');
         
         if (!applyAllButton || !revertAllButton) return;
         
@@ -401,7 +401,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             case 'applied':
                 // Only Revert All available after applying
                 applyAllButton.disabled = true;
-                applyAllButton.innerHTML = '<i class="fas fa-check"></i> Applied';
+                applyAllButton.innerHTML = '<i class="fas fa-check-circle"></i> Applied';
                 revertAllButton.disabled = false;
                 revertAllButton.innerHTML = '<i class="fas fa-undo"></i> Revert All';
                 break;

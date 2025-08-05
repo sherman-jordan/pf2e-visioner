@@ -593,8 +593,8 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
     }
     
     updateBulkActionButtons() {
-        const applyAllButton = this.element.querySelector('.point-out-preview-dialog-bulk-action-btn[data-action="applyAll"]');
-        const revertAllButton = this.element.querySelector('.point-out-preview-dialog-bulk-action-btn[data-action="revertAll"]');
+        const applyAllButton = this.element.querySelector('.bulk-action-btn[data-action="applyAll"]');
+        const revertAllButton = this.element.querySelector('.bulk-action-btn[data-action="revertAll"]');
         
         if (applyAllButton && revertAllButton) {
             switch (this.bulkActionState) {

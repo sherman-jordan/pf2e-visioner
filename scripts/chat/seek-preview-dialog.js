@@ -124,7 +124,6 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             'observed': { icon: 'fas fa-eye', color: '#28a745', label: 'Observed' },
             'hidden': { icon: 'fas fa-eye-slash', color: '#ffc107', label: 'Hidden' },
             'undetected': { icon: 'fas fa-ghost', color: '#dc3545', label: 'Undetected' },
-            'concealed': { icon: 'fas fa-cloud', color: '#6c757d', label: 'Concealed' }
         };
         
         // Prepare outcomes for template
@@ -591,8 +590,8 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
      * Update bulk action button states based on current bulk action state
      */
     updateBulkActionButtons() {
-        const applyAllButton = this.element.querySelector('.seek-preview-dialog-bulk-action-btn[data-action="applyAll"]');
-        const revertAllButton = this.element.querySelector('.seek-preview-dialog-bulk-action-btn[data-action="revertAll"]');
+        const applyAllButton = this.element.querySelector('.bulk-action-btn[data-action="applyAll"]');
+        const revertAllButton = this.element.querySelector('.bulk-action-btn[data-action="revertAll"]');
         
         if (applyAllButton && revertAllButton) {
             switch (this.bulkActionState) {

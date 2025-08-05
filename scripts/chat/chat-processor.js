@@ -3,10 +3,11 @@
  * Provides intelligent visibility resolution for Seek actions
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
+import { MODULE_TITLE } from '../constants.js';
 import { previewSeekResults } from './seek-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
 import { previewHideResults } from './hide-logic.js';
+import { previewSneakResults } from './sneak-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
 const processedMessages = new Set();
@@ -20,8 +21,8 @@ const processedMessages = new Set();
 export function onRenderChatMessage(message, html) {
     // Early returns for optimization
     if (!game.user.isGM) return;
-        
-    // Use modern message detection approach - check for Seek, Point Out, and Hide
+    
+    // Use modern message detection approach - check for Seek, Point Out, Hide, and Sneak
     const actionData = extractActionData(message);
     if (!actionData) {
         return;
@@ -69,13 +70,19 @@ function extractActionData(message) {
                         context.slug === 'hide'
                     )) || message.flavor?.toLowerCase().includes('hide');
     
+    // Sneak detection - check context for skill checks with Sneak action
+    const isSneakAction = (context?.type === 'skill-check' && (
+                        context.options?.includes('action:sneak') || 
+                        context.slug === 'sneak'
+                    )) || message.flavor?.toLowerCase().includes('sneak');
+    
     // Early return if no supported action is detected
-    if (!isSeekAction && !isPointOutAction && !isHideAction) {
+    if (!isSeekAction && !isPointOutAction && !isHideAction && !isSneakAction) {
         return null;
     }
     
-    // For Seek and Hide, we need rolls and token (check both token.object and speaker.token)
-    if ((isSeekAction || isHideAction) && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
+    // For Seek, Hide, and Sneak, we need rolls and token (check both token.object and speaker.token)
+    if ((isSeekAction || isHideAction || isSneakAction) && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
     
     // For Point Out, we need token but not necessarily rolls
     if (isPointOutAction && !message?.token?.object && !message?.speaker?.token) return null;
@@ -100,6 +107,8 @@ function extractActionData(message) {
         actionType = 'point-out';
     } else if (isHideAction) {
         actionType = 'hide';
+    } else if (isSneakAction) {
+        actionType = 'sneak';
     } else {
         return null;
     }
@@ -209,6 +218,7 @@ function buildAutomationPanel(actionData) {
     const isSeek = actionData.actionType === 'seek';
     const isPointOut = actionData.actionType === 'point-out';
     const isHide = actionData.actionType === 'hide';
+    const isSneak = actionData.actionType === 'sneak';
     
     let label, tooltip, title, icon, actionName, buttonClass, panelClass;
     
@@ -236,6 +246,14 @@ function buildAutomationPanel(actionData) {
         actionName = 'open-hide-results';
         buttonClass = 'visioner-btn-hide';
         panelClass = 'hide-panel';
+    } else if (isSneak) {
+        label = 'Open Sneak Results';
+        tooltip = 'Preview and apply Sneak visibility changes';
+        title = 'Sneak Results Available';
+        icon = 'fas fa-user-ninja';
+        actionName = 'open-sneak-results';
+        buttonClass = 'visioner-btn-sneak';
+        panelClass = 'sneak-panel';
     }
     
     return `
@@ -304,6 +322,8 @@ async function previewActionResults(actionData) {
         return await previewPointOutResults(actionData);
     } else if (actionData.actionType === 'hide') {
         return await previewHideResults(actionData);
+    } else if (actionData.actionType === 'sneak') {
+        return await previewSneakResults(actionData);
     } else {
         console.warn('[Chat Processor] Unknown action type:', actionData.actionType);
     }

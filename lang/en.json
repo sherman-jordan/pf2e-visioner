@@ -88,6 +88,27 @@
       "SETTING_NAME": "Enable Hide Automation",
       "SETTING_HINT": "Automatically add buttons to Hide chat messages for applying visibility changes"
     },
+    "SNEAK_AUTOMATION": {
+      "BUTTON_APPLY": "Apply Sneak Results",
+      "BUTTON_PREVIEW": "Preview Results",
+      "BUTTON_PROCESSED": "Results Applied",
+      "BUTTON_TOOLTIP": "Apply visibility changes based on Sneak results",
+      "NO_OBSERVERS": "No observers found for {name}'s Sneak action",
+      "NO_CHANGES": "No visibility changes needed for {name}'s Sneak action",
+      "RESULTS_APPLIED": "Sneak automation applied changes: {changes}",
+      "ERROR_PROCESSING": "Error applying Sneak results. Check console for details.",
+      "PROCESSING": "Processing Sneak results...",
+      "PREVIEW_TITLE": "Sneak Results Preview",
+      "PREVIEW_HINT": "Sneak action results analysis",
+      "ROLL_VS_DC": "Roll vs Perception DC",
+      "OUTCOME": "Outcome",
+      "VISIBILITY_CHANGE": "Visibility Change",
+      "OPEN_RESULTS": "Open Sneak Results",
+      "OPEN_RESULTS_TOOLTIP": "Open the Sneak results dialog to apply individual or bulk visibility changes",
+      "ENCOUNTER_ONLY": "Show only encounter tokens",
+      "SETTING_NAME": "Enable Sneak Automation",
+      "SETTING_HINT": "Automatically add buttons to Sneak chat messages for applying visibility changes"
+    },
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {
         "name": "Enable Hover Tooltips",

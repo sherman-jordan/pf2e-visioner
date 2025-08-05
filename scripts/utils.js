@@ -184,15 +184,6 @@ export function getSceneTargets(observer, encounterOnly = false) {
            isValidToken(token);
   });
   
-  // If there are targeted tokens, only return those (for targeted operations)
-  const targetedTokens = Array.from(game.user.targets).filter(token => 
-    token !== observer && token.actor && isValidToken(token)
-  );
-  
-  if (targetedTokens.length > 0) {
-    return targetedTokens;
-  }
-  
   // Apply encounter filtering if requested
   if (!encounterOnly) {
     return allTokens;

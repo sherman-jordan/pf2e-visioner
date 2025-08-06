@@ -213,13 +213,26 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
             
             // Only apply changes to filtered outcomes
             const changedOutcomes = filteredOutcomes.filter(change => change.hasActionableChange !== false);
-            await app.applyVisibilityChanges(app.actorToken, changedOutcomes);
+            
+            // Make sure each outcome has the targetToken property
+            const processedOutcomes = changedOutcomes.map(outcome => {
+                // If outcome doesn't have targetToken, try to get it from the original outcome
+                if (!outcome.targetToken) {
+                    const originalOutcome = app.outcomes.find(o => o.target.id === outcome.target.id);
+                    if (originalOutcome && originalOutcome.targetToken) {
+                        return { ...outcome, targetToken: originalOutcome.targetToken };
+                    }
+                }
+                return outcome;
+            });
+            
+            await app.applyVisibilityChanges(app.actorToken, processedOutcomes);
             
             app.bulkActionState = 'applied';
             app.updateBulkActionButtons();
             app.updateAllRowButtonsToApplied();
             
-            ui.notifications.info(`${MODULE_TITLE}: Applied Point Out changes for ${changedOutcomes.length} allies. Dialog remains open for further adjustments.`);
+            ui.notifications.info(`${MODULE_TITLE}: Applied Point Out changes for ${processedOutcomes.length} allies. Dialog remains open for further adjustments.`);
         } catch (error) {
             console.error(`${MODULE_TITLE}: Error applying Point Out changes:`, error);
             ui.notifications.error(`${MODULE_TITLE}: Failed to apply Point Out changes`);
@@ -240,62 +253,29 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
             const filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
             
             // Only revert changes to filtered outcomes
-            const changedOutcomes = filteredOutcomes.map(change => ({
-                ...change,
-                newVisibility: change.oldVisibility || change.currentVisibility // Revert to original state
-            }));
+            const changedOutcomes = filteredOutcomes.map(change => {
+                // Make sure to include targetToken in the change
+                const originalOutcome = app.outcomes.find(o => o.target.id === change.target.id);
+                return {
+                    ...change,
+                    targetToken: originalOutcome?.targetToken || change.targetToken,
+                    newVisibility: change.oldVisibility || change.currentVisibility // Revert to original state
+                };
+            });
+            
             await app.applyVisibilityChanges(app.actorToken, changedOutcomes);
             
             app.bulkActionState = 'reverted';
             app.updateBulkActionButtons();
             app.updateAllRowButtonsToReverted();
             
-            ui.notifications.info(`${MODULE_TITLE}: Reverted Point Out changes for ${changedOutcomes.length} allies. Dialog remains open for further adjustments.`);
         } catch (error) {
             console.error(`${MODULE_TITLE}: Error reverting Point Out changes:`, error);
             ui.notifications.error(`${MODULE_TITLE}: Failed to revert Point Out changes`);
         }
     }
     
-    static async _onApplyChange(event, button) {
-        const app = currentPointOutDialog;
-        if (!app) return;
-        
-        const tokenId = button.dataset.tokenId;
-        const outcome = app.outcomes.find(o => o.target.id === tokenId);
-        if (!outcome) return;
-        
-        try {
-            await app.applyVisibilityChanges(app.actorToken, [outcome]);
-            app.updateRowButtonsToApplied(tokenId);
-            ui.notifications.info(`${MODULE_TITLE}: Applied Point Out change for ${outcome.target.name}`);
-        } catch (error) {
-            console.error(`${MODULE_TITLE}: Error applying Point Out change:`, error);
-            ui.notifications.error(`${MODULE_TITLE}: Failed to apply Point Out change`);
-        }
-    }
-    
-    static async _onRevertChange(event, button) {
-        const app = currentPointOutDialog;
-        if (!app) return;
-        
-        const tokenId = button.dataset.tokenId;
-        const outcome = app.outcomes.find(o => o.target.id === tokenId);
-        if (!outcome) return;
-        
-        try {
-            const revertedOutcome = {
-                ...outcome,
-                newVisibility: outcome.oldVisibility || outcome.currentVisibility // Revert to original state
-            };
-            await app.applyVisibilityChanges(app.actorToken, [revertedOutcome]);
-            app.updateRowButtonsToReverted(tokenId);
-            ui.notifications.info(`${MODULE_TITLE}: Reverted Point Out change for ${outcome.target.name}`);
-        } catch (error) {
-            console.error(`${MODULE_TITLE}: Error reverting Point Out change:`, error);
-            ui.notifications.error(`${MODULE_TITLE}: Failed to revert Point Out change`);
-        }
-    }
+
     
     static async _onToggleEncounterFilter(event, button) {
         const app = currentPointOutDialog;
@@ -351,14 +331,18 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
             return;
         }
         
+        console.log('Applying Point Out change for outcome:', outcome);
+        
         // Create proper change object using override state
         const change = {
-            target: outcome.target,
+            target: outcome.target, // This is the ally token
+            targetToken: outcome.targetToken, // This is the token being pointed out
             newVisibility: outcome.overrideState || outcome.newVisibility,
             changed: true
         };
         
         try {
+            // Apply the change - the ally will see the pointed out token
             await app.applyVisibilityChanges(app.actorToken, [change]);
             
             // Update button states to show applied and enable revert
@@ -383,6 +367,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
             // Update the count display
             app.updateChangesCount();
         } catch (error) {
+            console.error(`${MODULE_TITLE}: Error applying change.`, error);
             ui.notifications.error(`${MODULE_TITLE}: Error applying change.`);
         }
     }
@@ -404,13 +389,13 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         
         const revertChange = {
             target: outcome.target,
+            targetToken: outcome.targetToken, // Include the targetToken for Point Out
             newVisibility: outcome.oldVisibility || outcome.currentVisibility,
             changed: true
         };
         
         try {
             await app.applyVisibilityChanges(app.actorToken, [revertChange]);
-            ui.notifications.info(`${MODULE_TITLE}: Reverted ${outcome.target.name} to original visibility`);
             
             // Update button states to show reverted and enable apply
             const tokenId = outcome.target.id;
@@ -434,6 +419,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
             // Update the count display
             app.updateChangesCount();
         } catch (error) {
+            console.error(`${MODULE_TITLE}: Error reverting change.`, error);
             ui.notifications.error(`${MODULE_TITLE}: Error reverting change.`);
         }
     }
@@ -482,53 +468,59 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
      * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
      */
     async applyVisibilityChanges(actor, changes, options = {}) {
-        // Default direction for Point Out is observer_to_target (ally sees target)
+        // For Point Out, we need to handle the special relationship:
+        // The ally token needs to see the pointed out token
         options.direction = options.direction || 'observer_to_target';
         
-        // Process Point Out specific changes
-        const processedChanges = await Promise.all(changes.map(async (change) => {
-            // For Point Out, we need to handle the special case where the target might be in targetToken
-            if (!change.target) {
-                console.error(`${MODULE_TITLE}: No target found in change:`, change);
-                return null;
-            }
-            
-            // Get target token - inline logic to avoid circular import
-            let targetToken = change.targetToken;
-            if (!targetToken) {
-                // Try to get from action data
-                if (this.actionData.target) {
-                    targetToken = this.actionData.target;
-                } else {
-                    // Try to get from message flags
-                    const targetData = this.actionData.message?.flags?.pf2e?.target;
-                    if (targetData?.token) {
-                        targetToken = canvas.tokens.get(targetData.token);
-                    } else if (game.user.targets && game.user.targets.size > 0) {
-                        // Try to get from current user targets
-                        targetToken = Array.from(game.user.targets)[0];
+        try {
+            // Process each change
+            const promises = changes.map(async (change) => {
+                try {
+                    if (!change.target) {
+                        console.error(`${MODULE_TITLE}: No ally token found in change:`, change);
+                        return;
                     }
+                    
+                    // Get the token being pointed out
+                    let pointedOutToken = change.targetToken;
+                    if (!pointedOutToken) {
+                        // Try to get from action data
+                        if (this.actionData.target) {
+                            pointedOutToken = this.actionData.target;
+                        } else if (game.user.targets && game.user.targets.size > 0) {
+                            // Try to get from current user targets
+                            pointedOutToken = Array.from(game.user.targets)[0];
+                        }
+                    }
+                    
+                    if (!pointedOutToken) {
+                        console.error(`${MODULE_TITLE}: Could not find pointed out token for Point Out`);
+                        return;
+                    }
+                    
+                    // The ally token (change.target) needs to see the pointed out token (pointedOutToken)
+                    // Use the shared applyVisibilityChanges function
+                    await applyVisibilityChanges(
+                        change.target, // The ally token (observer)
+                        [{ 
+                            target: pointedOutToken, // The pointed out token (target)
+                            newVisibility: change.overrideState || change.newVisibility,
+                            changed: true
+                        }],
+                        { direction: 'observer_to_target' }
+                    );
+                } catch (error) {
+                    console.error(`${MODULE_TITLE}: Error applying individual visibility change:`, error);
                 }
-            }
+            });
             
-            if (!targetToken) {
-                console.error(`${MODULE_TITLE}: Could not find target token for Point Out`);
-                return null;
-            }
-            
-            return {
-                target: change.target,
-                targetToken: targetToken,
-                newVisibility: change.newVisibility,
-                overrideState: change.overrideState
-            };
-        }));
-        
-        // Filter out null changes
-        const validChanges = processedChanges.filter(change => change !== null);
-        
-        // Use the shared implementation
-        return applyVisibilityChanges(actor, validChanges, options);
+            // Wait for all changes to complete
+            await Promise.all(promises);
+            return true;
+        } catch (error) {
+            console.error(`${MODULE_TITLE}: Error applying visibility changes:`, error);
+            return false;
+        }
     }
     
     updateAllRowButtonsToApplied() {

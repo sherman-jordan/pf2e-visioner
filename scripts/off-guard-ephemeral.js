@@ -5,41 +5,6 @@
 
 import { MODULE_ID } from './constants.js';
 
-/**
- * Initialize off-guard automation using EphemeralEffect Rule Elements
- */
-export function initializeEphemeralOffGuardHandling() {
-  // Use libWrapper to modify Check.roll for attack rolls
-  if (typeof libWrapper === 'function') {
-    if (game.pf2e?.Check?.roll) {
-      libWrapper.register(MODULE_ID, 'game.pf2e.Check.roll', handleCheckRollEphemeral, 'WRAPPER');
-
-    } else {
-      // Try again when PF2E is fully loaded
-      Hooks.once('pf2e.systemReady', () => {
-        if (game.pf2e?.Check?.roll) {
-          libWrapper.register(MODULE_ID, 'game.pf2e.Check.roll', handleCheckRollEphemeral, 'WRAPPER');
-
-        }
-      });
-    }
-  } else {
-    console.warn('PF2E Visioner: libWrapper not found, ephemeral off-guard effects will not work');
-  }
-  
-  // Clean up ephemeral effects when combat ends
-  Hooks.on('deleteCombat', cleanupEphemeralEffects);
-}
-
-/**
- * Handle Check.roll wrapper to add ephemeral off-guard effects for hidden/undetected targets
- * @param {Function} wrapped - The original Check.roll function
- * @param {...any} args - The function arguments
- */
-async function handleCheckRollEphemeral(wrapped, ...args) {
-    // Simply pass through to the original function without applying any effects
-    return wrapped(...args);
-}
 
 /**
  * Create an ephemeral effect for visibility states

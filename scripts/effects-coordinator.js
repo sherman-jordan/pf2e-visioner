@@ -4,8 +4,6 @@
  */
 
 import { VISIBILITY_STATES } from './constants.js';
-import { initializeEphemeralOffGuardHandling } from './off-guard-ephemeral.js';
-import { initializeTargeting } from './targeting.js';
 import { updateTokenVisuals } from './visual-effects.js';
 
 /**
@@ -82,18 +80,6 @@ export function resetTokenVisuals(token) {
   
   // Remove visual indicator (ring)
   removeVisualIndicator(token);
-}
-
-/**
- * Initialize all mechanical effects
- * This coordinates all the different effect systems
- */
-export function initializeMechanicalEffects() {
-  // Initialize off-guard handling using individual ephemeral effects
-
-  initializeEphemeralOffGuardHandling();
-  
-  initializeTargeting();
 }
 
 /**

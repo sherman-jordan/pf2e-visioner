@@ -170,6 +170,31 @@ export function markPanelComplete(panel, changes) {
 }
 
 /**
+ * Check if a token should be filtered based on ally filtering settings
+ * @param {Token} actingToken - The token performing the action
+ * @param {Token} targetToken - The token being evaluated
+ * @param {string} filterType - Type of filtering: 'enemies' (default), 'allies'
+ * @returns {boolean} True if the token should be filtered out (excluded)
+ */
+export function shouldFilterAlly(actingToken, targetToken, filterType = 'enemies') {
+    const ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
+    if (!ignoreAllies) return false;
+    
+    const actingTokenIsPC = actingToken.actor?.hasPlayerOwner || actingToken.actor?.type === 'character';
+    const targetTokenIsPC = targetToken.actor?.hasPlayerOwner || targetToken.actor?.type === 'character';
+    
+    if (filterType === 'enemies') {
+        // For enemy interactions (seek, hide, sneak, diversion): PCs target NPCs, NPCs target PCs
+        return actingTokenIsPC === targetTokenIsPC;
+    } else if (filterType === 'allies') {
+        // For ally interactions (point out): PCs help PCs, NPCs help NPCs
+        return actingTokenIsPC !== targetTokenIsPC;
+    }
+    
+    return false;
+}
+
+/**
  * Filter outcomes based on encounter filter setting
  * @param {Array} outcomes - Array of outcomes to filter
  * @param {boolean} encounterOnly - Whether to filter for encounter only

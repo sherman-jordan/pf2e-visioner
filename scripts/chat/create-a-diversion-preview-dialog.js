@@ -66,11 +66,10 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
                 isTokenInEncounter(outcome.observer)
             );
             
-            // Auto-uncheck if no encounter tokens found
+            // If no encounter tokens found, keep the filter active but show empty list
             if (processedOutcomes.length === 0) {
-                this.encounterOnly = false;
-                processedOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
+                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found for this action`);
+                // Keep processedOutcomes as empty array, don't reset to all outcomes
             }
         }
         

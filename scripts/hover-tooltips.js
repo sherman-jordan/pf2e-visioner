@@ -14,6 +14,21 @@ let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 
 /**
+ * Check if tooltips are allowed for the current user
+ * @returns {boolean} True if tooltips should be shown
+ */
+function canShowTooltips() {
+  // Always allow GM to see tooltips if hover tooltips are enabled
+  if (game.user.isGM) {
+    return game.settings.get(MODULE_ID, 'enableHoverTooltips');
+  }
+  
+  // For players, check both enableHoverTooltips and allowPlayerTooltips
+  return game.settings.get(MODULE_ID, 'enableHoverTooltips') && 
+         game.settings.get(MODULE_ID, 'allowPlayerTooltips');
+}
+
+/**
  * Set the tooltip mode
  * @param {string} mode - 'target' (default - how others see hovered token) or 'observer' (O key - how hovered token sees others)
  */
@@ -33,11 +48,11 @@ export function setTooltipMode(mode) {
 }
 
 /**
- * Initialize hover tooltip system (GM only)
+ * Initialize hover tooltip system
  */
 export function initializeHoverTooltips() {
-  // Only initialize hover tooltips for GM
-  if (!game.user.isGM) return;
+  // Only initialize hover tooltips if allowed for this user
+  if (!canShowTooltips()) return;
   
   // Add event listeners to canvas for token hover
   canvas.tokens.placeables.forEach(token => {
@@ -60,11 +75,8 @@ export function initializeHoverTooltips() {
  * @param {Token} hoveredToken - The token being hovered
  */
 function onTokenHover(hoveredToken) {
-  // Only GM should see hover tooltips for visibility management
-  if (!game.user.isGM) return;
-  
-  // Double check GM status for safety
-  if (game.user.role < CONST.USER_ROLES.GAMEMASTER) return;
+  // Only show hover tooltips if allowed for this user
+  if (!canShowTooltips()) return;
   
   if (currentHoveredToken === hoveredToken) return;
   
@@ -88,7 +100,7 @@ function onTokenHoverEnd(token) {
  * @param {boolean} highlight - Whether objects should be highlighted
  */
 export function onHighlightObjects(highlight) {
-  if (!game.user.isGM) return;
+  if (!canShowTooltips()) return;
   
   if (highlight) {
     // Alt key always uses target mode (how others see controlled tokens)
@@ -117,6 +129,11 @@ function showVisibilityIndicators(hoveredToken) {
   
   if (tooltipMode === 'observer') {
     // Observer mode (O key): Show how the hovered token sees others
+    // For players, only allow if they control the hovered token
+    if (!game.user.isGM && !hoveredToken.isOwner) {
+      return;
+    }
+    
     otherTokens.forEach(targetToken => {
       const visibilityMap = getVisibilityMap(hoveredToken);
       const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
@@ -127,14 +144,30 @@ function showVisibilityIndicators(hoveredToken) {
     });
   } else {
     // Target mode (default): Show how others see the hovered token
-    otherTokens.forEach(observerToken => {
-      const visibilityMap = getVisibilityMap(observerToken);
-      const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
+    // For players, only show visibility from their controlled tokens' perspective
+    if (!game.user.isGM) {
+      // Filter to only show visibility from controlled tokens
+      const controlledTokens = otherTokens.filter(t => t.isOwner);
       
-      if (visibilityState !== 'observed') {
-        addVisibilityIndicator(observerToken, observerToken, visibilityState, 'target');
-      }
-    });
+      controlledTokens.forEach(observerToken => {
+        const visibilityMap = getVisibilityMap(observerToken);
+        const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
+        
+        if (visibilityState !== 'observed') {
+          addVisibilityIndicator(observerToken, observerToken, visibilityState, 'target');
+        }
+      });
+    } else {
+      // GM sees all perspectives
+      otherTokens.forEach(observerToken => {
+        const visibilityMap = getVisibilityMap(observerToken);
+        const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
+        
+        if (visibilityState !== 'observed') {
+          addVisibilityIndicator(observerToken, observerToken, visibilityState, 'target');
+        }
+      });
+    }
   }
 }
 
@@ -144,6 +177,11 @@ function showVisibilityIndicators(hoveredToken) {
  * @param {string} forceMode - Optional mode to force ('observer' or 'target'), defaults to current tooltipMode
  */
 function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
+  // For players, only allow if they control the observer token
+  if (!game.user.isGM && !observerToken.isOwner) {
+    return;
+  }
+  
   // Get all other tokens in the scene
   const otherTokens = canvas.tokens.placeables.filter(t => 
     t !== observerToken && t.isVisible
@@ -166,15 +204,31 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
     });
   } else {
     // Target mode: Show how others see the observer token
-    otherTokens.forEach(otherToken => {
-      const visibilityMap = getVisibilityMap(otherToken);
-      const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
+    // For players, only show visibility from their controlled tokens' perspective
+    if (!game.user.isGM) {
+      const controlledTokens = otherTokens.filter(t => t.isOwner);
       
-      if (visibilityState !== 'observed') {
-        // Show indicator on the OTHER token, from the perspective of that token seeing the observer
-        addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target');
-      }
-    });
+      controlledTokens.forEach(otherToken => {
+        const visibilityMap = getVisibilityMap(otherToken);
+        const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
+        
+        if (visibilityState !== 'observed') {
+          // Show indicator on the OTHER token, from the perspective of that token seeing the observer
+          addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target');
+        }
+      });
+    } else {
+      // GM sees all perspectives
+      otherTokens.forEach(otherToken => {
+        const visibilityMap = getVisibilityMap(otherToken);
+        const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
+        
+        if (visibilityState !== 'observed') {
+          // Show indicator on the OTHER token, from the perspective of that token seeing the observer
+          addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target');
+        }
+      });
+    }
   }
 }
 

@@ -3,13 +3,12 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { setVisibilityMap, getVisibilityMap } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
-import { discoverHideObservers, analyzeHideOutcome } from './hide-logic.js';
 import { refreshEveryonesPerception } from '../socket.js';
+import { getVisibilityMap, setVisibilityMap } from '../utils.js';
+import { updateTokenVisuals } from '../visual-effects.js';
+import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
 
 // Store reference to current hide dialog
 let currentHideDialog = null;
@@ -130,11 +129,10 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
                 isTokenInEncounter(outcome.target)
             );
             
-            // Auto-uncheck if no encounter tokens found
+            // If no encounter tokens found, keep the filter active but show empty list
             if (filteredOutcomes.length === 0) {
-                this.encounterOnly = false;
-                filteredOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
+                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found for this action`);
+                // Keep filteredOutcomes as empty array, don't reset to all outcomes
             }
         }
         
@@ -454,7 +452,6 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         });
-        
         
         if (changedOutcomes.length === 0) {
             ui.notifications.info(`${MODULE_TITLE}: No visibility changes to apply`);

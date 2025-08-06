@@ -74,11 +74,10 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 isTokenInEncounter(outcome.token)
             );
             
-            // Auto-uncheck if no encounter tokens found
+            // If no encounter tokens found, keep the filter active but show empty list
             if (filteredOutcomes.length === 0) {
-                this.encounterOnly = false;
-                filteredOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
+                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found for this action`);
+                // Keep filteredOutcomes as empty array, don't reset to all outcomes
             }
         }
         

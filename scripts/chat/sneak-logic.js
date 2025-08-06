@@ -1,6 +1,6 @@
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween, isTokenInEncounter, hasActiveEncounter } from '../utils.js';
-import { determineOutcome } from './shared-utils.js';
+import { determineOutcome, shouldFilterAlly } from './shared-utils.js';
 import { SneakPreviewDialog } from './sneak-preview-dialog.js';
 
 /**
@@ -24,6 +24,9 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
 
         // Skip if token has no actor
         if (!token.actor) continue;
+        
+        // Apply ally filtering if enabled
+        if (shouldFilterAlly(sneakingToken, token, 'enemies')) continue;
 
         // Apply encounter filtering if requested
         if (encounterOnly && hasActiveEncounter() && !isTokenInEncounter(token)) {

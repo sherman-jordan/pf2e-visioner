@@ -5,6 +5,22 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2025-08-06
+
+### Added
+- **Player Tooltip Setting**: New "Allow Player Tooltips" setting enables non-GM players to see visibility indication tooltips from their controlled tokens' perspective
+- **Ignore Allies Setting**: New "Ignore Allies" setting filters visibility dialogs so NPCs only see players and players only see NPCs, streamlining visibility management
+- **Shared Utility Functions**: Extracted common ally filtering logic into reusable utility functions for better code maintainability
+
+### Fixed
+- **Hide Dialog Encounter Filter**: Fixed bug where "Apply All" button in Hide dialog ignored encounter filter and applied changes to all tokens instead of only encounter tokens
+- **Encounter Filter Logic**: Encounter filter now properly maintains its state and shows empty results when no encounter tokens match, instead of automatically disabling the filter
+
+### Improved
+- **Code Organization**: Refactored all chat automation modules to use shared ally filtering utility, eliminating code duplication and ensuring consistency
+- **Player Access Control**: Players can only see tooltips for their own controlled tokens when player tooltips are enabled, preventing information leakage
+- **Setting Integration**: Both new settings require world restart and are properly integrated with the module's configuration system
+
 ## [0.2.5] - 2025-08-06
 
 ### Fixed

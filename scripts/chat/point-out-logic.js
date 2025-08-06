@@ -9,7 +9,8 @@ import {
     calculateTokenDistance, 
     hasActiveEncounter, 
     isTokenInEncounter,
-    extractStealthDC
+    extractStealthDC,
+    shouldFilterAlly
 } from './shared-utils.js';
 import { PointOutPreviewDialog } from './point-out-preview-dialog.js';
 
@@ -98,25 +99,28 @@ export function discoverPointOutAllies(pointerToken, targetToken, encounterOnly 
     
     const allies = [];
     
-    // Find allies who can't see this target
-    for (const ally of canvas.tokens.placeables) {
-        if (ally === pointerToken || ally === targetToken) continue;
-        if (!ally.actor) continue;
+    // Find all tokens that are allies of the pointing token
+    for (const token of canvas.tokens.placeables) {
+        if (token === pointerToken) continue;
+        if (!token.actor) continue;
+        
+        // Apply ally filtering if enabled (for Point Out, we filter non-allies)
+        if (shouldFilterAlly(pointerToken, token, 'allies')) continue;
         
         // Check encounter filtering
-        if (encounterOnly && !isTokenInEncounter(ally)) continue;
+        if (encounterOnly && !isTokenInEncounter(token)) continue;
         
         // Check if this ally can't see the target
-        const allyVisibility = getVisibilityBetween(ally, targetToken);
+        const allyVisibility = getVisibilityBetween(token, targetToken);
         if (allyVisibility === 'undetected') {
             const stealthDC = extractStealthDC(targetToken);
             if (stealthDC > 0) {
                 allies.push({
-                    token: ally, // The ally who can't see
+                    token: token, // The ally who can't see
                     targetToken: targetToken, // The token being pointed out
                     stealthDC,
                     currentVisibility: allyVisibility,
-                    distance: calculateTokenDistance(pointerToken, ally)
+                    distance: calculateTokenDistance(pointerToken, token)
                 });
             }
         }

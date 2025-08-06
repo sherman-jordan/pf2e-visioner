@@ -4,7 +4,7 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { determineOutcome } from './shared-utils.js';
+import { determineOutcome, shouldFilterAlly } from './shared-utils.js';
 import { getVisibilityBetween } from '../utils.js';
 import { CreateADiversionPreviewDialog } from './create-a-diversion-preview-dialog.js';
 
@@ -30,6 +30,9 @@ export function discoverDiversionObservers(divertingToken) {
         
         // Skip tokens without actors
         if (!token.actor) continue;
+        
+        // Apply ally filtering if enabled
+        if (shouldFilterAlly(divertingToken, token, 'enemies')) continue;
         
         // Check if this token can see the diverting token
         const visibility = getVisibilityBetween(token, divertingToken);

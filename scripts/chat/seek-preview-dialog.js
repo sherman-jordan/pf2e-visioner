@@ -127,11 +127,10 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 isTokenInEncounter(outcome.target)
             );
             
-            // Auto-uncheck if no encounter tokens found
+            // If no encounter tokens found, keep the filter active but show empty list
             if (filteredOutcomes.length === 0) {
-                this.encounterOnly = false;
-                filteredOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter targets found, showing all`);
+                ui.notifications.info(`${MODULE_TITLE}: No encounter targets found for this action`);
+                // Keep filteredOutcomes as empty array, don't reset to all outcomes
             }
         }
         
@@ -669,9 +668,8 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         if (targets.length === 0) {
             ui.notifications.info(`${MODULE_TITLE}: No ${app.encounterOnly ? 'encounter ' : ''}targets found for seek action`);
-            // Reset to false if no targets found
-            app.encounterOnly = false;
-            return;
+            // Keep the filter state, just show empty results
+            // Don't auto-disable the filter
         }
         
         // Re-analyze outcomes with new targets

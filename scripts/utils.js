@@ -4,6 +4,7 @@
 
 import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
+import { shouldFilterAlly } from './chat/shared-utils.js';
 
 /**
  * Get the visibility map for a token
@@ -183,10 +184,15 @@ export function getSceneTargets(observer, encounterOnly = false) {
   if (!observer) return [];
   
   // Get all tokens except the observer
-  const allTokens = canvas.tokens.placeables.filter(token => {
+  let allTokens = canvas.tokens.placeables.filter(token => {
     return token !== observer && 
            token.actor && 
            isValidToken(token);
+  });
+  
+  // Apply ally filtering if enabled
+  allTokens = allTokens.filter(token => {
+    return !shouldFilterAlly(observer, token, 'enemies');
   });
   
   // Apply encounter filtering if requested

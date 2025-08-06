@@ -20,6 +20,12 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'allowPlayerTooltips') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       } else if (key === 'useHudButton') {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({

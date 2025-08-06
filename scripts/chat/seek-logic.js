@@ -11,7 +11,8 @@ import {
     calculateTokenDistance, 
     hasActiveEncounter, 
     isTokenInEncounter,
-    determineOutcome
+    determineOutcome,
+    shouldFilterAlly
 } from './shared-utils.js';
 import { SeekPreviewDialog } from './seek-preview-dialog.js';
 
@@ -30,6 +31,9 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false) {
     for (const token of canvas.tokens.placeables) {
         if (token === seekerToken) continue;
         if (!token.actor) continue;
+        
+        // Apply ally filtering if enabled
+        if (shouldFilterAlly(seekerToken, token, 'enemies')) continue;
         
         // Check encounter filtering if requested
         if (encounterOnly && !isTokenInEncounter(token)) continue;

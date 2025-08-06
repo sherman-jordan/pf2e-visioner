@@ -52,6 +52,24 @@ export const DEFAULT_SETTINGS = {
     default: true
   },
 
+  allowPlayerTooltips: {
+    name: 'PF2E_VISIONER.SETTINGS.ALLOW_PLAYER_TOOLTIPS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.ALLOW_PLAYER_TOOLTIPS.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+
+  ignoreAllies: {
+    name: 'PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.name',
+    hint: 'PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+
   defaultEncounterFilter: {
     name: 'PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name',
     hint: 'PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.hint',

@@ -163,7 +163,7 @@ async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibil
             tokenIcon: {
                 show: false
             },
-            unidentified: false,
+            unidentified: true,
             start: {
                 value: 0,
                 initiative: options.initiative 

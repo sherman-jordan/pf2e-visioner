@@ -10,7 +10,8 @@ import {
     calculateTokenDistance, 
     hasActiveEncounter, 
     isTokenInEncounter,
-    determineOutcome
+    determineOutcome,
+    shouldFilterAlly
 } from './shared-utils.js';
 import { HidePreviewDialog } from './hide-preview-dialog.js';
 
@@ -31,6 +32,9 @@ export function discoverHideObservers(hidingToken, encounterOnly = false) {
         if (!token.actor) {
             continue;
         }
+        
+        // Apply ally filtering if enabled
+        if (shouldFilterAlly(hidingToken, token, 'enemies')) continue;
         
         // Check encounter filtering if requested
         if (encounterOnly && !isTokenInEncounter(token)) {

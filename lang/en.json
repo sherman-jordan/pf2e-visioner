@@ -132,6 +132,14 @@
         "name": "Enable Hover Tooltips",
         "hint": "Show visibility status tooltips when hovering over tokens (requires restart)"
       },
+      "ALLOW_PLAYER_TOOLTIPS": {
+        "name": "Allow Player Tooltips",
+        "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens (requires restart)"
+      },
+      "IGNORE_ALLIES": {
+        "name": "Ignore Allies",
+        "hint": "When enabled, NPCs will only see party members in dialogs, and players will only see NPCs. This simplifies visibility management by hiding ally-to-ally relationships."
+      },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Default Encounter Filter State",
         "hint": "When enabled, the encounter filter checkbox in dialogs will be checked by default when there's an active encounter"

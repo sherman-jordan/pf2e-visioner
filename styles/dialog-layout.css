@@ -1,0 +1,199 @@
+/*
+ * Dialog Layout Styles - Simplified for maximum compatibility
+ */
+
+/* Force dialog to have a fixed height */
+.point-out-preview-dialog,
+.seek-preview-dialog,
+.hide-preview-dialog,
+.sneak-preview-dialog,
+.create-a-diversion-preview-dialog {
+  height: 600px;
+}
+
+/* Force dialog content to be full height */
+.point-out-preview-dialog .window-content,
+.seek-preview-dialog .window-content,
+.hide-preview-dialog .window-content,
+.sneak-preview-dialog .window-content,
+.create-a-diversion-preview-dialog .window-content {
+  height: 100%;
+  padding: 10px;
+  overflow: hidden;
+}
+
+/* Force content wrapper to be flex with full height */
+.point-out-preview-content,
+.seek-preview-content,
+.hide-preview-content,
+.sneak-preview-content,
+.create-a-diversion-preview-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Force header to not grow */
+.actor-info,
+.hider-info,
+.encounter-filter-section {
+  flex: 0 0 auto;
+}
+
+/* Force table container to grow and scroll */
+.results-table-container {
+  flex: 1 1 auto;
+  overflow-y: scroll !important;
+  overflow-x: hidden;
+  border: 1px solid #666;
+  margin-bottom: 10px;
+  /* Default scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(73, 80, 87, 0.6) transparent;
+}
+
+/* Force footer to not grow */
+.point-out-preview-dialog-bulk-actions-header,
+.seek-preview-dialog-bulk-actions-header,
+.hide-preview-dialog-bulk-actions-header,
+.sneak-preview-dialog-bulk-actions-header,
+.create-a-diversion-preview-dialog-bulk-actions-header {
+  flex: 0 0 auto;
+  border-top: 1px solid #666;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Basic table styling */
+.visibility-table,
+.point-out-results-table,
+.seek-results-table,
+.hide-results-table,
+.sneak-results-table,
+.create-a-diversion-results-table {
+  width: 100%;
+}
+
+/* Sticky headers */
+.results-table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Row styling */
+.results-table-container tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* WebKit scrollbar styling (default) */
+.results-table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.results-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(73, 80, 87, 0.6);
+  border-radius: 4px;
+}
+
+.results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(73, 80, 87, 0.8);
+}
+
+/* Theme-specific styling */
+
+/* Hide - Purple */
+.hide-preview-dialog .results-table-container {
+  scrollbar-color: rgba(142, 36, 170, 0.6) transparent;
+}
+
+.hide-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(142, 36, 170, 0.6);
+}
+
+.hide-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(142, 36, 170, 0.8);
+}
+
+.hide-preview-dialog .results-table-container thead th {
+  background-color: #8e24aa;
+  color: white;
+}
+
+/* Seek - Blue */
+.seek-preview-dialog .results-table-container {
+  scrollbar-color: rgba(44, 90, 160, 0.6) transparent;
+}
+
+.seek-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(44, 90, 160, 0.6);
+}
+
+.seek-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(44, 90, 160, 0.8);
+}
+
+.seek-preview-dialog .results-table-container thead th {
+  background-color: #2c5aa0;
+  color: white;
+}
+
+/* Point Out - Orange */
+.point-out-preview-dialog .results-table-container {
+  scrollbar-color: rgba(255, 152, 0, 0.6) transparent;
+}
+
+.point-out-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 152, 0, 0.6);
+}
+
+.point-out-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 152, 0, 0.8);
+}
+
+.point-out-preview-dialog .results-table-container thead th {
+  background-color: #ff9800;
+  color: white;
+}
+
+/* Sneak - Gray */
+.sneak-preview-dialog .results-table-container {
+  scrollbar-color: rgba(108, 117, 125, 0.6) transparent;
+}
+
+.sneak-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(108, 117, 125, 0.6);
+}
+
+.sneak-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 117, 125, 0.8);
+}
+
+.sneak-preview-dialog .results-table-container thead th {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Create a Diversion - Teal */
+.create-a-diversion-preview-dialog .results-table-container {
+  scrollbar-color: rgba(23, 162, 184, 0.6) transparent;
+}
+
+.create-a-diversion-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(23, 162, 184, 0.6);
+}
+
+.create-a-diversion-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(23, 162, 184, 0.8);
+}
+
+.create-a-diversion-preview-dialog .results-table-container thead th {
+  background-color: #17a2b8;
+  color: white;
+}

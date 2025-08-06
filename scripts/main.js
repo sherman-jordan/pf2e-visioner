@@ -1,6 +1,6 @@
 
 // Import settings
-import { registerSettings, registerKeybindings } from "./settings.js";
+import { registerKeybindings, registerSettings } from "./settings.js";
 
 // Import detection wrapper
 import { initializeDetectionWrapper } from "./detection-wrapper.js";
@@ -8,6 +8,8 @@ import { initializeDetectionWrapper } from "./detection-wrapper.js";
 // Import hooks
 import { registerHooks } from "./hooks.js";
 
+// Import dialog scroll fix
+import { initializeDialogScrollFix } from "./dialog-scroll-fix.js";
 
 
 Hooks.once("init", async () => {
@@ -24,6 +26,9 @@ Hooks.once("init", async () => {
     
     
     initializeDetectionWrapper();
+    
+    // Initialize dialog scroll fix
+    initializeDialogScrollFix();
     
   } catch (error) {
     console.error('PF2E Visioner: Initialization failed at step:', error.message);

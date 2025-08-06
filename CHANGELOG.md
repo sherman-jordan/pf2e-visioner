@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Improved
+- **Dialog Layout**: Added scrollable table with fixed footer to action dialogs for better usability with many tokens
+- **Dialog Sizing**: Fixed dialog height and scrolling behavior to ensure proper display of large result sets
+- **Table Scrolling**: Enhanced table container to properly handle overflow with fixed headers and footers
+- **Cross-Browser Compatibility**: Added JavaScript-based scrolling fixes for better cross-browser support
+- **Direct DOM Manipulation**: Added dedicated scroll fix module that applies direct DOM styling to ensure consistent scrolling behavior across all browsers and Foundry versions
+- **Themed Scrollbars**: Added color-matched scrollbars for each action dialog type (Hide, Seek, Point Out, Sneak, Create a Diversion) to enhance visual consistency
+
 ## [0.2.17] - 2025-08-06
 
 ### Fixed

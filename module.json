@@ -20,7 +20,8 @@
     "styles/visibility-manager.css",
     "styles/token-effects.css",
     "styles/responsive.css",
-    "styles/tooltips.css"
+    "styles/tooltips.css",
+    "styles/dialog-layout.css"
   ],
   "languages": [
     {

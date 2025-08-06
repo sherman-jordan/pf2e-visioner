@@ -21,7 +21,44 @@ export function injectChatAutomationStyles() {
     style.textContent = css;
     document.head.appendChild(style);
     
+    // Add event listener to fix scrolling in dialogs
+    Hooks.on('renderApplication', (app, html, data) => {
+        if (app.constructor.name.includes('PreviewDialog')) {
+            fixDialogScrolling(html);
+        }
+    });
+    
     console.debug('PF2E Visioner: Chat automation styles injected');
+}
+
+/**
+ * Fix scrolling in dialog containers
+ * @param {jQuery} html - The rendered HTML of the dialog
+ */
+function fixDialogScrolling(html) {
+    // Ensure the results table container can scroll
+    const container = html.find('.results-table-container');
+    if (container.length) {
+        // Force the container to take up available space
+        container.css({
+            'flex': '1 1 auto',
+            'overflow-y': 'auto',
+            'min-height': '150px',
+            'max-height': 'calc(100% - 180px)'
+        });
+        
+        // Ensure the table headers are sticky
+        const headers = container.find('thead th');
+        if (headers.length) {
+            headers.css({
+                'position': 'sticky',
+                'top': '0',
+                'z-index': '2'
+            });
+        }
+        
+        console.debug('PF2E Visioner: Dialog scrolling fixed');
+    }
 }
 
 /**

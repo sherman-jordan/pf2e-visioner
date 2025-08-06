@@ -7,6 +7,7 @@ import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, setVisibilityMap, getVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
+import { refreshEveryonesPerception } from '../socket.js';
 
 /**
  * Validate if a token is a valid Seek target
@@ -120,6 +121,7 @@ export function applyVisibilityChanges(seeker, changes) {
                 updateTokenVisuals(change.target);
             }
         });
+        refreshEveryonesPerception();
         
         // Notify success
         const changeCount = changes.length;

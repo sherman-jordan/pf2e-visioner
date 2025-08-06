@@ -44,7 +44,8 @@
     },
     "NOTIFICATIONS": {
       "NO_OBSERVER_SELECTED": "Please select an observer token first",
-      "MULTIPLE_OBSERVERS": "Multiple observer tokens selected - please select only one"
+      "MULTIPLE_OBSERVERS": "Multiple observer tokens selected - please select only one",
+      "NO_SOCKETLIB_INSTALLED": "PF2E Visioner needs socketlib module to be active in order to auto-refresh client screens. Please activate it."
     },
     "SEEK_AUTOMATION": {
       "BUTTON_APPLY": "Apply Seek Results",

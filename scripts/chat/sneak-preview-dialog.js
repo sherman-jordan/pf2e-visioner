@@ -2,6 +2,7 @@ import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, setVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { filterOutcomesByEncounter } from './shared-utils.js';
+import { refreshEveryonesPerception } from '../socket.js';
 
 // Store reference to current sneak dialog
 let currentSneakDialog = null;
@@ -398,6 +399,7 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Update button states
         app.updateRowButtonsToApplied(tokenId);
+        refreshEveryonesPerception();
         
         ui.notifications.info(`${MODULE_TITLE}: Applied sneak result - ${outcome.token.name} sees ${app.sneakingToken.name} as ${effectiveNewState}`);
     }
@@ -424,6 +426,7 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Update button states
         app.updateRowButtonsToReverted(tokenId);
+        refreshEveryonesPerception();
         
         ui.notifications.info(`${MODULE_TITLE}: Reverted sneak result - ${outcome.token.name} sees ${app.sneakingToken.name} as ${outcome.oldVisibility}`);
     }
@@ -466,6 +469,7 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
 
         app.bulkActionState = 'applied';
         app.updateBulkActionButtons();
+        refreshEveryonesPerception();
         
         ui.notifications.info(`${MODULE_TITLE}: Applied all sneak results (${changedOutcomes.length} changes). Dialog remains open for further adjustments.`);
     }
@@ -504,6 +508,7 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
 
         app.bulkActionState = 'reverted';
         app.updateBulkActionButtons();
+        refreshEveryonesPerception();
         
         ui.notifications.info(`${MODULE_TITLE}: Reverted all sneak results (${changedOutcomes.length} changes). Dialog remains open for further adjustments.`);
     }

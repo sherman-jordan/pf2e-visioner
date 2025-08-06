@@ -5,6 +5,7 @@
 import { VISIBILITY_STATES } from './constants.js';
 import { getSceneTargets, getVisibilityMap, setVisibilityMap, showNotification, hasActiveEncounter } from './utils.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
+import { refreshEveryonesPerception } from './socket.js';
 
 import { MODULE_ID } from './constants.js';
 
@@ -326,6 +327,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         }
       }
     }
+    refreshEveryonesPerception();
     
     // Import and update visuals
     const { updateTokenVisuals } = await import('./effects-coordinator.js');
@@ -355,7 +357,8 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     
     // Clear the visibility map
     await setVisibilityMap(app.observer, {});
-    
+    refreshEveryonesPerception();
+     
     return app.render();
   }
 

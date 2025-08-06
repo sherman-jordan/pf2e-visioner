@@ -7,6 +7,7 @@ import { onRenderTokenHUD } from './token-hud.js';
 import { onRenderChatMessage } from './chat/chat-processor.js';
 import { injectChatAutomationStyles } from './chat/chat-automation-styles.js';
 import { updateTokenVisuals } from './visual-effects.js';
+import { registerSocket } from './socket.js';
 
 /**
  * Register all FoundryVTT hooks
@@ -75,6 +76,8 @@ function onReady() {
   if (!game.settings.get('pf2e-visioner', 'useHudButton')) {
     setupFallbackHUDButton();
   }
+
+  registerSocket();
 }
 
 /**

@@ -8,6 +8,7 @@ import { setVisibilityBetween } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { hasActiveEncounter, isTokenInEncounter } from '../utils.js';
 import { filterOutcomesByEncounter } from './shared-utils.js';
+import { refreshEveryonesPerception } from '../socket.js';
 
 // Store reference to current create a diversion dialog
 let currentDiversionDialog = null;
@@ -449,6 +450,7 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
             
             await updateTokenVisuals(observerToken);
             await updateTokenVisuals(this.divertingToken);
+            refreshEveryonesPerception();
         } catch (error) {
             console.error(`${MODULE_TITLE}: Error applying visibility change:`, error);
             ui.notifications.error(`${MODULE_TITLE}: Failed to apply visibility change`);

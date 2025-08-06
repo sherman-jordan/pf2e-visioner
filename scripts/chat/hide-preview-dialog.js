@@ -8,7 +8,7 @@ import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from '../socket.js';
 import { getVisibilityMap, setVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
-import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
+import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter, shouldFilterAlly } from './shared-utils.js';
 
 // Store reference to current hide dialog
 let currentHideDialog = null;

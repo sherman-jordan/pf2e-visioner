@@ -76,50 +76,62 @@ async function handleCheckRollEphemeral(wrapped, ...args) {
         
 
         
-        if (["hidden", "undetected"].includes(targetVisibilityFromAttacker)) {
-            // Create or update ephemeral effect on the attacker (who becomes off-guard)
-            await createEphemeralOffGuardEffect(originToken.actor, targetActor, targetVisibilityFromAttacker);
-        } else {
-
+        // Check if the target has visibility of the attacker
+        const targetVisibilityMap = getVisibilityMap(targetToken);
+        const attackerVisibilityFromTarget = targetVisibilityMap[originToken.document.id];
+        
+        // Only apply effect if the attacker is hidden or undetected from the target's perspective
+        if (["hidden", "undetected"].includes(attackerVisibilityFromTarget)) {
+            // Use the updateEphemeralEffectsForVisibility function with target_to_observer direction
+            // This means the target sees the attacker as hidden
+            await updateEphemeralEffectsForVisibility(targetToken, originToken, attackerVisibilityFromTarget, {
+                direction: 'target_to_observer' // Attacker is hidden from target
+            });
         }
     } else {
-
+        // No action needed for non-hidden targets
     }
     
     return wrapped(...args);
 }
 
 /**
- * Create an ephemeral effect that makes the observer off-guard when attacking a hidden target
- * @param {Actor} observerActor - The observing actor (who gets the off-guard effect)
- * @param {Actor} hiddenActor - The hidden actor (who the observer is off-guard to)
+ * Create an ephemeral effect for visibility states
+ * @param {Actor} effectReceiverActor - The actor who receives the effect (the hidden one)
+ * @param {Actor} effectSourceActor - The actor who is the source of the effect (the one who sees the hidden actor)
  * @param {string} visibilityState - The visibility state ('hidden' or 'undetected')
  * @param {Object} options - Optional configuration
  * @param {boolean} options.initiative - Boolean (default: null)
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  */
-async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibilityState, options = {}) {
+async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceActor, visibilityState, options = {}) {
 
     
     // Check if effect already exists to prevent duplicates
-    const existingEffect = observerActor.itemTypes.effect.find(e => 
-        (e.name === 'Hidden' || e.name === 'Undetected' || e.name === 'Concealed') && 
-        e.system.rules?.[0]?.predicate?.includes(`target:signature:${hiddenActor.signature}`)
+    const existingEffect = effectReceiverActor.itemTypes.effect.find(e => 
+        e.flags?.[MODULE_ID]?.isEphemeralOffGuard &&
+        e.flags?.[MODULE_ID]?.hiddenActorSignature === effectSourceActor.signature
     );
     
     if (existingEffect) {
-
         return; // Effect already exists for this target
     }
 
     const visibilityLabel = game.i18n.localize(`PF2E.condition.${visibilityState}.name`);
     
+    // Add some logging to debug the issue
+    console.log('Creating effect with:', {
+        effectReceiverActor: effectReceiverActor.name,
+        effectSourceActor: effectSourceActor.name,
+        visibilityState
+    });
+    
     const ephemeralEffect = {
-        name: `${visibilityLabel}`,
+        name: `${visibilityLabel} from ${effectSourceActor.name}`,
         type: 'effect',
         system: {
             description: {
-                value: `<p>Target is off-guard due to attacker being ${visibilityState}.</p>`,
+                value: `<p>You are ${visibilityState.toLowerCase()} from ${effectSourceActor.name}'s perspective.</p>`,
                 gm: ''
             },
             publication: {
@@ -131,7 +143,7 @@ async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibil
             rules: [
                 {
                     key: 'EphemeralEffect',
-                    predicate: [`target:signature:${hiddenActor.signature}`],
+                    predicate: [`target:signature:${effectSourceActor.signature}`],
                     selectors: [
                         'strike-attack-roll',
                         'spell-attack-roll',
@@ -174,14 +186,14 @@ async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibil
             fromSpell: false,
             context: {
                 origin: {
-                    actor: observerActor.uuid,
-                    token: observerActor.getActiveTokens()?.[0]?.uuid,
+                    actor: effectSourceActor.uuid,
+                    token: effectSourceActor.getActiveTokens()?.[0]?.uuid,
                     item: null,
                     spellcasting: null
                 },
                 target: {
-                    actor: hiddenActor.uuid,
-                    token: hiddenActor.getActiveTokens()?.[0]?.uuid
+                    actor: effectReceiverActor.uuid,
+                    token: effectReceiverActor.getActiveTokens()?.[0]?.uuid
                 },
                 roll: null
             }
@@ -190,14 +202,14 @@ async function createEphemeralOffGuardEffect(observerActor, hiddenActor, visibil
         flags: {
             [MODULE_ID]: {
                 isEphemeralOffGuard: true,
-                hiddenActorSignature: hiddenActor.signature,
+                hiddenActorSignature: effectSourceActor.signature,
                 visibilityState: visibilityState
             }
         }
     };
 
     try {
-        await observerActor.createEmbeddedDocuments("Item", [ephemeralEffect]);
+        await effectReceiverActor.createEmbeddedDocuments("Item", [ephemeralEffect]);
 
     } catch (error) {
         console.error('Failed to create ephemeral off-guard effect:', error);
@@ -254,23 +266,30 @@ export async function cleanupEphemeralEffectsForTarget(observerActor, hiddenActo
  * @param {Object} options - Optional configuration
  * @param {boolean} options.initiative - Boolean (default: null)
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
+ * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
  */
 export async function updateEphemeralEffectsForVisibility(observerToken, targetToken, newVisibilityState, options = {}) {
-
-    
     if (!observerToken?.actor || !targetToken?.actor) {
-
         return;
     }
     
-    // Clean up existing effects first
-
-    await cleanupEphemeralEffectsForTarget(observerToken.actor, targetToken.actor, options);
+    // Default direction is observer_to_target (observer sees target)
+    const direction = options.direction || 'observer_to_target';
     
-    // Create new effect if target is hidden/undetected
-    // The OBSERVER gets the off-guard effect (because they are off-guard to the hidden target)
+    // Determine which token gets the effect based on direction
+    // In observer_to_target: the target gets the effect (target is hidden from observer)
+    // In target_to_observer: the observer gets the effect (observer is hidden from target)
+    const [effectReceiverActor, effectSourceActor] = direction === 'observer_to_target' 
+        ? [targetToken.actor, observerToken.actor]   // Target is hidden from observer
+        : [observerToken.actor, targetToken.actor];  // Observer is hidden from target
+    
+    // Clean up existing effects first
+    await cleanupEphemeralEffectsForTarget(effectReceiverActor, effectSourceActor, options);
+    
+    // Only apply effects if the token is hidden or undetected
     if (["hidden", "undetected"].includes(newVisibilityState)) {
-        await createEphemeralOffGuardEffect(observerToken.actor, targetToken.actor, newVisibilityState, options);
+        // Apply effect to the token that is hidden/undetected
+        await createEphemeralOffGuardEffect(effectReceiverActor, effectSourceActor, newVisibilityState, options);
     }
 }
 

@@ -4,9 +4,8 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityMap, setVisibilityMap } from '../utils.js';
+import { getVisibilityMap, setVisibilityBetween, setVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 
 /**
@@ -140,9 +139,14 @@ export function determineOutcome(total, die, dc) {
  * Apply visibility changes atomically with error handling
  * @param {Token} seeker - The seeking token
  * @param {Array} changes - Array of change objects
+ * @param {Object} options - Additional options
+ * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
  */
-export function applyVisibilityChanges(seeker, changes) {
+export function applyVisibilityChanges(seeker, changes, options = {}) {
     if (!changes || changes.length === 0) return;
+    
+    // Default direction is observer_to_target (seeker sees target)
+    const direction = options.direction || 'observer_to_target';
     
     try {
         // Get current visibility map
@@ -151,10 +155,10 @@ export function applyVisibilityChanges(seeker, changes) {
         // Apply all changes
         changes.forEach(change => {
             if (change.target && change.newVisibility) {
-                visibilityMap[change.target.id] = change.newVisibility;
-                
-                // Apply ephemeral effects if needed
-                updateEphemeralEffectsForVisibility(seeker, change.target, change.newVisibility);
+                // Update visibility and apply effects with the specified direction
+                setVisibilityBetween(seeker, change.target, change.newVisibility, {
+                    direction: direction
+                });
             }
         });
         
@@ -172,7 +176,6 @@ export function applyVisibilityChanges(seeker, changes) {
         
         // Notify success
         const changeCount = changes.length;
-        ui.notifications.info(`${MODULE_TITLE}: Applied visibility changes to ${changeCount} token${changeCount !== 1 ? 's' : ''}`);
         
     } catch (error) {
         console.error(`${MODULE_TITLE}: Error applying visibility changes:`, error);

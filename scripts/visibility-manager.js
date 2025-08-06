@@ -3,9 +3,9 @@
  */
 
 import { VISIBILITY_STATES } from './constants.js';
-import { getSceneTargets, getVisibilityMap, setVisibilityMap, showNotification, hasActiveEncounter } from './utils.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from './socket.js';
+import { getSceneTargets, getVisibilityMap, hasActiveEncounter, setVisibilityMap, showNotification } from './utils.js';
 
 import { MODULE_ID } from './constants.js';
 
@@ -291,17 +291,17 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       // Observer Mode: "How I see others" - update this observer's visibility map
       await setVisibilityMap(app.observer, visibilityChanges);
       
-      // Update off-guard effects: this observer gets effects for targets they see as hidden
+      // Update ephemeral effects for each target token
       for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
         const targetToken = canvas.tokens.get(tokenId);
         if (targetToken) {
-
-          
           try {
-            // In Observer Mode: effect goes on the hidden token (targetToken) targeting the observer
-            await updateEphemeralEffectsForVisibility(targetToken, app.observer, newState);
+            // In Observer Mode: observer sees target, so target is hidden from observer
+            await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
+              direction: 'observer_to_target' // Target is hidden from observer
+            });
           } catch (error) {
-            console.error('Visibility Manager: Error updating off-guard effects:', error);
+            console.error('Visibility Manager: Error updating effects:', error);
           }
         }
       }
@@ -317,12 +317,14 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
           observerVisibilityData[app.observer.document.id] = newState;
           await setVisibilityMap(observerToken, observerVisibilityData);
           
-          // Update off-guard effects: in Target Mode, the selected token gets effects for observers who see them as hidden
+          // Update ephemeral effects
           try {
-            // In Target Mode: effect goes on the selected token (app.observer) targeting the observer
-            await updateEphemeralEffectsForVisibility(app.observer, observerToken, newState);
+            // In Target Mode: observers see the selected token (app.observer)
+            await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, {
+              direction: 'observer_to_target' // Selected token is hidden from observer
+            });
           } catch (error) {
-            console.error('Visibility Manager: Error updating off-guard effects:', error);
+            console.error('Visibility Manager: Error updating effects:', error);
           }
         }
       }

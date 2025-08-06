@@ -4,9 +4,8 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityMap, setVisibilityMap } from '../utils.js';
+import { getVisibilityMap, setVisibilityBetween, setVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter, shouldFilterAlly } from './shared-utils.js';
 
@@ -567,7 +566,10 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         // Update token visuals
         updateTokenVisuals(this.actorToken, [outcome.target]);
-        updateEphemeralEffectsForVisibility(this.actorToken, [outcome.target]);
+        // Use setVisibilityBetween which will handle the visibility state and effects
+        setVisibilityBetween(outcome.target, this.actorToken, outcome.oldVisibility, {
+            direction: 'observer_to_target' // Observer (target) sees the hiding token (actorToken)
+        });
         refreshEveryonesPerception();
         
         // Reset override state
@@ -694,10 +696,20 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         // Placeholder for future functionality if needed
     }
     
-    applyVisibilityChanges(hidingToken, changes) {
+    /**
+     * Apply visibility changes for hide action
+     * @param {Token} hidingToken - The token that's hiding
+     * @param {Array} changes - Array of change objects
+     * @param {Object} options - Additional options
+     * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
+     */
+    async applyVisibilityChanges(hidingToken, changes, options = {}) {
         if (!changes || changes.length === 0) {
             return;
         }
+        
+        // Default direction is observer_to_target (observer sees hiding token)
+        const direction = options.direction || 'observer_to_target';
         
         try {
             // Get current visibility map
@@ -705,21 +717,18 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             
             // Apply all changes - note the perspective is reversed for Hide
             // We're setting how observers see the hiding token
-            changes.forEach(change => {
+            for (const change of changes) {
                 // Use override state if available, otherwise use calculated newVisibility
                 const effectiveNewState = change.overrideState || change.newVisibility;
                 
                 if (change.target && effectiveNewState) {
                     // For Hide, we set how the observer (change.target) sees the hiding token
-                    const observerVisibilityMap = getVisibilityMap(change.target);
-                    
-                    observerVisibilityMap[hidingToken.id] = effectiveNewState;
-                    setVisibilityMap(change.target, observerVisibilityMap);
-                                        
-                    // Apply ephemeral effects if needed - for Hide, effects go on the hiding token
-                    updateEphemeralEffectsForVisibility(hidingToken, change.target, effectiveNewState);
+                    // Use setVisibilityBetween which handles both visibility state and effects
+                    await setVisibilityBetween(change.target, hidingToken, effectiveNewState, {
+                        direction: direction
+                    });
                 }
-            });
+            }
             
             // Update visual effects for all affected tokens
             updateTokenVisuals(hidingToken);
@@ -908,7 +917,6 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         try {
             await app.applyVisibilityChanges(app.actorToken, [change]);
-            ui.notifications.info(`${MODULE_TITLE}: Applied visibility change for ${outcome.target.name}`);
             
             // Update button states for this row
             const row = app.element.querySelector(`tr[data-token-id="${tokenId}"]`);
@@ -964,7 +972,6 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
                 
         try {
             await app.applyVisibilityChanges(app.actorToken, [change]);
-            ui.notifications.info(`${MODULE_TITLE}: Reverted visibility change for ${outcome.target.name}`);
             
             // Update button states for this row
             const row = app.element.querySelector(`tr[data-token-id="${tokenId}"]`);

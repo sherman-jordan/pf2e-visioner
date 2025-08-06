@@ -4,11 +4,10 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { setVisibilityBetween } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
-import { hasActiveEncounter, isTokenInEncounter } from '../utils.js';
-import { filterOutcomesByEncounter } from './shared-utils.js';
 import { refreshEveryonesPerception } from '../socket.js';
+import { hasActiveEncounter, isTokenInEncounter, setVisibilityBetween } from '../utils.js';
+import { updateTokenVisuals } from '../visual-effects.js';
+import { filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current create a diversion dialog
 let currentDiversionDialog = null;
@@ -269,9 +268,7 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
         
         // Update button states
         app.updateRowButtonsToApplied(tokenId);
-        
-        ui.notifications.info(`${MODULE_TITLE}: Applied visibility change for ${outcome.observer.name}`);
-    }
+   }
 
     /**
      * Handle individual revert change
@@ -288,7 +285,6 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
         // Update button states
         app.updateRowButtonsToReverted(tokenId);
         
-        ui.notifications.info(`${MODULE_TITLE}: Reverted visibility change for ${outcome.observer.name}`);
     }
 
     /**
@@ -446,7 +442,7 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
             // This also handles ephemeral effects through the setVisibilityBetween function
             // For Create a Diversion, effects last 1 round
             // The diverting token is the observer, the observer token is the target
-            await setVisibilityBetween(this.divertingToken, observerToken, newVisibility, { durationRounds: 0, initiative: true });
+            await setVisibilityBetween(this.divertingToken, observerToken, newVisibility, { durationRounds: 0, initiative: true, direction: 'target_to_observer' });
             
             await updateTokenVisuals(observerToken);
             await updateTokenVisuals(this.divertingToken);

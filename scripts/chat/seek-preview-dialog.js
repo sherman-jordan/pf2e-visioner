@@ -3,13 +3,12 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { setVisibilityBetween, getVisibilityBetween, getVisibilityMap, setVisibilityMap } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
-import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
-import { discoverSeekTargets, analyzeSeekOutcome } from './seek-logic.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
+import { getVisibilityBetween, setVisibilityBetween } from '../utils.js';
+import { updateTokenVisuals } from '../visual-effects.js';
+import { analyzeSeekOutcome, discoverSeekTargets } from './seek-logic.js';
+import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
 
 // Store reference to current seek dialog
 let currentSeekDialog = null;
@@ -359,8 +358,10 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 try {                    
                     // Revert to original visibility
                     // This also handles ephemeral effects through the setVisibilityBetween function
-                    // For Seek: The target token is the observer (gets the effect), the seeker is the target
-                    await setVisibilityBetween(outcome.target, app.actorToken, outcome.oldVisibility);
+                    // For Seek: The seeker is the observer, the target is being observed
+                    await setVisibilityBetween(app.actorToken, outcome.target, outcome.oldVisibility, {
+                        direction: 'observer_to_target' // Seeker (observer) sees target
+                    });
                     
                     // Update token visuals
                     await updateTokenVisuals(app.actorToken);
@@ -411,7 +412,6 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         
         try {
             await app.applyVisibilityChanges(app.actorToken, [change]);
-            ui.notifications.info(`${MODULE_TITLE}: Applied visibility change for ${outcome.target.name}`);
             
             // Update button states to show applied and enable revert
             const tokenId = outcome.target.id;
@@ -531,22 +531,21 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
     
     /**
      * Apply visibility changes using the existing utility function
+     * @param {Token} seeker - The seeker token
+     * @param {Array} changes - Array of change objects
+     * @param {Object} options - Additional options
+     * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
      */
-    async applyVisibilityChanges(seeker, changes) {
+    async applyVisibilityChanges(seeker, changes, options = {}) {
+        // Default direction is observer_to_target (seeker sees target)
+        const direction = options.direction || 'observer_to_target';
+        
         const promises = changes.map(async (change) => {
             try {
-                // Update the visibility relationship in the visibility map
-                // Note: We don't use setVisibilityBetween here because it would apply effects to the seeker
-                // Instead, we handle visibility map and effects separately for proper seek automation
-                const visibilityMap = getVisibilityMap(seeker);
-                visibilityMap[change.target.document.id] = change.newVisibility;
-                await setVisibilityMap(seeker, visibilityMap);
-                
-                // Apply ephemeral effects to the target token (like in visibility manager's Observer Mode)
-                // For Seek, the target token (being sought) should be the observer (gets off-guard effect)
-                // And the seeker token should be the target
-                // NOTE: We only manage ephemeral effects, not PF2E conditions - those should remain as originally set
-                await updateEphemeralEffectsForVisibility(change.target, seeker, change.newVisibility);
+                // Update visibility between seeker and target with the specified direction
+                await setVisibilityBetween(seeker, change.target, change.newVisibility, {
+                    direction: direction
+                });
                 
             } catch (error) {
                 ui.notifications.error(`${MODULE_TITLE}: Error applying changes.`);

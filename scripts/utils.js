@@ -2,9 +2,9 @@
  * Utility functions for PF2E Per-Token Visibility
  */
 
+import { shouldFilterAlly } from './chat/shared-utils.js';
 import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
-import { shouldFilterAlly } from './chat/shared-utils.js';
 
 /**
  * Get the visibility map for a token
@@ -44,9 +44,11 @@ export function getVisibilityBetween(observer, target) {
  * @param {Object} options - Additional options
  * @param {number} options.durationRounds - Duration of visibility change in rounds
  * @param {boolean} options.initiative - Boolean (default: null)
+ * @param {boolean} options.skipEphemeralUpdate - Skip updating ephemeral effects (default: false)
+ * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
  * @returns {Promise} Promise that resolves when visibility is set
  */
-export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false}) {
+export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false, direction: 'observer_to_target'}) {
   const visibilityMap = getVisibilityMap(observer);
   visibilityMap[target.document.id] = state;
   await setVisibilityMap(observer, visibilityMap);
@@ -56,6 +58,7 @@ export async function setVisibilityBetween(observer, target, state, options = {s
   // Update off-guard effects using ephemeral approach
   try {
     if (!options.skipEphemeralUpdate) {
+      // Direction is already set in the options with a default value
       await updateEphemeralEffectsForVisibility(observer, target, state, options);
     }
   } catch (error) {

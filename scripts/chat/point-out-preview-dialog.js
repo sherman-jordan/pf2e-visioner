@@ -3,13 +3,12 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { getVisibilityBetween, setVisibilityMap, getVisibilityMap } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
-import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { hasActiveEncounter, isTokenInEncounter, filterOutcomesByEncounter } from './shared-utils.js';
-import { getPointOutTarget, discoverPointOutAllies, analyzePointOutOutcome } from './point-out-logic.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
+import { getVisibilityBetween, setVisibilityBetween } from '../utils.js';
+import { updateTokenVisuals } from '../visual-effects.js';
+import { analyzePointOutOutcome, discoverPointOutAllies, getPointOutTarget } from './point-out-logic.js';
+import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
 
 // Store reference to current dialog (shared with SeekPreviewDialog)
 let currentPointOutDialog = null;
@@ -363,7 +362,6 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         
         try {
             await app.applyVisibilityChanges(app.actorToken, [change]);
-            ui.notifications.info(`${MODULE_TITLE}: Applied visibility change for ${outcome.target.name}`);
             
             // Update button states to show applied and enable revert
             const tokenId = outcome.target.id;
@@ -478,7 +476,17 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         return super.close(options);
     }
     
-    async applyVisibilityChanges(actor, changes) {        
+    /**
+     * Apply visibility changes using the existing utility function
+     * @param {Token} actor - The actor token (usually the one pointing out)
+     * @param {Array} changes - Array of change objects
+     * @param {Object} options - Additional options
+     * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
+     */
+    async applyVisibilityChanges(actor, changes, options = {}) {
+        // Default direction is observer_to_target (ally sees target)
+        const direction = options.direction || 'observer_to_target';
+        
         const promises = changes.map(async (change) => {
             try {
                 // For Point Out, the ally (change.target) gains visibility of the targetToken
@@ -500,7 +508,6 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
                 
                 // Use the ally token (not actor) for getVisibilityMap
                 const allyToken = change.target;
-                const visibilityMap = getVisibilityMap(allyToken);
                 // Get target token - inline logic to avoid circular import
                 let targetToken = change.targetToken;
                 if (!targetToken) {
@@ -518,14 +525,11 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
                         }
                     }
                 }
-                const targetId = targetToken.document.id;
-                const oldVisibility = visibilityMap[targetId] || 'observed';
                 
-                visibilityMap[targetId] = change.newVisibility;
-                await setVisibilityMap(allyToken, visibilityMap);
-                
-                // Update ephemeral effects: ally (observer) gains effects based on their visibility of the target
-                await updateEphemeralEffectsForVisibility(allyToken, targetToken, change.newVisibility);
+                // Update visibility between ally and target with the specified direction
+                await setVisibilityBetween(allyToken, targetToken, change.newVisibility, {
+                    direction: direction
+                });
                 
             } catch (error) {
                 console.error(`${MODULE_TITLE}: Failed to apply visibility change for ${change.target.name}:`, error);

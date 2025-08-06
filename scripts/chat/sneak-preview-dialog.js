@@ -1,8 +1,8 @@
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { getVisibilityBetween, setVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
-import { filterOutcomesByEncounter } from './shared-utils.js';
 import { refreshEveryonesPerception } from '../socket.js';
+import { getVisibilityBetween, hasActiveEncounter, isTokenInEncounter, setVisibilityBetween } from '../utils.js';
+import { filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current sneak dialog
 let currentSneakDialog = null;
@@ -390,7 +390,10 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
             // For Sneak actions, also apply ephemeral effects where sneaking token gets effects against observers
             // This matches Create a Diversion logic where the acting token gets effects against observers
             if (['hidden', 'undetected'].includes(effectiveNewState)) {
-                await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, effectiveNewState, { durationRounds: 1 });
+                await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, effectiveNewState, { 
+                    durationRounds: 1,
+                    direction: 'target_to_observer' // Sneaking token (target) is hidden from observer
+                });
             }
         } catch (error) {
             console.warn('Error applying visibility changes:', error);
@@ -418,7 +421,10 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
             await setVisibilityBetween(outcome.token, app.sneakingToken, outcome.oldVisibility, {skipEphemeralUpdate: true});
             
             // Clean up ephemeral effects on the sneaking token by reverting its visibility of the observer
-            await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, outcome.oldVisibility, { durationRounds: 1 });
+            await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, outcome.oldVisibility, { 
+                durationRounds: 1,
+                direction: 'target_to_observer' // Sneaking token (target) is hidden from observer
+            });
         } catch (error) {
             console.warn('Error reverting visibility changes:', error);
             // Continue execution even if visibility changes fail
@@ -458,7 +464,10 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 
                 // For Sneak actions, also apply ephemeral effects where sneaking token gets effects against observers
                 if (['hidden', 'undetected'].includes(effectiveNewState)) {
-                    await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, effectiveNewState, { durationRounds: 1 });
+                    await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, effectiveNewState, { 
+                        durationRounds: 1,
+                        direction: 'target_to_observer' // Sneaking token (target) is hidden from observer
+                    });
                 }
             } catch (error) {
                 console.warn('Error applying visibility changes for bulk apply:', error);
@@ -498,7 +507,10 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
                 await setVisibilityBetween(outcome.token, app.sneakingToken, outcome.oldVisibility, {skipEphemeralUpdate: true});
                 
                 // Clean up ephemeral effects on the sneaking token
-                await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, outcome.oldVisibility, { durationRounds: 1 });
+                await updateEphemeralEffectsForVisibility(app.sneakingToken, outcome.token, outcome.oldVisibility, { 
+                    durationRounds: 1,
+                    direction: 'target_to_observer' // Sneaking token (target) is hidden from observer
+                });
             } catch (error) {
                 console.warn('Error reverting visibility changes for bulk revert:', error);
                 // Continue with other outcomes even if one fails

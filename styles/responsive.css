@@ -141,13 +141,13 @@
     justify-content: center;
   }
 
-  .action-button {
+  .vm-action-button {
     padding: var(--spacing-xs) var(--spacing-md);
     font-size: 12px;
     min-width: 80px;
   }
 
-  .action-button i {
+  .vm-action-button i {
     font-size: 12px;
   }
 
@@ -248,7 +248,7 @@
     min-width: 60px !important;
   }
 
-  .action-button {
+  .vm-action-button {
     padding: var(--spacing-xs);
     font-size: 11px;
     min-width: 60px;
@@ -260,7 +260,7 @@
     align-items: stretch;
   }
 
-  .action-button {
+  .vm-action-button {
     width: 100%;
     justify-content: center;
   }
@@ -353,7 +353,7 @@
     border-width: 2px !important;
   }
 
-  .action-button {
+  .vm-action-button {
     border-width: 2px;
   }
 
@@ -373,7 +373,7 @@
     animation: none !important;
   }
 
-  .action-button:hover {
+  .vm-action-button:hover {
     transform: none;
   }
 

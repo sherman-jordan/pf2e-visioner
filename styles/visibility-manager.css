@@ -741,7 +741,7 @@
   z-index: 10;
 }
 
-.action-button {
+.vm-action-button {
   padding: 6px 12px;
   border: 1px solid var(--color-border-light-primary);
   border-radius: 4px;
@@ -756,7 +756,7 @@
   transition: all 0.2s ease;
 }
 
-.action-button:hover {
+.vm-action-button:hover {
   background: var(--color-bg-option-active);
   border-color: var(--color-border-highlight);
   border-width: 2px;
@@ -764,13 +764,13 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.action-button.apply {
+.vm-action-button.apply {
   background: var(--color-bg-btn-primary);
   border-color: var(--color-border-highlight-alt);
   color: var(--color-text-light-primary);
 }
 
-.action-button.apply:hover {
+.vm-action-button.apply:hover {
   background: var(--color-bg-btn-primary-active);
   border-color: var(--color-border-highlight);
   border-width: 2px;
@@ -778,12 +778,12 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.action-button.reset {
+.vm-action-button.reset {
   background: var(--color-bg-btn-secondary);
   border-color: var(--color-border-light-primary);
 }
 
-.action-button.cancel {
+.vm-action-button.cancel {
   background: transparent;
   border-color: var(--color-border-light-primary);
 }

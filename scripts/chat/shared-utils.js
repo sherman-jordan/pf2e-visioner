@@ -5,7 +5,7 @@
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityMap, setVisibilityBetween, setVisibilityMap } from '../utils.js';
+import { setVisibilityBetween } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 
 /**
@@ -137,46 +137,69 @@ export function determineOutcome(total, die, dc) {
 
 /**
  * Apply visibility changes atomically with error handling
- * @param {Token} seeker - The seeking token
+ * This is a unified function that replaces individual dialog-specific implementations
+ * @param {Token} observer - The observer token (usually the seeker, pointer, etc.)
  * @param {Array} changes - Array of change objects
  * @param {Object} options - Additional options
  * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
+ * @param {boolean} options.updateVisuals - Whether to update token visuals (default: true)
+ * @param {boolean} options.refreshPerception - Whether to refresh everyone's perception (default: true)
+ * @param {number} options.durationRounds - Duration in rounds (default: undefined)
+ * @param {boolean} options.initiative - Whether to use initiative (default: undefined)
+ * @returns {Promise} Promise that resolves when all changes are applied
  */
-export function applyVisibilityChanges(seeker, changes, options = {}) {
+export async function applyVisibilityChanges(observer, changes, options = {}) {
     if (!changes || changes.length === 0) return;
     
-    // Default direction is observer_to_target (seeker sees target)
+    // Default options
     const direction = options.direction || 'observer_to_target';
     
     try {
-        // Get current visibility map
-        const visibilityMap = getVisibilityMap(seeker);
-        
-        // Apply all changes
-        changes.forEach(change => {
-            if (change.target && change.newVisibility) {
-                // Update visibility and apply effects with the specified direction
-                setVisibilityBetween(seeker, change.target, change.newVisibility, {
-                    direction: direction
+        // Process each change
+        const promises = changes.map(async (change) => {
+            try {
+                if (!change.target) return;
+                
+                // Get the effective new visibility state
+                const effectiveNewState = change.overrideState || change.newVisibility;
+                if (!effectiveNewState) return;
+                
+                // Handle special case for Point Out where target might be in change.targetToken
+                let targetToken = change.target;
+                if (change.targetToken) {
+                    targetToken = change.targetToken;
+                }
+                
+                // Apply the visibility change with the specified direction
+                await setVisibilityBetween(observer, targetToken, effectiveNewState, {
+                    direction: direction,
+                    durationRounds: options.durationRounds,
+                    initiative: options.initiative,
+                    skipEphemeralUpdate: options.skipEphemeralUpdate,
+                    skipCleanup: options.skipCleanup
                 });
+            } catch (error) {
+                console.error(`${MODULE_TITLE}: Error applying individual visibility change:`, error);
             }
         });
         
-        // Update the visibility map
-        setVisibilityMap(seeker, visibilityMap);
+        // Wait for all changes to complete
+        await Promise.all(promises);
         
-        // Update visual effects for all affected tokens
-        updateTokenVisuals(seeker);
-        changes.forEach(change => {
-            if (change.target) {
-                updateTokenVisuals(change.target);
+        // Update token visuals if requested
+            try {
+                await updateTokenVisuals(observer);
+                for (const change of changes) {
+                    if (change.target) {
+                        await updateTokenVisuals(change.target);
+                    }
+                }
+            } catch (error) {
+                console.warn(`${MODULE_TITLE}: Error updating token visuals:`, error);
             }
-        });
-        refreshEveryonesPerception();
         
-        // Notify success
-        const changeCount = changes.length;
-        
+        // Refresh everyone's perception if requested
+            refreshEveryonesPerception();        
     } catch (error) {
         console.error(`${MODULE_TITLE}: Error applying visibility changes:`, error);
         ui.notifications.error(`${MODULE_TITLE}: Failed to apply visibility changes - ${error.message}`);

@@ -4,11 +4,9 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityBetween, setVisibilityBetween } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
+import { getVisibilityBetween } from '../utils.js';
 import { analyzePointOutOutcome, discoverPointOutAllies, getPointOutTarget } from './point-out-logic.js';
-import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
+import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
 
 // Store reference to current dialog (shared with SeekPreviewDialog)
 let currentPointOutDialog = null;
@@ -477,72 +475,60 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
     }
     
     /**
-     * Apply visibility changes using the existing utility function
+     * Apply visibility changes using the shared utility function
      * @param {Token} actor - The actor token (usually the one pointing out)
      * @param {Array} changes - Array of change objects
      * @param {Object} options - Additional options
      * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
      */
     async applyVisibilityChanges(actor, changes, options = {}) {
-        // Default direction is observer_to_target (ally sees target)
-        const direction = options.direction || 'observer_to_target';
+        // Default direction for Point Out is observer_to_target (ally sees target)
+        options.direction = options.direction || 'observer_to_target';
         
-        const promises = changes.map(async (change) => {
-            try {
-                // For Point Out, the ally (change.target) gains visibility of the targetToken
-                if (!change.target) {
-                    console.error(`${MODULE_TITLE}: No target found in change:`, change);
-                    return;
-                }
-                
-                const allyActor = change.target?.actor;
-                if (!allyActor) {
-                    console.error(`${MODULE_TITLE}: No actor found for ally token ${change.target?.name || 'unknown'}`);
-                    return;
-                }
-                
-                if (!change.targetToken && !change.target) {
-                    console.error(`${MODULE_TITLE}: No target token found in change:`, change);
-                    return;
-                }
-                
-                // Use the ally token (not actor) for getVisibilityMap
-                const allyToken = change.target;
-                // Get target token - inline logic to avoid circular import
-                let targetToken = change.targetToken;
-                if (!targetToken) {
-                    // Try to get from action data
-                    if (this.actionData.target) {
-                        targetToken = this.actionData.target;
-                    } else {
-                        // Try to get from message flags
-                        const targetData = this.actionData.message?.flags?.pf2e?.target;
-                        if (targetData?.token) {
-                            targetToken = canvas.tokens.get(targetData.token);
-                        } else if (game.user.targets && game.user.targets.size > 0) {
-                            // Try to get from current user targets
-                            targetToken = Array.from(game.user.targets)[0];
-                        }
+        // Process Point Out specific changes
+        const processedChanges = await Promise.all(changes.map(async (change) => {
+            // For Point Out, we need to handle the special case where the target might be in targetToken
+            if (!change.target) {
+                console.error(`${MODULE_TITLE}: No target found in change:`, change);
+                return null;
+            }
+            
+            // Get target token - inline logic to avoid circular import
+            let targetToken = change.targetToken;
+            if (!targetToken) {
+                // Try to get from action data
+                if (this.actionData.target) {
+                    targetToken = this.actionData.target;
+                } else {
+                    // Try to get from message flags
+                    const targetData = this.actionData.message?.flags?.pf2e?.target;
+                    if (targetData?.token) {
+                        targetToken = canvas.tokens.get(targetData.token);
+                    } else if (game.user.targets && game.user.targets.size > 0) {
+                        // Try to get from current user targets
+                        targetToken = Array.from(game.user.targets)[0];
                     }
                 }
-                
-                // Update visibility between ally and target with the specified direction
-                await setVisibilityBetween(allyToken, targetToken, change.newVisibility, {
-                    direction: direction
-                });
-                
-            } catch (error) {
-                console.error(`${MODULE_TITLE}: Failed to apply visibility change for ${change.target.name}:`, error);
             }
-        });
+            
+            if (!targetToken) {
+                console.error(`${MODULE_TITLE}: Could not find target token for Point Out`);
+                return null;
+            }
+            
+            return {
+                target: change.target,
+                targetToken: targetToken,
+                newVisibility: change.newVisibility,
+                overrideState: change.overrideState
+            };
+        }));
         
-        await Promise.all(promises);
-        try { 
-            await updateTokenVisuals(); 
-        } catch (error) { 
-            console.warn(`${MODULE_TITLE}: Could not refresh token visuals:`, error); 
-        }
-        refreshEveryonesPerception();
+        // Filter out null changes
+        const validChanges = processedChanges.filter(change => change !== null);
+        
+        // Use the shared implementation
+        return applyVisibilityChanges(actor, validChanges, options);
     }
     
     updateAllRowButtonsToApplied() {

@@ -4,10 +4,8 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { refreshEveryonesPerception } from '../socket.js';
-import { hasActiveEncounter, isTokenInEncounter, setVisibilityBetween } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
-import { filterOutcomesByEncounter } from './shared-utils.js';
+import { hasActiveEncounter, isTokenInEncounter } from '../utils.js';
+import { applyVisibilityChanges, filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current create a diversion dialog
 let currentDiversionDialog = null;
@@ -326,9 +324,25 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
             return;
         }
         
+        // Apply changes one by one to ensure each observer gets the correct effect
         for (const outcome of changedOutcomes) {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-            await app.applyVisibilityChange(outcome.observer, effectiveNewState);
+            
+            // For Create a Diversion, the observer token should see the diverting token as hidden
+            await applyVisibilityChanges(outcome.observer, [{
+                target: app.divertingToken,
+                newVisibility: effectiveNewState
+            }], { 
+                direction: 'observer_to_target',
+                durationRounds: 0,
+                initiative: true,
+                skipEphemeralUpdate: false, // Ensure ephemeral effects are created
+                skipCleanup: true // Skip cleanup to prevent removing previous effects
+            });
+        }
+        
+        // Update UI for each row
+        for (const outcome of changedOutcomes) {
             app.updateRowButtonsToApplied(outcome.observer.id);
         }
         
@@ -434,19 +448,23 @@ export class CreateADiversionPreviewDialog extends foundry.applications.api.Appl
     }
 
     /**
-     * Apply visibility change to a token
+     * Apply visibility change to a token using the shared utility function
+     * @param {Token} observerToken - The observer token
+     * @param {string} newVisibility - The new visibility state
      */
     async applyVisibilityChange(observerToken, newVisibility) {
         try {
-            // Apply the visibility change
-            // This also handles ephemeral effects through the setVisibilityBetween function
-            // For Create a Diversion, effects last 1 round
-            // The diverting token is the observer, the observer token is the target
-            await setVisibilityBetween(this.divertingToken, observerToken, newVisibility, { durationRounds: 0, initiative: true, direction: 'target_to_observer' });
-            
-            await updateTokenVisuals(observerToken);
-            await updateTokenVisuals(this.divertingToken);
-            refreshEveryonesPerception();
+            // For Create a Diversion, effects use initiative tracking
+            // For Create a Diversion, the observer token should see the diverting token as hidden
+            // So the diverting token is the target, and the observer token is the observer
+            await applyVisibilityChanges(observerToken, [{
+                target: this.divertingToken,
+                newVisibility: newVisibility
+            }], { 
+                direction: 'observer_to_target', // Observer sees diverting token as hidden
+                durationRounds: 0, // Set to 0 to use initiative value
+                initiative: true,
+            });
         } catch (error) {
             console.error(`${MODULE_TITLE}: Error applying visibility change:`, error);
             ui.notifications.error(`${MODULE_TITLE}: Failed to apply visibility change`);

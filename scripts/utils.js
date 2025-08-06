@@ -48,7 +48,7 @@ export function getVisibilityBetween(observer, target) {
  * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
  * @returns {Promise} Promise that resolves when visibility is set
  */
-export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false, direction: 'observer_to_target'}) {
+export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false, direction: 'observer_to_target', skipCleanup: false}) {
   const visibilityMap = getVisibilityMap(observer);
   visibilityMap[target.document.id] = state;
   await setVisibilityMap(observer, visibilityMap);

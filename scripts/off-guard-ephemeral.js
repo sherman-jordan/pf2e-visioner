@@ -4,7 +4,6 @@
  */
 
 import { MODULE_ID } from './constants.js';
-import { getVisibilityMap } from './utils.js';
 
 /**
  * Initialize off-guard automation using EphemeralEffect Rule Elements
@@ -38,60 +37,7 @@ export function initializeEphemeralOffGuardHandling() {
  * @param {...any} args - The function arguments
  */
 async function handleCheckRollEphemeral(wrapped, ...args) {
-    const context = args[1];
-    if (!context) {
-        return wrapped(...args);
-    }
-    
-    if (Array.isArray(context.options)) context.options = new Set(context.options);
-
-    const {
-        actor,
-        createMessage = "true",
-        type,
-        token,
-        target,
-        viewOnly,
-    } = context;
-    
-    const originToken = (token ?? actor?.getActiveTokens()?.[0])?.object;
-    const targetToken = target?.token?.object;
-
-    if (
-        viewOnly ||
-        !createMessage ||
-        !originToken ||
-        actor?.isOfType("hazard") ||
-        !["attack-roll", "spell-attack-roll"].includes(type)
-    ) {
-        return wrapped(...args);
-    }
-
-    const targetActor = targetToken?.actor;
-    
-    if (targetActor && originToken?.actor) {
-        // Check if target is hidden/undetected from attacker's perspective
-        const attackerVisibilityMap = getVisibilityMap(originToken);
-        const targetVisibilityFromAttacker = attackerVisibilityMap[targetToken.document.id];
-        
-
-        
-        // Check if the target has visibility of the attacker
-        const targetVisibilityMap = getVisibilityMap(targetToken);
-        const attackerVisibilityFromTarget = targetVisibilityMap[originToken.document.id];
-        
-        // Only apply effect if the attacker is hidden or undetected from the target's perspective
-        if (["hidden", "undetected"].includes(attackerVisibilityFromTarget)) {
-            // Use the updateEphemeralEffectsForVisibility function with target_to_observer direction
-            // This means the target sees the attacker as hidden
-            await updateEphemeralEffectsForVisibility(targetToken, originToken, attackerVisibilityFromTarget, {
-                direction: 'target_to_observer' // Attacker is hidden from target
-            });
-        }
-    } else {
-        // No action needed for non-hidden targets
-    }
-    
+    // Simply pass through to the original function without applying any effects
     return wrapped(...args);
 }
 

@@ -5,10 +5,10 @@
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityBetween, setVisibilityBetween } from '../utils.js';
+import { getVisibilityBetween } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { analyzeSeekOutcome, discoverSeekTargets } from './seek-logic.js';
-import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
+import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
 
 // Store reference to current seek dialog
 let currentSeekDialog = null;
@@ -356,11 +356,13 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
             // Revert each outcome to its original visibility state
             for (const outcome of changedOutcomes) {
                 try {                    
-                    // Revert to original visibility
-                    // This also handles ephemeral effects through the setVisibilityBetween function
-                    // For Seek: The seeker is the observer, the target is being observed
-                    await setVisibilityBetween(app.actorToken, outcome.target, outcome.oldVisibility, {
-                        direction: 'observer_to_target' // Seeker (observer) sees target
+                    // Use the shared applyVisibilityChanges function
+                    await applyVisibilityChanges(app.actorToken, [{
+                        target: outcome.target,
+                        newVisibility: outcome.oldVisibility
+                    }], {
+                        direction: 'observer_to_target', // Seeker (observer) sees target
+                        updateVisuals: false // We'll update visuals manually below
                     });
                     
                     // Update token visuals
@@ -530,37 +532,18 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
     }
     
     /**
-     * Apply visibility changes using the existing utility function
+     * Apply visibility changes using the shared utility function
      * @param {Token} seeker - The seeker token
      * @param {Array} changes - Array of change objects
      * @param {Object} options - Additional options
      * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
      */
     async applyVisibilityChanges(seeker, changes, options = {}) {
-        // Default direction is observer_to_target (seeker sees target)
-        const direction = options.direction || 'observer_to_target';
+        // Default direction for Seek is observer_to_target (seeker sees target)
+        options.direction = options.direction || 'observer_to_target';
         
-        const promises = changes.map(async (change) => {
-            try {
-                // Update visibility between seeker and target with the specified direction
-                await setVisibilityBetween(seeker, change.target, change.newVisibility, {
-                    direction: direction
-                });
-                
-            } catch (error) {
-                ui.notifications.error(`${MODULE_TITLE}: Error applying changes.`);
-            }
-        });
-        
-        await Promise.all(promises);
-        
-        // Refresh token visuals to ensure all changes are displayed
-        try {
-            await updateTokenVisuals();
-        } catch (error) {
-            ui.notifications.error(`${MODULE_TITLE}: Error refreshing token visuals.`);
-        }
-        refreshEveryonesPerception();
+        // Use the shared implementation
+        return applyVisibilityChanges(seeker, changes, options);
     }
     
     /**

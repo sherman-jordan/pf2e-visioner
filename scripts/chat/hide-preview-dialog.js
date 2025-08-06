@@ -5,9 +5,9 @@
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityMap, setVisibilityBetween, setVisibilityMap } from '../utils.js';
+import { getVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
-import { filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter, shouldFilterAlly } from './shared-utils.js';
+import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter, shouldFilterAlly } from './shared-utils.js';
 
 // Store reference to current hide dialog
 let currentHideDialog = null;
@@ -697,7 +697,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     }
     
     /**
-     * Apply visibility changes for hide action
+     * Apply visibility changes for hide action using the shared utility function
      * @param {Token} hidingToken - The token that's hiding
      * @param {Array} changes - Array of change objects
      * @param {Object} options - Additional options
@@ -708,37 +708,34 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             return;
         }
         
-        // Default direction is observer_to_target (observer sees hiding token)
-        const direction = options.direction || 'observer_to_target';
+        // Default direction for Hide is observer_to_target (observer sees hiding token)
+        options.direction = options.direction || 'observer_to_target';
         
-        try {
-            // Get current visibility map
-            const visibilityMap = getVisibilityMap(hidingToken);
+        // Process Hide specific changes - for Hide, the target is the observer and hidingToken is the target
+        const processedChanges = changes.map(change => {
+            // Use override state if available, otherwise use calculated newVisibility
+            const effectiveNewState = change.overrideState || change.newVisibility;
             
-            // Apply all changes - note the perspective is reversed for Hide
-            // We're setting how observers see the hiding token
-            for (const change of changes) {
-                // Use override state if available, otherwise use calculated newVisibility
-                const effectiveNewState = change.overrideState || change.newVisibility;
-                
-                if (change.target && effectiveNewState) {
-                    // For Hide, we set how the observer (change.target) sees the hiding token
-                    // Use setVisibilityBetween which handles both visibility state and effects
-                    await setVisibilityBetween(change.target, hidingToken, effectiveNewState, {
-                        direction: direction
-                    });
-                }
+            if (change.target && effectiveNewState) {
+                // For Hide, we need to swap the tokens:
+                // The observer is change.target and the target is hidingToken
+                return {
+                    observer: change.target,
+                    target: hidingToken,
+                    newVisibility: effectiveNewState
+                };
             }
-            
-            // Update visual effects for all affected tokens
-            updateTokenVisuals(hidingToken);
-            changes.forEach(change => {
-                if (change.target) {
-                    updateTokenVisuals(change.target);
-                }
-            });
-            refreshEveryonesPerception();
-            
+            return null;
+        }).filter(change => change !== null);
+        
+        // Use the shared implementation for each processed change
+        try {
+            for (const change of processedChanges) {
+                await applyVisibilityChanges(change.observer, [{
+                    target: change.target,
+                    newVisibility: change.newVisibility
+                }], options);
+            }
         } catch (error) {
             console.error(`${MODULE_TITLE}: Error applying hide visibility changes:`, error);
             ui.notifications.error(`${MODULE_TITLE}: Failed to apply hide visibility changes - ${error.message}`);

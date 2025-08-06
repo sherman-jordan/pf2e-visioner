@@ -1,6 +1,6 @@
-import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { getVisibilityBetween, isTokenInEncounter, hasActiveEncounter } from '../utils.js';
-import { determineOutcome, shouldFilterAlly } from './shared-utils.js';
+import { MODULE_TITLE } from '../constants.js';
+import { getVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
+import { determineOutcome, extractPerceptionDC, shouldFilterAlly } from './shared-utils.js';
 import { SneakPreviewDialog } from './sneak-preview-dialog.js';
 
 /**
@@ -42,13 +42,8 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
             continue;
         }
 
-        // Get the observer's Perception DC - using robust path checking for different PF2e versions
-        const perceptionDC = token.actor?.system?.perception?.dc?.value || 
-                           token.actor?.system?.perception?.dc ||
-                           token.actor?.system?.attributes?.perception?.dc || 
-                           token.actor?.data?.data?.perception?.dc?.value || 
-                           token.actor?.data?.data?.attributes?.perception?.dc || 
-                           Math.floor(10 + token.actor?.system?.abilities?.wis?.mod || 0);
+        // Get the observer's Perception DC using the shared utility function
+        const perceptionDC = extractPerceptionDC(token);
         
         observers.push({
             token: token,

@@ -3,17 +3,16 @@
  * Handles Hide-specific calculations, target discovery, and result processing
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
+import { MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
-import { 
-    extractStealthDC, 
-    calculateTokenDistance, 
-    hasActiveEncounter, 
-    isTokenInEncounter,
-    determineOutcome,
-    shouldFilterAlly
-} from './shared-utils.js';
 import { HidePreviewDialog } from './hide-preview-dialog.js';
+import {
+  calculateTokenDistance,
+  determineOutcome,
+  extractPerceptionDC,
+  isTokenInEncounter,
+  shouldFilterAlly
+} from './shared-utils.js';
 
 /**
  * Discover valid Hide observers (tokens that can see the hiding token)
@@ -69,50 +68,7 @@ export function discoverHideObservers(hidingToken, encounterOnly = false, applyA
     return observers.sort((a, b) => a.distance - b.distance);
 }
 
-/**
- * Extract Perception DC from token using modern PF2e patterns
- * @param {Token} token - The token to extract DC from
- * @returns {number} The Perception DC or 0 if not found
- */
-export function extractPerceptionDC(token) {
-    if (!token.actor) return 0;
-    
-    const actor = token.actor;
-    
-    // Method 1: Try standard perception skill DC (for PCs)
-    const perceptionSkill = actor.skills?.perception;
-    if (perceptionSkill?.dc?.value) {
-        return perceptionSkill.dc.value;
-    }
-    
-    // Method 2: Try perception modifier + 10 (standard DC calculation)
-    if (perceptionSkill?.modifier !== undefined) {
-        return perceptionSkill.modifier + 10;
-    }
-    
-    // Method 3: Try system perception data (for NPCs)
-    if (actor.system?.perception?.dc?.value) {
-        return actor.system.perception.dc.value;
-    }
-    
-    // Method 4: Try perception modifier from system + 10
-    if (actor.system?.perception?.mod !== undefined) {
-        return actor.system.perception.mod + 10;
-    }
-    
-    // Method 5: Try attributes.perception (alternative structure)
-    if (actor.system?.attributes?.perception?.dc) {
-        return actor.system.attributes.perception.dc;
-    }
-    
-    // Method 6: Calculate from level if nothing else works (fallback for NPCs)
-    if (actor.system?.details?.level?.value !== undefined) {
-        const level = actor.system.details.level.value;
-        return 10 + level; // Basic DC calculation
-    }
-    
-    return 0;
-}
+
 
 /**
  * Advanced Hide outcome calculator following official PF2e rules

@@ -3,11 +3,11 @@
  * Common functions used by both Seek and Point Out logic
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { getVisibilityBetween, setVisibilityMap, getVisibilityMap } from '../utils.js';
-import { updateTokenVisuals } from '../visual-effects.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { updateEphemeralEffectsForVisibility } from '../off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from '../socket.js';
+import { getVisibilityMap, setVisibilityMap } from '../utils.js';
+import { updateTokenVisuals } from '../visual-effects.js';
 
 /**
  * Validate if a token is a valid Seek target
@@ -23,14 +23,15 @@ export function isValidSeekTarget(token, seeker) {
 }
 
 /**
- * Extract Stealth DC from token using modern PF2e patterns
+ * Extract Stealth DC from token using the definite path
  * @param {Token} token - The token to extract DC from
  * @returns {number} The Stealth DC or 0 if not found
  */
 export function extractStealthDC(token) {
-    // Try to get from actor's stealth skill
-    const stealthSkill = token.actor?.skills?.stealth;
-    return stealthSkill?.dc?.value || 0;
+    if (!token.actor) return 0;
+    
+    // For both PCs and NPCs: actor.system.skills.stealth.dc
+    return token.actor.system?.skills?.stealth?.dc || 0;
 }
 
 /**
@@ -192,6 +193,18 @@ export function shouldFilterAlly(actingToken, targetToken, filterType = 'enemies
     }
     
     return false;
+}
+
+/**
+ * Extract Perception DC from token using the definite path
+ * @param {Token} token - The token to extract DC from
+ * @returns {number} The Perception DC or 0 if not found
+ */
+export function extractPerceptionDC(token) {
+    if (!token.actor) return 0;
+    
+    // For both PCs and NPCs: actor.system.perception.dc
+    return token.actor.system?.perception?.dc || 0;
 }
 
 /**

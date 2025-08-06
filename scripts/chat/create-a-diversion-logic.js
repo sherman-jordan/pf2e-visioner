@@ -3,10 +3,10 @@
  * Handles the discovery and analysis of Create a Diversion action outcomes
  */
 
-import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { determineOutcome, shouldFilterAlly } from './shared-utils.js';
+import { MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { CreateADiversionPreviewDialog } from './create-a-diversion-preview-dialog.js';
+import { determineOutcome, extractPerceptionDC, shouldFilterAlly } from './shared-utils.js';
 
 /**
  * Discovers all tokens that can see the diverting token (potential targets for diversion)
@@ -41,13 +41,8 @@ export function discoverDiversionObservers(divertingToken) {
         // Only include tokens that can currently see the diverting token
         // (observed or concealed - they need to see you to be diverted)
         if (visibility === 'observed') {
-            // Get the correct perception DC from the actor data
-            const perceptionDC = token.actor?.system?.perception?.dc?.value || 
-                               token.actor?.system?.perception?.dc ||
-                               token.actor?.system?.attributes?.perception?.dc || 
-                               token.actor?.data?.data?.perception?.dc?.value || 
-                               token.actor?.data?.data?.attributes?.perception?.dc || 
-                               Math.floor(10 + token.actor?.system?.abilities?.wis?.mod || 0);
+            // Get the correct perception DC using the shared utility function
+            const perceptionDC = extractPerceptionDC(token);
             console.log(`${MODULE_TITLE}: Adding observer ${token.name} - DC: ${perceptionDC}`);
             observers.push({
                 token: token,

@@ -372,8 +372,9 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
      */
     updateChangesCount() {
         
-        // Count outcomes where override state differs from old visibility
-        const changesCount = this.outcomes.filter(outcome => {
+        // Get filtered outcomes and count changes
+        const filteredOutcomes = this.getFilteredOutcomes();
+        const changesCount = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             const hasChange = effectiveNewState !== outcome.oldVisibility;
             return hasChange;
@@ -412,7 +413,8 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         if (!applyAllButton || !revertAllButton) return;
         
         // Count current changes to determine if Apply All should be enabled
-        const changesCount = this.outcomes.filter(outcome => {
+        const filteredOutcomes = this.getFilteredOutcomes();
+        const changesCount = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         }).length;

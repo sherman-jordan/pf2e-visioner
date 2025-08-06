@@ -128,9 +128,11 @@ export class Pf2eVisionerApi {
    * @param {string} observerId - The ID of the observing token
    * @param {string} targetId - The ID of the target token
    * @param {string} state - The visibility state to set ('observed', 'hidden', 'undetected', 'concealed')
+   * @param {Object} options - Optional configuration
+   * @param {boolean} options.skipEphemeralUpdate - Boolean (default: false)
    * @returns {Promise<boolean>} Promise that resolves to true if successful, false otherwise
    */
-  static async setVisibility(observerId, targetId, state) {
+  static async setVisibility(observerId, targetId, state, options = {}) {
     try {
       // Validate visibility state
       const validStates = ['observed', 'hidden', 'undetected', 'concealed'];
@@ -154,7 +156,7 @@ export class Pf2eVisionerApi {
       }
 
       // Set visibility using utility function
-      await setVisibilityBetween(observerToken, targetToken, state);
+      await setVisibilityBetween(observerToken, targetToken, state, options);
       await updateTokenVisuals();
       
       return true;

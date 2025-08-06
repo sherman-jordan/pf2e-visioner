@@ -44,6 +44,12 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'limitSeekRangeInCombat') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       }
       
       try {

@@ -79,6 +79,15 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  limitSeekRangeInCombat: {
+    name: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+
   useHudButton: {
     name: 'PF2E_VISIONER.SETTINGS.USE_HUD_BUTTON.name',
     hint: 'PF2E_VISIONER.SETTINGS.USE_HUD_BUTTON.hint',

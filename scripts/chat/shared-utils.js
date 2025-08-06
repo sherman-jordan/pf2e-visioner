@@ -38,12 +38,58 @@ export function extractStealthDC(token) {
  * Calculate distance between tokens for sorting
  * @param {Token} token1 - First token
  * @param {Token} token2 - Second token
- * @returns {number} Distance in grid units
+ * @returns {number} Distance in feet
  */
 export function calculateTokenDistance(token1, token2) {
-    const dx = token1.x - token2.x;
-    const dy = token1.y - token2.y;
-    return Math.sqrt(dx * dx + dy * dy) / canvas.grid.size;
+    // Try to use token's distanceTo method if available (PF2e system provides this)
+    if (token1.distanceTo) {
+        try {
+            // Use token's direct distanceTo method
+            return token1.distanceTo(token2);
+        } catch (error) {
+          console.error(`${MODULE_TITLE}: Error calculating distance between tokens, using fallback methods:`, error);
+        }
+    }
+    
+    // Try to use PF2e system's distance calculation if available
+    if (game.system.id === 'pf2e' && game.pf2e?.utils?.distance) {
+        try {
+            // Use PF2e's distance calculation
+            return game.pf2e.utils.distance.getDistance(token1, token2);
+        } catch (error) {
+            // Fall back to other methods if PF2e's function fails
+        }
+    }
+    
+    // Try using Foundry's built-in measurement
+    if (canvas.grid && canvas.grid.measureDistance) {
+        try {
+            // Try to use Foundry's built-in distance calculation
+            return canvas.grid.measureDistance(token1.center, token2.center);
+        } catch (error) {
+            // Fall back to manual calculation if the built-in one fails
+        }
+    }
+    
+    // Fallback manual calculation
+    // Get the center points of each token
+    const t1Center = {
+        x: token1.x + (token1.width * canvas.grid.size) / 2,
+        y: token1.y + (token1.height * canvas.grid.size) / 2
+    };
+    
+    const t2Center = {
+        x: token2.x + (token2.width * canvas.grid.size) / 2,
+        y: token2.y + (token2.height * canvas.grid.size) / 2
+    };
+    
+    // Calculate distance between centers in pixels
+    const dx = t1Center.x - t2Center.x;
+    const dy = t1Center.y - t2Center.y;
+    const pixelDistance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Convert to feet (assuming 5ft grid)
+    return (pixelDistance / canvas.grid.size) * 5;
 }
 
 /**

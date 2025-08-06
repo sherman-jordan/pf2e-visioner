@@ -66,7 +66,10 @@
       "OPEN_RESULTS_TOOLTIP": "Open the Seek results dialog to apply individual or bulk visibility changes",
       "ENCOUNTER_ONLY": "Show only encounter tokens",
       "SETTING_NAME": "Enable Seek Automation",
-      "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes"
+      "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes",
+      "OUT_OF_RANGE": "Out of Range",
+      "RANGE_LIMIT_ACTIVE": "Range limit active: Only showing targets within 30 feet",
+      "NO_TARGETS_IN_RANGE": "No valid targets within 30 feet range"
     },
     "HIDE_AUTOMATION": {
       "BUTTON_APPLY": "Apply Hide Results",
@@ -143,6 +146,10 @@
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Default Encounter Filter State",
         "hint": "When enabled, the encounter filter checkbox in dialogs will be checked by default when there's an active encounter"
+      },
+      "LIMIT_SEEK_RANGE": {
+        "name": "Limit Seek Range in Combat",
+        "hint": "When enabled, Seek actions in combat will only detect targets within 30 feet (following PF2e combat rules)"
       },
       "USE_HUD_BUTTON": {
         "name": "Use Token HUD Button",

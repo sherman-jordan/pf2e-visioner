@@ -35,6 +35,7 @@ A comprehensive FoundryVTT v13 module that provides advanced per-token visibilit
 - Supports all major detection states: Observed, Concealed, Hidden, Undetected
 - **Automatic Off-Guard Conditions**: When hidden/undetected attackers make attacks, targets automatically become off-guard for both AC penalties and damage benefits (like sneak attack)
 - **Seek Action Automation**: Automatically apply visibility changes when Seek actions are rolled - buttons appear in chat messages to instantly resolve results
+- **Custom Rule Element**: Programmatically change visibility statuses and apply ephemeral effects using the Visibility rule element
 - **Visual Consistency**: All interface elements use consistent color coding throughout
 
 ### ⚡ **Easy to Use**
@@ -147,6 +148,7 @@ Automatically apply corresponding PF2E conditions (Hidden, Undetected, etc.) whe
 - **ApplicationV2**: Uses FoundryVTT v13's latest UI framework
 - **CSS Layers**: Professional styling that integrates with core themes
 - See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed structure documentation
+- See [RULE_ELEMENTS.md](RULE_ELEMENTS.md) for custom rule elements documentation
 
 ### Data Storage
 - Visibility relationships are stored as flags on token documents

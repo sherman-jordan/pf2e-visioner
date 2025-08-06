@@ -32,6 +32,12 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'ignoreAllies') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       } else if (key === 'defaultEncounterFilter') {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({

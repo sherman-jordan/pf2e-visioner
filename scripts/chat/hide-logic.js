@@ -19,9 +19,10 @@ import { HidePreviewDialog } from './hide-preview-dialog.js';
  * Discover valid Hide observers (tokens that can see the hiding token)
  * @param {Token} hidingToken - The token performing the Hide
  * @param {boolean} encounterOnly - Whether to filter to encounter tokens only
+ * @param {boolean} applyAllyFilter - Whether to apply ally filtering (default: true)
  * @returns {Array} Array of observer objects with token, DC, and visibility data
  */
-export function discoverHideObservers(hidingToken, encounterOnly = false) {
+export function discoverHideObservers(hidingToken, encounterOnly = false, applyAllyFilter = true) {
     if (!hidingToken) return [];
     
     const observers = [];
@@ -33,8 +34,8 @@ export function discoverHideObservers(hidingToken, encounterOnly = false) {
             continue;
         }
         
-        // Apply ally filtering if enabled
-        if (shouldFilterAlly(hidingToken, token, 'enemies')) continue;
+        // Apply ally filtering if enabled and requested
+        if (applyAllyFilter && shouldFilterAlly(hidingToken, token, 'enemies')) continue;
         
         // Check encounter filtering if requested
         if (encounterOnly && !isTokenInEncounter(token)) {
@@ -183,7 +184,7 @@ export async function previewHideResults(actionData) {
         return;
     }
     
-    const observers = discoverHideObservers(actionData.actor);
+    const observers = discoverHideObservers(actionData.actor, false, false);
     
     if (observers.length === 0) {
         ui.notifications.info(`${MODULE_TITLE}: No observers found for ${actionData.actor.name} to hide from`);

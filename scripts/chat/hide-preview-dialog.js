@@ -122,18 +122,12 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
-        // Filter outcomes based on encounter filter
-        let filteredOutcomes = this.outcomes;
-        if (this.encounterOnly && hasActiveEncounter()) {
-            filteredOutcomes = this.outcomes.filter(outcome => 
-                isTokenInEncounter(outcome.target)
-            );
-            
-            // If no encounter tokens found, keep the filter active but show empty list
-            if (filteredOutcomes.length === 0) {
-                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found for this action`);
-                // Keep filteredOutcomes as empty array, don't reset to all outcomes
-            }
+        // Get filtered outcomes using helper method
+        const filteredOutcomes = this.getFilteredOutcomes();
+        
+        // Show notification if encounter filter results in empty list
+        if (this.encounterOnly && hasActiveEncounter() && filteredOutcomes.length === 0) {
+            ui.notifications.info(`${MODULE_TITLE}: No encounter observers found for this action`);
         }
         
         // Process outcomes to add additional properties needed by template
@@ -167,6 +161,26 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         context.bulkActionState = this.bulkActionState;
         
         return context;
+    }
+    
+    /**
+     * Get filtered outcomes based on current filter settings
+     * @returns {Array} Filtered outcomes
+     */
+    getFilteredOutcomes() {
+        // Apply ally filtering first (since we disabled it in discoverHideObservers)
+        let filteredOutcomes = this.outcomes.filter(outcome => {
+            return !shouldFilterAlly(this.actorToken, outcome.target, 'enemies');
+        });
+        
+        // Then apply encounter filtering if requested
+        if (this.encounterOnly && hasActiveEncounter()) {
+            filteredOutcomes = filteredOutcomes.filter(outcome => 
+                isTokenInEncounter(outcome.target)
+            );
+        }
+        
+        return filteredOutcomes;
     }
 
     /**
@@ -789,8 +803,11 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             return;
         }
         
-        // Get all outcomes that have actionable changes
-        const changedOutcomes = app.outcomes.filter(outcome => {
+        // Get filtered outcomes based on current filter settings
+        const filteredOutcomes = app.getFilteredOutcomes();
+        
+        // Get filtered outcomes that have actionable changes
+        const changedOutcomes = filteredOutcomes.filter(outcome => {
             const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             return effectiveNewState !== outcome.oldVisibility;
         });

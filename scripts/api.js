@@ -5,6 +5,7 @@
 import { updateTokenVisuals } from './effects-coordinator.js';
 import { getVisibilityBetween, setVisibilityBetween, showNotification } from './utils.js';
 import { TokenVisibilityManager } from './visibility-manager.js';
+import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 
 /**
  * Main API class for the module
@@ -168,6 +169,49 @@ export class Pf2eVisionerApi {
    */
   static async updateTokenVisuals() {
     await updateTokenVisuals();
+  }
+
+  /**
+   * Update ephemeral effects for visibility changes
+   * @param {string} observerId - The ID of the observing token
+   * @param {string} targetId - The ID of the target token
+   * @param {string} newVisibilityState - The new visibility state ('observed', 'hidden', 'undetected', 'concealed')
+   * @param {Object} options - Optional configuration
+   * @param {boolean} options.initiative - Boolean (default: null)
+   * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
+   * @returns {Promise<boolean>} Promise that resolves to true if successful, false otherwise
+   */
+  static async updateEphemeralEffects(observerId, targetId, newVisibilityState, options = {}) {
+    try {
+      // Validate visibility state
+      const validStates = ['observed', 'hidden', 'undetected', 'concealed'];
+      if (!validStates.includes(newVisibilityState)) {
+        console.error(`Invalid visibility state: ${newVisibilityState}. Valid states are: ${validStates.join(', ')}`);
+        return false;
+      }
+
+      // Get tokens from IDs
+      const observerToken = canvas.tokens.get(observerId);
+      const targetToken = canvas.tokens.get(targetId);
+
+      if (!observerToken) {
+        console.error(`Observer token not found with ID: ${observerId}`);
+        return false;
+      }
+
+      if (!targetToken) {
+        console.error(`Target token not found with ID: ${targetId}`);
+        return false;
+      }
+
+      // Update ephemeral effects using the utility function
+      await updateEphemeralEffectsForVisibility(observerToken, targetToken, newVisibilityState, options);
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating ephemeral effects:', error);
+      return false;
+    }
   }
 
   /**

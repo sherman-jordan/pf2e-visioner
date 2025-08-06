@@ -112,10 +112,11 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
                 isTokenInEncounter(outcome.target)
             );
             
-            // If no encounter tokens found, keep the filter active but show empty list
+            // Auto-uncheck if no encounter tokens found
             if (filteredOutcomes.length === 0) {
-                ui.notifications.info(`${MODULE_TITLE}: No encounter allies found for this action`);
-                // Keep filteredOutcomes as empty array, don't reset to all outcomes
+                this.encounterOnly = false;
+                filteredOutcomes = this.outcomes;
+                ui.notifications.info(`${MODULE_TITLE}: No encounter allies found, showing all`);
             }
         }
         
@@ -309,16 +310,18 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         const pointOutTarget = getPointOutTarget(app.actionData);
         if (!pointOutTarget) {
             ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
+            app.encounterOnly = false;
             return;
         }
         
         // Find allies who can't see this target
         let allies = discoverPointOutAllies(app.actorToken, pointOutTarget, app.encounterOnly);
         
-        // If no encounter allies found, keep filter but show empty results
+        // If no encounter allies found, turn off filter and try again
         if (allies.length === 0 && app.encounterOnly) {
-            ui.notifications.info(`${MODULE_TITLE}: No encounter allies found who can't see ${pointOutTarget.name}`);
-            // Keep the filter active, don't auto-disable it
+            ui.notifications.info(`${MODULE_TITLE}: No encounter allies found who can't see ${pointOutTarget.name} - showing all allies`);
+            app.encounterOnly = false;
+            allies = discoverPointOutAllies(app.actorToken, pointOutTarget, app.encounterOnly);
         }
         
         // If still no allies found, show message and return

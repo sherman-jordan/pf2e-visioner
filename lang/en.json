@@ -69,7 +69,9 @@
       "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes",
       "OUT_OF_RANGE": "Out of Range",
       "RANGE_LIMIT_ACTIVE": "Range limit active: Only showing targets within 30 feet",
-      "NO_TARGETS_IN_RANGE": "No valid targets within 30 feet range"
+      "RANGE_LIMIT_ACTIVE_CUSTOM": "Range limit active: Only showing targets within {distance} feet",
+      "NO_TARGETS_IN_RANGE": "No valid targets within 30 feet range",
+      "NO_TARGETS_IN_RANGE_CUSTOM": "No valid targets within {distance} feet range"
     },
     "HIDE_AUTOMATION": {
       "BUTTON_APPLY": "Apply Hide Results",
@@ -149,7 +151,11 @@
       },
       "LIMIT_SEEK_RANGE": {
         "name": "Limit Seek Range in Combat",
-        "hint": "When enabled, Seek actions in combat will only detect targets within 30 feet (following PF2e combat rules)"
+        "hint": "When enabled, Seek actions in combat will only detect targets within the specified distance"
+      },
+      "CUSTOM_SEEK_DISTANCE": {
+        "name": "Seek Range Value",
+        "hint": "Set the maximum distance (in feet) for Seek actions when range limitation is enabled"
       },
       "USE_HUD_BUTTON": {
         "name": "Use Token HUD Button",

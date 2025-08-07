@@ -50,6 +50,12 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'customSeekDistance') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       }
       
       try {

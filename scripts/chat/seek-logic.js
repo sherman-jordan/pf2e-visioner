@@ -27,7 +27,8 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false) {
     const targets = [];
     const isInCombat = hasActiveEncounter();
     const limitRangeInCombat = game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
-    const maxSeekRange = 30; // 30 feet maximum range in combat when setting is enabled
+    const customSeekDistance = game.settings.get(MODULE_ID, 'customSeekDistance');
+    const maxSeekRange = customSeekDistance; // Use the custom distance setting
         
     // Find all tokens that are hidden or undetected to the seeker
     for (const token of canvas.tokens.placeables) {
@@ -150,9 +151,10 @@ export async function previewSeekResults(actionData) {
     const limitRangeInCombat = game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
     const rangeRestricted = isInCombat && limitRangeInCombat;
     
-    // If in combat and range is limited, show a notification
+    // If in combat and range is limited, show a notification with custom distance
     if (rangeRestricted) {
-        ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.RANGE_LIMIT_ACTIVE')}`);
+        const customSeekDistance = game.settings.get(MODULE_ID, 'customSeekDistance');
+        ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.RANGE_LIMIT_ACTIVE_CUSTOM', {distance: customSeekDistance})}`);
     }
     
     const targets = discoverSeekTargets(actionData.actor);
@@ -160,7 +162,8 @@ export async function previewSeekResults(actionData) {
     if (targets.length === 0) {
         // Show different message based on whether range limitation is active
         if (rangeRestricted) {
-            ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.NO_TARGETS_IN_RANGE')}`);
+            const customSeekDistance = game.settings.get(MODULE_ID, 'customSeekDistance');
+            ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.NO_TARGETS_IN_RANGE_CUSTOM', {distance: customSeekDistance})}`);
         } else {
             ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.NO_UNDETECTED_TOKENS', { name: actionData.actor.name })}`);
         }

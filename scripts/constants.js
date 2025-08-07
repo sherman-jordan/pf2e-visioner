@@ -43,6 +43,7 @@ export const VISIBILITY_STATES = {
  * Default module settings
  */
 export const DEFAULT_SETTINGS = {
+  // Visibility Indicators
   enableHoverTooltips: {
     name: 'PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.name',
     hint: 'PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.hint',
@@ -61,6 +62,7 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  // Token Filtering
   ignoreAllies: {
     name: 'PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.name',
     hint: 'PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.hint',
@@ -79,6 +81,7 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  // Seek Action Settings
   limitSeekRangeInCombat: {
     name: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.name',
     hint: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.hint',
@@ -88,6 +91,16 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  customSeekDistance: {
+    name: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE.hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 30
+  },
+
+  // Interface Settings
   useHudButton: {
     name: 'PF2E_VISIONER.SETTINGS.USE_HUD_BUTTON.name',
     hint: 'PF2E_VISIONER.SETTINGS.USE_HUD_BUTTON.hint',

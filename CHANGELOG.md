@@ -5,6 +5,13 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-08-07
+
+### Added
+- **Custom Seek Distance**: Added configurable distance setting for Seek range limitation
+- **Settings Organization**: Improved settings layout with logical grouping for better usability
+- **Enhanced Notifications**: Updated range limit messages to show the custom distance
+
 
 ## [0.2.18] - 2025-08-06
 

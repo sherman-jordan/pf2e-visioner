@@ -141,6 +141,10 @@
         "name": "Allow Player Tooltips",
         "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens (requires restart)"
       },
+      "TOOLTIP_FONT_SIZE": {
+        "name": "Tooltip Font Size",
+        "hint": "Adjust the font size of visibility tooltips (client-side setting)"
+      },
       "IGNORE_ALLIES": {
         "name": "Ignore Allies",
         "hint": "When enabled, NPCs will only see party members in dialogs, and players will only see NPCs. This simplifies visibility management by hiding ally-to-ally relationships."

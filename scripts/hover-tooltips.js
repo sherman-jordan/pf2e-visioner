@@ -12,6 +12,7 @@ let tokenEventHandlers = new Map(); // Store references to our specific event ha
 let tooltipMode = 'target'; // 'target' (default) or 'observer'
 let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
+let tooltipFontSize = 16; // Default font size, will be updated from settings
 
 /**
  * Check if tooltips are allowed for the current user
@@ -53,6 +54,10 @@ export function setTooltipMode(mode) {
 export function initializeHoverTooltips() {
   // Only initialize hover tooltips if allowed for this user
   if (!canShowTooltips()) return;
+  
+  // Set the CSS variable for tooltip font size
+  tooltipFontSize = game.settings.get(MODULE_ID, 'tooltipFontSize');
+  document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${tooltipFontSize}px`);
   
   // Add event listeners to canvas for token hover
   canvas.tokens.placeables.forEach(token => {
@@ -314,9 +319,13 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
     'undetected': 'Undetected'
   };
   
+  // Get the font size from settings and scale appropriately for the icon text
+  tooltipFontSize = game.settings.get(MODULE_ID, 'tooltipFontSize');
+  const iconFontSize = Math.round(tooltipFontSize * 1.5); // Scale up for the icon text
+  
   const iconText = new PIXI.Text(stateLabels[visibilityState] || 'Observed', {
     fontFamily: 'Arial, sans-serif',
-    fontSize: 24,
+    fontSize: iconFontSize,
     fill: 0xFFFFFF,
     align: 'center',
     fontWeight: 'bold'
@@ -366,21 +375,24 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
   glow.alpha = 0.3;
   
   // Add hover tooltip functionality using Foundry's built-in tooltip system
+  tooltipFontSize = game.settings.get(MODULE_ID, 'tooltipFontSize');
+  const detailFontSize = Math.max(12, tooltipFontSize - 2); // Slightly smaller font for details
+  
   let tooltipText;
   if (mode === 'observer') {
     // Observer mode: "How [hovered token] sees [this token]"
-    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: 16px;">
+    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: ${tooltipFontSize}px;">
       <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
     </div>
-    <div style="font-size: 14px; color: #ccc;">
+    <div style="font-size: ${detailFontSize}px; color: #ccc;">
       ${observerToken.document.name} sees ${targetToken.document.name} as ${game.i18n.localize(config.label).toLowerCase()}
     </div>`;
   } else {
     // Target mode: "How [this token] sees [hovered token]"
-    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: 16px;">
+    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: ${tooltipFontSize}px;">
       <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
     </div>
-    <div style="font-size: 14px; color: #ccc;">
+    <div style="font-size: ${detailFontSize}px; color: #ccc;">
       ${targetToken.document.name} sees ${observerToken.document.name} as ${game.i18n.localize(config.label).toLowerCase()}
     </div>`;
   }

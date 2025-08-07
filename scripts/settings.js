@@ -56,6 +56,11 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'tooltipFontSize') {
+        settingConfig.onChange = (value) => {
+          // Update CSS variable for tooltip font size
+          document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${value}px`);
+        };
       }
       
       try {

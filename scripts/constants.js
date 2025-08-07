@@ -61,6 +61,20 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: false
   },
+  
+  tooltipFontSize: {
+    name: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.hint',
+    scope: 'client',
+    config: true,
+    type: Number,
+    default: 16,
+    range: {
+      min: 12,
+      max: 24,
+      step: 1
+    }
+  },
 
   // Token Filtering
   ignoreAllies: {

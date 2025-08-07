@@ -5,6 +5,13 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-08-08
+
+### Added
+- **Custom Tooltip Size**: Added slider control for adjusting tooltip font size
+- **Client-side Setting**: Font size preference is stored per-user rather than globally
+- **Responsive Sizing**: Tooltip components scale proportionally with font size changes
+
 ## [0.3.0] - 2025-08-07
 
 ### Added

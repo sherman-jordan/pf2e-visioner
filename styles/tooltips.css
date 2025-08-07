@@ -14,7 +14,8 @@
   position: absolute;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-normal), transform var(--transition-normal);
+  transition: opacity var(--transition-normal),
+    transform var(--transition-normal);
   z-index: 1000;
 }
 
@@ -41,7 +42,7 @@
 
 /* Tooltip Arrow */
 .tooltip::before {
-  content: '';
+  content: "";
   border: 6px solid transparent;
   border-top-color: rgba(0, 0, 0, 0.95);
   bottom: 100%;
@@ -130,7 +131,11 @@
 
 /* Specific Tooltip Styles for PF2E Visioner */
 .visibility-tooltip {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.95),
+    rgba(20, 20, 20, 0.95)
+  );
   border: 1px solid var(--color-border-light-primary);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
@@ -145,7 +150,11 @@
 .concealed-effect[data-tooltip]::after,
 .undetected-effect[data-tooltip]::after,
 .no-effect[data-tooltip]::after {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(30, 30, 30, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.95),
+    rgba(30, 30, 30, 0.95)
+  );
   border: 1px solid currentColor;
   max-width: 250px;
   font-size: 11px;
@@ -154,7 +163,11 @@
 
 /* State Badge Tooltips */
 .state-badge[data-tooltip]::after {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.95),
+    rgba(20, 20, 20, 0.95)
+  );
   border: 1px solid currentColor;
   max-width: 200px;
   font-size: 11px;
@@ -276,7 +289,11 @@
 /* Keyboard Shortcut Tooltips */
 .shortcut-tooltip::after {
   content: attr(data-tooltip) " (" attr(data-shortcut) ")";
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(40, 40, 40, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.95),
+    rgba(40, 40, 40, 0.95)
+  );
   border: 1px solid var(--color-border-light-primary);
 }
 
@@ -310,7 +327,7 @@
     .tooltip:hover::after {
       opacity: 0;
     }
-    
+
     /* Show tooltips on tap/focus instead */
     .tooltip:focus::before,
     .tooltip:focus::after,
@@ -330,12 +347,20 @@
 }
 
 /* PF2E Visioner Tooltip Styling for Foundry's built-in tooltip system */
+:root {
+  --pf2e-visioner-tooltip-font-size: 16px;
+}
+
 .tooltip.pf2e-visioner-tooltip {
-  background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,20,20,0.95)) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.95),
+    rgba(20, 20, 20, 0.95)
+  ) !important;
   border: 2px solid var(--color-border-highlight-alt) !important;
   border-radius: 8px !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.8), 0 0 20px rgba(255, 152, 0, 0.3) !important;
-  font-size: 16px !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 152, 0, 0.3) !important;
+  font-size: var(--pf2e-visioner-tooltip-font-size) !important;
   padding: 12px 16px !important;
   max-width: 300px !important;
   color: white !important;

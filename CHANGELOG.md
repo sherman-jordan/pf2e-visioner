@@ -5,6 +5,11 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-08-09
+
+### Added
+- **Block Target Tooltips for Players**: Added setting to prevent players from seeing target tooltips when hovering over tokens, while still allowing them to see tooltips when holding O key or pressing Alt
+
 ## [0.4.0] - 2025-08-08
 
 ### Added

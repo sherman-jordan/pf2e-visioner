@@ -56,6 +56,12 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'blockPlayerTargetTooltips') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       } else if (key === 'tooltipFontSize') {
         settingConfig.onChange = (value) => {
           // Update CSS variable for tooltip font size

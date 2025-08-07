@@ -67,10 +67,11 @@ export const DEFAULT_SETTINGS = {
     hint: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.hint',
     scope: 'client',
     config: true,
+    restricted: false, // Allow players to see and change this setting
     type: Number,
     default: 16,
     range: {
-      min: 12,
+      min: 10,
       max: 24,
       step: 1
     }
@@ -122,6 +123,15 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: true
+  },
+
+  blockPlayerTargetTooltips: {
+    name: 'PF2E_VISIONER.SETTINGS.BLOCK_PLAYER_TARGET_TOOLTIPS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.BLOCK_PLAYER_TARGET_TOOLTIPS.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
   }
 };
 

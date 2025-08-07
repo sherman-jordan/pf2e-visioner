@@ -17,7 +17,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         tag: 'div',
         classes: ['point-out-preview-dialog'],
         window: {
-            title: 'Point Out Results Preview',
+            title: 'Point Out Results',
             icon: 'fas fa-hand-point-right',
             resizable: true
         },

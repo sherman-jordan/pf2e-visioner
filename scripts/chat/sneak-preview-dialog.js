@@ -13,10 +13,10 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
     constructor(sneakingToken, outcomes, changes, sneakData, options = {}) {
         super({
             id: `sneak-preview-${sneakingToken.id}`,
-            title: `${MODULE_TITLE}: Sneak Results Preview`,
+            title: `Sneak Results`,
             tag: 'form',
             window: {
-                title: 'Sneak Results Preview',
+                title: 'Sneak Results',
                 icon: 'fas fa-user-ninja',
                 resizable: true,
                 positioned: true,

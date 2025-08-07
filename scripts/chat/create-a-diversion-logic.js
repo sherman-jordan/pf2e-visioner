@@ -13,9 +13,7 @@ import { determineOutcome, extractPerceptionDC, shouldFilterAlly } from './share
  * @param {Token} divertingToken - The token performing Create a Diversion
  * @returns {Array} Array of observer tokens that can see the diverting token
  */
-export function discoverDiversionObservers(divertingToken) {
-    console.log(`${MODULE_TITLE}: Discovering diversion observers for token:`, divertingToken.name);
-    
+export function discoverDiversionObservers(divertingToken) {    
     if (!canvas.tokens) {
         console.warn(`${MODULE_TITLE}: Canvas tokens not available`);
         return [];
@@ -36,26 +34,21 @@ export function discoverDiversionObservers(divertingToken) {
         
         // Check if this token can see the diverting token
         const visibility = getVisibilityBetween(token, divertingToken);
-        console.log(`${MODULE_TITLE}: Checking token ${token.name} - visibility: ${visibility}`);
         
         // Only include tokens that can currently see the diverting token
         // (observed or concealed - they need to see you to be diverted)
         if (visibility === 'observed') {
             // Get the correct perception DC using the shared utility function
             const perceptionDC = extractPerceptionDC(token);
-            console.log(`${MODULE_TITLE}: Adding observer ${token.name} - DC: ${perceptionDC}`);
             observers.push({
                 token: token,
                 actor: token.actor,
                 currentVisibility: visibility,
                 perceptionDC: perceptionDC
             });
-        } else {
-            console.log(`${MODULE_TITLE}: Skipping token ${token.name} - visibility '${visibility}' not suitable for diversion`);
-        }
+        } 
     }
     
-    console.log(`${MODULE_TITLE}: Found ${observers.length} potential diversion targets`);
     return observers;
 }
 
@@ -88,9 +81,7 @@ export function analyzeDiversionOutcome(diversionData, observer) {
     // Ensure we're using the observer's unique perception DC
     const dc = perceptionDC;
     const margin = rollTotal - dc;
-    
-    console.log(`${MODULE_TITLE}: Analyzing diversion for ${observerToken.name} - Roll: ${rollTotal}, DC: ${dc}, Margin: ${margin}`);
-    
+        
     // Get the die result for critical success/failure determination
     const dieResult = roll.dice?.[0]?.total ?? roll.terms?.[0]?.total ?? 10;
     const outcome = determineOutcome(rollTotal, dieResult, dc);
@@ -122,9 +113,7 @@ export function analyzeDiversionOutcome(diversionData, observer) {
             // Observer is aware you tried to create a diversion
             break;
     }
-    
-    console.log(`${MODULE_TITLE}: Diversion analysis - ${observerToken.name}: ${currentVisibility} → ${newVisibility} (${outcome}, margin: ${margin})`);
-    
+        
     return {
         observer: observerToken,
         currentVisibility: currentVisibility,
@@ -141,9 +130,7 @@ export function analyzeDiversionOutcome(diversionData, observer) {
  * Shows the Create a Diversion results preview dialog
  * @param {Object} diversionData - The diversion action data
  */
-export async function previewDiversionResults(diversionData) {
-    console.log(`${MODULE_TITLE}: Previewing Create a Diversion results for:`, diversionData.actor?.name);
-    
+export async function previewDiversionResults(diversionData) {    
     // Validate diversionData
     if (!diversionData || !diversionData.actor || !diversionData.roll) {
         console.error(`${MODULE_TITLE}: Invalid diversionData provided to previewDiversionResults:`, diversionData);

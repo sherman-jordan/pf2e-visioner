@@ -111,6 +111,13 @@ function getChatAutomationCSS() {
             box-shadow: 0 4px 8px rgba(23, 162, 184, 0.15);
         }
         
+        /* Consequences Panel - Red Theme */
+        .pf2e-visioner-automation-panel.consequences-panel {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            border: 2px solid #dc3545;
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.15);
+        }
+        
         .automation-header {
             display: flex;
             align-items: center;
@@ -173,9 +180,82 @@ function getChatAutomationCSS() {
             color: white;
         }
         
+        .visioner-btn-consequences {
+            background: linear-gradient(135deg, #dc3545, #b21f2d);
+            color: white;
+        }
+        
         .visioner-btn:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* Consequences Dialog Bulk Actions */
+        .consequences-preview-dialog-bulk-actions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
+            border-top: 1px solid var(--color-border-light-primary, #555);
+            margin-top: 12px;
+        }
+        
+        .consequences-preview-dialog-bulk-actions-info {
+            color: var(--color-text-primary, #f0f0f0);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .consequences-preview-dialog-changes-count,
+        .consequences-preview-dialog-total-count {
+            color: #dc3545 !important;
+            font-weight: 700 !important;
+        }
+        
+        .consequences-preview-dialog-bulk-actions-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .consequences-preview-dialog-bulk-action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: white;
+        }
+        
+        .consequences-preview-dialog-bulk-action-btn.apply-all {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+        }
+        
+        .consequences-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
+            background: linear-gradient(135deg, #218838, #155724);
+            transform: translateY(-1px);
+        }
+        
+        .consequences-preview-dialog-bulk-action-btn.revert-all {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+        
+        .consequences-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
+            background: #c82333;
+            border-color: #c82333;
+        }
+        
+        .consequences-preview-dialog-bulk-action-btn:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed;
+            transform: none;
         }
         
         /* Unified Bulk Action Button Styles */
@@ -491,7 +571,8 @@ function getChatAutomationCSS() {
         .hide-results-table,
         .point-out-results-table,
         .create-a-diversion-preview-dialog .results-table,
-        .sneak-results-table {
+        .sneak-results-table,
+        .consequences-results-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
@@ -504,7 +585,8 @@ function getChatAutomationCSS() {
         .hide-results-table thead,
         .point-out-results-table thead,
         .create-a-diversion-preview-dialog .results-table thead,
-        .sneak-results-table thead {
+        .sneak-results-table thead,
+        .consequences-results-table thead {
             background: var(--color-bg-option, rgba(255, 255, 255, 0.1));
         }
         
@@ -512,7 +594,8 @@ function getChatAutomationCSS() {
         .hide-results-table th,
         .point-out-results-table th,
         .create-a-diversion-preview-dialog .results-table th,
-        .sneak-results-table th {
+        .sneak-results-table th,
+        .consequences-results-table th {
             padding: 8px 6px;
             text-align: center;
             font-weight: bold;
@@ -525,7 +608,8 @@ function getChatAutomationCSS() {
         .hide-results-table td,
         .point-out-results-table td,
         .create-a-diversion-preview-dialog .results-table td,
-        .sneak-results-table td {
+        .sneak-results-table td,
+        .consequences-results-table td {
             padding: 8px 6px;
             text-align: center;
             border-bottom: 1px solid var(--color-border-light-tertiary, #444);
@@ -538,7 +622,8 @@ function getChatAutomationCSS() {
         .hide-results-table tbody tr:nth-child(even) td,
         .point-out-results-table tbody tr:nth-child(even) td,
         .create-a-diversion-preview-dialog .results-table tbody tr:nth-child(even) td,
-        .sneak-results-table tbody tr:nth-child(even) td {
+        .sneak-results-table tbody tr:nth-child(even) td,
+        .consequences-results-table tbody tr:nth-child(even) td {
             background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
         }
         
@@ -2107,6 +2192,77 @@ function getChatAutomationCSS() {
             background: linear-gradient(135deg, #17a2b8, #0d7377);
             border-bottom: 2px solid #0d7377;
             color: white;
+        }
+        
+        /* Consequences Dialog Window Title - Red Theme */
+        .consequences-preview-dialog .window-header {
+            background: linear-gradient(135deg, #dc3545, #b21f2d);
+            border-bottom: 2px solid #b21f2d;
+            color: white;
+        }
+        
+        .consequences-preview-dialog .window-title {
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .consequences-preview-dialog .window-header .window-controls .control {
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .consequences-preview-dialog .window-header .window-controls .control:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .consequences-preview-dialog .window-content {
+            padding: 0;
+            background: var(--color-bg-primary, #2a2a2a);
+            color: var(--color-text-primary, #f0f0f0);
+        }
+        
+        /* Consequences Dialog Content Structure */
+        .consequences-preview-dialog .consequences-preview-content {
+            padding: 16px;
+        }
+        
+        .consequences-preview-dialog .attacker-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, #dc3545, #b21f2d);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .attacker-image img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #ff6b6b;
+            margin-right: 12px;
+        }
+        
+        .consequences-preview-dialog .attacker-details {
+            flex: 1;
+        }
+        
+        .consequences-preview-dialog .attacker-name {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .consequences-preview-dialog .attacker-details .hint {
+            margin: 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
         }
         
         .create-a-diversion-preview-dialog .window-title {

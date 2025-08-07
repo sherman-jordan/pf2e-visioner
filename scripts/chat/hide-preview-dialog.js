@@ -18,7 +18,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         tag: 'div',
         classes: ['hide-preview-dialog'],
         window: {
-            title: 'Hide Results Preview',
+            title: 'Hide Results',
             icon: 'fas fa-eye-slash',
             resizable: true
         },
@@ -47,7 +47,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         // Set window title and icon for hide dialog
         options.window = {
             ...options.window,
-            title: `Hide Results Preview`,
+            title: `Hide Results`,
             icon: 'fas fa-eye-slash'
         };
         

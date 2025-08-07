@@ -4,11 +4,12 @@
  */
 
 import { MODULE_TITLE } from '../constants.js';
-import { previewSeekResults } from './seek-logic.js';
-import { previewPointOutResults } from './point-out-logic.js';
-import { previewHideResults } from './hide-logic.js';
-import { previewSneakResults } from './sneak-logic.js';
+import { previewConsequencesResults } from './consequences-logic.js';
 import { previewDiversionResults } from './create-a-diversion-logic.js';
+import { previewHideResults } from './hide-logic.js';
+import { previewPointOutResults } from './point-out-logic.js';
+import { previewSeekResults } from './seek-logic.js';
+import { previewSneakResults } from './sneak-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
 const processedMessages = new Set();
@@ -23,13 +24,17 @@ export function onRenderChatMessage(message, html) {
     // Early returns for optimization
     if (!game.user.isGM) return;
     
+    // Check if this is a damage roll
+    const isDamageRoll = message.flags?.pf2e?.context?.type === 'damage-roll' || 
+                        message.flags?.pf2e?.damageRoll || 
+                        message.content?.includes('Damage Roll');
+    
     // Use modern message detection approach - check for Seek, Point Out, Hide, and Sneak
     const actionData = extractActionData(message);
     if (!actionData) {
         return;
     }
-    
-    
+        
     // Prevent duplicate processing using cache
     if (processedMessages.has(message.id)) {
         return;
@@ -41,7 +46,7 @@ export function onRenderChatMessage(message, html) {
 
 /**
  * Modern approach to extract action data from chat messages
- * Supports Seek, Point Out, and Hide actions
+ * Supports Seek, Point Out, Hide, Sneak, Create a Diversion, and damage rolls from hidden/undetected tokens
  * @param {ChatMessage} message - The chat message to analyze
  * @returns {Object|null} Action data or null if not a supported action
  */
@@ -90,16 +95,74 @@ function extractActionData(message) {
                         context.slug === 'sneak'
                     )) || (message.flavor?.toLowerCase().includes('sneak') && !message.flavor?.toLowerCase().includes('create a diversion')));
     
+    // Damage roll from hidden/undetected token detection
+    const isDamageRoll = context?.type === 'damage-roll' || 
+                         message.flags?.pf2e?.damageRoll || 
+                         message.content?.includes('Damage Roll');
+    
+    // Check if the token is hidden or undetected
+    let isHiddenOrUndetectedToken = false;
+    let actorToken = null;
+    
+    // Get the token - try multiple approaches
+    if (message.token?.object) {
+        actorToken = message.token.object;
+    } else if (message.speaker?.token && canvas?.tokens?.get) {
+        actorToken = canvas.tokens.get(message.speaker.token);
+    }
+    
+    // Check for conditions first
+    if (actorToken && actorToken.actor) {
+        const conditions = actorToken.actor.conditions?.conditions || [];
+        isHiddenOrUndetectedToken = conditions.some(c => 
+            c.slug === 'hidden' || c.slug === 'undetected'
+        );
+    }
+    
+    // If no conditions found, check for effect flags in the message
+    if (!isHiddenOrUndetectedToken && context?.options) {        
+        // Look for any option that includes "effect:hidden" or "effect:undetected" or just "hidden-from"
+        isHiddenOrUndetectedToken = context.options.some(option => 
+            option.includes('effect:hidden-from') || 
+            option.includes('effect:undetected-from') ||
+            option.includes('hidden-from') ||
+            option.includes('undetected-from')
+        );
+        
+        // Also check origin rollOptions if available
+        if (!isHiddenOrUndetectedToken && origin?.rollOptions) {            
+            isHiddenOrUndetectedToken = origin.rollOptions.some(option => 
+                option.includes('effect:hidden-from') || 
+                option.includes('effect:undetected-from') ||
+                option.includes('hidden-from') ||
+                option.includes('undetected-from')
+            );
+        }
+        
+        // Check for self:effect:hidden patterns
+        if (!isHiddenOrUndetectedToken && context.options) {
+            isHiddenOrUndetectedToken = context.options.some(option => 
+                option.includes('self:effect:hidden') || 
+                option.includes('self:effect:undetected')
+            );
+        }
+    }
+    
+    // Combine damage roll and hidden/undetected status
+    const isConsequencesAction = isDamageRoll && isHiddenOrUndetectedToken;
+    
     // Early return if no supported action is detected
-    if (!isSeekAction && !isPointOutAction && !isHideAction && !isSneakAction && !isCreateADiversionAction) {
+    if (!isSeekAction && !isPointOutAction && !isHideAction && !isSneakAction && 
+        !isCreateADiversionAction && !isConsequencesAction) {
         return null;
     }
     
-    // For Seek, Hide, Sneak, and Create a Diversion, we need rolls and token (check both token.object and speaker.token)
-    if ((isSeekAction || isHideAction || isSneakAction || isCreateADiversionAction) && (!message.rolls?.length || (!message?.token?.object && !message?.speaker?.token))) return null;
+    // For Seek, Hide, Sneak, Create a Diversion, and Consequences, we need rolls and token
+    if ((isSeekAction || isHideAction || isSneakAction || isCreateADiversionAction || isConsequencesAction) && 
+        (!message.rolls?.length || (!actorToken))) return null;
     
     // For Point Out, we need token but not necessarily rolls
-    if (isPointOutAction && !message?.token?.object && !message?.speaker?.token) return null;
+    if (isPointOutAction && !actorToken) return null;
     
     // For Point Out, we also need a specific target
     if (isPointOutAction) {
@@ -125,16 +188,20 @@ function extractActionData(message) {
         actionType = 'sneak';
     } else if (isCreateADiversionAction) {
         actionType = 'create-a-diversion';
+    } else if (isConsequencesAction) {
+        actionType = 'consequences';
     } else {
         return null;
     }
     
-    // Get the token - try multiple approaches
-    let actorToken = null;
-    if (message.token?.object) {
-        actorToken = message.token.object;
-    } else if (message.speaker?.token && canvas?.tokens?.get) {
-        actorToken = canvas.tokens.get(message.speaker.token);
+    // Extract damage data for consequences
+    let damageData = null;
+    if (isConsequencesAction) {
+        damageData = {
+            formula: message.rolls?.[0]?.formula || '',
+            total: message.rolls?.[0]?.total || 0,
+            isCritical: message.flags?.pf2e?.context?.options?.includes('critical-hit') || false
+        };
     }
     
     if (!actorToken) {
@@ -147,7 +214,8 @@ function extractActionData(message) {
         actor: actorToken,
         roll: message.rolls?.[0] || null,
         context,
-        messageId: message.id
+        messageId: message.id,
+        damageData
     };
 }
 
@@ -226,7 +294,7 @@ function injectAutomationUI(message, html, actionData) {
 
 /**
  * Modern automation panel builder with enhanced UX
- * Creates accessible, feature-rich interface for Seek, Point Out, and Hide
+ * Creates accessible, feature-rich interface for all supported actions
  * @param {Object} actionData - The action data
  * @returns {string} Complete automation panel HTML
  */
@@ -236,6 +304,7 @@ function buildAutomationPanel(actionData) {
     const isHide = actionData.actionType === 'hide';
     const isSneak = actionData.actionType === 'sneak';
     const isCreateADiversion = actionData.actionType === 'create-a-diversion';
+    const isConsequences = actionData.actionType === 'consequences';
     
     let label, tooltip, title, icon, actionName, buttonClass, panelClass;
     
@@ -279,6 +348,14 @@ function buildAutomationPanel(actionData) {
         actionName = 'open-diversion-results';
         buttonClass = 'visioner-btn-create-a-diversion';
         panelClass = 'create-a-diversion-panel';
+    } else if (isConsequences) {
+        label = 'Open Damage Consequences';
+        tooltip = 'Preview and apply visibility changes after damage from hidden/undetected attacker';
+        title = 'Damage Consequences Available';
+        icon = 'fas fa-skull';
+        actionName = 'open-consequences-results';
+        buttonClass = 'visioner-btn-consequences';
+        panelClass = 'consequences-panel';
     }
     
     return `
@@ -335,7 +412,7 @@ function bindAutomationEvents(panel, message, actionData) {
 }
 
 /**
- * Unified preview function for Seek, Point Out, and Hide results
+ * Unified preview function for all supported actions
  * Shows a dialog with potential outcomes
  * @param {Object} actionData - The action data
  */
@@ -351,6 +428,8 @@ async function previewActionResults(actionData) {
         return await previewSneakResults(actionData);
     } else if (actionData.actionType === 'create-a-diversion') {
         return await previewDiversionResults(actionData);
+    } else if (actionData.actionType === 'consequences') {
+        return await previewConsequencesResults(actionData);
     } else {
         console.warn('[Chat Processor] Unknown action type:', actionData.actionType);
     }

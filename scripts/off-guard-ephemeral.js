@@ -30,13 +30,6 @@ async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceAc
 
     const visibilityLabel = game.i18n.localize(`PF2E.condition.${visibilityState}.name`);
     
-    // Add some logging to debug the issue
-    console.log('Creating effect with:', {
-        effectReceiverActor: effectReceiverActor.name,
-        effectSourceActor: effectSourceActor.name,
-        visibilityState
-    });
-    
     const ephemeralEffect = {
         name: `${visibilityLabel} from ${effectSourceActor.name}`,
         type: 'effect',

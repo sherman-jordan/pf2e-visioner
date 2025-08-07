@@ -17,8 +17,6 @@ export function initializeDialogScrollFix() {
       }, 100);
     }
   });
-  
-  console.log("PF2E Visioner: Dialog scroll fix initialized");
 }
 
 /**
@@ -86,8 +84,6 @@ function applyScrollFix(element) {
   
   // Force the footer to not grow
   footer.style.flex = '0 0 auto';
-  
-  console.log(`PF2E Visioner: Scroll fix applied to ${dialogType} dialog with themed scrollbar`);
 }
 
 /**

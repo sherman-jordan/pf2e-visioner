@@ -15,6 +15,11 @@ import { initializeDialogScrollFix } from "./dialog-scroll-fix.js";
 Hooks.once("init", async () => {
   
   try {
+    // Register Handlebars helper for default value
+    Handlebars.registerHelper('default', function(value, defaultValue) {
+      return value !== undefined && value !== null ? value : defaultValue;
+    });
+    
     registerSettings();
     
     registerKeybindings();

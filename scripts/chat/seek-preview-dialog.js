@@ -19,7 +19,7 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         tag: 'div',
         classes: ['seek-preview-dialog'], // Keep same class for CSS compatibility
         window: {
-            title: 'Seek Results Preview',
+            title: 'Seek Results',
             icon: 'fas fa-search',
             resizable: true
         },
@@ -48,7 +48,7 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
         // Set window title and icon for seek dialog
         options.window = {
             ...options.window,
-            title: 'Action Results Preview',
+            title: 'Action Results',
             icon: 'fas fa-search'
         };
         

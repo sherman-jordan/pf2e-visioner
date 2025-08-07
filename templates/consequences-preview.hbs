@@ -1,0 +1,135 @@
+{{!--
+  ApplicationV2 template for Consequences Dialog for damage rolls from hidden/undetected tokens
+  Matches the visibility manager's design and styling with red theme
+--}}
+
+<div class="consequences-preview-content">
+  {{!-- Attacking Token Information Panel --}}
+  <div class="attacker-info">
+    <div class="attacker-image">
+      <img src="{{attackingToken.image}}" data-tooltip="{{attackingToken.name}}" />
+    </div>
+    <div class="attacker-details">
+      <h3 class="attacker-name">{{attackingToken.name}}</h3>
+      <p class="hint">Damage consequences for hidden/undetected attacker</p>
+    </div>
+  </div>
+
+  {{!-- Encounter Filter --}}
+  {{#if showEncounterFilter}}
+  <div class="encounter-filter-section">
+    <label class="encounter-filter-checkbox">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+    </label>
+  </div>
+  {{/if}}
+
+  {{!-- Results Table --}}
+  <div class="results-table-container">
+    <table class="visibility-table consequences-results-table">
+      <thead>
+        <tr>
+          <th class="token-image">Token</th>
+          <th class="token-name">Name</th>
+          <th class="visibility-change">Visibility Change</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each outcomes as |outcome|}}
+          <tr class="token-row" data-token-id="{{outcome.target.id}}">
+            <td class="token-image">
+              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+            </td>
+            <td class="token-name">
+              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+            </td>
+            <td class="visibility-change">
+              <div class="visibility-change-with-override">
+                {{!-- Current state icon with appropriate color --}}
+                {{#if (eq outcome.currentVisibility 'observed')}}
+                  <i class="fas fa-eye" style="color: #4CAF50" title="Observed"></i>
+                {{else if (eq outcome.currentVisibility 'concealed')}}
+                  <i class="fas fa-cloud" style="color: #FFC107" title="Concealed"></i>
+                {{else if (eq outcome.currentVisibility 'hidden')}}
+                  <i class="fas fa-eye-slash" style="color: #FF9800" title="Hidden"></i>
+                {{else if (eq outcome.currentVisibility 'undetected')}}
+                  <i class="fas fa-ghost" style="color: #dc3545" title="Undetected"></i>
+                {{/if}}
+                
+                <i class="fas fa-arrow-right visibility-arrow"></i>
+                
+                {{!-- State selection buttons --}}
+                <div class="state-selection">
+                  <input type="hidden" name="selected-state-{{outcome.target.id}}" value="{{outcome.overrideState}}" />
+                  <button type="button" 
+                          class="state-icon {{#if (eq 'observed' (default outcome.overrideState 'observed'))}}selected{{/if}}"
+                          data-action="overrideState"
+                          data-token-id="{{outcome.target.id}}"
+                          data-state="observed"
+                          title="{{localize 'PF2E.condition.observed.name'}}">
+                    <i class="fas fa-eye" style="color: #4CAF50"></i>
+                  </button>
+                  <button type="button" 
+                          class="state-icon {{#if (eq outcome.overrideState 'concealed')}}selected{{/if}}"
+                          data-action="overrideState"
+                          data-token-id="{{outcome.target.id}}"
+                          data-state="concealed"
+                          title="{{localize 'PF2E.condition.concealed.name'}}">
+                    <i class="fas fa-cloud" style="color: #FFC107"></i>
+                  </button>
+                  <button type="button" 
+                          class="state-icon {{#if (eq outcome.overrideState 'hidden')}}selected{{/if}}"
+                          data-action="overrideState"
+                          data-token-id="{{outcome.target.id}}"
+                          data-state="hidden"
+                          title="{{localize 'PF2E.condition.hidden.name'}}">
+                    <i class="fas fa-eye-slash" style="color: #FF9800"></i>
+                  </button>
+                  <button type="button" 
+                          class="state-icon {{#if (eq outcome.overrideState 'undetected')}}selected{{/if}}"
+                          data-action="overrideState"
+                          data-token-id="{{outcome.target.id}}"
+                          data-state="undetected"
+                          title="{{localize 'PF2E.condition.undetected.name'}}">
+                    <i class="fas fa-ghost" style="color: #F44336"></i>
+                  </button>
+                </div>
+              </div>
+            </td>
+            <td class="actions">
+              <div class="action-buttons" style="display: flex; justify-content: center;">
+                {{#if outcome.hasActionableChange}}
+                  <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility" disabled>
+                    <i class="fas fa-undo"></i>
+                  </button>
+                {{else}}
+                  <span class="no-action">No change</span>
+                {{/if}}
+              </div>
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- Bulk Actions --}}
+  <div class="consequences-preview-dialog-bulk-actions-header">
+    <div class="consequences-preview-dialog-bulk-actions-info">
+      <span class="consequences-preview-dialog-changes-count">{{changesCount}}</span> of <span class="consequences-preview-dialog-total-count">{{totalCount}}</span> targets will have visibility changes.
+    </div>
+    <div class="consequences-preview-dialog-bulk-actions-buttons">
+      <button type="button" class="consequences-preview-dialog-bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+        <i class="fas fa-check-circle"></i> Apply All
+      </button>
+      <button type="button" class="consequences-preview-dialog-bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+        <i class="fas fa-undo"></i> Revert All
+      </button>
+    </div>
+  </div>
+</div>

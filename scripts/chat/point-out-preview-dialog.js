@@ -118,8 +118,8 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         }
         
         const visibilityStates = {
-            'hidden': { icon: 'fas fa-eye-slash', color: '#ffc107', label: 'Hidden' },
-            'undetected': { icon: 'fas fa-ghost', color: '#dc3545', label: 'Undetected' }
+            'hidden': { icon: 'fas fa-eye-slash', color: '#ff6600', label: 'Hidden' },
+            'undetected': { icon: 'fas fa-ghost', color: '#f44336', label: 'Undetected' }
         };
         
         const processedOutcomes = filteredOutcomes.map(outcome => {

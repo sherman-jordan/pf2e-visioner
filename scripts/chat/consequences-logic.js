@@ -28,7 +28,7 @@ export async function previewConsequencesResults(actionData) {
         const outcomes = await Promise.all(potentialTargets.map(async (target) => {
             // IMPORTANT: For consequences dialog, we need to know how the TARGET sees the ATTACKER
             // This is the opposite direction from most other dialogs!
-            const currentVisibility = await getVisibilityBetween(target, attackingToken);
+            const currentVisibility = getVisibilityBetween(target, attackingToken);
                         
             return {
                 target,

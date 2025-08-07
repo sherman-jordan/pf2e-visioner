@@ -142,7 +142,8 @@ export async function previewDiversionResults(diversionData) {
     const observers = discoverDiversionObservers(diversionData.actor);
     
     if (observers.length === 0) {
-        // No need for notification, just silently return
+        // No valid observers, inform the user
+        ui.notifications.info(`${MODULE_TITLE}: No creatures can see you, so Create a Diversion has no effect.`);
         return;
     }
     
@@ -153,7 +154,8 @@ export async function previewDiversionResults(diversionData) {
     const changes = outcomes.filter(outcome => outcome.changed);
     
     if (changes.length === 0) {
-        // No need for notification, just silently return
+        // No changes detected, inform the user
+        ui.notifications.info(`${MODULE_TITLE}: Create a Diversion roll did not result in any visibility changes.`);
         return;
     }
     

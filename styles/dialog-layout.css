@@ -325,8 +325,8 @@
   .state-selection
   .state-icon[data-state="hidden"].selected {
   background: rgba(255, 152, 0, 0.2);
-  border: 2px solid #ff9800;
-  box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+  border: 2px solid #ff6600;
+  box-shadow: 0 0 8px rgba(255, 102, 0, 0.5);
   transform: scale(1.1);
 }
 
@@ -377,7 +377,7 @@
   right: -2px;
   width: 8px;
   height: 8px;
-  background-color: #ff9800;
+  background-color: #ff6600;
   border-radius: 50%;
   border: 1px solid #fff;
 }

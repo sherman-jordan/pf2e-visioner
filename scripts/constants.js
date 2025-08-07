@@ -149,6 +149,15 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: false
+  },
+  
+  debug: {
+    name: 'Debug Mode',
+    hint: 'Enable detailed console logging for troubleshooting',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
   }
 };
 

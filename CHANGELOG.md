@@ -5,6 +5,11 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2025-08-09
+
+### Fixed
+- **Unification**: Matching colors through all dialogs for the visibility states
+
 ## [0.7.0] - 2025-08-08
 
 ### Added
@@ -13,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Client-side setting that can be set individually by each user
   - Adds visual indicators and alternative color schemes for better visibility
   - Includes pattern indicators to help differentiate visibility states beyond color
+
+### Fixed
+- **Create a Diversion Button**: Fixed issue where the Create a Diversion button would appear even when there were no valid targets (creatures that can see the actor)
+- **Create a Diversion Dialog**: Fixed issue where the Create a Diversion dialog would not open when clicking the button
+- Added notification when attempting to use Create a Diversion with no valid targets
+- Added detailed logging for Create a Diversion actions to help with troubleshooting
 
 ## [0.6.1] - 2025-08-07
 

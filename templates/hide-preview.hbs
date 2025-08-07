@@ -64,7 +64,7 @@
               <div class="visibility-change-inline">
                 <span class="state-icon" data-state="{{outcome.oldVisibility}}" title="{{outcome.oldVisibility}}">
                   <i class="fas {{#if (eq outcome.oldVisibility "observed")}}fa-eye{{else if (eq outcome.oldVisibility "concealed")}}fa-cloud{{else if (eq outcome.oldVisibility "hidden")}}fa-eye-slash{{else}}fa-question{{/if}}" 
-                     style="color: {{#if (eq outcome.oldVisibility "observed")}}#4CAF50{{else if (eq outcome.oldVisibility "concealed")}}#FFC107{{else if (eq outcome.oldVisibility "hidden")}}#FF9800{{else}}#9E9E9E{{/if}}"></i>
+                     style="color: {{#if (eq outcome.oldVisibility "observed")}}#4caf50{{else if (eq outcome.oldVisibility "concealed")}}#FFC107{{else if (eq outcome.oldVisibility "hidden")}}#ff6600{{else}}#9E9E9E{{/if}}"></i>
                 </span>
                 <i class="fas fa-arrow-right visibility-arrow"></i>
                 <div class="override-icons">
@@ -72,7 +72,7 @@
                     <span class="state-icon {{#if (eq state.value outcome.overrideState)}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
                           data-state="{{state.value}}" data-token-id="{{../outcome.target.id}}" title="{{state.label}}">
                       <i class="fas {{#if (eq state.value "observed")}}fa-eye{{else if (eq state.value "concealed")}}fa-cloud{{else if (eq state.value "hidden")}}fa-eye-slash{{else if (eq state.value "undetected")}}fa-ghost{{else}}fa-question{{/if}}" 
-                         style="color: {{#if (eq state.value "observed")}}#4CAF50{{else if (eq state.value "concealed")}}#FFC107{{else if (eq state.value "hidden")}}#FF9800{{else if (eq state.value "undetected")}}#F44336{{else}}#9E9E9E{{/if}}"></i>
+                         style="color: {{#if (eq state.value "observed")}}#4caf50{{else if (eq state.value "concealed")}}#FFC107{{else if (eq state.value "hidden")}}#ff6600{{else if (eq state.value "undetected")}}#f44336{{else}}#9E9E9E{{/if}}"></i>
                     </span>
                   {{/each}}
                 </div>

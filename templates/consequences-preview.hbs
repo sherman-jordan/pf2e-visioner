@@ -11,7 +11,13 @@
     </div>
     <div class="attacker-details">
       <h3 class="attacker-name">{{attackingToken.name}}</h3>
-      <p class="hint">Damage consequences for hidden/undetected attacker</p>
+      <p class="hint">
+        {{#if damageData.isAttackRoll}}
+          Attack consequences for hidden/undetected attacker
+        {{else}}
+          Damage consequences for hidden/undetected attacker
+        {{/if}}
+      </p>
     </div>
   </div>
 
@@ -49,13 +55,13 @@
               <div class="visibility-change-with-override">
                 {{!-- Current state icon with appropriate color --}}
                 {{#if (eq outcome.currentVisibility 'observed')}}
-                  <i class="fas fa-eye" style="color: #4CAF50" title="Observed"></i>
+                  <i class="fas fa-eye" style="color: #4caf50" title="Observed"></i>
                 {{else if (eq outcome.currentVisibility 'concealed')}}
                   <i class="fas fa-cloud" style="color: #FFC107" title="Concealed"></i>
                 {{else if (eq outcome.currentVisibility 'hidden')}}
-                  <i class="fas fa-eye-slash" style="color: #FF9800" title="Hidden"></i>
+                  <i class="fas fa-eye-slash" style="color: #ff6600" title="Hidden"></i>
                 {{else if (eq outcome.currentVisibility 'undetected')}}
-                  <i class="fas fa-ghost" style="color: #dc3545" title="Undetected"></i>
+                  <i class="fas fa-ghost" style="color: #f44336" title="Undetected"></i>
                 {{/if}}
                 
                 <i class="fas fa-arrow-right visibility-arrow"></i>
@@ -85,7 +91,7 @@
                           data-token-id="{{outcome.target.id}}"
                           data-state="hidden"
                           title="{{localize 'PF2E.condition.hidden.name'}}">
-                    <i class="fas fa-eye-slash" style="color: #FF9800"></i>
+                    <i class="fas fa-eye-slash" style="color: #ff6600"></i>
                   </button>
                   <button type="button" 
                           class="state-icon {{#if (eq outcome.overrideState 'undetected')}}selected{{/if}}"

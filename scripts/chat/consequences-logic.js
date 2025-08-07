@@ -20,7 +20,7 @@ export async function previewConsequencesResults(actionData) {
         const potentialTargets = findPotentialTargets(attackingToken);
         
         if (potentialTargets.length === 0) {
-            ui.notifications.warn(`${MODULE_TITLE}: No valid targets found for consequences dialog`);
+            // No need for notification, just silently return
             return;
         }
         
@@ -48,7 +48,7 @@ export async function previewConsequencesResults(actionData) {
         const filteredOutcomes = hiddenOrUndetectedOutcomes;
         
         if (filteredOutcomes.length === 0) {
-            ui.notifications.info(`${MODULE_TITLE}: No valid targets found for consequences dialog`);
+            // No need for notification, just silently return
             return;
         }
         

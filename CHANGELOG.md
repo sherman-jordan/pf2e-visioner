@@ -5,17 +5,23 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] - 2025-08-10
+## [0.6.1] - 2025-08-07
+
+### Changed
+- **Improved Dialog Visibility Logic**: Dialog buttons now only appear when there are valid targets for actions, avoiding unnecessary notifications for all dialog types (Seek, Point Out, Hide, Sneak, Create a Diversion, and Consequences)
+
+## [0.6.0] - 2025-08-07
 
 ### Added
 - **Damage Consequences Dialog**: Added red-themed dialog that appears when a hidden or undetected token makes a damage roll, allowing the GM to update visibility states of affected targets
 
-## [0.5.0] - 2025-08-09
+
+## [0.5.0] - 2025-08-07
 
 ### Added
 - **Block Target Tooltips for Players**: Added setting to prevent players from seeing target tooltips when hovering over tokens, while still allowing them to see tooltips when holding O key or pressing Alt
 
-## [0.4.0] - 2025-08-08
+## [0.4.0] - 2025-08-07
 
 ### Added
 - **Custom Tooltip Size**: Added slider control for adjusting tooltip font size

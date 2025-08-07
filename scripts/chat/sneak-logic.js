@@ -139,7 +139,7 @@ export async function previewSneakResults(sneakData) {
     const observers = discoverSneakObservers(sneakData.actor, false);
     
     if (observers.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: No observers found for sneak action`);
+        // No need for notification, just silently return
         return;
     }
 
@@ -148,7 +148,7 @@ export async function previewSneakResults(sneakData) {
                               .filter(outcome => outcome !== null);
 
     if (outcomes.length === 0) {
-        ui.notifications.warn(`${MODULE_TITLE}: No valid sneak outcomes to display`);
+        // No need for notification, just silently return
         return;
     }
 

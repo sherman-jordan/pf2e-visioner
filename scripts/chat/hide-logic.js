@@ -7,11 +7,11 @@ import { MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { HidePreviewDialog } from './hide-preview-dialog.js';
 import {
-  calculateTokenDistance,
-  determineOutcome,
-  extractPerceptionDC,
-  isTokenInEncounter,
-  shouldFilterAlly
+    calculateTokenDistance,
+    determineOutcome,
+    extractPerceptionDC,
+    isTokenInEncounter,
+    shouldFilterAlly
 } from './shared-utils.js';
 
 /**
@@ -143,7 +143,7 @@ export async function previewHideResults(actionData) {
     const observers = discoverHideObservers(actionData.actor, false, false);
     
     if (observers.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: No observers found for ${actionData.actor.name} to hide from`);
+        // No need for notification, just silently return
         return;
     }
     

@@ -142,7 +142,7 @@ export async function previewDiversionResults(diversionData) {
     const observers = discoverDiversionObservers(diversionData.actor);
     
     if (observers.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: No tokens can see ${diversionData.actor.name} - no diversion needed`);
+        // No need for notification, just silently return
         return;
     }
     
@@ -153,7 +153,7 @@ export async function previewDiversionResults(diversionData) {
     const changes = outcomes.filter(outcome => outcome.changed);
     
     if (changes.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: Create a Diversion had no effect on visibility`);
+        // No need for notification, just silently return
         return;
     }
     

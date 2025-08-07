@@ -4,6 +4,7 @@
  */
 
 import { MODULE_TITLE } from '../constants.js';
+import { getVisibilityBetween } from '../utils.js';
 import { previewConsequencesResults } from './consequences-logic.js';
 import { previewDiversionResults } from './create-a-diversion-logic.js';
 import { previewHideResults } from './hide-logic.js';
@@ -270,6 +271,16 @@ function extractTargetFromMessage(message) {
  */
 function injectAutomationUI(message, html, actionData) {
     try {
+        // Check if there are valid targets for this action
+        const hasValidTargets = checkForValidTargets(actionData);
+        
+        // If no valid targets, don't inject the UI
+        if (!hasValidTargets) {
+            // Mark as processed to avoid repeated checks
+            processedMessages.add(message.id);
+            return;
+        }
+        
         // Create automation panel
         const panelHtml = buildAutomationPanel(actionData);
         const panel = $(panelHtml);
@@ -290,6 +301,264 @@ function injectAutomationUI(message, html, actionData) {
     } catch (error) {
         console.error(`${MODULE_TITLE}: Error injecting automation UI:`, error);
     }
+}
+
+/**
+ * Check if there are valid targets for the given action
+ * @param {Object} actionData - The action data
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkForValidTargets(actionData) {
+    // Get all tokens on the canvas
+    const allTokens = canvas.tokens.placeables;
+    
+    // Filter out tokens without actors and the actor's own token
+    const potentialTargets = allTokens.filter(token => {
+        // Skip the actor's own token
+        if (token === actionData.actor) return false;
+        
+        // Skip tokens without actors
+        if (!token.actor) return false;
+        
+        // Only include character and npc type tokens
+        if (token.actor.type !== 'character' && token.actor.type !== 'npc' && token.actor.type !== 'hazard') return false;
+        
+        return true;
+    });
+    
+    // If no potential targets, no need to continue
+    if (potentialTargets.length === 0) return false;
+    
+    // Handle each action type differently
+    switch (actionData.actionType) {
+        case 'consequences':
+            return checkConsequencesTargets(actionData, potentialTargets);
+            
+        case 'seek':
+            return checkSeekTargets(actionData, potentialTargets);
+            
+        case 'point-out':
+            return checkPointOutTargets(actionData, potentialTargets);
+            
+        case 'hide':
+            return checkHideTargets(actionData, potentialTargets);
+            
+        case 'sneak':
+            return checkSneakTargets(actionData, potentialTargets);
+            
+        case 'create-a-diversion':
+            return checkDiversionTargets(actionData, potentialTargets);
+            
+        default:
+            // For unknown action types, assume there are valid targets
+            return true;
+    }
+}
+
+/**
+ * Check if there are valid targets for the consequences action
+ * @param {Object} actionData - The action data
+ * @param {Array} potentialTargets - Array of potential target tokens
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkConsequencesTargets(actionData, potentialTargets) {
+    // For consequences, check if any tokens see the attacker as hidden/undetected
+    for (const target of potentialTargets) {
+        // Skip tokens with the same disposition as the attacking token
+        if (target.document.disposition === actionData.actor.document.disposition) continue;
+        
+        // Use the module's getVisibilityBetween function directly
+        const visibility = getVisibilityBetween(target, actionData.actor);
+        if (visibility === 'hidden' || visibility === 'undetected') {
+            return true;
+        }
+        
+        // Check roll options on the target
+        if (target.actor.getRollOptions) {
+            const rollOptions = target.actor.getRollOptions();
+            const hasHiddenOrUndetected = rollOptions.some(option => 
+                option.includes('target:hidden') || 
+                option.includes('target:undetected') || 
+                option.includes('hidden-from') || 
+                option.includes('undetected-from')
+            );
+            if (hasHiddenOrUndetected) return true;
+        }
+        
+        // Check conditions on the attacking token
+        if (actionData.actor.actor) {
+            const conditions = actionData.actor.actor.conditions?.conditions || [];
+            const isHiddenOrUndetected = conditions.some(c => 
+                c.slug === 'hidden' || c.slug === 'undetected'
+            );
+            if (isHiddenOrUndetected) return true;
+        }
+    }
+    
+    // No valid targets found
+    return false;
+}
+
+/**
+ * Check if there are valid targets for the seek action
+ * @param {Object} actionData - The action data
+ * @param {Array} potentialTargets - Array of potential target tokens
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkSeekTargets(actionData, potentialTargets) {
+    // For seek, check if any tokens are concealed, hidden, or undetected from the actor
+    for (const target of potentialTargets) {
+        // Use the module's getVisibilityBetween function directly
+        const visibility = getVisibilityBetween(actionData.actor, target);
+        if (visibility === 'concealed' || visibility === 'hidden' || visibility === 'undetected') {
+            return true;
+        }
+        
+        // Check conditions on the target
+        if (target.actor) {
+            const conditions = target.actor.conditions?.conditions || [];
+            const isHiddenOrUndetected = conditions.some(c => 
+                c.slug === 'hidden' || c.slug === 'undetected' || c.slug === 'concealed'
+            );
+            if (isHiddenOrUndetected) return true;
+        }
+        
+        // Check roll options on the actor
+        if (actionData.actor.actor?.getRollOptions) {
+            const rollOptions = actionData.actor.actor.getRollOptions();
+            const hasHiddenOrUndetected = rollOptions.some(option => 
+                option.includes('target:concealed') || 
+                option.includes('target:hidden') || 
+                option.includes('target:undetected')
+            );
+            if (hasHiddenOrUndetected) return true;
+        }
+    }
+    
+    // No valid targets found
+    return false;
+}
+
+/**
+ * Check if there are valid targets for the point-out action
+ * @param {Object} actionData - The action data
+ * @param {Array} potentialTargets - Array of potential target tokens
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkPointOutTargets(actionData, potentialTargets) {
+    // For point-out, check if there's at least one ally and one hidden/undetected target
+    let hasAlly = false;
+    let hasHiddenTarget = false;
+    
+    // Check for allies (different tokens with same disposition)
+    for (const token of potentialTargets) {
+        if (token.document.disposition === actionData.actor.document.disposition) {
+            hasAlly = true;
+            break;
+        }
+    }
+    
+    // Check for hidden/undetected targets
+    for (const target of potentialTargets) {
+        // Skip tokens with the same disposition as the actor
+        if (target.document.disposition === actionData.actor.document.disposition) continue;
+        
+        // Use the module's getVisibilityBetween function directly
+        const visibility = getVisibilityBetween(actionData.actor, target);
+        if (visibility === 'hidden' || visibility === 'undetected') {
+            hasHiddenTarget = true;
+            break;
+        }
+        
+        // Check conditions on the target
+        if (target.actor) {
+            const conditions = target.actor.conditions?.conditions || [];
+            const isHiddenOrUndetected = conditions.some(c => 
+                c.slug === 'hidden' || c.slug === 'undetected'
+            );
+            if (isHiddenOrUndetected) {
+                hasHiddenTarget = true;
+                break;
+            }
+        }
+    }
+    
+    // Need both an ally and a hidden target for point-out to be useful
+    return hasAlly && hasHiddenTarget;
+}
+
+/**
+ * Check if there are valid targets for the hide action
+ * @param {Object} actionData - The action data
+ * @param {Array} potentialTargets - Array of potential target tokens
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkHideTargets(actionData, potentialTargets) {
+    // For hide, check if there are any tokens that can currently see the hiding token
+    for (const target of potentialTargets) {
+        // Check current visibility state - Hide only affects tokens that can currently see you
+        const currentVisibility = getVisibilityBetween(target, actionData.actor);
+        
+        // For Hide, we need to find tokens that can see the hiding token as observed or concealed
+        // Skip if explicitly set to hidden or undetected
+        if (currentVisibility !== 'hidden' && currentVisibility !== 'undetected') {
+            return true;
+        }
+    }
+    
+    // No valid targets found
+    return false;
+}
+
+/**
+ * Check if there are valid targets for the sneak action
+ * @param {Object} actionData - The action data
+ * @param {Array} potentialTargets - Array of potential target tokens
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkSneakTargets(actionData, potentialTargets) {
+    // For sneak, check if there are any tokens that the sneaking token is currently hidden or undetected from
+    for (const target of potentialTargets) {
+        // Get current visibility - how this observer sees the sneaking token
+        const currentVisibility = getVisibilityBetween(target, actionData.actor);
+        
+        // Only include tokens that the sneaking token is currently hidden or undetected from
+        // Sneak action is used to maintain or improve stealth against these tokens
+        if (currentVisibility === 'hidden' || currentVisibility === 'undetected') {
+            return true;
+        }
+    }
+    
+    // No valid targets found
+    return false;
+}
+
+/**
+ * Check if there are valid targets for the create-a-diversion action
+ * @param {Object} actionData - The action data
+ * @param {Array} potentialTargets - Array of potential target tokens
+ * @returns {boolean} True if there are valid targets, false otherwise
+ */
+function checkDiversionTargets(actionData, potentialTargets) {
+    // For create-a-diversion, check if there are any tokens that can currently see the diverting token
+    for (const target of potentialTargets) {
+        // Skip tokens with the same disposition
+        if (target.document.disposition === actionData.actor.document.disposition) {
+            continue;
+        }
+        
+        // Check if this token can see the diverting token
+        const visibility = getVisibilityBetween(target, actionData.actor);
+        
+        // Only include tokens that can currently see the diverting token
+        // (observed - they need to see you to be diverted)
+        if (visibility === 'observed') {
+            return true;
+        }
+    }
+    
+    // No valid targets found
+    return false;
 }
 
 /**

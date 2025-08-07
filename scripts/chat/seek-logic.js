@@ -160,13 +160,7 @@ export async function previewSeekResults(actionData) {
     const targets = discoverSeekTargets(actionData.actor);
     
     if (targets.length === 0) {
-        // Show different message based on whether range limitation is active
-        if (rangeRestricted) {
-            const customSeekDistance = game.settings.get(MODULE_ID, 'customSeekDistance');
-            ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.NO_TARGETS_IN_RANGE_CUSTOM', {distance: customSeekDistance})}`);
-        } else {
-            ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.NO_UNDETECTED_TOKENS', { name: actionData.actor.name })}`);
-        }
+        // No need for notification, just silently return
         return;
     }
     

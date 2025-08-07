@@ -3,16 +3,15 @@
  * Handles Point Out-specific calculations, ally discovery, and result processing
  */
 
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
+import { MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
-import { 
-    calculateTokenDistance, 
-    hasActiveEncounter, 
-    isTokenInEncounter,
+import { PointOutPreviewDialog } from './point-out-preview-dialog.js';
+import {
+    calculateTokenDistance,
     extractStealthDC,
+    isTokenInEncounter,
     shouldFilterAlly
 } from './shared-utils.js';
-import { PointOutPreviewDialog } from './point-out-preview-dialog.js';
 
 /**
  * Get the actual target from Point Out action data
@@ -212,7 +211,7 @@ export async function previewPointOutResults(actionData) {
     const pointOutTarget = getPointOutTarget(actionData);
     
     if (!pointOutTarget) {
-        ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
+        // No need for notification, just silently return
         return;
     }
     
@@ -220,7 +219,7 @@ export async function previewPointOutResults(actionData) {
     const allies = discoverPointOutAllies(actionData.actor, pointOutTarget);
     
     if (allies.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: No allies found who can't see ${pointOutTarget.name}`);
+        // No need for notification, just silently return
         return;
     }
     

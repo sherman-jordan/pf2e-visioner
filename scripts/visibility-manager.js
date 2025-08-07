@@ -139,11 +139,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     // Get proper avatar image - be more strict about what we accept
     const getTokenImage = (token) => {
       // Only use actor portrait if it exists and isn't a generic token
-      if (token.actor?.img && 
-          token.actor.img !== "icons/svg/mystery-man.svg" && 
-          !token.actor.img.includes("tokens/") &&
-          !token.actor.img.includes("Token") &&
-          token.actor.img.includes(".")) {
+      if (token.actor?.img) {
         return token.actor.img;
       }
       

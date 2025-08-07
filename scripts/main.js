@@ -1,4 +1,3 @@
-
 // Import settings
 import { registerKeybindings, registerSettings } from "./settings.js";
 
@@ -10,10 +9,11 @@ import { registerHooks } from "./hooks.js";
 
 // Import dialog scroll fix
 import { initializeDialogScrollFix } from "./dialog-scroll-fix.js";
+// Import rule elements
+import { initializeRuleElements } from "./rule-elements/index.js";
 
-
+// Initialize the module
 Hooks.once("init", async () => {
-  
   try {
     // Register Handlebars helper for default value
     Handlebars.registerHelper('default', function(value, defaultValue) {
@@ -21,22 +21,30 @@ Hooks.once("init", async () => {
     });
     
     registerSettings();
+    console.log('PF2E Visioner | Initializing module');
     
+    // Register settings and keybindings
+    registerSettings();
     registerKeybindings();
     
+    // Register hooks
     registerHooks();
     
+    // Set up API
     const { api } = await import("./api.js");
-    game.modules.get("pf2e-visioner").api = api;
-    
-    
+    game.modules.get("pf2e-visioner").api = api;    
+    // Initialize detection wrapper
     initializeDetectionWrapper();
     
     // Initialize dialog scroll fix
     initializeDialogScrollFix();
     
+    // Initialize rule elements
+    initializeRuleElements();
+    
+    console.log('PF2E Visioner | Initialization complete');
   } catch (error) {
-    console.error('PF2E Visioner: Initialization failed at step:', error.message);
+    console.error('PF2E Visioner: Initialization failed:', error.message);
     console.error('PF2E Visioner: Full error details:', error);
     console.error('PF2E Visioner: Stack trace:', error.stack);
     
@@ -59,5 +67,3 @@ Hooks.once("ready", () => {
     console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);
   }
 });
-
-

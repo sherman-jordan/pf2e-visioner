@@ -5,7 +5,17 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.1] - 2025-08-09
+## [0.8.0] - 2025-08-10
+
+### Added
+- **Rule Element Initial Support**: Added custom rule element for controlling visibility states
+  - Implemented PF2eVisionerVisibility rule element with direction control (TO/FROM)
+  - Added schema with configurable options for subject, observers, mode, and status
+  - Supports multiple observer types: all, allies, enemies, selected, targeted
+  - Includes various modes: set, increase, decrease, remove
+  - Provides duration control and range limitations
+  - Effects are placed on the subject token for consistent behavior
+  - Added comprehensive documentation and example items
 
 ### Fixed
 - **Unification**: Matching colors through all dialogs for the visibility states

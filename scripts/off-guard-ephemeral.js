@@ -170,28 +170,52 @@ export async function cleanupEphemeralEffectsForTarget(observerActor, hiddenActo
  * @param {Object} options - Optional configuration
  * @param {boolean} options.initiative - Boolean (default: null)
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
- * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
+ * @param {string} options.effectTarget - Which token gets the effect ('observer' or 'subject')
  */
 export async function updateEphemeralEffectsForVisibility(observerToken, targetToken, newVisibilityState, options = {}) {
     if (!observerToken?.actor || !targetToken?.actor) {
         return;
     }
     
-    // Default direction is observer_to_target (observer sees target)
-    const direction = options.direction || 'observer_to_target';
+    console.log(`PF2E Visioner | Updating ephemeral effects: ${observerToken.name} sees ${targetToken.name} as ${newVisibilityState}`);
     
-    // Determine which token gets the effect based on direction
-    // In observer_to_target: the target gets the effect (target is hidden from observer)
-    // In target_to_observer: the observer gets the effect (observer is hidden from target)
-    const [effectReceiverActor, effectSourceActor] = direction === 'observer_to_target' 
-        ? [targetToken.actor, observerToken.actor]   // Target is hidden from observer
-        : [observerToken.actor, targetToken.actor];  // Observer is hidden from target
+    // Determine which token gets the effect
+    let effectReceiverActor, effectSourceActor;
+    
+    // For rule elements, always put effects on the subject
+    if (options.direction) {
+        // Rule elements always put effects on the subject
+        options.effectTarget = 'subject';
+        console.log(`PF2E Visioner | Rule element with direction='${options.direction}', forcing effectTarget='subject'`);
+    } else if (!options.effectTarget) {
+        // Handle legacy direction parameter for backward compatibility
+        if (options.direction === 'target_to_observer') {
+            options.effectTarget = 'observer';
+        } else {
+            // Default to 'subject' (target) if not specified
+            options.effectTarget = 'subject';
+        }
+        console.log(`PF2E Visioner | Using default effectTarget='${options.effectTarget}'`);
+    }
+    
+    const effectTarget = options.effectTarget;
+    
+    if (effectTarget === 'observer') {
+        console.log(`PF2E Visioner | Effect will be placed on observer: ${observerToken.name}`);
+        effectReceiverActor = observerToken.actor;
+        effectSourceActor = targetToken.actor;
+    } else {
+        console.log(`PF2E Visioner | Effect will be placed on subject: ${targetToken.name}`);
+        effectReceiverActor = targetToken.actor;
+        effectSourceActor = observerToken.actor;
+    }
     
     // Clean up existing effects first
     await cleanupEphemeralEffectsForTarget(effectReceiverActor, effectSourceActor, options);
     
-    // Only apply effects if the token is hidden or undetected
-    if (["hidden", "undetected"].includes(newVisibilityState)) {
+
+    // Only apply effects if the token is hidden or undetected and we're not in remove mode
+    if (!options.removeAllEffects && ["hidden", "undetected"].includes(newVisibilityState)) {
         // Apply effect to the token that is hidden/undetected
         await createEphemeralOffGuardEffect(effectReceiverActor, effectSourceActor, newVisibilityState, options);
     }

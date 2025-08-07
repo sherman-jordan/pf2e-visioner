@@ -21,7 +21,6 @@ Hooks.once("init", async () => {
     });
     
     registerSettings();
-    console.log('PF2E Visioner | Initializing module');
     
     // Register settings and keybindings
     registerSettings();
@@ -42,7 +41,6 @@ Hooks.once("init", async () => {
     // Initialize rule elements
     initializeRuleElements();
     
-    console.log('PF2E Visioner | Initialization complete');
   } catch (error) {
     console.error('PF2E Visioner: Initialization failed:', error.message);
     console.error('PF2E Visioner: Full error details:', error);

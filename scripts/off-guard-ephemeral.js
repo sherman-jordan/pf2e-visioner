@@ -176,9 +176,7 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
     if (!observerToken?.actor || !targetToken?.actor) {
         return;
     }
-    
-    console.log(`PF2E Visioner | Updating ephemeral effects: ${observerToken.name} sees ${targetToken.name} as ${newVisibilityState}`);
-    
+        
     // Determine which token gets the effect
     let effectReceiverActor, effectSourceActor;
     
@@ -186,7 +184,6 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
     if (options.direction) {
         // Rule elements always put effects on the subject
         options.effectTarget = 'subject';
-        console.log(`PF2E Visioner | Rule element with direction='${options.direction}', forcing effectTarget='subject'`);
     } else if (!options.effectTarget) {
         // Handle legacy direction parameter for backward compatibility
         if (options.direction === 'target_to_observer') {
@@ -195,17 +192,14 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
             // Default to 'subject' (target) if not specified
             options.effectTarget = 'subject';
         }
-        console.log(`PF2E Visioner | Using default effectTarget='${options.effectTarget}'`);
     }
     
     const effectTarget = options.effectTarget;
     
     if (effectTarget === 'observer') {
-        console.log(`PF2E Visioner | Effect will be placed on observer: ${observerToken.name}`);
         effectReceiverActor = observerToken.actor;
         effectSourceActor = targetToken.actor;
     } else {
-        console.log(`PF2E Visioner | Effect will be placed on subject: ${targetToken.name}`);
         effectReceiverActor = targetToken.actor;
         effectSourceActor = observerToken.actor;
     }

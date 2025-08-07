@@ -9,8 +9,7 @@ import { PointOutPreviewDialog } from './point-out-preview-dialog.js';
 import {
     calculateTokenDistance,
     extractStealthDC,
-    isTokenInEncounter,
-    shouldFilterAlly
+    isTokenInEncounter
 } from './shared-utils.js';
 
 /**
@@ -57,8 +56,9 @@ export function findBestPointOutTarget(pointerToken) {
         if (token.actor?.type !== 'npc' && token.actor?.type !== 'character') return false;
         
         // Pointer must be able to see the target (can't point out what you can't see)
+        // Allow pointing out targets that are observed, concealed, or hidden to the pointer
         const pointerVisibility = getVisibilityBetween(pointerToken, token);
-        if (pointerVisibility === 'undetected') return false;
+        if (pointerVisibility === 'undetected') return false; // Can't point out what you can't see
         
         // Check if any allies can't see this target
         const allies = canvas.tokens.placeables.filter(ally => {
@@ -96,16 +96,20 @@ export function findBestPointOutTarget(pointerToken) {
 export function discoverPointOutAllies(pointerToken, targetToken, encounterOnly = false) {
     if (!pointerToken || !targetToken) return [];
     
+    // First, check if the pointer can see the target (must be observed, concealed, or hidden)
+    const pointerVisibility = getVisibilityBetween(pointerToken, targetToken);
+    if (pointerVisibility === 'undetected') {
+        // Can't point out what you can't see
+        return [];
+    }
+    
     const allies = [];
     
     // Find all tokens that are allies of the pointing token
     for (const token of canvas.tokens.placeables) {
         if (token === pointerToken) continue;
         if (!token.actor) continue;
-        
-        // Apply ally filtering if enabled (for Point Out, we filter non-allies)
-        if (shouldFilterAlly(pointerToken, token, 'allies')) continue;
-        
+
         // Check encounter filtering
         if (encounterOnly && !isTokenInEncounter(token)) continue;
         
@@ -151,6 +155,7 @@ export function discoverPointOutTargets(pointerToken, targetToken = null, encoun
 /**
  * Analyze Point Out outcome following official PF2e rules
  * Point Out makes undetected creatures hidden to specific allies
+ * The pointer can see the target (observed, concealed, or hidden) and points it out to allies who can't see it
  * @param {Object} actionData - The Point Out action data
  * @param {Object} allyData - Data about the ally who can't see the target
  * @returns {Object} Detailed outcome analysis
@@ -211,7 +216,7 @@ export async function previewPointOutResults(actionData) {
     const pointOutTarget = getPointOutTarget(actionData);
     
     if (!pointOutTarget) {
-        // No need for notification, just silently return
+        ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
         return;
     }
     
@@ -219,7 +224,7 @@ export async function previewPointOutResults(actionData) {
     const allies = discoverPointOutAllies(actionData.actor, pointOutTarget);
     
     if (allies.length === 0) {
-        // No need for notification, just silently return
+        ui.notifications.info(`${MODULE_TITLE}: No allies to point out to`);
         return;
     }
     

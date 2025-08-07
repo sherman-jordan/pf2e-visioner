@@ -5,6 +5,14 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-08-07
+
+### Fixed
+- **Visibility Manager Mode Switching**: Fixed issue where toggling between observer and target mode would reset changes made in the previous mode
+  - Changes in both modes are now preserved when toggling between modes
+  - Apply Changes button now applies changes from both observer and target modes
+- **Point Out Action**: Improved Point Out action to work when the pointer can see the target in any visibility state (observed, concealed, or hidden)
+
 ## [0.8.0] - 2025-08-10
 
 ### Added

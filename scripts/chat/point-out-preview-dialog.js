@@ -123,7 +123,6 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
         };
         
         const processedOutcomes = filteredOutcomes.map(outcome => {
-            const currentVisibility = getVisibilityBetween(this.actorToken, outcome.target) || outcome.oldVisibility;
             const availableStates = {
                 'hidden': {
                     ...visibilityStates.hidden,
@@ -131,7 +130,6 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
                 }
             };
             
-            const effectiveNewState = outcome.overrideState || outcome.newVisibility;
             // Check if there's an actionable change - either the outcome naturally changed OR user overrode the state
             const hasActionableChange = outcome.changed || (outcome.overrideState && outcome.overrideState !== outcome.oldVisibility);
             

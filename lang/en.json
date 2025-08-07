@@ -7,9 +7,9 @@
       "TARGET": "Target Token",
       "VISIBILITY_STATE": "Visibility State",
       "NO_TOKENS": "No tokens available in this scene",
-      "APPLY": "Apply Changes",
+      "APPLY": "Apply All Changes",
       "CANCEL": "Cancel",
-      "RESET": "Reset All",
+      "RESET": "Reset Mode Changes",
       "BULK_ACTIONS": "Bulk Actions"
     },
     "VISIBILITY_STATES": {

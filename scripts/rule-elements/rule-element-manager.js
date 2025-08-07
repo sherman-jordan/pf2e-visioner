@@ -11,7 +11,6 @@ let PF2eVisionerVisibilityRuleElement = null;
  * This should be called from the module's init hook
  */
 export function initRuleElementManager() {
-  console.log('PF2E Visioner | Initializing Rule Element Manager');
   
   // Register hooks for different stages of initialization
   Hooks.once('setup', setupRuleElements);
@@ -23,7 +22,6 @@ export function initRuleElementManager() {
  * This prepares the rule element classes but doesn't register them yet
  */
 function setupRuleElements() {
-  console.log('PF2E Visioner | Setting up rule elements');
   
   // We'll define the rule element class here, but not register it yet
   if (game.pf2e?.RuleElementPF2e) {
@@ -163,8 +161,6 @@ function setupRuleElements() {
           return tokens;
         }
       };
-      
-      console.log('PF2E Visioner | PF2eVisionerVisibility rule element class defined successfully');
     } catch (error) {
       console.error('PF2E Visioner | Error defining PF2eVisionerVisibility rule element class:', error);
     }
@@ -177,9 +173,7 @@ function setupRuleElements() {
  * Register rule elements during the ready hook
  * This registers the rule elements with the PF2e system
  */
-function registerRuleElements() {
-  console.log('PF2E Visioner | Registering rule elements');
-  
+function registerRuleElements() {  
   if (!game.pf2e?.RuleElements) {
     console.error('PF2E Visioner | Failed to register rule elements: PF2e system not ready');
     return;
@@ -188,7 +182,6 @@ function registerRuleElements() {
   try {
     // If the rule element class wasn't defined during setup, try again now
     if (!PF2eVisionerVisibilityRuleElement && game.pf2e?.RuleElementPF2e) {
-      console.log('PF2E Visioner | Defining rule element class during ready hook');
       setupRuleElements();
     }
     
@@ -218,10 +211,6 @@ function registerRuleElements() {
         game.i18n.translations.PF2E.RuleElement.PF2eVisionerVisibility = "PF2e Visioner Visibility";
       }
     }
-    
-    console.log('PF2E Visioner | Custom rule elements registered successfully');
-    console.log('PF2E Visioner | Use window.PF2EVisioner.testRuleElements() to test the rule element');
-    console.log('PF2E Visioner | Use window.PF2EVisioner.verifyRuleElementInUI() to verify the rule element appears in the UI');
   } catch (error) {
     console.error('PF2E Visioner | Error registering rule elements:', error);
   }

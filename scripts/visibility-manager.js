@@ -68,6 +68,12 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     // Initialize encounter filter state based on setting
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     
+    // Initialize storage for saved mode data
+    this._savedModeData = {
+      observer: {},
+      target: {}
+    };
+    
     // Set this as the current instance
     TokenVisibilityManager.currentInstance = this;
   }
@@ -342,11 +348,99 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
    * Apply changes and close
    */
   static async applyChanges(event, button) {
-    await this.submit();
+    const app = this;
+    
+    // First save the current mode's form state
+    try {
+      // Get all visibility inputs from the form
+      const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+      
+      // Create a storage object for this mode if it doesn't exist
+      if (!app._savedModeData) app._savedModeData = {};
+      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = {};
+      
+      // Store each visibility setting
+      visibilityInputs.forEach(input => {
+        const tokenId = input.name.replace('visibility.', '');
+        app._savedModeData[app.mode][tokenId] = input.value;
+      });
+      
+    } catch (error) {
+      console.error('Visibility Manager: Error saving current form state:', error);
+    }
+    
+    // Process and apply changes from both modes
+    if (app._savedModeData) {
+      
+      // Apply observer mode changes if we have them
+      if (app._savedModeData.observer) {
+        const observerChanges = {};
+        
+        // Extract visibility changes from observer mode data
+        for (const [tokenId, value] of Object.entries(app._savedModeData.observer)) {
+          observerChanges[tokenId] = value;
+        }
+        
+        // Apply observer mode changes
+        if (Object.keys(observerChanges).length > 0) {
+          await setVisibilityMap(app.observer, observerChanges);
+          
+          // Update ephemeral effects for each target token
+          for (const [tokenId, newState] of Object.entries(observerChanges)) {
+            const targetToken = canvas.tokens.get(tokenId);
+            if (targetToken) {
+              try {
+                await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
+                  direction: 'observer_to_target'
+                });
+              } catch (error) {
+                console.error('Visibility Manager: Error updating effects:', error);
+              }
+            }
+          }
+        }
+      }
+      
+      // Apply target mode changes if we have them
+      if (app._savedModeData.target) {
+        let targetChangeCount = 0;
+        
+        // Apply target mode changes
+        for (const [observerTokenId, newState] of Object.entries(app._savedModeData.target)) {
+          const observerToken = canvas.tokens.get(observerTokenId);
+          if (observerToken) {
+            // Update the observer's visibility map to show how they see the selected token
+            const observerVisibilityData = getVisibilityMap(observerToken);
+            observerVisibilityData[app.observer.document.id] = newState;
+            await setVisibilityMap(observerToken, observerVisibilityData);
+            
+            // Update ephemeral effects
+            try {
+              await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, {
+                direction: 'observer_to_target'
+              });
+            } catch (error) {
+              console.error('Visibility Manager: Error updating effects:', error);
+            }
+            
+            targetChangeCount++;
+          }
+        }
+     }
+      
+      // Update everyone's perception after applying all changes
+      refreshEveryonesPerception();
+    } else {
+      // Fall back to normal submit if no saved data
+      await this.submit();
+    }
     
     // Force update visuals immediately
     const { updateTokenVisuals } = await import('./effects-coordinator.js');
     await updateTokenVisuals();
+    
+    // Clear saved data
+    app._savedModeData = null;
     
     this.close();
   }
@@ -373,13 +467,64 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     // Store current position and size to prevent jumping
     const currentPosition = app.position;
     
-    // Toggle the mode
-    app.mode = app.mode === 'observer' ? 'target' : 'observer';
+    // Capture the current form state
+    try {
+      // Get all visibility inputs from the form
+      const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+      
+      // Create a storage object for this mode if it doesn't exist
+      if (!app._savedModeData) app._savedModeData = {};
+      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = {};
+      
+      // Store each visibility setting
+      visibilityInputs.forEach(input => {
+        const tokenId = input.name.replace('visibility.', '');
+        app._savedModeData[app.mode][tokenId] = input.value;
+      });
+      
+    } catch (error) {
+      console.error('Visibility Manager: Error saving form state:', error);
+    }
     
-
+    // Toggle the mode
+    const newMode = app.mode === 'observer' ? 'target' : 'observer';
+    app.mode = newMode;
     
     // Re-render with preserved position
     await app.render({ force: true });
+    
+    // After rendering, restore any saved values for the new mode
+    try {
+      if (app._savedModeData && app._savedModeData[newMode]) {
+        // Find all visibility inputs in the newly rendered form
+        const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+        
+        // Set values from saved data
+        visibilityInputs.forEach(input => {
+          const tokenId = input.name.replace('visibility.', '');
+          if (app._savedModeData[newMode][tokenId]) {
+            // Set the input value
+            input.value = app._savedModeData[newMode][tokenId];
+            
+            // Also update the visual state (selected icon)
+            const iconContainer = input.closest('.icon-selection');
+            if (iconContainer) {
+              // Remove selected class from all icons
+              const icons = iconContainer.querySelectorAll('.state-icon');
+              icons.forEach(icon => icon.classList.remove('selected'));
+              
+              // Add selected class to the matching icon
+              const targetIcon = iconContainer.querySelector(`[data-state="${input.value}"]`);
+              if (targetIcon) {
+                targetIcon.classList.add('selected');
+              }
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Visibility Manager: Error restoring saved form state:', error);
+    }
     
     // Restore position after render to prevent jumping
     if (currentPosition) {

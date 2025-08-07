@@ -67,6 +67,20 @@ export function registerSettings() {
           // Update CSS variable for tooltip font size
           document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${value}px`);
         };
+      } else if (key === 'colorblindMode') {
+        settingConfig.onChange = (value) => {
+          // Apply colorblind mode CSS class to the body
+          document.body.classList.remove(
+            'pf2e-visioner-colorblind-protanopia',
+            'pf2e-visioner-colorblind-deuteranopia',
+            'pf2e-visioner-colorblind-tritanopia',
+            'pf2e-visioner-colorblind-achromatopsia'
+          );
+          
+          if (value !== 'none') {
+            document.body.classList.add(`pf2e-visioner-colorblind-${value}`);
+          }
+        };
       }
       
       try {

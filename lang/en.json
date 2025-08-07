@@ -145,6 +145,17 @@
         "name": "Tooltip Font Size",
         "hint": "Adjust the font size of visibility tooltips (client-side setting)"
       },
+      "COLORBLIND_MODE": {
+        "name": "Colorblind Mode",
+        "hint": "Select a colorblind mode to adjust colors for better visibility (client-side setting)",
+        "CHOICES": {
+          "none": "No Colorblind Mode",
+          "protanopia": "Protanopia (Red-Blind)",
+          "deuteranopia": "Deuteranopia (Green-Blind)",
+          "tritanopia": "Tritanopia (Blue-Blind)",
+          "achromatopsia": "Achromatopsia (Complete Color Blindness)"
+        }
+      },
       "IGNORE_ALLIES": {
         "name": "Ignore Allies",
         "hint": "When enabled, NPCs will only see party members in dialogs, and players will only see NPCs. This simplifies visibility management by hiding ally-to-ally relationships."

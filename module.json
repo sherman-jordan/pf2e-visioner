@@ -7,7 +7,7 @@
       "name": "RoiLeaf"
     }
   ],
-  "version": "0.6.0",
+  "version": "0.7.0",
   "compatibility": {
     "minimum": "13.341",
     "verified": "13.346"
@@ -21,7 +21,9 @@
     "styles/token-effects.css",
     "styles/responsive.css",
     "styles/tooltips.css",
-    "styles/dialog-layout.css"
+    "styles/dialog-layout.css",
+    "styles/colorblind.css",
+    "styles/colorblind-buttons.css"
   ],
   "languages": [
     {

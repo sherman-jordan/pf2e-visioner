@@ -330,9 +330,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
             ui.notifications.warn(`${MODULE_TITLE}: No change to apply for this token`);
             return;
         }
-        
-        console.log('Applying Point Out change for outcome:', outcome);
-        
+                
         // Create proper change object using override state
         const change = {
             target: outcome.target, // This is the ally token

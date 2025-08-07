@@ -47,4 +47,17 @@ Hooks.once("init", async () => {
   }
 });
 
+// Initialize colorblind mode on ready
+Hooks.once("ready", () => {
+  try {
+    // Apply colorblind mode if set
+    const colorblindMode = game.settings.get("pf2e-visioner", "colorblindMode");
+    if (colorblindMode !== "none") {
+      document.body.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
+    }
+  } catch (error) {
+    console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);
+  }
+});
+
 

@@ -76,6 +76,23 @@ export const DEFAULT_SETTINGS = {
       step: 1
     }
   },
+  
+  colorblindMode: {
+    name: 'PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.hint',
+    scope: 'client',
+    config: true,
+    restricted: false, // Allow players to see and change this setting
+    type: String,
+    choices: {
+      "none": "PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.CHOICES.none",
+      "protanopia": "PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.CHOICES.protanopia",
+      "deuteranopia": "PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.CHOICES.deuteranopia",
+      "tritanopia": "PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.CHOICES.tritanopia",
+      "achromatopsia": "PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.CHOICES.achromatopsia"
+    },
+    default: "none"
+  },
 
   // Token Filtering
   ignoreAllies: {

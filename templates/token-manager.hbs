@@ -68,18 +68,6 @@
       </div>
       <div class="legend-panel">
         {{#if isVisibilityTab}}
-          {{!-- Show cover legend ABOVE visibility legend for quick reference --}}
-          <div class="cover-legend" style="margin-bottom: 4px;">
-            {{#each coverStates as |state|}}
-              <div class="legend-item" title="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
-                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
-                <span>{{state.label}}</span>
-                {{#if (gt state.bonusAC 0)}}
-                  <span class="bonus-badge">+{{state.bonusAC}}</span>
-                {{/if}}
-              </div>
-            {{/each}}
-          </div>
           <div class="visibility-legend">
             {{#each visibilityStates as |state|}}
               <div class="legend-item" title="{{state.label}}">

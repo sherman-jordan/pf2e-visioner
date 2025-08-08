@@ -52,9 +52,6 @@ export function onRenderChatMessage(message, html) {
                 const flg = message?.flags?.pf2e?.target;
                 targetId = flg?.token || null;
             }
-            try {
-                const currentTargets = Array.from(game.user.targets || []).map(t => t?.id);
-            } catch (_) {}
             requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId);
         } catch (e) {
             console.warn(`${MODULE_TITLE}: Failed to auto-forward Point Out to GM:`, e);
@@ -821,37 +818,17 @@ function bindAutomationEvents(panel, message, actionData) {
                         } catch (_) {}
                     } catch (_) {}
                 }
-            } else if (
-
-
-
-                (action === 'open-hide-results' && actionData.actionType === 'hide') ||
-
-
-                (action === 'open-sneak-results' && actionData.actionType === 'sneak') ||
-
-
-                (action === 'open-diversion-results' && actionData.actionType === 'create-a-diversion') ||
-
-
-                (action === 'open-consequences-results' && actionData.actionType === 'consequences')
-
-
-            ) {
-
-
-                // Directly delegate to unified preview handler for these actions
-
-
                 await previewActionResults(actionData);
-
-
+            } else if (
+                (action === 'open-hide-results' && actionData.actionType === 'hide') ||
+                (action === 'open-sneak-results' && actionData.actionType === 'sneak') ||
+                (action === 'open-diversion-results' && actionData.actionType === 'create-a-diversion') ||
+                (action === 'open-consequences-results' && actionData.actionType === 'consequences')
+            ) {
+                // Directly delegate to unified preview handler for these actions
+                await previewActionResults(actionData);
             } else if (typeof action === 'string' && action.startsWith('open-')) {
-
-
                 // Future-proof: any other open-* actions fall back to unified preview
-
-
                 await previewActionResults(actionData);
             }
         } catch (error) {

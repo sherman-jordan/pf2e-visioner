@@ -501,23 +501,29 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         if (Object.keys(obsVis).length > 0) {
           const currentMap = getVisibilityMap(app.observer) || {};
           await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
+          const pairs = [];
           for (const [tokenId, newState] of Object.entries(obsVis)) {
             const targetToken = canvas.tokens.get(tokenId);
             if (targetToken) {
               try { await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, { effectTarget: 'subject' }); } catch (e) { console.error('Token Manager: visibility (observer) effect error', e); }
+              pairs.push({ observerId: app.observer.id, targetId: tokenId, visibility: newState });
             }
           }
+          try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs); } catch (_) {}
         }
         // Targets → Observer
         const tgtVis = app._savedModeData.target?.visibility || {};
+        const pairs2 = [];
         for (const [observerTokenId, newState] of Object.entries(tgtVis)) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (observerToken) {
             const observerVisibilityData = getVisibilityMap(observerToken) || {};
             await setVisibilityMap(observerToken, { ...observerVisibilityData, [app.observer.document.id]: newState });
             try { await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' }); } catch (e) { console.error('Token Manager: visibility (target) effect error', e); }
+            pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, visibility: newState });
           }
         }
+        if (pairs2.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } catch (_) {} }
       }
 
       if (isCover) {
@@ -526,16 +532,21 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         if (Object.keys(obsCov).length > 0) {
           const currentCover = getCoverMap(app.observer) || {};
           await setCoverMap(app.observer, { ...currentCover, ...obsCov });
+          const pairs = Object.entries(obsCov).map(([tokenId, state]) => ({ observerId: app.observer.id, targetId: tokenId, cover: state }));
+          if (pairs.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs); } catch (_) {} }
         }
         // Targets → Observer
         const tgtCov = app._savedModeData.target?.cover || {};
+        const pairs2 = [];
         for (const [observerTokenId, newState] of Object.entries(tgtCov)) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (observerToken) {
             const observerCoverData = getCoverMap(observerToken) || {};
             await setCoverMap(observerToken, { ...observerCoverData, [app.observer.document.id]: newState });
+            pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, cover: newState });
           }
         }
+        if (pairs2.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } catch (_) {} }
       }
 
       refreshEveryonesPerception();
@@ -543,8 +554,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       await this.submit();
     }
 
-    const { updateTokenVisuals } = await import('./effects-coordinator.js');
-    await updateTokenVisuals();
+    // Targeted refresh will have run; do a light perception update only
+    try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
     this.close();
   }
 
@@ -623,8 +634,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     await applyTargetMode();
 
     refreshEveryonesPerception();
-    const { updateTokenVisuals } = await import('./effects-coordinator.js');
-    await updateTokenVisuals();
+    try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
     this.close();
   }
 

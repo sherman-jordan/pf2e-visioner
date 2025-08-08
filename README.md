@@ -1,6 +1,6 @@
 # PF2E Visioner – Full Feature Overview
 
-**PF2E Visioner** is a powerful, modular visibility system for Foundry VTT tailored to the Pathfinder Second Edition (PF2E) ruleset. It provides GMs with complete control over how each token perceives others and integrates deeply with PF2E's visibility mechanics.
+**PF2E Visioner** is a powerful, modular token management system for Foundry VTT tailored to the Pathfinder Second Edition (PF2E) ruleset. It provides GMs with complete control over how each token perceives others (visibility) and their cover status, integrating deeply with PF2E's visibility and cover mechanics.
 
 Support the project on Ko-fi: [https://ko-fi.com/roileaf](https://ko-fi.com/roileaf)
 
@@ -15,11 +15,19 @@ Support the project on Ko-fi: [https://ko-fi.com/roileaf](https://ko-fi.com/roil
 * Independent perception per creature.
 * Data stored in modern token flags.
 
+### Per-Token Cover Control
+
+* Assigns cover state per observer-target pair.
+* Cover states: **None**, **Lesser** (+1 AC), **Standard** (+2 AC/Reflex/Stealth), **Greater** (+4 AC/Reflex/Stealth).
+* Independent cover assessment per creature.
+* Data stored in modern token flags.
+
 ### Interface
 
 * Based on **ApplicationV2** with modern layout.
+* Tabbed interface for **Visibility** and **Cover** management.
 * Responsive UI with fixed headers/footers.
-* Sortable, color-coded visibility table.
+* Sortable, color-coded tables for both visibility and cover.
 * Always-visible controls with clean separation.
 
 ### Visual Indicators
@@ -27,8 +35,9 @@ Support the project on Ko-fi: [https://ko-fi.com/roileaf](https://ko-fi.com/roil
 * Tokens are visually altered based on visibility:
 
   * Transparency, outlines, icons, effects.
+* Cover indicators show current cover status with icons and colors.
 * Smooth animated transitions between states.
-* Tooltips show perception from selected/hovered tokens.
+* Tooltips show perception and cover from selected/hovered tokens.
 
 ---
 

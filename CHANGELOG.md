@@ -5,6 +5,24 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-01-XX
+
+### Added
+- **Cover Support**: Added comprehensive cover management system alongside visibility
+  - New cover states: None, Lesser (+1 AC), Standard (+2 AC/Reflex/Stealth), Greater (+4 AC/Reflex/Stealth)
+  - Tabbed interface with separate Visibility and Cover management tabs
+  - Cover indicators with icons and colors for each state
+  - Mechanical effects display showing AC, Reflex, and Stealth bonuses
+  - Bulk actions for setting cover states across multiple tokens
+  - API methods for programmatic cover management
+  - Roll options integration for cover states
+
+### Changed
+- **Renamed Module**: "Visibility Manager" is now "Visioner Token Manager" to reflect expanded functionality
+- **Updated API**: Added `getCover()`, `setCover()`, and `getCoverStates()` methods
+- **Enhanced Roll Options**: `getRollOptions()` now includes cover-related options
+- **Legacy Support**: Maintained backward compatibility with existing visibility API
+
 ## [1.0.2] - 2025-08-07
 
 ### Fixed

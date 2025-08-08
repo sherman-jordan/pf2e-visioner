@@ -11,14 +11,14 @@ pf2e-visioner/
 │   ├── constants.js         # Configuration and constants
 │   ├── utils.js             # Utility functions
 │   ├── api.js               # Public API and main functionality
-│   ├── visibility-manager.js # ApplicationV2 UI component
-│   ├── visibility-effects.js # Visual effects and token rendering
+│   ├── token-manager.js     # ApplicationV2 UI component (renamed from visibility-manager.js)
+│   ├── visual-effects.js    # Visual effects and token rendering
 │   ├── hooks.js             # FoundryVTT hooks registration
 │   └── settings.js          # Module settings and keybindings
 ├── templates/
-│   └── visibility-manager.hbs # Handlebars template for UI
+│   └── token-manager.hbs    # Handlebars template for UI (renamed from visibility-manager.hbs)
 ├── styles/
-│   └── visibility-manager.css # CSS styling
+│   └── visibility-manager.css # CSS styling (now includes cover styles)
 ├── lang/
 │   └── en.json             # English localization
 ├── module.json             # Module manifest
@@ -46,6 +46,7 @@ pf2e-visioner/
   - `MODULE_ID`: The module identifier
   - `MODULE_TITLE`: Human-readable module name
   - `VISIBILITY_STATES`: Configuration for all visibility states
+  - `COVER_STATES`: Configuration for all cover states
   - `DEFAULT_SETTINGS`: Module settings configuration
   - `KEYBINDINGS`: Keybinding configurations
 - **Dependencies**: None (base file)
@@ -57,29 +58,37 @@ pf2e-visioner/
   - `setVisibilityMap()`: Save token visibility data
   - `getVisibilityBetween()`: Get visibility between two tokens
   - `setVisibilityBetween()`: Set visibility between two tokens
+  - `getCoverMap()`: Get token cover data
+  - `setCoverMap()`: Save token cover data
+  - `getCoverBetween()`: Get cover between two tokens
+  - `setCoverBetween()`: Set cover between two tokens
   - `applyPF2ECondition()`: Apply PF2E system conditions
   - `createVisibilityIndicator()`: Create visual indicators
+  - `createCoverIndicator()`: Create cover visual indicators
   - Various validation and helper functions
 - **Dependencies**: `constants.js`
 
 ### User Interface
 
-#### `scripts/visibility-manager.js`
-- **Purpose**: ApplicationV2-based UI for managing visibility
-- **Class**: `TokenVisibilityManager`
+#### `scripts/token-manager.js`
+- **Purpose**: ApplicationV2-based UI for managing visibility and cover
+- **Class**: `VisionerTokenManager`
 - **Responsibilities**:
-  - Render the visibility management interface
+  - Render the token management interface with tabbed visibility and cover controls
   - Handle form submissions and user interactions
   - Provide bulk actions for multiple tokens
   - Manage window positioning and behavior
-- **Dependencies**: `constants.js`, `utils.js`, `visibility-effects.js`
+  - Switch between visibility and cover management tabs
+- **Dependencies**: `constants.js`, `utils.js`, `visual-effects.js`
 
-#### `templates/visibility-manager.hbs`
+#### `templates/token-manager.hbs`
 - **Purpose**: Handlebars template for the UI
 - **Features**:
+  - Tabbed interface for visibility and cover management
   - Observer token information display
-  - Bulk action buttons
-  - Token visibility table with dropdowns
+  - Bulk action buttons for both visibility and cover
+  - Token tables with dropdowns for both visibility and cover states
+  - Cover legend showing mechanical effects
   - Responsive design elements
 - **Dependencies**: Localization keys from `lang/en.json`
 
@@ -90,13 +99,15 @@ pf2e-visioner/
   - Responsive design breakpoints
   - Animation keyframes for visual effects
   - Theme-aware styling
+  - Tab navigation styles
+  - Cover-specific styling
 - **Dependencies**: FoundryVTT v13 CSS custom properties
 
 ### Functionality
 
 #### `scripts/api.js`
 - **Purpose**: Public API and core functionality
-- **Class**: `PerTokenVisibilityAPI`
+- **Class**: `Pf2eVisionerApi`
 - **Key Methods**:
   - `openVisibilityManager()`: Open the UI
   - `getVisibilityBetween()`: Query visibility states

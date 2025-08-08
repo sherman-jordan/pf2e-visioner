@@ -1,15 +1,24 @@
 /**
- * ApplicationV2-based Token Visibility Manager
+ * ApplicationV2-based Visioner Token Manager
+ * Handles both visibility and cover management for tokens
  */
 
-import { VISIBILITY_STATES } from './constants.js';
+import { COVER_STATES, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from './socket.js';
-import { getSceneTargets, getVisibilityMap, hasActiveEncounter, setVisibilityMap, showNotification } from './utils.js';
+import {
+    getCoverMap,
+    getSceneTargets,
+    getVisibilityMap,
+    hasActiveEncounter,
+    setCoverMap,
+    setVisibilityMap,
+    showNotification
+} from './utils.js';
 
 import { MODULE_ID } from './constants.js';
 
-export class TokenVisibilityManager extends foundry.applications.api.ApplicationV2 {
+export class VisionerTokenManager extends foundry.applications.api.ApplicationV2 {
   
   // Track the current instance to prevent multiple dialogs
   static currentInstance = null;
@@ -17,40 +26,51 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   static DEFAULT_OPTIONS = {
     tag: 'form',
     form: {
-      handler: TokenVisibilityManager.formHandler,
+      handler: VisionerTokenManager.formHandler,
       submitOnChange: false,
       closeOnSubmit: false
     },
     window: {
-      title: 'PF2E_VISIONER.VISIBILITY_MANAGER.TITLE',
+      title: 'PF2E_VISIONER.TOKEN_MANAGER.TITLE',
       icon: 'fas fa-eye',
       resizable: true
     },
     position: {
-      width: 545,
-      height: 600
+      width: 600,
+      height: 650
     },
     actions: {
-      apply: TokenVisibilityManager.applyChanges,
-      reset: TokenVisibilityManager.resetAll,
-      toggleMode: TokenVisibilityManager.toggleMode,
-      toggleEncounterFilter: TokenVisibilityManager.toggleEncounterFilter,
-      // PC-specific bulk actions
-      bulkPCHidden: TokenVisibilityManager.bulkSetState,
-      bulkPCUndetected: TokenVisibilityManager.bulkSetState,
-      bulkPCConcealed: TokenVisibilityManager.bulkSetState,
-      bulkPCObserved: TokenVisibilityManager.bulkSetState,
-      // NPC-specific bulk actions
-      bulkNPCHidden: TokenVisibilityManager.bulkSetState,
-      bulkNPCUndetected: TokenVisibilityManager.bulkSetState,
-      bulkNPCConcealed: TokenVisibilityManager.bulkSetState,
-      bulkNPCObserved: TokenVisibilityManager.bulkSetState
+      apply: VisionerTokenManager.applyChanges,
+      reset: VisionerTokenManager.resetAll,
+      toggleMode: VisionerTokenManager.toggleMode,
+      toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
+      toggleTab: VisionerTokenManager.toggleTab,
+      // PC-specific bulk actions for visibility
+      bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
+      bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
+      bulkPCConcealed: VisionerTokenManager.bulkSetVisibilityState,
+      bulkPCObserved: VisionerTokenManager.bulkSetVisibilityState,
+      // NPC-specific bulk actions for visibility
+      bulkNPCHidden: VisionerTokenManager.bulkSetVisibilityState,
+      bulkNPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
+      bulkNPCConcealed: VisionerTokenManager.bulkSetVisibilityState,
+      bulkNPCObserved: VisionerTokenManager.bulkSetVisibilityState,
+      // PC-specific bulk actions for cover
+      bulkPCNoCover: VisionerTokenManager.bulkSetCoverState,
+      bulkPCLesserCover: VisionerTokenManager.bulkSetCoverState,
+      bulkPCStandardCover: VisionerTokenManager.bulkSetCoverState,
+      bulkPCGreaterCover: VisionerTokenManager.bulkSetCoverState,
+      // NPC-specific bulk actions for cover
+      bulkNPCNoCover: VisionerTokenManager.bulkSetCoverState,
+      bulkNPCLesserCover: VisionerTokenManager.bulkSetCoverState,
+      bulkNPCStandardCover: VisionerTokenManager.bulkSetCoverState,
+      bulkNPCGreaterCover: VisionerTokenManager.bulkSetCoverState
     }
   };
 
   static PARTS = {
     form: {
-      template: 'modules/pf2e-visioner/templates/visibility-manager.hbs'
+      template: 'modules/pf2e-visioner/templates/token-manager.hbs'
     }
   };
 
@@ -58,6 +78,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     super(options);
     this.observer = observer;
     this.visibilityData = getVisibilityMap(observer);
+    this.coverData = getCoverMap(observer);
     
     // Smart default mode selection
     // If the token is controlled by current user, default to Target Mode ("how others see me")
@@ -65,17 +86,26 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     const isControlledByUser = observer.actor?.hasPlayerOwner && observer.isOwner;
     this.mode = options.mode || (isControlledByUser ? 'target' : 'observer');
     
+    // Initialize active tab (visibility or cover)
+    this.activeTab = options.activeTab || 'visibility';
+    
     // Initialize encounter filter state based on setting
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     
     // Initialize storage for saved mode data
     this._savedModeData = {
-      observer: {},
-      target: {}
+      observer: {
+        visibility: {},
+        cover: {}
+      },
+      target: {
+        visibility: {},
+        cover: {}
+      }
     };
     
     // Set this as the current instance
-    TokenVisibilityManager.currentInstance = this;
+    VisionerTokenManager.currentInstance = this;
   }
 
   /**
@@ -85,6 +115,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   updateObserver(newObserver) {
     this.observer = newObserver;
     this.visibilityData = getVisibilityMap(newObserver);
+    this.coverData = getCoverMap(newObserver);
     
     // Update mode based on new observer
     const isControlledByUser = newObserver.actor?.hasPlayerOwner && newObserver.isOwner;
@@ -105,6 +136,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   updateObserverWithMode(newObserver, mode) {
     this.observer = newObserver;
     this.visibilityData = getVisibilityMap(newObserver);
+    this.coverData = getCoverMap(newObserver);
     this.mode = mode;
     
     // Reset encounter filter to default for new observer
@@ -125,10 +157,13 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       return context;
     }
 
-    // Add mode information to context
+    // Add mode and tab information to context
     context.mode = this.mode;
+    context.activeTab = this.activeTab;
     context.isObserverMode = this.mode === 'observer';
     context.isTargetMode = this.mode === 'target';
+    context.isVisibilityTab = this.activeTab === 'visibility';
+    context.isCoverTab = this.activeTab === 'cover';
 
     // Add encounter filtering context
     context.showEncounterFilter = hasActiveEncounter();
@@ -159,7 +194,8 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     if (this.mode === 'observer') {
       // Observer Mode: "How I see others"
       allTargets = sceneTokens.map(token => {
-        const currentState = this.visibilityData[token.document.id] || 'observed';
+        const currentVisibilityState = this.visibilityData[token.document.id] || 'observed';
+        const currentCoverState = this.coverData[token.document.id] || 'none';
         
         const disposition = token.document.disposition || 0;
         
@@ -167,16 +203,28 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
           id: token.document.id,
           name: token.document.name,
           img: getTokenImage(token),
-          currentState,
+          currentVisibilityState,
+          currentCoverState,
           isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
           disposition: disposition,
           dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
-          states: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
+          visibilityStates: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
             value: key,
             label: game.i18n.localize(config.label),
-            selected: currentState === key,
+            selected: currentVisibilityState === key,
             icon: config.icon,
             color: config.color
+          })),
+          coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
+            value: key,
+            label: game.i18n.localize(config.label),
+            selected: currentCoverState === key,
+            icon: config.icon,
+            color: config.color,
+            bonusAC: config.bonusAC,
+            bonusReflex: config.bonusReflex,
+            bonusStealth: config.bonusStealth,
+            canHide: config.canHide
           }))
         };
       });
@@ -185,7 +233,9 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       allTargets = sceneTokens.map(observerToken => {
         // Get how this observer sees the selected token (reversed relationship)
         const observerVisibilityData = getVisibilityMap(observerToken);
-        const currentState = observerVisibilityData[this.observer.document.id] || 'observed';
+        const observerCoverData = getCoverMap(observerToken);
+        const currentVisibilityState = observerVisibilityData[this.observer.document.id] || 'observed';
+        const currentCoverState = observerCoverData[this.observer.document.id] || 'none';
         
         const disposition = observerToken.document.disposition || 0;
         
@@ -193,36 +243,65 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
           id: observerToken.document.id,
           name: observerToken.document.name,
           img: getTokenImage(observerToken),
-          currentState,
+          currentVisibilityState,
+          currentCoverState,
           isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === 'character',
           disposition: disposition,
           dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
-          states: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
+          visibilityStates: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
             value: key,
             label: game.i18n.localize(config.label),
-            selected: currentState === key,
+            selected: currentVisibilityState === key,
             icon: config.icon,
             color: config.color
+          })),
+          coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
+            value: key,
+            label: game.i18n.localize(config.label),
+            selected: currentCoverState === key,
+            icon: config.icon,
+            color: config.color,
+            bonusAC: config.bonusAC,
+            bonusReflex: config.bonusReflex,
+            bonusStealth: config.bonusStealth,
+            canHide: config.canHide
           }))
         };
       });
     }
 
     // Define status precedence for sorting (undetected > hidden > concealed > observed)
-    const statusPrecedence = {
+    const visibilityPrecedence = {
       'undetected': 0,
       'hidden': 1,
       'concealed': 2,
       'observed': 3
     };
 
+    // Define cover precedence for sorting (greater > standard > lesser > none)
+    const coverPrecedence = {
+      'greater': 0,
+      'standard': 1,
+      'lesser': 2,
+      'none': 3
+    };
+
     // Sort function by status precedence, then by name
     const sortByStatusAndName = (a, b) => {
-      const statusA = statusPrecedence[a.currentState] ?? 999;
-      const statusB = statusPrecedence[b.currentState] ?? 999;
-      
-      if (statusA !== statusB) {
-        return statusA - statusB;
+      if (this.activeTab === 'visibility') {
+        const statusA = visibilityPrecedence[a.currentVisibilityState] ?? 999;
+        const statusB = visibilityPrecedence[b.currentVisibilityState] ?? 999;
+        
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
+      } else {
+        const statusA = coverPrecedence[a.currentCoverState] ?? 999;
+        const statusB = coverPrecedence[b.currentCoverState] ?? 999;
+        
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
       }
       
       // If same status, sort alphabetically by name
@@ -239,6 +318,17 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       label: game.i18n.localize(config.label),
       icon: config.icon,
       color: config.color
+    }));
+
+    context.coverStates = Object.entries(COVER_STATES).map(([key, config]) => ({
+      key,
+      label: game.i18n.localize(config.label),
+      icon: config.icon,
+      color: config.color,
+      bonusAC: config.bonusAC,
+      bonusReflex: config.bonusReflex,
+      bonusStealth: config.bonusStealth,
+      canHide: config.canHide
     }));
 
     context.hasTargets = allTargets.length > 0;
@@ -276,61 +366,78 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   static async formHandler(event, form, formData) {
     const app = this;
     const visibilityChanges = {};
+    const coverChanges = {};
     
-    // Parse visibility changes from form data
+    // Parse form data
     const formDataObj = formData.object || formData;
     for (const [key, value] of Object.entries(formDataObj)) {
       if (key.startsWith('visibility.')) {
         const tokenId = key.replace('visibility.', '');
         visibilityChanges[tokenId] = value;
+      } else if (key.startsWith('cover.')) {
+        const tokenId = key.replace('cover.', '');
+        coverChanges[tokenId] = value;
       }
     }
 
     // Handle visibility updates based on mode
-
-    
     if (app.mode === 'observer') {
       // Observer Mode: "How I see others" - update this observer's visibility map
-      await setVisibilityMap(app.observer, visibilityChanges);
-      
-      // Update ephemeral effects for each target token
-      for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
-        const targetToken = canvas.tokens.get(tokenId);
-        if (targetToken) {
-          try {
-            // In Observer Mode: observer sees target, so target is hidden from observer
-            await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
-              direction: 'observer_to_target' // Target is hidden from observer
-            });
-          } catch (error) {
-            console.error('Visibility Manager: Error updating effects:', error);
+      if (Object.keys(visibilityChanges).length > 0) {
+        await setVisibilityMap(app.observer, visibilityChanges);
+        
+        // Update ephemeral effects for each target token
+        for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
+          const targetToken = canvas.tokens.get(tokenId);
+          if (targetToken) {
+            try {
+              await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
+                direction: 'observer_to_target'
+              });
+            } catch (error) {
+              console.error('Token Manager: Error updating visibility effects:', error);
+            }
           }
         }
       }
+
+      // Handle cover updates
+      if (Object.keys(coverChanges).length > 0) {
+        await setCoverMap(app.observer, coverChanges);
+      }
     } else {
-      // Target Mode: "How others see me" - update each observer's visibility map
-      for (const [observerTokenId, newState] of Object.entries(visibilityChanges)) {
+      // Target Mode: "How others see me" - update each observer's maps
+      for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (observerToken) {
-
-          
-          // Update the observer's visibility map to show how they see the selected token
+          // Update the observer's visibility map
           const observerVisibilityData = getVisibilityMap(observerToken);
-          observerVisibilityData[app.observer.document.id] = newState;
+          observerVisibilityData[app.observer.document.id] = newVisibilityState;
           await setVisibilityMap(observerToken, observerVisibilityData);
           
           // Update ephemeral effects
           try {
-            // In Target Mode: observers see the selected token (app.observer)
-            await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, {
-              direction: 'observer_to_target' // Selected token is hidden from observer
+            await updateEphemeralEffectsForVisibility(observerToken, app.observer, newVisibilityState, {
+              direction: 'observer_to_target'
             });
           } catch (error) {
-            console.error('Visibility Manager: Error updating effects:', error);
+            console.error('Token Manager: Error updating visibility effects:', error);
           }
         }
       }
+
+      // Handle cover updates for target mode
+      for (const [observerTokenId, newCoverState] of Object.entries(coverChanges)) {
+        const observerToken = canvas.tokens.get(observerTokenId);
+        if (observerToken) {
+          // Update the observer's cover map
+          const observerCoverData = getCoverMap(observerToken);
+          observerCoverData[app.observer.document.id] = newCoverState;
+          await setCoverMap(observerToken, observerCoverData);
+        }
+      }
     }
+    
     refreshEveryonesPerception();
     
     // Import and update visuals
@@ -348,21 +455,28 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     
     // First save the current mode's form state
     try {
-      // Get all visibility inputs from the form
+      // Get all inputs from the form
       const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+      const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
       
       // Create a storage object for this mode if it doesn't exist
       if (!app._savedModeData) app._savedModeData = {};
-      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = {};
+      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
       
       // Store each visibility setting
       visibilityInputs.forEach(input => {
         const tokenId = input.name.replace('visibility.', '');
-        app._savedModeData[app.mode][tokenId] = input.value;
+        app._savedModeData[app.mode].visibility[tokenId] = input.value;
+      });
+
+      // Store each cover setting
+      coverInputs.forEach(input => {
+        const tokenId = input.name.replace('cover.', '');
+        app._savedModeData[app.mode].cover[tokenId] = input.value;
       });
       
     } catch (error) {
-      console.error('Visibility Manager: Error saving current form state:', error);
+      console.error('Token Manager: Error saving current form state:', error);
     }
     
     // Process and apply changes from both modes
@@ -370,19 +484,15 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       
       // Apply observer mode changes if we have them
       if (app._savedModeData.observer) {
-        const observerChanges = {};
+        const observerVisibilityChanges = app._savedModeData.observer.visibility || {};
+        const observerCoverChanges = app._savedModeData.observer.cover || {};
         
-        // Extract visibility changes from observer mode data
-        for (const [tokenId, value] of Object.entries(app._savedModeData.observer)) {
-          observerChanges[tokenId] = value;
-        }
-        
-        // Apply observer mode changes
-        if (Object.keys(observerChanges).length > 0) {
-          await setVisibilityMap(app.observer, observerChanges);
+        // Apply observer mode visibility changes
+        if (Object.keys(observerVisibilityChanges).length > 0) {
+          await setVisibilityMap(app.observer, observerVisibilityChanges);
           
           // Update ephemeral effects for each target token
-          for (const [tokenId, newState] of Object.entries(observerChanges)) {
+          for (const [tokenId, newState] of Object.entries(observerVisibilityChanges)) {
             const targetToken = canvas.tokens.get(tokenId);
             if (targetToken) {
               try {
@@ -390,39 +500,51 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
                   direction: 'observer_to_target'
                 });
               } catch (error) {
-                console.error('Visibility Manager: Error updating effects:', error);
+                console.error('Token Manager: Error updating visibility effects:', error);
               }
             }
           }
+        }
+
+        // Apply observer mode cover changes
+        if (Object.keys(observerCoverChanges).length > 0) {
+          await setCoverMap(app.observer, observerCoverChanges);
         }
       }
       
       // Apply target mode changes if we have them
       if (app._savedModeData.target) {
-        let targetChangeCount = 0;
+        const targetVisibilityChanges = app._savedModeData.target.visibility || {};
+        const targetCoverChanges = app._savedModeData.target.cover || {};
         
-        // Apply target mode changes
-        for (const [observerTokenId, newState] of Object.entries(app._savedModeData.target)) {
+        // Apply target mode visibility changes
+        for (const [observerTokenId, newState] of Object.entries(targetVisibilityChanges)) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (observerToken) {
-            // Update the observer's visibility map to show how they see the selected token
             const observerVisibilityData = getVisibilityMap(observerToken);
             observerVisibilityData[app.observer.document.id] = newState;
             await setVisibilityMap(observerToken, observerVisibilityData);
             
-            // Update ephemeral effects
             try {
               await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, {
                 direction: 'observer_to_target'
               });
             } catch (error) {
-              console.error('Visibility Manager: Error updating effects:', error);
+              console.error('Token Manager: Error updating visibility effects:', error);
             }
-            
-            targetChangeCount++;
           }
         }
-     }
+
+        // Apply target mode cover changes
+        for (const [observerTokenId, newState] of Object.entries(targetCoverChanges)) {
+          const observerToken = canvas.tokens.get(observerTokenId);
+          if (observerToken) {
+            const observerCoverData = getCoverMap(observerToken);
+            observerCoverData[app.observer.document.id] = newState;
+            await setCoverMap(observerToken, observerCoverData);
+          }
+        }
+      }
       
       // Update everyone's perception after applying all changes
       refreshEveryonesPerception();
@@ -442,15 +564,16 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   }
 
   /**
-   * Reset all visibility states to observed
+   * Reset all visibility and cover states
    */
   static async resetAll(event, button) {
     const app = this;
     
-    // Clear the visibility map
+    // Clear the visibility and cover maps
     await setVisibilityMap(app.observer, {});
+    await setCoverMap(app.observer, {});
     refreshEveryonesPerception();
-     
+      
     return app.render();
   }
 
@@ -465,21 +588,28 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     
     // Capture the current form state
     try {
-      // Get all visibility inputs from the form
+      // Get all inputs from the form
       const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+      const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
       
       // Create a storage object for this mode if it doesn't exist
       if (!app._savedModeData) app._savedModeData = {};
-      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = {};
+      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
       
       // Store each visibility setting
       visibilityInputs.forEach(input => {
         const tokenId = input.name.replace('visibility.', '');
-        app._savedModeData[app.mode][tokenId] = input.value;
+        app._savedModeData[app.mode].visibility[tokenId] = input.value;
+      });
+
+      // Store each cover setting
+      coverInputs.forEach(input => {
+        const tokenId = input.name.replace('cover.', '');
+        app._savedModeData[app.mode].cover[tokenId] = input.value;
       });
       
     } catch (error) {
-      console.error('Visibility Manager: Error saving form state:', error);
+      console.error('Token Manager: Error saving form state:', error);
     }
     
     // Toggle the mode
@@ -492,24 +622,42 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     // After rendering, restore any saved values for the new mode
     try {
       if (app._savedModeData && app._savedModeData[newMode]) {
-        // Find all visibility inputs in the newly rendered form
+        // Find all inputs in the newly rendered form
         const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+        const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
         
-        // Set values from saved data
+        // Set visibility values from saved data
         visibilityInputs.forEach(input => {
           const tokenId = input.name.replace('visibility.', '');
-          if (app._savedModeData[newMode][tokenId]) {
-            // Set the input value
-            input.value = app._savedModeData[newMode][tokenId];
+          if (app._savedModeData[newMode].visibility[tokenId]) {
+            input.value = app._savedModeData[newMode].visibility[tokenId];
             
             // Also update the visual state (selected icon)
             const iconContainer = input.closest('.icon-selection');
             if (iconContainer) {
-              // Remove selected class from all icons
               const icons = iconContainer.querySelectorAll('.state-icon');
               icons.forEach(icon => icon.classList.remove('selected'));
               
-              // Add selected class to the matching icon
+              const targetIcon = iconContainer.querySelector(`[data-state="${input.value}"]`);
+              if (targetIcon) {
+                targetIcon.classList.add('selected');
+              }
+            }
+          }
+        });
+
+        // Set cover values from saved data
+        coverInputs.forEach(input => {
+          const tokenId = input.name.replace('cover.', '');
+          if (app._savedModeData[newMode].cover[tokenId]) {
+            input.value = app._savedModeData[newMode].cover[tokenId];
+            
+            // Also update the visual state (selected icon)
+            const iconContainer = input.closest('.icon-selection');
+            if (iconContainer) {
+              const icons = iconContainer.querySelectorAll('.state-icon');
+              icons.forEach(icon => icon.classList.remove('selected'));
+              
               const targetIcon = iconContainer.querySelector(`[data-state="${input.value}"]`);
               if (targetIcon) {
                 targetIcon.classList.add('selected');
@@ -519,7 +667,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         });
       }
     } catch (error) {
-      console.error('Visibility Manager: Error restoring saved form state:', error);
+      console.error('Token Manager: Error restoring saved form state:', error);
     }
     
     // Restore position after render to prevent jumping
@@ -529,6 +677,19 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
         top: currentPosition.top,
         width: currentPosition.width
       });
+    }
+  }
+
+  /**
+   * Toggle between Visibility and Cover tabs
+   */
+  static async toggleTab(event, button) {
+    const app = this;
+    const newTab = button.dataset.tab;
+    
+    if (newTab && newTab !== app.activeTab) {
+      app.activeTab = newTab;
+      await app.render({ force: true });
     }
   }
 
@@ -556,29 +717,28 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   }
 
   /**
-   * Bulk set visibility state for tokens (updates icon selection and hidden inputs)
-   * Now supports filtering by target type (PC/NPC)
+   * Bulk set visibility state for tokens
    */
-  static async bulkSetState(event, button) {
+  static async bulkSetVisibilityState(event, button) {
     try {
       const state = button.dataset.state;
       const targetType = button.dataset.targetType; // 'pc' or 'npc'
       
       if (!state) {
-        console.warn('No state specified for bulk action');
+        console.warn('No state specified for bulk visibility action');
         return;
       }
       
       // Update icon selections in the form, filtered by target type
       const form = event.target.closest('form');
       if (form) {
-        let selector = '.icon-selection';
+        let selector = '.visibility-section .icon-selection';
         
         // If target type is specified, filter to only that section
         if (targetType === 'pc') {
-          selector = '.table-section:has(.header-left .fa-users) .icon-selection';
+          selector = '.visibility-section .table-section:has(.header-left .fa-users) .icon-selection';
         } else if (targetType === 'npc') {
-          selector = '.table-section:has(.header-left .fa-dragon) .icon-selection';
+          selector = '.visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection';
         }
         
         const iconSelections = form.querySelectorAll(selector);
@@ -602,8 +762,59 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
       }
       
     } catch (error) {
-      console.error('Error in bulk set state:', error);
+      console.error('Error in bulk set visibility state:', error);
       showNotification('An error occurred while setting bulk visibility state', 'error');
+    }
+  }
+
+  /**
+   * Bulk set cover state for tokens
+   */
+  static async bulkSetCoverState(event, button) {
+    try {
+      const state = button.dataset.state;
+      const targetType = button.dataset.targetType; // 'pc' or 'npc'
+      
+      if (!state) {
+        console.warn('No state specified for bulk cover action');
+        return;
+      }
+      
+      // Update icon selections in the form, filtered by target type
+      const form = event.target.closest('form');
+      if (form) {
+        let selector = '.cover-section .icon-selection';
+        
+        // If target type is specified, filter to only that section
+        if (targetType === 'pc') {
+          selector = '.cover-section .table-section:has(.header-left .fa-users) .icon-selection';
+        } else if (targetType === 'npc') {
+          selector = '.cover-section .table-section:has(.header-left .fa-dragon) .icon-selection';
+        }
+        
+        const iconSelections = form.querySelectorAll(selector);
+        iconSelections.forEach(iconSelection => {
+          // Remove selected class from all icons in this selection
+          const icons = iconSelection.querySelectorAll('.state-icon');
+          icons.forEach(icon => icon.classList.remove('selected'));
+          
+          // Add selected class to the target state icon
+          const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
+          if (targetIcon) {
+            targetIcon.classList.add('selected');
+          }
+          
+          // Update the hidden input value
+          const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
+          if (hiddenInput) {
+            hiddenInput.value = state;
+          }
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error in bulk set cover state:', error);
+      showNotification('An error occurred while setting bulk cover state', 'error');
     }
   }
 
@@ -624,8 +835,8 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
     this.cleanupAllTokenBorders();
     
     // Clear the current instance reference
-    if (TokenVisibilityManager.currentInstance === this) {
-      TokenVisibilityManager.currentInstance = null;
+    if (VisionerTokenManager.currentInstance === this) {
+      VisionerTokenManager.currentInstance = null;
     }
     
     return super.close(options);
@@ -679,7 +890,7 @@ export class TokenVisibilityManager extends foundry.applications.api.Application
   }
 
   /**
-   * Add click handlers for icon-based visibility selection
+   * Add click handlers for icon-based state selection
    */
   addIconClickHandlers() {
     const element = this.element;

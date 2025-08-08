@@ -1,7 +1,9 @@
 /**
  * Visual Effects Handler
- * Handles token visual updates and refresh operations
+ * Handles token visual updates and refresh operations for both visibility and cover
  */
+
+import { updateTokenCoverEffects } from './cover-effects.js';
 
 /**
  * Update token visuals - now mostly handled by detection wrapper
@@ -20,6 +22,21 @@ export async function updateTokenVisuals() {
   // We just need to refresh tokens to trigger the detection system
   for (const token of canvas.tokens.placeables) {
     if (token.visible) {
+      // Update cover effects
+      if (game.user.isGM) {
+        const { getCoverMap } = await import('./utils.js');
+        const coverData = getCoverMap(token);
+        
+        // For each token that the current token has cover against
+        for (const [targetId, coverState] of Object.entries(coverData)) {
+          const targetToken = canvas.tokens.get(targetId);
+          if (targetToken) {
+            const { applyCoverCondition } = await import('./cover-effects.js');
+            await applyCoverCondition(targetToken, token, coverState);
+          }
+        }
+      }
+      
       token.refresh();
     }
   }

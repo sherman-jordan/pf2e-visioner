@@ -102,7 +102,12 @@ export function registerKeybindings() {
     const keybindingConfig = { ...config };
     
     // Add appropriate handler
-    if (key === 'openVisibilityManager') {
+    if (key === 'openTokenManager') {
+      keybindingConfig.onDown = async () => {
+        const { api } = await import('./api.js');
+        await api.openTokenManager();
+      };
+    } else if (key === 'openVisibilityManager') {
       keybindingConfig.onDown = async () => {
         const { api } = await import('./api.js');
         await api.openVisibilityManager();

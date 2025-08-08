@@ -1,9 +1,9 @@
 /**
- * Utility functions for PF2E Per-Token Visibility
+ * Utility functions for PF2E Visioner Token Manager
  */
 
 import { shouldFilterAlly } from './chat/shared-utils.js';
-import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 
 /**
@@ -245,4 +245,90 @@ export function isTokenInEncounter(token) {
  */
 export function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Get the cover map for a token
+ * @param {Token} token - The token to get cover data for
+ * @returns {Object} Cover map object
+ */
+export function getCoverMap(token) {
+  return token?.document.getFlag(MODULE_ID, 'cover') ?? {};
+}
+
+/**
+ * Set the cover map for a token
+ * @param {Token} token - The token to set cover data for
+ * @param {Object} coverMap - The cover map to save
+ * @returns {Promise} Promise that resolves when flag is set
+ */
+export async function setCoverMap(token, coverMap) {
+  return token?.document.setFlag(MODULE_ID, 'cover', coverMap);
+}
+
+/**
+ * Get cover state between two tokens
+ * @param {Token} observer - The observing token
+ * @param {Token} target - The target token being observed
+ * @returns {string} Cover state
+ */
+export function getCoverBetween(observer, target) {
+  const coverMap = getCoverMap(observer);
+  return coverMap[target.document.id] || 'none';
+}
+
+/**
+ * Set cover state between two tokens
+ * @param {Token} observer - The observing token
+ * @param {Token} target - The target token being observed
+ * @param {string} state - The cover state to set
+ * @returns {Promise} Promise that resolves when cover is set
+ */
+export async function setCoverBetween(observer, target, state) {
+  const coverMap = getCoverMap(observer);
+  coverMap[target.document.id] = state;
+  await setCoverMap(observer, coverMap);
+  
+  // Apply PF2E condition if applicable
+  try {
+    const { applyCoverCondition } = await import('./cover-effects.js');
+    await applyCoverCondition(target, observer, state);
+  } catch (error) {
+    console.error('Error applying cover condition:', error);
+  }
+}
+
+/**
+ * Create cover indicator element
+ * @param {string} state - The cover state
+ * @returns {HTMLElement} The indicator element
+ */
+export function createCoverIndicator(state) {
+  if (state === 'none') return null;
+
+  const config = COVER_STATES[state];
+  if (!config) return null;
+
+  const indicator = document.createElement('div');
+  indicator.className = 'cover-indicator';
+  indicator.innerHTML = `<i class="${config.icon}" style="color: ${config.color}"></i>`;
+  indicator.style.cssText = `
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  `;
+
+  return indicator;
 }

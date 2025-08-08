@@ -2,12 +2,12 @@
  * FoundryVTT hooks registration and handling
  */
 
-import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
-import { onRenderTokenHUD } from './token-hud.js';
-import { onRenderChatMessage } from './chat/chat-processor.js';
 import { injectChatAutomationStyles } from './chat/chat-automation-styles.js';
-import { updateTokenVisuals } from './visual-effects.js';
+import { onRenderChatMessage } from './chat/chat-processor.js';
+import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
 import { registerSocket } from './socket.js';
+import { onRenderTokenHUD } from './token-hud.js';
+import { updateTokenVisuals } from './visual-effects.js';
 
 /**
  * Register all FoundryVTT hooks
@@ -131,7 +131,7 @@ function setupFallbackHUDButton() {
       const button = document.createElement('div');
       button.className = 'pf2e-visioner-floating-button';
       button.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
-      button.title = 'Visibility Manager (Left: Target, Right: Observer) - Drag to move';
+      button.title = 'Token Manager (Left: Target, Right: Observer) - Drag to move';
       
       // Add drag functionality
       let isDragging = false;
@@ -232,10 +232,10 @@ function setupFallbackHUDButton() {
         event.stopPropagation();
         
         try {
-          const { openVisibilityManagerWithMode } = await import('./api.js');
-          await openVisibilityManagerWithMode(token, 'target');
+          const { openTokenManagerWithMode } = await import('./api.js');
+          await openTokenManagerWithMode(token, 'target');
         } catch (error) {
-          console.error('PF2E Visioner: Error opening visibility manager:', error);
+          console.error('PF2E Visioner: Error opening token manager:', error);
         }
       });
       
@@ -251,10 +251,10 @@ function setupFallbackHUDButton() {
         event.stopPropagation();
         
         try {
-          const { openVisibilityManagerWithMode } = await import('./api.js');
-          await openVisibilityManagerWithMode(token, 'observer');
+          const { openTokenManagerWithMode } = await import('./api.js');
+          await openTokenManagerWithMode(token, 'observer');
         } catch (error) {
-          console.error('PF2E Visioner: Error opening visibility manager:', error);
+          console.error('PF2E Visioner: Error opening token manager:', error);
         }
       });
       
@@ -275,20 +275,20 @@ async function onControlToken(token, controlled) {
 }
 
 /**
- * Add visibility manager button to token HUD
+ * Add token manager button to token HUD
  * @param {TokenHUD} hud - The token HUD
  * @param {Array} buttons - The buttons array
  * @param {Token} token - The token
  */
 function onGetTokenHUDButtons(hud, buttons, token) {
-  // Add the visibility button
+  // Add the token manager button
   buttons.push({
-    name: 'visibility',
-    title: 'Visibility Manager (Left: Target Mode, Right: Observer Mode)',
+    name: 'token-manager',
+    title: 'Token Manager (Left: Target Mode, Right: Observer Mode)',
     icon: 'fas fa-eye',
     onClick: async () => {
-      const { openVisibilityManagerWithMode } = await import('./api.js');
-      await openVisibilityManagerWithMode(token, 'target');
+      const { openTokenManagerWithMode } = await import('./api.js');
+      await openTokenManagerWithMode(token, 'target');
     },
     button: true
   });
@@ -303,24 +303,24 @@ function onGetTokenDirectoryEntryContext(html, options) {
   if (!game.user.isGM) return;
   
   options.push({
-    name: 'PF2E_VISIONER.CONTEXT_MENU.MANAGE_VISIBILITY',
+    name: 'PF2E_VISIONER.CONTEXT_MENU.MANAGE_TOKEN',
     icon: '<i class="fas fa-eye"></i>',
     callback: async (li) => {
       const tokenId = li.data('token-id');
       const token = canvas.tokens.get(tokenId);
       if (token) {
-        const { openVisibilityManager } = await import('./api.js');
-        await openVisibilityManager(token);
+        const { openTokenManager } = await import('./api.js');
+        await openTokenManager(token);
       }
     }
   });
 }
 
 /**
- * Handle canvas ready - apply persistent visibility effects
+ * Handle canvas ready - apply persistent visibility and cover effects
  */
 async function onCanvasReady() {
-  // Apply persistent visibility effects based on GM configuration
+  // Apply persistent visibility and cover effects based on GM configuration
   await updateTokenVisuals();
   
   // Initialize hover tooltips if enabled
@@ -332,10 +332,10 @@ async function onCanvasReady() {
 // onRefreshToken function removed to prevent infinite loops
 
 /**
- * Handle token creation - reapply persistent visibility effects
+ * Handle token creation - reapply persistent visibility and cover effects
  */
 async function onTokenCreated() {
-  // Reapply persistent visibility effects to include new token
+  // Reapply persistent visibility and cover effects to include new token
   setTimeout(async () => {
     await updateTokenVisuals();
     
@@ -348,10 +348,10 @@ async function onTokenCreated() {
 }
 
 /**
- * Handle token deletion - reapply persistent visibility effects
+ * Handle token deletion - reapply persistent visibility and cover effects
  */
 async function onTokenDeleted() {
-  // Reapply persistent visibility effects after token removal
+  // Reapply persistent visibility and cover effects after token removal
   setTimeout(async () => {
     await updateTokenVisuals();
     

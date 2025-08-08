@@ -5,6 +5,15 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-08-08
+
+### Added
+- **Out of Combat Seek Distance Limitation**: Implemented distance limitations for Seek actions outside of combat
+  - GMs can now configure maximum distance for out-of-combat Seek attempts
+  - Distance is calculated automatically between seeker and potential targets
+  - Setting can be adjusted in module configuration
+
+
 ## [1.0.2] - 2025-08-07
 
 ### Fixed

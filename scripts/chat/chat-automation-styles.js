@@ -28,7 +28,7 @@ export function injectChatAutomationStyles() {
         }
     });
     
-    console.debug('PF2E Visioner: Chat automation styles injected');
+    console.log('PF2E Visioner: Chat automation styles injected');
 }
 
 /**
@@ -57,7 +57,7 @@ function fixDialogScrolling(html) {
             });
         }
         
-        console.debug('PF2E Visioner: Dialog scrolling fixed');
+        console.log('PF2E Visioner: Dialog scrolling fixed');
     }
 }
 

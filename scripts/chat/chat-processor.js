@@ -4,6 +4,7 @@
  */
 
 import { MODULE_TITLE } from '../constants.js';
+import { requestGMOpenPointOut, requestGMOpenSeekWithTemplate } from '../socket.js';
 import { getVisibilityBetween } from '../utils.js';
 import { previewConsequencesResults } from './consequences-logic.js';
 import { previewDiversionResults } from './create-a-diversion-logic.js';
@@ -22,18 +23,74 @@ const processedMessages = new Set();
  * @param {jQuery} html - The rendered HTML element
  */
 export function onRenderChatMessage(message, html) {
-    // Early returns for optimization
-    if (!game.user.isGM) return;
-
     // Use modern message detection approach - check for Seek, Point Out, Hide, and Sneak
     const actionData = extractActionData(message);
-    if (!actionData) {
+    if (!actionData) return;
+
+    // If there is a pending player-provided seek template for this message and the current user is GM,
+    // allow re-processing even if this message was already processed earlier.
+    const hasPendingSeekTemplateForGM = actionData.actionType === 'seek'
+        && game.user.isGM
+        && !!(message.flags?.['pf2e-visioner']?.seekTemplate);
+    // Detect player-authored Point Out
+    const isPlayerPointOutAuthor = !game.user.isGM
+        && actionData.actionType === 'point-out'
+        && message.user?.id === game.user.id;
+
+    // If a player authored a Point Out, auto-forward to GM and render nothing for the player
+    if (isPlayerPointOutAuthor) {
+        try {
+            // Determine target robustly: prefer player's current Target, then PF2e flags
+            let targetId = null;
+            if (game.user.targets?.size) {
+                targetId = Array.from(game.user.targets)[0]?.id || null;
+            }
+            if (!targetId) {
+                targetId = actionData.context?.target?.token || null;
+            }
+            if (!targetId) {
+                const flg = message?.flags?.pf2e?.target;
+                targetId = flg?.token || null;
+            }
+            try {
+                const currentTargets = Array.from(game.user.targets || []).map(t => t?.id);
+                console.log(`${MODULE_TITLE}: Player auto-sending Point Out request`, {
+                    messageId: actionData.messageId,
+                    actorTokenId: actionData.actor?.id,
+                    currentTargets,
+                    contextTarget: actionData.context?.target,
+                    resolvedTargetId: targetId
+                });
+            } catch (_) {}
+            requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId);
+        } catch (e) {
+            console.warn(`${MODULE_TITLE}: Failed to auto-forward Point Out to GM:`, e);
+        }
+        processedMessages.add(message.id);
         return;
     }
+    const hasPendingPointOutForGM = actionData.actionType === 'point-out'
+        && game.user.isGM
+        && !!(message.flags?.['pf2e-visioner']?.pointOut);
 
-    // Prevent duplicate processing using cache
+    // Allow GM always.
+    // Allow players for:
+    //  - Seek when template mode is enabled and they are the message author
+    //  - Point Out when they are the message author (so we can forward their target to GM)
+    const isSeekTemplatePlayer = !game.user.isGM
+        && actionData.actionType === 'seek'
+        && game.settings.get('pf2e-visioner', 'seekUseTemplate')
+        && message.user?.id === game.user.id;
+    // Players never see Point Out UI; only Seek template when allowed
+    if (!game.user.isGM && !isSeekTemplatePlayer) return;
+
+    // Prevent duplicate processing using cache, unless there is a pending seek template for the GM
     if (processedMessages.has(message.id)) {
-        return;
+        if (hasPendingSeekTemplateForGM || hasPendingPointOutForGM) {
+            try { processedMessages.delete(message.id); } catch (_) {}
+        } else {
+            return;
+        }
     }
 
     // Create and inject the automation interface
@@ -215,47 +272,7 @@ function extractActionData(message) {
     };
 }
 
-/**
- * Extract DC from message content or flags
- * @param {ChatMessage} message - The chat message
- * @returns {number|null} The DC or null if not found
- */
-function extractDCFromMessage(message) {
-    // Try to extract from PF2e context
-    const context = message.flags?.pf2e?.context;
-    if (context?.dc?.value) {
-        return context.dc.value;
-    }
 
-    // Try to extract from message content
-    const dcMatch = message.content?.match(/DC\s*(\d+)/i);
-    if (dcMatch) {
-        return parseInt(dcMatch[1]);
-    }
-
-    return null;
-}
-
-/**
- * Extract target from message flags or current targets
- * @param {ChatMessage} message - The chat message
- * @returns {Token|null} The target token or null if not found
- */
-function extractTargetFromMessage(message) {
-    // Try to get from PF2e flags
-    const targetData = message.flags?.pf2e?.target;
-    if (targetData?.token) {
-        const targetToken = canvas.tokens.get(targetData.token);
-        if (targetToken) return targetToken;
-    }
-
-    // Try to get from current user targets
-    if (game.user.targets && game.user.targets.size > 0) {
-        return Array.from(game.user.targets)[0];
-    }
-
-    return null;
-}
 
 /**
  * Advanced UI injection system for action automation
@@ -266,18 +283,31 @@ function extractTargetFromMessage(message) {
  */
 function injectAutomationUI(message, html, actionData) {
     try {
+        // If a player-provided Seek template exists on this message but contains no targets,
+        // and the current user is GM, do not inject any actions at all.
+        if (actionData.actionType === 'seek' && game.user.isGM) {
+            const pending = message?.flags?.['pf2e-visioner']?.seekTemplate;
+            if (pending && pending.hasTargets === false) {
+                processedMessages.add(message.id);
+                return;
+            }
+        }
         // Check if there are valid targets for this action
         const hasValidTargets = checkForValidTargets(actionData);
 
-        // If no valid targets, don't inject the UI
+        // If no valid targets, still allow GM to open results when a player provided a template with targets
         if (!hasValidTargets) {
-            // Mark as processed to avoid repeated checks
-            processedMessages.add(message.id);
-            return;
+            const pendingForGM = (actionData.actionType === 'seek' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.seekTemplate?.hasTargets))
+                || (actionData.actionType === 'point-out' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.pointOut?.hasTargets));
+            if (!pendingForGM) {
+                // Mark as processed to avoid repeated checks
+                processedMessages.add(message.id);
+                return;
+            }
         }
 
-        // Create automation panel
-        const panelHtml = buildAutomationPanel(actionData);
+    // Create automation panel
+    const panelHtml = buildAutomationPanel(actionData, message);
         const panel = $(panelHtml);
 
         // Find appropriate insertion point
@@ -287,7 +317,7 @@ function injectAutomationUI(message, html, actionData) {
         // Insert panel after message content
         messageContent.after(panel);
 
-        // Bind events to the panel
+        // Bind events to the panel (players will only have template setup available when allowed)
         bindAutomationEvents(panel, message, actionData);
 
         // Mark as processed
@@ -549,7 +579,7 @@ function checkDiversionTargets(actionData, potentialTargets) {
  * @param {Object} actionData - The action data
  * @returns {string} Complete automation panel HTML
  */
-function buildAutomationPanel(actionData) {
+function buildAutomationPanel(actionData, message) {
     const isSeek = actionData.actionType === 'seek';
     const isPointOut = actionData.actionType === 'point-out';
     const isHide = actionData.actionType === 'hide';
@@ -562,15 +592,16 @@ function buildAutomationPanel(actionData) {
     if (isSeek) {
         label = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS');
         tooltip = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP');
-        title = 'Seek Results Available';
+        title = 'Seek Results';
         icon = 'fas fa-search';
         actionName = 'open-seek-results';
         buttonClass = 'visioner-btn-seek';
         panelClass = 'seek-panel';
     } else if (isPointOut) {
+        // Only show Point Out button to GM; players don't see this and GM uses player's target implicitly
         label = 'Open Point Out Results';
         tooltip = 'Preview and apply Point Out visibility changes';
-        title = 'Point Out Results Available';
+        title = 'Point Out Results';
         icon = 'fas fa-hand-point-right';
         actionName = 'open-point-out-results';
         buttonClass = 'visioner-btn-point-out';
@@ -578,7 +609,7 @@ function buildAutomationPanel(actionData) {
     } else if (isHide) {
         label = 'Open Hide Results';
         tooltip = 'Preview and apply Hide visibility changes';
-        title = 'Hide Results Available';
+        title = 'Hide Results';
         icon = 'fas fa-eye-slash';
         actionName = 'open-hide-results';
         buttonClass = 'visioner-btn-hide';
@@ -586,7 +617,7 @@ function buildAutomationPanel(actionData) {
     } else if (isSneak) {
         label = 'Open Sneak Results';
         tooltip = 'Preview and apply Sneak visibility changes';
-        title = 'Sneak Results Available';
+        title = 'Sneak Results';
         icon = 'fas fa-user-ninja';
         actionName = 'open-sneak-results';
         buttonClass = 'visioner-btn-sneak';
@@ -594,7 +625,7 @@ function buildAutomationPanel(actionData) {
     } else if (isCreateADiversion) {
         label = 'Open Diversion Results';
         tooltip = 'Preview and apply Create a Diversion visibility changes';
-        title = 'Create a Diversion Results Available';
+        title = 'Create a Diversion Results';
         icon = 'fas fa-theater-masks';
         actionName = 'open-diversion-results';
         buttonClass = 'visioner-btn-create-a-diversion';
@@ -602,7 +633,7 @@ function buildAutomationPanel(actionData) {
     } else if (isConsequences) {
         label = 'Open Damage Consequences';
         tooltip = 'Preview and apply visibility changes after damage from hidden/undetected attacker';
-        title = 'Damage Consequences Available';
+        title = 'Damage Consequences';
         icon = 'fas fa-skull';
         actionName = 'open-consequences-results';
         buttonClass = 'visioner-btn-consequences';
@@ -610,10 +641,79 @@ function buildAutomationPanel(actionData) {
     }
 
     const isSeekWithTemplateOption = isSeek && game.settings.get('pf2e-visioner', 'seekUseTemplate');
+    // Prefer the provided message (fresh render) when available
+    const msgForPanel = isSeek ? (message || game.messages.get(actionData.messageId)) : null;
+    const hasPendingTemplateFromPlayer = isSeek && !!(msgForPanel?.flags?.['pf2e-visioner']?.seekTemplate) && game.user.isGM;
+    const pendingHasTargets = !!(msgForPanel?.flags?.['pf2e-visioner']?.seekTemplate?.hasTargets);
+    const hasPendingPointOutFromPlayer = isPointOut && !!(msgForPanel?.flags?.['pf2e-visioner']?.pointOut) && game.user.isGM;
+    const pendingPointOutHasTargets = !!(msgForPanel?.flags?.['pf2e-visioner']?.pointOut?.hasTargets);
     const hasExistingTemplate = isSeekWithTemplateOption && !!(canvas?.scene?.templates?.find?.(t => {
         const f = t?.flags?.['pf2e-visioner'];
         return f?.seekPreviewManual && f?.messageId === actionData.messageId && f?.actorTokenId === actionData.actor.id && t?.user?.id === game.userId;
     }));
+
+    // Precompute action buttons HTML to avoid complex nested template expressions
+    let actionButtonsHtml = '';
+    if (isSeek) {
+        if (hasPendingTemplateFromPlayer) {
+            if (pendingHasTargets) {
+                actionButtonsHtml = `
+                    <button type=\"button\" 
+                            class=\"visioner-btn ${buttonClass}\" 
+                            data-action=\"open-seek-results\"
+                            title=\"${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP')}\">\n                        <i class=\"${icon}\"></i> ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS')}\n                    </button>`;
+            } else {
+                // Pending template from player has no targets: show nothing at all
+                actionButtonsHtml = '';
+            }
+        } else if (isSeekWithTemplateOption) {
+            actionButtonsHtml = `
+                <button type=\"button\"
+                        class=\"visioner-btn ${buttonClass} setup-template\"
+                        data-action=\"${hasExistingTemplate ? 'remove-seek-template' : 'setup-seek-template'}\"
+                        title=\"${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}\">\n                    <i class=\"fas fa-bullseye\"></i> ${hasExistingTemplate ? game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE') : game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE')}\n                </button>`;
+        } else if (game.user.isGM) {
+            actionButtonsHtml = `
+                <button type="button" 
+                        class="visioner-btn ${buttonClass}" 
+                        data-action="${actionName}"
+                        title="${tooltip}">
+                    <i class="${icon}"></i> ${label}
+                </button>`;
+        }
+    } else if (isPointOut) {
+        if (hasPendingPointOutFromPlayer) {
+            if (pendingPointOutHasTargets) {
+                actionButtonsHtml = `
+                    <button type="button" 
+                            class="visioner-btn ${buttonClass}" 
+                            data-action="open-point-out-results"
+                            title="Preview and apply Point Out visibility changes">
+                        <i class="fas fa-hand-point-right"></i> Open Point Out Results
+                    </button>`;
+            } else {
+                actionButtonsHtml = '';
+            }
+        } else if (game.user.isGM) {
+            actionButtonsHtml = `
+                <button type="button" 
+                        class="visioner-btn ${buttonClass}" 
+                        data-action="${actionName}"
+                        title="${tooltip}">
+                    <i class="${icon}"></i> ${label}
+                </button>`;
+        }
+    } else {
+        if (game.user.isGM) {
+            actionButtonsHtml = `
+                <button type="button" 
+                        class="visioner-btn ${buttonClass}" 
+                        data-action="${actionName}"
+                        title="${tooltip}">
+                    <i class="${icon}"></i> ${label}
+                </button>`;
+        }
+    }
     return `
         <div class="pf2e-visioner-automation-panel ${panelClass}" data-message-id="${actionData.messageId}" data-action-type="${actionData.actionType}">
             <div class="automation-header">
@@ -621,21 +721,7 @@ function buildAutomationPanel(actionData) {
                 <span class="automation-title">${title}</span>
             </div>
             <div class="automation-actions">
-                ${isSeekWithTemplateOption ? `
-                    <button type="button"
-                            class="visioner-btn ${buttonClass} setup-template"
-                            data-action="${hasExistingTemplate ? 'remove-seek-template' : 'setup-seek-template'}"
-                            title="${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}">
-                        <i class="fas fa-bullseye"></i> ${hasExistingTemplate ? game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE') : game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE')}
-                    </button>
-                ` : `
-                    <button type="button" 
-                            class="visioner-btn ${buttonClass}" 
-                            data-action="${actionName}"
-                            title="${tooltip}">
-                        <i class="${icon}"></i> ${label}
-                    </button>
-                `}
+                ${actionButtonsHtml}
             </div>
         </div>
     `;
@@ -683,7 +769,65 @@ function bindAutomationEvents(panel, message, actionData) {
                         }
                     }
                 } catch (_) {}
-            } else {
+            } else if (action === 'open-seek-results' && actionData.actionType === 'seek') {
+                // If a player provided a template, the GM should have pending flags on the message
+                const msg = game.messages.get(actionData.messageId);
+                const pending = msg?.flags?.['pf2e-visioner']?.seekTemplate;
+                if (pending && game.user.isGM) {
+                    // Use the pending template data to open results
+                    actionData.seekTemplateCenter = pending.center;
+                    actionData.seekTemplateRadiusFeet = pending.radiusFeet;
+                    // Reconstruct a minimal roll if present
+                    if (typeof pending.rollTotal === 'number') {
+                        actionData.roll = { total: pending.rollTotal, dice: [{ total: typeof pending.dieResult === 'number' ? pending.dieResult : undefined }] };
+                    }
+                }
+                await previewActionResults(actionData);
+            } else if (action === 'open-point-out-results' && actionData.actionType === 'point-out') {
+                // If a player requested Point Out, ensure GM uses stored flags for the target
+                if (game.user.isGM) {
+                    try {
+                        const msg = game.messages.get(actionData.messageId);
+                        const modulePointOut = msg?.flags?.['pf2e-visioner']?.pointOut;
+                        if (modulePointOut?.targetTokenId) {
+                            actionData.context = actionData.context || {};
+                            actionData.context.target = { token: modulePointOut.targetTokenId };
+                        } else if (msg?.flags?.pf2e?.target?.token) {
+                            actionData.context = actionData.context || {};
+                            actionData.context.target = { token: msg.flags.pf2e.target.token };
+                        } else if (!actionData.context?.target?.token) {
+                            // As a last resort, resolve based on the pointer's best target
+                            const pointerId = modulePointOut?.pointerTokenId || actionData.actor?.id;
+                            const pointerToken = pointerId ? canvas.tokens.get(pointerId) : null;
+                            if (pointerToken) {
+                                const { findBestPointOutTarget } = await import('./point-out-logic.js');
+                                const best = findBestPointOutTarget(pointerToken);
+                                if (best) {
+                                    actionData.context = actionData.context || {};
+                                    actionData.context.target = { token: best.id };
+                                }
+                            }
+                        }
+
+                        // Ping target for clarity ONLY if this is a GM-initiated Point Out (no player handoff present)
+                        try {
+                            if (!modulePointOut) {
+                                const targetId = actionData.context?.target?.token;
+                                if (targetId) {
+                                    const tok = canvas.tokens.get(targetId);
+                                    if (tok) {
+                                        const point = tok.center || { x: tok.x + (tok.w ?? (tok.width * canvas.grid.size)) / 2, y: tok.y + (tok.h ?? (tok.height * canvas.grid.size)) / 2 };
+                                        if (typeof canvas.ping === 'function') {
+                                            canvas.ping(point, { color: game.user?.color, name: 'Point Out' });
+                                        } else if (canvas?.pings?.create) {
+                                            canvas.pings.create({ ...point, user: game.user });
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (_) {}
+                    } catch (_) {}
+                }
                 await previewActionResults(actionData);
             }
         } catch (error) {
@@ -705,7 +849,56 @@ async function previewActionResults(actionData) {
     if (actionData.actionType === 'seek') {
         return await previewSeekResults(actionData);
     } else if (actionData.actionType === 'point-out') {
-        return await previewPointOutResults(actionData);
+        if (game.user.isGM) {
+            // Ensure target is present for GM by enriching from message flags if missing
+            try {
+                if (!actionData.context) actionData.context = {};
+                let hasTarget = actionData.context?.target?.actor || actionData.context?.target?.token;
+                if (!hasTarget && actionData.messageId) {
+                    const msg = game.messages.get(actionData.messageId);
+                    const targetData = msg?.flags?.pf2e?.target;
+                    if (targetData) {
+                        actionData.context.target = { ...targetData };
+                        hasTarget = true;
+                    }
+                    // Fallback to module flags from player→GM handoff
+                    if (!hasTarget) {
+                        const modulePO = msg?.flags?.['pf2e-visioner']?.pointOut;
+                        if (modulePO?.targetTokenId) {
+                            actionData.context.target = { token: modulePO.targetTokenId };
+                            hasTarget = true;
+                        }
+                    }
+                }
+            } catch (_) {}
+            return await previewPointOutResults(actionData);
+        } else {
+            // Determine target robustly: prefer player's current Target, then PF2e flags
+            let targetId = null;
+            if (game.user.targets?.size) {
+                targetId = Array.from(game.user.targets)[0]?.id || null;
+            }
+            if (!targetId) {
+                targetId = actionData.context?.target?.token || null;
+            }
+            if (!targetId) {
+                const msg = game.messages.get(actionData.messageId);
+                const flg = msg?.flags?.pf2e?.target;
+                targetId = flg?.token || null;
+            }
+            try {
+                const currentTargets = Array.from(game.user.targets || []).map(t => t?.id);
+                console.log(`${MODULE_TITLE}: Player sending Point Out request`, {
+                    messageId: actionData.messageId,
+                    actorTokenId: actionData.actor?.id,
+                    currentTargets,
+                    contextTarget: actionData.context?.target,
+                    resolvedTargetId: targetId
+                });
+            } catch (_) {}
+            requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId);
+            return;
+        }
     } else if (actionData.actionType === 'hide') {
         return await previewHideResults(actionData);
     } else if (actionData.actionType === 'sneak') {
@@ -750,37 +943,100 @@ async function setupSeekTemplate(actionData) {
         ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}`);
         const distance = 30;
 
+        // If GM, allow full measured-template placement and capture via create hook
+        if (game.user.isGM) {
+            const tplData = {
+                t: 'circle',
+                user: game.userId,
+                distance,
+                fillColor: game.user?.color || '#ff9800',
+                borderColor: game.user?.color || '#ff9800',
+                texture: null,
+                flags: { 'pf2e-visioner': { seekPreviewManual: true, messageId: actionData.messageId, actorTokenId: actionData.actor.id } }
+            };
+
+            let dispatched = false;
+            await new Promise((resolve) => {
+                const createHookId = Hooks.on('createMeasuredTemplate', async (doc) => {
+                    if (!doc || doc.user?.id !== game.userId) return;
+                    try {
+                        Hooks.off('createMeasuredTemplate', createHookId);
+                        try { await doc.update({ [`flags.pf2e-visioner.seekPreviewManual`]: true, [`flags.pf2e-visioner.messageId`]: actionData.messageId, [`flags.pf2e-visioner.actorTokenId`]: actionData.actor.id }); } catch (_) {}
+                        actionData.seekTemplateCenter = { x: doc.x, y: doc.y };
+                        actionData.seekTemplateRadiusFeet = Number(doc.distance) || distance;
+                        const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
+                        if (!dispatched && targets.length > 0) {
+                            dispatched = true;
+                            await previewSeekResults(actionData);
+                        }
+                        updateSeekTemplateButton(actionData, true);
+                    } finally {
+                        resolve();
+                    }
+                });
+
+                const layer = canvas?.templates;
+                if (typeof layer?.createPreview === 'function') {
+                    layer.createPreview(tplData);
+                } else if (typeof MeasuredTemplate?.createPreview === 'function') {
+                    MeasuredTemplate.createPreview(tplData);
+                } else {
+                    // GM fallback: single click to create template
+                    const pointerHandler = async (event) => {
+                        canvas.stage.off('pointerdown', pointerHandler);
+                        try {
+                            const local = event.data.getLocalPosition(canvas.stage);
+                            const snapped = canvas.grid?.getSnappedPosition?.(local.x, local.y, 2) || { x: local.x, y: local.y };
+                            const [created] = await canvas.scene.createEmbeddedDocuments('MeasuredTemplate', [{ ...tplData, x: snapped.x, y: snapped.y }]);
+                            if (created) {
+                                try { await canvas.scene.updateEmbeddedDocuments('MeasuredTemplate', [{ _id: created.id, [`flags.pf2e-visioner.seekPreviewManual`]: true, [`flags.pf2e-visioner.messageId`]: actionData.messageId, [`flags.pf2e-visioner.actorTokenId`]: actionData.actor.id }]); } catch (_) {}
+                                actionData.seekTemplateCenter = { x: created.x, y: created.y };
+                                actionData.seekTemplateRadiusFeet = Number(created.distance) || distance;
+                                const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
+                                if (targets.length > 0) {
+                                    await previewSeekResults(actionData);
+                                }
+                                updateSeekTemplateButton(actionData, true);
+                            }
+                        } finally {
+                            resolve();
+                        }
+                    };
+                    canvas.stage.on('pointerdown', pointerHandler, { once: true });
+                }
+            });
+            return;
+        }
+
+        // PLAYER PATH: try full measured-template placement like GM; fallback to single-click if not permitted
         const tplData = {
             t: 'circle',
             user: game.userId,
             distance,
             fillColor: game.user?.color || '#ff9800',
             borderColor: game.user?.color || '#ff9800',
-            texture: null,
-            flags: { 'pf2e-visioner': { seekPreviewManual: true, messageId: actionData.messageId, actorTokenId: actionData.actor.id } }
+            texture: null
         };
 
-        let dispatched = false;
+        let usedPreview = false;
         await new Promise((resolve) => {
-            // Preferred: native preview then capture on create
             const createHookId = Hooks.on('createMeasuredTemplate', async (doc) => {
                 if (!doc || doc.user?.id !== game.userId) return;
                 try {
                     Hooks.off('createMeasuredTemplate', createHookId);
-                    // Tag the created doc so the button state detection can find it
-                    await doc.update({ [`flags.pf2e-visioner.seekPreviewManual`]: true, [`flags.pf2e-visioner.messageId`]: actionData.messageId, [`flags.pf2e-visioner.actorTokenId`]: actionData.actor.id });
-                    actionData.seekTemplateCenter = { x: doc.x, y: doc.y };
-                    actionData.seekTemplateRadiusFeet = Number(doc.distance) || 30;
-                    // Only open dialog if there are targets within the placed template
-                    const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
-                    if (!dispatched && targets.length > 0) {
-                        dispatched = true;
-                        await previewSeekResults(actionData);
-                    } else {
-                        ui.notifications.info(`${MODULE_TITLE}: No valid targets within template`);
-                    }
-                    // Update button to Remove state in-place
-                    updateSeekTemplateButton(actionData, true);
+                    usedPreview = true;
+                    const center = { x: doc.x, y: doc.y };
+                    const radius = Number(doc.distance) || distance;
+                    actionData.seekTemplateCenter = center;
+                    actionData.seekTemplateRadiusFeet = radius;
+                    // Clean up the player's helper template to avoid clutter
+                    try { await doc.delete(); } catch (_) {}
+                    const targets = discoverSeekTargets(actionData.actor, false, radius, center);
+                    const roll = actionData.roll || game.messages.get(actionData.messageId)?.rolls?.[0] || null;
+                    const rollTotal = roll?.total ?? null;
+                    const dieResult = roll?.dice?.[0]?.total ?? roll?.terms?.[0]?.total ?? null;
+                    // Always inform the GM, even when there are no targets, so the GM panel can hide actions
+                    requestGMOpenSeekWithTemplate(actionData.actor.id, center, radius, actionData.messageId, rollTotal, dieResult);
                 } finally {
                     resolve();
                 }
@@ -788,42 +1044,40 @@ async function setupSeekTemplate(actionData) {
 
             const layer = canvas?.templates;
             if (typeof layer?.createPreview === 'function') {
-                // Preferred API: layer-driven preview
                 layer.createPreview(tplData);
             } else if (typeof MeasuredTemplate?.createPreview === 'function') {
-                // Legacy fallback
                 MeasuredTemplate.createPreview(tplData);
             } else {
-                // Fallback: single-click placement without live preview
+                resolve();
+            }
+        });
+
+        if (!usedPreview) {
+            // Fallback: single-click choose center
+            await new Promise((resolve) => {
                 const pointerHandler = async (event) => {
                     canvas.stage.off('pointerdown', pointerHandler);
                     try {
                         const local = event.data.getLocalPosition(canvas.stage);
                         const snapped = canvas.grid?.getSnappedPosition?.(local.x, local.y, 2) || { x: local.x, y: local.y };
-                        const [created] = await canvas.scene.createEmbeddedDocuments('MeasuredTemplate', [{ ...tplData, x: snapped.x, y: snapped.y }]);
-                        if (created) {
-                            // Ensure flags are present for detection
-                            try { await canvas.scene.updateEmbeddedDocuments('MeasuredTemplate', [{ _id: created.id, [`flags.pf2e-visioner.seekPreviewManual`]: true, [`flags.pf2e-visioner.messageId`]: actionData.messageId, [`flags.pf2e-visioner.actorTokenId`]: actionData.actor.id }]); } catch (_) {}
-                            actionData.seekTemplateCenter = { x: created.x, y: created.y };
-                            actionData.seekTemplateRadiusFeet = Number(created.distance) || 30;
-                            const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
-                            if (!dispatched && targets.length > 0) {
-                                dispatched = true;
-                                await previewSeekResults(actionData);
-                            } else {
-                                ui.notifications.info(`${MODULE_TITLE}: No valid targets within template`);
-                            }
-                            // Update button to Remove state in-place
-                            updateSeekTemplateButton(actionData, true);
+                        actionData.seekTemplateCenter = { x: snapped.x, y: snapped.y };
+                        actionData.seekTemplateRadiusFeet = distance;
+                        const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
+                        const roll = actionData.roll || game.messages.get(actionData.messageId)?.rolls?.[0] || null;
+                        const rollTotal = roll?.total ?? null;
+                        const dieResult = roll?.dice?.[0]?.total ?? roll?.terms?.[0]?.total ?? null;
+                        // Always inform the GM, even when there are no targets
+                        requestGMOpenSeekWithTemplate(actionData.actor.id, actionData.seekTemplateCenter, actionData.seekTemplateRadiusFeet, actionData.messageId, rollTotal, dieResult);
+                        if (targets.length === 0) {
+                            ui.notifications.info(`${MODULE_TITLE}: No valid targets within template`);
                         }
                     } finally {
-                        Hooks.off('createMeasuredTemplate', createHookId);
                         resolve();
                     }
                 };
                 canvas.stage.on('pointerdown', pointerHandler, { once: true });
-            }
-        });
+            });
+        }
     } catch (error) {
         console.error(`${MODULE_TITLE}: Failed to setup Seek template:`, error);
     }

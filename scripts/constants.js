@@ -46,7 +46,7 @@ export const COVER_STATES = {
   none: {
     label: 'PF2E_VISIONER.COVER_STATES.none',
     pf2eCondition: null,
-    icon: 'fas fa-square',
+    icon: 'fas fa-shield-slash',
     color: '#4caf50',  // Green - no cover
     bonusAC: 0,
     bonusReflex: 0,
@@ -56,7 +56,7 @@ export const COVER_STATES = {
   lesser: {
     label: 'PF2E_VISIONER.COVER_STATES.lesser',
     pf2eCondition: 'lesser-cover',
-    icon: 'fas fa-chess-board',
+    icon: 'fa-regular fa-shield',
     color: '#ffc107',  // Yellow - minor cover
     bonusAC: 1,
     bonusReflex: 0,
@@ -76,7 +76,7 @@ export const COVER_STATES = {
   greater: {
     label: 'PF2E_VISIONER.COVER_STATES.greater',
     pf2eCondition: 'greater-cover',
-    icon: 'fas fa-shield-halved',
+    icon: 'fas fa-shield',
     color: '#f44336',  // Red - major cover
     bonusAC: 4,
     bonusReflex: 4,
@@ -160,6 +160,15 @@ export const DEFAULT_SETTINGS = {
   },
 
   // Seek Action Settings
+  seekUseTemplate: {
+    name: 'PF2E_VISIONER.SETTINGS.SEEK_USE_TEMPLATE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.SEEK_USE_TEMPLATE.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+  
   limitSeekRangeInCombat: {
     name: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.name',
     hint: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.hint',
@@ -169,9 +178,29 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  // Seek range limitation outside of combat
+  limitSeekRangeOutOfCombat: {
+    name: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE_OUT_OF_COMBAT.name',
+    hint: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE_OUT_OF_COMBAT.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+
   customSeekDistance: {
     name: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE.name',
     hint: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE.hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 30
+  },
+
+  // Separate distance for out-of-combat seeks
+  customSeekDistanceOutOfCombat: {
+    name: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE_OOC.name',
+    hint: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE_OOC.hint',
     scope: 'world',
     config: true,
     type: Number,

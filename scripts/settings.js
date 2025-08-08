@@ -44,13 +44,31 @@ export function registerSettings() {
             world: true
           });
         };
+      } else if (key === 'seekUseTemplate') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       } else if (key === 'limitSeekRangeInCombat') {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({
             world: true
           });
         };
+      } else if (key === 'limitSeekRangeOutOfCombat') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       } else if (key === 'customSeekDistance') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
+      } else if (key === 'customSeekDistanceOutOfCombat') {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({
             world: true

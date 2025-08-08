@@ -1,27 +1,56 @@
 # Changelog
 
+## [1.3.0] - 2025-08-08
+
+### Visioner Token Manager (Visibility & Cover)
+- Reworked Apply actions:
+  - Apply Current now applies the active type (Visibility or Cover) for BOTH modes (Observer → Targets and Targets → Observer).
+  - Apply Both now applies BOTH types for BOTH modes in one click.
+- States persist reliably after changing type:
+  - All map writes now merge into existing maps instead of overwriting.
+  - Writes use `document.update({ flags... })` for stability.
+  - Dialog refresh re-reads maps from flags on each render.
+- Corrected table sorting per type (ally\npc):
+  - Visibility order: Observed → Concealed → Hidden → Undetected.
+  - Cover order: None → Lesser → Standard → Greater.
+
+
 All notable changes to the PF2E Visioner module will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2025-01-XX
-
-### Added
-- **Cover Support**: Added comprehensive cover management system alongside visibility
-  - New cover states: None, Lesser (+1 AC), Standard (+2 AC/Reflex/Stealth), Greater (+4 AC/Reflex/Stealth)
-  - Tabbed interface with separate Visibility and Cover management tabs
-  - Cover indicators with icons and colors for each state
-  - Mechanical effects display showing AC, Reflex, and Stealth bonuses
-  - Bulk actions for setting cover states across multiple tokens
-  - API methods for programmatic cover management
-  - Roll options integration for cover states
+## [1.2.1] - 2025-08-08
 
 ### Changed
-- **Renamed Module**: "Visibility Manager" is now "Visioner Token Manager" to reflect expanded functionality
-- **Updated API**: Added `getCover()`, `setCover()`, and `getCoverStates()` methods
-- **Enhanced Roll Options**: `getRollOptions()` now includes cover-related options
-- **Legacy Support**: Maintained backward compatibility with existing visibility API
+- **Seek Template Player Logic**: Players will now be able to put their own seek templates, letting GMs open the results nicely
+- **Point out Player Logic**: Players are now able to point out themselves, letting the GM open the results nicely, added ping on the pointed out token
+
+
+## [1.2.0] - 2025-08-08
+
+### Added
+- **Seek via Template (30 ft Burst)**: Optional template-based Seek targeting
+  - New setting to enable template mode for Seek
+  - “Setup Seek Template” button in chat lets you place a 30 ft burst anywhere with live preview
+  - Tokens inside the template are considered for Seek; edge intersections count
+  - Button toggles to “Remove Seek Template” after placement
+
+### Changed
+- **Range Limitation Logic**: When using a template, combat/non-combat Seek distance limits are fully ignored
+- **Colors**: Template colors use the current player's color; fallback to themed defaults
+
+
+---
+
+## [1.1.0] - 2025-08-08
+
+### Added
+- **Out of Combat Seek Distance Limitation**: Implemented distance limitations for Seek actions outside of combat
+  - GMs can now configure maximum distance for out-of-combat Seek attempts
+  - Distance is calculated automatically between seeker and potential targets
+  - Setting can be adjusted in module configuration
+
 
 ## [1.0.2] - 2025-08-07
 

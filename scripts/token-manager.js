@@ -7,13 +7,13 @@ import { COVER_STATES, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from './socket.js';
 import {
-    getCoverMap,
-    getSceneTargets,
-    getVisibilityMap,
-    hasActiveEncounter,
-    setCoverMap,
-    setVisibilityMap,
-    showNotification
+  getCoverMap,
+  getSceneTargets,
+  getVisibilityMap,
+  hasActiveEncounter,
+  setCoverMap,
+  setVisibilityMap,
+  showNotification
 } from './utils.js';
 
 import { MODULE_ID } from './constants.js';
@@ -32,7 +32,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     },
     window: {
       title: 'PF2E_VISIONER.TOKEN_MANAGER.TITLE',
-      icon: 'fas fa-eye',
+      icon: 'fas fa-user-pen',
       resizable: true
     },
     position: {
@@ -40,7 +40,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       height: 650
     },
     actions: {
-      apply: VisionerTokenManager.applyChanges,
+      applyCurrent: VisionerTokenManager.applyCurrent,
+      applyBoth: VisionerTokenManager.applyBoth,
       reset: VisionerTokenManager.resetAll,
       toggleMode: VisionerTokenManager.toggleMode,
       toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
@@ -157,6 +158,12 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       return context;
     }
 
+    // Always refresh maps from document flags to avoid stale UI after applies
+    try {
+      this.visibilityData = getVisibilityMap(this.observer) || {};
+      this.coverData = getCoverMap(this.observer) || {};
+    } catch (_) {}
+
     // Add mode and tab information to context
     context.mode = this.mode;
     context.activeTab = this.activeTab;
@@ -270,20 +277,20 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       });
     }
 
-    // Define status precedence for sorting (undetected > hidden > concealed > observed)
+    // Define status precedence for sorting (observed → concealed → hidden → undetected)
     const visibilityPrecedence = {
-      'undetected': 0,
-      'hidden': 1,
-      'concealed': 2,
-      'observed': 3
+      observed: 0,
+      concealed: 1,
+      hidden: 2,
+      undetected: 3
     };
 
-    // Define cover precedence for sorting (greater > standard > lesser > none)
+    // Define cover precedence for sorting (none → lesser → standard → greater)
     const coverPrecedence = {
-      'greater': 0,
-      'standard': 1,
-      'lesser': 2,
-      'none': 3
+      none: 0,
+      lesser: 1,
+      standard: 2,
+      greater: 3
     };
 
     // Sort function by status precedence, then by name
@@ -381,10 +388,12 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     }
 
     // Handle visibility updates based on mode
-    if (app.mode === 'observer') {
-      // Observer Mode: "How I see others" - update this observer's visibility map
-      if (Object.keys(visibilityChanges).length > 0) {
-        await setVisibilityMap(app.observer, visibilityChanges);
+      if (app.mode === 'observer') {
+        // Observer Mode: "How I see others" - update this observer's visibility map
+        if (Object.keys(visibilityChanges).length > 0) {
+          const currentMap = getVisibilityMap(app.observer) || {};
+          const merged = { ...currentMap, ...visibilityChanges };
+          await setVisibilityMap(app.observer, merged);
         
         // Update ephemeral effects for each target token
         for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
@@ -401,10 +410,12 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         }
       }
 
-      // Handle cover updates
-      if (Object.keys(coverChanges).length > 0) {
-        await setCoverMap(app.observer, coverChanges);
-      }
+        // Handle cover updates
+        if (Object.keys(coverChanges).length > 0) {
+          const currentCover = getCoverMap(app.observer) || {};
+          const mergedCover = { ...currentCover, ...coverChanges };
+          await setCoverMap(app.observer, mergedCover);
+        }
     } else {
       // Target Mode: "How others see me" - update each observer's maps
       for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
@@ -431,9 +442,9 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         const observerToken = canvas.tokens.get(observerTokenId);
         if (observerToken) {
           // Update the observer's cover map
-          const observerCoverData = getCoverMap(observerToken);
-          observerCoverData[app.observer.document.id] = newCoverState;
-          await setCoverMap(observerToken, observerCoverData);
+          const observerCoverData = getCoverMap(observerToken) || {};
+          const merged = { ...observerCoverData, [app.observer.document.id]: newCoverState };
+          await setCoverMap(observerToken, merged);
         }
       }
     }
@@ -450,7 +461,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   /**
    * Apply changes and close
    */
-  static async applyChanges(event, button) {
+  static async applyCurrent(event, button) {
     const app = this;
     
     // First save the current mode's form state
@@ -479,87 +490,141 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       console.error('Token Manager: Error saving current form state:', error);
     }
     
-    // Process and apply changes from both modes
+    // Apply current TYPE for BOTH modes (observer + target)
     if (app._savedModeData) {
-      
-      // Apply observer mode changes if we have them
-      if (app._savedModeData.observer) {
-        const observerVisibilityChanges = app._savedModeData.observer.visibility || {};
-        const observerCoverChanges = app._savedModeData.observer.cover || {};
-        
-        // Apply observer mode visibility changes
-        if (Object.keys(observerVisibilityChanges).length > 0) {
-          await setVisibilityMap(app.observer, observerVisibilityChanges);
-          
-          // Update ephemeral effects for each target token
-          for (const [tokenId, newState] of Object.entries(observerVisibilityChanges)) {
+      const isVisibility = app.activeTab === 'visibility';
+      const isCover = app.activeTab === 'cover';
+
+      if (isVisibility) {
+        // Observer → Targets
+        const obsVis = app._savedModeData.observer?.visibility || {};
+        if (Object.keys(obsVis).length > 0) {
+          const currentMap = getVisibilityMap(app.observer) || {};
+          await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
+          for (const [tokenId, newState] of Object.entries(obsVis)) {
             const targetToken = canvas.tokens.get(tokenId);
             if (targetToken) {
-              try {
-                await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
-                  direction: 'observer_to_target'
-                });
-              } catch (error) {
-                console.error('Token Manager: Error updating visibility effects:', error);
-              }
+              try { await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, { effectTarget: 'subject' }); } catch (e) { console.error('Token Manager: visibility (observer) effect error', e); }
             }
           }
         }
-
-        // Apply observer mode cover changes
-        if (Object.keys(observerCoverChanges).length > 0) {
-          await setCoverMap(app.observer, observerCoverChanges);
-        }
-      }
-      
-      // Apply target mode changes if we have them
-      if (app._savedModeData.target) {
-        const targetVisibilityChanges = app._savedModeData.target.visibility || {};
-        const targetCoverChanges = app._savedModeData.target.cover || {};
-        
-        // Apply target mode visibility changes
-        for (const [observerTokenId, newState] of Object.entries(targetVisibilityChanges)) {
+        // Targets → Observer
+        const tgtVis = app._savedModeData.target?.visibility || {};
+        for (const [observerTokenId, newState] of Object.entries(tgtVis)) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (observerToken) {
-            const observerVisibilityData = getVisibilityMap(observerToken);
-            observerVisibilityData[app.observer.document.id] = newState;
-            await setVisibilityMap(observerToken, observerVisibilityData);
-            
-            try {
-              await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, {
-                direction: 'observer_to_target'
-              });
-            } catch (error) {
-              console.error('Token Manager: Error updating visibility effects:', error);
-            }
-          }
-        }
-
-        // Apply target mode cover changes
-        for (const [observerTokenId, newState] of Object.entries(targetCoverChanges)) {
-          const observerToken = canvas.tokens.get(observerTokenId);
-          if (observerToken) {
-            const observerCoverData = getCoverMap(observerToken);
-            observerCoverData[app.observer.document.id] = newState;
-            await setCoverMap(observerToken, observerCoverData);
+            const observerVisibilityData = getVisibilityMap(observerToken) || {};
+            await setVisibilityMap(observerToken, { ...observerVisibilityData, [app.observer.document.id]: newState });
+            try { await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' }); } catch (e) { console.error('Token Manager: visibility (target) effect error', e); }
           }
         }
       }
-      
-      // Update everyone's perception after applying all changes
+
+      if (isCover) {
+        // Observer → Targets
+        const obsCov = app._savedModeData.observer?.cover || {};
+        if (Object.keys(obsCov).length > 0) {
+          const currentCover = getCoverMap(app.observer) || {};
+          await setCoverMap(app.observer, { ...currentCover, ...obsCov });
+        }
+        // Targets → Observer
+        const tgtCov = app._savedModeData.target?.cover || {};
+        for (const [observerTokenId, newState] of Object.entries(tgtCov)) {
+          const observerToken = canvas.tokens.get(observerTokenId);
+          if (observerToken) {
+            const observerCoverData = getCoverMap(observerToken) || {};
+            await setCoverMap(observerToken, { ...observerCoverData, [app.observer.document.id]: newState });
+          }
+        }
+      }
+
       refreshEveryonesPerception();
     } else {
-      // Fall back to normal submit if no saved data
       await this.submit();
     }
-    
-    // Force update visuals immediately
+
     const { updateTokenVisuals } = await import('./effects-coordinator.js');
     await updateTokenVisuals();
-    
-    // Clear saved data
-    app._savedModeData = null;
-    
+    this.close();
+  }
+
+  /**
+   * Apply both Visibility and Cover changes for the current mode
+   */
+  static async applyBoth(event, button) {
+    const app = this;
+    // Save current inputs first
+    try {
+      const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+      const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
+      if (!app._savedModeData) app._savedModeData = {};
+      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
+      visibilityInputs.forEach(input => {
+        const tokenId = input.name.replace('visibility.', '');
+        app._savedModeData[app.mode].visibility[tokenId] = input.value;
+      });
+      coverInputs.forEach(input => {
+        const tokenId = input.name.replace('cover.', '');
+        app._savedModeData[app.mode].cover[tokenId] = input.value;
+      });
+    } catch (error) {
+      console.error('Token Manager: Error saving current form state:', error);
+    }
+
+    // Apply BOTH modes (observer and target) regardless of current mode
+    const applyObserverMode = async () => {
+      const vis = (app._savedModeData.observer?.visibility) || {};
+      const cov = (app._savedModeData.observer?.cover) || {};
+      if (Object.keys(vis).length > 0) {
+        const currentMap = getVisibilityMap(app.observer) || {};
+        const merged = { ...currentMap, ...vis };
+        await setVisibilityMap(app.observer, merged);
+        for (const [tokenId, newState] of Object.entries(vis)) {
+          const targetToken = canvas.tokens.get(tokenId);
+          if (targetToken) {
+            try {
+              await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, { effectTarget: 'subject' });
+            } catch (error) { console.error('Token Manager: Error updating visibility effects:', error); }
+          }
+        }
+      }
+      if (Object.keys(cov).length > 0) {
+        const currentCover = getCoverMap(app.observer) || {};
+        const mergedCover = { ...currentCover, ...cov };
+        await setCoverMap(app.observer, mergedCover);
+      }
+    };
+
+    const applyTargetMode = async () => {
+      const vis = (app._savedModeData.target?.visibility) || {};
+      const cov = (app._savedModeData.target?.cover) || {};
+      for (const [observerTokenId, newState] of Object.entries(vis)) {
+        const observerToken = canvas.tokens.get(observerTokenId);
+        if (observerToken) {
+          const observerVisibilityData = getVisibilityMap(observerToken) || {};
+          const merged = { ...observerVisibilityData, [app.observer.document.id]: newState };
+          await setVisibilityMap(observerToken, merged);
+          try {
+            await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' });
+          } catch (error) { console.error('Token Manager: Error updating visibility effects:', error); }
+        }
+      }
+      for (const [observerTokenId, newState] of Object.entries(cov)) {
+        const observerToken = canvas.tokens.get(observerTokenId);
+        if (observerToken) {
+          const observerCoverData = getCoverMap(observerToken) || {};
+          const mergedCover = { ...observerCoverData, [app.observer.document.id]: newState };
+          await setCoverMap(observerToken, mergedCover);
+        }
+      }
+    };
+
+    await applyObserverMode();
+    await applyTargetMode();
+
+    refreshEveryonesPerception();
+    const { updateTokenVisuals } = await import('./effects-coordinator.js');
+    await updateTokenVisuals();
     this.close();
   }
 
@@ -688,8 +753,70 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     const newTab = button.dataset.tab;
     
     if (newTab && newTab !== app.activeTab) {
+      // 1) Save current tab inputs before switching
+      try {
+        const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+        const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
+
+        if (!app._savedModeData) app._savedModeData = {};
+        if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
+
+        visibilityInputs.forEach(input => {
+          const tokenId = input.name.replace('visibility.', '');
+          app._savedModeData[app.mode].visibility[tokenId] = input.value;
+        });
+
+        coverInputs.forEach(input => {
+          const tokenId = input.name.replace('cover.', '');
+          app._savedModeData[app.mode].cover[tokenId] = input.value;
+        });
+      } catch (error) {
+        console.error('Token Manager: Error saving tab state:', error);
+      }
+
+      // 2) Switch tab and re-render
       app.activeTab = newTab;
       await app.render({ force: true });
+
+      // 3) Restore saved values for the current mode on the newly active tab
+      try {
+        if (app._savedModeData && app._savedModeData[app.mode]) {
+          const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
+          const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
+
+          visibilityInputs.forEach(input => {
+            const tokenId = input.name.replace('visibility.', '');
+            const saved = app._savedModeData[app.mode].visibility[tokenId];
+            if (saved) {
+              input.value = saved;
+              const iconContainer = input.closest('.icon-selection');
+              if (iconContainer) {
+                const icons = iconContainer.querySelectorAll('.state-icon');
+                icons.forEach(icon => icon.classList.remove('selected'));
+                const targetIcon = iconContainer.querySelector(`[data-state="${saved}"]`);
+                if (targetIcon) targetIcon.classList.add('selected');
+              }
+            }
+          });
+
+          coverInputs.forEach(input => {
+            const tokenId = input.name.replace('cover.', '');
+            const saved = app._savedModeData[app.mode].cover[tokenId];
+            if (saved) {
+              input.value = saved;
+              const iconContainer = input.closest('.icon-selection');
+              if (iconContainer) {
+                const icons = iconContainer.querySelectorAll('.state-icon');
+                icons.forEach(icon => icon.classList.remove('selected'));
+                const targetIcon = iconContainer.querySelector(`[data-state="${saved}"]`);
+                if (targetIcon) targetIcon.classList.add('selected');
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Token Manager: Error restoring tab state:', error);
+      }
     }
   }
 

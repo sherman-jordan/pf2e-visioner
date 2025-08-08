@@ -3,7 +3,7 @@
  * Handles Point Out-specific calculations, ally discovery, and result processing
  */
 
-import { MODULE_TITLE } from '../constants.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { PointOutPreviewDialog } from './point-out-preview-dialog.js';
 import {
@@ -21,19 +21,51 @@ export function getPointOutTarget(actionData) {
     // Try to get target from various sources
     let targetToken = null;
     
-    // Method 1: Check if there are current user targets
-    if (game.user.targets && game.user.targets.size > 0) {
-        targetToken = Array.from(game.user.targets)[0];
-        return targetToken;
+    // Method 0: If explicit token id is provided in actionData, use it (from socket handoff)
+    if (actionData.context?.target?.token) {
+        const tokenFromContext = canvas.tokens.get(actionData.context.target.token);
+        if (tokenFromContext) return tokenFromContext;
+    }
+
+    // Method 1: If GM, do not rely on current user targets for player flows; prefer message flags
+    if (!game.user.isGM) {
+        if (game.user.targets && game.user.targets.size > 0) {
+            targetToken = Array.from(game.user.targets)[0];
+            return targetToken;
+        }
     }
     
-    // Method 2: Check message flags for target data
+    // Method 2: Check message/context flags for target data
+    if (actionData.context?.target?.token) {
+        const targetTokenId = actionData.context.target.token;
+        targetToken = canvas.tokens.get(targetTokenId);
+        if (targetToken) return targetToken;
+    }
     if (actionData.context?.target?.actor) {
         const targetActorId = actionData.context.target.actor;
         targetToken = canvas.tokens.placeables.find(t => t.actor?.id === targetActorId);
-        if (targetToken) {
-            return targetToken;
-        }
+        if (targetToken) return targetToken;
+    }
+    // Method 2b: Pull directly from the originating chat message flags if available (PF2e flags)
+    if (actionData.messageId) {
+        try {
+            const msg = game.messages.get(actionData.messageId);
+            const targetData = msg?.flags?.pf2e?.target;
+            if (targetData?.token) {
+                targetToken = canvas.tokens.get(targetData.token);
+                if (targetToken) return targetToken;
+            }
+            if (targetData?.actor) {
+                targetToken = canvas.tokens.placeables.find(t => t.actor?.id === targetData.actor);
+                if (targetToken) return targetToken;
+            }
+            // Method 2c: Pull from module flags set by player → GM handoff
+            const modulePointOut = msg?.flags?.[MODULE_ID]?.pointOut;
+            if (modulePointOut?.targetTokenId) {
+                const tokenFromModule = canvas.tokens.get(modulePointOut.targetTokenId);
+                if (tokenFromModule) return tokenFromModule;
+            }
+        } catch (_) {}
     }
     
     // Method 3: Check for target in message content (fallback)
@@ -213,11 +245,30 @@ export async function previewPointOutResults(actionData) {
     }
     
     // Get the actual targeted token from the Point Out action
-    const pointOutTarget = getPointOutTarget(actionData);
+    let pointOutTarget = getPointOutTarget(actionData);
     
     if (!pointOutTarget) {
-        ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
-        return;
+        // Fallback: try to pick a reasonable target from the pointer token context
+        try {
+            const msg = actionData.messageId ? game.messages.get(actionData.messageId) : null;
+            const modulePO = msg?.flags?.[MODULE_ID]?.pointOut;
+            const pointerTokenId = modulePO?.pointerTokenId || actionData.actor?.id;
+            const pointerToken = pointerTokenId ? canvas.tokens.get(pointerTokenId) : null;
+            if (pointerToken) {
+                const best = findBestPointOutTarget(pointerToken);
+                if (best) {
+                    pointOutTarget = best;
+                    // Ensure context carries the resolved target for downstream
+                    actionData.context = actionData.context || {};
+                    actionData.context.target = { token: best.id };
+                }
+            }
+        } catch (_) {}
+
+        if (!pointOutTarget) {
+            ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
+            return;
+        }
     }
     
     // Find allies who can't see this target and will benefit from Point Out

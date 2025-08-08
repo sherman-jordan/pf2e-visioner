@@ -64,11 +64,14 @@ Hooks.once("ready", async () => {
     }
     
     // Clean up any lingering cover effects from previous sessions
-    try {
-      const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
-      await cleanupAllCoverEffects();
-    } catch (error) {
-      console.error('PF2E Visioner: Failed to clean up cover effects:', error);
+    // Run this on a single authoritative client (GM only) to avoid race conditions
+    if (game.user.isGM) {
+      try {
+        const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+        await cleanupAllCoverEffects();
+      } catch (error) {
+        console.error('PF2E Visioner: Failed to clean up cover effects:', error);
+      }
     }
   } catch (error) {
     console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);

@@ -32,12 +32,27 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
             return;
         }
         // Otherwise, remove the old one so we can create the new one
-        await effectReceiverActor.deleteEmbeddedDocuments("Item", [existingEffect.id]);
+        try {
+            if (effectReceiverActor.items.get(existingEffect.id)) {
+                await effectReceiverActor.deleteEmbeddedDocuments("Item", [existingEffect.id]);
+            }
+        } catch (_) {
+            // Ignore if it was already removed
+        }
     }
 
     const stateConfig = COVER_STATES[coverState];
     const coverLabel = game.i18n.localize(stateConfig.label);
     
+    // Pick a representative image per cover level
+    const coverEffectImageByState = {
+        lesser: "systems/pf2e/icons/equipment/shields/buckler.webp",
+        standard: "systems/pf2e/icons/equipment/shields/steel-shield.webp",
+        greater: "systems/pf2e/icons/equipment/shields/tower-shield.webp",
+    };
+
+    const effectImg = coverEffectImageByState[coverState] || "systems/pf2e/icons/equipment/shields/steel-shield.webp";
+
     const ephemeralEffect = {
         name: `${coverLabel} against ${effectSourceActor.name}`,
         type: 'effect',
@@ -91,7 +106,7 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
             },
             badge: null
         },
-        img: "systems/pf2e/icons/equipment/shields/steel-shield.webp",
+        img: effectImg,
                          flags: {
             [MODULE_ID]: {
                 isEphemeralCover: true,
@@ -142,7 +157,20 @@ export async function cleanupAllCoverEffects() {
             
             if (ephemeralEffects.length > 0) {
                 const effectIds = ephemeralEffects.map(e => e.id);
-                await actor.deleteEmbeddedDocuments("Item", effectIds);
+                // Guard against already-removed items
+                const existingIds = effectIds.filter(id => !!actor.items.get(id));
+                if (existingIds.length > 0) {
+                    try {
+                        await actor.deleteEmbeddedDocuments("Item", existingIds);
+                    } catch (e) {
+                        // As a last resort, delete one-by-one to skip missing
+                        for (const id of existingIds) {
+                            if (actor.items.get(id)) {
+                                try { await actor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+                            }
+                        }
+                    }
+                }
             }
         }
     } catch (error) {
@@ -168,7 +196,18 @@ export async function cleanupCoverEffectsForObserver(targetActor, observerActor)
         
         if (ephemeralEffects.length > 0) {
             const effectIds = ephemeralEffects.map(e => e.id);
-            await targetActor.deleteEmbeddedDocuments("Item", effectIds);
+            const existingIds = effectIds.filter(id => !!targetActor.items.get(id));
+            if (existingIds.length > 0) {
+                try {
+                    await targetActor.deleteEmbeddedDocuments("Item", existingIds);
+                } catch (e) {
+                    for (const id of existingIds) {
+                        if (targetActor.items.get(id)) {
+                            try { await targetActor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+                        }
+                    }
+                }
+            }
         }
     } catch (error) {
         console.error('Error cleaning up ephemeral cover effects for observer:', error);

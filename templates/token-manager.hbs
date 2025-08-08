@@ -10,15 +10,7 @@
 {{else}}
   <div class="visioner-token-manager">
 
-  {{!-- Icon-only Tab Navigation (top-right) --}}
-  <div class="icon-tab-navigation">
-    <button type="button" class="icon-tab-button {{#if isVisibilityTab}}active{{/if}}" data-action="toggleTab" data-tab="visibility" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_TAB"}}">
-      <i class="fas fa-eye"></i>
-    </button>
-    <button type="button" class="icon-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
-      <i class="fas fa-shield-alt"></i>
-    </button>
-  </div>
+  {{!-- Icon-only Tab Navigation and Legend moved to top-right inside observer-info --}}
 
   {{!-- Observer Information with Mode Toggle - Always visible --}}
   <div class="observer-info">
@@ -39,10 +31,18 @@
           </div>
         </button>
         <h3 class="observer-name">{{observer.name}}</h3>
-        {{#if isObserverMode}}
-          <p class="hint">How <em>{{observer.name}}</em> sees other tokens</p>
+        {{#if isCoverTab}}
+          {{#if isObserverMode}}
+            <p class="hint">How much cover other tokens have against <em>{{observer.name}}</em></p>
+          {{else}}
+            <p class="hint">How much cover <em>{{observer.name}}</em> has against other tokens</p>
+          {{/if}}
         {{else}}
-          <p class="hint">How other tokens see <em>{{observer.name}}</em></p>
+          {{#if isObserverMode}}
+            <p class="hint">How <em>{{observer.name}}</em> sees other tokens</p>
+          {{else}}
+            <p class="hint">How other tokens see <em>{{observer.name}}</em></p>
+          {{/if}}
         {{/if}}
         
         {{!-- Encounter Filter Checkbox --}}
@@ -56,20 +56,60 @@
         {{/if}}
       </div>
     </div>
+
+    <div class="observer-tools">
+      <div class="icon-tab-navigation">
+        <button type="button" class="icon-tab-button {{#if isVisibilityTab}}active{{/if}}" data-action="toggleTab" data-tab="visibility" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_TAB"}}">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button type="button" class="icon-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
+          <i class="fas fa-shield-alt"></i>
+        </button>
+      </div>
+      <div class="legend-panel">
+        {{#if isVisibilityTab}}
+          {{!-- Show cover legend ABOVE visibility legend for quick reference --}}
+          <div class="cover-legend" style="margin-bottom: 4px;">
+            {{#each coverStates as |state|}}
+              <div class="legend-item" title="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
+                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+                <span>{{state.label}}</span>
+                {{#if (gt state.bonusAC 0)}}
+                  <span class="bonus-badge">+{{state.bonusAC}}</span>
+                {{/if}}
+              </div>
+            {{/each}}
+          </div>
+          <div class="visibility-legend">
+            {{#each visibilityStates as |state|}}
+              <div class="legend-item" title="{{state.label}}">
+                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+                <span>{{state.label}}</span>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="cover-legend">
+            {{#each coverStates as |state|}}
+              <div class="legend-item" title="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
+                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+                <span>{{state.label}}</span>
+                {{#if (gt state.bonusAC 0)}}
+                  <span class="bonus-badge">+{{state.bonusAC}}</span>
+                {{/if}}
+              </div>
+            {{/each}}
+          </div>
+        {{/if}}
+      </div>
+    </div>
   </div>
 
   {{!-- Tab Content --}}
   <div class="tab-content">
     {{!-- Visibility Tab --}}
     <div class="tab-panel visibility-section {{#if isVisibilityTab}}active{{/if}}">
-      <div class="compact-legend visibility-legend">
-        {{#each visibilityStates as |state|}}
-          <div class="legend-item" title="{{state.label}}">
-            <i class="{{state.icon}}" style="color: {{state.color}}"></i>
-            <span>{{state.label}}</span>
-          </div>
-        {{/each}}
-      </div>
+      {{!-- Legend moved to top-right observer-tools --}}
 
       {{!-- Scrollable tables area for visibility --}}
       <div class="tables-content">
@@ -255,17 +295,7 @@
 
     {{!-- Cover Tab --}}
     <div class="tab-panel cover-section {{#if isCoverTab}}active{{/if}}">
-      <div class="compact-legend cover-legend">
-        {{#each coverStates as |state|}}
-          <div class="legend-item" title="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
-            <i class="{{state.icon}}" style="color: {{state.color}}"></i>
-            <span>{{state.label}}</span>
-            {{#if (gt state.bonusAC 0)}}
-              <span class="bonus-badge">+{{state.bonusAC}}</span>
-            {{/if}}
-          </div>
-        {{/each}}
-      </div>
+      {{!-- Legend moved to top-right observer-tools --}}
 
       {{!-- Scrollable tables area for cover --}}
       <div class="tables-content">
@@ -281,7 +311,14 @@
                 </div>
                 <div class="bulk-actions-header">
                   {{#each coverStates as |state|}}
-                    <button type="button" class="bulk-state-header" data-action="bulkPC{{capitalize state.key}}Cover" data-state="{{state.key}}" data-target-type="pc" title="Set all PCs as {{state.label}}">
+                    {{!-- Special-case mapping for "none" → bulkPCNoCover --}}
+                    <button
+                      type="button"
+                      class="bulk-state-header"
+                      data-action="{{#if (eq state.key "none")}}bulkPCNoCover{{else}}bulkPC{{capitalize state.key}}Cover{{/if}}"
+                      data-state="{{state.key}}"
+                      data-target-type="pc"
+                      title="Set all PCs as {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -331,20 +368,20 @@
                         </td>
                         <td class="mechanical-effects">
                           {{#if (eq target.currentCoverState "none")}}
-                            <span class="no-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
+                            <span class="no-effect cover-none" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
                               <i class="fas fa-check-circle"></i> No cover
                             </span>
                           {{else if (eq target.currentCoverState "lesser")}}
-                            <span class="cover-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-lesser" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +1 AC
                             </span>
                           {{else if (eq target.currentCoverState "standard")}}
-                            <span class="cover-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-standard" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
                             </span>
                           {{else if (eq target.currentCoverState "greater")}}
-                            <span class="cover-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
-                              <i class="fas fa-shield-halved"></i> +4 AC, +4 Reflex, +4 Stealth
+                            <span class="cover-effect cover-greater" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
+                              <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
                             </span>
                           {{/if}}
                         </td>
@@ -366,7 +403,14 @@
                 </div>
                 <div class="bulk-actions-header">
                   {{#each coverStates as |state|}}
-                    <button type="button" class="bulk-state-header" data-action="bulkNPC{{capitalize state.key}}Cover" data-state="{{state.key}}" data-target-type="npc" title="Set all NPCs as {{state.label}}">
+                    {{!-- Special-case mapping for "none" → bulkNPCNoCover --}}
+                    <button
+                      type="button"
+                      class="bulk-state-header"
+                      data-action="{{#if (eq state.key "none")}}bulkNPCNoCover{{else}}bulkNPC{{capitalize state.key}}Cover{{/if}}"
+                      data-state="{{state.key}}"
+                      data-target-type="npc"
+                      title="Set all NPCs as {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -416,20 +460,20 @@
                         </td>
                         <td class="mechanical-effects">
                           {{#if (eq target.currentCoverState "none")}}
-                            <span class="no-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
+                            <span class="no-effect cover-none" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
                               <i class="fas fa-check-circle"></i> No cover
                             </span>
                           {{else if (eq target.currentCoverState "lesser")}}
-                            <span class="cover-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-lesser" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +1 AC
                             </span>
                           {{else if (eq target.currentCoverState "standard")}}
-                            <span class="cover-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-standard" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
                             </span>
                           {{else if (eq target.currentCoverState "greater")}}
-                            <span class="cover-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
-                              <i class="fas fa-shield-halved"></i> +4 AC, +4 Reflex, +4 Stealth
+                            <span class="cover-effect cover-greater" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
+                              <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
                             </span>
                           {{/if}}
                         </td>
@@ -452,9 +496,13 @@
 
   {{!-- Action Buttons --}}
   <footer class="sheet-footer flexrow">
-    <button type="button" class="vm-action-button apply" data-action="apply">
+    <button type="button" class="vm-action-button apply" data-action="applyCurrent">
       <i class="fas fa-check"></i>
       {{localize "PF2E_VISIONER.TOKEN_MANAGER.APPLY"}}
+    </button>
+    <button type="button" class="vm-action-button apply" data-action="applyBoth">
+      <i class="fas fa-layer-group"></i>
+      {{localize "PF2E_VISIONER.TOKEN_MANAGER.APPLY_BOTH"}}
     </button>
     <button type="button" class="vm-action-button reset" data-action="reset">
       <i class="fas fa-undo"></i>

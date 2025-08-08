@@ -169,10 +169,19 @@ async function removeCoverConditions(token) {
     );
     
     if (coverConditions.length > 0) {
-      await token.actor.deleteEmbeddedDocuments(
-        'Item',
-        coverConditions.map(c => c.id)
-      );
+      const ids = coverConditions.map(c => c.id);
+      const existingIds = ids.filter(id => !!token.actor.items.get(id));
+      if (existingIds.length > 0) {
+        try {
+          await token.actor.deleteEmbeddedDocuments('Item', existingIds);
+        } catch (e) {
+          for (const id of existingIds) {
+            if (token.actor.items.get(id)) {
+              try { await token.actor.deleteEmbeddedDocuments('Item', [id]); } catch (_) {}
+            }
+          }
+        }
+      }
     }
   } catch (error) {
     console.error('Error removing cover conditions:', error);

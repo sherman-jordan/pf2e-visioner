@@ -12,7 +12,8 @@ import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
  * @returns {Object} Visibility map object
  */
 export function getVisibilityMap(token) {
-  return token?.document.getFlag(MODULE_ID, 'visibility') ?? {};
+  const map = token?.document.getFlag(MODULE_ID, 'visibility') ?? {};
+  return map;
 }
 
 /**
@@ -22,7 +23,10 @@ export function getVisibilityMap(token) {
  * @returns {Promise} Promise that resolves when flag is set
  */
 export async function setVisibilityMap(token, visibilityMap) {
-  return token?.document.setFlag(MODULE_ID, 'visibility', visibilityMap);
+  if (!token?.document) return;
+  const path = `flags.${MODULE_ID}.visibility`;
+  const result = await token.document.update({ [path]: visibilityMap }, { diff: false });
+  return result;
 }
 
 /**
@@ -253,7 +257,8 @@ export function capitalize(str) {
  * @returns {Object} Cover map object
  */
 export function getCoverMap(token) {
-  return token?.document.getFlag(MODULE_ID, 'cover') ?? {};
+  const map = token?.document.getFlag(MODULE_ID, 'cover') ?? {};
+  return map;
 }
 
 /**
@@ -263,7 +268,10 @@ export function getCoverMap(token) {
  * @returns {Promise} Promise that resolves when flag is set
  */
 export async function setCoverMap(token, coverMap) {
-  return token?.document.setFlag(MODULE_ID, 'cover', coverMap);
+  if (!token?.document) return;
+  const path = `flags.${MODULE_ID}.cover`;
+  const result = await token.document.update({ [path]: coverMap }, { diff: false });
+  return result;
 }
 
 /**

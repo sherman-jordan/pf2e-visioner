@@ -5,6 +5,22 @@ All notable changes to the PF2E Visioner module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-08-08
+
+### Added
+- **Seek via Template (30 ft Burst)**: Optional template-based Seek targeting
+  - New setting to enable template mode for Seek
+  - “Setup Seek Template” button in chat lets you place a 30 ft burst anywhere with live preview
+  - Tokens inside the template are considered for Seek; edge intersections count
+  - Button toggles to “Remove Seek Template” after placement
+
+### Changed
+- **Range Limitation Logic**: When using a template, combat/non-combat Seek distance limits are fully ignored
+- **Colors**: Template colors use the current player's color; fallback to themed defaults
+
+
+---
+
 ## [1.1.0] - 2025-08-08
 
 ### Added

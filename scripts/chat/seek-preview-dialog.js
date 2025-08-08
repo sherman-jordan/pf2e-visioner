@@ -527,6 +527,17 @@ export class SeekPreviewDialog extends foundry.applications.api.ApplicationV2 {
      * Override close to clear global reference
      */
     close(options) {
+        // Clean up only auto-created preview templates (not manual, which we delete immediately on placement)
+        try {
+            if (this.templateId && canvas.scene && !this.templateCenter) {
+                const doc = canvas.scene.templates?.get?.(this.templateId) || canvas.scene.getEmbeddedDocument?.('MeasuredTemplate', this.templateId);
+                if (doc) {
+                    canvas.scene.deleteEmbeddedDocuments('MeasuredTemplate', [this.templateId]);
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to remove Seek preview template:', e);
+        }
         currentSeekDialog = null;
         return super.close(options);
     }

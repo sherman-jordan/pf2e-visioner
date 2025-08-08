@@ -9,7 +9,7 @@ import { previewConsequencesResults } from './consequences-logic.js';
 import { previewDiversionResults } from './create-a-diversion-logic.js';
 import { previewHideResults } from './hide-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
-import { previewSeekResults } from './seek-logic.js';
+import { discoverSeekTargets, previewSeekResults } from './seek-logic.js';
 import { previewSneakResults } from './sneak-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
@@ -609,6 +609,11 @@ function buildAutomationPanel(actionData) {
         panelClass = 'consequences-panel';
     }
 
+    const isSeekWithTemplateOption = isSeek && game.settings.get('pf2e-visioner', 'seekUseTemplate');
+    const hasExistingTemplate = isSeekWithTemplateOption && !!(canvas?.scene?.templates?.find?.(t => {
+        const f = t?.flags?.['pf2e-visioner'];
+        return f?.seekPreviewManual && f?.messageId === actionData.messageId && f?.actorTokenId === actionData.actor.id && t?.user?.id === game.userId;
+    }));
     return `
         <div class="pf2e-visioner-automation-panel ${panelClass}" data-message-id="${actionData.messageId}" data-action-type="${actionData.actionType}">
             <div class="automation-header">
@@ -616,12 +621,21 @@ function buildAutomationPanel(actionData) {
                 <span class="automation-title">${title}</span>
             </div>
             <div class="automation-actions">
-                <button type="button" 
-                        class="visioner-btn ${buttonClass}" 
-                        data-action="${actionName}"
-                        title="${tooltip}">
-                    <i class="${icon}"></i> ${label}
-                </button>
+                ${isSeekWithTemplateOption ? `
+                    <button type="button"
+                            class="visioner-btn ${buttonClass} setup-template"
+                            data-action="${hasExistingTemplate ? 'remove-seek-template' : 'setup-seek-template'}"
+                            title="${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}">
+                        <i class="fas fa-bullseye"></i> ${hasExistingTemplate ? game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE') : game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE')}
+                    </button>
+                ` : `
+                    <button type="button" 
+                            class="visioner-btn ${buttonClass}" 
+                            data-action="${actionName}"
+                            title="${tooltip}">
+                        <i class="${icon}"></i> ${label}
+                    </button>
+                `}
             </div>
         </div>
     `;
@@ -652,7 +666,26 @@ function bindAutomationEvents(panel, message, actionData) {
 
         try {
             button.addClass('processing').prop('disabled', true);
-            await previewActionResults(actionData);
+            if (action === 'setup-seek-template' && actionData.actionType === 'seek') {
+                await setupSeekTemplate(actionData);
+            } else if (action === 'remove-seek-template' && actionData.actionType === 'seek') {
+                await removeSeekTemplate(actionData);
+                // Re-render panel back to Setup state
+                try {
+                    const parent = button.closest('.pf2e-visioner-automation-panel');
+                    if (parent?.length) {
+                        const messageId = parent.data('message-id');
+                        const message = game.messages.get(messageId);
+                        if (message) {
+                            const html = $(message.element);
+                            parent.remove();
+                            injectAutomationUI(message, html, actionData);
+                        }
+                    }
+                } catch (_) {}
+            } else {
+                await previewActionResults(actionData);
+            }
         } catch (error) {
             console.error(`${MODULE_TITLE}: Automation error:`, error);
             ui.notifications.error(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.ERROR_PROCESSING')}`);
@@ -683,6 +716,135 @@ async function previewActionResults(actionData) {
         return await previewConsequencesResults(actionData);
     } else {
         console.warn('[Chat Processor] Unknown action type:', actionData.actionType);
+    }
+}
+
+/**
+ * Update the Seek template button state (Setup ↔ Remove) in-place
+ */
+function updateSeekTemplateButton(actionData, hasTemplate) {
+    try {
+        const panel = $(`.pf2e-visioner-automation-panel[data-message-id="${actionData.messageId}"]`);
+        if (!panel?.length) return;
+        const btn = panel.find('button.setup-template');
+        if (!btn?.length) return;
+        if (hasTemplate) {
+            btn.attr('data-action', 'remove-seek-template');
+            btn.attr('title', game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP'));
+            btn.html(`<i class="fas fa-bullseye"></i> ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE')}`);
+        } else {
+            btn.attr('data-action', 'setup-seek-template');
+            btn.attr('title', game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP'));
+            btn.html(`<i class="fas fa-bullseye"></i> ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE')}`);
+        }
+    } catch (_) {}
+}
+
+/**
+ * Allow the GM to place a 30 ft template anywhere for Seek, then open results using that area
+ * @param {Object} actionData
+ */
+async function setupSeekTemplate(actionData) {
+    if (!canvas?.scene) return;
+    try {
+        ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}`);
+        const distance = 30;
+
+        const tplData = {
+            t: 'circle',
+            user: game.userId,
+            distance,
+            fillColor: game.user?.color || '#ff9800',
+            borderColor: game.user?.color || '#ff9800',
+            texture: null,
+            flags: { 'pf2e-visioner': { seekPreviewManual: true, messageId: actionData.messageId, actorTokenId: actionData.actor.id } }
+        };
+
+        let dispatched = false;
+        await new Promise((resolve) => {
+            // Preferred: native preview then capture on create
+            const createHookId = Hooks.on('createMeasuredTemplate', async (doc) => {
+                if (!doc || doc.user?.id !== game.userId) return;
+                try {
+                    Hooks.off('createMeasuredTemplate', createHookId);
+                    // Tag the created doc so the button state detection can find it
+                    await doc.update({ [`flags.pf2e-visioner.seekPreviewManual`]: true, [`flags.pf2e-visioner.messageId`]: actionData.messageId, [`flags.pf2e-visioner.actorTokenId`]: actionData.actor.id });
+                    actionData.seekTemplateCenter = { x: doc.x, y: doc.y };
+                    actionData.seekTemplateRadiusFeet = Number(doc.distance) || 30;
+                    // Only open dialog if there are targets within the placed template
+                    const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
+                    if (!dispatched && targets.length > 0) {
+                        dispatched = true;
+                        await previewSeekResults(actionData);
+                    } else {
+                        ui.notifications.info(`${MODULE_TITLE}: No valid targets within template`);
+                    }
+                    // Update button to Remove state in-place
+                    updateSeekTemplateButton(actionData, true);
+                } finally {
+                    resolve();
+                }
+            });
+
+            const layer = canvas?.templates;
+            if (typeof layer?.createPreview === 'function') {
+                // Preferred API: layer-driven preview
+                layer.createPreview(tplData);
+            } else if (typeof MeasuredTemplate?.createPreview === 'function') {
+                // Legacy fallback
+                MeasuredTemplate.createPreview(tplData);
+            } else {
+                // Fallback: single-click placement without live preview
+                const pointerHandler = async (event) => {
+                    canvas.stage.off('pointerdown', pointerHandler);
+                    try {
+                        const local = event.data.getLocalPosition(canvas.stage);
+                        const snapped = canvas.grid?.getSnappedPosition?.(local.x, local.y, 2) || { x: local.x, y: local.y };
+                        const [created] = await canvas.scene.createEmbeddedDocuments('MeasuredTemplate', [{ ...tplData, x: snapped.x, y: snapped.y }]);
+                        if (created) {
+                            // Ensure flags are present for detection
+                            try { await canvas.scene.updateEmbeddedDocuments('MeasuredTemplate', [{ _id: created.id, [`flags.pf2e-visioner.seekPreviewManual`]: true, [`flags.pf2e-visioner.messageId`]: actionData.messageId, [`flags.pf2e-visioner.actorTokenId`]: actionData.actor.id }]); } catch (_) {}
+                            actionData.seekTemplateCenter = { x: created.x, y: created.y };
+                            actionData.seekTemplateRadiusFeet = Number(created.distance) || 30;
+                            const targets = discoverSeekTargets(actionData.actor, false, actionData.seekTemplateRadiusFeet, actionData.seekTemplateCenter);
+                            if (!dispatched && targets.length > 0) {
+                                dispatched = true;
+                                await previewSeekResults(actionData);
+                            } else {
+                                ui.notifications.info(`${MODULE_TITLE}: No valid targets within template`);
+                            }
+                            // Update button to Remove state in-place
+                            updateSeekTemplateButton(actionData, true);
+                        }
+                    } finally {
+                        Hooks.off('createMeasuredTemplate', createHookId);
+                        resolve();
+                    }
+                };
+                canvas.stage.on('pointerdown', pointerHandler, { once: true });
+            }
+        });
+    } catch (error) {
+        console.error(`${MODULE_TITLE}: Failed to setup Seek template:`, error);
+    }
+}
+
+async function removeSeekTemplate(actionData) {
+    if (!canvas?.scene?.templates) return;
+    try {
+        const toRemove = canvas.scene.templates
+            .filter(t => t?.flags?.['pf2e-visioner']?.seekPreviewManual && t?.flags?.['pf2e-visioner']?.messageId === actionData.messageId && t?.flags?.['pf2e-visioner']?.actorTokenId === actionData.actor.id && t?.user?.id === game.userId)
+            .map(t => t.id);
+        if (toRemove.length) {
+            await canvas.scene.deleteEmbeddedDocuments('MeasuredTemplate', toRemove);
+        }
+        delete actionData.seekTemplateCenter;
+        delete actionData.seekTemplateRadiusFeet;
+        ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE')}`);
+        // Update button to Setup state in-place
+        updateSeekTemplateButton(actionData, false);
+    } catch (error) {
+        console.error(`${MODULE_TITLE}: Failed to remove Seek template:`, error);
     }
 }
 

@@ -114,6 +114,15 @@ export const DEFAULT_SETTINGS = {
   },
 
   // Seek Action Settings
+  seekUseTemplate: {
+    name: 'PF2E_VISIONER.SETTINGS.SEEK_USE_TEMPLATE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.SEEK_USE_TEMPLATE.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+  
   limitSeekRangeInCombat: {
     name: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.name',
     hint: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE.hint',

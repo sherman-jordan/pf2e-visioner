@@ -2,11 +2,11 @@
  * Public API for PF2E Per-Token Visibility
  */
 
-import { updateTokenVisuals } from './effects-coordinator.js';
-import { refreshEveryonesPerception } from './socket.js';
-import { getVisibilityBetween, setVisibilityBetween, showNotification } from './utils.js';
-import { TokenVisibilityManager } from './visibility-manager.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
+import { refreshEveryonesPerception } from './socket.js';
+import { VisionerTokenManager } from './token-manager.js';
+import { getCoverBetween, getVisibilityBetween, setCoverBetween, setVisibilityBetween, showNotification } from './utils.js';
+import { updateTokenVisuals } from './visual-effects.js';
 
 /**
  * Main API class for the module
@@ -14,12 +14,12 @@ import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 export class Pf2eVisionerApi {
   
   /**
-   * Open the visibility manager for a specific observer token
+   * Open the token manager for a specific observer token
    * @param {Token} observer - The observer token (optional, uses controlled tokens if not provided)
    */
-  static async openVisibilityManager(observer = null) {
+  static async openTokenManager(observer = null) {
     if (!game.user.isGM) {
-      ui.notifications.warn('Only GMs can manage token visibility');
+      ui.notifications.warn('Only GMs can manage token visibility and cover');
       return;
     }
 
@@ -39,31 +39,31 @@ export class Pf2eVisionerApi {
     }
 
     // Check if there's already an open instance
-    if (TokenVisibilityManager.currentInstance) {
+    if (VisionerTokenManager.currentInstance) {
       // If the observer is the same, just bring the existing dialog to front
-      if (TokenVisibilityManager.currentInstance.observer === observer) {
-        TokenVisibilityManager.currentInstance.bringToTop();
-        return TokenVisibilityManager.currentInstance;
+      if (VisionerTokenManager.currentInstance.observer === observer) {
+        VisionerTokenManager.currentInstance.bringToTop();
+        return VisionerTokenManager.currentInstance;
       }
       // If different observer, update the existing dialog with new data
-      TokenVisibilityManager.currentInstance.updateObserver(observer);
-      TokenVisibilityManager.currentInstance.bringToTop();
-      return TokenVisibilityManager.currentInstance;
+      VisionerTokenManager.currentInstance.updateObserver(observer);
+      VisionerTokenManager.currentInstance.bringToTop();
+      return VisionerTokenManager.currentInstance;
     }
     
-    const manager = new TokenVisibilityManager(observer);
+    const manager = new VisionerTokenManager(observer);
     manager.render({ force: true });
     return manager;
   }
 
   /**
-   * Open the visibility manager with a specific mode
+   * Open the token manager with a specific mode
    * @param {Token} observer - The observer token
    * @param {string} mode - The mode to use ('observer' or 'target')
    */
-  static async openVisibilityManagerWithMode(observer, mode = 'observer') {
+  static async openTokenManagerWithMode(observer, mode = 'observer') {
     if (!game.user.isGM) {
-      ui.notifications.warn('Only GMs can manage token visibility');
+      ui.notifications.warn('Only GMs can manage token visibility and cover');
       return;
     }
 
@@ -73,23 +73,23 @@ export class Pf2eVisionerApi {
     }
 
     // Check if there's already an open instance
-    if (TokenVisibilityManager.currentInstance) {
+    if (VisionerTokenManager.currentInstance) {
       // If the observer is the same, update mode if different and bring to front
-      if (TokenVisibilityManager.currentInstance.observer === observer) {
-        if (TokenVisibilityManager.currentInstance.mode !== mode) {
-          TokenVisibilityManager.currentInstance.mode = mode;
-          TokenVisibilityManager.currentInstance.render({ force: true });
+      if (VisionerTokenManager.currentInstance.observer === observer) {
+        if (VisionerTokenManager.currentInstance.mode !== mode) {
+          VisionerTokenManager.currentInstance.mode = mode;
+          VisionerTokenManager.currentInstance.render({ force: true });
         }
-        TokenVisibilityManager.currentInstance.bringToTop();
-        return TokenVisibilityManager.currentInstance;
+        VisionerTokenManager.currentInstance.bringToTop();
+        return VisionerTokenManager.currentInstance;
       }
       // If different observer, update the existing dialog with new data and mode
-      TokenVisibilityManager.currentInstance.updateObserverWithMode(observer, mode);
-      TokenVisibilityManager.currentInstance.bringToTop();
-      return TokenVisibilityManager.currentInstance;
+      VisionerTokenManager.currentInstance.updateObserverWithMode(observer, mode);
+      VisionerTokenManager.currentInstance.bringToTop();
+      return VisionerTokenManager.currentInstance;
     }
     
-    const manager = new TokenVisibilityManager(observer, { mode });
+    const manager = new VisionerTokenManager(observer, { mode });
     manager.render({ force: true });
     return manager;
   }
@@ -216,6 +216,78 @@ export class Pf2eVisionerApi {
       return false;
     }
   }
+
+  /**
+   * Get cover state between two tokens
+   * @param {string} observerId - The ID of the observing token
+   * @param {string} targetId - The ID of the target token
+   * @returns {string|null} The cover state, or null if tokens not found
+   */
+  static getCover(observerId, targetId) {
+    try {
+      // Get tokens from IDs
+      const observerToken = canvas.tokens.get(observerId);
+      const targetToken = canvas.tokens.get(targetId);
+
+      if (!observerToken) {
+        console.error(`Observer token not found with ID: ${observerId}`);
+        return null;
+      }
+
+      if (!targetToken) {
+        console.error(`Target token not found with ID: ${targetId}`);
+        return null;
+      }
+
+      // Get cover using utility function
+      return getCoverBetween(observerToken, targetToken);
+    } catch (error) {
+      console.error('Error getting cover:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Set cover state between two tokens
+   * @param {string} observerId - The ID of the observing token
+   * @param {string} targetId - The ID of the target token
+   * @param {string} state - The cover state to set ('none', 'lesser', 'standard', 'greater')
+   * @param {Object} options - Optional configuration
+   * @returns {Promise<boolean>} Promise that resolves to true if successful, false otherwise
+   */
+  static async setCover(observerId, targetId, state, options = {}) {
+    try {
+      // Validate cover state
+      const validStates = ['none', 'lesser', 'standard', 'greater'];
+      if (!validStates.includes(state)) {
+        console.error(`Invalid cover state: ${state}. Valid states are: ${validStates.join(', ')}`);
+        return false;
+      }
+
+      // Get tokens from IDs
+      const observerToken = canvas.tokens.get(observerId);
+      const targetToken = canvas.tokens.get(targetId);
+
+      if (!observerToken) {
+        console.error(`Observer token not found with ID: ${observerId}`);
+        return false;
+      }
+
+      if (!targetToken) {
+        console.error(`Target token not found with ID: ${targetId}`);
+        return false;
+      }
+
+      // Set cover using utility function
+      await setCoverBetween(observerToken, targetToken, state, options);
+      await updateTokenVisuals();
+      
+      return true;
+    } catch (error) {
+      console.error('Error setting cover:', error);
+      return false;
+    }
+  }
   
   /**
    * Request clients to refresh their canvas
@@ -237,10 +309,17 @@ export class Pf2eVisionerApi {
     
     // Get visibility state between observer and target
     const visibilityState = this.getVisibility(observerId, targetId);
-    if (!visibilityState) return options;
+    if (visibilityState) {
+      // Add visibility-specific roll options
+      options.push(`per-token-visibility:target:${visibilityState}`);
+    }
     
-    // Add visibility-specific roll options
-    options.push(`per-token-visibility:target:${visibilityState}`);
+    // Get cover state between observer and target
+    const coverState = this.getCover(observerId, targetId);
+    if (coverState) {
+      // Add cover-specific roll options
+      options.push(`per-token-cover:target:${coverState}`);
+    }
     
     // Get observer token for capabilities check
     const observerToken = canvas.tokens.get(observerId);
@@ -279,13 +358,25 @@ export class Pf2eVisionerApi {
   static getVisibilityStates() {
     return ['observed', 'hidden', 'undetected', 'concealed'];
   }
+
+  /**
+   * Get all available cover states
+   * @returns {Array<string>} Array of valid cover states
+   */
+  static getCoverStates() {
+    return ['none', 'lesser', 'standard', 'greater'];
+  }
 }
 
 /**
  * Standalone function exports for internal use
  */
-export const openVisibilityManager = Pf2eVisionerApi.openVisibilityManager;
-export const openVisibilityManagerWithMode = Pf2eVisionerApi.openVisibilityManagerWithMode;
+export const openTokenManager = Pf2eVisionerApi.openTokenManager;
+export const openTokenManagerWithMode = Pf2eVisionerApi.openTokenManagerWithMode;
+
+// Legacy exports for backward compatibility
+export const openVisibilityManager = Pf2eVisionerApi.openTokenManager;
+export const openVisibilityManagerWithMode = Pf2eVisionerApi.openTokenManagerWithMode;
 
 /**
  * Main API export - this is what external modules should use

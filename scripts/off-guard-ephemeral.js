@@ -132,7 +132,18 @@ async function cleanupEphemeralEffects() {
             
             if (ephemeralEffects.length > 0) {
                 const effectIds = ephemeralEffects.map(e => e.id);
-                await actor.deleteEmbeddedDocuments("Item", effectIds);
+                const existingIds = effectIds.filter(id => !!actor.items.get(id));
+                if (existingIds.length > 0) {
+                    try {
+                        await actor.deleteEmbeddedDocuments("Item", existingIds);
+                    } catch (e) {
+                        for (const id of existingIds) {
+                            if (actor.items.get(id)) {
+                                try { await actor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+                            }
+                        }
+                    }
+                }
             }
         }
     } catch (error) {
@@ -154,7 +165,18 @@ export async function cleanupEphemeralEffectsForTarget(observerActor, hiddenActo
         
         if (ephemeralEffects.length > 0) {
             const effectIds = ephemeralEffects.map(e => e.id);
-            await observerActor.deleteEmbeddedDocuments("Item", effectIds);
+            const existingIds = effectIds.filter(id => !!observerActor.items.get(id));
+            if (existingIds.length > 0) {
+                try {
+                    await observerActor.deleteEmbeddedDocuments("Item", existingIds);
+                } catch (e) {
+                    for (const id of existingIds) {
+                        if (observerActor.items.get(id)) {
+                            try { await observerActor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+                        }
+                    }
+                }
+            }
 
         }
     } catch (error) {
@@ -180,16 +202,12 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
     // Determine which token gets the effect
     let effectReceiverActor, effectSourceActor;
     
-    // For rule elements, always put effects on the subject
-    if (options.direction) {
-        // Rule elements always put effects on the subject
-        options.effectTarget = 'subject';
-    } else if (!options.effectTarget) {
-        // Handle legacy direction parameter for backward compatibility
+    // Resolve effect target
+    if (!options.effectTarget) {
         if (options.direction === 'target_to_observer') {
             options.effectTarget = 'observer';
         } else {
-            // Default to 'subject' (target) if not specified
+            // Treat missing or 'observer_to_target' as subject by default
             options.effectTarget = 'subject';
         }
     }

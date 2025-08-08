@@ -40,6 +40,52 @@ export const VISIBILITY_STATES = {
 };
 
 /**
+ * Cover states supported by the module - aligned with PF2E cover rules
+ */
+export const COVER_STATES = {
+  none: {
+    label: 'PF2E_VISIONER.COVER_STATES.none',
+    pf2eCondition: null,
+    icon: 'fas fa-shield-slash',
+    color: '#4caf50',  // Green - no cover
+    bonusAC: 0,
+    bonusReflex: 0,
+    bonusStealth: 0,
+    canHide: false
+  },
+  lesser: {
+    label: 'PF2E_VISIONER.COVER_STATES.lesser',
+    pf2eCondition: 'lesser-cover',
+    icon: 'fa-regular fa-shield',
+    color: '#ffc107',  // Yellow - minor cover
+    bonusAC: 1,
+    bonusReflex: 0,
+    bonusStealth: 0,
+    canHide: false
+  },
+  standard: {
+    label: 'PF2E_VISIONER.COVER_STATES.standard',
+    pf2eCondition: 'cover',
+    icon: 'fas fa-shield-alt',
+    color: '#ff6600',  // Orange - significant cover
+    bonusAC: 2,
+    bonusReflex: 2,
+    bonusStealth: 2,
+    canHide: true
+  },
+  greater: {
+    label: 'PF2E_VISIONER.COVER_STATES.greater',
+    pf2eCondition: 'greater-cover',
+    icon: 'fas fa-shield',
+    color: '#f44336',  // Red - major cover
+    bonusAC: 4,
+    bonusReflex: 4,
+    bonusStealth: 4,
+    canHide: true
+  }
+};
+
+/**
  * Default module settings
  */
 export const DEFAULT_SETTINGS = {
@@ -201,9 +247,9 @@ export const UI_CONSTANTS = {
  * Keybinding configurations
  */
 export const KEYBINDINGS = {
-  openVisibilityManager: {
-    name: 'PF2E_VISIONER.KEYBINDINGS.OPEN_VISIBILITY_MANAGER.name',
-    hint: 'PF2E_VISIONER.KEYBINDINGS.OPEN_VISIBILITY_MANAGER.hint',
+  openTokenManager: {
+    name: 'PF2E_VISIONER.KEYBINDINGS.OPEN_TOKEN_MANAGER.name',
+    hint: 'PF2E_VISIONER.KEYBINDINGS.OPEN_TOKEN_MANAGER.hint',
     editable: [
       { key: 'KeyV', modifiers: ['Control', 'Shift'] }
     ]

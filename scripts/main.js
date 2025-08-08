@@ -32,6 +32,7 @@ Hooks.once("init", async () => {
     // Set up API
     const { api } = await import("./api.js");
     game.modules.get("pf2e-visioner").api = api;    
+    
     // Initialize detection wrapper
     initializeDetectionWrapper();
     
@@ -53,13 +54,24 @@ Hooks.once("init", async () => {
   }
 });
 
-// Initialize colorblind mode on ready
-Hooks.once("ready", () => {
+// Initialize colorblind mode and cleanup effects on ready
+Hooks.once("ready", async () => {
   try {
     // Apply colorblind mode if set
     const colorblindMode = game.settings.get("pf2e-visioner", "colorblindMode");
     if (colorblindMode !== "none") {
       document.body.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
+    }
+    
+    // Clean up any lingering cover effects from previous sessions
+    // Run this on a single authoritative client (GM only) to avoid race conditions
+    if (game.user.isGM) {
+      try {
+        const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+        await cleanupAllCoverEffects();
+      } catch (error) {
+        console.error('PF2E Visioner: Failed to clean up cover effects:', error);
+      }
     }
   } catch (error) {
     console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);

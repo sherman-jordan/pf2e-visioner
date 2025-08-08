@@ -27,8 +27,6 @@ export function injectChatAutomationStyles() {
             fixDialogScrolling(html);
         }
     });
-    
-    console.log('PF2E Visioner: Chat automation styles injected');
 }
 
 /**
@@ -56,8 +54,6 @@ function fixDialogScrolling(html) {
                 'z-index': '2'
             });
         }
-        
-        console.log('PF2E Visioner: Dialog scrolling fixed');
     }
 }
 
@@ -650,6 +646,7 @@ function getChatAutomationCSS() {
         .sneak-results-table .token-image img,
         .visibility-table .token-image img,
         .create-a-diversion-preview-dialog .visibility-table .token-image img,
+        .cover-table .token-image img,
         .visibility-table.sneak-results-table .token-image img {
             width: 32px !important;
             height: 32px !important;

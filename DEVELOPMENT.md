@@ -25,15 +25,19 @@ This guide helps developers set up and test the PF2E Visioner module.
 
 #### Basic Functionality
 - [ ] Module loads without errors (check browser console)
-- [ ] Visibility manager opens with `Ctrl+Shift+V`
+- [ ] Token manager opens with `Ctrl+Shift+V`
 - [ ] Token HUD shows eye icon when token is selected
-- [ ] Context menu shows "Manage Token Visibility" option
+- [ ] Context menu shows "Manage Token Visibility and Cover" option
 
 #### UI Testing
 - [ ] Observer info displays correctly at top
+- [ ] Tab navigation works between Visibility and Cover tabs
 - [ ] Bulk action buttons work for all visibility states
+- [ ] Bulk action buttons work for all cover states
 - [ ] Token table shows all scene tokens except observer
 - [ ] Dropdown menus update visibility states
+- [ ] Dropdown menus update cover states
+- [ ] Cover legend displays mechanical effects correctly
 - [ ] Apply/Reset/Cancel buttons function properly
 
 #### Visual Effects Testing
@@ -44,9 +48,12 @@ This guide helps developers set up and test the PF2E Visioner module.
 - [ ] Concealed tokens become dimmed (0.7 alpha)
 - [ ] Invisible tokens disappear completely (0.0 alpha)
 - [ ] Visual indicators appear on tokens (if enabled)
+- [ ] Cover indicators show correct icons and colors
+- [ ] Cover states display mechanical effects in tooltips
 
 #### Data Persistence
 - [ ] Visibility settings save when scene is reloaded
+- [ ] Cover settings save when scene is reloaded
 - [ ] Settings persist across FoundryVTT restarts
 
 #### Rule Elements Integration
@@ -56,7 +63,8 @@ This guide helps developers set up and test the PF2E Visioner module.
 - [ ] Attack rolls respect flat check requirements
 - [ ] Visual effects maintain PF2E-consistent appearance
 - [ ] Multiple observer tokens can have different visibility maps
-- [ ] Deleting tokens cleans up their visibility data
+- [ ] Multiple observer tokens can have different cover maps
+- [ ] Deleting tokens cleans up their visibility and cover data
 
 #### PF2E Integration
 - [ ] Auto-apply conditions setting works (when enabled)
@@ -93,8 +101,8 @@ The module is now organized into multiple files for better maintainability:
 - `scripts/main.js` - Entry point and initialization
 - `scripts/constants.js` - Configuration and constants
 - `scripts/api.js` - Public API and core functionality
-- `scripts/visibility-manager.js` - ApplicationV2 UI component
-- `scripts/visibility-effects.js` - Visual effects management
+- `scripts/token-manager.js` - ApplicationV2 UI component (renamed from visibility-manager.js)
+- `scripts/visual-effects.js` - Visual effects management
 - `scripts/hooks.js` - FoundryVTT hooks registration
 - `scripts/settings.js` - Settings and keybindings
 - `scripts/utils.js` - Utility functions

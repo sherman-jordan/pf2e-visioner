@@ -52,16 +52,6 @@ export function onRenderChatMessage(message, html) {
                 const flg = message?.flags?.pf2e?.target;
                 targetId = flg?.token || null;
             }
-            try {
-                const currentTargets = Array.from(game.user.targets || []).map(t => t?.id);
-                console.log(`${MODULE_TITLE}: Player auto-sending Point Out request`, {
-                    messageId: actionData.messageId,
-                    actorTokenId: actionData.actor?.id,
-                    currentTargets,
-                    contextTarget: actionData.context?.target,
-                    resolvedTargetId: targetId
-                });
-            } catch (_) {}
             requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId);
         } catch (e) {
             console.warn(`${MODULE_TITLE}: Failed to auto-forward Point Out to GM:`, e);
@@ -897,16 +887,6 @@ async function previewActionResults(actionData) {
                 const flg = msg?.flags?.pf2e?.target;
                 targetId = flg?.token || null;
             }
-            try {
-                const currentTargets = Array.from(game.user.targets || []).map(t => t?.id);
-                console.log(`${MODULE_TITLE}: Player sending Point Out request`, {
-                    messageId: actionData.messageId,
-                    actorTokenId: actionData.actor?.id,
-                    currentTargets,
-                    contextTarget: actionData.context?.target,
-                    resolvedTargetId: targetId
-                });
-            } catch (_) {}
             requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId);
             return;
         }

@@ -23,15 +23,6 @@ import {
  */
 export function discoverSeekTargets(seekerToken, encounterOnly = false, templateRadiusFeet = null, templateCenter = null) {
     if (!seekerToken) return [];
-    try {
-        console.log(`[${MODULE_ID}] discoverSeekTargets`, {
-            seekerTokenId: seekerToken?.id,
-            encounterOnly,
-            templateRadiusFeet,
-            templateCenter
-        });
-    } catch (_) {}
-    
     const targets = [];
     const isInCombat = hasActiveEncounter();
     const limitRangeInCombat = game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
@@ -180,14 +171,6 @@ export async function previewSeekResults(actionData) {
         ui.notifications.error(`${MODULE_TITLE}: Invalid seek data - cannot preview results`);
         return;
     }
-    try {
-        console.log(`[${MODULE_ID}] previewSeekResults start`, {
-            actorTokenId: actionData.actor?.id,
-            hasExplicitTemplate: !!(actionData.seekTemplateCenter && actionData.seekTemplateRadiusFeet),
-            seekTemplateCenter: actionData.seekTemplateCenter,
-            seekTemplateRadiusFeet: actionData.seekTemplateRadiusFeet
-        });
-    } catch (_) {}
     
     // Check if range limitation is active
     const isInCombat = hasActiveEncounter();
@@ -252,14 +235,6 @@ export async function previewSeekResults(actionData) {
     }
 
     const targets = discoverSeekTargets(actionData.actor, false, templateRadiusFeet, templateCenter);
-    try {
-        console.log(`[${MODULE_ID}] previewSeekResults discovered targets`, {
-            count: targets.length,
-            usingTemplate: !!(templateRadiusFeet != null && templateCenter),
-            templateRadiusFeet,
-            templateCenter
-        });
-    } catch (_) {}
     
     if (targets.length === 0) {
         // No need for notification, just silently return

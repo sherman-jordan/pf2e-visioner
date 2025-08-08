@@ -1,0 +1,102 @@
+/*
+ * Token Manager UI Improvements
+ * Modern, compact UI for the token manager
+ */
+
+/* Icon-only tab navigation */
+
+.visioner-token-manager { position: relative; width: 100%; }
+
+.visioner-token-manager .icon-tab-navigation {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+}
+
+.icon-tab-button {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 16px;
+}
+
+.icon-tab-button:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+}
+
+.icon-tab-button.active {
+  background-color: var(--pf2e-visioner-primary);
+  color: white;
+  border-color: var(--pf2e-visioner-primary);
+  box-shadow: 0 0 8px var(--color-shadow-highlight);
+}
+
+/* Compact legend styles */
+.compact-legend {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.compact-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  cursor: default;
+  position: relative;
+}
+
+.compact-legend .legend-item i {
+  font-size: 14px;
+}
+
+.compact-legend .legend-item span {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.compact-legend .bonus-badge {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Adjust the observer info section */
+.observer-info {
+  padding-bottom: 0;
+}
+
+/* Adjust tab content to compensate for the moved legend */
+.tab-content {
+  margin-top: 0;
+}
+
+/* Make the tables take up more space */
+.tables-content {
+  max-height: calc(100vh - 280px);
+}

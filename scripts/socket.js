@@ -65,16 +65,12 @@ function pointOutHandler(...args) {
  */
 export function requestGMOpenPointOut(pointerTokenId, targetTokenId, messageId) {
   if (!visionerSocket) return;
-  try {
-    console.log(`[${MODULE_ID}] requestGMOpenPointOut`, { pointerTokenId, targetTokenId, messageId, userId: game.userId });
-  } catch (_) {}
   visionerSocket.executeAsGM(POINTOUT_REQUEST_CHANNEL, { pointerTokenId, targetTokenId, messageId, userId: game.userId });
 }
 
 async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId, userId }) {
   try {
     if (!game.user.isGM) return;
-    console.log(`[${MODULE_ID}] pointOutRequestHandler`, { pointerTokenId, targetTokenId, messageId, fromUser: userId });
     const pointerToken = canvas.tokens.get(pointerTokenId);
     if (!pointerToken) return;
     // Resolve target token: prefer provided tokenId; otherwise, fall back to message PF2e flags
@@ -175,16 +171,12 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
  */
 export function requestGMOpenSeekWithTemplate(actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult) {
   if (!visionerSocket) return;
-  try {
-    console.log(`[${MODULE_ID}] requestGMOpenSeekWithTemplate`, { actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult, userId: game.userId });
-  } catch (_) {}
   visionerSocket.executeAsGM(SEEK_TEMPLATE_CHANNEL, { actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult, userId: game.userId });
 }
 
 async function seekTemplateHandler({ actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult, userId }) {
   try {
     if (!game.user.isGM) return; // Only GM handles
-    console.log(`[${MODULE_ID}] seekTemplateHandler received`, { actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult, fromUser: userId });
     const actorToken = canvas.tokens.get(actorTokenId);
     if (!actorToken) return;
 

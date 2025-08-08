@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0] - 2025-08-08
+
+### Visioner Token Manager (Visibility & Cover)
+- Reworked Apply actions:
+  - Apply Current now applies the active type (Visibility or Cover) for BOTH modes (Observer → Targets and Targets → Observer).
+  - Apply Both now applies BOTH types for BOTH modes in one click.
+- States persist reliably after changing type:
+  - All map writes now merge into existing maps instead of overwriting.
+  - Writes use `document.update({ flags... })` for stability.
+  - Dialog refresh re-reads maps from flags on each render.
+- Corrected table sorting per type (ally\npc):
+  - Visibility order: Observed → Concealed → Hidden → Undetected.
+  - Cover order: None → Lesser → Standard → Greater.
+
+
 All notable changes to the PF2E Visioner module will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

@@ -1,7 +1,8 @@
 /**
  * Visual Effects Handler
- * Handles token visual updates and refresh operations
+ * Handles token visual updates and refresh operations for both visibility and cover
  */
+
 
 /**
  * Update token visuals - now mostly handled by detection wrapper
@@ -9,19 +10,32 @@
  */
 export async function updateTokenVisuals() {
   if (!canvas?.tokens) return;
-  
-  // Check if Dice So Nice is currently animating to avoid interference
-  if (isDiceSoNiceAnimating()) {
-    setTimeout(() => updateTokenVisuals(), 500);
-    return;
-  }
-  
-  // The detection wrapper handles most of the work now
-  // We just need to refresh tokens to trigger the detection system
-  for (const token of canvas.tokens.placeables) {
-    if (token.visible) {
-      token.refresh();
-    }
+  if (isDiceSoNiceAnimating()) { setTimeout(() => updateTokenVisuals(), 500); return; }
+  for (const token of canvas.tokens.placeables) { if (token.visible) token.refresh(); }
+}
+
+/**
+ * Targeted updates for performance and correctness. Only applies effects to the provided pairs.
+ * @param {Array<{observerId:string,targetId:string,visibility?:string,cover?:string}>} pairs
+ */
+export async function updateSpecificTokenPairs(pairs) {
+  if (!Array.isArray(pairs) || pairs.length === 0) return;
+  // Apply only changed visibility/cover per pair
+  for (const p of pairs) {
+    const observer = canvas.tokens.get(p.observerId);
+    const target = canvas.tokens.get(p.targetId);
+    if (!observer || !target) continue;
+    // We do not draw custom visibility rings; detection/engine visuals will handle it
+    // Cover effect only for GM
+    try {
+      if (game.user.isGM && p.cover) {
+        const { applyCoverCondition } = await import('./cover-effects.js');
+        await applyCoverCondition(target, observer, p.cover);
+      }
+    } catch (_) {}
+    // Light refresh of the two tokens
+    try { observer.refresh(); } catch (_) {}
+    try { target.refresh(); } catch (_) {}
   }
 }
 

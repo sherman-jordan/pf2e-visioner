@@ -1,22 +1,32 @@
 {
   "PF2E_VISIONER": {
     "MODULE_TITLE": "PF2E Visioner",
-    "VISIBILITY_MANAGER": {
-      "TITLE": "Token Visibility Manager",
+    "TOKEN_MANAGER": {
+      "TITLE": "Visioner Token Manager",
       "OBSERVER": "Observer Token",
       "TARGET": "Target Token",
       "VISIBILITY_STATE": "Visibility State",
+      "COVER_STATE": "Cover State",
       "NO_TOKENS": "No tokens available in this scene",
-      "APPLY": "Apply All Changes",
+      "APPLY": "Apply Current",
+      "APPLY_BOTH": "Apply Both",
       "CANCEL": "Cancel",
-      "RESET": "Reset Mode Changes",
-      "BULK_ACTIONS": "Bulk Actions"
+      "RESET": "Reset Mode",
+      "BULK_ACTIONS": "Bulk Actions",
+      "VISIBILITY_TAB": "Visibility",
+      "COVER_TAB": "Cover"
     },
     "VISIBILITY_STATES": {
       "observed": "Observed",
-          "hidden": "Hidden",
-    "undetected": "Undetected", 
-    "concealed": "Concealed"
+      "hidden": "Hidden",
+      "undetected": "Undetected", 
+      "concealed": "Concealed"
+    },
+    "COVER_STATES": {
+      "none": "No Cover",
+      "lesser": "Lesser Cover",
+      "standard": "Standard Cover",
+      "greater": "Greater Cover"
     },
     "VISUAL_EFFECTS": {
       "HIDDEN_OVERLAY": "This token is hidden from your view",
@@ -33,14 +43,24 @@
       "UNDETECTED_TOOLTIP": "Undetected: You don't know the target's location. You are off-guard to the target and you can't easily target it. Using the Seek action can help find an undetected creature",
       "VISIBLE_TOOLTIP": "Visible: No penalties or effects",
       "BLINDED_OVERRIDE": "All creatures appear Hidden due to Blinded condition",
-      "DAZZLED_OVERRIDE": "All creatures appear Concealed due to Dazzled condition"
+      "DAZZLED_OVERRIDE": "All creatures appear Concealed due to Dazzled condition",
+      "NO_COVER_TOOLTIP": "No Cover: No bonuses or penalties",
+      "LESSER_COVER_TOOLTIP": "Lesser Cover: +1 circumstance bonus to AC",
+      "STANDARD_COVER_TOOLTIP": "Standard Cover: +2 circumstance bonus to AC, Reflex saves, and Stealth checks. Can Hide behind this cover.",
+      "GREATER_COVER_TOOLTIP": "Greater Cover: +4 circumstance bonus to AC, Reflex saves, and Stealth checks. Can Hide behind this cover."
     },
     "CONTEXT_MENU": {
+      "MANAGE_TOKEN": "Manage Token",
       "MANAGE_VISIBILITY": "Manage Token Visibility",
+      "MANAGE_COVER": "Manage Token Cover",
       "QUICK_HIDDEN": "Set as Hidden",
       "QUICK_UNDETECTED": "Set as Undetected",
       "QUICK_CONCEALED": "Set as Concealed",
-      "QUICK_OBSERVED": "Set as Observed"
+      "QUICK_OBSERVED": "Set as Observed",
+      "QUICK_NO_COVER": "Set No Cover",
+      "QUICK_LESSER_COVER": "Set Lesser Cover",
+      "QUICK_STANDARD_COVER": "Set Standard Cover",
+      "QUICK_GREATER_COVER": "Set Greater Cover"
     },
     "NOTIFICATIONS": {
       "NO_OBSERVER_SELECTED": "Please select an observer token first",
@@ -201,6 +221,10 @@
       "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens"
     },
     "KEYBINDINGS": {
+      "OPEN_TOKEN_MANAGER": {
+        "name": "Open Visioner Token Manager",
+        "hint": "Open the token manager for selected tokens"
+      },
       "OPEN_VISIBILITY_MANAGER": {
         "name": "Open Token Visibility Manager",
         "hint": "Open the visibility manager for selected tokens"

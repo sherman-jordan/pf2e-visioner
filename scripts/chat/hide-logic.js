@@ -3,8 +3,8 @@
  * Handles Hide-specific calculations, target discovery, and result processing
  */
 
-import { MODULE_TITLE } from '../constants.js';
-import { getVisibilityBetween } from '../utils.js';
+import { MODULE_ID, MODULE_TITLE } from '../constants.js';
+import { getCoverBetween, getVisibilityBetween } from '../utils.js';
 import { HidePreviewDialog } from './hide-preview-dialog.js';
 import {
     calculateTokenDistance,
@@ -25,6 +25,7 @@ export function discoverHideObservers(hidingToken, encounterOnly = false, applyA
     if (!hidingToken) return [];
     
     const observers = [];
+    const integrate = game.settings.get(MODULE_ID, 'integrateCoverVisibility');
     
     // Find all tokens that can currently see the hiding token
     for (const token of canvas.tokens.placeables) {
@@ -44,11 +45,18 @@ export function discoverHideObservers(hidingToken, encounterOnly = false, applyA
         // Check current visibility state - Hide only affects tokens that can currently see you
         const currentVisibility = getVisibilityBetween(token, hidingToken);
         
-        // For Hide, we need to find tokens that can see the hiding token as observed or concealed
-        // If no explicit visibility flag is set, we should assume they can see the token (default observed)
-        // Only skip if explicitly set to hidden or undetected
+        // For Hide, skip if explicitly set to hidden or undetected
         if (currentVisibility === 'hidden' || currentVisibility === 'undetected') {         
             continue;
+        }
+
+        // If integration is enabled, require Standard or Greater cover from this observer
+        if (integrate) {
+            const cover = getCoverBetween(token, hidingToken);
+            if (!(cover === 'standard' || cover === 'greater')) {
+                // Not sufficient cover to Hide against this observer
+                continue;
+            }
         }
         
         // Get the observer's Perception DC

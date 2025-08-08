@@ -8,7 +8,7 @@ import { requestGMOpenPointOut, requestGMOpenSeekWithTemplate } from '../socket.
 import { getVisibilityBetween } from '../utils.js';
 import { previewConsequencesResults } from './consequences-logic.js';
 import { previewDiversionResults } from './create-a-diversion-logic.js';
-import { previewHideResults } from './hide-logic.js';
+import { analyzeHideOutcome, discoverHideObservers, previewHideResults } from './hide-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
 import { discoverSeekTargets, previewSeekResults } from './seek-logic.js';
 import { previewSneakResults } from './sneak-logic.js';
@@ -496,20 +496,17 @@ function checkPointOutTargets(actionData, potentialTargets) {
  * @returns {boolean} True if there are valid targets, false otherwise
  */
 function checkHideTargets(actionData, potentialTargets) {
-    // For hide, check if there are any tokens that can currently see the hiding token
-    for (const target of potentialTargets) {
-        // Check current visibility state - Hide only affects tokens that can currently see you
-        const currentVisibility = getVisibilityBetween(target, actionData.actor);
+    // Use same discovery logic as the Hide preview to avoid mismatches.
+    const observers = discoverHideObservers(actionData.actor, false, false);
+    if (observers.length === 0) return false;
 
-        // For Hide, we need to find tokens that can see the hiding token as observed or concealed
-        // Skip if explicitly set to hidden or undetected
-        if (currentVisibility !== 'hidden' && currentVisibility !== 'undetected') {
-            return true;
-        }
+    // If we have a roll, also ensure at least one observer would change visibility
+    if (actionData.roll) {
+        const outcomes = observers.map(o => analyzeHideOutcome(actionData, o));
+        const changed = outcomes.some(o => o.changed);
+        if (!changed) return false;
     }
-
-    // No valid targets found
-    return false;
+    return true;
 }
 
 /**

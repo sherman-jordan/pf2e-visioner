@@ -5,7 +5,7 @@
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityMap } from '../utils.js';
+import { getCoverBetween, getVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
 import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter, shouldFilterAlly } from './shared-utils.js';
 
@@ -122,7 +122,16 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         const context = await super._prepareContext(options);
         
         // Get filtered outcomes using helper method
-        const filteredOutcomes = this.getFilteredOutcomes();
+        let filteredOutcomes = this.getFilteredOutcomes();
+
+        // If integration is enabled, annotate each row with cover info
+        const integrate = game.settings.get(MODULE_ID, 'integrateCoverVisibility');
+        if (integrate) {
+            filteredOutcomes = filteredOutcomes.map(o => ({
+                ...o,
+                cover: getCoverBetween(o.target, this.actorToken)
+            }));
+        }
         
         // Show notification if encounter filter results in empty list
         if (this.encounterOnly && hasActiveEncounter() && filteredOutcomes.length === 0) {
@@ -142,6 +151,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
                 availableStates,
                 overrideState,
                 hasActionableChange,
+                cover: outcome.cover,
                 calculatedOutcome: outcome.newVisibility, // For highlighting the calculated result
                 tokenImage: outcome.target.texture?.src || outcome.target.document?.texture?.src,
                 outcomeClass: this.getOutcomeClass(outcome.outcome),

@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.1] - 2025-08-08
+
+### Added
+- New world setting: Integrate Cover with Visibility Rules (`integrateCoverVisibility`). When enabled, certain actions obey cover prerequisites. Specifically, Hide is only available if the acting token has at least Standard Cover from an observer.
+
+### Changed
+- Chat automation now hides the “Open Hide Results” button when no actionable changes are possible after applying visibility and cover checks (and the actual roll outcome when present).
+- Hide observer discovery uses the same cover gating as the UI check to ensure consistency.
+
+---
+
 ## [1.3.0] - 2025-08-08
 
 ### Visioner Token Manager (Visibility & Cover)

@@ -215,6 +215,10 @@
       "BLOCK_PLAYER_TARGET_TOOLTIPS": {
         "name": "Block Target Tooltips for Players",
         "hint": "When enabled, players won't see tooltips when hovering over tokens in target mode (how others see the hovered token). They can still see tooltips when holding O key or pressing Alt."
+      },
+      "INTEGRATE_COVER_VISIBILITY": {
+        "name": "Integrate Cover with Visibility Rules",
+        "hint": "When enabled, certain actions follow cover prerequisites. For example, Hide is only allowed if the acting token has at least Standard Cover from an observer."
       }
     },
     "UI": {

@@ -226,6 +226,16 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
   
+  // Integration: Cover ↔ Visibility rules
+  integrateCoverVisibility: {
+    name: 'PF2E_VISIONER.SETTINGS.INTEGRATE_COVER_VISIBILITY.name',
+    hint: 'PF2E_VISIONER.SETTINGS.INTEGRATE_COVER_VISIBILITY.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true
+  },
+  
   debug: {
     name: 'Debug Mode',
     hint: 'Enable detailed console logging for troubleshooting',

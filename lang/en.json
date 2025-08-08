@@ -168,9 +168,17 @@
         "name": "Limit Seek Range in Combat",
         "hint": "When enabled, Seek actions in combat will only detect targets within the specified distance"
       },
+      "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
+        "name": "Limit Seek Range out of Combat",
+        "hint": "When enabled, Seek actions outside of combat will only detect targets within the specified distance"
+      },
       "CUSTOM_SEEK_DISTANCE": {
         "name": "Seek Range Value",
         "hint": "Set the maximum distance (in feet) for Seek actions when range limitation is enabled"
+      },
+      "CUSTOM_SEEK_DISTANCE_OOC": {
+        "name": "Seek Range Value (Out of Combat)",
+        "hint": "Set the maximum distance (in feet) for Seek actions when out-of-combat range limitation is enabled"
       },
       "USE_HUD_BUTTON": {
         "name": "Use Token HUD Button",

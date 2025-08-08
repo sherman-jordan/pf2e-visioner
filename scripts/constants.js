@@ -123,9 +123,29 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  // Seek range limitation outside of combat
+  limitSeekRangeOutOfCombat: {
+    name: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE_OUT_OF_COMBAT.name',
+    hint: 'PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE_OUT_OF_COMBAT.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+
   customSeekDistance: {
     name: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE.name',
     hint: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE.hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 30
+  },
+
+  // Separate distance for out-of-combat seeks
+  customSeekDistanceOutOfCombat: {
+    name: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE_OOC.name',
+    hint: 'PF2E_VISIONER.SETTINGS.CUSTOM_SEEK_DISTANCE_OOC.hint',
     scope: 'world',
     config: true,
     type: Number,

@@ -7,12 +7,12 @@ import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { SeekPreviewDialog } from './seek-preview-dialog.js';
 import {
-  calculateTokenDistance,
-  determineOutcome,
-  extractStealthDC,
-  hasActiveEncounter,
-  isTokenInEncounter,
-  shouldFilterAlly
+    calculateTokenDistance,
+    determineOutcome,
+    extractStealthDC,
+    hasActiveEncounter,
+    isTokenInEncounter,
+    shouldFilterAlly
 } from './shared-utils.js';
 
 /**
@@ -27,8 +27,10 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false) {
     const targets = [];
     const isInCombat = hasActiveEncounter();
     const limitRangeInCombat = game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
+    const limitRangeOutOfCombat = game.settings.get(MODULE_ID, 'limitSeekRangeOutOfCombat');
     const customSeekDistance = game.settings.get(MODULE_ID, 'customSeekDistance');
-    const maxSeekRange = customSeekDistance; // Use the custom distance setting
+    const customSeekDistanceOOC = game.settings.get(MODULE_ID, 'customSeekDistanceOutOfCombat');
+    const maxSeekRange = isInCombat ? customSeekDistance : customSeekDistanceOOC; // Use appropriate distance
         
     // Find all tokens that are hidden or undetected to the seeker
     for (const token of canvas.tokens.placeables) {
@@ -44,8 +46,9 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false) {
         // Calculate distance early for range limiting
         const distance = calculateTokenDistance(seekerToken, token);
         
-        // Apply range limitation in combat if setting is enabled
-        if (isInCombat && limitRangeInCombat && distance > maxSeekRange) {
+        // Apply range limitation based on context and settings
+        const isRangeLimited = (isInCombat && limitRangeInCombat) || (!isInCombat && limitRangeOutOfCombat);
+        if (isRangeLimited && distance > maxSeekRange) {
             // Skip this token as it's out of range
             continue;
         }
@@ -149,12 +152,15 @@ export async function previewSeekResults(actionData) {
     // Check if range limitation is active
     const isInCombat = hasActiveEncounter();
     const limitRangeInCombat = game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
-    const rangeRestricted = isInCombat && limitRangeInCombat;
+    const limitRangeOutOfCombat = game.settings.get(MODULE_ID, 'limitSeekRangeOutOfCombat');
+    const rangeRestricted = (isInCombat && limitRangeInCombat) || (!isInCombat && limitRangeOutOfCombat);
     
-    // If in combat and range is limited, show a notification with custom distance
+    // If range is limited, show a notification with custom distance
     if (rangeRestricted) {
-        const customSeekDistance = game.settings.get(MODULE_ID, 'customSeekDistance');
-        ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.RANGE_LIMIT_ACTIVE_CUSTOM', {distance: customSeekDistance})}`);
+        const distance = isInCombat
+            ? game.settings.get(MODULE_ID, 'customSeekDistance')
+            : game.settings.get(MODULE_ID, 'customSeekDistanceOutOfCombat');
+        ui.notifications.info(`${MODULE_TITLE}: ${game.i18n.format('PF2E_VISIONER.SEEK_AUTOMATION.RANGE_LIMIT_ACTIVE_CUSTOM', {distance})}`);
     }
     
     const targets = discoverSeekTargets(actionData.actor);

@@ -11,6 +11,7 @@ import { previewDiversionResults } from './create-a-diversion-logic.js';
 import { analyzeHideOutcome, discoverHideObservers, previewHideResults } from './hide-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
 import { discoverSeekTargets, previewSeekResults } from './seek-logic.js';
+import { shouldFilterAlly } from './shared-utils.js';
 import { previewSneakResults } from './sneak-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
@@ -138,9 +139,14 @@ function extractActionData(message) {
         context.slug === 'sneak'
     )) || (message.flavor?.toLowerCase().includes('sneak') && !message.flavor?.toLowerCase().includes('create a diversion')));
 
-    // Damage roll from hidden/undetected token detection
-    const isDamageRoll = context?.type === 'damage-roll' ||
-        message.flags?.pf2e?.damageRoll ||
+    // Damage roll from hidden/undetected token detection (robust)
+    const firstRoll = message.rolls?.[0];
+    const isDamageRoll = (context?.type === 'damage-roll') ||
+        (message.flags?.pf2e?.damageRoll) ||
+        (firstRoll && (firstRoll.isDamage === true ||
+            (typeof DamageRoll !== 'undefined' && firstRoll instanceof DamageRoll) ||
+            (typeof CONFIG?.Dice?.DamageRoll !== 'undefined' && firstRoll instanceof CONFIG.Dice.DamageRoll) ||
+            (typeof firstRoll?.options?.type === 'string' && firstRoll.options.type.includes('damage')))) ||
         message.content?.includes('Damage Roll');
 
     // Check if the token is hidden or undetected
@@ -153,23 +159,43 @@ function extractActionData(message) {
     } else if (message.speaker?.token && canvas?.tokens?.get) {
         actorToken = canvas.tokens.get(message.speaker.token);
     }
+    // Fallback: resolve from speaker.actor to an active token if none found above
+    if (!actorToken && message.speaker?.actor) {
+        try {
+            const speakerActor = game.actors?.get?.(message.speaker.actor);
+            const activeTokens = speakerActor?.getActiveTokens?.(true, true) || [];
+            actorToken = activeTokens[0] || null;
+        } catch (_) {}
+    }
+    // Fallback: resolve from PF2E origin uuid when available
+    if (!actorToken && origin?.uuid && typeof fromUuidSync === 'function') {
+        try {
+            const originDoc = fromUuidSync(origin.uuid);
+            const originActor = originDoc?.actor ?? originDoc?.parent?.actor ?? null;
+            const activeTokens = originActor?.getActiveTokens?.(true, true) || [];
+            actorToken = activeTokens[0] || null;
+        } catch (_) {}
+    }
 
     // Check for conditions first
     if (actorToken && actorToken.actor) {
-        const conditions = actorToken.actor.conditions?.conditions || [];
-        isHiddenOrUndetectedToken = conditions.some(c =>
-            c.slug === 'hidden' || c.slug === 'undetected'
-        );
+        // Prefer v13 itemTypes.condition when available, fallback to legacy collection
+        const itemTypeConditions = actorToken.actor.itemTypes?.condition || [];
+        const legacyConditions = actorToken.actor.conditions?.conditions || [];
+        isHiddenOrUndetectedToken = itemTypeConditions.some(c => c?.slug === 'hidden' || c?.slug === 'undetected')
+            || legacyConditions.some(c => c?.slug === 'hidden' || c?.slug === 'undetected');
     }
 
     // If no conditions found, check for effect flags in the message
     if (!isHiddenOrUndetectedToken && context?.options) {
-        // Look for any option that includes "effect:hidden" or "effect:undetected" or just "hidden-from"
+        // Look for any option that includes hidden/undetected indicators
         isHiddenOrUndetectedToken = context.options.some(option =>
             option.includes('effect:hidden-from') ||
             option.includes('effect:undetected-from') ||
             option.includes('hidden-from') ||
-            option.includes('undetected-from')
+            option.includes('undetected-from') ||
+            option.includes('self:hidden') ||
+            option.includes('self:undetected')
         );
 
         // Also check origin rollOptions if available
@@ -178,21 +204,25 @@ function extractActionData(message) {
                 option.includes('effect:hidden-from') ||
                 option.includes('effect:undetected-from') ||
                 option.includes('hidden-from') ||
-                option.includes('undetected-from')
+                option.includes('undetected-from') ||
+                option.includes('self:hidden') ||
+                option.includes('self:undetected')
             );
         }
 
-        // Check for self:effect:hidden patterns
+        // Check for self hidden patterns
         if (!isHiddenOrUndetectedToken && context.options) {
             isHiddenOrUndetectedToken = context.options.some(option =>
                 option.includes('self:effect:hidden') ||
-                option.includes('self:effect:undetected')
+                option.includes('self:effect:undetected') ||
+                option.includes('self:hidden') ||
+                option.includes('self:undetected')
             );
         }
     }
 
-    // Combine damage roll and hidden/undetected status
-    const isConsequencesAction = isDamageRoll && isHiddenOrUndetectedToken;
+    // For consequences, any damage roll may qualify; later we verify hidden/undetected vs observers
+    const isConsequencesAction = isDamageRoll;
 
     // Early return if no supported action is detected
     if (!isSeekAction && !isPointOutAction && !isHideAction && !isSneakAction &&
@@ -200,9 +230,11 @@ function extractActionData(message) {
         return null;
     }
 
-    // For Seek, Hide, Sneak, Create a Diversion, and Consequences, we need rolls and token
-    if ((isSeekAction || isHideAction || isSneakAction || isCreateADiversionAction || isConsequencesAction) &&
+    // For Seek, Hide, Sneak, and Create a Diversion, we need both a roll and a token
+    if ((isSeekAction || isHideAction || isSneakAction || isCreateADiversionAction) &&
         (!message.rolls?.length || (!actorToken))) return null;
+    // For Consequences, only a token is required; roll is optional
+    if (isConsequencesAction && !actorToken) return null;
 
     // For Point Out, we need token but not necessarily rolls
     if (isPointOutAction && !actorToken) return null;
@@ -240,10 +272,34 @@ function extractActionData(message) {
     // Extract damage data for consequences
     let damageData = null;
     if (isConsequencesAction) {
+        // Derive hidden/undetected indicator from flags/options for fallback logic in the dialog
+        const contextOptions = context?.options || [];
+        const originOptions = origin?.rollOptions || [];
+        const indicatesUndetected = [...contextOptions, ...originOptions].some(opt =>
+            opt.includes('effect:undetected-from') || opt.includes('undetected-from') || opt.includes('self:undetected')
+        );
+        const indicatesHidden = (!indicatesUndetected) && [...contextOptions, ...originOptions].some(opt =>
+            opt.includes('effect:hidden-from') || opt.includes('hidden-from') || opt.includes('self:hidden')
+        );
+
+        // Detect via actor conditions (v13 or legacy)
+        let attackerConditionIndicator = null;
+        try {
+            const itemConds = actorToken.actor?.itemTypes?.condition || [];
+            if (itemConds.some(c => c?.slug === 'undetected')) attackerConditionIndicator = 'undetected';
+            else if (itemConds.some(c => c?.slug === 'hidden')) attackerConditionIndicator = 'hidden';
+            else {
+                const legacyConds = actorToken.actor?.conditions?.conditions || [];
+                if (legacyConds.some(c => c?.slug === 'undetected')) attackerConditionIndicator = 'undetected';
+                else if (legacyConds.some(c => c?.slug === 'hidden')) attackerConditionIndicator = 'hidden';
+            }
+        } catch (_) {}
+
         damageData = {
             formula: message.rolls?.[0]?.formula || '',
             total: message.rolls?.[0]?.total || 0,
-            isCritical: message.flags?.pf2e?.context?.options?.includes('critical-hit') || false
+            isCritical: message.flags?.pf2e?.context?.options?.includes('critical-hit') || false,
+            hiddenIndicator: indicatesUndetected ? 'undetected' : (indicatesHidden ? 'hidden' : (attackerConditionIndicator || null))
         };
     }
 
@@ -285,11 +341,13 @@ function injectAutomationUI(message, html, actionData) {
         // Check if there are valid targets for this action
         const hasValidTargets = checkForValidTargets(actionData);
 
-        // If no valid targets, still allow GM to open results when a player provided a template with targets
+        // If no valid targets, still allow in special cases
         if (!hasValidTargets) {
             const pendingForGM = (actionData.actionType === 'seek' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.seekTemplate?.hasTargets))
                 || (actionData.actionType === 'point-out' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.pointOut?.hasTargets));
-            if (!pendingForGM) {
+            // For consequences, hide button when no valid targets, otherwise show as normal
+            const allowConsequencesForGM = actionData.actionType === 'consequences' ? false : false;
+            if (!pendingForGM && !allowConsequencesForGM) {
                 // Mark as processed to avoid repeated checks
                 processedMessages.add(message.id);
                 return;
@@ -379,34 +437,13 @@ function checkForValidTargets(actionData) {
 function checkConsequencesTargets(actionData, potentialTargets) {
     // For consequences, check if any tokens see the attacker as hidden/undetected
     for (const target of potentialTargets) {
-        // Skip tokens with the same disposition as the attacking token
-        if (target.document.disposition === actionData.actor.document.disposition) continue;
+        // Respect ally-filter setting instead of raw disposition
+        if (shouldFilterAlly(actionData.actor, target, 'enemies')) continue;
 
-        // Use the module's getVisibilityBetween function directly
+        // Use the module's per-token visibility map directly
         const visibility = getVisibilityBetween(target, actionData.actor);
         if (visibility === 'hidden' || visibility === 'undetected') {
             return true;
-        }
-
-        // Check roll options on the target
-        if (target.actor.getRollOptions) {
-            const rollOptions = target.actor.getRollOptions();
-            const hasHiddenOrUndetected = rollOptions.some(option =>
-                option.includes('target:hidden') ||
-                option.includes('target:undetected') ||
-                option.includes('hidden-from') ||
-                option.includes('undetected-from')
-            );
-            if (hasHiddenOrUndetected) return true;
-        }
-
-        // Check conditions on the attacking token
-        if (actionData.actor.actor) {
-            const conditions = actionData.actor.actor.conditions?.conditions || [];
-            const isHiddenOrUndetected = conditions.some(c =>
-                c.slug === 'hidden' || c.slug === 'undetected'
-            );
-            if (isHiddenOrUndetected) return true;
         }
     }
 

@@ -34,7 +34,7 @@ export class ConsequencesPreviewDialog extends foundry.applications.api.Applicat
             resizable: true
         },
         position: {
-            width: 430,
+            width: 520,
             height: 'auto'
         },
         actions: {

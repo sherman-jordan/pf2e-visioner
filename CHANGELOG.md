@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3] - 2025-08-09
+
+### Fixed
+- Damage Consequences: Only list targets that explicitly have the attacker as Hidden/Undetected; removed global condition fallback.
+- Damage Consequences button is hidden when no outcomes exist and shown when at least one target qualifies.
+- Token Manager/Visibility Manager: Reworked layout to a single outer scroll container; inner tables no longer create nested scrollbars.
+- Sticky footer no longer overlaps content; center area flexes and scrolls correctly.
+
 ## [1.3.2] - 2025-08-09
 
 ## Fixed

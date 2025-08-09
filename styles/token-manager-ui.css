@@ -5,7 +5,7 @@
 
 /* Icon-only tab navigation */
 
-.visioner-token-manager { position: relative; width: 100%; }
+.visioner-token-manager { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
 
 .visioner-token-manager .icon-tab-navigation {
   position: absolute;
@@ -91,12 +91,26 @@
   padding-bottom: 0;
 }
 
-/* Adjust tab content to compensate for the moved legend */
+/* Layout: make center content flex so footer never overlaps */
 .visioner-tab-content {
   margin-top: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow child overflow area to size correctly */
 }
 
-/* Make the tables take up more space */
-.tables-content {
-  max-height: calc(100vh - 280px);
+/* Scrollable tables area that respects footer height */
+.visioner-token-manager .tab-panel { display: none; }
+.visioner-token-manager .tab-panel.active { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.visioner-token-manager .tables-content { flex: 1; overflow-y: auto; padding-right: 2px; }
+
+/* Footer: stick to bottom of the window content without covering rows */
+.visioner-token-manager .sheet-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: var(--color-bg);
+  padding-top: 8px;
+  box-shadow: 0 -4px 8px rgba(0,0,0,0.2);
 }

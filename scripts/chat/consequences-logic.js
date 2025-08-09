@@ -3,8 +3,10 @@
  * Handles logic for consequences from damage rolls by hidden/undetected tokens
  */
 
-import { MODULE_ID, MODULE_TITLE } from '../constants.js';
+import { MODULE_TITLE } from '../constants.js';
+import { getVisibilityMap } from '../utils.js';
 import { ConsequencesPreviewDialog } from './consequences-preview-dialog.js';
+import { shouldFilterAlly } from './shared-utils.js';
 
 /**
  * Preview consequences from damage rolls by hidden/undetected tokens
@@ -19,16 +21,13 @@ export async function previewConsequencesResults(actionData) {
         // Find all potential targets (tokens that should see the attacking token)
         const potentialTargets = findPotentialTargets(attackingToken);
         
-        if (potentialTargets.length === 0) {
-            // No need for notification, just silently return
-            return;
-        }
+        // Always proceed to open the dialog, even with no potential targets, so the GM gets feedback
         
         // Get current visibility states for each target
         const outcomes = await Promise.all(potentialTargets.map(async (target) => {
             // IMPORTANT: For consequences dialog, we need to know how the TARGET sees the ATTACKER
             // This is the opposite direction from most other dialogs!
-            const currentVisibility = getVisibilityBetween(target, attackingToken);
+            const currentVisibility = await computeVisibilityBetween(target, attackingToken);
                         
             return {
                 target,
@@ -39,18 +38,11 @@ export async function previewConsequencesResults(actionData) {
         }));
                 
         // Filter to include only tokens where the attacking token is hidden or undetected from them
-        const hiddenOrUndetectedOutcomes = outcomes.filter(outcome => {
-            const isHiddenOrUndetected = outcome.currentVisibility === 'hidden' || outcome.currentVisibility === 'undetected';
-            return isHiddenOrUndetected;
-        });
-                
-        // Use the filtered outcomes
-        const filteredOutcomes = hiddenOrUndetectedOutcomes;
-        
-        if (filteredOutcomes.length === 0) {
-            // No need for notification, just silently return
-            return;
-        }
+        let filteredOutcomes = outcomes.filter(outcome => outcome.currentVisibility === 'hidden' || outcome.currentVisibility === 'undetected');
+
+        // Do NOT fall back to attacker global condition; rely solely on explicit per-observer visibility mapping
+
+        // Even if still no outcomes, still open an empty dialog to indicate no changes
         
         // Create dialog
         const dialog = new ConsequencesPreviewDialog(
@@ -75,25 +67,27 @@ export async function previewConsequencesResults(actionData) {
  * @returns {Array} Array of potential target tokens
  */
 function findPotentialTargets(attackingToken) {
-    // Get all tokens on the canvas
-    const allTokens = canvas.tokens.placeables;
+    // Get all tokens on the canvas (prefer placed tokens)
+    const allTokens = (canvas?.tokens?.placeables || []);
     
     // Filter out the attacking token and tokens without actors
-    return allTokens.filter(token => {
+    const results = allTokens.filter(token => {
         // Skip the attacking token itself
         if (token === attackingToken) return false;
         
         // Skip tokens without actors
         if (!token.actor) return false;
         
-        // Only include character and npc type tokens
-        if (token.actor.type !== 'character' && token.actor.type !== 'npc') return false;
-        
-        // Skip tokens with the same disposition as the attacking token
-        if (token.document.disposition === attackingToken.document.disposition) return false;
+        // Only include character, npc, or hazard type tokens
+        if (token.actor.type !== 'character' && token.actor.type !== 'npc' && token.actor.type !== 'hazard') return false;
+
+        // Optionally filter allies based on module setting (defaults to include allies)
+        if (shouldFilterAlly(attackingToken, token, 'enemies')) return false;
         
         return true;
     });
+    
+    return results;
 }
 
 /**
@@ -102,14 +96,14 @@ function findPotentialTargets(attackingToken) {
  * @param {Token} targetToken - The target token (the one being seen)
  * @returns {string} The visibility state
  */
-async function getVisibilityBetween(observerToken, targetToken) {
-    
-    // Try to use the module's API if available
-    if (game.modules.get(MODULE_ID)?.api?.getVisibilityBetween) {
-        const result = await game.modules.get(MODULE_ID).api.getVisibilityBetween(observerToken, targetToken);
-        return result;
-    }
-    
+async function computeVisibilityBetween(observerToken, targetToken) {
+    // First, consult the module's own per-token visibility map. If an explicit mapping exists,
+    // always respect it (even when it's 'observed') and do not fall back to heuristics.
+    try {
+        const map = getVisibilityMap(observerToken) || {};
+        const explicit = Object.prototype.hasOwnProperty.call(map, targetToken.document.id) ? map[targetToken.document.id] : undefined;
+        if (explicit !== undefined) return explicit;
+    } catch (_) {}
     // IMPORTANT: For consequences dialog, we need to check if the observer has any effects
     // that indicate the target is hidden or undetected from them
     
@@ -210,71 +204,34 @@ async function getVisibilityBetween(observerToken, targetToken) {
         return null;
     };
     
-    // Check if the target has general hidden/undetected condition
-    const checkTargetConditions = (target) => {
-        if (!target || !target.actor) return null;
-                
-        // Check for conditions using itemTypes.condition (more reliable)
-        if (target.actor.itemTypes?.condition) {
-            const conditions = target.actor.itemTypes.condition || [];
-            
-            // Check for undetected condition
-            if (conditions.some(c => c.slug === 'undetected')) {
-                return 'undetected';
-            }
-            
-            // Check for hidden condition
-            if (conditions.some(c => c.slug === 'hidden')) {
-                return 'hidden';
-            }
-            
-            // Check for concealed condition
-            if (conditions.some(c => c.slug === 'concealed')) {
-                return 'concealed';
-            }
-        }
-        
-        // Fallback to checking conditions through conditions property
-        if (target.actor.conditions?.conditions) {
-            const conditions = target.actor.conditions.conditions || [];
-            
-            // Check for undetected condition
-            if (conditions.some(c => c.slug === 'undetected')) {
-                return 'undetected';
-            }
-            
-            // Check for hidden condition
-            if (conditions.some(c => c.slug === 'hidden')) {
-                return 'hidden';
-            }
-            
-            // Check for concealed condition
-            if (conditions.some(c => c.slug === 'concealed')) {
-                return 'concealed';
-            }
-        }
-        
-        return null;
-    };
-    
     // First check if the observer has any effects indicating the target is hidden/undetected
     const observerEffectResult = checkObserverEffects(observerToken, targetToken);
     if (observerEffectResult) {
         return observerEffectResult;
     }
     
-    // Then check if the target has any effects indicating it's hidden/undetected from the observer
+    // Then check if the target has any direct effects indicating it's hidden/undetected from the observer
     const targetEffectResult = checkTargetEffects(targetToken, observerToken);
     if (targetEffectResult) {
         return targetEffectResult;
     }
     
-    // Finally, check if the target has general hidden/undetected condition
-    const targetConditionResult = checkTargetConditions(targetToken);
-    if (targetConditionResult) {
-        return targetConditionResult;
-    }
-    
     // Default to observed
     return 'observed';
+}
+
+/**
+ * Quick check for a general condition on a token's actor
+ * @param {Token} token
+ * @param {string} slug
+ * @returns {boolean}
+ */
+function hasCondition(token, slug) {
+    try {
+        const itemTypeConditions = token?.actor?.itemTypes?.condition || [];
+        if (itemTypeConditions.some(c => c?.slug === slug)) return true;
+        const legacy = token?.actor?.conditions?.conditions || [];
+        if (legacy.some(c => c?.slug === slug)) return true;
+    } catch (_) {}
+    return false;
 }

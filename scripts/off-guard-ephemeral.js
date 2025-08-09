@@ -83,7 +83,7 @@ async function createEphemeralOffGuardEffect(effectReceiverToken, effectSourceTo
             start: {
                 value: 0,
                 initiative: options.initiative 
-                ? game.combat?.getCombatantByToken(observerActor.id)?.initiative 
+                ? game.combat?.getCombatantByToken(observerToken.actor.id)?.initiative 
                 : null
             },
             badge: null,

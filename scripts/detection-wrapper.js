@@ -97,7 +97,7 @@ function canDetectWrapper(threshold) {
  * Check if visibility threshold is reached based on our module's flags
  */
 function reachesVisibilityThreshold(origin, target, threshold, config = {}) {
-  if (!origin.actor || !target.actor) return false;
+  if (!origin?.actor || !target?.actor) return false;
   
   // Get visibility from our module's flags
   if (!config.visibility) {

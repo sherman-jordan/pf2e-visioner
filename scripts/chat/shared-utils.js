@@ -280,6 +280,23 @@ export function extractPerceptionDC(token) {
 }
 
 /**
+ * Check if a token has the 'concealed' condition on its actor
+ * Works for both v13 itemTypes.condition and legacy collections
+ * @param {Token} token
+ * @returns {boolean}
+ */
+export function hasConcealedCondition(token) {
+    try {
+        const itemTypeConditions = token?.actor?.itemTypes?.condition || [];
+        if (itemTypeConditions.some(c => c?.slug === 'concealed')) return true;
+        const legacyConditions = token?.actor?.conditions?.conditions || [];
+        return legacyConditions.some(c => c?.slug === 'concealed');
+    } catch (_) {
+        return false;
+    }
+}
+
+/**
  * Filter outcomes based on encounter filter setting
  * @param {Array} outcomes - Array of outcomes to filter
  * @param {boolean} encounterOnly - Whether to filter for encounter only

@@ -392,60 +392,85 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         // Observer Mode: "How I see others" - update this observer's visibility map
         if (Object.keys(visibilityChanges).length > 0) {
           const currentMap = getVisibilityMap(app.observer) || {};
-          const merged = { ...currentMap, ...visibilityChanges };
+          const merged = { ...currentMap };
+          // Only write entries that actually change, to reduce doc update size
+          for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
+            if (merged[tokenId] !== newState) merged[tokenId] = newState;
+          }
           await setVisibilityMap(app.observer, merged);
-        
-        // Update ephemeral effects for each target token
-        for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
-          const targetToken = canvas.tokens.get(tokenId);
-          if (targetToken) {
-            try {
-              await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
-                direction: 'observer_to_target'
-              });
-            } catch (error) {
-              console.error('Token Manager: Error updating visibility effects:', error);
-            }
+
+          // Batch ephemeral updates to avoid sequential awaits
+          const updates = [];
+          for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
+            const targetToken = canvas.tokens.get(tokenId);
+            if (!targetToken) continue;
+            // Skip no-op updates
+            const currentState = currentMap?.[tokenId];
+            if (currentState === newState) continue;
+            updates.push(updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, {
+              direction: 'observer_to_target'
+            }));
+          }
+          if (updates.length) {
+            try { await Promise.allSettled(updates); } catch (error) { console.warn('Token Manager: some visibility effect updates failed', error); }
           }
         }
-      }
 
         // Handle cover updates
         if (Object.keys(coverChanges).length > 0) {
           const currentCover = getCoverMap(app.observer) || {};
-          const mergedCover = { ...currentCover, ...coverChanges };
+          const mergedCover = { ...currentCover };
+          for (const [tokenId, newState] of Object.entries(coverChanges)) {
+            if (mergedCover[tokenId] !== newState) mergedCover[tokenId] = newState;
+          }
           await setCoverMap(app.observer, mergedCover);
         }
-    } else {
+      } else {
       // Target Mode: "How others see me" - update each observer's maps
+      // Batch target-mode updates per observer
+      const perObserverChanges = new Map();
       for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
-        if (observerToken) {
-          // Update the observer's visibility map
-          const observerVisibilityData = getVisibilityMap(observerToken);
-          observerVisibilityData[app.observer.document.id] = newVisibilityState;
-          await setVisibilityMap(observerToken, observerVisibilityData);
-          
-          // Update ephemeral effects
-          try {
-            await updateEphemeralEffectsForVisibility(observerToken, app.observer, newVisibilityState, {
-              direction: 'observer_to_target'
-            });
-          } catch (error) {
-            console.error('Token Manager: Error updating visibility effects:', error);
-          }
+        if (!observerToken) continue;
+        const current = getVisibilityMap(observerToken) || {};
+        const currentState = current[app.observer.document.id];
+        if (currentState === newVisibilityState) continue; // skip no-op
+        // Queue map write
+        if (!perObserverChanges.has(observerTokenId)) perObserverChanges.set(observerTokenId, { token: observerToken, map: current });
+        perObserverChanges.get(observerTokenId).map[app.observer.document.id] = newVisibilityState;
+      }
+      // Perform document writes first
+      for (const { token: observerToken, map } of perObserverChanges.values()) {
+        await setVisibilityMap(observerToken, map);
+      }
+      // Then batch ephemeral updates
+      const effectPromises = [];
+      for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
+        const observerToken = canvas.tokens.get(observerTokenId);
+        if (!observerToken) continue;
+        const currentState = getVisibilityMap(observerToken)?.[app.observer.document.id];
+        if (currentState !== newVisibilityState) {
+          effectPromises.push(updateEphemeralEffectsForVisibility(observerToken, app.observer, newVisibilityState, { direction: 'observer_to_target' }));
         }
+      }
+      if (effectPromises.length) {
+        try { await Promise.allSettled(effectPromises); } catch (error) { console.warn('Token Manager: some visibility effect updates failed', error); }
       }
 
       // Handle cover updates for target mode
+      // Batch target-mode cover writes
+      const perObserverCover = new Map();
       for (const [observerTokenId, newCoverState] of Object.entries(coverChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
-        if (observerToken) {
-          // Update the observer's cover map
-          const observerCoverData = getCoverMap(observerToken) || {};
-          const merged = { ...observerCoverData, [app.observer.document.id]: newCoverState };
-          await setCoverMap(observerToken, merged);
-        }
+        if (!observerToken) continue;
+        const current = getCoverMap(observerToken) || {};
+        const currentState = current[app.observer.document.id];
+        if (currentState === newCoverState) continue;
+        if (!perObserverCover.has(observerTokenId)) perObserverCover.set(observerTokenId, { token: observerToken, map: current });
+        perObserverCover.get(observerTokenId).map[app.observer.document.id] = newCoverState;
+      }
+      for (const { token: observerToken, map } of perObserverCover.values()) {
+        await setCoverMap(observerToken, map);
       }
     }
     
@@ -603,12 +628,21 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         const currentCover = getCoverMap(app.observer) || {};
         const mergedCover = { ...currentCover, ...cov };
         await setCoverMap(app.observer, mergedCover);
+        // Apply cover effects and light refresh
+        try {
+          const pairs = Object.entries(cov).map(([tokenId, state]) => ({ observerId: app.observer.id, targetId: tokenId, cover: state }));
+          if (pairs.length) {
+            const { updateSpecificTokenPairs } = await import('./visual-effects.js');
+            await updateSpecificTokenPairs(pairs);
+          }
+        } catch (_) {}
       }
     };
 
     const applyTargetMode = async () => {
       const vis = (app._savedModeData.target?.visibility) || {};
       const cov = (app._savedModeData.target?.cover) || {};
+      const pairs2 = [];
       for (const [observerTokenId, newState] of Object.entries(vis)) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (observerToken) {
@@ -626,8 +660,11 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
           const observerCoverData = getCoverMap(observerToken) || {};
           const mergedCover = { ...observerCoverData, [app.observer.document.id]: newState };
           await setCoverMap(observerToken, mergedCover);
+          // Queue pair for visual/effect update
+          pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, cover: newState });
         }
       }
+      if (pairs2.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } catch (_) {} }
     };
 
     await applyObserverMode();
@@ -867,7 +904,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       }
       
       // Update icon selections in the form, filtered by target type
-      const form = event.target.closest('form');
+      const form = event.currentTarget.closest('form');
       if (form) {
         let selector = '.visibility-section .icon-selection';
         
@@ -879,23 +916,21 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         }
         
         const iconSelections = form.querySelectorAll(selector);
-        iconSelections.forEach(iconSelection => {
-          // Remove selected class from all icons in this selection
-          const icons = iconSelection.querySelectorAll('.state-icon');
-          icons.forEach(icon => icon.classList.remove('selected'));
-          
-          // Add selected class to the target state icon
-          const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
-          if (targetIcon) {
-            targetIcon.classList.add('selected');
-          }
-          
-          // Update the hidden input value
+
+        // Minimize DOM churn: only change rows that actually differ
+        for (const iconSelection of iconSelections) {
           const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
-          if (hiddenInput) {
-            hiddenInput.value = state;
-          }
-        });
+          const current = hiddenInput?.value;
+          if (current === state) continue; // skip unchanged rows
+
+          // Toggle only the necessary icons instead of clearing all
+          const currentSelected = iconSelection.querySelector('.state-icon.selected');
+          if (currentSelected) currentSelected.classList.remove('selected');
+          const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
+          if (targetIcon) targetIcon.classList.add('selected');
+
+          if (hiddenInput) hiddenInput.value = state;
+        }
       }
       
     } catch (error) {
@@ -918,7 +953,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       }
       
       // Update icon selections in the form, filtered by target type
-      const form = event.target.closest('form');
+      const form = event.currentTarget.closest('form');
       if (form) {
         let selector = '.cover-section .icon-selection';
         
@@ -930,23 +965,20 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         }
         
         const iconSelections = form.querySelectorAll(selector);
-        iconSelections.forEach(iconSelection => {
-          // Remove selected class from all icons in this selection
-          const icons = iconSelection.querySelectorAll('.state-icon');
-          icons.forEach(icon => icon.classList.remove('selected'));
-          
-          // Add selected class to the target state icon
-          const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
-          if (targetIcon) {
-            targetIcon.classList.add('selected');
-          }
-          
-          // Update the hidden input value
+
+        // Minimize DOM churn: only change rows that actually differ
+        for (const iconSelection of iconSelections) {
           const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
-          if (hiddenInput) {
-            hiddenInput.value = state;
-          }
-        });
+          const current = hiddenInput?.value;
+          if (current === state) continue; // skip unchanged rows
+
+          const currentSelected = iconSelection.querySelector('.state-icon.selected');
+          if (currentSelected) currentSelected.classList.remove('selected');
+          const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
+          if (targetIcon) targetIcon.classList.add('selected');
+
+          if (hiddenInput) hiddenInput.value = state;
+        }
       }
       
     } catch (error) {

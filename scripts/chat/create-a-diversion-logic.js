@@ -6,7 +6,7 @@
 import { MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { CreateADiversionPreviewDialog } from './create-a-diversion-preview-dialog.js';
-import { determineOutcome, extractPerceptionDC, shouldFilterAlly } from './shared-utils.js';
+import { determineOutcome, extractPerceptionDC, hasConcealedCondition, shouldFilterAlly } from './shared-utils.js';
 
 /**
  * Discovers all tokens that can see the diverting token (potential targets for diversion)
@@ -33,11 +33,15 @@ export function discoverDiversionObservers(divertingToken) {
         if (shouldFilterAlly(divertingToken, token, 'enemies')) continue;
         
         // Check if this token can see the diverting token
-        const visibility = getVisibilityBetween(token, divertingToken);
+        let visibility = getVisibilityBetween(token, divertingToken);
+        // If map says observed but the actor is concealed, treat as concealed for gating
+        if (visibility === 'observed' && hasConcealedCondition(divertingToken)) {
+            visibility = 'concealed';
+        }
         
         // Only include tokens that can currently see the diverting token
-        // (observed or concealed - they need to see you to be diverted)
-        if (visibility === 'observed') {
+        // Show observers that are either observed or concealed
+        if (visibility === 'observed' || visibility === 'concealed') {
             // Get the correct perception DC using the shared utility function
             const perceptionDC = extractPerceptionDC(token);
             observers.push({
@@ -92,8 +96,8 @@ export function analyzeDiversionOutcome(diversionData, observer) {
     
     switch (outcome) {
         case 'critical-success':
-            // Critical Success: Observer becomes undetected (if they could see you)
-            if (currentVisibility === 'observed') {
+            // Treat both observed and concealed as "could see you"
+            if (currentVisibility === 'observed' || currentVisibility === 'concealed') {
                 newVisibility = 'hidden';
                 changed = true;
             }
@@ -101,7 +105,7 @@ export function analyzeDiversionOutcome(diversionData, observer) {
             
         case 'success':
             // Success: Observer becomes hidden (if they could see you)
-            if (currentVisibility === 'observed') {
+            if (currentVisibility === 'observed' || currentVisibility === 'concealed') {
                 newVisibility = 'hidden';
                 changed = true;
             }

@@ -15,13 +15,13 @@ import { MODULE_ID } from './constants.js';
  * @param {boolean} options.initiative - Boolean (default: null)
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  */
-async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceActor, visibilityState, options = {}) {
+async function createEphemeralOffGuardEffect(effectReceiverToken, effectSourceToken, visibilityState, options = {}) {
 
     
     // Check if effect already exists to prevent duplicates
-    const existingEffect = effectReceiverActor.itemTypes.effect.find(e => 
+    const existingEffect = effectReceiverToken.actor.itemTypes.effect.find(e => 
         e.flags?.[MODULE_ID]?.isEphemeralOffGuard &&
-        e.flags?.[MODULE_ID]?.hiddenActorSignature === effectSourceActor.signature
+        e.flags?.[MODULE_ID]?.hiddenActorSignature === effectSourceToken.actor.signature
     );
     
     if (existingEffect) {
@@ -31,11 +31,11 @@ async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceAc
     const visibilityLabel = game.i18n.localize(`PF2E.condition.${visibilityState}.name`);
     
     const ephemeralEffect = {
-        name: `${visibilityLabel} from ${effectSourceActor.name}`,
+        name: `${visibilityLabel} from ${effectSourceToken.name}`,
         type: 'effect',
         system: {
             description: {
-                value: `<p>You are ${visibilityState.toLowerCase()} from ${effectSourceActor.name}'s perspective.</p>`,
+                value: `<p>You are ${visibilityState.toLowerCase()} from ${effectSourceToken.name}'s perspective.</p>`,
                 gm: ''
             },
             publication: {
@@ -47,7 +47,7 @@ async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceAc
             rules: [
                 {
                     key: 'EphemeralEffect',
-                    predicate: [`target:signature:${effectSourceActor.signature}`],
+                    predicate: [`target:signature:${effectSourceToken.actor.signature}`],
                     selectors: [
                         'strike-attack-roll',
                         'spell-attack-roll',
@@ -90,14 +90,14 @@ async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceAc
             fromSpell: false,
             context: {
                 origin: {
-                    actor: effectSourceActor.uuid,
-                    token: effectSourceActor.getActiveTokens()?.[0]?.uuid,
+                    actor: effectSourceToken.actor.uuid,
+                    token: effectSourceToken.actor.getActiveTokens()?.[0]?.uuid,
                     item: null,
                     spellcasting: null
                 },
                 target: {
-                    actor: effectReceiverActor.uuid,
-                    token: effectReceiverActor.getActiveTokens()?.[0]?.uuid
+                    actor: effectReceiverToken.actor.uuid,
+                    token: effectReceiverToken.actor.getActiveTokens()?.[0]?.uuid
                 },
                 roll: null
             }
@@ -106,14 +106,14 @@ async function createEphemeralOffGuardEffect(effectReceiverActor, effectSourceAc
         flags: {
             [MODULE_ID]: {
                 isEphemeralOffGuard: true,
-                hiddenActorSignature: effectSourceActor.signature,
+                hiddenActorSignature: effectSourceToken.actor.signature,
                 visibilityState: visibilityState
             }
         }
     };
 
     try {
-        await effectReceiverActor.createEmbeddedDocuments("Item", [ephemeralEffect]);
+        await effectReceiverToken.actor.createEmbeddedDocuments("Item", [ephemeralEffect]);
 
     } catch (error) {
         console.error('Failed to create ephemeral off-guard effect:', error);
@@ -153,26 +153,26 @@ async function cleanupEphemeralEffects() {
 
 /**
  * Clean up ephemeral effects for a specific target when visibility changes
- * @param {Actor} observerActor - The observing actor (who has the effect)
- * @param {Actor} hiddenActor - The hidden actor (who is targeted by the effect)
+ * @param {Token} observerToken - The observing token (who has the effect)
+ * @param {Token} hiddenToken - The hidden token (who is targeted by the effect)
  */
-export async function cleanupEphemeralEffectsForTarget(observerActor, hiddenActor) {
+export async function cleanupEphemeralEffectsForTarget(observerToken, hiddenToken) {
     try {
-        const ephemeralEffects = observerActor.itemTypes.effect.filter(e => 
+        const ephemeralEffects = observerToken.actor.itemTypes.effect.filter(e => 
             e.flags?.[MODULE_ID]?.isEphemeralOffGuard &&
-            e.flags?.[MODULE_ID]?.hiddenActorSignature === hiddenActor.signature
+            e.flags?.[MODULE_ID]?.hiddenActorSignature === hiddenToken.actor.signature
         );
         
         if (ephemeralEffects.length > 0) {
             const effectIds = ephemeralEffects.map(e => e.id);
-            const existingIds = effectIds.filter(id => !!observerActor.items.get(id));
+            const existingIds = effectIds.filter(id => !!observerToken.actor.items.get(id));
             if (existingIds.length > 0) {
                 try {
-                    await observerActor.deleteEmbeddedDocuments("Item", existingIds);
+                    await observerToken.actor.deleteEmbeddedDocuments("Item", existingIds);
                 } catch (e) {
                     for (const id of existingIds) {
-                        if (observerActor.items.get(id)) {
-                            try { await observerActor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+                        if (observerToken.actor.items.get(id)) {
+                            try { await observerToken.actor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
                         }
                     }
                 }
@@ -200,7 +200,7 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
     }
         
     // Determine which token gets the effect
-    let effectReceiverActor, effectSourceActor;
+    let effectReceiverToken, effectSourceToken;
     
     // Resolve effect target
     if (!options.effectTarget) {
@@ -215,21 +215,21 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
     const effectTarget = options.effectTarget;
     
     if (effectTarget === 'observer') {
-        effectReceiverActor = observerToken.actor;
-        effectSourceActor = targetToken.actor;
+        effectReceiverToken = observerToken;
+        effectSourceToken = targetToken;
     } else {
-        effectReceiverActor = targetToken.actor;
-        effectSourceActor = observerToken.actor;
+        effectReceiverToken = targetToken;
+        effectSourceToken = observerToken;
     }
     
     // Clean up existing effects first
-    await cleanupEphemeralEffectsForTarget(effectReceiverActor, effectSourceActor, options);
+    await cleanupEphemeralEffectsForTarget(effectReceiverToken, effectSourceToken, options);
     
 
     // Only apply effects if the token is hidden or undetected and we're not in remove mode
     if (!options.removeAllEffects && ["hidden", "undetected"].includes(newVisibilityState)) {
         // Apply effect to the token that is hidden/undetected
-        await createEphemeralOffGuardEffect(effectReceiverActor, effectSourceActor, newVisibilityState, options);
+        await createEphemeralOffGuardEffect(effectReceiverToken, effectSourceToken, newVisibilityState, options);
     }
 }
 

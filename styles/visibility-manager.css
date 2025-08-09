@@ -772,6 +772,19 @@
   table-layout: fixed;
 }
 
+/* Visibility Table */
+.visibility-table .visibility-state {
+text-align: center;
+}
+
+.visibility-table .current-state {
+text-align: center;
+}
+
+.visibility-table .mechanical-effects {
+text-align: center;
+}
+
 /* Specific column width controls */
 .visibility-table .token-image {
   width: 36px;

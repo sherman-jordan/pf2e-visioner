@@ -4,10 +4,10 @@
 
 import { injectChatAutomationStyles } from './chat/chat-automation-styles.js';
 import { onRenderChatMessage } from './chat/chat-processor.js';
+import { rebuildAllEphemeralEffects, updateTokenVisuals } from './effects-coordinator.js';
 import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
 import { registerSocket } from './socket.js';
 import { onRenderTokenHUD } from './token-hud.js';
-import { updateTokenVisuals } from './visual-effects.js';
 
 /**
  * Register all FoundryVTT hooks
@@ -320,8 +320,13 @@ function onGetTokenDirectoryEntryContext(html, options) {
  * Handle canvas ready - apply persistent visibility and cover effects
  */
 async function onCanvasReady() {
-  // Apply persistent visibility and cover effects based on GM configuration
-  await updateTokenVisuals();
+  // Rebuild ephemeral effects from maps when the canvas is ready (GM),
+  // otherwise do a light visual refresh for players
+  if (game.user.isGM) {
+    try { await rebuildAllEphemeralEffects(); } catch (e) { console.warn('PF2E Visioner: rebuild on canvasReady failed', e); }
+  } else {
+    await updateTokenVisuals();
+  }
   
   // Initialize hover tooltips if enabled
   if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {

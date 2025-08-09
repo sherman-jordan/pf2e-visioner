@@ -10,6 +10,7 @@ import {
     calculateTokenDistance,
     determineOutcome,
     extractPerceptionDC,
+    hasConcealedCondition,
     isTokenInEncounter,
     shouldFilterAlly
 } from './shared-utils.js';
@@ -43,18 +44,26 @@ export function discoverHideObservers(hidingToken, encounterOnly = false, applyA
         }
         
         // Check current visibility state - Hide only affects tokens that can currently see you
-        const currentVisibility = getVisibilityBetween(token, hidingToken);
+        let currentVisibility = getVisibilityBetween(token, hidingToken);
+        // If map says observed but the actor is concealed, treat as concealed for gating
+        if (currentVisibility === 'observed' && hasConcealedCondition(hidingToken)) {
+            currentVisibility = 'concealed';
+        }
         
         // For Hide, skip if explicitly set to hidden or undetected
         if (currentVisibility === 'hidden' || currentVisibility === 'undetected') {         
             continue;
         }
 
-        // If integration is enabled, require Standard or Greater cover from this observer
+        // With integration ON: allow Hide if you either have Standard/Greater cover OR are Concealed
+        // With integration OFF: only allow Hide if Concealed (ignore cover entirely)
         if (integrate) {
             const cover = getCoverBetween(token, hidingToken);
-            if (!(cover === 'standard' || cover === 'greater')) {
-                // Not sufficient cover to Hide against this observer
+            if (!(cover === 'standard' || cover === 'greater' || currentVisibility === 'concealed')) {
+                continue;
+            }
+        } else {
+            if (currentVisibility !== 'concealed') {
                 continue;
             }
         }

@@ -7,8 +7,8 @@ import { MODULE_TITLE } from '../constants.js';
 import { requestGMOpenPointOut, requestGMOpenSeekWithTemplate } from '../socket.js';
 import { getVisibilityBetween } from '../utils.js';
 import { previewConsequencesResults } from './consequences-logic.js';
-import { previewDiversionResults } from './create-a-diversion-logic.js';
-import { analyzeHideOutcome, discoverHideObservers, previewHideResults } from './hide-logic.js';
+import { discoverDiversionObservers, previewDiversionResults } from './create-a-diversion-logic.js';
+import { discoverHideObservers, previewHideResults } from './hide-logic.js';
 import { previewPointOutResults } from './point-out-logic.js';
 import { discoverSeekTargets, previewSeekResults } from './seek-logic.js';
 import { shouldFilterAlly } from './shared-utils.js';
@@ -441,7 +441,16 @@ function checkConsequencesTargets(actionData, potentialTargets) {
         if (shouldFilterAlly(actionData.actor, target, 'enemies')) continue;
 
         // Use the module's per-token visibility map directly
-        const visibility = getVisibilityBetween(target, actionData.actor);
+        let visibility = getVisibilityBetween(target, actionData.actor);
+        // Accept concealed from actor condition as well
+        try {
+            const itemTypeConditions = actionData.actor?.actor?.itemTypes?.condition || [];
+            const legacyConditions = actionData.actor?.actor?.conditions?.conditions || [];
+            const actorIsConcealed = itemTypeConditions.some(c => c?.slug === 'concealed') || legacyConditions.some(c => c?.slug === 'concealed');
+            if (visibility === 'observed' && actorIsConcealed) {
+                visibility = 'concealed';
+            }
+        } catch (_) {}
         if (visibility === 'hidden' || visibility === 'undetected') {
             return true;
         }
@@ -535,15 +544,7 @@ function checkPointOutTargets(actionData, potentialTargets) {
 function checkHideTargets(actionData, potentialTargets) {
     // Use same discovery logic as the Hide preview to avoid mismatches.
     const observers = discoverHideObservers(actionData.actor, false, false);
-    if (observers.length === 0) return false;
-
-    // If we have a roll, also ensure at least one observer would change visibility
-    if (actionData.roll) {
-        const outcomes = observers.map(o => analyzeHideOutcome(actionData, o));
-        const changed = outcomes.some(o => o.changed);
-        if (!changed) return false;
-    }
-    return true;
+    return observers.length > 0;
 }
 
 /**
@@ -576,25 +577,9 @@ function checkSneakTargets(actionData, potentialTargets) {
  * @returns {boolean} True if there are valid targets, false otherwise
  */
 function checkDiversionTargets(actionData, potentialTargets) {
-    // For create-a-diversion, check if there are any tokens that can currently see the diverting token
-    for (const target of potentialTargets) {
-        // Skip tokens with the same disposition
-        if (target.document.disposition === actionData.actor.document.disposition) {
-            continue;
-        }
-
-        // Check if this token can see the diverting token
-        const visibility = getVisibilityBetween(target, actionData.actor);
-
-        // Only include tokens that can currently see the diverting token
-        // (observed - they need to see you to be diverted)
-        if (visibility === 'observed') {
-            return true;
-        }
-    }
-
-    // No valid targets found
-    return false;
+    // Use same discovery logic as the Diversion preview to avoid mismatches
+    const observers = discoverDiversionObservers(actionData.actor);
+    return observers.length > 0;
 }
 
 /**

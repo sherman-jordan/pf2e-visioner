@@ -7,23 +7,23 @@ import { COVER_STATES, MODULE_ID } from './constants.js';
 
 /**
  * Create an ephemeral effect for cover states
- * @param {Actor} effectReceiverActor - The actor who receives the cover effect
- * @param {Actor} effectSourceActor - The actor who is the source of the effect (the observer)
+ * @param {Token} effectReceiverToken - The token who receives the cover effect
+ * @param {Token} effectSourceToken - The token who is the source of the effect (the observer)
  * @param {string} coverState - The cover state ('lesser', 'standard', or 'greater')
  * @param {Object} options - Optional configuration
  * @param {boolean} options.initiative - Boolean (default: null)
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  */
-export async function createEphemeralCoverEffect(effectReceiverActor, effectSourceActor, coverState, options = {}) {
+export async function createEphemeralCoverEffect(effectReceiverToken, effectSourceToken, coverState, options = {}) {
     // Skip if no cover or invalid state
     if (!coverState || coverState === 'none' || !COVER_STATES[coverState]) {
         return;
     }
 
     // Check if effect already exists to prevent duplicates
-    const existingEffect = effectReceiverActor.itemTypes.effect.find(e => 
+    const existingEffect = effectReceiverToken.actor.itemTypes.effect.find(e => 
         e.flags?.[MODULE_ID]?.isEphemeralCover &&
-        e.flags?.[MODULE_ID]?.observerActorSignature === effectSourceActor.signature
+        e.flags?.[MODULE_ID]?.observerActorSignature === effectSourceToken.actor.signature
     );
     
     if (existingEffect) {
@@ -33,8 +33,8 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
         }
         // Otherwise, remove the old one so we can create the new one
         try {
-            if (effectReceiverActor.items.get(existingEffect.id)) {
-                await effectReceiverActor.deleteEmbeddedDocuments("Item", [existingEffect.id]);
+            if (effectReceiverToken.actor.items.get(existingEffect.id)) {
+                await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", [existingEffect.id]);
             }
         } catch (_) {
             // Ignore if it was already removed
@@ -54,25 +54,25 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
     const effectImg = coverEffectImageByState[coverState] || "systems/pf2e/icons/equipment/shields/steel-shield.webp";
 
     const ephemeralEffect = {
-        name: `${coverLabel} against ${effectSourceActor.name}`,
+        name: `${coverLabel} against ${effectSourceToken.name}`,
         type: 'effect',
         system: {
             description: {
-                value: `<p>You have ${coverState} cover against ${effectSourceActor.name}, granting a +${stateConfig.bonusAC} circumstance bonus to AC.</p>`,
+                value: `<p>You have ${coverState} cover against ${effectSourceToken.name}, granting a +${stateConfig.bonusAC} circumstance bonus to AC.</p>`,
                 gm: ''
             },
             rules: [
                 {
                     key: "RollOption",
                     domain: "all",
-                    option: `cover-against:${effectSourceActor.id}`
+                    option: `cover-against:${effectSourceToken.id}`
                 },
                 {
                     key: "FlatModifier",
                     selector: "ac",
                     type: "circumstance",
                     value: stateConfig.bonusAC,
-                    predicate: [`origin:signature:${effectSourceActor.signature}`]
+                    predicate: [`origin:signature:${effectSourceToken.actor.signature}`]
                 }
             ],
             slug: null,
@@ -101,7 +101,7 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
             start: {
                 value: 0,
                 initiative: options.initiative 
-                ? game.combat?.getCombatantByToken(effectReceiverActor.token?.id)?.initiative 
+                ? game.combat?.getCombatantByToken(effectReceiverToken?.id)?.initiative 
                 : null
             },
             badge: null
@@ -110,8 +110,8 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
                          flags: {
             [MODULE_ID]: {
                 isEphemeralCover: true,
-                observerActorSignature: effectSourceActor.signature,
-                observerTokenId: effectSourceActor.getActiveTokens()?.[0]?.id || '',
+                observerActorSignature: effectSourceToken.actor.signature,
+                observerTokenId: effectSourceToken.id,
                 coverState: coverState
             },
             core: {}
@@ -139,7 +139,7 @@ export async function createEphemeralCoverEffect(effectReceiverActor, effectSour
     }
 
     try {
-        await effectReceiverActor.createEmbeddedDocuments("Item", [ephemeralEffect]);
+        await effectReceiverToken.actor.createEmbeddedDocuments("Item", [ephemeralEffect]);
     } catch (error) {
         console.error('Failed to create ephemeral cover effect:', error);
     }
@@ -180,30 +180,29 @@ export async function cleanupAllCoverEffects() {
 
 /**
  * Clean up ephemeral cover effects for a specific observer
- * @param {Actor} targetActor - The actor with cover
- * @param {Actor} observerActor - The observing actor
+ * @param {Token} targetToken - The token with cover
+ * @param {Token} observerToken - The observing token
  */
-export async function cleanupCoverEffectsForObserver(targetActor, observerActor) {
+export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {
          try {
-         const observerToken = observerActor.getActiveTokens()?.[0];
          if (!observerToken) return;
          
-         const ephemeralEffects = targetActor.itemTypes.effect.filter(e => 
+         const ephemeralEffects = targetToken.actor.itemTypes.effect.filter(e => 
              e.flags?.[MODULE_ID]?.isEphemeralCover && 
-             (e.flags?.[MODULE_ID]?.observerActorSignature === observerActor.signature ||
+             (e.flags?.[MODULE_ID]?.observerActorSignature === observerToken.actor.signature ||
               e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
          );
         
         if (ephemeralEffects.length > 0) {
             const effectIds = ephemeralEffects.map(e => e.id);
-            const existingIds = effectIds.filter(id => !!targetActor.items.get(id));
+            const existingIds = effectIds.filter(id => !!targetToken.actor.items.get(id));
             if (existingIds.length > 0) {
                 try {
-                    await targetActor.deleteEmbeddedDocuments("Item", existingIds);
+                    await targetToken.actor.deleteEmbeddedDocuments("Item", existingIds);
                 } catch (e) {
                     for (const id of existingIds) {
-                        if (targetActor.items.get(id)) {
-                            try { await targetActor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+                        if (targetToken.actor.items.get(id)) {
+                            try { await targetToken.actor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
                         }
                     }
                 }
@@ -228,14 +227,11 @@ export async function updateEphemeralCoverEffects(targetToken, observerToken, co
         return;
     }
     
-    const targetActor = targetToken.actor;
-    const observerActor = observerToken.actor;
-    
     // Clean up existing effects first
-    await cleanupCoverEffectsForObserver(targetActor, observerActor);
+    await cleanupCoverEffectsForObserver(targetToken, observerToken);
     
     // Only apply effects if there's cover
     if (!options.removeAllEffects && coverState && coverState !== 'none') {
-        await createEphemeralCoverEffect(targetActor, observerActor, coverState, options);
+        await createEphemeralCoverEffect(targetToken, observerToken, coverState, options);
     }
 }

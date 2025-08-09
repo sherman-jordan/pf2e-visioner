@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.4] - 2025-08-09
+
+### Added
+- Hover tooltips now show Font Awesome icon badges aligned above tokens:
+  - Left badge: visibility state icon
+  - Right badge: cover icon when applicable
+- PF2e hud support for tooltip position
+
+### Changed
+- Hover tooltips no longer render text labels; icons are used for a cleaner, compact look.
+- Badge positioning uses world-to-screen transforms, keeping alignment stable under zoom/pan.
+- Create a Diversion discovery now considers both observed and concealed creatures as valid observers, and outcomes display only those who can currently see the diverter.
+- Hide possible when token got observers and is concealed OR (has standard OR great cover)
+
+### Fixed
+- Token Manager: resolved ReferenceError for `pairs2` in target-mode apply flows.
+- Tooltip cleanup reliably removes DOM badges to prevent lingering elements after hover/Alt/O.
+
 ## [1.3.3] - 2025-08-09
 
 ### Fixed

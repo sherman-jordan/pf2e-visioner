@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.3.4] - 2025-08-09
+## [1.4.0] - 2025-08-09
 
 ### Added
 - Hover tooltips now show Font Awesome icon badges aligned above tokens:

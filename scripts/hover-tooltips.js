@@ -284,7 +284,7 @@ function showVisibilityIndicators(hoveredToken) {
       
       otherTokens.forEach(observerToken => {
         const visibilityMap = getVisibilityMap(observerToken);
-        const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
+        const visibilityState = visibilityMap[hoveredToken?.document?.id] || 'observed';
         
         if (visibilityState !== 'observed') {
           // Show indicator on the observer token

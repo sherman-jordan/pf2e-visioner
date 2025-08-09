@@ -13,6 +13,7 @@
 - Badge positioning uses world-to-screen transforms, keeping alignment stable under zoom/pan.
 - Create a Diversion discovery now considers both observed and concealed creatures as valid observers, and outcomes display only those who can currently see the diverter.
 - Hide possible when token got observers and is concealed OR (has standard OR great cover)
+- Effects will show token name rather than actor
 
 ### Fixed
 - Token Manager: resolved ReferenceError for `pairs2` in target-mode apply flows.

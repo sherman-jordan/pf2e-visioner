@@ -196,7 +196,7 @@
 }
 
 /* Tab Content */
-.tab-content {
+.visioner-tab-content {
   flex: 1;
   display: flex;
   flex-direction: column;

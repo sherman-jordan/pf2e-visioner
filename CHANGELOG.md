@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.2] - 2025-08-09
+
+## Fixed
+- CSS class overrding default system one (sorry!)
+
 ## [1.3.1] - 2025-08-08
 
 ### Added

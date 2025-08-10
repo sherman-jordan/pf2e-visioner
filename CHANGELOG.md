@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.6.1] - 2025-08-10
+
+### Fixed
+- Token Manager: Cover should now support highlight and go to row as well
+
+
 ## [1.6.0] - 2025-08-10
 
 ### Added

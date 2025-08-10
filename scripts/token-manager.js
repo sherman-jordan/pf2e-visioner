@@ -1025,6 +1025,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       } catch (error) {
         console.error('Token Manager: Error restoring tab state:', error);
       }
+      // After switching tabs, re-apply selection highlight so rows in the new tab are highlighted too
+      try { VisionerTokenManager._applySelectionHighlight(); } catch (_) {}
     }
   }
 
@@ -1262,16 +1264,49 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       app.element.querySelectorAll('tr.token-row.row-hover')?.forEach((el) => el.classList.remove('row-hover'));
       const selected = Array.from(canvas?.tokens?.controlled ?? []);
       if (!selected.length) return;
+      const activeTab = app.activeTab || 'visibility';
+      const sectionSelector = activeTab === 'cover' ? '.cover-section' : '.visibility-section';
       let firstRow = null;
       for (const tok of selected) {
-        const row = app.element.querySelector(`tr[data-token-id="${tok.id}"]`);
-        if (row) {
-          row.classList.add('row-hover');
-          if (!firstRow) firstRow = row;
+        const rows = app.element.querySelectorAll(`tr[data-token-id="${tok.id}"]`);
+        if (rows && rows.length) {
+          rows.forEach((r) => r.classList.add('row-hover'));
+          if (!firstRow) {
+            // Prefer a row within the visible active section
+            for (const r of rows) {
+              const section = r.closest(sectionSelector);
+              const visible = section && getComputedStyle(section).display !== 'none';
+              if (section && visible) { firstRow = r; break; }
+            }
+            // Fallback to the first match if none in active section
+            if (!firstRow) firstRow = rows[0];
+          }
         }
       }
-      if (firstRow && typeof firstRow.scrollIntoView === 'function') {
-        firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      if (firstRow) {
+        const scroller = app.element.querySelector('.tables-content') || app.element;
+        // Defer to next frame to ensure layout after render/tab switch
+        requestAnimationFrame(() => {
+          try {
+            // Try native scrollIntoView first
+            if (typeof firstRow.scrollIntoView === 'function') {
+              firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+            // Also explicitly scroll the container to the row as a robust fallback
+            const computeOffsetTop = (child, ancestor) => {
+              let top = 0, el = child;
+              while (el && el !== ancestor) { top += el.offsetTop; el = el.offsetParent; }
+              return top;
+            };
+            const top = computeOffsetTop(firstRow, scroller);
+            const targetTop = Math.max(0, top - 32); // small padding
+            if (typeof scroller.scrollTo === 'function') {
+              scroller.scrollTo({ top: targetTop, behavior: 'smooth' });
+            } else {
+              scroller.scrollTop = targetTop;
+            }
+          } catch (_) {}
+        });
       }
     } catch (_) {}
   }

@@ -68,35 +68,28 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
     }
     
     _addHoverListeners() {
-        // Add hover listeners to token rows (Point Out template uses different structure)
-        const tokenRows = this.element.querySelectorAll('tr[data-token-id]');
-        
-        tokenRows.forEach(row => {
-            const tokenId = row.dataset.tokenId;
-            if (!tokenId) return;
-            
-            // Remove existing listeners to prevent duplicates
-            row.removeEventListener('mouseenter', row._hoverIn);
-            row.removeEventListener('mouseleave', row._hoverOut);
-            
-            // Add new listeners
-            row._hoverIn = () => {
-                const token = canvas.tokens.get(tokenId);
-                if (token) {
-                    token._onHoverIn(new Event('mouseenter'), { hoverOutOthers: true });
+        const applySelection = () => {
+            try {
+                this.element.querySelectorAll('tr.token-row.row-hover')?.forEach((el) => el.classList.remove('row-hover'));
+                const selected = Array.from(canvas?.tokens?.controlled ?? []);
+                if (!selected.length) return;
+                let firstRow = null;
+                for (const tok of selected) {
+                    const row = this.element.querySelector(`tr[data-token-id=\"${tok.id}\"]`);
+                    if (row) {
+                        row.classList.add('row-hover');
+                        if (!firstRow) firstRow = row;
+                    }
                 }
-            };
-            
-            row._hoverOut = () => {
-                const token = canvas.tokens.get(tokenId);
-                if (token) {
-                    token._onHoverOut(new Event('mouseleave'));
+                if (firstRow && typeof firstRow.scrollIntoView === 'function') {
+                    firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
                 }
-            };
-            
-            row.addEventListener('mouseenter', row._hoverIn);
-            row.addEventListener('mouseleave', row._hoverOut);
-        });
+            } catch (_) {}
+        };
+        applySelection();
+        if (!this._selectionHookId) {
+            this._selectionHookId = Hooks.on('controlToken', () => applySelection());
+        }
     }
     
     async _prepareContext(options) {
@@ -452,6 +445,7 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
     }
     
     close(options) {
+        if (this._selectionHookId) { try { Hooks.off('controlToken', this._selectionHookId); } catch (_) {} this._selectionHookId = null; }
         currentPointOutDialog = null;
         return super.close(options);
     }

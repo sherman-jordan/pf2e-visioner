@@ -219,6 +219,10 @@
       "INTEGRATE_COVER_VISIBILITY": {
         "name": "Integrate Cover with Visibility Rules",
         "hint": "When enabled, certain actions follow cover prerequisites. For example, Hide is only allowed if the acting token has at least Standard Cover from an observer."
+      },
+      "INTEGRATE_ROLL_OUTCOME": {
+        "name": "Integrate roll outcome in the token manager",
+        "hint": "Adds a column to the Token Manager to show the last relevant roll result vs current DC and outcome."
       }
     },
     "UI": {

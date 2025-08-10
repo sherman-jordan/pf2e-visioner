@@ -235,6 +235,15 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true
   },
+  // Token Manager
+  integrateRollOutcome: {
+    name: 'PF2E_VISIONER.SETTINGS.INTEGRATE_ROLL_OUTCOME.name',
+    hint: 'PF2E_VISIONER.SETTINGS.INTEGRATE_ROLL_OUTCOME.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
   
   debug: {
     name: 'Debug Mode',

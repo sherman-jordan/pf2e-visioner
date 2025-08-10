@@ -94,6 +94,14 @@
   background-color: rgba(0, 0, 0, 0.1);
 }
 
+/* Selection-based highlight parity with token manager */
+.results-table-container tr.token-row.row-hover,
+.results-table-container tr[data-token-id].row-hover {
+  outline: 2px solid var(--pf2e-visioner-primary, #ff9800);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px rgba(255, 152, 0, 0.3);
+}
+
 /* WebKit scrollbar styling (default) */
 .results-table-container::-webkit-scrollbar {
   width: 8px;

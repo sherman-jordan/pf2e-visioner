@@ -79,43 +79,40 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
         // Update changes count
         this.updateChangesCount();
         
-        // Add hover listeners for token highlighting
-        this._addHoverListeners();
+        // Selection-based highlighting
+        this._attachSelectionHandlers();
+        this._applySelectionHighlight();
     }
     
     /**
      * Add hover listeners to highlight tokens on canvas
      */
-    _addHoverListeners() {
-        // Add hover listeners to token rows
-        const tokenRows = this.element.querySelectorAll('tr[data-token-id]');
-        
-        tokenRows.forEach(row => {
-            const tokenId = row.dataset.tokenId;
-            if (!tokenId) return;
-            
-            // Remove existing listeners to prevent duplicates
-            row.removeEventListener('mouseenter', row._hoverIn);
-            row.removeEventListener('mouseleave', row._hoverOut);
-            
-            // Add new listeners
-            row._hoverIn = () => {
-                const token = canvas.tokens.get(tokenId);
-                if (token) {
-                    token._onHoverIn(new Event('mouseenter'), { hoverOutOthers: true });
+    _attachSelectionHandlers() {
+        if (this._selectionHookId) return;
+        this._selectionHookId = Hooks.on('controlToken', () => this._applySelectionHighlight());
+    }
+
+    _detachSelectionHandlers() {
+        if (this._selectionHookId) { try { Hooks.off('controlToken', this._selectionHookId); } catch (_) {} this._selectionHookId = null; }
+    }
+
+    _applySelectionHighlight() {
+        try {
+            this.element.querySelectorAll('tr.token-row.row-hover')?.forEach((el) => el.classList.remove('row-hover'));
+            const selected = Array.from(canvas?.tokens?.controlled ?? []);
+            if (!selected.length) return;
+            let firstRow = null;
+            for (const tok of selected) {
+                const row = this.element.querySelector(`tr[data-token-id="${tok.id}"]`);
+                if (row) {
+                    row.classList.add('row-hover');
+                    if (!firstRow) firstRow = row;
                 }
-            };
-            
-            row._hoverOut = () => {
-                const token = canvas.tokens.get(tokenId);
-                if (token) {
-                    token._onHoverOut(new Event('mouseleave'));
-                }
-            };
-            
-            row.addEventListener('mouseenter', row._hoverIn);
-            row.addEventListener('mouseleave', row._hoverOut);
-        });
+            }
+            if (firstRow && typeof firstRow.scrollIntoView === 'function') {
+                firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+        } catch (_) {}
     }
     
     async _prepareContext(options) {
@@ -456,6 +453,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     }
     
     static async _onClose(event, target) {
+        if (currentHideDialog) { currentHideDialog._detachSelectionHandlers?.(); }
         currentHideDialog = null;
         return super._onClose?.(event, target);
     }

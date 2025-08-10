@@ -121,13 +121,34 @@
               </div>
               <div class="visibility-table-container">
                 <table class="visibility-table">
+                  {{#if showOutcomeColumn}}
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:15%" />
+                    <col style="width:26%" />
+                    <col style="width:18%" />
+                    <col style="width:12%" />
+                    <col style="width:19%" />
+                  </colgroup>
+                  {{else}}
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:20%" />
+                    <col style="width:32%" />
+                    <col style="width:22%" />
+                    <col style="width:16%" />
+                  </colgroup>
+                  {{/if}}
                   <thead>
                     <tr>
                       <th class="token-image">Token</th>
                       <th class="token-name">Name</th>
                       <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
                       <th class="current-state">Current State</th>
-                      <th class="mechanical-effects">Effects</th>
+                      <th class="dc-column">{{#if isTargetMode}}Perception DC{{else}}Stealth DC{{/if}}</th>
+                      {{#if showOutcomeColumn}}
+                        <th class="outcome-column">Outcome</th>
+                      {{/if}}
                     </tr>
                   </thead>
                   <tbody>
@@ -154,32 +175,31 @@
                         <td class="current-state">
                           {{#each target.visibilityStates as |state|}}
                             {{#if state.selected}}
-                              <span class="state-indicator" style="color: {{state.color}}">
+                              <span class="state-indicator" style="color: {{state.color}}"
+                                    {{#if (eq state.value "hidden")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "concealed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "undetected")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "observed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
                                 <i class="{{state.icon}}"></i>
                                 {{state.label}}
                               </span>
                             {{/if}}
                           {{/each}}
                         </td>
-                        <td class="mechanical-effects">
-                          {{#if (eq target.currentVisibilityState "hidden")}}
-                            <span class="flat-check" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}">
-                              <i class="fas fa-dice-d20"></i> DC 11 flat check
-                            </span>
-                          {{else if (eq target.currentVisibilityState "concealed")}}
-                            <span class="concealed-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}">
-                              <i class="fas fa-dice-d20"></i> DC 5 flat check
-                            </span>
-                          {{else if (eq target.currentVisibilityState "undetected")}}
-                            <span class="undetected-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}">
-                              <i class="fas fa-question-circle"></i> Location unknown
-                            </span>
+                        <td class="dc-column">
+                          {{#if isTargetMode}}
+                            <span class="dc-value">{{target.perceptionDC}}</span>
                           {{else}}
-                            <span class="no-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}">
-                              <i class="fas fa-check-circle"></i> No effects
-                            </span>
+                            <span class="dc-value">{{target.stealthDC}}</span>
                           {{/if}}
                         </td>
+                        {{#if ../showOutcomeColumn}}
+                          <td class="outcome-column">
+                            {{#if target.showOutcome}}
+                              <span class="dc-outcome {{target.outcomeClass}}" title="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                            {{/if}}
+                          </td>
+                        {{/if}}
                       </tr>
                     {{/each}}
                   </tbody>
@@ -206,13 +226,34 @@
               </div>
               <div class="visibility-table-container">
                 <table class="visibility-table">
+                  {{#if showOutcomeColumn}}
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:15%" />
+                    <col style="width:26%" />
+                    <col style="width:18%" />
+                    <col style="width:12%" />
+                    <col style="width:19%" />
+                  </colgroup>
+                  {{else}}
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:20%" />
+                    <col style="width:32%" />
+                    <col style="width:22%" />
+                    <col style="width:16%" />
+                  </colgroup>
+                  {{/if}}
                   <thead>
                     <tr>
                       <th class="token-image">Token</th>
                       <th class="token-name">Name</th>
                       <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
                       <th class="current-state">Current State</th>
-                      <th class="mechanical-effects">Effects</th>
+                      <th class="dc-column">{{#if isTargetMode}}Perception DC{{else}}Stealth DC{{/if}}</th>
+                      {{#if showOutcomeColumn}}
+                        <th class="outcome-column">Outcome</th>
+                      {{/if}}
                     </tr>
                   </thead>
                   <tbody>
@@ -239,32 +280,31 @@
                         <td class="current-state">
                           {{#each target.visibilityStates as |state|}}
                             {{#if state.selected}}
-                              <span class="state-indicator" style="color: {{state.color}}">
+                              <span class="state-indicator" style="color: {{state.color}}"
+                                    {{#if (eq state.value "hidden")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "concealed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "undetected")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "observed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
                                 <i class="{{state.icon}}"></i>
                                 {{state.label}}
                               </span>
                             {{/if}}
                           {{/each}}
                         </td>
-                        <td class="mechanical-effects">
-                          {{#if (eq target.currentVisibilityState "hidden")}}
-                            <span class="flat-check" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}">
-                              <i class="fas fa-dice-d20"></i> DC 11 flat check
-                            </span>
-                          {{else if (eq target.currentVisibilityState "concealed")}}
-                            <span class="concealed-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}">
-                              <i class="fas fa-dice-d20"></i> DC 5 flat check
-                            </span>
-                          {{else if (eq target.currentVisibilityState "undetected")}}
-                            <span class="undetected-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}">
-                              <i class="fas fa-question-circle"></i> Location unknown
-                            </span>
+                        <td class="dc-column">
+                          {{#if isTargetMode}}
+                            <span class="dc-value">{{target.perceptionDC}}</span>
                           {{else}}
-                            <span class="no-effect" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}">
-                              <i class="fas fa-check-circle"></i> No effects
-                            </span>
+                            <span class="dc-value">{{target.stealthDC}}</span>
                           {{/if}}
                         </td>
+                        {{#if ../showOutcomeColumn}}
+                          <td class="outcome-column">
+                            {{#if target.showOutcome}}
+                              <span class="dc-outcome {{target.outcomeClass}}" title="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                            {{/if}}
+                          </td>
+                        {{/if}}
                       </tr>
                     {{/each}}
                   </tbody>

@@ -3,11 +3,13 @@
  * Handles both visibility and cover management for tokens
  */
 
+import { extractPerceptionDC, extractStealthDC } from './chat/shared-utils.js';
 import { COVER_STATES, VISIBILITY_STATES } from './constants.js';
 import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
 import { refreshEveryonesPerception } from './socket.js';
 import {
   getCoverMap,
+  getLastRollTotalForActor,
   getSceneTargets,
   getVisibilityMap,
   hasActiveEncounter,
@@ -22,6 +24,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   
   // Track the current instance to prevent multiple dialogs
   static currentInstance = null;
+  static _canvasHoverHandlers = new Map();
+  static _selectionHookId = null;
   
   static DEFAULT_OPTIONS = {
     tag: 'form',
@@ -206,6 +210,25 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         
         const disposition = token.document.disposition || 0;
         
+        // Compute DCs and optional outcome based on settings
+        const perceptionDC = extractPerceptionDC(this.observer);
+        const stealthDC = extractStealthDC(token);
+        const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
+        let showOutcome = false;
+        let outcomeLabel = '';
+        let outcomeClass = '';
+        if (showOutcomeSetting) {
+          const lastRoll = getLastRollTotalForActor(this.observer?.actor, null);
+          if (typeof lastRoll === 'number' && typeof stealthDC === 'number') {
+            const diff = lastRoll - stealthDC;
+            // PF2E degrees of success
+            if (diff >= 10) { outcomeLabel = 'Critical Success'; outcomeClass = 'critical-success'; }
+            else if (diff >= 0) { outcomeLabel = 'Success'; outcomeClass = 'success'; }
+            else if (diff <= -10) { outcomeLabel = 'Critical Failure'; outcomeClass = 'critical-failure'; }
+            else { outcomeLabel = 'Failure'; outcomeClass = 'failure'; }
+            showOutcome = true;
+          }
+        }
         return {
           id: token.document.id,
           name: token.document.name,
@@ -232,7 +255,12 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             bonusReflex: config.bonusReflex,
             bonusStealth: config.bonusStealth,
             canHide: config.canHide
-          }))
+          })),
+          perceptionDC,
+          stealthDC,
+          showOutcome,
+          outcomeLabel,
+          outcomeClass
         };
       });
     } else {
@@ -246,6 +274,24 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         
         const disposition = observerToken.document.disposition || 0;
         
+        
+        const perceptionDC = extractPerceptionDC(observerToken);
+        const stealthDC = extractStealthDC(this.observer);
+        const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
+        let showOutcome = false;
+        let outcomeLabel = '';
+        let outcomeClass = '';
+        if (showOutcomeSetting) {
+          const lastRoll = getLastRollTotalForActor(this.observer?.actor, null);
+          if (typeof lastRoll === 'number' && typeof perceptionDC === 'number') {
+            const diff = lastRoll - perceptionDC;
+            if (diff >= 10) { outcomeLabel = 'Critical Success'; outcomeClass = 'critical-success'; }
+            else if (diff >= 0) { outcomeLabel = 'Success'; outcomeClass = 'success'; }
+            else if (diff <= -10) { outcomeLabel = 'Critical Failure'; outcomeClass = 'critical-failure'; }
+            else { outcomeLabel = 'Failure'; outcomeClass = 'failure'; }
+            showOutcome = true;
+          }
+        }
         return {
           id: observerToken.document.id,
           name: observerToken.document.name,
@@ -272,7 +318,12 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             bonusReflex: config.bonusReflex,
             bonusStealth: config.bonusStealth,
             canHide: config.canHide
-          }))
+          })),
+          perceptionDC,
+          stealthDC,
+          showOutcome,
+          outcomeLabel,
+          outcomeClass
         };
       });
     }
@@ -341,6 +392,12 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     context.hasTargets = allTargets.length > 0;
     context.hasPCs = context.pcTargets.length > 0;
     context.hasNPCs = context.npcTargets.length > 0;
+    // Settings-driven columns
+    try {
+      context.showOutcomeColumn = game.settings.get(MODULE_ID, 'integrateRollOutcome');
+    } catch (_) {
+      context.showOutcomeColumn = false;
+    }
     
     // Check if we're showing targeted tokens
     const targetedTokens = Array.from(game.user.targets).filter(token =>
@@ -992,8 +1049,22 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    */
   _onRender(context, options) {
     super._onRender(context, options);
-    this.addTokenHighlighting();
+    try {
+      const showOutcome = game.settings.get(MODULE_ID, 'integrateRollOutcome');
+      if (showOutcome) {
+        // Ensure sufficient width to display Outcome column fully
+        const minWidth = 705;
+        const current = this.position?.width ?? 0;
+        if (!current || current < minWidth) {
+          this.setPosition({ width: minWidth });
+        }
+      }
+    } catch (_) {}
+    // No row→token hover anymore (to avoid conflict with canvas→row). Keep icon handlers.
     this.addIconClickHandlers();
+    // Setup canvas selection → row highlighting
+    VisionerTokenManager._attachSelectionHandlers();
+    VisionerTokenManager._applySelectionHighlight();
   }
 
   /**
@@ -1002,6 +1073,13 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   async close(options = {}) {
     // Clean up any remaining token borders
     this.cleanupAllTokenBorders();
+    // Remove selection handlers and clear row highlights
+    VisionerTokenManager._detachSelectionHandlers();
+    try {
+      if (this.element) {
+        this.element.querySelectorAll('tr.token-row.row-hover')?.forEach((el) => el.classList.remove('row-hover'));
+      }
+    } catch (_) {}
     
     // Clear the current instance reference
     if (VisionerTokenManager.currentInstance === this) {
@@ -1009,6 +1087,95 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     }
     
     return super.close(options);
+  }
+
+  /**
+   * Attach hover handlers on canvas tokens to highlight corresponding rows in the manager
+   */
+  static _attachCanvasHoverHandlers() {
+    const app = VisionerTokenManager.currentInstance;
+    if (!app || !app.element || !canvas?.tokens?.placeables?.length) return;
+    // If already attached, skip
+    if (VisionerTokenManager._canvasHoverHandlers.size > 0) return;
+
+    canvas.tokens.placeables.forEach((token) => {
+      const over = () => {
+        try {
+          const row = app.element.querySelector(`tr[data-token-id="${token.id}"]`);
+          if (row) {
+            row.classList.add('row-hover');
+            // Scroll into view within the main tables-content container
+            const scroller = app.element.querySelector('.tables-content') || row.closest('.visibility-table-container') || app.element;
+            if (scroller && typeof row.scrollIntoView === 'function') {
+              row.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+          }
+        } catch (_) {}
+      };
+      const out = () => {
+        try {
+          const row = app.element.querySelector(`tr[data-token-id="${token.id}"]`);
+          if (row) row.classList.remove('row-hover');
+        } catch (_) {}
+      };
+      token.on('pointerover', over);
+      token.on('pointerout', out);
+      VisionerTokenManager._canvasHoverHandlers.set(token.id, { over, out });
+    });
+  }
+
+  /**
+   * Detach previously attached canvas hover handlers
+   */
+  static _detachCanvasHoverHandlers() {
+    if (!canvas?.tokens) return;
+    VisionerTokenManager._canvasHoverHandlers.forEach((handlers, id) => {
+      const token = canvas.tokens.get(id);
+      if (token) {
+        try { token.off('pointerover', handlers.over); } catch (_) {}
+        try { token.off('pointerout', handlers.out); } catch (_) {}
+      }
+    });
+    VisionerTokenManager._canvasHoverHandlers.clear();
+  }
+
+  /**
+   * Selection-based row highlight handlers
+   */
+  static _attachSelectionHandlers() {
+    if (VisionerTokenManager._selectionHookId) return;
+    VisionerTokenManager._selectionHookId = Hooks.on('controlToken', () => {
+      VisionerTokenManager._applySelectionHighlight();
+    });
+  }
+
+  static _detachSelectionHandlers() {
+    if (VisionerTokenManager._selectionHookId) {
+      try { Hooks.off('controlToken', VisionerTokenManager._selectionHookId); } catch (_) {}
+      VisionerTokenManager._selectionHookId = null;
+    }
+  }
+
+  static _applySelectionHighlight() {
+    const app = VisionerTokenManager.currentInstance;
+    if (!app || !app.element) return;
+    try {
+      // Clear existing
+      app.element.querySelectorAll('tr.token-row.row-hover')?.forEach((el) => el.classList.remove('row-hover'));
+      const selected = Array.from(canvas?.tokens?.controlled ?? []);
+      if (!selected.length) return;
+      let firstRow = null;
+      for (const tok of selected) {
+        const row = app.element.querySelector(`tr[data-token-id="${tok.id}"]`);
+        if (row) {
+          row.classList.add('row-hover');
+          if (!firstRow) firstRow = row;
+        }
+      }
+      if (firstRow && typeof firstRow.scrollIntoView === 'function') {
+        firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    } catch (_) {}
   }
 
   /**
@@ -1023,40 +1190,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   /**
    * Add hover highlighting to help identify tokens on canvas
    */
-  addTokenHighlighting() {
-    const element = this.element;
-    if (!element) return;
-
-    // Find all token rows in the table
-    const rows = element.querySelectorAll('tr[data-token-id]');
-    
-    rows.forEach(row => {
-      const tokenId = row.dataset.tokenId;
-      if (!tokenId) return;
-      
-      // Remove existing listeners to prevent duplicates
-      row.removeEventListener('mouseenter', row._hoverIn);
-      row.removeEventListener('mouseleave', row._hoverOut);
-      
-      // Add new listeners using Foundry's native token hover methods
-      row._hoverIn = () => {
-        const token = canvas.tokens.get(tokenId);
-        if (token) {
-          token._onHoverIn(new Event('mouseenter'), { hoverOutOthers: true });
-        }
-      };
-      
-      row._hoverOut = () => {
-        const token = canvas.tokens.get(tokenId);
-        if (token) {
-          token._onHoverOut(new Event('mouseleave'));
-        }
-      };
-      
-      row.addEventListener('mouseenter', row._hoverIn);
-      row.addEventListener('mouseleave', row._hoverOut);
-    });
-  }
+  // Removed row→token hover to avoid conflicts with canvas→row highlight/scroll
 
   /**
    * Add click handlers for icon-based state selection

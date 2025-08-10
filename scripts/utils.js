@@ -340,3 +340,37 @@ export function createCoverIndicator(state) {
 
   return indicator;
 }
+
+/**
+ * Compute Perception DC for an actor with robust fallbacks
+ * @param {Actor} actor
+ * @returns {number|null}
+ */
+/**
+ * Find the most recent chat roll total for an actor, optionally filtered by slug
+ * @param {Actor} actor
+ * @param {string|null} requiredSlug e.g., 'perception' | 'stealth'
+ * @returns {number|null}
+ */
+export function getLastRollTotalForActor(actor, requiredSlug = null) {
+  try {
+    if (!actor || !game?.messages?.contents?.length) return null;
+    const messages = game.messages.contents;
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const msg = messages[i];
+      try {
+        const speakerActorId = msg.speaker?.actor || msg.actor?._id;
+        if (speakerActorId !== actor.id) continue;
+        // Check roll
+        const total = msg.rolls?.[0]?.total;
+        if (typeof total !== 'number') continue;
+        if (requiredSlug) {
+          const slug = msg.flags?.pf2e?.context?.slug || null;
+          if (slug !== requiredSlug) continue;
+        }
+        return total;
+      } catch (_) { /* ignore and continue */ }
+    }
+  } catch (_) {}
+  return null;
+}

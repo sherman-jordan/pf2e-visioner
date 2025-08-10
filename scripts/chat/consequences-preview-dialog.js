@@ -143,8 +143,11 @@ export class ConsequencesPreviewDialog extends foundry.applications.api.Applicat
         // Initialize bulk action buttons state
         this.updateBulkActionButtons();
         
-        // Add token hover highlighting
-        this._addHoverListeners();
+        // Selection-based highlighting parity
+        this._applySelectionHighlight();
+        if (!this._selectionHookId) {
+            this._selectionHookId = Hooks.on('controlToken', () => this._applySelectionHighlight());
+        }
         
         // Add icon click handlers
         this.addIconClickHandlers();
@@ -156,36 +159,23 @@ export class ConsequencesPreviewDialog extends foundry.applications.api.Applicat
     /**
      * Add hover listeners to highlight tokens on canvas when hovering over rows
      */
-    _addHoverListeners() {
-        // Add hover listeners to token rows
-        const tokenRows = this.element.querySelectorAll('.token-row, tr[data-token-id]');
-        
-        tokenRows.forEach(row => {
-            const tokenId = row.dataset.tokenId;
-            if (!tokenId) return;
-            
-            // Remove existing listeners to prevent duplicates
-            row.removeEventListener('mouseenter', row._hoverIn);
-            row.removeEventListener('mouseleave', row._hoverOut);
-            
-            // Add new listeners
-            row._hoverIn = () => {
-                const token = canvas.tokens.get(tokenId);
-                if (token) {
-                    token._onHoverIn(new Event('mouseenter'), { hoverOutOthers: true });
+    _applySelectionHighlight() {
+        try {
+            this.element.querySelectorAll('tr.token-row.row-hover')?.forEach((el) => el.classList.remove('row-hover'));
+            const selected = Array.from(canvas?.tokens?.controlled ?? []);
+            if (!selected.length) return;
+            let firstRow = null;
+            for (const tok of selected) {
+                const row = this.element.querySelector(`tr[data-token-id=\"${tok.id}\"]`);
+                if (row) {
+                    row.classList.add('row-hover');
+                    if (!firstRow) firstRow = row;
                 }
-            };
-            
-            row._hoverOut = () => {
-                const token = canvas.tokens.get(tokenId);
-                if (token) {
-                    token._onHoverOut(new Event('mouseleave'));
-                }
-            };
-            
-            row.addEventListener('mouseenter', row._hoverIn);
-            row.addEventListener('mouseleave', row._hoverOut);
-        });
+            }
+            if (firstRow && typeof firstRow.scrollIntoView === 'function') {
+                firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+        } catch (_) {}
     }
 
     /**

@@ -769,7 +769,7 @@
   width: 100%;
   border-collapse: collapse;
   margin: 0;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 /* Visibility Table */
@@ -787,15 +787,15 @@ text-align: center;
 
 /* Specific column width controls */
 .visibility-table .token-image {
-  width: 36px;
+  width: 10%;
   min-width: 36px;
-  max-width: 36px;
+  max-width: 60px;
   text-align: center;
   padding: 4px;
 }
 
 .visibility-table .token-name,
-.cover-table .token-name { width: 18%; min-width: 72px; max-width: 110px; }
+.cover-table .token-name { width: 15%; min-width: 72px; max-width: 110px; }
 
 .token-name strong {
   display: block;
@@ -805,11 +805,13 @@ text-align: center;
   cursor: help;
 }
 
-.visibility-table .visibility-state { width: 28%; min-width: 120px; }
+.visibility-table .visibility-state { width: 26%; min-width: 160px; }
 
-.visibility-table .current-state { width: 26%; min-width: 90px; }
+.visibility-table .current-state { width: 18%; min-width: 120px; }
 
-.visibility-table .mechanical-effects { width: 28%; min-width: 130px; }
+/* New DC and Outcome columns */
+.visibility-table .dc-column { width: 12%; min-width: 90px; }
+.visibility-table .outcome-column { width: 19%; min-width: 140px; }
 
 /* Ensure Effects column header has consistent font size */
 .visibility-table th.mechanical-effects,
@@ -834,6 +836,13 @@ text-align: center;
 
 .token-visibility-manager .visibility-table tbody tr:nth-child(odd) {
   background: transparent !important;
+}
+
+/* Row highlight when hovering the corresponding token on canvas */
+tr.token-row.row-hover {
+  outline: 2px solid var(--pf2e-visioner-primary, #ff9800);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px rgba(255, 152, 0, 0.3);
 }
 
 /* Form Controls */

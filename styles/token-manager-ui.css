@@ -1,3 +1,30 @@
+/* DC and outcome columns */
+.visioner-token-manager table .dc-column,
+.visioner-token-manager table .outcome-column {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Ensure table allows natural sizing so long labels aren't clipped */
+.visioner-token-manager .visibility-table { table-layout: auto; }
+
+.visioner-token-manager .dc-value {
+  font-weight: 600;
+}
+
+.visioner-token-manager .dc-outcome {
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.visioner-token-manager .dc-outcome.success { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.35); }
+.visioner-token-manager .dc-outcome.critical-success { background: rgba(76, 175, 80, 0.22); color: #4caf50; border: 1px solid rgba(76,175,80,0.55); }
+.visioner-token-manager .dc-outcome.failure { background: rgba(244, 67, 54, 0.12); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
+.visioner-token-manager .dc-outcome.critical-failure { background: rgba(244, 67, 54, 0.22); color: #f44336; border: 1px solid rgba(244,67,54,0.55); }
 /*
  * Token Manager UI Improvements
  * Modern, compact UI for the token manager

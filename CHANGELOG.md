@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.5.0] - 2025-08-10
+
+### Added
+- Token Manager: Replaced Effects column with DC column in the Visibility tab.
+  - Target mode shows Perception DC; Observer mode shows Stealth DC.
+- New world setting: "Integrate roll outcome in the token manager".
+  - Optional Outcome column compares the last relevant roll to the DC and displays degree-of-success (Success, Failure, Critical Success/Failure).
+- Selection-based row highlighting across Token Manager and all action dialogs (Seek, Hide, Sneak, Create a Diversion, Point Out, Consequences):
+  - Selecting tokens on the canvas highlights matching rows and auto-scrolls them into view.
+
+### Changed
+- Moved effects descriptions into the Current State tooltip.
+- Unified PC and NPC table widths; responsive colgroups when Outcome is on/off.
+- Outcome chip style matches action dialogs.
+- If Outcome is enabled, the manager widens on open to ensure the column is visible.
+- Removed hover-based row→token and token→row behavior to avoid conflicts; selection now drives row highlighting.
+
+### Fixed
+- Correct DC tooltip text and header alignment.
+- Layout glitches when Outcome is disabled.
+
 ## [1.4.0] - 2025-08-09
 
 ### Added

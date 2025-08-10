@@ -1,5 +1,11 @@
 # Changelog
 
+
+## [1.5.1] - 2025-08-10
+
+### Changed
+- Matching color for dialog theme on highlight row
+
 ## [1.5.0] - 2025-08-10
 
 ### Added

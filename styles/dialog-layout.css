@@ -102,6 +102,43 @@
   box-shadow: inset 0 0 0 2px rgba(255, 152, 0, 0.3);
 }
 
+/* Theme-colored row highlight per dialog */
+.seek-preview-dialog .results-table-container tr.row-hover,
+.seek-preview-dialog .results-table-container tr[data-token-id].row-hover {
+  outline-color: #2c5aa0;
+  box-shadow: inset 0 0 0 2px rgba(44, 90, 160, 0.35);
+}
+
+.hide-preview-dialog .results-table-container tr.row-hover,
+.hide-preview-dialog .results-table-container tr[data-token-id].row-hover {
+  outline-color: #8e24aa;
+  box-shadow: inset 0 0 0 2px rgba(142, 36, 170, 0.35);
+}
+
+.point-out-preview-dialog .results-table-container tr.row-hover,
+.point-out-preview-dialog .results-table-container tr[data-token-id].row-hover {
+  outline-color: #ff9800;
+  box-shadow: inset 0 0 0 2px rgba(255, 152, 0, 0.35);
+}
+
+.sneak-preview-dialog .results-table-container tr.row-hover,
+.sneak-preview-dialog .results-table-container tr[data-token-id].row-hover {
+  outline-color: #6c757d;
+  box-shadow: inset 0 0 0 2px rgba(108, 117, 125, 0.35);
+}
+
+.create-a-diversion-preview-dialog .results-table-container tr.row-hover,
+.create-a-diversion-preview-dialog .results-table-container tr[data-token-id].row-hover {
+  outline-color: #17a2b8;
+  box-shadow: inset 0 0 0 2px rgba(23, 162, 184, 0.35);
+}
+
+.consequences-preview-dialog .results-table-container tr.row-hover,
+.consequences-preview-dialog .results-table-container tr[data-token-id].row-hover {
+  outline-color: #dc3545;
+  box-shadow: inset 0 0 0 2px rgba(220, 53, 69, 0.35);
+}
+
 /* WebKit scrollbar styling (default) */
 .results-table-container::-webkit-scrollbar {
   width: 8px;

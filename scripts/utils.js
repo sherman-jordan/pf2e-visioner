@@ -53,11 +53,11 @@ export function getVisibilityBetween(observer, target) {
  * @returns {Promise} Promise that resolves when visibility is set
  */
 export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false, direction: 'observer_to_target', skipCleanup: false}) {
+  if (!observer?.document?.id || !target?.document?.id) return;
+  
   const visibilityMap = getVisibilityMap(observer);
   visibilityMap[target.document.id] = state;
   await setVisibilityMap(observer, visibilityMap);
-  
-
   
   // Update off-guard effects using ephemeral approach
   try {
@@ -67,6 +67,48 @@ export async function setVisibilityBetween(observer, target, state, options = {s
     }
   } catch (error) {
     console.error('PF2E Visioner: Error updating off-guard effects:', error);
+  }
+}
+
+/**
+ * Clean up visibility and cover data when a token is deleted
+ * @param {TokenDocument} tokenDoc - The token document being deleted
+ */
+export function cleanupDeletedToken(tokenDoc) {
+  if (!tokenDoc?.id) return;
+  
+  try {
+    // Get all tokens on the canvas
+    const allTokens = canvas.tokens?.placeables || [];
+    
+    // For each token, remove the deleted token from its visibility and cover maps
+    allTokens.forEach(async (token) => {
+      if (!token?.document) return;
+      
+      let updated = false;
+      
+      // Clean up visibility map
+      const visibilityMap = getVisibilityMap(token);
+      if (visibilityMap && visibilityMap[tokenDoc.id] !== undefined) {
+        delete visibilityMap[tokenDoc.id];
+        await setVisibilityMap(token, visibilityMap);
+        updated = true;
+      }
+      
+      // Clean up cover map
+      const coverMap = getCoverMap(token);
+      if (coverMap && coverMap[tokenDoc.id] !== undefined) {
+        delete coverMap[tokenDoc.id];
+        await setCoverMap(token, coverMap);
+        updated = true;
+      }
+      
+      if (updated && game.settings?.get?.('pf2e-visioner', 'debug')) {
+        console.log(`[Visioner-debug] Cleaned up maps for deleted token ${tokenDoc.name} (${tokenDoc.id}) from token ${token.name}`);
+      }
+    });
+  } catch (error) {
+    console.error('PF2E Visioner: Error cleaning up data for deleted token:', error);
   }
 }
 

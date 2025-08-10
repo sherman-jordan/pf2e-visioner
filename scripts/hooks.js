@@ -353,19 +353,41 @@ async function onTokenCreated() {
 }
 
 /**
- * Handle token deletion - reapply persistent visibility and cover effects
+ * Handle token deletion - clean up visibility maps and effects
+ * @param {TokenDocument} tokenDoc - The token document being deleted
  */
-async function onTokenDeleted() {
-  // Reapply persistent visibility and cover effects after token removal
-  setTimeout(async () => {
-    await updateTokenVisuals();
+async function onTokenDeleted(tokenDoc) {
+  try {
+    // Import the cleanup functions
+    const { cleanupDeletedToken } = await import('./utils.js');
+    const { cleanupDeletedTokenEffects } = await import('./off-guard-ephemeral.js');
+    const { cleanupDeletedTokenCoverEffects } = await import('./cover-ephemeral.js');
     
-    // Reinitialize hover tooltips to remove deleted token
-    if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
-      cleanupHoverTooltips();
-      initializeHoverTooltips();
+    // Clean up visibility maps and effects
+    if (tokenDoc) {
+      // First clean up the visibility maps
+      cleanupDeletedToken(tokenDoc);
+      
+      // Then clean up visibility and cover effects
+      await Promise.all([
+        cleanupDeletedTokenEffects(tokenDoc),
+        cleanupDeletedTokenCoverEffects(tokenDoc)
+      ]);
     }
-  }, 100);
+    
+    // Reapply persistent visibility and cover effects after token removal
+    setTimeout(async () => {
+      await updateTokenVisuals();
+      
+      // Reinitialize hover tooltips to remove deleted token
+      if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
+        cleanupHoverTooltips();
+        initializeHoverTooltips();
+      }
+    }, 100);
+  } catch (error) {
+    console.error('PF2E Visioner: Error cleaning up deleted token:', error);
+  }
 }
 
 /**

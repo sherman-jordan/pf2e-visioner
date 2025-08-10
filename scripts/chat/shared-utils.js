@@ -149,57 +149,86 @@ export function determineOutcome(total, die, dc) {
  * @returns {Promise} Promise that resolves when all changes are applied
  */
 export async function applyVisibilityChanges(observer, changes, options = {}) {
-    if (!changes || changes.length === 0) return;
+    if (!changes || changes.length === 0 || !observer) return;
     
     // Default options
     const direction = options.direction || 'observer_to_target';
     
     try {
-        // Process each change
-        const promises = changes.map(async (change) => {
-            try {
-                if (!change.target) return;
-                
-                // Get the effective new visibility state
-                const effectiveNewState = change.overrideState || change.newVisibility;
-                if (!effectiveNewState) return;
-                
-                // Handle special case for Point Out where target might be in change.targetToken
-                let targetToken = change.target;
-                if (change.targetToken) {
-                    targetToken = change.targetToken;
-                }
-                
-                // Apply the visibility change with the specified direction
-                await setVisibilityBetween(observer, targetToken, effectiveNewState, {
-                    direction: direction,
-                    durationRounds: options.durationRounds,
-                    initiative: options.initiative,
-                    skipEphemeralUpdate: options.skipEphemeralUpdate,
-                    skipCleanup: options.skipCleanup
-                });
-            } catch (error) {
-                console.error(`${MODULE_TITLE}: Error applying individual visibility change:`, error);
-            }
-        });
+        // Group changes by target to reduce map updates
+        const changesByTarget = new Map();
         
-        // Wait for all changes to complete
-        await Promise.all(promises);
+        // Process and group changes
+        for (const change of changes) {
+            if (!change?.target) continue;
+            
+            // Get the effective new visibility state
+            const effectiveNewState = change.overrideState || change.newVisibility;
+            if (!effectiveNewState) continue;
+            
+            // Handle special case for Point Out where target might be in change.targetToken
+            let targetToken = change.target;
+            if (change.targetToken) {
+                targetToken = change.targetToken;
+            }
+            
+            // Store in map with target ID as key
+            if (targetToken?.document?.id) {
+                changesByTarget.set(targetToken.document.id, {
+                    target: targetToken,
+                    state: effectiveNewState
+                });
+            }
+        }
+        
+        // Process changes in batches to avoid overwhelming the system
+        const batchSize = 5;
+        const targetIds = Array.from(changesByTarget.keys());
+        
+        for (let i = 0; i < targetIds.length; i += batchSize) {
+            const batchIds = targetIds.slice(i, i + batchSize);
+            await Promise.all(batchIds.map(async (targetId) => {
+                const changeData = changesByTarget.get(targetId);
+                if (!changeData) return;
+                
+                try {
+                    await setVisibilityBetween(observer, changeData.target, changeData.state, {
+                        direction: direction,
+                        durationRounds: options.durationRounds,
+                        initiative: options.initiative,
+                        skipEphemeralUpdate: options.skipEphemeralUpdate,
+                        skipCleanup: options.skipCleanup
+                    });
+                } catch (error) {
+                    console.error(`${MODULE_TITLE}: Error applying visibility change:`, error);
+                }
+            }));
+        }
         
         // Update token visuals if requested
-            try {
-                await updateTokenVisuals(observer);
-                for (const change of changes) {
-                    if (change.target) {
-                        await updateTokenVisuals(change.target);
-                    }
+        try {
+            // Update observer visuals once
+            await updateTokenVisuals(observer);
+            
+            // Update target visuals in batches
+            const uniqueTargets = new Set();
+            for (const change of changes) {
+                if (change?.target?.id) {
+                    uniqueTargets.add(change.target);
                 }
-            } catch (error) {
-                console.warn(`${MODULE_TITLE}: Error updating token visuals:`, error);
             }
+            
+            const targetsArray = Array.from(uniqueTargets);
+            for (let i = 0; i < targetsArray.length; i += batchSize) {
+                const batchTargets = targetsArray.slice(i, i + batchSize);
+                await Promise.all(batchTargets.map(target => updateTokenVisuals(target)));
+            }
+        } catch (error) {
+            console.warn(`${MODULE_TITLE}: Error updating token visuals:`, error);
+        }
         
         // Refresh everyone's perception if requested
-            refreshEveryonesPerception();        
+        refreshEveryonesPerception();
     } catch (error) {
         console.error(`${MODULE_TITLE}: Error applying visibility changes:`, error);
         ui.notifications.error(`${MODULE_TITLE}: Failed to apply visibility changes - ${error.message}`);

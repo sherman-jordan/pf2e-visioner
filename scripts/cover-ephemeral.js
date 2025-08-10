@@ -420,23 +420,40 @@ async function pruneEmptyCoverAggregates(effectReceiverToken) {
  */
 export async function cleanupAllCoverEffects() {
     try {
-        for (const actor of game.actors) {
-            const ephemeralEffects = actor.itemTypes.effect.filter(e => 
-                e.flags?.[MODULE_ID]?.isEphemeralCover
-            );
+        // Process actors in batches to avoid overwhelming the system
+        const allActors = Array.from(game.actors || []);
+        const batchSize = 10;
+        
+        for (let i = 0; i < allActors.length; i += batchSize) {
+            const actorBatch = allActors.slice(i, i + batchSize);
             
-            if (ephemeralEffects.length > 0) {
-                const effectIds = ephemeralEffects.map(e => e.id);
-                // Guard against already-removed items
-                const existingIds = effectIds.filter(id => !!actor.items.get(id));
-                if (existingIds.length > 0) {
-                    try {
-                        await actor.deleteEmbeddedDocuments("Item", existingIds);
-                    } catch (e) {
-                        // As a last resort, delete one-by-one to skip missing
-                        for (const id of existingIds) {
-                            if (actor.items.get(id)) {
-                                try { await actor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
+            // Process each actor in the batch
+            for (const actor of actorBatch) {
+                if (!actor?.itemTypes?.effect) continue;
+                
+                const ephemeralEffects = actor.itemTypes.effect.filter(e => 
+                    e.flags?.[MODULE_ID]?.isEphemeralCover
+                );
+                
+                if (ephemeralEffects.length > 0) {
+                    const effectIds = ephemeralEffects.map(e => e.id);
+                    // Guard against already-removed items
+                    const existingIds = effectIds.filter(id => !!actor.items.get(id));
+                    
+                    if (existingIds.length > 0) {
+                        try {
+                            // Delete all effects in a single bulk operation
+                            await actor.deleteEmbeddedDocuments("Item", existingIds);
+                        } catch (error) {
+                            console.error(`[${MODULE_ID}] Error bulk deleting cover effects:`, error);
+                            
+                            // As a last resort, delete one-by-one to skip missing
+                            for (const id of existingIds) {
+                                if (actor.items.get(id)) {
+                                    try { 
+                                        await actor.deleteEmbeddedDocuments("Item", [id]); 
+                                    } catch (_) {}
+                                }
                             }
                         }
                     }
@@ -444,7 +461,7 @@ export async function cleanupAllCoverEffects() {
             }
         }
     } catch (error) {
-        console.error('Error cleaning up ephemeral cover effects:', error);
+        console.error(`[${MODULE_ID}] Error cleaning up ephemeral cover effects:`, error);
     }
 }
 
@@ -454,32 +471,78 @@ export async function cleanupAllCoverEffects() {
  * @param {Token} observerToken - The observing token
  */
 async function cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken) {
-    const ephemeralEffects = targetToken.actor.itemTypes.effect.filter(e => 
-        e.flags?.[MODULE_ID]?.isEphemeralCover && 
-        (e.flags?.[MODULE_ID]?.observerActorSignature === observerToken.actor.signature ||
-         e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
-    );
+    if (!targetToken?.actor || !observerToken?.actor) return;
+    
+    try {
+        // Get all ephemeral cover effects for this observer
+        const ephemeralEffects = targetToken.actor.itemTypes.effect.filter(e => 
+            e.flags?.[MODULE_ID]?.isEphemeralCover && 
+            (e.flags?.[MODULE_ID]?.observerActorSignature === observerToken.actor.signature ||
+             e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
+        );
 
-    if (ephemeralEffects.length > 0) {
-            const effectIds = ephemeralEffects.map(e => e.id);
-            const existingIds = effectIds.filter(id => !!targetToken.actor.items.get(id));
-            if (existingIds.length > 0) {
-                try {
-                    const safe = existingIds.filter(id => !!targetToken.actor.items.get(id));
-                    if (safe.length) await targetToken.actor.deleteEmbeddedDocuments("Item", safe);
-                } catch (e) {
-                    for (const id of existingIds) {
-                        if (targetToken.actor.items.get(id)) {
-                            try { await targetToken.actor.deleteEmbeddedDocuments("Item", [id]); } catch (_) {}
-                        }
+        // Get all cover aggregates
+        const allCoverAggregates = targetToken.actor.itemTypes.effect.filter(e => 
+            e.flags?.[MODULE_ID]?.aggregateCover === true
+        );
+        
+        // Prepare operation collections
+        const effectsToDelete = [];
+        const effectsToUpdate = [];
+        const signature = observerToken.actor.signature;
+        const tokenId = observerToken.id;
+        
+        // Process individual ephemeral effects
+        if (ephemeralEffects.length > 0) {
+            const effectIds = ephemeralEffects.map(e => e.id)
+                .filter(id => !!targetToken.actor.items.get(id));
+                
+            effectsToDelete.push(...effectIds);
+        }
+        
+        // Process aggregates to remove this observer
+        for (const aggregate of allCoverAggregates) {
+            const rules = Array.isArray(aggregate.system.rules) ? 
+                aggregate.system.rules.filter(r => {
+                    // Remove AC rules for this observer
+                    if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                        Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                        return false;
                     }
-                }
+                    // Remove roll options for this observer
+                    if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                        return false;
+                    }
+                    return true;
+                }) : [];
+            
+            if (rules.length === 0) {
+                // Mark for deletion if no rules left
+                effectsToDelete.push(aggregate.id);
+            } else {
+                // Otherwise update with filtered rules
+                effectsToUpdate.push({
+                    _id: aggregate.id,
+                    'system.rules': rules
+                });
             }
+        }
+        
+        // Execute all operations in bulk
+        if (effectsToDelete.length > 0) {
+            await targetToken.actor.deleteEmbeddedDocuments('Item', effectsToDelete);
+        }
+        
+        if (effectsToUpdate.length > 0) {
+            await targetToken.actor.updateEmbeddedDocuments('Item', effectsToUpdate);
+        }
+        
+        // Handle reflex and stealth bonuses after all operations
+        await updateReflexStealthAcrossCoverAggregates(targetToken);
+        
+    } catch (error) {
+        console.error(`[${MODULE_ID}] Error cleaning up cover effects for observer:`, error);
     }
-    // Also remove from aggregate rules across all states
-    await removeObserverFromCoverAggregate(targetToken, observerToken);
-    await pruneEmptyCoverAggregates(targetToken);
-    await dedupeCoverAggregates(targetToken);
 }
 
 export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {
@@ -502,19 +565,600 @@ export async function cleanupCoverEffectsForObserver(targetToken, observerToken)
  * @param {boolean} options.initiative - Boolean (default: null)
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  */
+/**
+ * Clean up all cover effects related to a deleted token
+ * @param {TokenDocument} tokenDoc - The token document being deleted
+ */
+export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
+    if (!tokenDoc?.id || !tokenDoc?.actor?.id) return;
+    
+    try {
+        const deletedToken = {
+            id: tokenDoc.id,
+            actor: {
+                id: tokenDoc.actor.id,
+                signature: tokenDoc.actor.id // Use actor ID as signature for deleted tokens
+            }
+        };
+        
+        // Clean up from all tokens on the canvas
+        const allTokens = canvas.tokens?.placeables || [];
+        
+        // Process in batches to avoid overwhelming the system
+        const batchSize = 10;
+        for (let i = 0; i < allTokens.length; i += batchSize) {
+            const batch = allTokens.slice(i, i + batchSize);
+            
+            for (const token of batch) {
+                if (!token?.actor) continue;
+                
+                // Collect effects to delete and effects to update
+                let effectsToDelete = [];
+                let effectsToUpdate = [];
+                const signature = deletedToken.actor.signature;
+                const tokenId = deletedToken.id;
+                
+                // Find any aggregate effects that might reference the deleted token
+                const effects = token.actor.itemTypes.effect || [];
+                
+                // First, check for effects where this token is the observer
+                const observerEffects = effects.filter(e => 
+                    e.flags?.[MODULE_ID]?.aggregateCover === true && 
+                    e.flags?.[MODULE_ID]?.observerToken === tokenId
+                );
+                
+                if (observerEffects.length > 0) {
+                    console.log(`[${MODULE_ID}] Found ${observerEffects.length} cover effects where deleted token is the observer`);
+                    effectsToDelete.push(...observerEffects.map(e => e.id));
+                    continue; // Skip to the next token, as we're deleting these effects entirely
+                }
+                
+                // Then check for effects that might have rules referencing the deleted token
+                const relevantEffects = effects.filter(e => 
+                    e.flags?.[MODULE_ID]?.aggregateCover === true
+                );
+                
+                console.log(`[${MODULE_ID}] Found ${relevantEffects.length} aggregate cover effects on token ${token.name}`);
+                
+                // For each relevant effect, remove any rules that reference the deleted token
+                for (const effect of relevantEffects) {
+                    const rules = Array.isArray(effect.system?.rules) ? [...effect.system.rules] : [];
+                    
+                    // Filter out rules that reference the deleted token in any way
+                    console.log(`[${MODULE_ID}] Checking ${rules.length} rules in cover effect ${effect.name}`);
+                    
+                    const newRules = rules.filter(r => {
+                        // Convert the entire rule to a string for comprehensive checking
+                        const ruleString = JSON.stringify(r);
+                        
+                        // Check if the rule contains any reference to the deleted token
+                        if (ruleString.includes(signature) || ruleString.includes(tokenId)) {
+                            console.log(`[${MODULE_ID}] Found reference to deleted token in cover rule:`, r);
+                            return false;
+                        }
+                        
+                        return true;
+                    });
+                    
+                    // If rules were removed, update the effect
+                    if (newRules.length !== rules.length) {
+                        console.log(`[${MODULE_ID}] Cover rules changed: ${rules.length} -> ${newRules.length}`);
+                        
+                        if (newRules.length === 0) {
+                            // If no rules left, add to delete list
+                            effectsToDelete.push(effect.id);
+                            console.log(`[${MODULE_ID}] Marking cover effect ${effect.name} for deletion`);
+                        } else {
+                            // Otherwise add to update list
+                            effectsToUpdate.push({
+                                _id: effect.id,
+                                'system.rules': newRules
+                            });
+                            console.log(`[${MODULE_ID}] Marking cover effect ${effect.name} for update with ${newRules.length} rules`);
+                        }
+                    } else {
+                        console.log(`[${MODULE_ID}] No rules changed for cover effect ${effect.name}`);
+                    }
+                }
+                
+                // Also check for legacy cover effects that might reference the deleted token
+                const legacyEffects = effects.filter(e => 
+                    e.flags?.[MODULE_ID]?.cover === true &&
+                    (e.flags?.[MODULE_ID]?.observerToken === tokenId || e.flags?.[MODULE_ID]?.targetToken === tokenId)
+                );
+                
+                if (legacyEffects.length > 0) {
+                    console.log(`[${MODULE_ID}] Found ${legacyEffects.length} legacy cover effects referencing deleted token`);
+                    effectsToDelete.push(...legacyEffects.map(e => e.id));
+                }
+                
+                console.log(`[${MODULE_ID}] Final counts for cover effects: ${effectsToDelete.length} to delete, ${effectsToUpdate.length} to update`);
+                
+                // Perform bulk operations
+                try {
+                    // Delete effects in bulk if any
+                    if (effectsToDelete.length > 0) {
+                        console.log(`[${MODULE_ID}] Deleting ${effectsToDelete.length} cover effects for token ${token.name}`);
+                        await token.actor.deleteEmbeddedDocuments('Item', effectsToDelete);
+                        console.log(`[${MODULE_ID}] Successfully deleted ${effectsToDelete.length} cover effects`);
+                    }
+                    
+                    // Update effects in bulk if any
+                    if (effectsToUpdate.length > 0) {
+                        console.log(`[${MODULE_ID}] Updating ${effectsToUpdate.length} cover effects for token ${token.name}`);
+                        console.log(`[${MODULE_ID}] Cover update data:`, effectsToUpdate);
+                        await token.actor.updateEmbeddedDocuments('Item', effectsToUpdate);
+                        console.log(`[${MODULE_ID}] Successfully updated ${effectsToUpdate.length} cover effects`);
+                    }
+                    
+                    // Update reflex and stealth bonuses if any changes were made
+                    if (effectsToDelete.length > 0 || effectsToUpdate.length > 0) {
+                        await updateReflexStealthAcrossCoverAggregates(token);
+                    }
+                } catch (error) {
+                    console.error(`${MODULE_ID}: Error updating cover effects for deleted token:`, error);
+                }
+            }
+        }
+    } catch (error) {
+        console.error(`${MODULE_ID}: Error cleaning up cover effects for deleted token:`, error);
+    }
+}
+
 export async function updateEphemeralCoverEffects(targetToken, observerToken, coverState, options = {}) {
     if (!targetToken?.actor || !observerToken?.actor) {
         return;
     }
     
     await runWithCoverEffectLock(targetToken.actor, async () => {
-        if (options.removeAllEffects || !coverState || coverState === 'none') {
-            // Already inside lock: call unlocked variant to avoid deadlock
-            await cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken);
-            await pruneEmptyCoverAggregates(targetToken);
-            return;
+        try {
+            const signature = observerToken.actor.signature;
+            const tokenId = observerToken.id;
+            const isRemove = options.removeAllEffects || !coverState || coverState === 'none';
+            
+            // Get all existing cover aggregates
+            const allCoverAggregates = targetToken.actor.itemTypes.effect.filter(e => 
+                e.flags?.[MODULE_ID]?.aggregateCover === true
+            );
+            
+            // Prepare operation collections
+            const effectsToCreate = [];
+            const effectsToUpdate = [];
+            const effectsToDelete = [];
+            
+            if (isRemove) {
+                // Process all aggregates to remove this observer
+                for (const aggregate of allCoverAggregates) {
+                    const rules = Array.isArray(aggregate.system.rules) ? 
+                        aggregate.system.rules.filter(r => {
+                            // Remove AC rules for this observer
+                            if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                                Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                                return false;
+                            }
+                            // Remove roll options for this observer
+                            if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                                return false;
+                            }
+                            return true;
+                        }) : [];
+                    
+                    if (rules.length === 0) {
+                        // Mark for deletion if no rules left
+                        effectsToDelete.push(aggregate.id);
+                    } else {
+                        // Otherwise update with filtered rules
+                        effectsToUpdate.push({
+                            _id: aggregate.id,
+                            'system.rules': rules
+                        });
+                    }
+                }
+            } else {
+                // Adding/updating cover for this observer
+                
+                // Find the aggregate for this cover state
+                let targetAggregate = allCoverAggregates.find(e => 
+                    e.flags?.[MODULE_ID]?.coverState === coverState
+                );
+                
+                if (!targetAggregate) {
+                    // Need to create a new aggregate
+                    const label = getCoverLabel(coverState);
+                    const img = getCoverImageForState(coverState);
+                    
+                    // Create new aggregate data
+                    effectsToCreate.push({
+                        name: label,
+                        type: 'effect',
+                        system: {
+                            description: { value: `<p>Aggregated ${label.toLowerCase()} cover vs multiple observers.</p>`, gm: '' },
+                            rules: [
+                                // Add roll option
+                                { key: 'RollOption', domain: 'all', option: `cover-against:${tokenId}` },
+                                // Add AC modifier
+                                { 
+                                    key: 'FlatModifier', 
+                                    selector: 'ac', 
+                                    type: 'circumstance', 
+                                    value: getCoverBonusByState(coverState), 
+                                    predicate: [`origin:signature:${signature}`] 
+                                }
+                            ],
+                            slug: null,
+                            traits: { otherTags: [], value: [] },
+                            level: { value: 1 },
+                            duration: options.durationRounds >= 0 ? 
+                                { value: options.durationRounds, unit: 'rounds', expiry: 'turn-start', sustained: false } : 
+                                { value: -1, unit: 'unlimited', expiry: null, sustained: false },
+                            tokenIcon: { show: false },
+                            unidentified: true,
+                            start: { 
+                                value: 0, 
+                                initiative: options.initiative ? 
+                                    game.combat?.getCombatantByToken(targetToken?.id)?.initiative : null 
+                            },
+                            badge: null
+                        },
+                        img,
+                        flags: { [MODULE_ID]: { aggregateCover: true, coverState } }
+                    });
+                } else {
+                    // Update existing aggregate
+                    const rules = Array.isArray(targetAggregate.system.rules) ? [...targetAggregate.system.rules] : [];
+                    
+                    // Remove any existing rules for this observer
+                    const filteredRules = rules.filter(r => {
+                        if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                            Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                            return false;
+                        }
+                        if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                            return false;
+                        }
+                        return true;
+                    });
+                    
+                    // Check if rules already exist before adding to prevent duplicates
+                    const hasRollOption = filteredRules.some(r => 
+                        r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`
+                    );
+                    const hasACModifier = filteredRules.some(r => 
+                        r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                        Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)
+                    );
+                    
+                    // Add new rules for this observer only if they don't exist
+                    if (!hasRollOption) {
+                        filteredRules.push({ key: 'RollOption', domain: 'all', option: `cover-against:${tokenId}` });
+                    }
+                    if (!hasACModifier) {
+                        filteredRules.push({ 
+                            key: 'FlatModifier', 
+                            selector: 'ac', 
+                            type: 'circumstance', 
+                            value: getCoverBonusByState(coverState), 
+                            predicate: [`origin:signature:${signature}`] 
+                        });
+                    }
+                    
+                    // Update the aggregate
+                    effectsToUpdate.push({
+                        _id: targetAggregate.id,
+                        'system.rules': filteredRules
+                    });
+                }
+                
+                // Remove this observer from other cover state aggregates
+                for (const aggregate of allCoverAggregates) {
+                    if (aggregate.flags?.[MODULE_ID]?.coverState === coverState) continue;
+                    
+                    const rules = Array.isArray(aggregate.system.rules) ? 
+                        aggregate.system.rules.filter(r => {
+                            if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                                Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                                return false;
+                            }
+                            if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                                return false;
+                            }
+                            return true;
+                        }) : [];
+                    
+                    if (rules.length === 0) {
+                        effectsToDelete.push(aggregate.id);
+                    } else {
+                        effectsToUpdate.push({
+                            _id: aggregate.id,
+                            'system.rules': rules
+                        });
+                    }
+                }
+            }
+            
+            // Execute all operations in bulk
+            if (effectsToDelete.length > 0) {
+                await targetToken.actor.deleteEmbeddedDocuments('Item', effectsToDelete);
+            }
+            
+            if (effectsToUpdate.length > 0) {
+                await targetToken.actor.updateEmbeddedDocuments('Item', effectsToUpdate);
+            }
+            
+            if (effectsToCreate.length > 0) {
+                await targetToken.actor.createEmbeddedDocuments('Item', effectsToCreate);
+            }
+            
+            // Handle reflex and stealth bonuses after all operations
+            if (!isRemove) {
+                await updateReflexStealthAcrossCoverAggregates(targetToken);
+            }
+            
+        } catch (error) {
+            console.error(`[${MODULE_ID}] Error updating cover effects:`, error);
         }
-        // Aggregate mode: add/update observer rule for the given cover state
-        await addObserverToCoverAggregate(targetToken, observerToken, coverState, options);
     });
+}
+
+/**
+ * Batch update cover effects for multiple targets
+ * @param {Token} observerToken - The observer token
+ * @param {Array<Object>} targetUpdates - Array of {target: Token, state: string} objects
+ * @param {Object} options - Optional configuration
+ */
+export async function batchUpdateCoverEffects(observerToken, targetUpdates, options = {}) {
+    if (!observerToken?.actor || !targetUpdates?.length) return;
+    
+    // Group targets by their actor to minimize updates
+    const updatesByTarget = new Map();
+    
+    for (const update of targetUpdates) {
+        if (!update.target?.actor) continue;
+        
+        const targetId = update.target.actor.id;
+        
+        if (!updatesByTarget.has(targetId)) {
+            updatesByTarget.set(targetId, {
+                target: update.target,
+                states: new Map()
+            });
+        }
+        
+        // Group by cover state
+        const targetData = updatesByTarget.get(targetId);
+        const state = update.state || 'none';
+        
+        if (!targetData.states.has(state)) {
+            targetData.states.set(state, []);
+        }
+        
+        targetData.states.get(state).push(observerToken);
+    }
+    
+    // Process each target's batch
+    for (const [targetId, data] of updatesByTarget.entries()) {
+        const { target, states } = data;
+        
+        await runWithCoverEffectLock(target.actor, async () => {
+            try {
+                // Get all existing cover aggregates
+                const allCoverAggregates = target.actor.itemTypes.effect.filter(e => 
+                    e.flags?.[MODULE_ID]?.aggregateCover === true
+                );
+                
+                // Create a map of cover state to aggregate
+                const aggregatesByState = new Map();
+                for (const agg of allCoverAggregates) {
+                    const state = agg.flags?.[MODULE_ID]?.coverState;
+                    if (state) {
+                        aggregatesByState.set(state, agg);
+                    }
+                }
+                
+                // Track changes for each aggregate
+                const rulesByState = new Map();
+                for (const agg of allCoverAggregates) {
+                    const state = agg.flags?.[MODULE_ID]?.coverState;
+                    if (state) {
+                        rulesByState.set(state, Array.isArray(agg.system.rules) ? [...agg.system.rules] : []);
+                    }
+                }
+                
+                const effectsToCreate = [];
+                const effectsToUpdate = [];
+                const effectsToDelete = [];
+                
+                // Process all updates by state
+                for (const [coverState, observers] of states.entries()) {
+                    const isRemove = coverState === 'none';
+                    
+                    if (isRemove) {
+                        // Remove these observers from all aggregates
+                        for (const [state, rules] of rulesByState.entries()) {
+                            const aggregate = aggregatesByState.get(state);
+                            if (!aggregate) continue;
+                            
+                            let modified = false;
+                            const filteredRules = [...rules];
+                            
+                            for (const observer of observers) {
+                                const signature = observer.actor.signature;
+                                const tokenId = observer.id;
+                                
+                                // Filter out rules for this observer
+                                const newRules = filteredRules.filter(r => {
+                                    if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                                        Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                                        modified = true;
+                                        return false;
+                                    }
+                                    if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                                        modified = true;
+                                        return false;
+                                    }
+                                    return true;
+                                });
+                                
+                                if (modified) {
+                                    filteredRules.splice(0, filteredRules.length, ...newRules);
+                                }
+                            }
+                            
+                            if (modified) {
+                                if (filteredRules.length === 0) {
+                                    effectsToDelete.push(aggregate.id);
+                                } else {
+                                    effectsToUpdate.push({
+                                        _id: aggregate.id,
+                                        'system.rules': filteredRules
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        // Add or update this cover state for these observers
+                        let targetAggregate = aggregatesByState.get(coverState);
+                        let rules = rulesByState.get(coverState) || [];
+                        let modified = false;
+                        
+                        for (const observer of observers) {
+                            const signature = observer.actor.signature;
+                            const tokenId = observer.id;
+                            
+                            // Remove any existing rules for this observer
+                            const filteredRules = rules.filter(r => {
+                                if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                                    Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                                    modified = true;
+                                    return false;
+                                }
+                                if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                                    modified = true;
+                                    return false;
+                                }
+                                return true;
+                            });
+                            
+                            // Add new rules for this observer
+                            filteredRules.push({ key: 'RollOption', domain: 'all', option: `cover-against:${tokenId}` });
+                            filteredRules.push({ 
+                                key: 'FlatModifier', 
+                                selector: 'ac', 
+                                type: 'circumstance', 
+                                value: getCoverBonusByState(coverState), 
+                                predicate: [`origin:signature:${signature}`] 
+                            });
+                            
+                            rules = filteredRules;
+                            modified = true;
+                        }
+                        
+                        if (modified) {
+                            if (targetAggregate) {
+                                // Update existing aggregate
+                                effectsToUpdate.push({
+                                    _id: targetAggregate.id,
+                                    'system.rules': rules
+                                });
+                            } else {
+                                // Create new aggregate
+                                const label = getCoverLabel(coverState);
+                                const img = getCoverImageForState(coverState);
+                                
+                                effectsToCreate.push({
+                                    name: label,
+                                    type: 'effect',
+                                    system: {
+                                        description: { value: `<p>Aggregated ${label.toLowerCase()} cover vs multiple observers.</p>`, gm: '' },
+                                        rules: rules,
+                                        slug: null,
+                                        traits: { otherTags: [], value: [] },
+                                        level: { value: 1 },
+                                        duration: options.durationRounds >= 0 ? 
+                                            { value: options.durationRounds, unit: 'rounds', expiry: 'turn-start', sustained: false } : 
+                                            { value: -1, unit: 'unlimited', expiry: null, sustained: false },
+                                        tokenIcon: { show: false },
+                                        unidentified: true,
+                                        start: { 
+                                            value: 0, 
+                                            initiative: options.initiative ? 
+                                                game.combat?.getCombatantByToken(target?.id)?.initiative : null 
+                                        },
+                                        badge: null
+                                    },
+                                    img,
+                                    flags: { [MODULE_ID]: { aggregateCover: true, coverState } }
+                                });
+                            }
+                            
+                            // Remove these observers from other cover state aggregates
+                            for (const [state, stateRules] of rulesByState.entries()) {
+                                if (state === coverState) continue;
+                                
+                                const aggregate = aggregatesByState.get(state);
+                                if (!aggregate) continue;
+                                
+                                let stateModified = false;
+                                let filteredRules = [...stateRules];
+                                
+                                for (const observer of observers) {
+                                    const signature = observer.actor.signature;
+                                    const tokenId = observer.id;
+                                    
+                                    const newRules = filteredRules.filter(r => {
+                                        if (r?.key === 'FlatModifier' && r.selector === 'ac' && 
+                                            Array.isArray(r.predicate) && r.predicate.includes(`origin:signature:${signature}`)) {
+                                            stateModified = true;
+                                            return false;
+                                        }
+                                        if (r?.key === 'RollOption' && r.domain === 'all' && r.option === `cover-against:${tokenId}`) {
+                                            stateModified = true;
+                                            return false;
+                                        }
+                                        return true;
+                                    });
+                                    
+                                    if (stateModified) {
+                                        filteredRules = newRules;
+                                    }
+                                }
+                                
+                                if (stateModified) {
+                                    if (filteredRules.length === 0) {
+                                        effectsToDelete.push(aggregate.id);
+                                    } else {
+                                        effectsToUpdate.push({
+                                            _id: aggregate.id,
+                                            'system.rules': filteredRules
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Execute all operations in bulk
+                if (effectsToDelete.length > 0) {
+                    await target.actor.deleteEmbeddedDocuments('Item', effectsToDelete);
+                }
+                
+                if (effectsToUpdate.length > 0) {
+                    await target.actor.updateEmbeddedDocuments('Item', effectsToUpdate);
+                }
+                
+                if (effectsToCreate.length > 0) {
+                    await target.actor.createEmbeddedDocuments('Item', effectsToCreate);
+                }
+                
+                // Handle reflex and stealth bonuses after all operations
+                if (effectsToCreate.length > 0 || effectsToUpdate.length > 0) {
+                    await updateReflexStealthAcrossCoverAggregates(target);
+                }
+                
+            } catch (error) {
+                console.error(`[${MODULE_ID}] Error in batch update cover:`, error);
+            }
+        });
+    }
 }

@@ -63,15 +63,6 @@ Hooks.once("ready", async () => {
       document.body.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
     }
     
-    // Register auto-cover detection (GM only to avoid duplicates)
-    if (game.user.isGM) {
-      try {
-        const { registerAutoCoverHooks } = await import("./auto-cover.js");
-        registerAutoCoverHooks();
-      } catch (error) {
-        console.error('PF2E Visioner: Failed to register auto-cover hooks:', error);
-      }
-    }
 
     // Clean up any lingering cover effects from previous sessions
     // Run this on a single authoritative client (GM only) to avoid race conditions

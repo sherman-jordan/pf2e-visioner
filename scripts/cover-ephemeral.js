@@ -168,7 +168,7 @@ async function ensureAggregateCoverEffect(effectReceiverToken, state, options = 
         const label = getCoverLabel(state);
         const img = getCoverImageForState(state);
         const base = {
-            name: label,
+            name: `${label} cover`,
             type: 'effect',
             system: {
                 description: { value: `<p>Aggregated ${label.toLowerCase()} cover vs multiple observers.</p>`, gm: '' },
@@ -300,7 +300,7 @@ function getCoverLabel(state) {
     if (entry?.label) {
         try { return game.i18n.localize(entry.label); } catch (_) {}
     }
-    return state ? (state.charAt(0).toUpperCase() + state.slice(1)) : 'None';
+    return state ? (state.charAt(0).toUpperCase() + state.slice(1)) : 'No';
 }
 
 function getCoverImageForState(state) {

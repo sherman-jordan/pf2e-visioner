@@ -99,6 +99,12 @@ export function registerSettings() {
             document.body.classList.add(`pf2e-visioner-colorblind-${value}`);
           }
         };
+      } else if (key === 'autoCover') {
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true
+          });
+        };
       }
       
       try {

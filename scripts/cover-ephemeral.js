@@ -183,10 +183,12 @@ async function ensureAggregateCoverEffect(effectReceiverToken, state, options = 
                 badge: null
             },
             img,
-            flags: { [MODULE_ID]: { aggregateCover: true, coverState: state } }
+            flags: { [MODULE_ID]: { aggregateCover: true, coverState: state, sticky: options.sticky === true } }
         };
         const [created] = await effectReceiverToken.actor.createEmbeddedDocuments('Item', [base]);
         aggregate = created;
+    } else if (options.sticky === true && aggregate?.flags?.[MODULE_ID]?.sticky !== true) {
+        try { await aggregate.update({ [`flags.${MODULE_ID}.sticky`]: true }); } catch (_) {}
     }
     return aggregate;
 }
@@ -385,10 +387,11 @@ async function removeObserverFromCoverAggregate(effectReceiverToken, observerTok
     await dedupeCoverAggregates(effectReceiverToken);
 }
 
-async function pruneEmptyCoverAggregates(effectReceiverToken) {
+async function pruneEmptyCoverAggregates(effectReceiverToken, options = {}) {
     try {
         const candidates = effectReceiverToken.actor.itemTypes.effect.filter(e => {
             if (e.flags?.[MODULE_ID]?.aggregateCover !== true) return false;
+            if (e.flags?.[MODULE_ID]?.sticky === true && !options.force) return false;
             const rules = Array.isArray(e.system?.rules) ? e.system.rules : [];
             // Count AC rules only; RollOption/reflex/stealth don't keep aggregates alive
             const acRules = rules.filter(r => r?.key === 'FlatModifier' && r.selector === 'ac');
@@ -453,11 +456,11 @@ export async function cleanupAllCoverEffects() {
  * @param {Token} targetToken - The token with cover
  * @param {Token} observerToken - The observing token
  */
-async function cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken) {
+async function cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken, options = {}) {
     const ephemeralEffects = targetToken.actor.itemTypes.effect.filter(e => 
         e.flags?.[MODULE_ID]?.isEphemeralCover && 
-        (e.flags?.[MODULE_ID]?.observerActorSignature === observerToken.actor.signature ||
-         e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
+         (e.flags?.[MODULE_ID]?.observerActorSignature === observerToken.actor.signature ||
+          e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
     );
 
     if (ephemeralEffects.length > 0) {
@@ -476,17 +479,20 @@ async function cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken
                 }
             }
     }
-    // Also remove from aggregate rules across all states
-    await removeObserverFromCoverAggregate(targetToken, observerToken);
-    await pruneEmptyCoverAggregates(targetToken);
-    await dedupeCoverAggregates(targetToken);
+    // Also remove from aggregate rules across all states, unless sticky and not forced
+    const aggregates = targetToken.actor.itemTypes.effect.filter(e => e.flags?.[MODULE_ID]?.aggregateCover === true);
+    const isAnySticky = aggregates.some(e => e.flags?.[MODULE_ID]?.sticky === true);
+    if (options.force || !isAnySticky) {
+        await removeObserverFromCoverAggregate(targetToken, observerToken);
+        await pruneEmptyCoverAggregates(targetToken, { force: options.force === true });
+    }
 }
 
-export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {
+export async function cleanupCoverEffectsForObserver(targetToken, observerToken, options = {}) {
     try {
         if (!observerToken) return;
         await runWithCoverEffectLock(targetToken.actor, async () => {
-            await cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken);
+            await cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken, options);
         });
     } catch (error) {
         console.error('Error cleaning up ephemeral cover effects for observer:', error);
@@ -510,8 +516,8 @@ export async function updateEphemeralCoverEffects(targetToken, observerToken, co
     await runWithCoverEffectLock(targetToken.actor, async () => {
         if (options.removeAllEffects || !coverState || coverState === 'none') {
             // Already inside lock: call unlocked variant to avoid deadlock
-            await cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken);
-            await pruneEmptyCoverAggregates(targetToken);
+            await cleanupCoverEffectsForObserverUnlocked(targetToken, observerToken, options);
+            await pruneEmptyCoverAggregates(targetToken, { force: options.force === true });
             return;
         }
         // Aggregate mode: add/update observer rule for the given cover state

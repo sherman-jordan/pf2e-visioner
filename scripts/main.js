@@ -64,7 +64,7 @@ Hooks.once("ready", async () => {
     }
     
     // Register auto-cover detection (GM only to avoid duplicates)
-    if (game.user.isGM) {
+    if (game.user.isGM && game.settings.get("pf2e-visioner", "autoCover")) {
       try {
         const { registerAutoCoverHooks } = await import("./auto-cover.js");
         registerAutoCoverHooks();

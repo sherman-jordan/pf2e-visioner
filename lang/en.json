@@ -156,6 +156,10 @@
       "SETTING_HINT": "Automatically add buttons to Create a Diversion chat messages for applying visibility changes"
     },
     "SETTINGS": {
+      "AUTO_COVER": {
+        "name": "Auto-Cover Application",
+        "hint": "Automatically apply cover when an attack intersects with a token"
+      },
       "ENABLE_HOVER_TOOLTIPS": {
         "name": "Enable Hover Tooltips",
         "hint": "Show visibility status tooltips when hovering over tokens (requires restart)"

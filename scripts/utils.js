@@ -293,10 +293,21 @@ export function getCoverBetween(observer, target) {
  * @returns {Promise} Promise that resolves when cover is set
  */
 export async function setCoverBetween(observer, target, state) {
-  const coverMap = getCoverMap(observer);
-  coverMap[target.document.id] = state;
-  await setCoverMap(observer, coverMap);
-  
+  if (!observer?.document || !target?.document) return;
+  // Update specific key path so we don't rely on object replacement semantics
+  const keyPath = `flags.${MODULE_ID}.cover.${target.document.id}`;
+  await observer.document.update({ [keyPath]: state });
+  // Verify persisted; if not, fallback to full map replacement
+  try {
+    const persisted = await observer.document.getFlag(MODULE_ID, 'cover');
+    if (!persisted || persisted[target.document.id] !== state) {
+      const map = getCoverMap(observer);
+      const newMap = { ...(map || {}) };
+      newMap[target.document.id] = state;
+      await setCoverMap(observer, newMap);
+    }
+  } catch (_) {}
+
   // Apply PF2E condition if applicable
   try {
     const { applyCoverCondition } = await import('./cover-effects.js');
@@ -304,6 +315,40 @@ export async function setCoverBetween(observer, target, state) {
   } catch (error) {
     console.error('Error applying cover condition:', error);
   }
+}
+
+/**
+ * Clear cover state between two tokens
+ * @param {Token} observer - The observing token
+ * @param {Token} target - The target token being observed
+ * @returns {Promise} Promise that resolves when cover is cleared
+ */
+export async function clearCoverBetween(observer, target) {
+  if (!observer?.document || !target?.document) return;
+  // Foundry deletion syntax using -= to remove a key from an object flag
+  const delPath = `flags.${MODULE_ID}.cover.-=${target.document.id}`;
+  await observer.document.update({ [delPath]: null });
+  // Verify persisted; if key remains, try clearing variant keys and fallback to full map rewrite
+  try {
+    let persisted = await observer.document.getFlag(MODULE_ID, 'cover');
+    const id = target.document.id;
+    const uuid = target.document.uuid || '';
+    const last = uuid.includes('.') ? uuid.split('.').pop() : null;
+    if (persisted && (id in persisted || (last && last in persisted))) {
+      const updates = {};
+      updates[`flags.${MODULE_ID}.cover.-=${id}`] = null;
+      if (last) updates[`flags.${MODULE_ID}.cover.-=${last}`] = null;
+      await observer.document.update(updates);
+      persisted = await observer.document.getFlag(MODULE_ID, 'cover');
+      if (persisted && (id in persisted || (last && last in persisted))) {
+        const map = getCoverMap(observer);
+        const newMap = { ...(map || {}) };
+        delete newMap[id];
+        if (last) delete newMap[last];
+        await setCoverMap(observer, newMap);
+      }
+    }
+  } catch (_) {}
 }
 
 /**

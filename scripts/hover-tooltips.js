@@ -9,6 +9,7 @@ import { getCoverMap, getVisibilityMap } from './utils.js';
 let currentHoveredToken = null;
 let visibilityIndicators = new Map();
 let coverIndicators = new Map();
+
 // Mapping of Font Awesome icon classes to glyphs for PIXI.Text rendering
 const COVER_ICON_GLYPHS = {
   'fas fa-shield-alt': '\uf3ed',
@@ -21,12 +22,14 @@ let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 // Initialize with default, will try to get from settings when available
 let tooltipFontSize = 16;
+// Store hook id for cover map updates to refresh tooltips
+let coverMapUpdatedHookId = null;
+
 
 /**
  * Check if tooltips are allowed for the current user and token
  * @param {string} [mode='target'] - The tooltip mode to check ('target' or 'observer')
  * @param {Token} [hoveredToken=null] - The token being hovered (optional)
- * @returns {boolean} True if tooltips should be shown
  */
 function canShowTooltips(mode = 'target', hoveredToken = null) {  
   // Always allow GM to see tooltips if hover tooltips are enabled
@@ -143,6 +146,40 @@ export function initializeHoverTooltips() {
   
   // Note: Alt key handled via highlightObjects hook registered in main hooks
   // O key event listeners added globally in registerHooks
+
+  // Listen for cover map updates to refresh indicators immediately
+  try {
+    if (!coverMapUpdatedHookId) {
+      coverMapUpdatedHookId = Hooks.on(`${MODULE_ID}.coverMapUpdated`, (payload) => {
+        // Lightweight refresh strategy:
+        // 1) If Alt-key tooltips are active, re-show for tracked tokens
+        if (isShowingKeyTooltips && keyTooltipTokens.size > 0) {
+          hideAllVisibilityIndicators();
+          const useObserverMode = !game.user.isGM && game.settings.get(MODULE_ID, 'blockPlayerTargetTooltips');
+          keyTooltipTokens.forEach((tokenId) => {
+            const t = canvas.tokens.get(tokenId);
+            if (t) {
+              showVisibilityIndicatorsForToken(t, useObserverMode ? 'observer' : 'target');
+            }
+          });
+          return;
+        }
+
+        // 2) If hovering a token, refresh its indicators
+        if (currentHoveredToken) {
+          hideAllVisibilityIndicators();
+          showVisibilityIndicators(currentHoveredToken);
+          return;
+        }
+
+        // 3) If in observer mode and have controlled tokens, refresh first controlled
+        if (canvas.tokens.controlled?.length && tooltipMode === 'observer') {
+          hideAllVisibilityIndicators();
+          showVisibilityIndicatorsForToken(canvas.tokens.controlled[0], 'observer');
+        }
+      });
+    }
+  } catch (_) {}
 }
 
 /**
@@ -250,8 +287,15 @@ function showVisibilityIndicators(hoveredToken) {
       otherTokens.forEach(targetToken => {
         const visibilityMap = getVisibilityMap(hoveredToken);
         const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
+        // Also consider cover when visibility is observed
+        let hasCover = false;
+        try {
+          const coverMap = getCoverMap(hoveredToken);
+          const coverState = coverMap[targetToken.document.id] || 'none';
+          hasCover = coverState !== 'none';
+        } catch (_) {}
         
-        if (visibilityState !== 'observed') {
+        if (visibilityState !== 'observed' || hasCover) {
           // Pass relation token (targetToken) to compute cover vs hoveredToken
           addVisibilityIndicator(targetToken, hoveredToken, visibilityState, 'observer', targetToken);
         }
@@ -272,8 +316,15 @@ function showVisibilityIndicators(hoveredToken) {
         nonPlayerTokens.forEach(otherToken => {
           const visibilityMap = getVisibilityMap(otherToken);
           const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
+          // Also consider cover when visibility is observed
+          let hasCover = false;
+          try {
+            const coverMap = getCoverMap(otherToken);
+            const coverState = coverMap[hoveredToken.document.id] || 'none';
+            hasCover = coverState !== 'none';
+          } catch (_) {}
           
-          if (visibilityState !== 'observed') {
+          if (visibilityState !== 'observed' || hasCover) {
             // Show indicator on the OTHER token to show how it sees the player's token
             addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target', hoveredToken);
           }
@@ -285,58 +336,17 @@ function showVisibilityIndicators(hoveredToken) {
       otherTokens.forEach(observerToken => {
         const visibilityMap = getVisibilityMap(observerToken);
         const visibilityState = visibilityMap[hoveredToken?.document?.id] || 'observed';
+        // Also consider cover when visibility is observed
+        let hasCover = false;
+        try {
+          const coverMap = getCoverMap(observerToken);
+          const coverState = coverMap[hoveredToken.document.id] || 'none';
+          hasCover = coverState !== 'none';
+        } catch (_) {}
         
-        if (visibilityState !== 'observed') {
+        if (visibilityState !== 'observed' || hasCover) {
           // Show indicator on the observer token
           addVisibilityIndicator(observerToken, observerToken, visibilityState, 'target', hoveredToken);
-        }
-      });
-    }
-  }
-}
-
-/**
- * Show cover indicators on other tokens
- * @param {Token} hoveredToken - The token being hovered
- */
-function showCoverIndicators(hoveredToken) {
-  const tooltipsAllowed = canShowTooltips(tooltipMode, hoveredToken);
-  if (!tooltipsAllowed) return;
-
-  hideAllCoverIndicators();
-
-  const otherTokens = canvas.tokens.placeables.filter(t => t !== hoveredToken && t.isVisible);
-  if (otherTokens.length === 0) return;
-
-  if (tooltipMode === 'observer') {
-    // How hoveredToken sees others (cover from hoveredToken's perspective)
-    if (!game.user.isGM && !hoveredToken.isOwner) return;
-    otherTokens.forEach(targetToken => {
-      const coverMap = getCoverMap(hoveredToken);
-      const coverState = coverMap[targetToken.document.id] || 'none';
-      if (coverState !== 'none') {
-        addCoverIndicator(targetToken, hoveredToken, coverState, 'observer');
-      }
-    });
-  } else {
-    // Target mode: How others see the hovered token (cover others have against hovered)
-    if (!game.user.isGM) {
-      if (hoveredToken.isOwner) {
-        const nonPlayerTokens = canvas.tokens.placeables.filter(t => t !== hoveredToken && t.isVisible);
-        nonPlayerTokens.forEach(otherToken => {
-          const coverMap = getCoverMap(otherToken);
-          const coverState = coverMap[hoveredToken.document.id] || 'none';
-          if (coverState !== 'none') {
-            addCoverIndicator(otherToken, otherToken, coverState, 'target');
-          }
-        });
-      }
-    } else {
-      otherTokens.forEach(observerToken => {
-        const coverMap = getCoverMap(observerToken);
-        const coverState = coverMap[hoveredToken.document.id] || 'none';
-        if (coverState !== 'none') {
-          addCoverIndicator(observerToken, observerToken, coverState, 'target');
         }
       });
     }
@@ -377,8 +387,15 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
     otherTokens.forEach(targetToken => {
       const visibilityMap = getVisibilityMap(observerToken);
       const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
+      // Also consider cover when visibility is observed
+      let hasCover = false;
+      try {
+        const coverMap = getCoverMap(observerToken);
+        const coverState = coverMap[targetToken.document.id] || 'none';
+        hasCover = coverState !== 'none';
+      } catch (_) {}
       
-      if (visibilityState !== 'observed') {
+      if (visibilityState !== 'observed' || hasCover) {
         addVisibilityIndicator(targetToken, observerToken, visibilityState, 'observer', targetToken);
       }
     });
@@ -394,8 +411,15 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
       otherTokensForPlayer.forEach(otherToken => {
         const visibilityMap = getVisibilityMap(otherToken);
         const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
+        // Also consider cover when visibility is observed
+        let hasCover = false;
+        try {
+          const coverMap = getCoverMap(otherToken);
+          const coverState = coverMap[observerToken.document.id] || 'none';
+          hasCover = coverState !== 'none';
+        } catch (_) {}
         
-        if (visibilityState !== 'observed') {
+        if (visibilityState !== 'observed' || hasCover) {
           // Show indicator on the OTHER token
           addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target', observerToken);
         }
@@ -406,8 +430,15 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
       otherTokens.forEach(otherToken => {
         const visibilityMap = getVisibilityMap(otherToken);
         const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
+        // Also consider cover when visibility is observed
+        let hasCover = false;
+        try {
+          const coverMap = getCoverMap(otherToken);
+          const coverState = coverMap[observerToken.document.id] || 'none';
+          hasCover = coverState !== 'none';
+        } catch (_) {}
         
-        if (visibilityState !== 'observed') {
+        if (visibilityState !== 'observed' || hasCover) {
           // Show indicator on the OTHER token
           addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target', observerToken);
         }
@@ -415,9 +446,8 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
     }
   }
 }
-
-/**
- * Show cover indicators for a specific token (without clearing existing ones)
+/*
+// ... (rest of the code remains the same)
  * Mirrors visibility behavior
  * @param {Token} observerToken
  * @param {string} forceMode
@@ -567,13 +597,19 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
   };
 
   if (coverConfig) {
-    // Two badges: visibility on left, cover on right
-    const visLeft = centerX - spacing / 2 - badgeWidth;
-    const coverLeft = centerX + spacing / 2;
-    indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
-    indicator._coverBadgeEl = placeBadge(coverLeft, centerY, coverConfig.color, coverConfig.icon);
+    if (visibilityState === 'observed') {
+      // Only cover badge, centered (no observed visibility badge)
+      const coverLeft = centerX - badgeWidth / 2;
+      indicator._coverBadgeEl = placeBadge(coverLeft, centerY, coverConfig.color, coverConfig.icon);
+    } else {
+      // Two badges: visibility on left, cover on right
+      const visLeft = centerX - spacing / 2 - badgeWidth;
+      const coverLeft = centerX + spacing / 2;
+      indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
+      indicator._coverBadgeEl = placeBadge(coverLeft, centerY, coverConfig.color, coverConfig.icon);
+    }
   } else {
-    // Only visibility badge, centered
+    // Only visibility badge (non-observed), centered
     const visLeft = centerX - badgeWidth / 2;
     indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
   }
@@ -719,10 +755,6 @@ function addCoverIndicator(targetToken, observerToken, coverState, mode = 'obser
   coverIndicators.set(targetToken.id + '|cover', indicator);
 }
 
-
-
-
-
 /**
  * Hide all visibility indicators
  */
@@ -836,6 +868,14 @@ export function cleanupHoverTooltips() {
   
   // Clear the handlers map
   tokenEventHandlers.clear();
+
+  // Remove coverMapUpdated hook listener if registered
+  try {
+    if (coverMapUpdatedHookId) {
+      Hooks.off(`${MODULE_ID}.coverMapUpdated`, coverMapUpdatedHookId);
+      coverMapUpdatedHookId = null;
+    }
+  } catch (_) {}
   
   // Note: O key event listeners are managed globally in hooks.js
 }

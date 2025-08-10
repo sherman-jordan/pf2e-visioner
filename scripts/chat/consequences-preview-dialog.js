@@ -4,7 +4,7 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
-import { hasActiveEncounter, isTokenInEncounter } from '../utils.js';
+import { hasActiveEncounter } from '../utils.js';
 import { applyVisibilityChanges, filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current consequences dialog
@@ -56,19 +56,14 @@ export class ConsequencesPreviewDialog extends foundry.applications.api.Applicat
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
-        // Filter outcomes based on encounter filter
-        let processedOutcomes = this.outcomes;
-        if (this.encounterOnly && hasActiveEncounter()) {
-            processedOutcomes = this.outcomes.filter(outcome => 
-                isTokenInEncounter(outcome.target)
-            );
-            
-            // Auto-uncheck if no encounter tokens found
-            if (processedOutcomes.length === 0) {
-                this.encounterOnly = false;
-                processedOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter targets found, showing all`);
-            }
+        // Filter outcomes based on encounter filter using the shared utility function
+        let processedOutcomes = filterOutcomesByEncounter(this.outcomes, this.encounterOnly, 'target');
+        
+        // Auto-uncheck if no encounter tokens found
+        if (processedOutcomes.length === 0 && this.encounterOnly && hasActiveEncounter()) {
+            this.encounterOnly = false;
+            processedOutcomes = this.outcomes;
+            ui.notifications.info(`${MODULE_TITLE}: No encounter targets found, showing all`);
         }
         
         // Prepare outcomes with additional UI data

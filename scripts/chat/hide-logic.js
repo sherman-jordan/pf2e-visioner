@@ -27,52 +27,57 @@ export function discoverHideObservers(hidingToken, encounterOnly = false, applyA
     
     const observers = [];
     const integrate = game.settings.get(MODULE_ID, 'integrateCoverVisibility');
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
     
-    // Find all tokens that can currently see the hiding token
+    // Find all tokens on the canvas as potential observers
     for (const token of canvas.tokens.placeables) {
         if (token === hidingToken) continue;
         if (!token.actor) {
             continue;
         }
         
-        // Apply ally filtering if enabled and requested
-        if (applyAllyFilter && shouldFilterAlly(hidingToken, token, 'enemies')) continue;
+        // Apply ally filtering if requested and enforcing RAW
+        if (applyAllyFilter && enforceRAW && shouldFilterAlly(hidingToken, token, 'enemies')) continue;
         
-        // Check encounter filtering if requested
-        if (encounterOnly && !isTokenInEncounter(token)) {
+        // Check encounter filtering if requested (only when enforcing RAW)
+        if (enforceRAW && encounterOnly && !isTokenInEncounter(token)) {
             continue;
         }
         
-        // Check current visibility state - Hide only affects tokens that can currently see you
+        // Determine current visibility state
         let currentVisibility = getVisibilityBetween(token, hidingToken);
         // If map says observed but the actor is concealed, treat as concealed for gating
         if (currentVisibility === 'observed' && hasConcealedCondition(hidingToken)) {
             currentVisibility = 'concealed';
         }
         
-        // For Hide, skip if explicitly set to hidden or undetected
-        if (currentVisibility === 'hidden' || currentVisibility === 'undetected') {         
+        // For Hide, only skip hidden/undetected observers when enforcing RAW
+        if (enforceRAW && (currentVisibility === 'hidden' || currentVisibility === 'undetected')) {
             continue;
         }
 
-        // With integration ON: allow Hide if you either have Standard/Greater cover OR are Concealed
-        // With integration OFF: only allow Hide if Concealed (ignore cover entirely)
-        if (integrate) {
-            const cover = getCoverBetween(token, hidingToken);
-            if (!(cover === 'standard' || cover === 'greater' || currentVisibility === 'concealed')) {
-                continue;
-            }
-        } else {
-            if (currentVisibility !== 'concealed') {
-                continue;
+        // Apply observer inclusion gating (cover/concealment) only when enforcing RAW
+        if (enforceRAW) {
+            // With integration ON: allow Hide if you either have Standard/Greater cover OR are Concealed
+            // With integration OFF: only allow Hide if Concealed (ignore cover entirely)
+            if (integrate) {
+                const cover = getCoverBetween(token, hidingToken);
+                if (!(cover === 'standard' || cover === 'greater' || currentVisibility === 'concealed')) {
+                    continue;
+                }
+            } else {
+                if (currentVisibility !== 'concealed') {
+                    continue;
+                }
             }
         }
         
-        // Get the observer's Perception DC
-        const perceptionDC = extractPerceptionDC(token);
-        if (perceptionDC <= 0) {
-            continue;
+        // Get the observer's Perception DC; when RAW is OFF, tolerate missing DC
+        let perceptionDC = extractPerceptionDC(token);
+        if (!enforceRAW && (!perceptionDC || perceptionDC <= 0)) {
+            perceptionDC = 10;
         }
+        if (enforceRAW && perceptionDC <= 0) continue;
         
         observers.push({
             token,
@@ -156,13 +161,22 @@ export async function previewHideResults(actionData) {
         ui.notifications.error(`${MODULE_TITLE}: Invalid hide data - cannot preview results`);
         return;
     }
+
+    // Actor-level RAW gating: only when enforcement is ON
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+    if (enforceRAW) {
+        const actorToken = actionData.actor;
+        const isConcealed = hasConcealedCondition(actorToken);
+        const hasStdCover = hasStandardCoverFromAnyObserver(actorToken);
+        if (!isConcealed && !hasStdCover) {
+            ui.notifications.info(`${MODULE_TITLE}: Hide requires being Concealed or having Standard Cover from an observer.`);
+            return;
+        }
+    }
     
     const observers = discoverHideObservers(actionData.actor, false, false);
     
-    if (observers.length === 0) {
-        // No need for notification, just silently return
-        return;
-    }
+    // Do not gate dialog on number of observers; gating is actor-only
     
     // Analyze all potential outcomes
     const outcomes = observers.map(observer => analyzeHideOutcome(actionData, observer));
@@ -171,4 +185,26 @@ export async function previewHideResults(actionData) {
     // Create and show ApplicationV2-based preview dialog
     const previewDialog = new HidePreviewDialog(actionData.actor, outcomes, changes, actionData);
     previewDialog.render(true);
+}
+
+/**
+ * Checks if the acting token has at least Standard Cover from any valid observer
+ * This is a lightweight actor-centric prerequisite (does not depend on outcomes)
+ * @param {Token} actorToken
+ * @returns {boolean}
+ */
+function hasStandardCoverFromAnyObserver(actorToken) {
+    try {
+        const tokens = canvas?.tokens?.placeables || [];
+        for (const t of tokens) {
+            if (t === actorToken) continue;
+            if (!t.actor) continue;
+            // Apply ally filter only when enforcing RAW
+            const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+            if (enforceRAW && shouldFilterAlly(actorToken, t, 'enemies')) continue;
+            const cover = getCoverBetween(t, actorToken);
+            if (cover === 'standard' || cover === 'greater') return true;
+        }
+    } catch (_) { /* noop */ }
+    return false;
 }

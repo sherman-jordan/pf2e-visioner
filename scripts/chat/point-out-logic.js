@@ -86,9 +86,10 @@ export function findBestPointOutTarget(pointerToken) {
         if (token.actor?.type !== 'npc' && token.actor?.type !== 'character') return false;
         
         // Pointer must be able to see the target (can't point out what you can't see)
-        // Allow pointing out targets that are observed, concealed, or hidden to the pointer
+        // Only enforce when RAW is ON; when OFF, do not filter outcomes
+        const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
         const pointerVisibility = getVisibilityBetween(pointerToken, token);
-        if (pointerVisibility === 'undetected') return false; // Can't point out what you can't see
+        if (enforceRAW && pointerVisibility === 'undetected') return false;
         
         // Check if any allies can't see this target
         const allies = canvas.tokens.placeables.filter(ally => {
@@ -125,11 +126,12 @@ export function findBestPointOutTarget(pointerToken) {
  */
 export function discoverPointOutAllies(pointerToken, targetToken, encounterOnly = false) {
     if (!pointerToken || !targetToken) return [];
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
     
     // First, check if the pointer can see the target (must be observed, concealed, or hidden)
     const pointerVisibility = getVisibilityBetween(pointerToken, targetToken);
-    if (pointerVisibility === 'undetected') {
-        // Can't point out what you can't see
+    // Only gate when enforcing RAW
+    if (enforceRAW && pointerVisibility === 'undetected') {
         return [];
     }
     
@@ -140,17 +142,21 @@ export function discoverPointOutAllies(pointerToken, targetToken, encounterOnly 
         if (token === pointerToken) continue;
         if (!token.actor) continue;
 
-        // Check encounter filtering
-        if (encounterOnly && !isTokenInEncounter(token)) continue;
+        // Check encounter filtering (only when enforcing RAW)
+        if (enforceRAW && encounterOnly && !isTokenInEncounter(token)) continue;
         
         // Check if this ally can't see the target
         const allyVisibility = getVisibilityBetween(token, targetToken);
-        if (allyVisibility === 'undetected') {
-            const stealthDC = extractStealthDC(targetToken);
-            if (stealthDC > 0) {
+        // Only restrict to allies that can't see when enforcing RAW
+        if (!enforceRAW || allyVisibility === 'undetected') {
+            let stealthDC = extractStealthDC(targetToken);
+            if (!enforceRAW && (!stealthDC || stealthDC <= 0)) {
+                stealthDC = 10;
+            }
+            if (!enforceRAW || stealthDC > 0) {
                 allies.push({
-                    token: token, // The ally who can't see
-                    targetToken: targetToken, // The token being pointed out
+                    token: token,
+                    targetToken: targetToken,
                     stealthDC,
                     currentVisibility: allyVisibility,
                     distance: calculateTokenDistance(pointerToken, token)
@@ -264,8 +270,12 @@ export async function previewPointOutResults(actionData) {
         } catch (_) {}
 
         if (!pointOutTarget) {
-            ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
-            return;
+            const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+            if (enforceRAW) {
+                ui.notifications.info(`${MODULE_TITLE}: No target found for Point Out action`);
+                return;
+            }
+            // Proceed with no target; dialog will open empty
         }
     }
     
@@ -282,11 +292,15 @@ export async function previewPointOutResults(actionData) {
     } catch (_) {}
 
     // Find allies who can't see this target and will benefit from Point Out
-    const allies = discoverPointOutAllies(actionData.actor, pointOutTarget);
+    const allies = pointOutTarget ? discoverPointOutAllies(actionData.actor, pointOutTarget) : [];
     
     if (allies.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: No allies to point out to`);
-        return;
+        const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+        if (enforceRAW) {
+            ui.notifications.info(`${MODULE_TITLE}: No allies to point out to`);
+            return;
+        }
+        // Continue to open dialog empty when enforcement is off
     }
     
     // Analyze all potential outcomes

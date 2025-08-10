@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.0] - 2025-08-10
+
+### Added
+- Enforce RAW Setting: When disabled (default) will skip some conditions checks
+- Delete token cleanup: To prevent memory leaks deleted tokens will have their states deleted from the map
+- Multiple rules per effect: Instead of multiple effects, the module will now handle one effect with multiple rules per state
+
+
+
 ## [1.6.1] - 2025-08-10
 
 ### Fixed

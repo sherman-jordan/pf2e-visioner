@@ -6,7 +6,7 @@
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { analyzePointOutOutcome, discoverPointOutAllies, getPointOutTarget } from './point-out-logic.js';
-import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter } from './shared-utils.js';
+import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter } from './shared-utils.js';
 
 // Store reference to current dialog (shared with SeekPreviewDialog)
 let currentPointOutDialog = null;
@@ -95,19 +95,14 @@ export class PointOutPreviewDialog extends foundry.applications.api.ApplicationV
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
-        // Filter outcomes based on encounter filter
-        let filteredOutcomes = this.outcomes;
-        if (this.encounterOnly && hasActiveEncounter()) {
-            filteredOutcomes = this.outcomes.filter(outcome => 
-                isTokenInEncounter(outcome.target)
-            );
-            
-            // Auto-uncheck if no encounter tokens found
-            if (filteredOutcomes.length === 0) {
-                this.encounterOnly = false;
-                filteredOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter allies found, showing all`);
-            }
+        // Filter outcomes based on encounter filter using the shared utility function
+        let filteredOutcomes = filterOutcomesByEncounter(this.outcomes, this.encounterOnly, 'target');
+        
+        // Auto-uncheck if no encounter tokens found
+        if (filteredOutcomes.length === 0 && this.encounterOnly && hasActiveEncounter()) {
+            this.encounterOnly = false;
+            filteredOutcomes = this.outcomes;
+            ui.notifications.info(`${MODULE_TITLE}: No encounter allies found, showing all`);
         }
         
         const visibilityStates = {

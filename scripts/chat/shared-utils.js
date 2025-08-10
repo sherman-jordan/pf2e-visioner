@@ -304,10 +304,12 @@ export function hasConcealedCondition(token) {
  * @returns {Array} Filtered outcomes
  */
 export function filterOutcomesByEncounter(outcomes, encounterOnly, tokenProperty = 'target') {
+    // If encounter filtering is not enabled or there's no active encounter, return all outcomes
     if (!encounterOnly || !hasActiveEncounter()) {
         return outcomes;
     }
     
+    // Filter outcomes to only include tokens in the current encounter
     return outcomes.filter(outcome => {
         const token = outcome[tokenProperty];
         return isTokenInEncounter(token);

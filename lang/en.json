@@ -223,6 +223,14 @@
       "INTEGRATE_ROLL_OUTCOME": {
         "name": "Integrate roll outcome in the token manager",
         "hint": "Adds a column to the Token Manager to show the last relevant roll result vs current DC and outcome."
+      },
+      "ENFORCE_RAW": {
+        "name": "Enforce RAW",
+        "hint": "When enabled, certain actions follow prerequisites. For example, Hide is only allowed if the acting token is Concealed or has Standard Cover from an observer."
+      },
+      "DEBUG": {
+        "name": "Debug Mode",
+        "hint": "Enable detailed console logging for troubleshooting"
       }
     },
     "UI": {

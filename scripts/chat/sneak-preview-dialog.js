@@ -1,6 +1,6 @@
 import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
-import { getVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
+import { getVisibilityBetween, hasActiveEncounter } from '../utils.js';
 import { applyVisibilityChanges, filterOutcomesByEncounter } from './shared-utils.js';
 
 // Store reference to current sneak dialog
@@ -66,19 +66,14 @@ export class SneakPreviewDialog extends foundry.applications.api.ApplicationV2 {
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         
-        // Filter outcomes based on encounter filter
-        let filteredOutcomes = this.outcomes;
-        if (this.encounterOnly && hasActiveEncounter()) {
-            filteredOutcomes = this.outcomes.filter(outcome => 
-                isTokenInEncounter(outcome.token)
-            );
-            
-            // Auto-uncheck if no encounter tokens found
-            if (filteredOutcomes.length === 0) {
-                this.encounterOnly = false;
-                filteredOutcomes = this.outcomes;
-                ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
-            }
+        // Filter outcomes based on encounter filter using the shared utility function
+        let filteredOutcomes = filterOutcomesByEncounter(this.outcomes, this.encounterOnly, 'token');
+        
+        // Auto-uncheck if no encounter tokens found
+        if (filteredOutcomes.length === 0 && this.encounterOnly && hasActiveEncounter()) {
+            this.encounterOnly = false;
+            filteredOutcomes = this.outcomes;
+            ui.notifications.info(`${MODULE_TITLE}: No encounter observers found, showing all`);
         }
         
         // Prepare visibility states for icons

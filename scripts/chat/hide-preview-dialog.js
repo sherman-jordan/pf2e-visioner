@@ -7,7 +7,7 @@ import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { refreshEveryonesPerception } from '../socket.js';
 import { getCoverBetween, getVisibilityMap } from '../utils.js';
 import { updateTokenVisuals } from '../visual-effects.js';
-import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, isTokenInEncounter, shouldFilterAlly } from './shared-utils.js';
+import { applyVisibilityChanges, filterOutcomesByEncounter, hasActiveEncounter, shouldFilterAlly } from './shared-utils.js';
 
 // Store reference to current hide dialog
 let currentHideDialog = null;
@@ -174,17 +174,14 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
      * @returns {Array} Filtered outcomes
      */
     getFilteredOutcomes() {
-        // Apply ally filtering first (since we disabled it in discoverHideObservers)
-        let filteredOutcomes = this.outcomes.filter(outcome => {
-            return !shouldFilterAlly(this.actorToken, outcome.target, 'enemies');
-        });
+        // Apply ally filtering only when enforcing RAW (since we may disable it in discoverHideObservers)
+        const enforceRAW = game.settings.get('pf2e-visioner', 'enforceRawRequirements');
+        let filteredOutcomes = enforceRAW
+            ? this.outcomes.filter(outcome => !shouldFilterAlly(this.actorToken, outcome.target, 'enemies'))
+            : this.outcomes.slice();
         
-        // Then apply encounter filtering if requested
-        if (this.encounterOnly && hasActiveEncounter()) {
-            filteredOutcomes = filteredOutcomes.filter(outcome => 
-                isTokenInEncounter(outcome.target)
-            );
-        }
+        // Then apply encounter filtering using the shared utility function
+        filteredOutcomes = filterOutcomesByEncounter(filteredOutcomes, this.encounterOnly, 'target');
         
         return filteredOutcomes;
     }

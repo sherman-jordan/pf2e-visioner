@@ -38,12 +38,19 @@ export async function previewConsequencesResults(actionData) {
         }));
                 
         // Filter to include only tokens where the attacking token is hidden or undetected from them
-        let filteredOutcomes = outcomes.filter(outcome => outcome.currentVisibility === 'hidden' || outcome.currentVisibility === 'undetected');
+        const enforceRAW = game.settings.get('pf2e-visioner', 'enforceRawRequirements');
+        let filteredOutcomes = enforceRAW
+            ? outcomes.filter(outcome => outcome.currentVisibility === 'hidden' || outcome.currentVisibility === 'undetected')
+            : outcomes;
 
         // Do NOT fall back to attacker global condition; rely solely on explicit per-observer visibility mapping
 
-        // Even if still no outcomes, still open an empty dialog to indicate no changes
-        
+        // If enforcing RAW and there are no valid outcomes, notify and stop
+        if (enforceRAW && filteredOutcomes.length === 0) {
+            ui.notifications.info(`${MODULE_TITLE}: No valid Consequences targets found`);
+            return;
+        }
+
         // Create dialog
         const dialog = new ConsequencesPreviewDialog(
             attackingToken,
@@ -70,6 +77,8 @@ export function findPotentialTargets(attackingToken) {
     // Get all tokens on the canvas (prefer placed tokens)
     const allTokens = (canvas?.tokens?.placeables || []);
     
+    const enforceRAW = game.settings.get('pf2e-visioner', 'enforceRawRequirements');
+
     // Filter out the attacking token and tokens without actors
     const results = allTokens.filter(token => {
         // Skip the attacking token itself
@@ -82,7 +91,7 @@ export function findPotentialTargets(attackingToken) {
         if (token.actor.type !== 'character' && token.actor.type !== 'npc' && token.actor.type !== 'hazard') return false;
 
         // Optionally filter allies based on module setting (defaults to include allies)
-        if (shouldFilterAlly(attackingToken, token, 'enemies')) return false;
+        if (enforceRAW && shouldFilterAlly(attackingToken, token, 'enemies')) return false;
         
         return true;
     });

@@ -24,6 +24,7 @@ import {
 export function discoverSeekTargets(seekerToken, encounterOnly = false, templateRadiusFeet = null, templateCenter = null) {
     if (!seekerToken) return [];
     const targets = [];
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
     const isInCombat = hasActiveEncounter();
     const limitRangeInCombat = game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
     const limitRangeOutOfCombat = game.settings.get(MODULE_ID, 'limitSeekRangeOutOfCombat');
@@ -36,17 +37,17 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false, template
         if (token === seekerToken) continue;
         if (!token.actor) continue;
         
-        // Apply ally filtering if enabled
-        if (shouldFilterAlly(seekerToken, token, 'enemies')) continue;
+        // Apply ally filtering only when enforcing RAW
+        if (enforceRAW && shouldFilterAlly(seekerToken, token, 'enemies')) continue;
         
-        // Check encounter filtering if requested
-        if (encounterOnly && !isTokenInEncounter(token)) continue;
+        // Check encounter filtering if requested (only when enforcing RAW)
+        if (enforceRAW && encounterOnly && !isTokenInEncounter(token)) continue;
         
         // Calculate distance early for range/template limiting
         let distance = calculateTokenDistance(seekerToken, token);
 
-        // If a template radius is provided, restrict to tokens inside the template radius
-        if (templateRadiusFeet != null && Number.isFinite(templateRadiusFeet)) {
+        // If a template radius is provided, restrict to tokens inside the template radius (only when enforcing RAW)
+        if (enforceRAW && templateRadiusFeet != null && Number.isFinite(templateRadiusFeet)) {
             // If a template center was provided, calculate distance from template center to token
             if (templateCenter && Number.isFinite(templateCenter.x) && Number.isFinite(templateCenter.y)) {
                 try {
@@ -71,18 +72,22 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false, template
         // Apply range limitation based on context and settings
         const usingTemplateArea = templateRadiusFeet != null && Number.isFinite(templateRadiusFeet);
         const isRangeLimited = !usingTemplateArea && ((isInCombat && limitRangeInCombat) || (!isInCombat && limitRangeOutOfCombat));
-        if (isRangeLimited && distance > maxSeekRange) {
+        if (enforceRAW && isRangeLimited && distance > maxSeekRange) {
             // Skip this token as it's out of range
             continue;
         }
         
         // Check current visibility state
         const currentVisibility = getVisibilityBetween(seekerToken, token);
-        if (currentVisibility !== 'undetected' && currentVisibility !== 'hidden') continue;
+        // Only restrict to hidden/undetected when enforcing RAW
+        if (enforceRAW && currentVisibility !== 'undetected' && currentVisibility !== 'hidden') continue;
         
-        // Extract Stealth DC
-        const stealthDC = extractStealthDC(token);
-        if (stealthDC <= 0) continue;
+        // Extract Stealth DC; when RAW is OFF, tolerate missing/invalid DC
+        let stealthDC = extractStealthDC(token);
+        if (!enforceRAW && (!stealthDC || stealthDC <= 0)) {
+            stealthDC = 10;
+        }
+        if (enforceRAW && stealthDC <= 0) continue;
         
         targets.push({
             token,
@@ -236,15 +241,17 @@ export async function previewSeekResults(actionData) {
 
     const targets = discoverSeekTargets(actionData.actor, false, templateRadiusFeet, templateCenter);
     
-    if (targets.length === 0) {
-        // No need for notification, just silently return
-        return;
-    }
-    
     // Analyze all potential outcomes
     const outcomes = targets.map(target => analyzeSeekOutcome(actionData, target));
     const changes = outcomes.filter(outcome => outcome.changed);
     
+    // When enforcing RAW, if there are no valid outcomes, notify and stop
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+    if (enforceRAW && outcomes.length === 0) {
+        ui.notifications.info(`${MODULE_TITLE}: No valid Seek targets found`);
+        return;
+    }
+
     // Create and show ApplicationV2-based preview dialog
     const previewDialog = new SeekPreviewDialog(actionData.actor, outcomes, changes, actionData);
     if (templateId) previewDialog.templateId = templateId;

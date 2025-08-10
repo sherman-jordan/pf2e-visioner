@@ -342,6 +342,13 @@ function extractActionData(message) {
  */
 function injectAutomationUI(message, html, actionData) {
     try {
+        const enforceRAW = game.settings.get('pf2e-visioner', 'enforceRawRequirements');
+
+        // Do not gate UI on seek template presence/targets; actor-level prerequisites handled in previews
+
+        // Do not gate UI on precomputed targets/outcomes; actor-level prerequisites, if any,
+        // are enforced inside individual preview functions.
+
         // If a player-provided Seek template exists on this message but contains no targets,
         // and the current user is GM, do not inject any actions at all.
         if (actionData.actionType === 'seek' && game.user.isGM) {
@@ -351,18 +358,23 @@ function injectAutomationUI(message, html, actionData) {
                 return;
             }
         }
+
         // Check if there are valid targets for this action
         const hasValidTargets = checkForValidTargets(actionData);
 
         // If no valid targets, still allow in special cases
         if (!hasValidTargets) {
+            // Always allow GM for Seek even when there are no precomputed valid targets
+            const allowSeekForGM = actionData.actionType === 'seek' && game.user.isGM;
+            // Allow players for Seek when template mode is enabled
+            const allowSeekForPlayer = actionData.actionType === 'seek' && !game.user.isGM && game.settings.get('pf2e-visioner', 'seekUseTemplate');
             const pendingForGM = (actionData.actionType === 'seek' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.seekTemplate?.hasTargets))
                 || (actionData.actionType === 'point-out' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.pointOut?.hasTargets));
             // Always allow GM to see Point Out actions even if pre-check cannot confirm targets
             const allowPointOutForGM = actionData.actionType === 'point-out' && game.user.isGM;
             // For consequences, hide button when no valid targets, otherwise show as normal
             const allowConsequencesForGM = actionData.actionType === 'consequences' ? false : false;
-            if (!pendingForGM && !allowPointOutForGM && !allowConsequencesForGM) {
+            if (!allowSeekForGM && !allowSeekForPlayer && !pendingForGM && !allowPointOutForGM && !allowConsequencesForGM) {
                 // Mark as processed to avoid repeated checks
                 processedMessages.add(message.id);
                 return;
@@ -451,9 +463,10 @@ function checkForValidTargets(actionData) {
  */
 function checkConsequencesTargets(actionData, potentialTargets) {
     // For consequences, check if any tokens see the attacker as hidden/undetected
+    const enforceRAW = game.settings.get('pf2e-visioner', 'enforceRawRequirements');
     for (const target of potentialTargets) {
         // Respect ally-filter setting instead of raw disposition
-        if (shouldFilterAlly(actionData.actor, target, 'enemies')) continue;
+        if (enforceRAW && shouldFilterAlly(actionData.actor, target, 'enemies')) continue;
 
         // Use the module's per-token visibility map directly
         let visibility = getVisibilityBetween(target, actionData.actor);

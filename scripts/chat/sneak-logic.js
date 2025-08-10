@@ -1,4 +1,4 @@
-import { MODULE_TITLE } from '../constants.js';
+import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
 import { determineOutcome, extractPerceptionDC, shouldFilterAlly } from './shared-utils.js';
 import { SneakPreviewDialog } from './sneak-preview-dialog.js';
@@ -16,6 +16,7 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
     }
 
     const observers = [];
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
     const allTokens = canvas.tokens.placeables;
 
     for (const token of allTokens) {
@@ -25,25 +26,28 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
         // Skip if token has no actor
         if (!token.actor) continue;
         
-        // Apply ally filtering if enabled
-        if (shouldFilterAlly(sneakingToken, token, 'enemies')) continue;
+        // Apply ally filtering only when enforcing RAW
+        if (enforceRAW && shouldFilterAlly(sneakingToken, token, 'enemies')) continue;
 
-        // Apply encounter filtering if requested
-        if (encounterOnly && hasActiveEncounter() && !isTokenInEncounter(token)) {
+        // Apply encounter filtering if requested (only when enforcing RAW)
+        if (enforceRAW && encounterOnly && hasActiveEncounter() && !isTokenInEncounter(token)) {
             continue;
         }
 
         // Get current visibility - how this observer sees the sneaking token
         const currentVisibility = getVisibilityBetween(token, sneakingToken);
         
-        // Only include tokens that the sneaking token is currently hidden or undetected from
-        // Sneak action is used to maintain or improve stealth against these tokens
-        if (!['hidden', 'undetected'].includes(currentVisibility)) {
+        // Only restrict to hidden/undetected when enforcing RAW
+        // When OFF, include all observers regardless of current visibility
+        if (enforceRAW && !['hidden', 'undetected'].includes(currentVisibility)) {
             continue;
         }
 
-        // Get the observer's Perception DC using the shared utility function
-        const perceptionDC = extractPerceptionDC(token);
+        // Get the observer's Perception DC; when RAW is OFF, tolerate missing/invalid DC with fallback 10
+        let perceptionDC = extractPerceptionDC(token);
+        if (!enforceRAW && (!perceptionDC || perceptionDC <= 0)) {
+            perceptionDC = 10;
+        }
         
         observers.push({
             token: token,
@@ -138,17 +142,16 @@ export async function previewSneakResults(sneakData) {
     // Discover potential observers
     const observers = discoverSneakObservers(sneakData.actor, false);
     
-    if (observers.length === 0) {
-        // No need for notification, just silently return
-        return;
-    }
+    // Do not gate dialog on number of observers; gating is actor-only
 
     // Analyze outcomes for each observer
     const outcomes = observers.map(observer => analyzeSneakOutcome(sneakData, observer))
                               .filter(outcome => outcome !== null);
 
-    if (outcomes.length === 0) {
-        // No need for notification, just silently return
+    // When enforcing RAW, if there are no valid outcomes, notify and stop
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+    if (enforceRAW && outcomes.length === 0) {
+        ui.notifications.info(`${MODULE_TITLE}: No valid Sneak observers found`);
         return;
     }
 

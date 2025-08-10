@@ -89,6 +89,7 @@ export const COVER_STATES = {
  * Default module settings
  */
 export const DEFAULT_SETTINGS = {
+
   // Visibility Indicators
   enableHoverTooltips: {
     name: 'PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.name',
@@ -235,6 +236,17 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true
   },
+  
+  // RAW enforcement toggle
+  enforceRawRequirements: {
+    name: 'PF2E_VISIONER.SETTINGS.ENFORCE_RAW.name',
+    hint: 'PF2E_VISIONER.SETTINGS.ENFORCE_RAW.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+  
   // Token Manager
   integrateRollOutcome: {
     name: 'PF2E_VISIONER.SETTINGS.INTEGRATE_ROLL_OUTCOME.name',

@@ -3,7 +3,7 @@
  * Handles the discovery and analysis of Create a Diversion action outcomes
  */
 
-import { MODULE_TITLE } from '../constants.js';
+import { MODULE_TITLE, MODULE_ID } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { CreateADiversionPreviewDialog } from './create-a-diversion-preview-dialog.js';
 import { determineOutcome, extractPerceptionDC, hasConcealedCondition, shouldFilterAlly } from './shared-utils.js';
@@ -20,6 +20,7 @@ export function discoverDiversionObservers(divertingToken) {
     }
 
     const observers = [];
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
     
     // Find all tokens that can currently see the diverting token
     for (const token of canvas.tokens.placeables) {
@@ -29,8 +30,8 @@ export function discoverDiversionObservers(divertingToken) {
         // Skip tokens without actors
         if (!token.actor) continue;
         
-        // Apply ally filtering if enabled
-        if (shouldFilterAlly(divertingToken, token, 'enemies')) continue;
+        // Apply ally filtering only when enforcing RAW
+        if (enforceRAW && shouldFilterAlly(divertingToken, token, 'enemies')) continue;
         
         // Check if this token can see the diverting token
         let visibility = getVisibilityBetween(token, divertingToken);
@@ -145,8 +146,9 @@ export async function previewDiversionResults(diversionData) {
     // Discover all observers that can see the diverting token
     const observers = discoverDiversionObservers(diversionData.actor);
     
-    if (observers.length === 0) {
-        // No valid observers, inform the user
+    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+    if (observers.length === 0 && enforceRAW) {
+        // Respect RAW: if no valid observers, do not open dialog
         ui.notifications.info(`${MODULE_TITLE}: No creatures can see you, so Create a Diversion has no effect.`);
         return;
     }
@@ -157,8 +159,8 @@ export async function previewDiversionResults(diversionData) {
     // Filter to only outcomes with changes
     const changes = outcomes.filter(outcome => outcome.changed);
     
-    if (changes.length === 0) {
-        // No changes detected, inform the user
+    if (changes.length === 0 && enforceRAW) {
+        // Respect RAW: if no actionable changes, do not open dialog
         ui.notifications.info(`${MODULE_TITLE}: Create a Diversion roll did not result in any visibility changes.`);
         return;
     }

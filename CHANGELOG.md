@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.0] - 2025-08-10
+
+### Added
+- Chat Automation: Added Apply Changes / Revert Changes to the automation panel for all actions
 
 ## [1.5.1] - 2025-08-10
 

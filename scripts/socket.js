@@ -148,6 +148,12 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
                       title="Preview and apply Point Out visibility changes">
                 <i class="fas fa-hand-point-right"></i> Open Point Out Results
               </button>
+              <button type="button"
+                      class="visioner-btn visioner-btn-point-out apply-now"
+                      data-action="apply-now-point-out"
+                      title="Apply all calculated changes without opening the dialog">
+                <i class="fas fa-check-double"></i> Apply Changes
+              </button>
             `;
           } else {
             try { panel.remove(); } catch (_) { actions.innerHTML = ''; }

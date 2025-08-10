@@ -16,6 +16,19 @@ import { previewSneakResults } from './sneak-logic.js';
 
 // Cache for processed messages to prevent duplicate processing
 const processedMessages = new Set();
+// Cache applied changes per message so revert can restore original states
+// Seek: messageId -> Array<{ targetId: string, oldVisibility: string }>
+const appliedSeekChangesByMessage = new Map();
+// Hide: messageId -> Array<{ observerId: string, oldVisibility: string }>
+const appliedHideChangesByMessage = new Map();
+// Sneak: messageId -> Array<{ observerId: string, oldVisibility: string }>
+const appliedSneakChangesByMessage = new Map();
+// Create a Diversion: messageId -> Array<{ observerId: string, oldVisibility: string }>
+const appliedDiversionChangesByMessage = new Map();
+// Consequences: messageId -> Array<{ observerId: string, oldVisibility: string }>
+const appliedConsequencesChangesByMessage = new Map();
+// Point Out: messageId -> Array<{ allyId: string, targetTokenId: string, oldVisibility: string }>
+const appliedPointOutChangesByMessage = new Map();
 
 /**
  * Enhanced chat message processor for Seek action automation
@@ -345,9 +358,11 @@ function injectAutomationUI(message, html, actionData) {
         if (!hasValidTargets) {
             const pendingForGM = (actionData.actionType === 'seek' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.seekTemplate?.hasTargets))
                 || (actionData.actionType === 'point-out' && game.user.isGM && !!(message.flags?.['pf2e-visioner']?.pointOut?.hasTargets));
+            // Always allow GM to see Point Out actions even if pre-check cannot confirm targets
+            const allowPointOutForGM = actionData.actionType === 'point-out' && game.user.isGM;
             // For consequences, hide button when no valid targets, otherwise show as normal
             const allowConsequencesForGM = actionData.actionType === 'consequences' ? false : false;
-            if (!pendingForGM && !allowConsequencesForGM) {
+            if (!pendingForGM && !allowPointOutForGM && !allowConsequencesForGM) {
                 // Mark as processed to avoid repeated checks
                 processedMessages.add(message.id);
                 return;
@@ -688,6 +703,12 @@ function buildAutomationPanel(actionData, message) {
                         data-action="${actionName}"
                         title="${tooltip}">
                     <i class="${icon}"></i> ${label}
+                </button>
+                <button type="button"
+                        class="visioner-btn ${buttonClass} apply-now"
+                        data-action="apply-now-seek"
+                        title="Apply all calculated changes without opening the dialog">
+                    <i class="fas fa-check-double"></i> Apply Changes
                 </button>`;
         }
     } else if (isPointOut) {
@@ -699,6 +720,12 @@ function buildAutomationPanel(actionData, message) {
                             data-action="open-point-out-results"
                             title="Preview and apply Point Out visibility changes">
                         <i class="fas fa-hand-point-right"></i> Open Point Out Results
+                    </button>
+                    <button type="button"
+                            class="visioner-btn ${buttonClass} apply-now"
+                            data-action="apply-now-point-out"
+                            title="Apply all calculated changes without opening the dialog">
+                        <i class="fas fa-check-double"></i> Apply Changes
                     </button>`;
             } else {
                 actionButtonsHtml = '';
@@ -710,6 +737,12 @@ function buildAutomationPanel(actionData, message) {
                         data-action="${actionName}"
                         title="${tooltip}">
                     <i class="${icon}"></i> ${label}
+                </button>
+                <button type="button"
+                        class="visioner-btn ${buttonClass} apply-now"
+                        data-action="apply-now-point-out"
+                        title="Apply all calculated changes without opening the dialog">
+                    <i class="fas fa-check-double"></i> Apply Changes
                 </button>`;
         }
     } else {
@@ -720,6 +753,12 @@ function buildAutomationPanel(actionData, message) {
                         data-action="${actionName}"
                         title="${tooltip}">
                     <i class="${icon}"></i> ${label}
+                </button>
+                <button type="button"
+                        class="visioner-btn ${buttonClass} apply-now"
+                        data-action="apply-now-generic"
+                        title="Apply all calculated changes without opening the dialog">
+                    <i class="fas fa-check-double"></i> Apply Changes
                 </button>`;
         }
     }
@@ -846,6 +885,18 @@ function bindAutomationEvents(panel, message, actionData) {
             ) {
                 // Directly delegate to unified preview handler for these actions
                 await previewActionResults(actionData);
+            } else if (action === 'apply-now-seek' && actionData.actionType === 'seek') {
+                await applyNowSeek(actionData, button);
+            } else if (action === 'apply-now-point-out' && actionData.actionType === 'point-out') {
+                await applyNowPointOut(actionData, button);
+            } else if (action === 'apply-now-generic') {
+                await applyNowGeneric(actionData, button);
+            } else if (action === 'revert-now-seek' && actionData.actionType === 'seek') {
+                await revertNowSeek(actionData, button);
+            } else if (action === 'revert-now-point-out' && actionData.actionType === 'point-out') {
+                await revertNowPointOut(actionData, button);
+            } else if (action === 'revert-now-generic') {
+                await revertNowGeneric(actionData, button);
             } else if (typeof action === 'string' && action.startsWith('open-')) {
                 // Future-proof: any other open-* actions fall back to unified preview
                 await previewActionResults(actionData);
@@ -920,6 +971,304 @@ async function previewActionResults(actionData) {
     } else {
         console.warn('[Chat Processor] Unknown action type:', actionData.actionType);
     }
+}
+
+// Apply-now helpers mirror dialogs' Apply All logic
+async function applyNowSeek(actionData, button) {
+  try {
+    const { discoverSeekTargets, analyzeSeekOutcome } = await import('./seek-logic.js');
+    const targets = discoverSeekTargets(actionData.actor, false);
+    const outcomes = targets.map(t => analyzeSeekOutcome(actionData, t));
+    const changes = outcomes
+      .filter(o => o.changed)
+      .map(o => ({ target: o.target, newVisibility: o.newVisibility, oldVisibility: o.oldVisibility, changed: true }));
+    if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: No changes to apply`); return; }
+    const { applyVisibilityChanges } = await import('./shared-utils.js');
+    await applyVisibilityChanges(actionData.actor, changes, { direction: 'observer_to_target' });
+    // Cache original states for revert
+    try {
+      appliedSeekChangesByMessage.set(actionData.messageId, changes.map(c => ({ targetId: c.target.id, oldVisibility: c.oldVisibility })));
+    } catch (_) {}
+    button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-seek');
+  } catch (e) { console.error(e); }
+}
+
+async function applyNowPointOut(actionData, button) {
+  try {
+    const { analyzePointOutOutcome, discoverPointOutAllies, getPointOutTarget, findBestPointOutTarget } = await import('./point-out-logic.js');
+    let target = getPointOutTarget(actionData);
+    if (!target) {
+      // Fallbacks for GM-authored messages: prefer current GM target, then best target heuristic
+      try {
+        if (game.user.targets?.size) target = Array.from(game.user.targets)[0];
+      } catch (_) {}
+      if (!target) target = findBestPointOutTarget(actionData.actor);
+    }
+    if (!target) { ui.notifications.info(`${MODULE_TITLE}: No target for Point Out`); return; }
+    const allies = discoverPointOutAllies(actionData.actor, target, false);
+    // If GM, also ping here for chat-panel-only apply flow
+    try {
+      if (game.user.isGM && target) {
+        const point = target.center || { x: target.x + (target.w ?? (target.width * canvas.grid.size)) / 2, y: target.y + (target.h ?? (target.height * canvas.grid.size)) / 2 };
+        if (typeof canvas.ping === 'function') {
+          canvas.ping(point, { color: game.user?.color, name: game.user?.name || 'Point Out' });
+        } else if (canvas?.pings?.create) {
+          canvas.pings.create({ ...point, user: game.user });
+        }
+      }
+    } catch (_) {}
+    const outcomes = allies.map(a => analyzePointOutOutcome(actionData, a));
+    const changes = outcomes.filter(o => o.changed).map(o => ({ target: o.target, targetToken: target, newVisibility: o.newVisibility, oldVisibility: o.oldVisibility, changed: true }));
+    if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: No changes to apply`); return; }
+    const { applyVisibilityChanges } = await import('./shared-utils.js');
+    for (const ch of changes) {
+      await applyVisibilityChanges(ch.target, [{ target: ch.targetToken, newVisibility: ch.newVisibility }], { direction: 'observer_to_target' });
+    }
+    // Cache for revert
+    try { appliedPointOutChangesByMessage.set(actionData.messageId, changes.map(ch => ({ allyId: ch.target.id, targetTokenId: ch.targetToken.id, oldVisibility: ch.oldVisibility }))); } catch (_) {}
+    button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-point-out');
+  } catch (e) { console.error(e); }
+}
+
+async function applyNowGeneric(actionData, button) {
+  try {
+    // Hide: observers' view of the hider must change
+    if (actionData.actionType === 'hide') {
+      const { discoverHideObservers, analyzeHideOutcome } = await import('./hide-logic.js');
+      const observers = discoverHideObservers(actionData.actor, false, false);
+      const outcomes = observers.map(o => analyzeHideOutcome(actionData, o));
+      const changes = outcomes.filter(o => o.changed);
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: No changes to apply`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const o of changes) {
+        await applyVisibilityChanges(o.target, [{ target: actionData.actor, newVisibility: o.newVisibility }], { direction: 'observer_to_target' });
+      }
+      // Cache applied Hide changes for revert: observer -> oldVisibility
+      try {
+        appliedHideChangesByMessage.set(actionData.messageId, changes.map(o => ({ observerId: (o.target?.id || o.token?.id), oldVisibility: o.oldVisibility })));
+      } catch (_) {}
+      button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-generic');
+      return;
+    }
+    // Sneak: same directionality as Hide
+    if (actionData.actionType === 'sneak') {
+      const { discoverSneakObservers, analyzeSneakOutcome } = await import('./sneak-logic.js');
+      const observers = discoverSneakObservers(actionData.actor, false);
+      const outcomes = observers.map(o => analyzeSneakOutcome(actionData, o));
+      const changes = outcomes.filter(o => o.changed);
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: No changes to apply`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const o of changes) {
+        const observer = o.token || o.target;
+        await applyVisibilityChanges(observer, [{ target: actionData.actor, newVisibility: o.newVisibility }], { direction: 'observer_to_target' });
+      }
+      // Cache applied Sneak changes for revert: observer -> oldVisibility
+      try {
+        appliedSneakChangesByMessage.set(actionData.messageId, changes.map(o => ({ observerId: (o.token?.id || o.target?.id), oldVisibility: o.oldVisibility })));
+      } catch (_) {}
+      button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-generic');
+      return;
+    }
+    // Other actions fall back to generic mapping
+    if (actionData.actionType === 'create-a-diversion') {
+      const { discoverDiversionObservers, analyzeDiversionOutcome } = await import('./create-a-diversion-logic.js');
+      const observers = discoverDiversionObservers(actionData.actor);
+      const outcomes = observers.map(o => analyzeDiversionOutcome(actionData, o));
+      const changes = outcomes.filter(o => o.changed);
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: No changes to apply`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const o of changes) {
+        const observer = o.observer || o.token || o.target;
+        await applyVisibilityChanges(observer, [{ target: actionData.actor, newVisibility: o.newVisibility }], { direction: 'observer_to_target' });
+      }
+      try { appliedDiversionChangesByMessage.set(actionData.messageId, changes.map(o => ({ observerId: (o.observer?.id || o.token?.id || o.target?.id), oldVisibility: o.currentVisibility }))); } catch (_) {}
+      button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-generic');
+      return;
+    }
+    if (actionData.actionType === 'consequences') {
+      // Build outcomes the same way as the dialog, then apply
+      const { findPotentialTargets, computeVisibilityBetween } = await import('./consequences-logic.js');
+      const attacker = actionData.actor;
+      const targets = findPotentialTargets(attacker);
+      if (!targets.length) { ui.notifications.info(`${MODULE_TITLE}: No valid targets for consequences.`); return; }
+      const outcomes = await Promise.all(targets.map(async (target) => ({
+        target,
+        currentVisibility: await computeVisibilityBetween(target, attacker)
+      })));
+      const changed = outcomes.filter(o => o.currentVisibility === 'hidden' || o.currentVisibility === 'undetected');
+      if (!changed.length) { ui.notifications.info(`${MODULE_TITLE}: No visibility changes to apply.`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const o of changed) {
+        await applyVisibilityChanges(o.target, [{ target: attacker, newVisibility: 'observed' }], { direction: 'observer_to_target' });
+      }
+      try { appliedConsequencesChangesByMessage.set(actionData.messageId, changed.map(o => ({ observerId: o.target.id, oldVisibility: o.currentVisibility }))); } catch (_) {}
+      button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-generic');
+      return;
+    }
+    button.html('<i class="fas fa-undo"></i> Revert Changes').attr('data-action', 'revert-now-generic');
+  } catch (e) { console.error(e); }
+}
+
+// Revert helpers mirror dialogs' Revert All
+async function revertNowSeek(actionData, button) {
+  try {
+    const cached = appliedSeekChangesByMessage.get(actionData.messageId) || [];
+    if (!cached.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+    const changes = cached
+      .map(entry => {
+        const tok = canvas?.tokens?.get?.(entry.targetId) || canvas.tokens.placeables.find(t => t.id === entry.targetId);
+        if (!tok) return null;
+        return { target: tok, newVisibility: entry.oldVisibility, changed: true };
+      })
+      .filter(Boolean);
+    if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+    const { applyVisibilityChanges } = await import('./shared-utils.js');
+    await applyVisibilityChanges(actionData.actor, changes, { direction: 'observer_to_target' });
+    try { appliedSeekChangesByMessage.delete(actionData.messageId); } catch (_) {}
+    button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-seek');
+  } catch (e) { console.error(e); }
+}
+
+async function revertNowPointOut(actionData, button) {
+  try {
+    // Use cache first for exact revert
+    const cached = appliedPointOutChangesByMessage.get(actionData.messageId) || [];
+    let changes = cached
+      .map(entry => {
+        const ally = canvas?.tokens?.get?.(entry.allyId) || canvas.tokens.placeables.find(t => t.id === entry.allyId);
+        const target = canvas?.tokens?.get?.(entry.targetTokenId) || canvas.tokens.placeables.find(t => t.id === entry.targetTokenId);
+        if (!ally || !target) return null;
+        return { target: ally, targetToken: target, newVisibility: entry.oldVisibility, changed: true };
+      })
+      .filter(Boolean);
+    if (!changes.length) {
+      // Fallback: recompute and revert
+      const { analyzePointOutOutcome, discoverPointOutAllies, getPointOutTarget } = await import('./point-out-logic.js');
+      const resolvedTarget = getPointOutTarget(actionData);
+      if (!resolvedTarget) { ui.notifications.info(`${MODULE_TITLE}: No target`); return; }
+      const allies = discoverPointOutAllies(actionData.actor, resolvedTarget, false);
+      const outcomes = allies.map(a => analyzePointOutOutcome(actionData, a));
+      changes = outcomes.filter(o => o.changed).map(o => ({ target: o.target, targetToken: resolvedTarget, newVisibility: o.oldVisibility || o.currentVisibility, changed: true }));
+    }
+    if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+    const { applyVisibilityChanges } = await import('./shared-utils.js');
+    for (const ch of changes) {
+      await applyVisibilityChanges(ch.target, [{ target: ch.targetToken, newVisibility: ch.newVisibility }], { direction: 'observer_to_target' });
+    }
+    try { appliedPointOutChangesByMessage.delete(actionData.messageId); } catch (_) {}
+    button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-point-out');
+  } catch (e) { console.error(e); }
+}
+
+async function revertNowGeneric(actionData, button) {
+  try {
+    // Hide: revert using cache first
+    if (actionData.actionType === 'hide') {
+      let cached = appliedHideChangesByMessage.get(actionData.messageId) || [];
+      let changes = cached
+        .map(entry => {
+          const observer = canvas?.tokens?.get?.(entry.observerId) || canvas.tokens.placeables.find(t => t.id === entry.observerId);
+          if (!observer) return null;
+          return { target: observer, newVisibility: entry.oldVisibility, changed: true };
+        })
+        .filter(Boolean);
+      if (!changes.length) {
+        // Fallback: recompute outcomes and revert oldVisibility
+        const { discoverHideObservers, analyzeHideOutcome } = await import('./hide-logic.js');
+        const observers = discoverHideObservers(actionData.actor, false, false);
+        const outcomes = observers.map(o => analyzeHideOutcome(actionData, o));
+        changes = outcomes.filter(o => o.changed).map(o => ({ target: o.target, newVisibility: o.oldVisibility, changed: true }));
+      }
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const ch of changes) {
+        await applyVisibilityChanges(ch.target, [{ target: actionData.actor, newVisibility: ch.newVisibility }], { direction: 'observer_to_target' });
+      }
+      try { appliedHideChangesByMessage.delete(actionData.messageId); } catch (_) {}
+      button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-generic');
+      return;
+    }
+    // Sneak: revert using cache first
+    if (actionData.actionType === 'sneak') {
+      let cached = appliedSneakChangesByMessage.get(actionData.messageId) || [];
+      let changes = cached
+        .map(entry => {
+          const observer = canvas?.tokens?.get?.(entry.observerId) || canvas.tokens.placeables.find(t => t.id === entry.observerId);
+          if (!observer) return null;
+          return { target: observer, newVisibility: entry.oldVisibility, changed: true };
+        })
+        .filter(Boolean);
+      if (!changes.length) {
+        // Fallback: recompute outcomes and revert
+        const { discoverSneakObservers, analyzeSneakOutcome } = await import('./sneak-logic.js');
+        const observers = discoverSneakObservers(actionData.actor, false);
+        const outcomes = observers.map(o => analyzeSneakOutcome(actionData, o));
+        changes = outcomes.filter(o => o.changed).map(o => ({ target: (o.token || o.target), newVisibility: o.oldVisibility, changed: true }));
+      }
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const ch of changes) {
+        await applyVisibilityChanges(ch.target, [{ target: actionData.actor, newVisibility: ch.newVisibility }], { direction: 'observer_to_target' });
+      }
+      try { appliedSneakChangesByMessage.delete(actionData.messageId); } catch (_) {}
+      button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-generic');
+      return;
+    }
+    // Other actions fall back to generic mapping
+    if (actionData.actionType === 'create-a-diversion') {
+      const cached = appliedDiversionChangesByMessage.get(actionData.messageId) || [];
+      let changes = cached
+        .map(entry => {
+          const observer = canvas?.tokens?.get?.(entry.observerId) || canvas.tokens.placeables.find(t => t.id === entry.observerId);
+          if (!observer) return null;
+          return { target: observer, newVisibility: entry.oldVisibility, changed: true };
+        })
+        .filter(Boolean);
+      if (!changes.length) {
+        const { discoverDiversionObservers, analyzeDiversionOutcome } = await import('./create-a-diversion-logic.js');
+        const observers = discoverDiversionObservers(actionData.actor);
+        const outcomes = observers.map(o => analyzeDiversionOutcome(actionData, o));
+        changes = outcomes.filter(o => o.changed).map(o => ({ target: (o.observer || o.token || o.target), newVisibility: o.currentVisibility, changed: true }));
+      }
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const ch of changes) {
+        await applyVisibilityChanges(ch.target, [{ target: actionData.actor, newVisibility: ch.newVisibility }], { direction: 'observer_to_target' });
+      }
+      try { appliedDiversionChangesByMessage.delete(actionData.messageId); } catch (_) {}
+      button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-generic');
+      return;
+    }
+    if (actionData.actionType === 'consequences') {
+      const cached = appliedConsequencesChangesByMessage.get(actionData.messageId) || [];
+      let changes = cached
+        .map(entry => {
+          const observer = canvas?.tokens?.get?.(entry.observerId) || canvas.tokens.placeables.find(t => t.id === entry.observerId);
+          if (!observer) return null;
+          return { target: observer, newVisibility: entry.oldVisibility, changed: true };
+        })
+        .filter(Boolean);
+      if (!changes.length) {
+        // Recompute outcomes then revert
+        const { findPotentialTargets, computeVisibilityBetween } = await import('./consequences-logic.js');
+        const attacker = actionData.actor;
+        const targets = findPotentialTargets(attacker);
+        const outcomes = await Promise.all(targets.map(async (target) => ({ target, currentVisibility: await computeVisibilityBetween(target, attacker) })));
+        changes = outcomes
+          .filter(o => o.currentVisibility === 'hidden' || o.currentVisibility === 'undetected')
+          .map(o => ({ target: o.target, newVisibility: o.currentVisibility, changed: true }));
+      }
+      if (!changes.length) { ui.notifications.info(`${MODULE_TITLE}: Nothing to revert`); return; }
+      const { applyVisibilityChanges } = await import('./shared-utils.js');
+      for (const ch of changes) {
+        await applyVisibilityChanges(ch.target, [{ target: actionData.actor, newVisibility: ch.newVisibility }], { direction: 'observer_to_target' });
+      }
+      try { appliedConsequencesChangesByMessage.delete(actionData.messageId); } catch (_) {}
+      button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-generic');
+      return;
+    }
+    button.html('<i class="fas fa-check-double"></i> Apply Changes').attr('data-action', 'apply-now-generic');
+  } catch (e) { console.error(e); }
 }
 
 /**

@@ -66,7 +66,7 @@ export async function previewConsequencesResults(actionData) {
  * @param {Token} attackingToken - The attacking token
  * @returns {Array} Array of potential target tokens
  */
-function findPotentialTargets(attackingToken) {
+export function findPotentialTargets(attackingToken) {
     // Get all tokens on the canvas (prefer placed tokens)
     const allTokens = (canvas?.tokens?.placeables || []);
     
@@ -96,7 +96,7 @@ function findPotentialTargets(attackingToken) {
  * @param {Token} targetToken - The target token (the one being seen)
  * @returns {string} The visibility state
  */
-async function computeVisibilityBetween(observerToken, targetToken) {
+export async function computeVisibilityBetween(observerToken, targetToken) {
     // First, consult the module's own per-token visibility map. If an explicit mapping exists,
     // always respect it (even when it's 'observed') and do not fall back to heuristics.
     try {

@@ -27,12 +27,10 @@ export function getPointOutTarget(actionData) {
         if (tokenFromContext) return tokenFromContext;
     }
 
-    // Method 1: If GM, do not rely on current user targets for player flows; prefer message flags
-    if (!game.user.isGM) {
-        if (game.user.targets && game.user.targets.size > 0) {
-            targetToken = Array.from(game.user.targets)[0];
-            return targetToken;
-        }
+    // Method 1: Use current user target when available (works for GM and players)
+    if (game.user.targets && game.user.targets.size > 0) {
+        targetToken = Array.from(game.user.targets)[0];
+        return targetToken;
     }
     
     // Method 2: Check message/context flags for target data
@@ -271,6 +269,18 @@ export async function previewPointOutResults(actionData) {
         }
     }
     
+    // If GM, ping the pointed-out target for visibility
+    try {
+        if (game.user.isGM && pointOutTarget) {
+            const point = pointOutTarget.center || { x: pointOutTarget.x + (pointOutTarget.w ?? (pointOutTarget.width * canvas.grid.size)) / 2, y: pointOutTarget.y + (pointOutTarget.h ?? (pointOutTarget.height * canvas.grid.size)) / 2 };
+            if (typeof canvas.ping === 'function') {
+                canvas.ping(point, { color: game.user?.color, name: game.user?.name || 'Point Out' });
+            } else if (canvas?.pings?.create) {
+                canvas.pings.create({ ...point, user: game.user });
+            }
+        }
+    } catch (_) {}
+
     // Find allies who can't see this target and will benefit from Point Out
     const allies = discoverPointOutAllies(actionData.actor, pointOutTarget);
     

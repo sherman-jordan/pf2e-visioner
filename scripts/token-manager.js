@@ -481,6 +481,21 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             if (mergedCover[tokenId] !== newState) mergedCover[tokenId] = newState;
           }
           await setCoverMap(app.observer, mergedCover);
+          // Ephemeral cover updates for changed pairs
+          try {
+            const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
+            const covPromises = [];
+            for (const [tokenId, newState] of Object.entries(coverChanges)) {
+              const prev = currentCover?.[tokenId];
+              if (prev === newState) continue;
+              const targetToken = canvas.tokens.get(tokenId);
+              if (!targetToken) continue;
+              covPromises.push(updateEphemeralCoverEffects(targetToken, app.observer, newState));
+            }
+            if (covPromises.length) {
+              try { await Promise.allSettled(covPromises); } catch (_) {}
+            }
+          } catch (_) {}
         }
       } else {
       // Target Mode: "How others see me" - update each observer's maps
@@ -511,7 +526,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         }
       }
       if (effectPromises.length) {
-        try { await Promise.allSettled(effectPromises); } catch (error) { console.warn('Token Manager: some visibility effect updates failed', error); }
+        try { await Promise.allSettled(effectPromises); } catch (error) { /* silent: non-fatal partial failures */ }
       }
 
       // Handle cover updates for target mode
@@ -529,14 +544,31 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       for (const { token: observerToken, map } of perObserverCover.values()) {
         await setCoverMap(observerToken, map);
       }
+      // Ephemeral cover updates for changed pairs
+      try {
+        const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
+        const covPromises2 = [];
+        for (const [observerTokenId, newCoverState] of Object.entries(coverChanges)) {
+          const observerToken = canvas.tokens.get(observerTokenId);
+          if (!observerToken) continue;
+          const current = getCoverMap(observerToken) || {};
+          const currentState = current[app.observer.document.id];
+          if (currentState !== newCoverState) {
+            covPromises2.push(updateEphemeralCoverEffects(app.observer, observerToken, newCoverState));
+          }
+        }
+        if (covPromises2.length) { try { await Promise.allSettled(covPromises2); } catch (_) {} }
+      } catch (_) {}
     }
     
-    refreshEveryonesPerception();
-    
-    // Import and update visuals
-    const { updateTokenVisuals } = await import('./effects-coordinator.js');
-    await updateTokenVisuals();
-    
+    // Run refresh and visuals in background; don't block UI
+    (async () => {
+      try {
+        refreshEveryonesPerception();
+        const { updateTokenVisuals } = await import('./effects-coordinator.js');
+        await updateTokenVisuals();
+      } catch (_) {}
+    })();
     return app.render();
   }
 
@@ -545,6 +577,9 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    */
   static async applyCurrent(event, button) {
     const app = this;
+    const { runTasksWithProgress } = await import('./progress.js');
+    let didShowProgress = false;
+    let didClose = false;
     
     // First save the current mode's form state
     try {
@@ -578,67 +613,120 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       const isCover = app.activeTab === 'cover';
 
       if (isVisibility) {
-        // Observer → Targets
-        const obsVis = app._savedModeData.observer?.visibility || {};
-        if (Object.keys(obsVis).length > 0) {
-          const currentMap = getVisibilityMap(app.observer) || {};
-          await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
-          const pairs = [];
-          for (const [tokenId, newState] of Object.entries(obsVis)) {
-            const targetToken = canvas.tokens.get(tokenId);
-            if (targetToken) {
-              try { await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, { effectTarget: 'subject' }); } catch (e) { console.error('Token Manager: visibility (observer) effect error', e); }
-              pairs.push({ observerId: app.observer.id, targetId: tokenId, visibility: newState });
+        if (app.mode === 'observer') {
+          // Apply only Observer → Targets
+          const obsVis = app._savedModeData.observer?.visibility || {};
+          if (Object.keys(obsVis).length > 0) {
+            const currentMap = getVisibilityMap(app.observer) || {};
+            await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
+            const pairs = [];
+            const effectTasksObs = [];
+            for (const [tokenId, newState] of Object.entries(obsVis)) {
+              const targetToken = canvas.tokens.get(tokenId);
+              if (targetToken) {
+              // Ensure opposite-state removal happens first for aggregate safety
+              const opts = { effectTarget: 'subject' };
+              effectTasksObs.push((async () => {
+                const other = newState === 'hidden' ? 'undetected' : newState === 'undetected' ? 'hidden' : null;
+                try {
+                  if (other) {
+                    const { removeObserverFromAggregate } = await import('./off-guard-ephemeral.js');
+                    await removeObserverFromAggregate(targetToken, app.observer, other, opts);
+                  }
+                } catch (_) {}
+                await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, opts);
+              })());
+                pairs.push({ observerId: app.observer.id, targetId: tokenId, visibility: newState });
+              }
+            }
+            if (effectTasksObs.length) { runTasksWithProgress(`${MODULE_ID}: Applying Visibility (Observer → Targets)`, effectTasksObs); didShowProgress = true; if (!didClose) { try { this.close(); didClose = true; } catch (_) {} } }
+            (async () => { 
+              try { 
+                const { updateSpecificTokenPairs } = await import('./visual-effects.js'); 
+                await updateSpecificTokenPairs(pairs);
+              } catch (_) {}
+            })();
+            // Reconciliation disabled during investigation to avoid delete/update collisions
+          }
+        } else if (app.mode === 'target') {
+          // Apply only Targets → Observer
+          const tgtVis = app._savedModeData.target?.visibility || {};
+          const pairs2 = [];
+          const effectTasksTgt = [];
+          for (const [observerTokenId, newState] of Object.entries(tgtVis)) {
+            if (typeof newState !== 'string' || !['observed', 'concealed', 'hidden', 'undetected'].includes(newState)) continue;
+            const observerToken = canvas.tokens.get(observerTokenId);
+            if (!observerToken) { continue; }
+            if (observerToken) {
+              const observerVisibilityData = getVisibilityMap(observerToken) || {};
+              await setVisibilityMap(observerToken, { ...observerVisibilityData, [app.observer.document.id]: newState });
+              effectTasksTgt.push(updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' }));
+              pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, visibility: newState });
             }
           }
-          try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs); } catch (_) {}
-        }
-        // Targets → Observer
-        const tgtVis = app._savedModeData.target?.visibility || {};
-        const pairs2 = [];
-        for (const [observerTokenId, newState] of Object.entries(tgtVis)) {
-          const observerToken = canvas.tokens.get(observerTokenId);
-          if (observerToken) {
-            const observerVisibilityData = getVisibilityMap(observerToken) || {};
-            await setVisibilityMap(observerToken, { ...observerVisibilityData, [app.observer.document.id]: newState });
-            try { await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' }); } catch (e) { console.error('Token Manager: visibility (target) effect error', e); }
-            pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, visibility: newState });
+          if (effectTasksTgt.length) {
+            runTasksWithProgress(`${MODULE_ID}: Applying Visibility (Targets → Observer)`, effectTasksTgt);
+            didShowProgress = true; if (!didClose) { try { this.close(); didClose = true; } catch (_) {} }
+            // Reconciliation disabled during investigation to avoid delete/update collisions
           }
+          (async () => { try { if (pairs2.length) { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } } catch (_) {} })();
         }
-        if (pairs2.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } catch (_) {} }
       }
 
       if (isCover) {
-        // Observer → Targets
-        const obsCov = app._savedModeData.observer?.cover || {};
-        if (Object.keys(obsCov).length > 0) {
-          const currentCover = getCoverMap(app.observer) || {};
-          await setCoverMap(app.observer, { ...currentCover, ...obsCov });
-          const pairs = Object.entries(obsCov).map(([tokenId, state]) => ({ observerId: app.observer.id, targetId: tokenId, cover: state }));
-          if (pairs.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs); } catch (_) {} }
-        }
-        // Targets → Observer
-        const tgtCov = app._savedModeData.target?.cover || {};
-        const pairs2 = [];
-        for (const [observerTokenId, newState] of Object.entries(tgtCov)) {
-          const observerToken = canvas.tokens.get(observerTokenId);
-          if (observerToken) {
-            const observerCoverData = getCoverMap(observerToken) || {};
-            await setCoverMap(observerToken, { ...observerCoverData, [app.observer.document.id]: newState });
-            pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, cover: newState });
+        if (app.mode === 'observer') {
+          const obsCov = app._savedModeData.observer?.cover || {};
+          if (Object.keys(obsCov).length > 0) {
+            const currentCover = getCoverMap(app.observer) || {};
+            await setCoverMap(app.observer, { ...currentCover, ...obsCov });
+            const pairs = Object.entries(obsCov).map(([tokenId, state]) => ({ observerId: app.observer.id, targetId: tokenId, cover: state }));
+            // Run ephemeral updates with progress
+            try {
+              const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
+              const covTasks = [];
+              for (const [tokenId, state] of Object.entries(obsCov)) {
+                const targetToken = canvas.tokens.get(tokenId);
+                if (targetToken) covTasks.push(() => updateEphemeralCoverEffects(targetToken, app.observer, state));
+              }
+              if (covTasks.length) { runTasksWithProgress('Applying Cover (Observer → Targets)', covTasks); didShowProgress = true; if (!didClose) { try { this.close(); didClose = true; } catch (_) {} } }
+            } catch (_) {}
+            (async () => { try { if (pairs.length) { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs); } } catch (_) {} })();
           }
+        } else if (app.mode === 'target') {
+          const tgtCov = app._savedModeData.target?.cover || {};
+          const pairs2 = [];
+          for (const [observerTokenId, newState] of Object.entries(tgtCov)) {
+            const observerToken = canvas.tokens.get(observerTokenId);
+            if (observerToken) {
+              const observerCoverData = getCoverMap(observerToken) || {};
+              await setCoverMap(observerToken, { ...observerCoverData, [app.observer.document.id]: newState });
+              pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, cover: newState });
+            }
+          }
+          // Ephemeral updates with progress
+          try {
+            const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
+            const covTasks = [];
+            for (const [observerTokenId, state] of Object.entries(tgtCov)) {
+              const observerToken = canvas.tokens.get(observerTokenId);
+              if (observerToken) covTasks.push(() => updateEphemeralCoverEffects(app.observer, observerToken, state));
+            }
+            if (covTasks.length) { runTasksWithProgress(`${MODULE_ID}: Applying Cover (Targets → Observer)`, covTasks); didShowProgress = true; if (!didClose) { try { this.close(); didClose = true; } catch (_) {} } }
+          } catch (_) {}
+          (async () => { try { if (pairs2.length) { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } } catch (_) {} })();
         }
-        if (pairs2.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } catch (_) {} }
       }
 
-      refreshEveryonesPerception();
+      // Background perception refresh
+      (async () => { try { refreshEveryonesPerception(); } catch (_) {} })();
     } else {
       await this.submit();
     }
 
-    // Targeted refresh will have run; do a light perception update only
-    try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
-    this.close();
+    // Light perception update in background
+    (async () => { try { canvas.perception.update({ refreshVision: true }); } catch (_) {} })();
+    // If not already closed, close now (no progress to show)
+    if (!didClose) { try { this.close(); } catch (_) {} }
   }
 
   /**
@@ -646,6 +734,9 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    */
   static async applyBoth(event, button) {
     const app = this;
+    const { runTasksWithProgress } = await import('./progress.js');
+    let tasks = [];
+    let didClose = false;
     // Save current inputs first
     try {
       const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
@@ -675,9 +766,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         for (const [tokenId, newState] of Object.entries(vis)) {
           const targetToken = canvas.tokens.get(tokenId);
           if (targetToken) {
-            try {
-              await updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, { effectTarget: 'subject' });
-            } catch (error) { console.error('Token Manager: Error updating visibility effects:', error); }
+            tasks.push(() => updateEphemeralEffectsForVisibility(app.observer, targetToken, newState, { effectTarget: 'subject' }));
           }
         }
       }
@@ -685,8 +774,15 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
         const currentCover = getCoverMap(app.observer) || {};
         const mergedCover = { ...currentCover, ...cov };
         await setCoverMap(app.observer, mergedCover);
-        // Apply cover effects and light refresh
+        // Queue cover ephemeral effects and visuals
         try {
+          const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
+          for (const [tokenId, state] of Object.entries(cov)) {
+            const targetToken = canvas.tokens.get(tokenId);
+            if (targetToken) {
+              tasks.push(() => updateEphemeralCoverEffects(targetToken, app.observer, state));
+            }
+          }
           const pairs = Object.entries(cov).map(([tokenId, state]) => ({ observerId: app.observer.id, targetId: tokenId, cover: state }));
           if (pairs.length) {
             const { updateSpecificTokenPairs } = await import('./visual-effects.js');
@@ -700,16 +796,16 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       const vis = (app._savedModeData.target?.visibility) || {};
       const cov = (app._savedModeData.target?.cover) || {};
       const pairs2 = [];
+      
       for (const [observerTokenId, newState] of Object.entries(vis)) {
+        if (typeof newState !== 'string' || !['observed', 'concealed', 'hidden', 'undetected'].includes(newState)) continue;
         const observerToken = canvas.tokens.get(observerTokenId);
         if (observerToken) {
           const observerVisibilityData = getVisibilityMap(observerToken) || {};
           const merged = { ...observerVisibilityData, [app.observer.document.id]: newState };
           await setVisibilityMap(observerToken, merged);
-          try {
-            await updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' });
-          } catch (error) { console.error('Token Manager: Error updating visibility effects:', error); }
-        }
+          tasks.push(() => updateEphemeralEffectsForVisibility(observerToken, app.observer, newState, { effectTarget: 'subject' }));
+        } else { }
       }
       for (const [observerTokenId, newState] of Object.entries(cov)) {
         const observerToken = canvas.tokens.get(observerTokenId);
@@ -719,17 +815,25 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
           await setCoverMap(observerToken, mergedCover);
           // Queue pair for visual/effect update
           pairs2.push({ observerId: observerTokenId, targetId: app.observer.id, cover: newState });
+          // Queue cover ephemeral effect
+          try {
+            const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
+            tasks.push(() => updateEphemeralCoverEffects(app.observer, observerToken, newState));
+          } catch (_) {}
         }
       }
       if (pairs2.length) { try { const { updateSpecificTokenPairs } = await import('./visual-effects.js'); await updateSpecificTokenPairs(pairs2); } catch (_) {} }
+      
     };
 
     await applyObserverMode();
     await applyTargetMode();
 
+    if (tasks.length) { runTasksWithProgress(`${MODULE_ID}: Applying Changes`, tasks); if (!didClose) { try { this.close(); didClose = true; } catch (_) {} } }
+
     refreshEveryonesPerception();
     try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
-    this.close();
+    if (!didClose) this.close();
   }
 
   /**
@@ -955,10 +1059,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       const state = button.dataset.state;
       const targetType = button.dataset.targetType; // 'pc' or 'npc'
       
-      if (!state) {
-        console.warn('No state specified for bulk visibility action');
-        return;
-      }
+      if (!state) { return; }
       
       // Update icon selections in the form, filtered by target type
       const form = event.currentTarget.closest('form');
@@ -1004,10 +1105,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       const state = button.dataset.state;
       const targetType = button.dataset.targetType; // 'pc' or 'npc'
       
-      if (!state) {
-        console.warn('No state specified for bulk cover action');
-        return;
-      }
+      if (!state) { return; }
       
       // Update icon selections in the form, filtered by target type
       const form = event.currentTarget.closest('form');

@@ -685,7 +685,11 @@ function buildAutomationPanel(actionData, message) {
                     <button type=\"button\" 
                             class=\"visioner-btn ${buttonClass}\" 
                             data-action=\"open-seek-results\"
-                            title=\"${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP')}\">\n                        <i class=\"${icon}\"></i> ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS')}\n                    </button>`;
+                            title=\"${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP')}\">\n                        <i class=\"${icon}\"></i> ${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS')}\n                    </button>
+                    <button type=\"button\"
+                            class=\"visioner-btn ${buttonClass} apply-now\"
+                            data-action=\"apply-now-seek\"
+                            title=\"Apply all calculated changes without opening the dialog\">\n                        <i class=\"fas fa-check-double\"></i> Apply Changes\n                    </button>`;
             } else {
                 // Pending template from player has no targets: show nothing at all
                 actionButtonsHtml = '';
@@ -696,6 +700,13 @@ function buildAutomationPanel(actionData, message) {
                         class=\"visioner-btn ${buttonClass} setup-template\"
                         data-action=\"${hasExistingTemplate ? 'remove-seek-template' : 'setup-seek-template'}\"
                         title=\"${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}\">\n                    <i class=\"fas fa-bullseye\"></i> ${hasExistingTemplate ? game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE') : game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE')}\n                </button>`;
+            if (hasExistingTemplate) {
+                actionButtonsHtml += `
+                <button type=\"button\"
+                        class=\"visioner-btn ${buttonClass} apply-now\"
+                        data-action=\"apply-now-seek\"
+                        title=\"Apply all calculated changes without opening the dialog\">\n                    <i class=\"fas fa-check-double\"></i> Apply Changes\n                </button>`;
+            }
         } else if (game.user.isGM) {
             actionButtonsHtml = `
                 <button type="button" 

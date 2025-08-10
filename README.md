@@ -1,3 +1,7 @@
+[![Latest Version](https://img.shields.io/github/v/release/roi007leaf/pf2e-visioner?display_name=tag&sort=semver&label=Latest%20Version)](https://github.com/roi007leaf/pf2e-visioner/releases/latest)
+
+![Latest Downloads](https://img.shields.io/github/downloads/roi007leaf/pf2e-visioner/latest/total?color=blue&label=latest%20downloads)
+
 # PF2E Visioner – Full Feature Overview
 
 PF2E Visioner is a visibility and perception toolkit for Foundry VTT’s PF2E system. It lets you control what every creature can see, automates PF2e visibility-changing actions, and provides clean UX for GMs and players.

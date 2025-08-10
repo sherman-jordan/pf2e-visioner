@@ -63,6 +63,7 @@ Hooks.once("ready", async () => {
       document.body.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
     }
     
+
     // Clean up any lingering cover effects from previous sessions
     // Run this on a single authoritative client (GM only) to avoid race conditions
     if (game.user.isGM) {

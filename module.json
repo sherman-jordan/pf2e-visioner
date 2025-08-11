@@ -9,14 +9,12 @@
       "flags": {}
     }
   ],
-  "version": "1.7.1",
+  "version": "1.9.0",
   "compatibility": {
     "minimum": "13.341",
     "verified": "13.346"
   },
-  "esmodules": [
-    "scripts/main.js"
-  ],
+  "esmodules": ["scripts/main.js"],
   "styles": [
     {
       "src": "styles/base.css"
@@ -70,16 +68,8 @@
   "socket": true,
   "flags": {
     "hotReload": {
-      "extensions": [
-        "css",
-        "hbs",
-        "json"
-      ],
-      "paths": [
-        "styles",
-        "templates",
-        "lang"
-      ]
+      "extensions": ["css", "hbs", "json"],
+      "paths": ["styles", "templates", "lang"]
     }
   },
   "relationships": {

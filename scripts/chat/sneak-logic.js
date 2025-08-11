@@ -1,7 +1,15 @@
-import { MODULE_TITLE, MODULE_ID } from '../constants.js';
-import { getVisibilityBetween, hasActiveEncounter, isTokenInEncounter } from '../utils.js';
-import { determineOutcome, extractPerceptionDC, shouldFilterAlly } from './shared-utils.js';
-import { SneakPreviewDialog } from './sneak-preview-dialog.js';
+import { MODULE_TITLE, MODULE_ID } from "../constants.js";
+import {
+  getVisibilityBetween,
+  hasActiveEncounter,
+  isTokenInEncounter,
+} from "../utils.js";
+import {
+  determineOutcome,
+  extractPerceptionDC,
+  shouldFilterAlly,
+} from "./shared-utils.js";
+import { SneakPreviewDialog } from "./sneak-preview-dialog.js";
 
 /**
  * Discovers tokens that can potentially see the sneaking token
@@ -10,53 +18,61 @@ import { SneakPreviewDialog } from './sneak-preview-dialog.js';
  * @returns {Array} Array of observer data objects
  */
 export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
-    if (!sneakingToken) {
-        console.warn(`${MODULE_TITLE}: No sneaking token provided to discoverSneakObservers`);
-        return [];
+  if (!sneakingToken) {
+    console.warn(
+      `${MODULE_TITLE}: No sneaking token provided to discoverSneakObservers`,
+    );
+    return [];
+  }
+
+  const observers = [];
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+  const allTokens = canvas.tokens.placeables;
+
+  for (const token of allTokens) {
+    // Skip the sneaking token itself
+    if (token.id === sneakingToken.id) continue;
+
+    // Skip if token has no actor
+    if (!token.actor) continue;
+
+    // Apply ally filtering only when enforcing RAW
+    if (enforceRAW && shouldFilterAlly(sneakingToken, token, "enemies"))
+      continue;
+
+    // Apply encounter filtering if requested (only when enforcing RAW)
+    if (
+      enforceRAW &&
+      encounterOnly &&
+      hasActiveEncounter() &&
+      !isTokenInEncounter(token)
+    ) {
+      continue;
     }
 
-    const observers = [];
-    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
-    const allTokens = canvas.tokens.placeables;
+    // Get current visibility - how this observer sees the sneaking token
+    const currentVisibility = getVisibilityBetween(token, sneakingToken);
 
-    for (const token of allTokens) {
-        // Skip the sneaking token itself
-        if (token.id === sneakingToken.id) continue;
-
-        // Skip if token has no actor
-        if (!token.actor) continue;
-        
-        // Apply ally filtering only when enforcing RAW
-        if (enforceRAW && shouldFilterAlly(sneakingToken, token, 'enemies')) continue;
-
-        // Apply encounter filtering if requested (only when enforcing RAW)
-        if (enforceRAW && encounterOnly && hasActiveEncounter() && !isTokenInEncounter(token)) {
-            continue;
-        }
-
-        // Get current visibility - how this observer sees the sneaking token
-        const currentVisibility = getVisibilityBetween(token, sneakingToken);
-        
-        // Only restrict to hidden/undetected when enforcing RAW
-        // When OFF, include all observers regardless of current visibility
-        if (enforceRAW && !['hidden', 'undetected'].includes(currentVisibility)) {
-            continue;
-        }
-
-        // Get the observer's Perception DC; when RAW is OFF, tolerate missing/invalid DC with fallback 10
-        let perceptionDC = extractPerceptionDC(token);
-        if (!enforceRAW && (!perceptionDC || perceptionDC <= 0)) {
-            perceptionDC = 10;
-        }
-        
-        observers.push({
-            token: token,
-            currentVisibility: currentVisibility,
-            perceptionDC: perceptionDC
-        });
+    // Only restrict to hidden/undetected when enforcing RAW
+    // When OFF, include all observers regardless of current visibility
+    if (enforceRAW && !["hidden", "undetected"].includes(currentVisibility)) {
+      continue;
     }
 
-    return observers;
+    // Get the observer's Perception DC; when RAW is OFF, tolerate missing/invalid DC with fallback 10
+    let perceptionDC = extractPerceptionDC(token);
+    if (!enforceRAW && (!perceptionDC || perceptionDC <= 0)) {
+      perceptionDC = 10;
+    }
+
+    observers.push({
+      token: token,
+      currentVisibility: currentVisibility,
+      perceptionDC: perceptionDC,
+    });
+  }
+
+  return observers;
 }
 
 /**
@@ -66,64 +82,69 @@ export function discoverSneakObservers(sneakingToken, encounterOnly = false) {
  * @returns {Object} Analysis result
  */
 export function analyzeSneakOutcome(sneakData, observer) {
-    if (!sneakData || !observer) {
-        console.warn(`${MODULE_TITLE}: Invalid data provided to analyzeSneakOutcome`);
-        return null;
-    }
+  if (!sneakData || !observer) {
+    console.warn(
+      `${MODULE_TITLE}: Invalid data provided to analyzeSneakOutcome`,
+    );
+    return null;
+  }
 
-    const roll = sneakData.roll;
-    const dc = observer.perceptionDC;
-    const margin = roll.total - dc;
-    
-    // Get the die result for natural 20/1 determination
-    const dieResult = roll.dice?.[0]?.total ?? roll.terms?.[0]?.total ?? 10;
-    const outcome = determineOutcome(roll.total, dieResult, dc);
+  const roll = sneakData.roll;
+  const dc = observer.perceptionDC;
+  const margin = roll.total - dc;
 
-    // Determine new visibility based on Sneak rules
-    let newVisibility = observer.currentVisibility;
-    let changed = false;
+  // Get the die result for natural 20/1 determination
+  const dieResult = roll.dice?.[0]?.total ?? roll.terms?.[0]?.total ?? 10;
+  const outcome = determineOutcome(roll.total, dieResult, dc);
 
-    switch (outcome) {
-        case 'critical-success':
-        case 'success':
-            // Success: You remain undetected by the creature
-            if (observer.currentVisibility !== 'undetected') {
-                newVisibility = 'undetected';
-                changed = true;
-            }
-            break;
-        case 'failure':
-            // Failure: You're hidden from the creature
-            if (observer.currentVisibility === 'observed' || observer.currentVisibility === 'concealed') {
-                newVisibility = 'hidden';
-                changed = true;
-            }
-            // If already hidden or undetected, remain hidden
-            else if (observer.currentVisibility === 'undetected') {
-                newVisibility = 'hidden';
-                changed = true;
-            }
-            break;
-        case 'critical-failure':
-            // Critical Failure: You're observed by the creature
-            if (observer.currentVisibility !== 'observed') {
-                newVisibility = 'observed';
-                changed = true;
-            }
-            break;
-    }
+  // Determine new visibility based on Sneak rules
+  let newVisibility = observer.currentVisibility;
+  let changed = false;
 
-    return {
-        token: observer.token,
-        oldVisibility: observer.currentVisibility,
-        newVisibility: newVisibility,
-        outcome: outcome,
-        rollTotal: roll.total,
-        dc: dc,
-        margin: margin,
-        changed: changed,
-        isSneak: true
-    };
+  switch (outcome) {
+    case "critical-success":
+    case "success":
+      // Success: You remain undetected by the creature
+      if (observer.currentVisibility !== "undetected") {
+        newVisibility = "undetected";
+        changed = true;
+      }
+      break;
+    case "failure":
+      // Failure: You're hidden from the creature
+      if (
+        observer.currentVisibility === "observed" ||
+        observer.currentVisibility === "concealed"
+      ) {
+        newVisibility = "hidden";
+        changed = true;
+      }
+      // If already hidden or undetected, remain hidden
+      else if (observer.currentVisibility === "undetected") {
+        newVisibility = "hidden";
+        changed = true;
+      }
+      break;
+    case "critical-failure":
+      // Critical Failure: You're observed by the creature
+      if (observer.currentVisibility !== "observed") {
+        newVisibility = "observed";
+        changed = true;
+      }
+      break;
+  }
+
+  return {
+    token: observer.token,
+    oldVisibility: observer.currentVisibility,
+    newVisibility: newVisibility,
+    outcome: outcome,
+    rollTotal: roll.total,
+    dc: dc,
+    margin: margin,
+    changed: changed,
+    isSneak: true,
+  };
 }
 
 /**
@@ -131,34 +152,44 @@ export function analyzeSneakOutcome(sneakData, observer) {
  * @param {Object} sneakData - The sneak action data
  */
 export async function previewSneakResults(sneakData) {
+  // Validate sneakData
+  if (!sneakData || !sneakData.actor || !sneakData.roll) {
+    console.error(
+      "Invalid sneakData provided to previewSneakResults:",
+      sneakData,
+    );
+    ui.notifications.error(
+      `${MODULE_TITLE}: Invalid sneak data - cannot preview results`,
+    );
+    return;
+  }
 
-    // Validate sneakData
-    if (!sneakData || !sneakData.actor || !sneakData.roll) {
-        console.error('Invalid sneakData provided to previewSneakResults:', sneakData);
-        ui.notifications.error(`${MODULE_TITLE}: Invalid sneak data - cannot preview results`);
-        return;
-    }
+  // Discover potential observers
+  const observers = discoverSneakObservers(sneakData.actor, false);
 
-    // Discover potential observers
-    const observers = discoverSneakObservers(sneakData.actor, false);
-    
-    // Do not gate dialog on number of observers; gating is actor-only
+  // Do not gate dialog on number of observers; gating is actor-only
 
-    // Analyze outcomes for each observer
-    const outcomes = observers.map(observer => analyzeSneakOutcome(sneakData, observer))
-                              .filter(outcome => outcome !== null);
+  // Analyze outcomes for each observer
+  const outcomes = observers
+    .map((observer) => analyzeSneakOutcome(sneakData, observer))
+    .filter((outcome) => outcome !== null);
 
-    // When enforcing RAW, if there are no valid outcomes, notify and stop
-    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
-    if (enforceRAW && outcomes.length === 0) {
-        ui.notifications.info(`${MODULE_TITLE}: No valid Sneak observers found`);
-        return;
-    }
+  // When enforcing RAW, if there are no valid outcomes, notify and stop
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+  if (enforceRAW && outcomes.length === 0) {
+    ui.notifications.info(`${MODULE_TITLE}: No valid Sneak observers found`);
+    return;
+  }
 
-    // Filter to only outcomes with changes
-    const changes = outcomes.filter(outcome => outcome.changed);
+  // Filter to only outcomes with changes
+  const changes = outcomes.filter((outcome) => outcome.changed);
 
-    // Create and show the dialog
-    const dialog = new SneakPreviewDialog(sneakData.actor, outcomes, changes, sneakData);
-    dialog.render(true);
+  // Create and show the dialog
+  const dialog = new SneakPreviewDialog(
+    sneakData.actor,
+    outcomes,
+    changes,
+    sneakData,
+  );
+  dialog.render(true);
 }

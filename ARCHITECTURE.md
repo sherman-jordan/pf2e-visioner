@@ -33,6 +33,7 @@ pf2e-visioner/
 ### Core Files
 
 #### `scripts/main.js`
+
 - **Purpose**: Entry point and module initialization
 - **Responsibilities**:
   - Initialize the module on Foundry's `init` hook
@@ -41,6 +42,7 @@ pf2e-visioner/
 - **Dependencies**: All other module files
 
 #### `scripts/constants.js`
+
 - **Purpose**: Centralized configuration and constants
 - **Exports**:
   - `MODULE_ID`: The module identifier
@@ -52,6 +54,7 @@ pf2e-visioner/
 - **Dependencies**: None (base file)
 
 #### `scripts/utils.js`
+
 - **Purpose**: Reusable utility functions
 - **Key Functions**:
   - `getVisibilityMap()`: Get token visibility data
@@ -71,6 +74,7 @@ pf2e-visioner/
 ### User Interface
 
 #### `scripts/token-manager.js`
+
 - **Purpose**: ApplicationV2-based UI for managing visibility and cover
 - **Class**: `VisionerTokenManager`
 - **Responsibilities**:
@@ -82,6 +86,7 @@ pf2e-visioner/
 - **Dependencies**: `constants.js`, `utils.js`, `visual-effects.js`
 
 #### `templates/token-manager.hbs`
+
 - **Purpose**: Handlebars template for the UI
 - **Features**:
   - Tabbed interface for visibility and cover management
@@ -93,6 +98,7 @@ pf2e-visioner/
 - **Dependencies**: Localization keys from `lang/en.json`
 
 #### `styles/visibility-manager.css`
+
 - **Purpose**: Modern CSS styling for FoundryVTT v13
 - **Features**:
   - CSS custom properties integration
@@ -106,6 +112,7 @@ pf2e-visioner/
 ### Functionality
 
 #### `scripts/api.js`
+
 - **Purpose**: Public API and core functionality
 - **Class**: `Pf2eVisionerApi`
 - **Key Methods**:
@@ -117,6 +124,7 @@ pf2e-visioner/
 - **Dependencies**: All other component files
 
 #### `scripts/visibility-effects.js`
+
 - **Purpose**: Visual effects and token appearance management
 - **Key Functions**:
   - `updateTokenVisuals()`: Update all token appearances
@@ -129,6 +137,7 @@ pf2e-visioner/
 ### Integration
 
 #### `scripts/hooks.js`
+
 - **Purpose**: FoundryVTT hooks registration and handling
 - **Registered Hooks**:
   - `ready`: Module ready notification
@@ -139,6 +148,7 @@ pf2e-visioner/
 - **Dependencies**: `constants.js`, `visibility-effects.js`, `utils.js`, `api.js`
 
 #### `scripts/settings.js`
+
 - **Purpose**: Module settings and keybindings management
 - **Functions**:
   - `registerSettings()`: Register all module settings
@@ -148,12 +158,14 @@ pf2e-visioner/
 ## Data Flow
 
 ### Initialization Flow
+
 1. `main.js` initializes on Foundry's `init` hook
 2. `settings.js` registers module settings and keybindings
 3. `hooks.js` registers all FoundryVTT event handlers
 4. Global `PerTokenVisibility` API is exposed
 
 ### Visibility Management Flow
+
 1. User opens visibility manager via hotkey, HUD, or context menu
 2. `api.js` validates permissions and controlled tokens
 3. `visibility-manager.js` creates ApplicationV2 instance
@@ -163,6 +175,7 @@ pf2e-visioner/
 7. Changes are persisted via token flags
 
 ### Visual Update Flow
+
 1. Token control change triggers `controlToken` hook
 2. `hooks.js` calls `updateTokenVisuals()`
 3. `visibility-effects.js` reads visibility data for controlled token
@@ -172,21 +185,25 @@ pf2e-visioner/
 ## Benefits of This Architecture
 
 ### Maintainability
+
 - **Single Responsibility**: Each file has a clear, focused purpose
 - **Loose Coupling**: Components interact through well-defined interfaces
 - **Easy Testing**: Individual components can be tested in isolation
 
 ### Readability
+
 - **Clear Structure**: File names and organization make functionality obvious
 - **Focused Files**: No single file is overwhelming in size
 - **Documentation**: Each file has clear purpose and dependencies
 
 ### Extensibility
+
 - **Modular Design**: New features can be added without affecting core components
 - **Clean API**: Other modules can integrate via the public API
 - **Configurable**: Constants and settings are centralized for easy modification
 
 ### Performance
+
 - **ES Modules**: Modern JavaScript module system with tree-shaking
 - **Lazy Loading**: Some modules are imported only when needed
 - **Efficient Updates**: Visual effects only update when necessary
@@ -194,6 +211,7 @@ pf2e-visioner/
 ## Development Workflow
 
 ### Adding New Features
+
 1. Determine which component should contain the new functionality
 2. Add any new constants to `constants.js`
 3. Implement core logic in the appropriate component file
@@ -202,12 +220,14 @@ pf2e-visioner/
 6. Add appropriate tests and documentation
 
 ### Debugging
+
 - Each component can be debugged independently
 - Console access via `window.PerTokenVisibility`
 - Clear separation makes error tracing easier
 - Modular imports allow for selective debugging
 
 ### Testing
+
 - Individual components can be unit tested
 - Integration tests can focus on component interactions
 - UI components can be tested separately from business logic

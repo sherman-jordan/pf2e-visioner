@@ -2,13 +2,24 @@
  * Automatic cover detection on attack rolls
  */
 
-import { setCoverBetween } from './utils.js';
+import { setCoverBetween } from "./utils.js";
 
-const SIZE_ORDER = { tiny: 0, sm: 1, small: 1, med: 2, medium: 2, lg: 3, large: 3, huge: 4, grg: 5, gargantuan: 5 };
+const SIZE_ORDER = {
+  tiny: 0,
+  sm: 1,
+  small: 1,
+  med: 2,
+  medium: 2,
+  lg: 3,
+  large: 3,
+  huge: 4,
+  grg: 5,
+  gargantuan: 5,
+};
 
 function getSizeRank(token) {
   try {
-    const v = token?.actor?.system?.traits?.size?.value ?? 'med';
+    const v = token?.actor?.system?.traits?.size?.value ?? "med";
     return SIZE_ORDER[v] ?? 2;
   } catch (_) {
     return 2;
@@ -28,8 +39,13 @@ function pointInRect(px, py, rect) {
 }
 
 function segmentsIntersect(p1, p2, q1, q2) {
-  const o = (a, b, c) => Math.sign((b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y));
-  const onSeg = (a, b, c) => Math.min(a.x, b.x) <= c.x && c.x <= Math.max(a.x, b.x) && Math.min(a.y, b.y) <= c.y && c.y <= Math.max(a.y, b.y);
+  const o = (a, b, c) =>
+    Math.sign((b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y));
+  const onSeg = (a, b, c) =>
+    Math.min(a.x, b.x) <= c.x &&
+    c.x <= Math.max(a.x, b.x) &&
+    Math.min(a.y, b.y) <= c.y &&
+    c.y <= Math.max(a.y, b.y);
   const o1 = o(p1, p2, q1);
   const o2 = o(p1, p2, q2);
   const o3 = o(q1, q2, p1);
@@ -43,7 +59,8 @@ function segmentsIntersect(p1, p2, q1, q2) {
 }
 
 function segmentIntersectsRect(p1, p2, rect) {
-  if (pointInRect(p1.x, p1.y, rect) || pointInRect(p2.x, p2.y, rect)) return true;
+  if (pointInRect(p1.x, p1.y, rect) || pointInRect(p2.x, p2.y, rect))
+    return true;
   const r1 = { x: rect.x1, y: rect.y1 };
   const r2 = { x: rect.x2, y: rect.y1 };
   const r3 = { x: rect.x2, y: rect.y2 };
@@ -58,10 +75,10 @@ function segmentIntersectsRect(p1, p2, rect) {
 
 function detectCoverStateForAttack(attacker, target) {
   try {
-    if (!attacker || !target) return 'none';
+    if (!attacker || !target) return "none";
     const p1 = attacker.center ?? attacker.getCenter();
     const p2 = target.center ?? target.getCenter();
-    if (!p1 || !p2) return 'none';
+    if (!p1 || !p2) return "none";
     const attackerSize = getSizeRank(attacker);
 
     let hasAny = false;
@@ -75,25 +92,25 @@ function detectCoverStateForAttack(attacker, target) {
       const blockerSize = getSizeRank(blocker);
       if (blockerSize - attackerSize >= 2) hasStandard = true;
     }
-    if (!hasAny) return 'none';
-    return hasStandard ? 'standard' : 'lesser';
+    if (!hasAny) return "none";
+    return hasStandard ? "standard" : "lesser";
   } catch (e) {
-    return 'none';
+    return "none";
   }
 }
 
 function isAttackLikeMessageData(data) {
   const flags = data?.flags?.pf2e ?? {};
   const ctx = flags.context ?? {};
-  const type = ctx?.type ?? '';
+  const type = ctx?.type ?? "";
   const traits = ctx?.traits ?? [];
-  if (type === 'attack-roll' || type === 'spell-attack-roll') return true;
-  if (Array.isArray(traits) && traits.includes('attack')) return true;
+  if (type === "attack-roll" || type === "spell-attack-roll") return true;
+  if (Array.isArray(traits) && traits.includes("attack")) return true;
   return false;
 }
 
 export function registerAutoCoverHooks() {
-  Hooks.on('preCreateChatMessage', async (doc, data, options, userId) => {
+  Hooks.on("preCreateChatMessage", async (doc, data, options, userId) => {
     try {
       if (!game.user.isGM) return; // avoid duplicates
       if (!isAttackLikeMessageData(data)) return;
@@ -105,10 +122,8 @@ export function registerAutoCoverHooks() {
       if (!attacker || !target) return;
 
       const state = detectCoverStateForAttack(attacker, target);
-      if (state === 'none') return;
+      if (state === "none") return;
       await setCoverBetween(attacker, target, state);
     } catch (_) {}
   });
 }
-
-

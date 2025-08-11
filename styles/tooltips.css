@@ -14,7 +14,8 @@
   position: absolute;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-normal),
+  transition:
+    opacity var(--transition-normal),
     transform var(--transition-normal);
   z-index: 1000;
 }
@@ -361,7 +362,9 @@
   ) !important;
   border: 2px solid var(--color-border-highlight-alt) !important;
   border-radius: 8px !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 152, 0, 0.3) !important;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(255, 152, 0, 0.3) !important;
   font-size: var(--pf2e-visioner-tooltip-font-size) !important;
   padding: 12px 16px !important;
   max-width: 300px !important;

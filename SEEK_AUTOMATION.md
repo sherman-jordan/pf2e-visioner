@@ -16,7 +16,7 @@ When a player or GM makes a Seek action roll, the module:
 The automation follows PF2e Seek action rules:
 
 - **Critical Success**: Undetected → Observed
-- **Success**: Undetected → Hidden  
+- **Success**: Undetected → Hidden
 - **Failure/Critical Failure**: No change (remains undetected)
 
 ## Usage
@@ -50,6 +50,7 @@ The automation follows PF2e Seek action rules:
 ## Integration
 
 This feature integrates seamlessly with:
+
 - Existing PF2E Visioner visibility system
 - Token visibility effects and conditions
 - Off-guard automation
@@ -62,16 +63,19 @@ This feature integrates seamlessly with:
 
 ## Troubleshooting
 
-**Button doesn't appear**: 
+**Button doesn't appear**:
+
 - Check that you're the GM
 - Verify the setting is enabled
 - Ensure the roll was actually a Seek action
 
 **No tokens found**:
+
 - Verify tokens are actually set as undetected to the seeker
 - Check that target tokens have valid Stealth DCs
 
 **Changes not applied**:
+
 - Check console for error messages
 - Verify tokens have proper actor data
 - Ensure PF2E Visioner visibility system is working normally

@@ -51,19 +51,19 @@ export function registerHooks() {
 
     const visionHeader =
       root.querySelector(
-        `nav.sheet-tabs [data-action="tab"][data-group="${group}"][data-tab="vision"]`
+        `nav.sheet-tabs [data-action="tab"][data-group="${group}"][data-tab="vision"]`,
       ) ||
       [
         ...root.querySelectorAll(
-          `nav.sheet-tabs [data-action="tab"][data-group="${group}"]`
+          `nav.sheet-tabs [data-action="tab"][data-group="${group}"]`,
         ),
       ].find((a) =>
-        (a.textContent || "").trim().toLowerCase().startsWith("vision")
+        (a.textContent || "").trim().toLowerCase().startsWith("vision"),
       );
     if (!visionHeader) return;
 
     const panel = root.querySelector(
-      `div.tab[data-group="${group}"][data-tab="vision"]`
+      `div.tab[data-group="${group}"][data-tab="vision"]`,
     );
     if (!panel || panel.querySelector(".pf2e-visioner-field")) return;
 
@@ -72,7 +72,7 @@ export function registerHooks() {
         (fs.querySelector("legend")?.textContent || "")
           .trim()
           .toLowerCase()
-          .startsWith("detection modes")
+          .startsWith("detection modes"),
     );
     const targetContainer = detectionFieldset ?? panel;
 
@@ -127,7 +127,7 @@ function onRenderTokenConfig(app, html) {
     const group = nav.data("group") || nav.attr("data-group") || "primary";
 
     const tabButton = $(
-      `<a class="item" data-group="${group}" data-tab="pf2e-visioner"><i class="fas fa-eye"></i> PF2E Visioner</a>`
+      `<a class="item" data-group="${group}" data-tab="pf2e-visioner"><i class="fas fa-eye"></i> PF2E Visioner</a>`,
     );
     nav.append(tabButton);
 
@@ -298,7 +298,7 @@ function setupFallbackHUDButton() {
         if (isDragging) {
           const dragDistance = Math.sqrt(
             Math.pow(event.clientX - dragStartPos.x, 2) +
-              Math.pow(event.clientY - dragStartPos.y, 2)
+              Math.pow(event.clientY - dragStartPos.y, 2),
           );
 
           // If moved more than 5 pixels, consider it a drag
@@ -335,7 +335,7 @@ function setupFallbackHUDButton() {
               JSON.stringify({
                 left: button.style.left,
                 top: button.style.top,
-              })
+              }),
             );
           }
 
@@ -626,7 +626,7 @@ function onDeleteCombat(combat, options, userId) {
 function resetEncounterFiltersInDialogs() {
   // Reset Hide dialog encounter filter
   const hideDialogs = Object.values(ui.windows).filter(
-    (w) => w.constructor.name === "HidePreviewDialog"
+    (w) => w.constructor.name === "HidePreviewDialog",
   );
   hideDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
@@ -634,7 +634,7 @@ function resetEncounterFiltersInDialogs() {
 
       // Update the checkbox in the UI
       const checkbox = dialog.element?.querySelector(
-        'input[data-action="toggleEncounterFilter"]'
+        'input[data-action="toggleEncounterFilter"]',
       );
       if (checkbox) {
         checkbox.checked = false;
@@ -647,7 +647,7 @@ function resetEncounterFiltersInDialogs() {
 
   // Reset Seek dialog encounter filter
   const seekDialogs = Object.values(ui.windows).filter(
-    (w) => w.constructor.name === "SeekPreviewDialog"
+    (w) => w.constructor.name === "SeekPreviewDialog",
   );
   seekDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
@@ -655,7 +655,7 @@ function resetEncounterFiltersInDialogs() {
 
       // Update the checkbox in the UI
       const checkbox = dialog.element?.querySelector(
-        'input[data-action="toggleEncounterFilter"]'
+        'input[data-action="toggleEncounterFilter"]',
       );
       if (checkbox) {
         checkbox.checked = false;
@@ -668,7 +668,7 @@ function resetEncounterFiltersInDialogs() {
 
   // Reset Point Out dialog encounter filter if it exists
   const pointOutDialogs = Object.values(ui.windows).filter(
-    (w) => w.constructor.name === "PointOutPreviewDialog"
+    (w) => w.constructor.name === "PointOutPreviewDialog",
   );
   pointOutDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
@@ -676,7 +676,7 @@ function resetEncounterFiltersInDialogs() {
 
       // Update the checkbox in the UI
       const checkbox = dialog.element?.querySelector(
-        'input[data-action="toggleEncounterFilter"]'
+        'input[data-action="toggleEncounterFilter"]',
       );
       if (checkbox) {
         checkbox.checked = false;

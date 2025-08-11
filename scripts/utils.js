@@ -2,9 +2,9 @@
  * Utility functions for PF2E Visioner Token Manager
  */
 
-import { shouldFilterAlly } from './chat/shared-utils.js';
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from './constants.js';
-import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
+import { shouldFilterAlly } from "./chat/shared-utils.js";
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
+import { updateEphemeralEffectsForVisibility } from "./off-guard-ephemeral.js";
 
 /**
  * Get the visibility map for a token
@@ -12,7 +12,7 @@ import { updateEphemeralEffectsForVisibility } from './off-guard-ephemeral.js';
  * @returns {Object} Visibility map object
  */
 export function getVisibilityMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, 'visibility') ?? {};
+  const map = token?.document.getFlag(MODULE_ID, "visibility") ?? {};
   return map;
 }
 
@@ -25,7 +25,10 @@ export function getVisibilityMap(token) {
 export async function setVisibilityMap(token, visibilityMap) {
   if (!token?.document) return;
   const path = `flags.${MODULE_ID}.visibility`;
-  const result = await token.document.update({ [path]: visibilityMap }, { diff: false });
+  const result = await token.document.update(
+    { [path]: visibilityMap },
+    { diff: false },
+  );
   return result;
 }
 
@@ -37,7 +40,7 @@ export async function setVisibilityMap(token, visibilityMap) {
  */
 export function getVisibilityBetween(observer, target) {
   const visibilityMap = getVisibilityMap(observer);
-  return visibilityMap[target.document.id] || 'observed';
+  return visibilityMap[target.document.id] || "observed";
 }
 
 /**
@@ -52,21 +55,35 @@ export function getVisibilityBetween(observer, target) {
  * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
  * @returns {Promise} Promise that resolves when visibility is set
  */
-export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false, direction: 'observer_to_target', skipCleanup: false}) {
+export async function setVisibilityBetween(
+  observer,
+  target,
+  state,
+  options = {
+    skipEphemeralUpdate: false,
+    direction: "observer_to_target",
+    skipCleanup: false,
+  },
+) {
   if (!observer?.document?.id || !target?.document?.id) return;
-  
+
   const visibilityMap = getVisibilityMap(observer);
   visibilityMap[target.document.id] = state;
   await setVisibilityMap(observer, visibilityMap);
-  
+
   // Update off-guard effects using ephemeral approach
   try {
     if (!options.skipEphemeralUpdate) {
       // Direction is already set in the options with a default value
-      await updateEphemeralEffectsForVisibility(observer, target, state, options);
+      await updateEphemeralEffectsForVisibility(
+        observer,
+        target,
+        state,
+        options,
+      );
     }
   } catch (error) {
-    console.error('PF2E Visioner: Error updating off-guard effects:', error);
+    console.error("PF2E Visioner: Error updating off-guard effects:", error);
   }
 }
 
@@ -76,7 +93,7 @@ export async function setVisibilityBetween(observer, target, state, options = {s
  */
 export async function cleanupDeletedToken(tokenDoc) {
   if (!tokenDoc?.id) return;
-  
+
   try {
     // Get all tokens on the canvas
     const allTokens = canvas.tokens?.placeables || [];
@@ -92,14 +109,17 @@ export async function cleanupDeletedToken(tokenDoc) {
 
       const visMap = getVisibilityMap(token);
       const covMap = getCoverMap(token);
-      const hadVis = visMap && Object.prototype.hasOwnProperty.call(visMap, tokenDoc.id);
-      const hadCov = covMap && Object.prototype.hasOwnProperty.call(covMap, tokenDoc.id);
+      const hadVis =
+        visMap && Object.prototype.hasOwnProperty.call(visMap, tokenDoc.id);
+      const hadCov =
+        covMap && Object.prototype.hasOwnProperty.call(covMap, tokenDoc.id);
       if (!hadVis && !hadCov) continue;
 
       const patch = { _id: token.document.id };
       if (hadVis) {
         // Save for potential restoration
-        restoreEntry.visibilityByObserver[token.document.id] = visMap[tokenDoc.id];
+        restoreEntry.visibilityByObserver[token.document.id] =
+          visMap[tokenDoc.id];
         const newVis = { ...visMap };
         delete newVis[tokenDoc.id];
         patch[`flags.${MODULE_ID}.visibility`] = newVis;
@@ -113,24 +133,31 @@ export async function cleanupDeletedToken(tokenDoc) {
       }
       updates.push(patch);
 
-      if (game.settings?.get?.('pf2e-visioner', 'debug')) {
-        console.log(`[Visioner-debug] Queued cleanup for deleted token ${tokenDoc.name} (${tokenDoc.id}) from token ${token.name}`);
+      if (game.settings?.get?.("pf2e-visioner", "debug")) {
+        console.log(
+          `[Visioner-debug] Queued cleanup for deleted token ${tokenDoc.name} (${tokenDoc.id}) from token ${token.name}`,
+        );
       }
     }
 
     // Apply all flag updates in one bulk scene update
     if (updates.length && scene?.updateEmbeddedDocuments) {
-      try { await scene.updateEmbeddedDocuments('Token', updates, { diff: false }); } catch (_) {}
+      try {
+        await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+      } catch (_) {}
     }
 
     // Persist restoration cache to the scene so an immediate undo can restore entries
     try {
-      const cache = scene?.getFlag?.(MODULE_ID, 'deletedEntryCache') || {};
+      const cache = scene?.getFlag?.(MODULE_ID, "deletedEntryCache") || {};
       cache[tokenDoc.id] = restoreEntry;
-      await scene?.setFlag?.(MODULE_ID, 'deletedEntryCache', cache);
+      await scene?.setFlag?.(MODULE_ID, "deletedEntryCache", cache);
     } catch (_) {}
   } catch (error) {
-    console.error('PF2E Visioner: Error cleaning up data for deleted token:', error);
+    console.error(
+      "PF2E Visioner: Error cleaning up data for deleted token:",
+      error,
+    );
   }
 }
 
@@ -144,14 +171,14 @@ export async function restoreDeletedTokenMaps(tokenDoc) {
   try {
     const scene = tokenDoc?.parent || canvas.scene;
     if (!scene) return false;
-    const cache = scene.getFlag(MODULE_ID, 'deletedEntryCache') || {};
+    const cache = scene.getFlag(MODULE_ID, "deletedEntryCache") || {};
     const entry = cache?.[tokenDoc.id];
     if (!entry) return false;
 
     const updates = [];
     const observerIds = new Set([
       ...Object.keys(entry.visibilityByObserver || {}),
-      ...Object.keys(entry.coverByObserver || {})
+      ...Object.keys(entry.coverByObserver || {}),
     ]);
 
     for (const obsId of observerIds) {
@@ -175,23 +202,23 @@ export async function restoreDeletedTokenMaps(tokenDoc) {
     }
 
     if (updates.length) {
-      try { await scene.updateEmbeddedDocuments('Token', updates, { diff: false }); } catch (_) {}
+      try {
+        await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+      } catch (_) {}
     }
 
     // Clear cache entry for this token id
     try {
       delete cache[tokenDoc.id];
-      await scene.setFlag(MODULE_ID, 'deletedEntryCache', cache);
+      await scene.setFlag(MODULE_ID, "deletedEntryCache", cache);
     } catch (_) {}
 
     return updates.length > 0;
   } catch (e) {
-    console.warn('PF2E Visioner: Failed to restore deleted token maps', e);
+    console.warn("PF2E Visioner: Failed to restore deleted token maps", e);
     return false;
   }
 }
-
-
 
 /**
  * Create visibility indicator element
@@ -199,13 +226,13 @@ export async function restoreDeletedTokenMaps(tokenDoc) {
  * @returns {HTMLElement} The indicator element
  */
 export function createVisibilityIndicator(state) {
-  if (state === 'observed') return null;
+  if (state === "observed") return null;
 
   const config = VISIBILITY_STATES[state];
   if (!config) return null;
 
-  const indicator = document.createElement('div');
-  indicator.className = 'visibility-indicator';
+  const indicator = document.createElement("div");
+  indicator.className = "visibility-indicator";
   indicator.innerHTML = `<i class="${config.icon}" style="color: ${config.color}"></i>`;
   indicator.style.cssText = `
     position: absolute;
@@ -233,7 +260,7 @@ export function createVisibilityIndicator(state) {
  * Walls visibility map (per observer)
  */
 export function getWallVisibilityMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, 'walls') ?? {};
+  const map = token?.document.getFlag(MODULE_ID, "walls") ?? {};
   return map;
 }
 
@@ -249,7 +276,7 @@ export async function setWallVisibilityMap(token, map) {
  * @param {string} key - The localization key
  * @param {string} type - The notification type (info, warn, error)
  */
-export function showNotification(key, type = 'info') {
+export function showNotification(key, type = "info") {
   const message = game.i18n.localize(key);
   ui.notifications[type](message);
 }
@@ -265,34 +292,34 @@ export function isValidToken(token) {
   if (!token || !token.document || !token.actor) {
     return false;
   }
-  
+
   // Filter out irrelevant actor types that don't need visibility management
   const actorType = token.actor.type;
-  
+
   // Exclude loot actors unless setting enabled
-  if (actorType === 'loot') {
+  if (actorType === "loot") {
     try {
-      if (!game.settings.get(MODULE_ID, 'includeLootActors')) return false;
+      if (!game.settings.get(MODULE_ID, "includeLootActors")) return false;
     } catch (_) {
       return false;
     }
   }
-  
+
   // Exclude vehicles unless they have crew (vehicles are usually just objects)
-  if (actorType === 'vehicle') {
+  if (actorType === "vehicle") {
     return false;
   }
-  
+
   // Exclude party actors - they're organizational, not individual creatures
-  if (actorType === 'party') {
+  if (actorType === "party") {
     return false;
   }
-  
+
   // Additional filtering based on actor properties
   const actor = token.actor;
-  
+
   // Filter out tokens that are clearly non-creatures based on name patterns
-  const name = token.document.name?.toLowerCase() || '';
+  const name = token.document.name?.toLowerCase() || "";
   const excludePatterns = [
     /\b(loot|treasure|chest|container|barrel|crate|sack)\b/,
     /\b(door|gate|portal|entrance|exit)\b/,
@@ -300,13 +327,16 @@ export function isValidToken(token) {
     /\b(trap|pressure.plate|trigger)\b/,
     /\b(furniture|table|chair|bed|altar)\b/,
     /\b(decoration|statue|pillar|column)\b/,
-    /\b(marker|waypoint|location|area)\b/
+    /\b(marker|waypoint|location|area)\b/,
   ];
-  
+
   // If loot is included, don't auto-exclude via name patterns
-  if (excludePatterns.some(pattern => pattern.test(name))) {
+  if (excludePatterns.some((pattern) => pattern.test(name))) {
     try {
-      if (token.actor?.type === 'loot' && game.settings.get(MODULE_ID, 'includeLootActors')) {
+      if (
+        token.actor?.type === "loot" &&
+        game.settings.get(MODULE_ID, "includeLootActors")
+      ) {
         // allow
       } else {
         return false;
@@ -315,18 +345,22 @@ export function isValidToken(token) {
       return false;
     }
   }
-  
+
   // Include character and npc types (the main creature types)
-  if (actorType === 'character' || actorType === 'npc' || actorType === 'hazard') {
+  if (
+    actorType === "character" ||
+    actorType === "npc" ||
+    actorType === "hazard"
+  ) {
     return true;
   }
-  
+
   // For unknown actor types, be conservative and include them
   // but exclude if they have no HP (likely not a creature)
   if (actor.system?.attributes?.hp?.max === 0) {
     return false;
   }
-  
+
   return true;
 }
 
@@ -338,34 +372,32 @@ export function isValidToken(token) {
  */
 export function getSceneTargets(observer, encounterOnly = false) {
   if (!observer) return [];
-  
+
   // Get all tokens except the observer
-  let allTokens = canvas.tokens.placeables.filter(token => {
-    return token !== observer && 
-           token.actor && 
-           isValidToken(token);
+  let allTokens = canvas.tokens.placeables.filter((token) => {
+    return token !== observer && token.actor && isValidToken(token);
   });
-  
+
   // Apply ally filtering if enabled
-  allTokens = allTokens.filter(token => {
-    return !shouldFilterAlly(observer, token, 'enemies');
+  allTokens = allTokens.filter((token) => {
+    return !shouldFilterAlly(observer, token, "enemies");
   });
-  
+
   // Apply encounter filtering if requested
   if (!encounterOnly) {
     return allTokens;
   }
-  
+
   // Filter to only tokens that are in the current encounter
-  return allTokens.filter(token => {
+  return allTokens.filter((token) => {
     // Check if there's an active encounter
     if (!game.combat || !game.combat.combatants.size) {
       return true; // Don't filter if there isn't a meaningful encounter
     }
-    
+
     // Check if this token's actor is in the encounter
-    return game.combat.combatants.some(combatant => 
-      combatant.token?.id === token.document.id
+    return game.combat.combatants.some(
+      (combatant) => combatant.token?.id === token.document.id,
     );
   });
 }
@@ -385,9 +417,9 @@ export function hasActiveEncounter() {
  */
 export function isTokenInEncounter(token) {
   if (!hasActiveEncounter()) return false;
-  
-  return game.combat.combatants.some(combatant => 
-    combatant.token?.id === token.document.id
+
+  return game.combat.combatants.some(
+    (combatant) => combatant.token?.id === token.document.id,
   );
 }
 
@@ -406,7 +438,7 @@ export function capitalize(str) {
  * @returns {Object} Cover map object
  */
 export function getCoverMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, 'cover') ?? {};
+  const map = token?.document.getFlag(MODULE_ID, "cover") ?? {};
   return map;
 }
 
@@ -419,7 +451,10 @@ export function getCoverMap(token) {
 export async function setCoverMap(token, coverMap) {
   if (!token?.document) return;
   const path = `flags.${MODULE_ID}.cover`;
-  const result = await token.document.update({ [path]: coverMap }, { diff: false });
+  const result = await token.document.update(
+    { [path]: coverMap },
+    { diff: false },
+  );
   return result;
 }
 
@@ -431,7 +466,7 @@ export async function setCoverMap(token, coverMap) {
  */
 export function getCoverBetween(observer, target) {
   const coverMap = getCoverMap(observer);
-  return coverMap[target.document.id] || 'none';
+  return coverMap[target.document.id] || "none";
 }
 
 /**
@@ -445,13 +480,13 @@ export async function setCoverBetween(observer, target, state) {
   const coverMap = getCoverMap(observer);
   coverMap[target.document.id] = state;
   await setCoverMap(observer, coverMap);
-  
+
   // Apply PF2E condition if applicable
   try {
-    const { applyCoverCondition } = await import('./cover-effects.js');
+    const { applyCoverCondition } = await import("./cover-effects.js");
     await applyCoverCondition(target, observer, state);
   } catch (error) {
-    console.error('Error applying cover condition:', error);
+    console.error("Error applying cover condition:", error);
   }
 }
 
@@ -461,13 +496,13 @@ export async function setCoverBetween(observer, target, state) {
  * @returns {HTMLElement} The indicator element
  */
 export function createCoverIndicator(state) {
-  if (state === 'none') return null;
+  if (state === "none") return null;
 
   const config = COVER_STATES[state];
   if (!config) return null;
 
-  const indicator = document.createElement('div');
-  indicator.className = 'cover-indicator';
+  const indicator = document.createElement("div");
+  indicator.className = "cover-indicator";
   indicator.innerHTML = `<i class="${config.icon}" style="color: ${config.color}"></i>`;
   indicator.style.cssText = `
     position: absolute;
@@ -512,13 +547,15 @@ export function getLastRollTotalForActor(actor, requiredSlug = null) {
         if (speakerActorId !== actor.id) continue;
         // Check roll
         const total = msg.rolls?.[0]?.total;
-        if (typeof total !== 'number') continue;
+        if (typeof total !== "number") continue;
         if (requiredSlug) {
           const slug = msg.flags?.pf2e?.context?.slug || null;
           if (slug !== requiredSlug) continue;
         }
         return total;
-      } catch (_) { /* ignore and continue */ }
+      } catch (_) {
+        /* ignore and continue */
+      }
     }
   } catch (_) {}
   return null;

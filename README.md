@@ -20,9 +20,9 @@ Support: [https://ko-fi.com/roileaf](https://ko-fi.com/roileaf)
 
 ## 🔌 Installation
 
-1) Install the module in Foundry’s Add-on Modules.
-2) Enable it for your world.
-3) Configure world settings (Game Settings → Module Settings → PF2E Visioner).
+1. Install the module in Foundry’s Add-on Modules.
+2. Enable it for your world.
+3. Configure world settings (Game Settings → Module Settings → PF2E Visioner).
 
 ---
 
@@ -133,7 +133,7 @@ Visioner augments PF2e chat cards with buttons that open result dialogs and appl
 ## 🔧 Developer API (minimal)
 
 ```js
-const api = game.modules.get('pf2e-visioner')?.api;
+const api = game.modules.get("pf2e-visioner")?.api;
 await api?.openVisibilityManager(token);
 ```
 

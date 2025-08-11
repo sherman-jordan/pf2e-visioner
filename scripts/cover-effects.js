@@ -3,7 +3,7 @@
  * Handles cover-related visual effects and mechanical effects
  */
 
-import { COVER_STATES } from './constants.js';
+import { COVER_STATES } from "./constants.js";
 
 /**
  * Apply cover effect to token based on cover state
@@ -13,10 +13,10 @@ import { COVER_STATES } from './constants.js';
  */
 export function applyCoverEffect(token, state, observer) {
   if (!token?.document) return;
-  
+
   const stateConfig = COVER_STATES[state];
   if (!stateConfig) return;
-  
+
   // Apply cover indicator
   applyCoverIndicator(token, stateConfig);
 }
@@ -28,69 +28,69 @@ export function applyCoverEffect(token, state, observer) {
  */
 function applyCoverIndicator(token, stateConfig) {
   if (!token?.mesh) return;
-  
+
   // Remove existing indicator
   removeCoverIndicator(token);
-  
+
   // Create new indicator
   const indicator = new PIXI.Container();
-  indicator.name = 'pf2e-visioner-cover-indicator';
-  
+  indicator.name = "pf2e-visioner-cover-indicator";
+
   // Create shield icon
   const shield = new PIXI.Graphics();
   shield.beginFill(stateConfig.color, 0.6);
   shield.lineStyle(2, stateConfig.color, 0.8);
-  
+
   // Draw a shield shape
   const width = 20;
   const height = 24;
-  
+
   // Shield top (curved)
   shield.moveTo(0, height / 2);
   shield.lineTo(0, height / 4);
   shield.arcTo(width / 2, 0, width, height / 4, width / 2);
   shield.lineTo(width, height / 2);
-  
+
   // Shield bottom (pointed)
   shield.lineTo(width / 2, height);
   shield.lineTo(0, height / 2);
-  
+
   shield.endFill();
-  
+
   // Position the shield at the top right of the token
   const tokenWidth = token.document.width * canvas.grid.size;
   const tokenHeight = token.document.height * canvas.grid.size;
-  
+
   indicator.addChild(shield);
   indicator.position.set(tokenWidth - width - 5, -5);
-  
+
   // Add text for cover level
   let text;
-  if (state === 'lesser') {
-    text = '+1';
-  } else if (state === 'standard') {
-    text = '+2';
-  } else if (state === 'greater') {
-    text = '+4';
+  if (state === "lesser") {
+    text = "+1";
+  } else if (state === "standard") {
+    text = "+2";
+  } else if (state === "greater") {
+    text = "+4";
   }
-  
+
   if (text) {
     const textStyle = new PIXI.TextStyle({
-      fontFamily: 'Arial',
+      fontFamily: "Arial",
       fontSize: 10,
-      fontWeight: 'bold',
-      fill: '#FFFFFF',
-      stroke: '#000000',
+      fontWeight: "bold",
+      fill: "#FFFFFF",
+      stroke: "#000000",
       strokeThickness: 2,
-      align: 'center'
+      align: "center",
     });
-    
+
     const textSprite = new PIXI.Text(text, textStyle);
     textSprite.anchor.set(0.5);
     textSprite.position.set(width / 2, height / 2);
     indicator.addChild(textSprite);
   }
-  
+
   token.addChild(indicator);
 }
 
@@ -100,8 +100,10 @@ function applyCoverIndicator(token, stateConfig) {
  */
 function removeCoverIndicator(token) {
   if (!token?.children) return;
-  
-  const existing = token.children.find(child => child.name === 'pf2e-visioner-cover-indicator');
+
+  const existing = token.children.find(
+    (child) => child.name === "pf2e-visioner-cover-indicator",
+  );
   if (existing) {
     token.removeChild(existing);
     existing.destroy();
@@ -130,10 +132,10 @@ function removeCoverIndicator(token) {
  */
 export async function applyCoverCondition(target, observer, coverState) {
   if (!target?.actor || !observer?.actor || !game.pf2e) return;
-  
+
   // Import the ephemeral cover effects system dynamically to avoid circular dependencies
-  const { updateEphemeralCoverEffects } = await import('./cover-ephemeral.js');
-  
+  const { updateEphemeralCoverEffects } = await import("./cover-ephemeral.js");
+
   // Apply ephemeral cover effects
   await updateEphemeralCoverEffects(target, observer, coverState);
 }
@@ -144,36 +146,41 @@ export async function applyCoverCondition(target, observer, coverState) {
  */
 async function removeCoverConditions(token) {
   if (!token?.actor || !game.pf2e) return;
-  
+
   try {
     // Import the ephemeral cover effects system dynamically
-    const { cleanupAllCoverEffects } = await import('./cover-ephemeral.js');
-    
+    const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+
     // Clean up any ephemeral cover effects
     await cleanupAllCoverEffects();
-    
+
     // Also clean up any legacy cover conditions if they exist
-    const coverConditions = token.actor.itemTypes.condition.filter(c => 
-      c.slug === 'lesser-cover' || c.slug === 'cover' || c.slug === 'greater-cover'
+    const coverConditions = token.actor.itemTypes.condition.filter(
+      (c) =>
+        c.slug === "lesser-cover" ||
+        c.slug === "cover" ||
+        c.slug === "greater-cover",
     );
-    
+
     if (coverConditions.length > 0) {
-      const ids = coverConditions.map(c => c.id);
-      const existingIds = ids.filter(id => !!token.actor.items.get(id));
+      const ids = coverConditions.map((c) => c.id);
+      const existingIds = ids.filter((id) => !!token.actor.items.get(id));
       if (existingIds.length > 0) {
         try {
-          await token.actor.deleteEmbeddedDocuments('Item', existingIds);
+          await token.actor.deleteEmbeddedDocuments("Item", existingIds);
         } catch (e) {
           for (const id of existingIds) {
             if (token.actor.items.get(id)) {
-              try { await token.actor.deleteEmbeddedDocuments('Item', [id]); } catch (_) {}
+              try {
+                await token.actor.deleteEmbeddedDocuments("Item", [id]);
+              } catch (_) {}
             }
           }
         }
       }
     }
   } catch (error) {
-    console.error('Error removing cover conditions:', error);
+    console.error("Error removing cover conditions:", error);
   }
 }
 

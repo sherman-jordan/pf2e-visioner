@@ -8,7 +8,7 @@
  */
 export function initializeTargeting() {
   // Hook into targeting
-  Hooks.on('targetToken', handleTargeting);
+  Hooks.on("targetToken", handleTargeting);
 }
 
 /**
@@ -19,11 +19,13 @@ export function initializeTargeting() {
  */
 function handleTargeting(user, token, targeted) {
   // This function could be used for future targeting-related features
-  
+
   if (!user.isGM && targeted) {
     // Check if any controlled tokens see this target as undetected
-    const controlled = canvas.tokens.controlled.filter(t => t.actor?.hasPlayerOwner);
-    
+    const controlled = canvas.tokens.controlled.filter(
+      (t) => t.actor?.hasPlayerOwner,
+    );
+
     for (const controlledToken of controlled) {
       // Future: Could add warnings or indicators for targeting undetected creatures
     }

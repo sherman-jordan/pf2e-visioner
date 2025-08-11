@@ -53,11 +53,11 @@ export function getVisibilityBetween(observer, target) {
  * @returns {Promise} Promise that resolves when visibility is set
  */
 export async function setVisibilityBetween(observer, target, state, options = {skipEphemeralUpdate: false, direction: 'observer_to_target', skipCleanup: false}) {
+  if (!observer?.document?.id || !target?.document?.id) return;
+  
   const visibilityMap = getVisibilityMap(observer);
   visibilityMap[target.document.id] = state;
   await setVisibilityMap(observer, visibilityMap);
-  
-
   
   // Update off-guard effects using ephemeral approach
   try {
@@ -67,6 +67,127 @@ export async function setVisibilityBetween(observer, target, state, options = {s
     }
   } catch (error) {
     console.error('PF2E Visioner: Error updating off-guard effects:', error);
+  }
+}
+
+/**
+ * Clean up visibility and cover data when a token is deleted
+ * @param {TokenDocument} tokenDoc - The token document being deleted
+ */
+export async function cleanupDeletedToken(tokenDoc) {
+  if (!tokenDoc?.id) return;
+  
+  try {
+    // Get all tokens on the canvas
+    const allTokens = canvas.tokens?.placeables || [];
+    const scene = tokenDoc.parent || canvas.scene;
+    const updates = [];
+
+    // Prepare a cache entry to allow restoration on undo
+    const restoreEntry = { visibilityByObserver: {}, coverByObserver: {} };
+
+    // For each token, remove the deleted token from its visibility and cover maps (collect bulk updates)
+    for (const token of allTokens) {
+      if (!token?.document) continue;
+
+      const visMap = getVisibilityMap(token);
+      const covMap = getCoverMap(token);
+      const hadVis = visMap && Object.prototype.hasOwnProperty.call(visMap, tokenDoc.id);
+      const hadCov = covMap && Object.prototype.hasOwnProperty.call(covMap, tokenDoc.id);
+      if (!hadVis && !hadCov) continue;
+
+      const patch = { _id: token.document.id };
+      if (hadVis) {
+        // Save for potential restoration
+        restoreEntry.visibilityByObserver[token.document.id] = visMap[tokenDoc.id];
+        const newVis = { ...visMap };
+        delete newVis[tokenDoc.id];
+        patch[`flags.${MODULE_ID}.visibility`] = newVis;
+      }
+      if (hadCov) {
+        // Save for potential restoration
+        restoreEntry.coverByObserver[token.document.id] = covMap[tokenDoc.id];
+        const newCov = { ...covMap };
+        delete newCov[tokenDoc.id];
+        patch[`flags.${MODULE_ID}.cover`] = newCov;
+      }
+      updates.push(patch);
+
+      if (game.settings?.get?.('pf2e-visioner', 'debug')) {
+        console.log(`[Visioner-debug] Queued cleanup for deleted token ${tokenDoc.name} (${tokenDoc.id}) from token ${token.name}`);
+      }
+    }
+
+    // Apply all flag updates in one bulk scene update
+    if (updates.length && scene?.updateEmbeddedDocuments) {
+      try { await scene.updateEmbeddedDocuments('Token', updates, { diff: false }); } catch (_) {}
+    }
+
+    // Persist restoration cache to the scene so an immediate undo can restore entries
+    try {
+      const cache = scene?.getFlag?.(MODULE_ID, 'deletedEntryCache') || {};
+      cache[tokenDoc.id] = restoreEntry;
+      await scene?.setFlag?.(MODULE_ID, 'deletedEntryCache', cache);
+    } catch (_) {}
+  } catch (error) {
+    console.error('PF2E Visioner: Error cleaning up data for deleted token:', error);
+  }
+}
+
+/**
+ * Restore previously removed visibility/cover entries for a token that was undone/recreated
+ * Performs bulk updates for performance
+ * @param {TokenDocument} tokenDoc - The recreated token document
+ * @returns {Promise<boolean>} true if restoration performed
+ */
+export async function restoreDeletedTokenMaps(tokenDoc) {
+  try {
+    const scene = tokenDoc?.parent || canvas.scene;
+    if (!scene) return false;
+    const cache = scene.getFlag(MODULE_ID, 'deletedEntryCache') || {};
+    const entry = cache?.[tokenDoc.id];
+    if (!entry) return false;
+
+    const updates = [];
+    const observerIds = new Set([
+      ...Object.keys(entry.visibilityByObserver || {}),
+      ...Object.keys(entry.coverByObserver || {})
+    ]);
+
+    for (const obsId of observerIds) {
+      const token = canvas.tokens?.get?.(obsId);
+      if (!token?.document) continue;
+      const patch = { _id: obsId };
+      const visState = entry.visibilityByObserver?.[obsId];
+      const covState = entry.coverByObserver?.[obsId];
+
+      if (visState !== undefined) {
+        const current = getVisibilityMap(token);
+        const newVis = { ...current, [tokenDoc.id]: visState };
+        patch[`flags.${MODULE_ID}.visibility`] = newVis;
+      }
+      if (covState !== undefined) {
+        const current = getCoverMap(token);
+        const newCov = { ...current, [tokenDoc.id]: covState };
+        patch[`flags.${MODULE_ID}.cover`] = newCov;
+      }
+      updates.push(patch);
+    }
+
+    if (updates.length) {
+      try { await scene.updateEmbeddedDocuments('Token', updates, { diff: false }); } catch (_) {}
+    }
+
+    // Clear cache entry for this token id
+    try {
+      delete cache[tokenDoc.id];
+      await scene.setFlag(MODULE_ID, 'deletedEntryCache', cache);
+    } catch (_) {}
+
+    return updates.length > 0;
+  } catch (e) {
+    console.warn('PF2E Visioner: Failed to restore deleted token maps', e);
+    return false;
   }
 }
 

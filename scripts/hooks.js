@@ -23,7 +23,7 @@ export function registerHooks() {
   Hooks.on('highlightObjects', onHighlightObjects);
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
   Hooks.on('createToken', onTokenCreated);
-  Hooks.on('deleteToken', onTokenDeleted);
+Hooks.on('deleteToken', onTokenDeleted);
   
   // Encounter hooks to reset dialog states
   Hooks.on('updateCombat', onUpdateCombat);
@@ -339,8 +339,19 @@ async function onCanvasReady() {
 /**
  * Handle token creation - reapply persistent visibility and cover effects
  */
-async function onTokenCreated() {
+async function onTokenCreated(scene, tokenDoc) {
   // Reapply persistent visibility and cover effects to include new token
+  try {
+    // Try restore of maps if this is an undo of a deletion
+    const { restoreDeletedTokenMaps } = await import('./utils.js');
+    const restored = await restoreDeletedTokenMaps(tokenDoc);
+    if (restored && game.user.isGM) {
+      // Ensure aggregates reflect restored maps
+      const { rebuildAllEphemeralEffects } = await import('./effects-coordinator.js');
+      await rebuildAllEphemeralEffects();
+    }
+  } catch (_) {}
+
   setTimeout(async () => {
     await updateTokenVisuals();
     
@@ -353,19 +364,68 @@ async function onTokenCreated() {
 }
 
 /**
- * Handle token deletion - reapply persistent visibility and cover effects
+ * Handle token deletion - clean up visibility maps and effects
+ * @param {Scene} scene - The scene containing the token
+ * @param {TokenDocument} tokenDoc - The token document being deleted
  */
-async function onTokenDeleted() {
-  // Reapply persistent visibility and cover effects after token removal
-  setTimeout(async () => {
-    await updateTokenVisuals();
-    
-    // Reinitialize hover tooltips to remove deleted token
-    if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
-      cleanupHoverTooltips();
-      initializeHoverTooltips();
+async function onTokenDeleted(...args) {
+  try {
+    // Handle Foundry version differences: (scene, tokenDoc, options, userId) vs (tokenDoc, context, userId)
+    let tokenDoc = null;
+    for (const a of args) {
+      if (a && typeof a === 'object') {
+        // TokenDocument typically has an actor and a parent Scene
+        if (a?.actor && (a?.parent || a?.scene || a?.documentName === 'Token')) {
+          tokenDoc = a;
+          break;
+        }
+      }
     }
-  }, 100);
+    if (!tokenDoc) {
+      // Fallback: if first arg is a Scene, second is likely the TokenDocument
+      if (args[0]?.tokens && args[1]?.actor) tokenDoc = args[1];
+    }
+    if (!tokenDoc?.id) return;
+
+    // Import the cleanup functions
+    const { cleanupDeletedToken } = await import('./utils.js');
+    const { cleanupDeletedTokenEffects } = await import('./off-guard-ephemeral.js');
+    const { cleanupDeletedTokenCoverEffects } = await import('./cover-ephemeral.js');
+    
+    // Clean up visibility maps and effects
+    if (tokenDoc) {
+      // First clean up the visibility maps
+      try { await cleanupDeletedToken(tokenDoc); } catch (e) { console.warn('PF2E Visioner: map cleanup failed', e); }
+      
+      // Then clean up visibility and cover effects
+      await Promise.all([
+        cleanupDeletedTokenEffects(tokenDoc),
+        cleanupDeletedTokenCoverEffects(tokenDoc)
+      ]);
+    }
+    
+    // Reapply persistent visibility and cover effects after token removal
+    setTimeout(async () => {
+      try {
+        if (game.user.isGM) {
+          // Rebuild aggregates strictly from maps to guarantee purged rules
+          await rebuildAllEphemeralEffects();
+        } else {
+          await updateTokenVisuals();
+        }
+      } catch (e) {
+        console.warn('PF2E Visioner: post-delete rebuild failed', e);
+      }
+      
+      // Reinitialize hover tooltips to remove deleted token
+      if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
+        cleanupHoverTooltips();
+        initializeHoverTooltips();
+      }
+    }, 100);
+  } catch (error) {
+    console.error('PF2E Visioner: Error cleaning up deleted token:', error);
+  }
 }
 
 /**

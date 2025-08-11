@@ -166,43 +166,6 @@ export async function applyVisibilityState(token, state) {
   // GM hints feature was removed - no visual indicators
 }
 
-/**
- * Apply token visibility effects based on the current observer
- * @param {Token} token - The token to modify
- * @param {string} state - The visibility state
- * @param {Object} config - The visibility configuration
- */
-function applyTokenVisibilityEffect(token, state, config) {
-  // Get the current controlled/observer token
-  const controlled = canvas.tokens.controlled;
-  const observer = controlled.length > 0 ? controlled[0] : null;
-  
-  if (!observer || observer === token) {
-    // If no observer or observing self, show normally
-    token.mesh.visible = true;
-    token.visible = true;
-    token.mesh.alpha = 1.0;
-    token.alpha = 1.0;
-    return;
-  }
-  
-  // Apply state-specific visual effects based on observer relationship
-  switch (state) {
-    case 'hidden':
-      applyHiddenEffect(token, observer);
-      break;
-    case 'concealed':
-      applyConcealedEffect(token, observer);
-      break;
-    default:
-      // Show normally for observed or unknown states
-      token.mesh.visible = true;
-      token.visible = true;
-      token.mesh.alpha = 1.0;
-      token.alpha = 1.0;
-      break;
-  }
-}
 
 /**
  * Apply PF2E Undetected condition for full mechanical effect

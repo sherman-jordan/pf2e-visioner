@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.8.0] - 2025-08-11
+
+### Added
+- API: `api.clearAllSceneData()` to clear all per-token visibility/cover maps and all module-created effects across the scene, then rebuild and refresh visuals.
+- Macros added:
+  - Clear All Scene Data (calls `api.clearAllSceneData()`)
+  - Open Token Manager(calls `api.openTokenManager()`)
+
+### Improved
+- Effects handling: will now use batching for better performance
+
 ## [1.7.1] - 2025-08-11
 
 ### Changed
@@ -15,9 +26,23 @@
 
 ### Added
 - Enforce RAW Setting: When disabled (default) will skip some conditions checks
-- Delete token cleanup: To prevent memory leaks deleted tokens will have their states deleted from the map
 - Multiple rules per effect: Instead of multiple effects, the module will now handle one effect with multiple rules per state
 
+### Improved
+- Memory optimization: Batch processing for visibility changes to reduce heap usage
+- Token deletion cleanup: Automatically remove deleted tokens from visibility maps, visibility effects, and cover effects
+- Performance: Optimized effect creation and updates to use bulk operations instead of individual promises
+- Efficiency: Replaced Promise.all loops with direct bulk document operations for better memory usage
+- Performance: Completely redesigned effect updates to batch all operations by state and effect type
+- Performance: Implemented batched visibility and cover updates in token manager to drastically reduce individual updates
+- UI Improvement: "Apply Current" now applies the current type (visibility or cover) for both observer and target modes
+- UI Improvement: "Apply Both" now applies both types (visibility and cover) for both observer and target modes
+- UI Improvement: Visibility Manager now closes immediately when applying changes and shows a progress bar
+- Performance: Optimized cover effects system with bulk operations for better memory usage
+
+### Fixed
+- Chat Automation: Fixed encounter filtering not working properly for all actions (Seek, Point Out, Sneak, Hide, Create a Diversion, Consequences)
+- Chat Automation: Fixed issue where players couldn't see the Seek template setup button when no valid targets were detected
 
 
 ## [1.6.1] - 2025-08-10

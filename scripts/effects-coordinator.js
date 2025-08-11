@@ -146,6 +146,7 @@ export async function rebuildAllEphemeralEffects() {
  * Ensures no leftover aggregate effects remain when predicates are empty
  * @param {Token[]} targets
  */
+// Removed unused: reconcileVisibilityAggregatesForTargets
 export async function reconcileVisibilityAggregatesForTargets(targets) {
   try {
     if (!Array.isArray(targets) || targets.length === 0) return;

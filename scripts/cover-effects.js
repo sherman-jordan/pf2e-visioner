@@ -114,24 +114,13 @@ function removeCoverIndicator(token) {
  * @param {string} state - New cover state
  * @param {Token} observer - Observer token
  */
-export function updateTokenCoverState(token, state, observer) {
-  if (state === 'none') {
-    resetCoverEffects(token);
-  } else {
-    applyCoverEffect(token, state, observer);
-  }
-}
+// Removed legacy visual-only cover state updater
 
 /**
  * Reset token cover effects
  * @param {Token} token - Token to reset
  */
-export function resetCoverEffects(token) {
-  if (!token) return;
-  
-  // Remove cover indicator
-  removeCoverIndicator(token);
-}
+// Removed legacy cover reset (indicator-only)
 
 /**
  * Apply PF2e system conditions based on cover state
@@ -193,16 +182,4 @@ async function removeCoverConditions(token) {
  * @param {Token} token - Token to update
  * @param {Object} coverData - Cover data mapping of observer tokens to cover states
  */
-export async function updateTokenCoverEffects(token, coverData) {
-  if (!token) return;
-  
-  // For each observer-target relationship, apply the appropriate cover state
-  for (const [observerId, coverState] of Object.entries(coverData)) {
-    // Get the observer token
-    const observer = canvas.tokens.get(observerId);
-    if (!observer) continue;
-    
-    // Apply cover condition for this specific observer-target relationship
-    await applyCoverCondition(token, observer, coverState);
-  }
-}
+// Removed legacy bulk cover visual updater in favor of ephemeral cover effects system

@@ -18,78 +18,6 @@ async function runWithEffectLock(actor, taskFn) {
     _effectLocks.set(actor, next.catch(() => {}));
     return next;
 }
-
-/**
- * Ensure a single aggregated ephemeral effect exists on the receiver and return it
- * The effect will contain one EphemeralEffect rule per observer signature to reduce item spam
- */
-async function ensureAggregateOffGuardEffect(effectReceiverToken, visibilityState, options = {}) {
-    if (!effectReceiverToken?.actor?.itemTypes?.effect) return null;
-    
-    const effects = effectReceiverToken.actor.itemTypes.effect;
-    let aggregate = effects.find(e => e.flags?.[MODULE_ID]?.aggregateOffGuard === true
-        && e.flags?.[MODULE_ID]?.visibilityState === visibilityState
-        && e.flags?.[MODULE_ID]?.effectTarget === (options.effectTarget || 'subject'));
-
-    if (!aggregate) {
-        const visibilityLabel = game.i18n.localize(`PF2E.condition.${visibilityState}.name`);
-        const base = {
-            name: `${visibilityLabel}`,
-            type: 'effect',
-            system: {
-                description: { value: `<p>Aggregated off-guard for ${visibilityState} vs multiple observers.</p>`, gm: '' },
-                rules: [],
-                slug: null,
-                traits: { otherTags: [], value: [] },
-                level: { value: 1 },
-                duration: options.durationRounds >= 0 ? { value: options.durationRounds, unit: 'rounds', expiry: 'turn-end', sustained: false } : { value: -1, unit: 'unlimited', expiry: null, sustained: false },
-                tokenIcon: { show: false },
-                unidentified: true,
-                start: { value: 0, initiative: options.initiative ? game.combat?.getCombatantByToken(effectReceiverToken.actor.id)?.initiative : null },
-                badge: null, fromSpell: false
-            },
-            img: `systems/pf2e/icons/conditions/${visibilityState}.webp`,
-            flags: { [MODULE_ID]: { aggregateOffGuard: true, visibilityState, effectTarget: (options.effectTarget || 'subject') } }
-        };
-        try {
-            const [created] = await effectReceiverToken.actor.createEmbeddedDocuments('Item', [base]);
-            aggregate = created;
-        } catch (error) {
-            console.error(`${LOG_PREFIX}: Failed to create aggregate effect:`, error);
-            return null;
-        }
-    }
-    return aggregate;
-}
-
-/**
- * Add an observer signature as a rule entry to the aggregate effect if missing
- */
-async function addObserverToAggregate(effectReceiverToken, observerToken, visibilityState, options = {}) {
-    const aggregate = await ensureAggregateOffGuardEffect(effectReceiverToken, visibilityState, options);
-    const signature = observerToken.actor.signature;
-    const rules = Array.isArray(aggregate.system.rules) ? [...aggregate.system.rules] : [];
-    const exists = rules.some(r => r?.key === 'EphemeralEffect' && (Array.isArray(r.predicate) ? r.predicate.includes(`target:signature:${signature}`) : false));
-    if (exists) return aggregate;
-    rules.push({
-        key: 'EphemeralEffect',
-        predicate: [`target:signature:${signature}`],
-        selectors: ['strike-attack-roll', 'spell-attack-roll', 'strike-damage', 'attack-spell-damage'],
-        uuid: 'Compendium.pf2e.conditionitems.AJh5ex99aV6VTggg'
-    });
-    // Verify the aggregate still exists before updating (it may have been deleted by another process)
-    const aggId = aggregate?.id;
-    if (!aggId || !effectReceiverToken?.actor?.items?.get?.(aggId)) {
-        const again = await ensureAggregateOffGuardEffect(effectReceiverToken, visibilityState, options);
-        const againId = again?.id;
-        if (!againId || !effectReceiverToken?.actor?.items?.get?.(againId)) return again;
-        await again.update({ 'system.rules': rules });
-        return again;
-    }
-    await aggregate.update({ 'system.rules': rules });
-    return aggregate;
-}
-
 /**
  * Remove an observer signature rule from the aggregate effect; delete effect if empty
  */
@@ -147,54 +75,6 @@ async function pruneEmptyAggregates(effectReceiverToken) {
         }
     } catch (error) {
         console.error(`${LOG_PREFIX}: Error in pruneEmptyAggregates:`, error);
-    }
-}
-
-/**
- * Clean up all ephemeral off-guard effects from all actors
- */
-async function cleanupEphemeralEffects() {
-    try {
-        // Process actors in batches to avoid overwhelming the system
-        const allActors = Array.from(game.actors || []);
-        const batchSize = 10;
-        
-        for (let i = 0; i < allActors.length; i += batchSize) {
-            const actorBatch = allActors.slice(i, i + batchSize);
-            
-            for (const actor of actorBatch) {
-                if (!actor?.itemTypes?.effect) continue;
-                
-                const ephemeralEffects = actor.itemTypes.effect.filter(e => 
-                    e.flags?.[MODULE_ID]?.isEphemeralOffGuard
-                );
-                
-                if (ephemeralEffects.length > 0) {
-                    const effectIds = ephemeralEffects.map(e => e?.id).filter(id => !!id);
-                    const existingIds = effectIds.filter(id => !!actor?.items?.get?.(id));
-                    
-                    if (existingIds.length > 0) {
-                        try {
-                            // Delete all effects in a single bulk operation
-                            await actor.deleteEmbeddedDocuments("Item", existingIds);
-                        } catch (error) {
-                            console.error(`${LOG_PREFIX}: Error bulk deleting ephemeral effects:`, error);
-                            
-                            // Fallback: Try deleting individually if bulk delete fails
-                            for (const id of existingIds) {
-                                if (!!id && !!actor?.items?.get?.(id)) {
-                                    try { 
-                                        await actor.deleteEmbeddedDocuments("Item", [id]); 
-                                    } catch (_) {}
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error(`${LOG_PREFIX}: Error cleaning up ephemeral effects:`, error);
     }
 }
 

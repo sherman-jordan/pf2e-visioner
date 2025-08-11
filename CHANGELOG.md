@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0] - 2025-08-11
+
+### Added
+- API: `api.clearAllSceneData()` to clear all per-token visibility/cover maps and all module-created effects across the scene, then rebuild and refresh visuals.
+- Macros added:
+  - Clear All Scene Data (calls `api.clearAllSceneData()`)
+  - Open Token Manager(calls `api.openTokenManager()`)
+
 ## [1.7.1] - 2025-08-11
 
 ### Changed

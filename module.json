@@ -1,10 +1,12 @@
 {
   "id": "pf2e-visioner",
   "title": "PF2E Visioner",
-  "description": "Advanced per-token visibility and cover management for Pathfinder 2E. PF2E Visioner allows GMs to set different visibility states (observed, concealed, hidden, undetected) and cover states (none, lesser, standard, greater) for each token from each observer's perspective, with automatic PF2E condition integration and mechanical effects.",
+  "description": "<p>Advanced per-token visibility and cover management for Pathfinder 2E. PF2E Visioner allows GMs to set different visibility states (observed, concealed, hidden, undetected) and cover states (none, lesser, standard, greater) for each token from each observer's perspective, with automatic PF2E condition integration and mechanical effects.</p>",
   "authors": [
     {
-      "name": "RoiLeaf"
+      "name": "RoiLeaf",
+      "discord": "RoiLeaf",
+      "flags": {}
     }
   ],
   "version": "1.7.1",
@@ -16,28 +18,68 @@
     "scripts/main.js"
   ],
   "styles": [
-    "styles/base.css",
-    "styles/visibility-manager.css",
-    "styles/token-effects.css",
-    "styles/responsive.css",
-    "styles/tooltips.css",
-    "styles/dialog-layout.css",
-    "styles/colorblind.css",
-    "styles/colorblind-buttons.css",
-    "styles/token-manager-ui.css"
+    {
+      "src": "styles/base.css"
+    },
+    {
+      "src": "styles/visibility-manager.css"
+    },
+    {
+      "src": "styles/token-effects.css"
+    },
+    {
+      "src": "styles/responsive.css"
+    },
+    {
+      "src": "styles/tooltips.css"
+    },
+    {
+      "src": "styles/dialog-layout.css"
+    },
+    {
+      "src": "styles/colorblind.css"
+    },
+    {
+      "src": "styles/colorblind-buttons.css"
+    },
+    {
+      "src": "styles/token-manager-ui.css"
+    }
   ],
   "languages": [
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
+    }
+  ],
+  "packs": [
+    {
+      "name": "pf2e-visioner-macros",
+      "label": "PF2E Visioner Macros",
+      "path": "packs/pf2e-visioner-macros",
+      "type": "Macro",
+      "system": "pf2e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     }
   ],
   "socket": true,
   "flags": {
     "hotReload": {
-      "extensions": ["css", "hbs", "json"],
-      "paths": ["styles", "templates", "lang"]
+      "extensions": [
+        "css",
+        "hbs",
+        "json"
+      ],
+      "paths": [
+        "styles",
+        "templates",
+        "lang"
+      ]
     }
   },
   "relationships": {
@@ -48,16 +90,16 @@
         "compatibility": {
           "minimum": "6.0.0"
         }
-      }
-    ],
-    "requires": [
+      },
       {
         "id": "pf2e",
         "type": "system",
         "compatibility": {
           "minimum": "6.0.0"
         }
-      },
+      }
+    ],
+    "requires": [
       {
         "id": "lib-wrapper",
         "type": "module",

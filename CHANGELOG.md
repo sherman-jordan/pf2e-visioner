@@ -11,6 +11,7 @@
 ### Changed
 
 - Seek and Token Manager now respect the token-level Stealth DC override for loot tokens, falling back to the world default when unset.
+- Removed Cover and visibility integration, rules will now explicitly follor enforce RAW setting
 
 ## [1.8.0] - 2025-08-11
 

@@ -339,6 +339,14 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
         effectSourceToken = observerToken;
     }
     
+    // Skip non-creature actors like loot/vehicle/party
+    try {
+        const receiverType = (effectTarget === 'observer' ? observerToken?.actor?.type : targetToken?.actor?.type) || null;
+        if (receiverType && ['loot', 'vehicle', 'party'].includes(receiverType)) {
+            return; // Visual-only handling elsewhere
+        }
+    } catch (_) {}
+
     // For performance and race-safety, serialize per receiver
     await runWithEffectLock(effectReceiverToken.actor, async () => {
         // Collect all operations to perform in a single batch
@@ -535,6 +543,14 @@ export async function batchUpdateVisibilityEffects(observerToken, targetUpdates,
     // Process each receiver's batch
     for (const [receiverId, data] of updatesByReceiver.entries()) {
         const { receiver, updates } = data;
+
+        // Skip non-creature receivers such as loot/vehicle/party
+        try {
+            const rType = receiver?.actor?.type;
+            if (rType && ['loot', 'vehicle', 'party'].includes(rType)) {
+                continue;
+            }
+        } catch (_) {}
         
         await runWithEffectLock(receiver.actor, async () => {
             try {

@@ -230,6 +230,21 @@ export function createVisibilityIndicator(state) {
 }
 
 /**
+ * Walls visibility map (per observer)
+ */
+export function getWallVisibilityMap(token) {
+  const map = token?.document.getFlag(MODULE_ID, 'walls') ?? {};
+  return map;
+}
+
+export async function setWallVisibilityMap(token, map) {
+  if (!token?.document) return;
+  const path = `flags.${MODULE_ID}.walls`;
+  const result = await token.document.update({ [path]: map }, { diff: false });
+  return result;
+}
+
+/**
  * Show a notification to the user
  * @param {string} key - The localization key
  * @param {string} type - The notification type (info, warn, error)
@@ -254,9 +269,13 @@ export function isValidToken(token) {
   // Filter out irrelevant actor types that don't need visibility management
   const actorType = token.actor.type;
   
-  // Exclude loot actors - they're just containers, not creatures
+  // Exclude loot actors unless setting enabled
   if (actorType === 'loot') {
-    return false;
+    try {
+      if (!game.settings.get(MODULE_ID, 'includeLootActors')) return false;
+    } catch (_) {
+      return false;
+    }
   }
   
   // Exclude vehicles unless they have crew (vehicles are usually just objects)
@@ -284,8 +303,17 @@ export function isValidToken(token) {
     /\b(marker|waypoint|location|area)\b/
   ];
   
+  // If loot is included, don't auto-exclude via name patterns
   if (excludePatterns.some(pattern => pattern.test(name))) {
-    return false;
+    try {
+      if (token.actor?.type === 'loot' && game.settings.get(MODULE_ID, 'includeLootActors')) {
+        // allow
+      } else {
+        return false;
+      }
+    } catch (_) {
+      return false;
+    }
   }
   
   // Include character and npc types (the main creature types)

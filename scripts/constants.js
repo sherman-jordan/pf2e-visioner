@@ -153,6 +153,45 @@ export const DEFAULT_SETTINGS = {
     default: false
   },
 
+  // Loot DCs
+  lootPerceptionDC: {
+    name: 'PF2E_VISIONER.SETTINGS.LOOT_PERCEPTION_DC.name',
+    hint: 'PF2E_VISIONER.SETTINGS.LOOT_PERCEPTION_DC.hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 10
+  },
+  lootStealthDC: {
+    name: 'PF2E_VISIONER.SETTINGS.LOOT_STEALTH_DC.name',
+    hint: 'PF2E_VISIONER.SETTINGS.LOOT_STEALTH_DC.hint',
+    scope: 'world',
+    config: true,
+    type: Number,
+    default: 15
+  },
+
+  // Include additional object types in managers
+  includeLootActors: {
+    name: 'PF2E_VISIONER.SETTINGS.INCLUDE_LOOT_ACTORS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.INCLUDE_LOOT_ACTORS.hint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false
+  },
+
+  // Visuals perspective
+  visualsUseControlledPerspective: {
+    name: 'PF2E_VISIONER.SETTINGS.VISUALS_USE_CONTROLLED_PERSPECTIVE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.VISUALS_USE_CONTROLLED_PERSPECTIVE.hint',
+    scope: 'client',
+    config: true,
+    restricted: false,
+    type: Boolean,
+    default: true
+  },
+
   defaultEncounterFilter: {
     name: 'PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name',
     hint: 'PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.hint',

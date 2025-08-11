@@ -91,3 +91,29 @@ export async function applyPersistentVisibilityEffects() {
   // but most functionality is now handled by other systems
   await updateTokenVisuals();
 }
+
+/**
+ * Visual-only walls toggle per observer
+ * Hides walls for this client if the active observer has them set as hidden
+ */
+// Wall visuals and tooltips temporarily disabled
+export async function updateWallVisuals() { return; }
+
+/**
+ * Handle Foundry hoverWall hook: show a tooltip at the midpoint when hovered, if visible to observer
+ */
+export function handleHoverWall() { return; }
+
+// Tooltip helpers removed for now
+
+function canvasCoordinatesToScreen(wx, wy) {
+  try {
+    const p = canvas?.stage?.toGlobal?.(new PIXI.Point(wx, wy));
+    const rect = canvas?.app?.view?.getBoundingClientRect?.();
+    if (p && rect) return { x: rect.left + p.x, y: rect.top + p.y };
+  } catch (_) {}
+  // Fallback: try to position relative to canvas element
+  const el = canvas.app?.view;
+  const rect = el?.getBoundingClientRect?.() || { left: 0, top: 0 };
+  return { x: rect.left + wx, y: rect.top + wy };
+}

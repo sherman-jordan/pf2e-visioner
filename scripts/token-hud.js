@@ -4,6 +4,7 @@
  */
 
 import { openVisibilityManagerWithMode } from './api.js';
+import { MODULE_ID } from './constants.js';
 
 /**
  * Handle rendering of token HUD to add visibility button
@@ -12,9 +13,17 @@ import { openVisibilityManagerWithMode } from './api.js';
  */
 export function onRenderTokenHUD(app, html) {
   // Only add button if HUD button setting is enabled
-  if (!game.settings.get('pf2e-visioner', 'useHudButton')) {
+  if (!game.settings.get(MODULE_ID, 'useHudButton')) {
     return;
   }
+
+  // Respect loot-actors setting: do not add for loot when disabled
+  try {
+    const token = app?.object;
+    if (token?.actor?.type === 'loot' && !game.settings.get(MODULE_ID, 'includeLootActors')) {
+      return;
+    }
+  } catch (_) {}
 
   renderVisibilityButton(app, html);
 }

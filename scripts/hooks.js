@@ -2,35 +2,167 @@
  * FoundryVTT hooks registration and handling
  */
 
-import { injectChatAutomationStyles } from './chat/chat-automation-styles.js';
-import { onRenderChatMessage } from './chat/chat-processor.js';
-import { rebuildAllEphemeralEffects, updateTokenVisuals } from './effects-coordinator.js';
-import { cleanupHoverTooltips, initializeHoverTooltips, onHighlightObjects } from './hover-tooltips.js';
-import { registerSocket } from './socket.js';
-import { onRenderTokenHUD } from './token-hud.js';
-
+import { injectChatAutomationStyles } from "./chat/chat-automation-styles.js";
+import { onRenderChatMessage } from "./chat/chat-processor.js";
+import { MODULE_ID } from "./constants.js";
+import {
+  rebuildAllEphemeralEffects,
+  updateTokenVisuals,
+} from "./effects-coordinator.js";
+import {
+  cleanupHoverTooltips,
+  initializeHoverTooltips,
+  onHighlightObjects,
+} from "./hover-tooltips.js";
+import { registerSocket } from "./socket.js";
+import { onRenderTokenHUD } from "./token-hud.js";
+import { updateWallVisuals } from "./visual-effects.js";
 /**
  * Register all FoundryVTT hooks
  */
 export function registerHooks() {
-  Hooks.on('ready', onReady);
-  Hooks.on('controlToken', onControlToken);
-  Hooks.on('getTokenHUDButtons', onGetTokenHUDButtons);
-  Hooks.on('renderTokenHUD', onRenderTokenHUD);
-  Hooks.on('renderChatMessage', onRenderChatMessage);
-  Hooks.on('getTokenDirectoryEntryContext', onGetTokenDirectoryEntryContext);
-  Hooks.on('canvasReady', onCanvasReady);
-  Hooks.on('highlightObjects', onHighlightObjects);
+  Hooks.on("ready", onReady);
+  Hooks.on("controlToken", onControlToken);
+  // Wall hooks temporarily disabled
+  Hooks.on("getTokenHUDButtons", onGetTokenHUDButtons);
+  /** Register all relevant render hooks (core + PF2E overrides) */
+
+  for (const hook of [
+    "renderTokenConfig",
+    "renderPrototypeTokenConfig",
+    "renderTokenConfigPF2e",
+    "renderPrototypeTokenConfigPF2e",
+  ]) {
+    Hooks.on(hook, (app, root) => {
+      try {
+        injectVisioner(app, root);
+      } catch (e) {
+        console.error("[pf2e-visioner]", e);
+      }
+    });
+  }
+
+  function injectVisioner(app, root) {
+    const tokenDoc = app?.document;
+    const actor = tokenDoc?.actor ?? tokenDoc?.parent;
+    if (!actor) return;
+
+    const group = "sheet";
+
+    const visionHeader =
+      root.querySelector(
+        `nav.sheet-tabs [data-action="tab"][data-group="${group}"][data-tab="vision"]`
+      ) ||
+      [
+        ...root.querySelectorAll(
+          `nav.sheet-tabs [data-action="tab"][data-group="${group}"]`
+        ),
+      ].find((a) =>
+        (a.textContent || "").trim().toLowerCase().startsWith("vision")
+      );
+    if (!visionHeader) return;
+
+    const panel = root.querySelector(
+      `div.tab[data-group="${group}"][data-tab="vision"]`
+    );
+    if (!panel || panel.querySelector(".pf2e-visioner-field")) return;
+
+    const detectionFieldset = [...panel.querySelectorAll("fieldset")].find(
+      (fs) =>
+        (fs.querySelector("legend")?.textContent || "")
+          .trim()
+          .toLowerCase()
+          .startsWith("detection modes")
+    );
+    const targetContainer = detectionFieldset ?? panel;
+
+    const current =
+      tokenDoc.getFlag?.(MODULE_ID, "stealthDC") ??
+      tokenDoc.flags?.[MODULE_ID]?.stealthDC ??
+      "";
+
+    const wrap = document.createElement("div");
+    wrap.className = "form-group pf2e-visioner-field highlight"; // "highlight" lets you style in CSS
+    wrap.innerHTML = `
+    <label>Stealth DC</label>
+    <input type="number" inputmode="numeric" min="0" step="1"
+           name="flags.${MODULE_ID}.stealthDC"
+           value="${Number.isFinite(+current) ? +current : ""}">
+    <p class="hint">(PF2E Visioner) stealth dc for loot tokens</code>.</p>
+  `;
+
+    targetContainer.appendChild(wrap);
+  }
+
+  Hooks.on("renderTokenHUD", onRenderTokenHUD);
+  Hooks.on("renderChatMessage", onRenderChatMessage);
+  Hooks.on("getTokenDirectoryEntryContext", onGetTokenDirectoryEntryContext);
+  Hooks.on("canvasReady", onCanvasReady);
+  Hooks.on("highlightObjects", onHighlightObjects);
+  // Wall visuals temporarily disabled
   // Note: refreshToken hook removed to prevent infinite loops when applying visibility states
-  Hooks.on('createToken', onTokenCreated);
-Hooks.on('deleteToken', onTokenDeleted);
-  
+  Hooks.on("createToken", onTokenCreated);
+  Hooks.on("deleteToken", onTokenDeleted);
+
   // Encounter hooks to reset dialog states
-  Hooks.on('updateCombat', onUpdateCombat);
-  Hooks.on('deleteCombat', onDeleteCombat);
-  
+  Hooks.on("updateCombat", onUpdateCombat);
+  Hooks.on("deleteCombat", onDeleteCombat);
+
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();
+}
+function onRenderTokenConfig(app, html) {
+  try {
+    const doc = app?.document || app?.object; // v13: document
+    if (!doc) return;
+    const perceptionDC =
+      Number(doc.getFlag("pf2e-visioner", "perceptionDC")) || "";
+    const stealthDc = Number(doc.getFlag("pf2e-visioner", "stealthDc")) || "";
+
+    const nav = html
+      .find("nav.sheet-tabs, nav.tabs, .sheet-tabs, .tabs")
+      .first();
+    if (!nav.length) return;
+    if (nav.find('[data-tab="pf2e-visioner"]').length) return;
+    const group = nav.data("group") || nav.attr("data-group") || "primary";
+
+    const tabButton = $(
+      `<a class="item" data-group="${group}" data-tab="pf2e-visioner"><i class="fas fa-eye"></i> PF2E Visioner</a>`
+    );
+    nav.append(tabButton);
+
+    const tabContent = $(`
+      <section class="tab" data-group="${group}" data-tab="pf2e-visioner">
+        <div class="form-group">
+          <label>Visioner Perception DC (override)</label>
+          <div class="form-fields">
+            <input type="number" name="flags.pf2e-visioner.perceptionDC" value="${perceptionDC}" placeholder="blank = auto" min="0"/>
+          </div>
+          <p class="notes">If set, Visioner uses this value for Perception DC checks instead of the actor’s stat.</p>
+        </div>
+        <div class="form-group">
+          <label>Visioner Stealth DC (override)</label>
+          <div class="form-fields">
+            <input type="number" name="flags.pf2e-visioner.stealthDc" value="${stealthDc}" placeholder="blank = default" min="0"/>
+          </div>
+          <p class="notes">If set for loot tokens, Seek uses this DC instead of the module default.</p>
+        </div>
+      </section>
+    `);
+
+    const body = html.find(".sheet-body, .window-content form");
+    if (body.length) body.append(tabContent);
+    else html.append(tabContent);
+
+    // Rebind tabs (v13)
+    try {
+      const tabsAny = app._tabs || app.tabs;
+      if (Array.isArray(tabsAny)) tabsAny.forEach((t) => t?.bind?.(html[0]));
+      else tabsAny?.bind?.(html[0]);
+    } catch (_) {}
+  } catch (e) {
+    console.warn("[pf2e-visioner] failed to inject Token Config tab", e);
+  }
 }
 
 /**
@@ -38,15 +170,15 @@ Hooks.on('deleteToken', onTokenDeleted);
  */
 function setupAlternativeHUDButton() {
   // Try approach 1: Hook into canvas token right-click
-  Hooks.on('targetToken', (user, token, targeted) => {
+  Hooks.on("targetToken", (user, token, targeted) => {
     if (game.user.isGM && targeted) {
     }
   });
-  
+
   // Try approach 2: Listen for canvas right-clicks
-  Hooks.on('canvasReady', () => {
+  Hooks.on("canvasReady", () => {
     if (canvas?.stage) {
-      canvas.stage.on('rightclick', (event) => {
+      canvas.stage.on("rightclick", (event) => {
         const token = canvas.tokens.get(event.target?.id);
         if (token && game.user.isGM) {
           // Could show a custom context menu here
@@ -54,11 +186,11 @@ function setupAlternativeHUDButton() {
       });
     }
   });
-  
+
   // Try approach 3: Patch the TokenHUD class
   if (window.TokenHUD) {
     const originalGetData = window.TokenHUD.prototype.getData;
-    window.TokenHUD.prototype.getData = function() {
+    window.TokenHUD.prototype.getData = function () {
       const data = originalGetData.call(this);
       return data;
     };
@@ -71,9 +203,9 @@ function setupAlternativeHUDButton() {
 function onReady() {
   // Add CSS styles for chat automation
   injectChatAutomationStyles();
-  
+
   // Add a fallback approach - add a floating button when tokens are selected (only if HUD button is disabled)
-  if (!game.settings.get('pf2e-visioner', 'useHudButton')) {
+  if (!game.settings.get("pf2e-visioner", "useHudButton")) {
     setupFallbackHUDButton();
   }
 
@@ -85,7 +217,7 @@ function onReady() {
  */
 function setupFallbackHUDButton() {
   // Add CSS for floating button
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.textContent = `
     .pf2e-visioner-floating-button {
       position: fixed;
@@ -120,82 +252,93 @@ function setupFallbackHUDButton() {
     }
   `;
   document.head.appendChild(style);
-  
+
   // Add button when tokens are controlled (only if HUD button is disabled)
-  Hooks.on('controlToken', (token, controlled) => {
+  Hooks.on("controlToken", (token, controlled) => {
     // Remove any existing buttons
-    document.querySelectorAll('.pf2e-visioner-floating-button').forEach(btn => btn.remove());
-    
+    document
+      .querySelectorAll(".pf2e-visioner-floating-button")
+      .forEach((btn) => btn.remove());
+
     // Only show floating button if HUD button is disabled
-    if (controlled && game.user.isGM && !game.settings.get('pf2e-visioner', 'useHudButton')) {
-      const button = document.createElement('div');
-      button.className = 'pf2e-visioner-floating-button';
+    if (
+      controlled &&
+      game.user.isGM &&
+      !game.settings.get("pf2e-visioner", "useHudButton")
+    ) {
+      const button = document.createElement("div");
+      button.className = "pf2e-visioner-floating-button";
       button.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
-      button.title = 'Token Manager (Left: Target, Right: Observer) - Drag to move';
-      
+      button.title =
+        "Token Manager (Left: Target, Right: Observer) - Drag to move";
+
       // Add drag functionality
       let isDragging = false;
       let hasDragged = false;
       let dragStartPos = { x: 0, y: 0 };
       let dragOffset = { x: 0, y: 0 };
-      
-      button.addEventListener('mousedown', (event) => {
-        if (event.button === 0) { // Left mouse button
+
+      button.addEventListener("mousedown", (event) => {
+        if (event.button === 0) {
+          // Left mouse button
           isDragging = true;
           hasDragged = false;
           dragStartPos.x = event.clientX;
           dragStartPos.y = event.clientY;
-          
+
           const rect = button.getBoundingClientRect();
           dragOffset.x = event.clientX - rect.left;
           dragOffset.y = event.clientY - rect.top;
-          
+
           event.preventDefault();
         }
       });
-      
-      document.addEventListener('mousemove', (event) => {
+
+      document.addEventListener("mousemove", (event) => {
         if (isDragging) {
           const dragDistance = Math.sqrt(
-            Math.pow(event.clientX - dragStartPos.x, 2) + 
-            Math.pow(event.clientY - dragStartPos.y, 2)
+            Math.pow(event.clientX - dragStartPos.x, 2) +
+              Math.pow(event.clientY - dragStartPos.y, 2)
           );
-          
+
           // If moved more than 5 pixels, consider it a drag
           if (dragDistance > 5 && !hasDragged) {
             hasDragged = true;
-            button.classList.add('dragging');
+            button.classList.add("dragging");
           }
-          
+
           if (hasDragged) {
             const x = event.clientX - dragOffset.x;
             const y = event.clientY - dragOffset.y;
-            
+
             // Keep button within viewport bounds
             const maxX = window.innerWidth - button.offsetWidth;
             const maxY = window.innerHeight - button.offsetHeight;
-            
-            button.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
-            button.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+
+            button.style.left = Math.max(0, Math.min(x, maxX)) + "px";
+            button.style.top = Math.max(0, Math.min(y, maxY)) + "px";
           }
-          
+
           event.preventDefault();
         }
       });
-      
-      document.addEventListener('mouseup', (event) => {
+
+      document.addEventListener("mouseup", (event) => {
         if (isDragging) {
           isDragging = false;
-          button.classList.remove('dragging');
-          
+          button.classList.remove("dragging");
+
           // Save position to localStorage if we actually dragged
           if (hasDragged) {
-            localStorage.setItem('pf2e-visioner-button-pos', JSON.stringify({
-              left: button.style.left,
-              top: button.style.top
-            }));
+            localStorage.setItem(
+              "pf2e-visioner-button-pos",
+              JSON.stringify({
+                left: button.style.left,
+                top: button.style.top,
+              })
+            );
           }
-          
+
           // Add a small delay to prevent click events after drag
           if (hasDragged) {
             setTimeout(() => {
@@ -206,58 +349,58 @@ function setupFallbackHUDButton() {
           }
         }
       });
-      
+
       // Restore saved position
-      const savedPos = localStorage.getItem('pf2e-visioner-button-pos');
+      const savedPos = localStorage.getItem("pf2e-visioner-button-pos");
       if (savedPos) {
         try {
           const pos = JSON.parse(savedPos);
           if (pos.left) button.style.left = pos.left;
           if (pos.top) button.style.top = pos.top;
         } catch (e) {
-          console.warn('PF2E Visioner: Could not restore button position');
+          console.warn("PF2E Visioner: Could not restore button position");
         }
       }
-      
+
       // Add click handlers with debugging
-      button.addEventListener('click', async (event) => {
+      button.addEventListener("click", async (event) => {
         // Don't open menu if we just finished dragging
         if (hasDragged) {
           event.preventDefault();
           event.stopPropagation();
           return;
         }
-        
+
         event.preventDefault();
         event.stopPropagation();
-        
+
         try {
-          const { openTokenManagerWithMode } = await import('./api.js');
-          await openTokenManagerWithMode(token, 'target');
+          const { openTokenManagerWithMode } = await import("./api.js");
+          await openTokenManagerWithMode(token, "target");
         } catch (error) {
-          console.error('PF2E Visioner: Error opening token manager:', error);
+          console.error("PF2E Visioner: Error opening token manager:", error);
         }
       });
-      
-      button.addEventListener('contextmenu', async (event) => {
+
+      button.addEventListener("contextmenu", async (event) => {
         // Don't open menu if we just finished dragging
         if (hasDragged) {
           event.preventDefault();
           event.stopPropagation();
           return;
         }
-        
+
         event.preventDefault();
         event.stopPropagation();
-        
+
         try {
-          const { openTokenManagerWithMode } = await import('./api.js');
-          await openTokenManagerWithMode(token, 'observer');
+          const { openTokenManagerWithMode } = await import("./api.js");
+          await openTokenManagerWithMode(token, "observer");
         } catch (error) {
-          console.error('PF2E Visioner: Error opening token manager:', error);
+          console.error("PF2E Visioner: Error opening token manager:", error);
         }
       });
-      
+
       document.body.appendChild(button);
     }
   });
@@ -272,7 +415,10 @@ async function onControlToken(token, controlled) {
   // Token control no longer triggers visibility updates
   // Visibility effects are persistent based on GM configuration
   // This prevents selection-based changes and maintains persistent relationships
+  // Wall visuals temporarily disabled
 }
+
+// onUpdateWall removed
 
 /**
  * Add token manager button to token HUD
@@ -281,16 +427,25 @@ async function onControlToken(token, controlled) {
  * @param {Token} token - The token
  */
 function onGetTokenHUDButtons(hud, buttons, token) {
-  // Add the token manager button
+  // Add the token manager button (conditionally for loot actors)
+  try {
+    if (token?.actor?.type === "loot") {
+      // Only add HUD button for loot if the setting is enabled
+      if (!game.settings.get("pf2e-visioner", "includeLootActors")) {
+        return;
+      }
+    }
+  } catch (_) {}
+
   buttons.push({
-    name: 'token-manager',
-    title: 'Token Manager (Left: Target Mode, Right: Observer Mode)',
-    icon: 'fas fa-eye',
+    name: "token-manager",
+    title: "Token Manager (Left: Target Mode, Right: Observer Mode)",
+    icon: "fas fa-eye",
     onClick: async () => {
-      const { openTokenManagerWithMode } = await import('./api.js');
-      await openTokenManagerWithMode(token, 'target');
+      const { openTokenManagerWithMode } = await import("./api.js");
+      await openTokenManagerWithMode(token, "target");
     },
-    button: true
+    button: true,
   });
 }
 
@@ -301,18 +456,18 @@ function onGetTokenHUDButtons(hud, buttons, token) {
  */
 function onGetTokenDirectoryEntryContext(html, options) {
   if (!game.user.isGM) return;
-  
+
   options.push({
-    name: 'PF2E_VISIONER.CONTEXT_MENU.MANAGE_TOKEN',
+    name: "PF2E_VISIONER.CONTEXT_MENU.MANAGE_TOKEN",
     icon: '<i class="fas fa-eye"></i>',
     callback: async (li) => {
-      const tokenId = li.data('token-id');
+      const tokenId = li.data("token-id");
       const token = canvas.tokens.get(tokenId);
       if (token) {
-        const { openTokenManager } = await import('./api.js');
+        const { openTokenManager } = await import("./api.js");
         await openTokenManager(token);
       }
-    }
+    },
   });
 }
 
@@ -323,13 +478,20 @@ async function onCanvasReady() {
   // Rebuild ephemeral effects from maps when the canvas is ready (GM),
   // otherwise do a light visual refresh for players
   if (game.user.isGM) {
-    try { await rebuildAllEphemeralEffects(); } catch (e) { console.warn('PF2E Visioner: rebuild on canvasReady failed', e); }
+    try {
+      await rebuildAllEphemeralEffects();
+    } catch (e) {
+      console.warn("PF2E Visioner: rebuild on canvasReady failed", e);
+    }
   } else {
     await updateTokenVisuals();
   }
-  
+  try {
+    await updateWallVisuals();
+  } catch (_) {}
+
   // Initialize hover tooltips if enabled
-  if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
+  if (game.settings.get("pf2e-visioner", "enableHoverTooltips")) {
     initializeHoverTooltips();
   }
 }
@@ -343,20 +505,22 @@ async function onTokenCreated(scene, tokenDoc) {
   // Reapply persistent visibility and cover effects to include new token
   try {
     // Try restore of maps if this is an undo of a deletion
-    const { restoreDeletedTokenMaps } = await import('./utils.js');
+    const { restoreDeletedTokenMaps } = await import("./utils.js");
     const restored = await restoreDeletedTokenMaps(tokenDoc);
     if (restored && game.user.isGM) {
       // Ensure aggregates reflect restored maps
-      const { rebuildAllEphemeralEffects } = await import('./effects-coordinator.js');
+      const { rebuildAllEphemeralEffects } = await import(
+        "./effects-coordinator.js"
+      );
       await rebuildAllEphemeralEffects();
     }
   } catch (_) {}
 
   setTimeout(async () => {
     await updateTokenVisuals();
-    
+
     // Reinitialize hover tooltips to include new token
-    if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
+    if (game.settings.get("pf2e-visioner", "enableHoverTooltips")) {
       cleanupHoverTooltips();
       initializeHoverTooltips();
     }
@@ -373,9 +537,12 @@ async function onTokenDeleted(...args) {
     // Handle Foundry version differences: (scene, tokenDoc, options, userId) vs (tokenDoc, context, userId)
     let tokenDoc = null;
     for (const a of args) {
-      if (a && typeof a === 'object') {
+      if (a && typeof a === "object") {
         // TokenDocument typically has an actor and a parent Scene
-        if (a?.actor && (a?.parent || a?.scene || a?.documentName === 'Token')) {
+        if (
+          a?.actor &&
+          (a?.parent || a?.scene || a?.documentName === "Token")
+        ) {
           tokenDoc = a;
           break;
         }
@@ -388,22 +555,30 @@ async function onTokenDeleted(...args) {
     if (!tokenDoc?.id) return;
 
     // Import the cleanup functions
-    const { cleanupDeletedToken } = await import('./utils.js');
-    const { cleanupDeletedTokenEffects } = await import('./off-guard-ephemeral.js');
-    const { cleanupDeletedTokenCoverEffects } = await import('./cover-ephemeral.js');
-    
+    const { cleanupDeletedToken } = await import("./utils.js");
+    const { cleanupDeletedTokenEffects } = await import(
+      "./off-guard-ephemeral.js"
+    );
+    const { cleanupDeletedTokenCoverEffects } = await import(
+      "./cover-ephemeral.js"
+    );
+
     // Clean up visibility maps and effects
     if (tokenDoc) {
       // First clean up the visibility maps
-      try { await cleanupDeletedToken(tokenDoc); } catch (e) { console.warn('PF2E Visioner: map cleanup failed', e); }
-      
+      try {
+        await cleanupDeletedToken(tokenDoc);
+      } catch (e) {
+        console.warn("PF2E Visioner: map cleanup failed", e);
+      }
+
       // Then clean up visibility and cover effects
       await Promise.all([
         cleanupDeletedTokenEffects(tokenDoc),
-        cleanupDeletedTokenCoverEffects(tokenDoc)
+        cleanupDeletedTokenCoverEffects(tokenDoc),
       ]);
     }
-    
+
     // Reapply persistent visibility and cover effects after token removal
     setTimeout(async () => {
       try {
@@ -414,17 +589,17 @@ async function onTokenDeleted(...args) {
           await updateTokenVisuals();
         }
       } catch (e) {
-        console.warn('PF2E Visioner: post-delete rebuild failed', e);
+        console.warn("PF2E Visioner: post-delete rebuild failed", e);
       }
-      
+
       // Reinitialize hover tooltips to remove deleted token
-      if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
+      if (game.settings.get("pf2e-visioner", "enableHoverTooltips")) {
         cleanupHoverTooltips();
         initializeHoverTooltips();
       }
     }, 100);
   } catch (error) {
-    console.error('PF2E Visioner: Error cleaning up deleted token:', error);
+    console.error("PF2E Visioner: Error cleaning up deleted token:", error);
   }
 }
 
@@ -433,7 +608,7 @@ async function onTokenDeleted(...args) {
  */
 function onUpdateCombat(combat, updateData, options, userId) {
   // Check if combat has ended (started: false)
-  if (updateData.hasOwnProperty('started') && updateData.started === false) {
+  if (updateData.hasOwnProperty("started") && updateData.started === false) {
     resetEncounterFiltersInDialogs();
   }
 }
@@ -450,51 +625,63 @@ function onDeleteCombat(combat, options, userId) {
  */
 function resetEncounterFiltersInDialogs() {
   // Reset Hide dialog encounter filter
-  const hideDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'HidePreviewDialog');
-  hideDialogs.forEach(dialog => {
+  const hideDialogs = Object.values(ui.windows).filter(
+    (w) => w.constructor.name === "HidePreviewDialog"
+  );
+  hideDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
       dialog.encounterOnly = false;
-      
+
       // Update the checkbox in the UI
-      const checkbox = dialog.element?.querySelector('input[data-action="toggleEncounterFilter"]');
+      const checkbox = dialog.element?.querySelector(
+        'input[data-action="toggleEncounterFilter"]'
+      );
       if (checkbox) {
         checkbox.checked = false;
       }
-      
+
       // Re-render the dialog to show all tokens
       dialog.render({ force: true });
     }
   });
-  
+
   // Reset Seek dialog encounter filter
-  const seekDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'SeekPreviewDialog');
-  seekDialogs.forEach(dialog => {
+  const seekDialogs = Object.values(ui.windows).filter(
+    (w) => w.constructor.name === "SeekPreviewDialog"
+  );
+  seekDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
       dialog.encounterOnly = false;
-      
+
       // Update the checkbox in the UI
-      const checkbox = dialog.element?.querySelector('input[data-action="toggleEncounterFilter"]');
+      const checkbox = dialog.element?.querySelector(
+        'input[data-action="toggleEncounterFilter"]'
+      );
       if (checkbox) {
         checkbox.checked = false;
       }
-      
+
       // Re-render the dialog to show all tokens
       dialog.render({ force: true });
     }
   });
-  
+
   // Reset Point Out dialog encounter filter if it exists
-  const pointOutDialogs = Object.values(ui.windows).filter(w => w.constructor.name === 'PointOutPreviewDialog');
-  pointOutDialogs.forEach(dialog => {
+  const pointOutDialogs = Object.values(ui.windows).filter(
+    (w) => w.constructor.name === "PointOutPreviewDialog"
+  );
+  pointOutDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
       dialog.encounterOnly = false;
-      
+
       // Update the checkbox in the UI
-      const checkbox = dialog.element?.querySelector('input[data-action="toggleEncounterFilter"]');
+      const checkbox = dialog.element?.querySelector(
+        'input[data-action="toggleEncounterFilter"]'
+      );
       if (checkbox) {
         checkbox.checked = false;
       }
-      
+
       // Re-render the dialog to show all tokens
       dialog.render({ force: true });
     }

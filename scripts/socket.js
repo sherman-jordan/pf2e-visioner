@@ -34,6 +34,13 @@ export function refreshLocalPerception() {
     refreshSounds: true,
     refreshOcclusion: true,
   });
+  // Also refresh wall visuals/indicators for this client
+  try {
+    (async () => {
+      const { updateWallVisuals } = await import('./visual-effects.js');
+      await updateWallVisuals();
+    })();
+  } catch (_) {}
 }
 
 /*
@@ -42,6 +49,13 @@ export function refreshLocalPerception() {
  */
 export function refreshEveryonesPerception() {
   if (visionerSocket) visionerSocket.executeForEveryone(REFRESH_CHANNEL);
+  try {
+    (async () => {
+      const observerId = canvas.tokens.controlled?.[0]?.id || null;
+      const { updateWallVisuals } = await import('./visual-effects.js');
+      await updateWallVisuals(observerId);
+    })();
+  } catch (_) {}
 }
 
 /*

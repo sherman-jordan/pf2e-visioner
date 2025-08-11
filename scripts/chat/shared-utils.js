@@ -27,8 +27,17 @@ export function isValidSeekTarget(token, seeker) {
  * @returns {number} The Stealth DC or 0 if not found
  */
 export function extractStealthDC(token) {
-    if (!token.actor) return 0;
-    
+    if (!token?.actor) return 0;
+    // Loot actors use token override or world default; others use actor stealth DC
+    if (token.actor?.type === 'loot') {
+        const override = Number(token.document?.getFlag?.(MODULE_ID, 'stealthDc'))
+            || Number(token.document?.getFlag?.(MODULE_ID, 'stealthDC'))
+            || Number(token.document?.flags?.[MODULE_ID]?.stealthDc)
+            || Number(token.document?.flags?.[MODULE_ID]?.stealthDC);
+        if (Number.isFinite(override) && override > 0) return override;
+        const fallback = Number(game.settings.get(MODULE_ID, 'lootStealthDC'));
+        return Number.isFinite(fallback) ? fallback : 15;
+    }
     // For both PCs and NPCs: actor.system.skills.stealth.dc
     return token.actor.system?.skills?.stealth?.dc || 0;
 }
@@ -303,7 +312,14 @@ export function shouldFilterAlly(actingToken, targetToken, filterType = 'enemies
  */
 export function extractPerceptionDC(token) {
     if (!token.actor) return 0;
-    
+    const type = token.actor?.type;
+    // Per-token override
+    const override = Number(token.document?.getFlag?.(MODULE_ID, 'perceptionDC'));
+    if (Number.isFinite(override) && override > 0) return override;
+    if (type === 'loot') {
+        // Loot actors: use world setting fallback
+        return Number(game.settings.get(MODULE_ID, 'lootPerceptionDC'));
+    }
     // For both PCs and NPCs: actor.system.perception.dc
     return token.actor.system?.perception?.dc || 0;
 }

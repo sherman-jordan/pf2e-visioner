@@ -238,11 +238,34 @@
       "DEBUG": {
         "name": "Debug Mode",
         "hint": "Enable detailed console logging for troubleshooting"
+      },
+      "LOOT_PERCEPTION_DC": {
+        "name": "Default Perception DC for Loot Actors",
+        "hint": "Used when a loot token needs a Perception DC and doesn't have a system stat."
+      },
+      "LOOT_STEALTH_DC": {
+        "name": "Default Stealth DC for Loot Actors",
+        "hint": "DC used when considering loot tokens as Seek targets."
+      },
+      "INCLUDE_LOOT_ACTORS": {
+        "name": "Include loot actors in visibility manager",
+        "hint": "Allow configuring visibility states for loot actors (chests, containers) per observer. Visual only; no PF2E conditions are applied."
+      },
+      "INCLUDE_WALLS": {
+        "name": "Include walls as hideable objects (experimental)",
+        "hint": "Show walls in the manager to mark them as visible/hidden per observer. Current implementation is visual-only and does not change occlusion or collision."
+      },
+      "VISUALS_USE_CONTROLLED_PERSPECTIVE": {
+        "name": "Use controlled token perspective for visuals",
+        "hint": "When enabled, the current user's controlled token determines what they can visually see for objects configured as hidden or visible."
       }
     },
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens"
     },
+      "WALL": {
+        "VISIBLE_TO_YOU": "Hidden Wall"
+      },
     "KEYBINDINGS": {
       "OPEN_TOKEN_MANAGER": {
         "name": "Open Visioner Token Manager",

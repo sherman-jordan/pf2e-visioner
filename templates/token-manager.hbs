@@ -19,16 +19,23 @@
     </div>
     <div class="observer-content">
       <div class="observer-main">
-        <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" title="Click to switch between Observer and Target modes">
-          <div class="toggle-option {{#if isObserverMode}}active{{/if}}">
-            <i class="fas fa-eye"></i>
-            <span>Observer</span>
-          </div>
-          <div class="toggle-divider">|</div>
-          <div class="toggle-option {{#if isTargetMode}}active{{/if}}">
-            <i class="fas fa-user-secret"></i>
-            <span>Target</span>
-          </div>
+        <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" title="Click to switch between Observer and Target modes" {{#if lootObserver}}disabled{{/if}}>
+          {{#if lootObserver}}
+            <div class="toggle-option active">
+              <i class="fas fa-user-secret"></i>
+              <span>Target</span>
+            </div>
+          {{else}}
+            <div class="toggle-option {{#if isObserverMode}}active{{/if}}">
+              <i class="fas fa-eye"></i>
+              <span>Observer</span>
+            </div>
+            <div class="toggle-divider">|</div>
+            <div class="toggle-option {{#if isTargetMode}}active{{/if}}">
+              <i class="fas fa-user-secret"></i>
+              <span>Target</span>
+            </div>
+          {{/if}}
         </button>
         <h3 class="observer-name">{{observer.name}}</h3>
         {{#if isCoverTab}}
@@ -62,9 +69,11 @@
         <button type="button" class="icon-tab-button {{#if isVisibilityTab}}active{{/if}}" data-action="toggleTab" data-tab="visibility" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_TAB"}}">
           <i class="fas fa-eye"></i>
         </button>
-        <button type="button" class="icon-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
-          <i class="fas fa-shield-alt"></i>
-        </button>
+        {{#unless hideCoverTab}}
+          <button type="button" class="icon-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
+            <i class="fas fa-shield-alt"></i>
+          </button>
+        {{/unless}}
       </div>
       <div class="legend-panel">
         {{#if isVisibilityTab}}
@@ -313,6 +322,7 @@
             </div>
           {{/if}}
           
+          {{!-- Walls UI temporarily disabled --}}
         {{else}}
           <div class="no-targets">
             <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>
@@ -322,6 +332,7 @@
     </div>
 
     {{!-- Cover Tab --}}
+    {{#unless hideCoverTab}}
     <div class="tab-panel cover-section {{#if isCoverTab}}active{{/if}}">
       {{!-- Legend moved to top-right observer-tools --}}
 
@@ -520,6 +531,7 @@
         {{/if}}
       </div>
     </div>
+    {{/unless}}
   </div>
 
   {{!-- Action Buttons --}}

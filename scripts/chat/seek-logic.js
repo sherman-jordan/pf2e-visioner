@@ -7,12 +7,12 @@ import { MODULE_ID, MODULE_TITLE } from '../constants.js';
 import { getVisibilityBetween } from '../utils.js';
 import { SeekPreviewDialog } from './seek-preview-dialog.js';
 import {
-    calculateTokenDistance,
-    determineOutcome,
-    extractStealthDC,
-    hasActiveEncounter,
-    isTokenInEncounter,
-    shouldFilterAlly
+  calculateTokenDistance,
+  determineOutcome,
+  extractStealthDC,
+  hasActiveEncounter,
+  isTokenInEncounter,
+  shouldFilterAlly
 } from './shared-utils.js';
 
 /**
@@ -82,8 +82,16 @@ export function discoverSeekTargets(seekerToken, encounterOnly = false, template
         // Only restrict to hidden/undetected when enforcing RAW
         if (enforceRAW && currentVisibility !== 'undetected' && currentVisibility !== 'hidden') continue;
         
-        // Extract Stealth DC; when RAW is OFF, tolerate missing/invalid DC
-        let stealthDC = extractStealthDC(token);
+        // Extract DC: for loot, use setting-based Seek DC; otherwise Stealth DC
+        let stealthDC;
+        if (token.actor?.type === 'loot') {
+            const override = Number(token.document?.getFlag?.(MODULE_ID, 'stealthDc'));
+            stealthDC = Number.isFinite(override) && override > 0
+                ? override
+                : (Number(game.settings.get(MODULE_ID, 'lootStealthDC')) || 15);
+        } else {
+            stealthDC = extractStealthDC(token);
+        }
         if (!enforceRAW && (!stealthDC || stealthDC <= 0)) {
             stealthDC = 10;
         }

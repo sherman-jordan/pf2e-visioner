@@ -63,6 +63,12 @@ export async function rebuildAllEphemeralEffects() {
     for (const [targetId, agg] of perTarget.entries()) {
       const target = idToToken.get(targetId);
       if (!target?.actor) continue;
+      // Skip PF2E aggregate creation for non-creature actors like loot
+      const targetActorType = target.actor?.type;
+      const skipPF2eConditions = targetActorType === 'loot' || targetActorType === 'vehicle' || targetActorType === 'party';
+      if (skipPF2eConditions) {
+        continue;
+      }
       const actor = target.actor;
       const existing = actor.itemTypes?.effect || [];
       const toCreate = [];

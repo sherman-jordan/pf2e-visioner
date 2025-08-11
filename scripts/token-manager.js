@@ -88,7 +88,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     // If the token is controlled by current user, default to Target Mode ("how others see me")
     // Otherwise, default to Observer Mode ("how I see others")
     const isControlledByUser = observer.actor?.hasPlayerOwner && observer.isOwner;
-    this.mode = options.mode || (isControlledByUser ? 'target' : 'observer');
+    const isLootObserver = observer.actor?.type === 'loot';
+    this.mode = isLootObserver ? 'target' : (options.mode || (isControlledByUser ? 'target' : 'observer'));
     
     // Initialize active tab (visibility or cover)
     this.activeTab = options.activeTab || 'visibility';
@@ -98,14 +99,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     
     // Initialize storage for saved mode data
     this._savedModeData = {
-      observer: {
-        visibility: {},
-        cover: {}
-      },
-      target: {
-        visibility: {},
-        cover: {}
-      }
+      observer: { visibility: {}, cover: {} },
+      target: { visibility: {}, cover: {} }
     };
     
     // Set this as the current instance
@@ -123,7 +118,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     
     // Update mode based on new observer
     const isControlledByUser = newObserver.actor?.hasPlayerOwner && newObserver.isOwner;
-    this.mode = isControlledByUser ? 'target' : 'observer';
+    const isLootObserver = newObserver.actor?.type === 'loot';
+    this.mode = isLootObserver ? 'target' : (isControlledByUser ? 'target' : 'observer');
     
     // Reset encounter filter to default for new observer
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
@@ -141,7 +137,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     this.observer = newObserver;
     this.visibilityData = getVisibilityMap(newObserver);
     this.coverData = getCoverMap(newObserver);
-    this.mode = mode;
+    this.mode = (newObserver.actor?.type === 'loot') ? 'target' : mode;
     
     // Reset encounter filter to default for new observer
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
@@ -168,12 +164,20 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     } catch (_) {}
 
     // Add mode and tab information to context
+    const isLootObserver = this.observer?.actor?.type === 'loot';
+    if (isLootObserver) {
+      // Force target mode and hide cover
+      this.mode = 'target';
+      if (this.activeTab === 'cover') this.activeTab = 'visibility';
+    }
     context.mode = this.mode;
     context.activeTab = this.activeTab;
     context.isObserverMode = this.mode === 'observer';
     context.isTargetMode = this.mode === 'target';
     context.isVisibilityTab = this.activeTab === 'visibility';
     context.isCoverTab = this.activeTab === 'cover';
+    context.lootObserver = !!isLootObserver;
+    context.hideCoverTab = !!isLootObserver;
 
     // Add encounter filtering context
     context.showEncounterFilter = hasActiveEncounter();
@@ -228,22 +232,26 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             showOutcome = true;
           }
         }
+        // Limit visibility options if observer is a loot actor
+        const allowedVisKeys = isLootObserver ? ['observed', 'hidden'] : Object.keys(VISIBILITY_STATES);
+        const visibilityStates = allowedVisKeys.map(key => ({
+          value: key,
+          label: game.i18n.localize(VISIBILITY_STATES[key].label),
+          selected: (currentVisibilityState === key),
+          icon: VISIBILITY_STATES[key].icon,
+          color: VISIBILITY_STATES[key].color
+        }));
+
         return {
           id: token.document.id,
           name: token.document.name,
           img: getTokenImage(token),
-          currentVisibilityState,
+          currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : 'observed',
           currentCoverState,
           isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
           disposition: disposition,
           dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
-          visibilityStates: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
-            value: key,
-            label: game.i18n.localize(config.label),
-            selected: currentVisibilityState === key,
-            icon: config.icon,
-            color: config.color
-          })),
+          visibilityStates,
           coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
             value: key,
             label: game.i18n.localize(config.label),
@@ -291,22 +299,27 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             showOutcome = true;
           }
         }
+        // Limit visibility options if the selected token (observer in this row) is a loot actor
+        const isRowLoot = observerToken.actor?.type === 'loot' || isLootObserver;
+        const allowedVisKeys = isRowLoot ? ['observed', 'hidden'] : Object.keys(VISIBILITY_STATES);
+        const visibilityStates = allowedVisKeys.map(key => ({
+          value: key,
+          label: game.i18n.localize(VISIBILITY_STATES[key].label),
+          selected: (currentVisibilityState === key),
+          icon: VISIBILITY_STATES[key].icon,
+          color: VISIBILITY_STATES[key].color
+        }));
+
         return {
           id: observerToken.document.id,
           name: observerToken.document.name,
           img: getTokenImage(observerToken),
-          currentVisibilityState,
+          currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : 'observed',
           currentCoverState,
           isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === 'character',
           disposition: disposition,
           dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
-          visibilityStates: Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
-            value: key,
-            label: game.i18n.localize(config.label),
-            selected: currentVisibilityState === key,
-            icon: config.icon,
-            color: config.color
-          })),
+          visibilityStates,
           coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
             value: key,
             label: game.i18n.localize(config.label),
@@ -391,6 +404,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     context.hasTargets = allTargets.length > 0;
     context.hasPCs = context.pcTargets.length > 0;
     context.hasNPCs = context.npcTargets.length > 0;
+    // Walls UI temporarily disabled
+    context.includeWalls = false;
     // Settings-driven columns
     try {
       context.showOutcomeColumn = game.settings.get(MODULE_ID, 'integrateRollOutcome');
@@ -430,6 +445,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     const app = this;
     const visibilityChanges = {};
     const coverChanges = {};
+    const wallChanges = {};
     
     // Parse form data
     const formDataObj = formData.object || formData;
@@ -515,6 +531,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             console.warn('Token Manager: batch cover update failed', error);
           }
         }
+        // Walls functionality temporarily disabled
       } else {
       // Target Mode: "How others see me" - update each observer's maps
       // Batch target-mode updates per observer
@@ -670,10 +687,11 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       // Get all inputs from the form
       const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
       const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
+      const wallInputs = app.element.querySelectorAll('input[name^="walls."]');
       
       // Create a storage object for this mode if it doesn't exist
       if (!app._savedModeData) app._savedModeData = {};
-      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
+      if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {}, walls: {} };
       
       // Store each visibility setting
       visibilityInputs.forEach(input => {
@@ -685,6 +703,10 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       coverInputs.forEach(input => {
         const tokenId = input.name.replace('cover.', '');
         app._savedModeData[app.mode].cover[tokenId] = input.value;
+      });
+      wallInputs.forEach(input => {
+        const wallId = input.name.replace('walls.', '');
+        app._savedModeData[app.mode].walls[wallId] = input.value;
       });
       
     } catch (error) {
@@ -703,6 +725,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     try {
       const { batchUpdateVisibilityEffects } = await import('./off-guard-ephemeral.js');
       const { batchUpdateCoverEffects } = await import('./cover-ephemeral.js');
+      const { updateWallVisuals } = await import('./visual-effects.js');
       const isVisibility = app.activeTab === 'visibility';
       const isCover = app.activeTab === 'cover';
       
@@ -795,6 +818,14 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
             }
           }
         }
+      }
+
+      // Always apply observer wall updates if present
+      const obsWalls = app._savedModeData.observer?.walls || {};
+      if (Object.keys(obsWalls).length > 0) {
+        const currentWalls = getWallVisibilityMap(app.observer) || {};
+        await setWallVisibilityMap(app.observer, { ...currentWalls, ...obsWalls });
+        allOperations.push(async () => { try { await updateWallVisuals(app.observer?.id || null); } catch (_) {} });
       }
 
       if (isCover) {
@@ -1164,6 +1195,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    */
   static async toggleMode(event, button) {
     const app = this;
+    // If observer is a loot actor, do not allow switching modes
+    try { if (app?.observer?.actor?.type === 'loot') return; } catch (_) {}
     
     // Store current position and size to prevent jumping
     const currentPosition = app.position;

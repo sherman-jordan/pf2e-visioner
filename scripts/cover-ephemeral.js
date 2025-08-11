@@ -577,7 +577,8 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
             id: tokenDoc.id,
             actor: {
                 id: tokenDoc.actor.id,
-                signature: tokenDoc.actor.id // Use actor ID as signature for deleted tokens
+                // Use the PF2e actor signature if available; fall back to actor ID
+                signature: tokenDoc.actor?.signature || tokenDoc.actor.id
             }
         };
         

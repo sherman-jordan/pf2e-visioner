@@ -349,6 +349,8 @@
 /* PF2E Visioner Tooltip Styling for Foundry's built-in tooltip system */
 :root {
   --pf2e-visioner-tooltip-font-size: 16px;
+  --pf2e-visioner-tooltip-icon-size: 14px;
+  --pf2e-visioner-tooltip-badge-border: 2px;
 }
 
 .tooltip.pf2e-visioner-tooltip {
@@ -368,6 +370,7 @@
 
 .tooltip.pf2e-visioner-tooltip i {
   margin-right: 6px;
+  font-size: var(--pf2e-visioner-tooltip-icon-size);
 }
 
 .hover-visibility-tooltip {

@@ -168,10 +168,10 @@ async function ensureAggregateCoverEffect(effectReceiverToken, state, options = 
         const label = getCoverLabel(state);
         const img = getCoverImageForState(state);
         const base = {
-            name: `${label} cover`,
+            name: label,
             type: 'effect',
             system: {
-                description: { value: `<p>Aggregated ${label.toLowerCase()} cover vs multiple observers.</p>`, gm: '' },
+                description: { value: `<p>Aggregated ${label.toLowerCase()} vs multiple observers.</p>`, gm: '' },
                 rules: [],
                 slug: null,
                 traits: { otherTags: [], value: [] },

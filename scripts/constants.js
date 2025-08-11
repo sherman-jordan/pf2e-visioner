@@ -114,14 +114,16 @@ export const DEFAULT_SETTINGS = {
     hint: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.hint',
     scope: 'client',
     config: true,
-    restricted: false, // Allow players to see and change this setting
-    type: Number,
-    default: 16,
-    range: {
-      min: 10,
-      max: 24,
-      step: 1
-    }
+    restricted: false,
+    type: String,
+    choices: {
+      tiny: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.CHOICES.tiny',
+      small: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.CHOICES.small',
+      medium: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.CHOICES.medium',
+      large: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.CHOICES.large',
+      xlarge: 'PF2E_VISIONER.SETTINGS.TOOLTIP_FONT_SIZE.CHOICES.xlarge'
+    },
+    default: 'medium'
   },
   
   colorblindMode: {

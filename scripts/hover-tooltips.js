@@ -21,6 +21,36 @@ let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 // Initialize with default, will try to get from settings when available
 let tooltipFontSize = 16;
+let tooltipIconSize = 14; // Default icon size
+let badgeTicker = null; // Ticker for keeping DOM badges aligned on pan/zoom
+
+function computeSizesFromSetting(rawValue) {
+  try {
+    if (typeof rawValue === 'string') {
+      switch (rawValue) {
+        case 'tiny':
+          return { fontPx: 12, iconPx: 10, borderPx: 2 };
+        case 'small':
+          return { fontPx: 14, iconPx: 12, borderPx: 2 };
+        case 'large':
+          return { fontPx: 18, iconPx: 20, borderPx: 4 };
+        case 'xlarge':
+          return { fontPx: 20, iconPx: 24, borderPx: 5 };
+        case 'medium':
+        default:
+          return { fontPx: 16, iconPx: 16, borderPx: 3 };
+      }
+    }
+    const numeric = Number(rawValue);
+    if (!Number.isNaN(numeric) && numeric > 0) {
+      const fontPx = Math.round(numeric);
+      const iconPx = Math.max(Math.round(numeric), 12);
+      const borderPx = Math.max(2, Math.round(numeric / 8));
+      return { fontPx, iconPx, borderPx };
+    }
+  } catch (_) {}
+  return { fontPx: 16, iconPx: 16, borderPx: 3 };
+}
 
 /**
  * Check if tooltips are allowed for the current user and token
@@ -122,11 +152,18 @@ export function initializeHoverTooltips() {
   
   // Set the CSS variable for tooltip font size
   try {
-    tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize;
-    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${tooltipFontSize}px`);
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
+    const { fontPx, iconPx, borderPx } = computeSizesFromSetting(raw ?? tooltipFontSize);
+    tooltipFontSize = fontPx;
+    tooltipIconSize = iconPx;
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${fontPx}px`);
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-icon-size', `${iconPx}px`);
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-badge-border', `${borderPx}px`);
   } catch (e) {
     console.warn('PF2E Visioner: Error setting tooltip font size CSS variable', e);
     document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', '16px');
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-icon-size', '14px');
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-badge-border', '2px');
   }
   
   // Add event listeners to canvas for token hover
@@ -529,9 +566,18 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
   canvas.tokens.addChild(indicator);
 
   const canvasRect = canvas.app.view.getBoundingClientRect();
-  const badgeWidth = 22;
-  const badgeHeight = 20;
-  const spacing = 8;
+  // Compute dynamic badge dimensions based on configured sizes
+  let sizeConfig;
+  try {
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
+    sizeConfig = computeSizesFromSetting(raw ?? tooltipFontSize);
+  } catch (_) {
+    sizeConfig = { fontPx: tooltipFontSize, iconPx: tooltipIconSize, borderPx: 3 };
+  }
+  const badgeWidth = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8);
+  const badgeHeight = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6);
+  const spacing = Math.max(6, Math.round(sizeConfig.iconPx / 2));
+  const borderRadius = Math.round(badgeHeight / 3);
 
   // Determine if cover applies
   let coverConfig = null;
@@ -559,8 +605,8 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
     el.style.zIndex = '60';
     el.style.left = `${Math.round(leftPx)}px`;
     el.style.top = `${Math.round(topPx)}px`;
-    el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: 2px solid ${color}; border-radius: 6px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${color};">
-      <i class="${iconClass}" style="font-size: 14px; line-height: 1;"></i>
+    el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${color};">
+      <i class="${iconClass}" style="font-size: var(--pf2e-visioner-tooltip-icon-size, 14px); line-height: 1;"></i>
     </span>`;
     document.body.appendChild(el);
     return el;
@@ -579,6 +625,53 @@ function addVisibilityIndicator(targetToken, observerToken, visibilityState, mod
   }
 
   visibilityIndicators.set(targetToken.id, indicator);
+
+  // Ensure ticker updates DOM badge positions during pan/zoom
+  ensureBadgeTicker();
+}
+
+function ensureBadgeTicker() {
+  if (badgeTicker) return;
+  badgeTicker = () => {
+    try { updateBadgePositions(); } catch (_) {}
+  };
+  try { canvas.app.ticker.add(badgeTicker); } catch (_) {}
+}
+
+function updateBadgePositions() {
+  const canvasRect = canvas.app.view.getBoundingClientRect();
+  let sizeConfig;
+  try {
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
+    sizeConfig = computeSizesFromSetting(raw ?? tooltipFontSize);
+  } catch (_) {
+    sizeConfig = { fontPx: tooltipFontSize, iconPx: tooltipIconSize, borderPx: 3 };
+  }
+  const badgeWidth = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8);
+  const badgeHeight = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6);
+  const spacing = Math.max(6, Math.round(sizeConfig.iconPx / 2));
+  const hudActive = !!game.modules?.get?.('pf2e-hud')?.active;
+  const verticalOffset = hudActive ? 26 : -6;
+
+  visibilityIndicators.forEach((indicator) => {
+    if (!indicator || (!indicator._visBadgeEl && !indicator._coverBadgeEl)) return;
+    const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
+    const centerX = canvasRect.left + globalPoint.x;
+    const centerY = canvasRect.top + globalPoint.y - (badgeHeight / 2) + verticalOffset;
+
+    if (indicator._visBadgeEl && indicator._coverBadgeEl) {
+      const visLeft = centerX - spacing / 2 - badgeWidth;
+      const coverLeft = centerX + spacing / 2;
+      indicator._visBadgeEl.style.left = `${Math.round(visLeft)}px`;
+      indicator._visBadgeEl.style.top = `${Math.round(centerY)}px`;
+      indicator._coverBadgeEl.style.left = `${Math.round(coverLeft)}px`;
+      indicator._coverBadgeEl.style.top = `${Math.round(centerY)}px`;
+    } else if (indicator._visBadgeEl) {
+      const visLeft = centerX - badgeWidth / 2;
+      indicator._visBadgeEl.style.left = `${Math.round(visLeft)}px`;
+      indicator._visBadgeEl.style.top = `${Math.round(centerY)}px`;
+    }
+  });
 }
 
 /**
@@ -604,7 +697,9 @@ function addCoverIndicator(targetToken, observerToken, coverState, mode = 'obser
 
   const background = new PIXI.Graphics();
   background.beginFill(0x000000, 0.9);
-  background.lineStyle(3, parseInt(config.color.replace('#', ''), 16), 1);
+  try { tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize; } catch (_) {}
+  const coverBorderWidthOuter = Math.max(2, Math.round(tooltipFontSize / 8));
+  background.lineStyle(coverBorderWidthOuter, parseInt(config.color.replace('#', ''), 16), 1);
   background.drawCircle(0, 0, 14);
   background.endFill();
 
@@ -619,7 +714,10 @@ function addCoverIndicator(targetToken, observerToken, coverState, mode = 'obser
     'greater': 'Greater Cover'
   };
 
-  try { tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize; } catch (_) {}
+  try { 
+    tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize;
+    tooltipIconSize = Math.round(tooltipFontSize);
+  } catch (_) {}
   const iconFontSize = Math.round(tooltipFontSize * 1.3);
 
   const iconText = new PIXI.Text(stateLabels[coverState] || 'Cover', {
@@ -645,7 +743,9 @@ function addCoverIndicator(targetToken, observerToken, coverState, mode = 'obser
 
   background.clear();
   background.beginFill(0x000000, 0.9);
-  background.lineStyle(2, parseInt(config.color.replace('#', ''), 16), 1);
+  try { tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize; } catch (_) {}
+  const coverBorderWidthInner = Math.max(2, Math.round(tooltipFontSize / 8));
+  background.lineStyle(coverBorderWidthInner, parseInt(config.color.replace('#', ''), 16), 1);
   background.drawRoundedRect(-borderWidth/2, -borderHeight/2, borderWidth, borderHeight, 6);
   background.endFill();
 
@@ -667,20 +767,23 @@ function addCoverIndicator(targetToken, observerToken, coverState, mode = 'obser
   indicator.scale.set(1.0);
   glow.alpha = 0.3;
 
-  try { tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize; } catch (_) {}
+  try { 
+    tooltipFontSize = game.settings?.get?.(MODULE_ID, 'tooltipFontSize') || tooltipFontSize;
+    tooltipIconSize = Math.round(tooltipFontSize);
+  } catch (_) {}
   const detailFontSize = Math.max(12, tooltipFontSize - 2);
 
   let tooltipText;
   if (mode === 'observer') {
     tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: ${tooltipFontSize}px;">
-      <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
+      <i class="${config.icon}" style="font-size: ${tooltipIconSize}px;"></i> ${game.i18n.localize(config.label)}
     </div>
     <div style="font-size: ${detailFontSize}px; color: #ccc;">
       ${observerToken.document.name} gives ${targetToken.document.name} ${game.i18n.localize(config.label).toLowerCase()}
     </div>`;
   } else {
     tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: ${tooltipFontSize}px;">
-      <i class="${config.icon}"></i> ${game.i18n.localize(config.label)}
+      <i class="${config.icon}" style="font-size: ${tooltipIconSize}px;"></i> ${game.i18n.localize(config.label)}
     </div>
     <div style="font-size: ${detailFontSize}px; color: #ccc;">
       ${targetToken.document.name} has ${game.i18n.localize(config.label).toLowerCase()} against ${observerToken.document.name}
@@ -790,6 +893,14 @@ function hideAllVisibilityIndicators() {
   // Reset tracking variables to ensure clean state
   isShowingKeyTooltips = false;
   keyTooltipTokens.clear();
+
+  // Stop ticker when no indicators remain
+  try {
+    if (badgeTicker) {
+      canvas.app?.ticker?.remove?.(badgeTicker);
+      badgeTicker = null;
+    }
+  } catch (_) {}
 }
 
 /**

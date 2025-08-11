@@ -6,18 +6,6 @@
 import { COVER_STATES, MODULE_ID } from "./constants.js";
 import { getCoverMap } from "./utils.js";
 
-// Debug helpers (guarded by module 'debug' setting)
-function debugEnabled() {
-  try {
-    return Boolean(game?.settings?.get?.(MODULE_ID, "debug"));
-  } catch (_) {
-    return false;
-  }
-}
-function coverDebug(...args) {
-  if (debugEnabled()) console.debug(`[${MODULE_ID}][cover]`, ...args);
-}
-
 // Per-actor cover effect update lock to avoid concurrent update/delete races
 const _coverEffectLocks = new WeakMap();
 async function runWithCoverEffectLock(actor, taskFn) {
@@ -714,15 +702,7 @@ async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
       (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
     );
 
-    coverDebug("reconcile start", {
-      target: effectReceiverToken.name,
-      aggregates: aggregates.map((a) => ({
-        id: a.id,
-        name: a.name,
-        state: a.flags?.[MODULE_ID]?.coverState,
-        rules: a.system?.rules?.length ?? 0,
-      })),
-    });
+    
 
     for (const agg of aggregates) {
       const state = agg.flags?.[MODULE_ID]?.coverState || "none";
@@ -731,10 +711,7 @@ async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
       const seenAC = new Set();
       const seenRO = new Set();
 
-      coverDebug("checking aggregate", {
-        target: effectReceiverToken.name,
-        aggregate: { id: agg.id, name: agg.name, state, rules: rules.length },
-      });
+      
 
       const filtered = rules.filter((r) => {
         // Normalize AC rules; drop dupes and stale observers
@@ -756,14 +733,7 @@ async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
           const stillValid = candidates.some(
             (o) => (getCoverMap(o)?.[targetId] || "none") === state
           );
-          coverDebug("AC rule check", {
-            target: effectReceiverToken.name,
-            aggregateState: state,
-            signature,
-            acValue: r.value,
-            candidates: candidates.map((c) => c.name),
-            stillValid,
-          });
+          
           return stillValid;
         }
 
@@ -782,27 +752,13 @@ async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
           const token = observers.find((o) => o.id === tokenId);
           if (!token) return false;
           const s = getCoverMap(token)?.[targetId] || "none";
-          const keep = s === state;
-          coverDebug("RO rule check", {
-            target: effectReceiverToken.name,
-            aggregateState: state,
-            token: token.name,
-            mapState: s,
-            keep,
-          });
-          return keep;
+          return s === state;
         }
 
         return true;
       });
 
       if (filtered.length !== rules.length) {
-        coverDebug("aggregate filtered", {
-          target: effectReceiverToken.name,
-          aggregate: { id: agg.id, name: agg.name, state },
-          before: rules.length,
-          after: filtered.length,
-        });
         try {
           await agg.update({ "system.rules": filtered });
         } catch (_) {}
@@ -810,7 +766,6 @@ async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
     }
 
     await pruneEmptyCoverAggregates(effectReceiverToken);
-    coverDebug("reconcile end", { target: effectReceiverToken.name });
   } catch (_) {}
 }
 /**
@@ -1187,10 +1142,6 @@ export async function updateEphemeralCoverEffects(
   }
   // Skip non-creature targets entirely (e.g., loot)
   if (isIgnoredActorTypeForCover(targetToken.actor?.type)) {
-    coverDebug("skip update for ignored actor type", {
-      target: targetToken.name,
-      type: targetToken.actor?.type,
-    });
     return;
   }
 
@@ -1496,22 +1447,12 @@ export async function batchUpdateCoverEffects(
   for (const [targetId, data] of updatesByTarget.entries()) {
     const { target, states } = data;
     if (isIgnoredActorTypeForCover(target.actor?.type)) {
-      coverDebug("skip batch for ignored actor type", {
-        target: target.name,
-        type: target.actor?.type,
-      });
       continue;
     }
 
     await runWithCoverEffectLock(target.actor, async () => {
       try {
-        coverDebug("batchUpdate begin", {
-          target: target.name,
-          states: Array.from(states.entries()).map(([k, v]) => ({
-            state: k,
-            observers: v.map((o) => o.name),
-          })),
-        });
+        
         // Get all existing cover aggregates
         const allCoverAggregates = target.actor.itemTypes.effect.filter(
           (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
@@ -1775,12 +1716,6 @@ export async function batchUpdateCoverEffects(
           effectsToUpdate.length > 0 ||
           effectsToDelete.length > 0
         ) {
-          coverDebug("batchUpdate ops", {
-            target: target.name,
-            deletes: effectsToDelete.length,
-            updates: effectsToUpdate.length,
-            creates: effectsToCreate.length,
-          });
           await updateReflexStealthAcrossCoverAggregates(target);
           await dedupeCoverAggregates(target);
           await reconcileCoverAggregatesAgainstMaps(target);
@@ -1801,11 +1736,9 @@ export async function reconcileCoverEffectsForTarget(targetToken) {
   if (!targetToken?.actor) return;
   await runWithCoverEffectLock(targetToken.actor, async () => {
     try {
-      coverDebug("manual reconcile start", { target: targetToken.name });
       await updateReflexStealthAcrossCoverAggregates(targetToken);
       await dedupeCoverAggregates(targetToken);
       await reconcileCoverAggregatesAgainstMaps(targetToken);
-      coverDebug("manual reconcile end", { target: targetToken.name });
     } catch (e) {
       console.warn(`[${MODULE_ID}] reconcileCoverEffectsForTarget error`, e);
     }

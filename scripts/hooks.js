@@ -45,7 +45,7 @@ export function registerHooks() {
   function injectPF2eVisionerBox(app, root) {
     const tokenDoc = app?.document;
     const actor = tokenDoc?.actor ?? tokenDoc?.parent;
-    if (!actor) return;
+    if (!actor || actor.type !== 'loot') return;
 
     const panel = root.querySelector(
       `div.tab[data-group="sheet"][data-tab="vision"]`

@@ -8,6 +8,9 @@
   - Clear All Scene Data (calls `api.clearAllSceneData()`)
   - Open Token Manager(calls `api.openTokenManager()`)
 
+### Improved
+- Effects handling: will now use batching for better performance
+
 ## [1.7.1] - 2025-08-11
 
 ### Changed

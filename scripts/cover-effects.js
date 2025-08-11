@@ -102,7 +102,7 @@ function removeCoverIndicator(token) {
   if (!token?.children) return;
 
   const existing = token.children.find(
-    (child) => child.name === "pf2e-visioner-cover-indicator",
+    (child) => child.name === "pf2e-visioner-cover-indicator"
   );
   if (existing) {
     token.removeChild(existing);
@@ -158,8 +158,8 @@ async function removeCoverConditions(token) {
     const coverConditions = token.actor.itemTypes.condition.filter(
       (c) =>
         c.slug === "lesser-cover" ||
-        c.slug === "cover" ||
-        c.slug === "greater-cover",
+        c.slug === "standard-cover" ||
+        c.slug === "greater-cover"
     );
 
     if (coverConditions.length > 0) {

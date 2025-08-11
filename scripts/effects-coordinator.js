@@ -21,7 +21,7 @@ async function runWithActorLock(actor, taskFn) {
   });
   _actorLocks.set(
     actor,
-    next.catch(() => {}),
+    next.catch(() => {})
   );
   return next;
 }
@@ -38,78 +38,79 @@ export async function updateTokenVisuals() {
  * Only the GM should run this since it creates/removes items on actors
  */
 export async function rebuildAllEphemeralEffects() {
-  // Bulk, aggregate-based rebuild for startup performance
+  // Bulk rebuild using the same cover paths as token manager/auto-cover
   if (!game?.user?.isGM) return;
   if (!canvas?.tokens) return;
 
   try {
     const tokens = canvas.tokens.placeables;
-    const idToToken = new Map(tokens.map((t) => [t.document.id, t]));
 
-    // Precompute observers' maps and signatures
-    const observerEntries = tokens.map((o) => ({
-      token: o,
-      vis: getVisibilityMap(o) || {},
-      cov: getCoverMap(o) || {},
-      signature: o.actor?.signature,
-    }));
+    // 1) Rebuild cover using batch per-observer updates so we also clean up
+    // observers that no longer have entries (state 'none').
+    const { batchUpdateCoverEffects } = await import("./cover-ephemeral.js");
 
-    // For each target, collect visibility signatures and cover states per observer
-    const perTarget = new Map(); // targetId -> { hidden:Set<string>, undetected:Set<string>, coverByObserver: Map<observerId, state> }
-    for (const { token: observer, vis, cov } of observerEntries) {
-      const observerId = observer.id;
-      const signature = observer.actor?.signature;
-      for (const [targetId, state] of Object.entries(vis)) {
-        if (!perTarget.has(targetId))
-          perTarget.set(targetId, {
-            hidden: new Set(),
-            undetected: new Set(),
-            coverByObserver: new Map(),
-          });
-        if (!signature) continue; // Skip observers with no signature to avoid corrupt rules
-        if (state === "hidden") perTarget.get(targetId).hidden.add(signature);
-        else if (state === "undetected")
-          perTarget.get(targetId).undetected.add(signature);
+    for (const observer of tokens) {
+      if (!observer?.actor) continue;
+      const coverMap = getCoverMap(observer) || {};
+
+      // Build updates for all potential targets so missing entries become 'none'
+      const updates = [];
+      for (const target of tokens) {
+        if (!target?.actor || target === observer) continue;
+        // Skip non-creatures (loot/vehicle/party) to match prior behavior
+        const tType = target.actor?.type;
+        if (tType === "loot" || tType === "vehicle" || tType === "party")
+          continue;
+        const state = coverMap[target.document.id] || "none";
+        updates.push({ target, state });
       }
-      for (const [targetId, covState] of Object.entries(cov)) {
-        if (!perTarget.has(targetId))
-          perTarget.set(targetId, {
-            hidden: new Set(),
-            undetected: new Set(),
-            coverByObserver: new Map(),
-          });
-        if (covState && covState !== "none")
-          perTarget.get(targetId).coverByObserver.set(observerId, covState);
+      if (updates.length) {
+        await batchUpdateCoverEffects(observer, updates, {});
       }
     }
 
-    // Prepare per-actor bulk operations
-    for (const [targetId, agg] of perTarget.entries()) {
+    // 2) Rebuild visibility aggregates (hidden/undetected) as before
+    const idToToken = new Map(tokens.map((t) => [t.document.id, t]));
+    const observerEntries = tokens.map((o) => ({
+      token: o,
+      vis: getVisibilityMap(o) || {},
+      signature: o.actor?.signature,
+    }));
+
+    for (const [targetId] of new Map(
+      observerEntries.flatMap(({ vis }) => Object.keys(vis)).map((id) => [id])
+    ).entries()) {
       const target = idToToken.get(targetId);
       if (!target?.actor) continue;
-      // Skip PF2E aggregate creation for non-creature actors like loot
-      const targetActorType = target.actor?.type;
-      const skipPF2eConditions =
-        targetActorType === "loot" ||
-        targetActorType === "vehicle" ||
-        targetActorType === "party";
-      if (skipPF2eConditions) {
-        continue;
+      const targetType = target.actor?.type;
+      const skip =
+        targetType === "loot" ||
+        targetType === "vehicle" ||
+        targetType === "party";
+      if (skip) continue;
+
+      const hidden = new Set();
+      const undetected = new Set();
+      for (const { token: observer, vis, signature } of observerEntries) {
+        if (!signature) continue;
+        const state = vis?.[targetId];
+        if (state === "hidden") hidden.add(signature);
+        else if (state === "undetected") undetected.add(signature);
       }
+
       const actor = target.actor;
       const existing = actor.itemTypes?.effect || [];
       const toCreate = [];
       const toUpdate = [];
       const toDelete = [];
 
-      // Visibility aggregates (hidden/undetected)
       for (const state of ["hidden", "undetected"]) {
-        const signatures = Array.from(agg[state]);
+        const signatures = Array.from(state === "hidden" ? hidden : undetected);
         const eff = existing.find(
           (e) =>
             e.flags?.["pf2e-visioner"]?.aggregateOffGuard === true &&
             e.flags?.["pf2e-visioner"]?.visibilityState === state &&
-            e.flags?.["pf2e-visioner"]?.effectTarget === "subject",
+            e.flags?.["pf2e-visioner"]?.effectTarget === "subject"
         );
         if (signatures.length === 0) {
           if (eff) toDelete.push(eff.id);
@@ -163,122 +164,24 @@ export async function rebuildAllEphemeralEffects() {
         }
       }
 
-      // Cover aggregate
-      const covMap = agg.coverByObserver;
-      const coverRules = [];
-      let maxAC = 0;
-      for (const [observerId, covState] of covMap.entries()) {
-        const obs = canvas.tokens.get(observerId);
-        if (!obs?.actor) continue;
-        const sig = obs.actor.signature;
-        const bonusByState = { lesser: 1, standard: 2, greater: 4 };
-        const acVal = bonusByState[covState] || 0;
-        if (
-          !coverRules.some(
-            (r) =>
-              r.key === "RollOption" && r.option === `cover-against:${obs.id}`,
-          )
-        ) {
-          coverRules.push({
-            key: "RollOption",
-            domain: "all",
-            option: `cover-against:${obs.id}`,
-          });
-        }
-        coverRules.push({
-          key: "FlatModifier",
-          selector: "ac",
-          type: "circumstance",
-          value: acVal,
-          predicate: [`origin:signature:${sig}`],
-        });
-        if (acVal > maxAC) maxAC = acVal;
-      }
-      // Add reflex/stealth for standard/greater
-      if (coverRules.length) {
-        if (maxAC >= 2)
-          coverRules.push({
-            key: "FlatModifier",
-            selector: "reflex",
-            type: "circumstance",
-            value: maxAC === 4 ? 4 : 2,
-            predicate: ["area-effect"],
-          });
-        if (maxAC >= 2)
-          coverRules.push({
-            key: "FlatModifier",
-            selector: "stealth",
-            type: "circumstance",
-            value: maxAC === 4 ? 4 : 2,
-            predicate: ["action:hide", "action:sneak", "avoid-detection"],
-          });
-      }
-      const covEffect = existing.find(
-        (e) => e.flags?.["pf2e-visioner"]?.aggregateCover === true,
-      );
-      if (coverRules.length) {
-        const img =
-          maxAC === 4
-            ? "systems/pf2e/icons/equipment/shields/tower-shield.webp"
-            : maxAC === 2
-              ? "systems/pf2e/icons/equipment/shields/steel-shield.webp"
-              : "systems/pf2e/icons/equipment/shields/buckler.webp";
-        const name = `${maxAC === 4 ? "Greater" : maxAC === 2 ? "Standard" : "Lesser"}`;
-        if (covEffect)
-          toUpdate.push({
-            _id: covEffect.id,
-            "system.rules": coverRules,
-            name,
-            img,
-          });
-        else
-          toCreate.push({
-            name,
-            type: "effect",
-            system: {
-              description: {
-                value: "<p>Aggregated cover vs multiple observers.</p>",
-                gm: "",
-              },
-              rules: coverRules,
-              slug: null,
-              traits: { otherTags: [], value: [] },
-              level: { value: 1 },
-              duration: {
-                value: -1,
-                unit: "unlimited",
-                expiry: null,
-                sustained: false,
-              },
-              tokenIcon: { show: false },
-              unidentified: true,
-            },
-            img,
-            flags: { "pf2e-visioner": { aggregateCover: true } },
-          });
-      } else if (covEffect) {
-        toDelete.push(covEffect.id);
-      }
-
-      // Apply batched ops under lock with existence guards
       await runWithActorLock(actor, async () => {
         try {
           if (toCreate.length)
             await actor.createEmbeddedDocuments("Item", toCreate);
           const safeUpdates = toUpdate.filter(
-            (u) => !!u?._id && !!actor?.items?.get?.(u._id),
+            (u) => !!u?._id && !!actor?.items?.get?.(u._id)
           );
           if (safeUpdates.length)
             await actor.updateEmbeddedDocuments("Item", safeUpdates);
           const safeDeletes = toDelete.filter(
-            (id) => !!id && !!actor?.items?.get?.(id),
+            (id) => !!id && !!actor?.items?.get?.(id)
           );
           if (safeDeletes.length)
             await actor.deleteEmbeddedDocuments("Item", safeDeletes);
         } catch (e) {
           console.warn(
-            "Visioner bulk effect rebuild (actor) encountered errors",
-            e,
+            "Visioner bulk visibility rebuild (actor) encountered errors",
+            e
           );
         }
       });
@@ -288,7 +191,7 @@ export async function rebuildAllEphemeralEffects() {
   } catch (error) {
     console.error(
       "PF2E Visioner: Failed to rebuild ephemeral effects (bulk)",
-      error,
+      error
     );
   }
 }
@@ -329,7 +232,7 @@ export async function reconcileVisibilityAggregatesForTargets(targets) {
           (e) =>
             e.flags?.["pf2e-visioner"]?.aggregateOffGuard === true &&
             e.flags?.["pf2e-visioner"]?.visibilityState === state &&
-            e.flags?.["pf2e-visioner"]?.effectTarget === "subject",
+            e.flags?.["pf2e-visioner"]?.effectTarget === "subject"
         );
         await runWithActorLock(actor, async () => {
           if (signatures.length === 0) {

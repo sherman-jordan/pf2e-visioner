@@ -123,7 +123,25 @@ export function registerAutoCoverHooks() {
 
       const state = detectCoverStateForAttack(attacker, target);
       if (state === "none") return;
+      // Apply aggregate/ephemeral effect to match bulk method
+      try {
+        const { updateEphemeralCoverEffects } = await import(
+          "./cover-ephemeral.js"
+        );
+        await updateEphemeralCoverEffects(target, attacker, state, {
+          durationRounds: -1,
+        });
+      } catch (_) {}
+
+      // Persist to cover map (observer -> target)
       await setCoverBetween(attacker, target, state);
+      try {
+        Hooks.callAll("pf2e-visioner.coverMapUpdated", {
+          observerId: attacker.id,
+          targetId: target.id,
+          state,
+        });
+      } catch (_) {}
     } catch (_) {}
   });
 }

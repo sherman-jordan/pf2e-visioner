@@ -4,6 +4,19 @@
  */
 
 import { COVER_STATES, MODULE_ID } from "./constants.js";
+import { getCoverMap } from "./utils.js";
+
+// Debug helpers (guarded by module 'debug' setting)
+function debugEnabled() {
+  try {
+    return Boolean(game?.settings?.get?.(MODULE_ID, "debug"));
+  } catch (_) {
+    return false;
+  }
+}
+function coverDebug(...args) {
+  if (debugEnabled()) console.debug(`[${MODULE_ID}][cover]`, ...args);
+}
 
 // Per-actor cover effect update lock to avoid concurrent update/delete races
 const _coverEffectLocks = new WeakMap();
@@ -20,7 +33,7 @@ async function runWithCoverEffectLock(actor, taskFn) {
   // Keep the chain even on rejection
   _coverEffectLocks.set(
     actor,
-    next.catch(() => {}),
+    next.catch(() => {})
   );
   return next;
 }
@@ -38,7 +51,7 @@ export async function createEphemeralCoverEffect(
   effectReceiverToken,
   effectSourceToken,
   coverState,
-  options = {},
+  options = {}
 ) {
   // Skip if no cover or invalid state
   if (!coverState || coverState === "none" || !COVER_STATES[coverState]) {
@@ -50,7 +63,7 @@ export async function createEphemeralCoverEffect(
     (e) =>
       e.flags?.[MODULE_ID]?.isEphemeralCover &&
       e.flags?.[MODULE_ID]?.observerActorSignature ===
-        effectSourceToken.actor.signature,
+        effectSourceToken.actor.signature
   );
 
   if (existingEffect) {
@@ -169,7 +182,7 @@ export async function createEphemeralCoverEffect(
         selector: "stealth",
         type: "circumstance",
         value: stateConfig.bonusStealth,
-      },
+      }
     );
   }
 
@@ -188,13 +201,13 @@ export async function createEphemeralCoverEffect(
 async function ensureAggregateCoverEffect(
   effectReceiverToken,
   state,
-  options = {},
+  options = {}
 ) {
   const effects = effectReceiverToken.actor.itemTypes.effect;
   let aggregate = effects.find(
     (e) =>
       e.flags?.[MODULE_ID]?.aggregateCover === true &&
-      e.flags?.[MODULE_ID]?.coverState === state,
+      e.flags?.[MODULE_ID]?.coverState === state
   );
   if (!aggregate) {
     const label = getCoverLabel(state);
@@ -204,7 +217,7 @@ async function ensureAggregateCoverEffect(
       type: "effect",
       system: {
         description: {
-          value: `<p>Aggregated ${label.toLowerCase()} vs multiple observers.</p>`,
+          value: `<p>Aggregated ${label} vs multiple observers.</p>`,
           gm: "",
         },
         rules: [],
@@ -236,7 +249,7 @@ async function ensureAggregateCoverEffect(
     };
     const [created] = await effectReceiverToken.actor.createEmbeddedDocuments(
       "Item",
-      [base],
+      [base]
     );
     aggregate = created;
   }
@@ -274,7 +287,7 @@ function getMaxCoverStateFromRules(rules) {
 
 async function upsertReflexStealthForMaxCoverOnThisAggregate(
   aggregate,
-  maxState,
+  maxState
 ) {
   const rules = Array.isArray(aggregate.system.rules)
     ? [...aggregate.system.rules]
@@ -285,7 +298,7 @@ async function upsertReflexStealthForMaxCoverOnThisAggregate(
       !(
         r?.key === "FlatModifier" &&
         (r.selector === "reflex" || r.selector === "stealth")
-      ),
+      )
   );
   const cfg = COVER_STATES[maxState];
   if (cfg && (maxState === "standard" || maxState === "greater")) {
@@ -309,7 +322,7 @@ async function upsertReflexStealthForMaxCoverOnThisAggregate(
 
 async function updateReflexStealthAcrossCoverAggregates(effectReceiverToken) {
   const effects = effectReceiverToken.actor.itemTypes.effect.filter(
-    (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+    (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
   );
   if (effects.length === 0) return;
   // Determine highest state present across all aggregates by inspecting their AC rule values
@@ -329,18 +342,18 @@ async function updateReflexStealthAcrossCoverAggregates(effectReceiverToken) {
         !(
           r?.key === "FlatModifier" &&
           (r.selector === "reflex" || r.selector === "stealth")
-        ),
+        )
     );
     await agg.update({ "system.rules": withoutRS });
   }
   if (highestState !== "none") {
     const targetAgg = effects.find(
-      (e) => e.flags?.[MODULE_ID]?.coverState === highestState,
+      (e) => e.flags?.[MODULE_ID]?.coverState === highestState
     );
     if (targetAgg)
       await upsertReflexStealthForMaxCoverOnThisAggregate(
         targetAgg,
-        highestState,
+        highestState
       );
   }
   // After redistributing, prune any aggregates that now have no AC rules left
@@ -349,7 +362,7 @@ async function updateReflexStealthAcrossCoverAggregates(effectReceiverToken) {
 
 async function dedupeCoverAggregates(effectReceiverToken) {
   const effects = effectReceiverToken.actor.itemTypes.effect.filter(
-    (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+    (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
   );
   if (effects.length === 0) return;
   // Remove legacy single-aggregate effects without coverState flag
@@ -375,7 +388,7 @@ async function dedupeCoverAggregates(effectReceiverToken) {
     if (group.length <= 1) continue;
     // Choose deterministic primary to reduce race risk
     const primary = [...group].sort((a, b) =>
-      String(a.id).localeCompare(String(b.id)),
+      String(a.id).localeCompare(String(b.id))
     )[0];
     const mergedRules = [];
     const seen = new Set();
@@ -401,13 +414,14 @@ async function dedupeCoverAggregates(effectReceiverToken) {
       try {
         await effectReceiverToken.actor.deleteEmbeddedDocuments(
           "Item",
-          toDelete,
+          toDelete
         );
       } catch (_) {}
     }
     await updateAggregateCoverMetaForState(primary, state);
   }
   await updateReflexStealthAcrossCoverAggregates(effectReceiverToken);
+  await reconcileCoverAggregatesAgainstMaps(effectReceiverToken);
 }
 
 function getCoverLabel(state) {
@@ -432,6 +446,71 @@ function getCoverImageForState(state) {
   }
 }
 
+function isIgnoredActorTypeForCover(actorType) {
+  return (
+    actorType === "loot" || actorType === "vehicle" || actorType === "party"
+  );
+}
+
+const ORIGIN_SIG_PREFIX = "origin:signature:";
+function predicateHasSignature(predicate, signature) {
+  try {
+    const needle = `${ORIGIN_SIG_PREFIX}${signature}`;
+    if (!predicate) return false;
+    if (Array.isArray(predicate)) return predicate.includes(needle);
+    if (typeof predicate === "string") {
+      if (predicate.includes(needle)) return true;
+      if (predicate.trim().startsWith("[")) {
+        try {
+          const arr = JSON.parse(predicate);
+          if (Array.isArray(arr)) return arr.includes(needle);
+        } catch (_) {}
+      }
+      return false;
+    }
+    if (typeof predicate === "object") {
+      for (const key of Object.keys(predicate)) {
+        const val = predicate[key];
+        if (Array.isArray(val) && val.includes(needle)) return true;
+      }
+    }
+  } catch (_) {}
+  return false;
+}
+
+function extractSignaturesFromPredicate(predicate) {
+  const results = new Set();
+  const pushFrom = (arr) => {
+    for (const p of arr) {
+      const s = String(p);
+      if (s.startsWith(ORIGIN_SIG_PREFIX)) {
+        results.add(s.slice(ORIGIN_SIG_PREFIX.length));
+      }
+    }
+  };
+  try {
+    if (!predicate) return [];
+    if (Array.isArray(predicate)) {
+      pushFrom(predicate);
+    } else if (typeof predicate === "string") {
+      if (predicate.trim().startsWith("[")) {
+        try {
+          const arr = JSON.parse(predicate);
+          if (Array.isArray(arr)) pushFrom(arr);
+        } catch (_) {}
+      } else if (predicate.startsWith(ORIGIN_SIG_PREFIX)) {
+        results.add(predicate.slice(ORIGIN_SIG_PREFIX.length));
+      }
+    } else if (typeof predicate === "object") {
+      for (const key of Object.keys(predicate)) {
+        const val = predicate[key];
+        if (Array.isArray(val)) pushFrom(val);
+      }
+    }
+  } catch (_) {}
+  return [...results];
+}
+
 async function updateAggregateCoverMetaForState(aggregate, state) {
   const label = getCoverLabel(state);
   const desiredName = label;
@@ -450,12 +529,12 @@ async function addObserverToCoverAggregate(
   effectReceiverToken,
   observerToken,
   coverState,
-  options = {},
+  options = {}
 ) {
   const aggregate = await ensureAggregateCoverEffect(
     effectReceiverToken,
     coverState,
-    options,
+    options
   );
   const rules = Array.isArray(aggregate.system.rules)
     ? [...aggregate.system.rules]
@@ -472,14 +551,14 @@ async function addObserverToCoverAggregate(
         r.selector === "ac" &&
         Array.isArray(r.predicate) &&
         r.predicate.includes(`origin:signature:${signature}`)
-      ),
+      )
   );
   // Ensure RollOption for cover-against is present
   const hasRollOption = withoutObserverAC.some(
     (r) =>
       r?.key === "RollOption" &&
       r.domain === "all" &&
-      r.option === `cover-against:${tokenId}`,
+      r.option === `cover-against:${tokenId}`
   );
   if (!hasRollOption) {
     withoutObserverAC.push({
@@ -502,7 +581,7 @@ async function addObserverToCoverAggregate(
   const otherAggregates = effectReceiverToken.actor.itemTypes.effect.filter(
     (e) =>
       e.flags?.[MODULE_ID]?.aggregateCover === true &&
-      e.flags?.[MODULE_ID]?.coverState !== coverState,
+      e.flags?.[MODULE_ID]?.coverState !== coverState
   );
   for (const other of otherAggregates) {
     const otherRules = Array.isArray(other.system.rules)
@@ -535,10 +614,10 @@ async function addObserverToCoverAggregate(
 
 async function removeObserverFromCoverAggregate(
   effectReceiverToken,
-  observerToken,
+  observerToken
 ) {
   const effects = effectReceiverToken.actor.itemTypes.effect.filter(
-    (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+    (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
   );
   if (effects.length === 0) return;
   const signature = observerToken.actor.signature;
@@ -583,15 +662,15 @@ async function pruneEmptyCoverAggregates(effectReceiverToken) {
         const rules = Array.isArray(e.system?.rules) ? e.system.rules : [];
         // Count AC rules only; RollOption/reflex/stealth don't keep aggregates alive
         const acRules = rules.filter(
-          (r) => r?.key === "FlatModifier" && r.selector === "ac",
+          (r) => r?.key === "FlatModifier" && r.selector === "ac"
         );
         return acRules.length === 0;
-      },
+      }
     );
     // Further guard: don't delete if any observer map still claims cover for this target with this state
     const targetId = effectReceiverToken.id || effectReceiverToken.document?.id;
     const observers = (canvas?.tokens?.placeables ?? []).filter(
-      (t) => t?.document && t !== effectReceiverToken,
+      (t) => t?.document && t !== effectReceiverToken
     );
     const empties = candidates.filter((eff) => {
       const state = eff.flags?.[MODULE_ID]?.coverState;
@@ -614,6 +693,122 @@ async function pruneEmptyCoverAggregates(effectReceiverToken) {
     }
   } catch (_) {}
 }
+
+/**
+ * Reconcile cover aggregates of a target token against current observer→target cover maps.
+ * - Removes AC and RollOption rules whose observer no longer grants this state's cover
+ * - Collapses duplicate AC rules for the same observer signature
+ */
+async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
+  try {
+    if (!effectReceiverToken?.actor) return;
+    const targetId = effectReceiverToken.id || effectReceiverToken.document?.id;
+    const observers = (canvas?.tokens?.placeables ?? []).filter(
+      (t) => t && t !== effectReceiverToken && t.actor
+    );
+    const aggregates = effectReceiverToken.actor.itemTypes.effect.filter(
+      (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
+    );
+
+    coverDebug("reconcile start", {
+      target: effectReceiverToken.name,
+      aggregates: aggregates.map((a) => ({
+        id: a.id,
+        name: a.name,
+        state: a.flags?.[MODULE_ID]?.coverState,
+        rules: a.system?.rules?.length ?? 0,
+      })),
+    });
+
+    for (const agg of aggregates) {
+      const state = agg.flags?.[MODULE_ID]?.coverState || "none";
+      let rules = Array.isArray(agg.system.rules) ? [...agg.system.rules] : [];
+
+      const seenAC = new Set();
+      const seenRO = new Set();
+
+      coverDebug("checking aggregate", {
+        target: effectReceiverToken.name,
+        aggregate: { id: agg.id, name: agg.name, state, rules: rules.length },
+      });
+
+      const filtered = rules.filter((r) => {
+        // Normalize AC rules; drop dupes and stale observers
+        if (r?.key === "FlatModifier" && r.selector === "ac") {
+          const signatures = extractSignaturesFromPredicate(r.predicate);
+          const signature = signatures[0] ?? null;
+          const acKey = `ac:${signature}:${r.value}`;
+          if (seenAC.has(acKey)) return false; // duplicate within single aggregate
+          seenAC.add(acKey);
+
+          // If we cannot resolve a signature, keep the rule (defensive)
+          if (!signature) return true;
+
+          // Keep only if at least one live observer with this signature still maps this target to this state
+          const candidates = observers.filter(
+            (o) => o.actor?.signature === signature
+          );
+          if (candidates.length === 0) return false;
+          const stillValid = candidates.some(
+            (o) => (getCoverMap(o)?.[targetId] || "none") === state
+          );
+          coverDebug("AC rule check", {
+            target: effectReceiverToken.name,
+            aggregateState: state,
+            signature,
+            acValue: r.value,
+            candidates: candidates.map((c) => c.name),
+            stillValid,
+          });
+          return stillValid;
+        }
+
+        // Normalize RollOption rules; drop dupes and stale observer-token ids
+        if (
+          r?.key === "RollOption" &&
+          r.domain === "all" &&
+          typeof r.option === "string" &&
+          r.option.startsWith("cover-against:")
+        ) {
+          const tokenId = r.option.slice("cover-against:".length);
+          if (!tokenId) return false;
+          if (seenRO.has(tokenId)) return false; // duplicate within single aggregate
+          seenRO.add(tokenId);
+
+          const token = observers.find((o) => o.id === tokenId);
+          if (!token) return false;
+          const s = getCoverMap(token)?.[targetId] || "none";
+          const keep = s === state;
+          coverDebug("RO rule check", {
+            target: effectReceiverToken.name,
+            aggregateState: state,
+            token: token.name,
+            mapState: s,
+            keep,
+          });
+          return keep;
+        }
+
+        return true;
+      });
+
+      if (filtered.length !== rules.length) {
+        coverDebug("aggregate filtered", {
+          target: effectReceiverToken.name,
+          aggregate: { id: agg.id, name: agg.name, state },
+          before: rules.length,
+          after: filtered.length,
+        });
+        try {
+          await agg.update({ "system.rules": filtered });
+        } catch (_) {}
+      }
+    }
+
+    await pruneEmptyCoverAggregates(effectReceiverToken);
+    coverDebug("reconcile end", { target: effectReceiverToken.name });
+  } catch (_) {}
+}
 /**
  * Clean up all ephemeral cover effects from all actors
  */
@@ -631,7 +826,7 @@ export async function cleanupAllCoverEffects() {
         if (!actor?.itemTypes?.effect) continue;
 
         const ephemeralEffects = actor.itemTypes.effect.filter(
-          (e) => e.flags?.[MODULE_ID]?.isEphemeralCover,
+          (e) => e.flags?.[MODULE_ID]?.isEphemeralCover
         );
 
         if (ephemeralEffects.length > 0) {
@@ -646,7 +841,7 @@ export async function cleanupAllCoverEffects() {
             } catch (error) {
               console.error(
                 `[${MODULE_ID}] Error bulk deleting cover effects:`,
-                error,
+                error
               );
 
               // As a last resort, delete one-by-one to skip missing
@@ -665,7 +860,7 @@ export async function cleanupAllCoverEffects() {
   } catch (error) {
     console.error(
       `[${MODULE_ID}] Error cleaning up ephemeral cover effects:`,
-      error,
+      error
     );
   }
 }
@@ -677,7 +872,7 @@ export async function cleanupAllCoverEffects() {
  */
 async function cleanupCoverEffectsForObserverUnlocked(
   targetToken,
-  observerToken,
+  observerToken
 ) {
   if (!targetToken?.actor || !observerToken?.actor) return;
 
@@ -688,12 +883,12 @@ async function cleanupCoverEffectsForObserverUnlocked(
         e.flags?.[MODULE_ID]?.isEphemeralCover &&
         (e.flags?.[MODULE_ID]?.observerActorSignature ===
           observerToken.actor.signature ||
-          e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id),
+          e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
     );
 
     // Get all cover aggregates
     const allCoverAggregates = targetToken.actor.itemTypes.effect.filter(
-      (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+      (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
     );
 
     // Prepare operation collections
@@ -762,14 +957,14 @@ async function cleanupCoverEffectsForObserverUnlocked(
   } catch (error) {
     console.error(
       `[${MODULE_ID}] Error cleaning up cover effects for observer:`,
-      error,
+      error
     );
   }
 }
 
 export async function cleanupCoverEffectsForObserver(
   targetToken,
-  observerToken,
+  observerToken
 ) {
   try {
     if (!observerToken) return;
@@ -779,7 +974,7 @@ export async function cleanupCoverEffectsForObserver(
   } catch (error) {
     console.error(
       "Error cleaning up ephemeral cover effects for observer:",
-      error,
+      error
     );
   }
 }
@@ -834,12 +1029,12 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
         const observerEffects = effects.filter(
           (e) =>
             e.flags?.[MODULE_ID]?.aggregateCover === true &&
-            e.flags?.[MODULE_ID]?.observerToken === tokenId,
+            e.flags?.[MODULE_ID]?.observerToken === tokenId
         );
 
         if (observerEffects.length > 0) {
           console.log(
-            `[${MODULE_ID}] Found ${observerEffects.length} cover effects where deleted token is the observer`,
+            `[${MODULE_ID}] Found ${observerEffects.length} cover effects where deleted token is the observer`
           );
           effectsToDelete.push(...observerEffects.map((e) => e.id));
           continue; // Skip to the next token, as we're deleting these effects entirely
@@ -847,11 +1042,11 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
 
         // Then check for effects that might have rules referencing the deleted token
         const relevantEffects = effects.filter(
-          (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+          (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
         );
 
         console.log(
-          `[${MODULE_ID}] Found ${relevantEffects.length} aggregate cover effects on token ${token.name}`,
+          `[${MODULE_ID}] Found ${relevantEffects.length} aggregate cover effects on token ${token.name}`
         );
 
         // For each relevant effect, remove any rules that reference the deleted token
@@ -862,7 +1057,7 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
 
           // Filter out rules that reference the deleted token in any way
           console.log(
-            `[${MODULE_ID}] Checking ${rules.length} rules in cover effect ${effect.name}`,
+            `[${MODULE_ID}] Checking ${rules.length} rules in cover effect ${effect.name}`
           );
 
           const newRules = rules.filter((r) => {
@@ -876,7 +1071,7 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
             ) {
               console.log(
                 `[${MODULE_ID}] Found reference to deleted token in cover rule:`,
-                r,
+                r
               );
               return false;
             }
@@ -887,14 +1082,14 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
           // If rules were removed, update the effect
           if (newRules.length !== rules.length) {
             console.log(
-              `[${MODULE_ID}] Cover rules changed: ${rules.length} -> ${newRules.length}`,
+              `[${MODULE_ID}] Cover rules changed: ${rules.length} -> ${newRules.length}`
             );
 
             if (newRules.length === 0) {
               // If no rules left, add to delete list
               effectsToDelete.push(effect.id);
               console.log(
-                `[${MODULE_ID}] Marking cover effect ${effect.name} for deletion`,
+                `[${MODULE_ID}] Marking cover effect ${effect.name} for deletion`
               );
             } else {
               // Otherwise add to update list
@@ -903,12 +1098,12 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
                 "system.rules": newRules,
               });
               console.log(
-                `[${MODULE_ID}] Marking cover effect ${effect.name} for update with ${newRules.length} rules`,
+                `[${MODULE_ID}] Marking cover effect ${effect.name} for update with ${newRules.length} rules`
               );
             }
           } else {
             console.log(
-              `[${MODULE_ID}] No rules changed for cover effect ${effect.name}`,
+              `[${MODULE_ID}] No rules changed for cover effect ${effect.name}`
             );
           }
         }
@@ -918,18 +1113,18 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
           (e) =>
             e.flags?.[MODULE_ID]?.cover === true &&
             (e.flags?.[MODULE_ID]?.observerToken === tokenId ||
-              e.flags?.[MODULE_ID]?.targetToken === tokenId),
+              e.flags?.[MODULE_ID]?.targetToken === tokenId)
         );
 
         if (legacyEffects.length > 0) {
           console.log(
-            `[${MODULE_ID}] Found ${legacyEffects.length} legacy cover effects referencing deleted token`,
+            `[${MODULE_ID}] Found ${legacyEffects.length} legacy cover effects referencing deleted token`
           );
           effectsToDelete.push(...legacyEffects.map((e) => e.id));
         }
 
         console.log(
-          `[${MODULE_ID}] Final counts for cover effects: ${effectsToDelete.length} to delete, ${effectsToUpdate.length} to update`,
+          `[${MODULE_ID}] Final counts for cover effects: ${effectsToDelete.length} to delete, ${effectsToUpdate.length} to update`
         );
 
         // Perform bulk operations
@@ -937,23 +1132,23 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
           // Delete effects in bulk if any
           if (effectsToDelete.length > 0) {
             console.log(
-              `[${MODULE_ID}] Deleting ${effectsToDelete.length} cover effects for token ${token.name}`,
+              `[${MODULE_ID}] Deleting ${effectsToDelete.length} cover effects for token ${token.name}`
             );
             await token.actor.deleteEmbeddedDocuments("Item", effectsToDelete);
             console.log(
-              `[${MODULE_ID}] Successfully deleted ${effectsToDelete.length} cover effects`,
+              `[${MODULE_ID}] Successfully deleted ${effectsToDelete.length} cover effects`
             );
           }
 
           // Update effects in bulk if any
           if (effectsToUpdate.length > 0) {
             console.log(
-              `[${MODULE_ID}] Updating ${effectsToUpdate.length} cover effects for token ${token.name}`,
+              `[${MODULE_ID}] Updating ${effectsToUpdate.length} cover effects for token ${token.name}`
             );
             console.log(`[${MODULE_ID}] Cover update data:`, effectsToUpdate);
             await token.actor.updateEmbeddedDocuments("Item", effectsToUpdate);
             console.log(
-              `[${MODULE_ID}] Successfully updated ${effectsToUpdate.length} cover effects`,
+              `[${MODULE_ID}] Successfully updated ${effectsToUpdate.length} cover effects`
             );
           }
 
@@ -964,7 +1159,7 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
         } catch (error) {
           console.error(
             `${MODULE_ID}: Error updating cover effects for deleted token:`,
-            error,
+            error
           );
         }
       }
@@ -972,7 +1167,7 @@ export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
   } catch (error) {
     console.error(
       `${MODULE_ID}: Error cleaning up cover effects for deleted token:`,
-      error,
+      error
     );
   }
 }
@@ -981,9 +1176,17 @@ export async function updateEphemeralCoverEffects(
   targetToken,
   observerToken,
   coverState,
-  options = {},
+  options = {}
 ) {
   if (!targetToken?.actor || !observerToken?.actor) {
+    return;
+  }
+  // Skip non-creature targets entirely (e.g., loot)
+  if (isIgnoredActorTypeForCover(targetToken.actor?.type)) {
+    coverDebug("skip update for ignored actor type", {
+      target: targetToken.name,
+      type: targetToken.actor?.type,
+    });
     return;
   }
 
@@ -996,7 +1199,7 @@ export async function updateEphemeralCoverEffects(
 
       // Get all existing cover aggregates
       const allCoverAggregates = targetToken.actor.itemTypes.effect.filter(
-        (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+        (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
       );
 
       // Prepare operation collections
@@ -1046,7 +1249,7 @@ export async function updateEphemeralCoverEffects(
 
         // Find the aggregate for this cover state
         let targetAggregate = allCoverAggregates.find(
-          (e) => e.flags?.[MODULE_ID]?.coverState === coverState,
+          (e) => e.flags?.[MODULE_ID]?.coverState === coverState
         );
 
         if (!targetAggregate) {
@@ -1060,7 +1263,7 @@ export async function updateEphemeralCoverEffects(
             type: "effect",
             system: {
               description: {
-                value: `<p>Aggregated ${label.toLowerCase()} cover vs multiple observers.</p>`,
+                value: `<p>Aggregated ${label} vs multiple observers.</p>`,
                 gm: "",
               },
               rules: [
@@ -1141,14 +1344,14 @@ export async function updateEphemeralCoverEffects(
             (r) =>
               r?.key === "RollOption" &&
               r.domain === "all" &&
-              r.option === `cover-against:${tokenId}`,
+              r.option === `cover-against:${tokenId}`
           );
           const hasACModifier = filteredRules.some(
             (r) =>
               r?.key === "FlatModifier" &&
               r.selector === "ac" &&
               Array.isArray(r.predicate) &&
-              r.predicate.includes(`origin:signature:${signature}`),
+              r.predicate.includes(`origin:signature:${signature}`)
           );
 
           // Add new rules for this observer only if they don't exist
@@ -1216,27 +1419,29 @@ export async function updateEphemeralCoverEffects(
       if (effectsToDelete.length > 0) {
         await targetToken.actor.deleteEmbeddedDocuments(
           "Item",
-          effectsToDelete,
+          effectsToDelete
         );
       }
 
       if (effectsToUpdate.length > 0) {
         await targetToken.actor.updateEmbeddedDocuments(
           "Item",
-          effectsToUpdate,
+          effectsToUpdate
         );
       }
 
       if (effectsToCreate.length > 0) {
         await targetToken.actor.createEmbeddedDocuments(
           "Item",
-          effectsToCreate,
+          effectsToCreate
         );
       }
 
-      // Handle reflex and stealth bonuses after all operations
+      // Handle reflex/stealth and dedupe after operations
       if (!isRemove) {
         await updateReflexStealthAcrossCoverAggregates(targetToken);
+        await dedupeCoverAggregates(targetToken);
+        await reconcileCoverAggregatesAgainstMaps(targetToken);
       }
     } catch (error) {
       console.error(`[${MODULE_ID}] Error updating cover effects:`, error);
@@ -1253,7 +1458,7 @@ export async function updateEphemeralCoverEffects(
 export async function batchUpdateCoverEffects(
   observerToken,
   targetUpdates,
-  options = {},
+  options = {}
 ) {
   if (!observerToken?.actor || !targetUpdates?.length) return;
 
@@ -1286,12 +1491,26 @@ export async function batchUpdateCoverEffects(
   // Process each target's batch
   for (const [targetId, data] of updatesByTarget.entries()) {
     const { target, states } = data;
+    if (isIgnoredActorTypeForCover(target.actor?.type)) {
+      coverDebug("skip batch for ignored actor type", {
+        target: target.name,
+        type: target.actor?.type,
+      });
+      continue;
+    }
 
     await runWithCoverEffectLock(target.actor, async () => {
       try {
+        coverDebug("batchUpdate begin", {
+          target: target.name,
+          states: Array.from(states.entries()).map(([k, v]) => ({
+            state: k,
+            observers: v.map((o) => o.name),
+          })),
+        });
         // Get all existing cover aggregates
         const allCoverAggregates = target.actor.itemTypes.effect.filter(
-          (e) => e.flags?.[MODULE_ID]?.aggregateCover === true,
+          (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
         );
 
         // Create a map of cover state to aggregate
@@ -1310,7 +1529,7 @@ export async function batchUpdateCoverEffects(
           if (state) {
             rulesByState.set(
               state,
-              Array.isArray(agg.system.rules) ? [...agg.system.rules] : [],
+              Array.isArray(agg.system.rules) ? [...agg.system.rules] : []
             );
           }
         }
@@ -1441,7 +1660,7 @@ export async function batchUpdateCoverEffects(
                   type: "effect",
                   system: {
                     description: {
-                      value: `<p>Aggregated ${label.toLowerCase()} cover vs multiple observers.</p>`,
+                      value: `<p>Aggregated ${label} vs multiple observers.</p>`,
                       gm: "",
                     },
                     rules: rules,
@@ -1546,9 +1765,21 @@ export async function batchUpdateCoverEffects(
           await target.actor.createEmbeddedDocuments("Item", effectsToCreate);
         }
 
-        // Handle reflex and stealth bonuses after all operations
-        if (effectsToCreate.length > 0 || effectsToUpdate.length > 0) {
+        // Handle reflex/stealth redistribution and prune empties after any change
+        if (
+          effectsToCreate.length > 0 ||
+          effectsToUpdate.length > 0 ||
+          effectsToDelete.length > 0
+        ) {
+          coverDebug("batchUpdate ops", {
+            target: target.name,
+            deletes: effectsToDelete.length,
+            updates: effectsToUpdate.length,
+            creates: effectsToCreate.length,
+          });
           await updateReflexStealthAcrossCoverAggregates(target);
+          await dedupeCoverAggregates(target);
+          await reconcileCoverAggregatesAgainstMaps(target);
         }
       } catch (error) {
         console.error(`[${MODULE_ID}] Error in batch update cover:`, error);

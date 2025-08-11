@@ -289,6 +289,15 @@ export const DEFAULT_SETTINGS = {
     default: false,
   },
 
+  autoCover: {
+    name: "PF2E_VISIONER.SETTINGS.AUTO_COVER.name",
+    hint: "PF2E_VISIONER.SETTINGS.AUTO_COVER.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+
   debug: {
     name: "Debug Mode",
     hint: "Enable detailed console logging for troubleshooting",

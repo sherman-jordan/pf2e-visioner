@@ -19,6 +19,14 @@ import {
 
 import { MODULE_ID } from "./constants.js";
 
+function tmDebug(...args) {
+  try {
+    if (game.settings.get(MODULE_ID, "debug")) {
+      console.debug(`[${MODULE_ID}][tm-cover]`, ...args);
+    }
+  } catch (_) {}
+}
+
 export class VisionerTokenManager extends foundry.applications.api
   .ApplicationV2 {
   // Track the current instance to prevent multiple dialogs
@@ -637,6 +645,10 @@ export class VisionerTokenManager extends foundry.applications.api
       )) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
+        try {
+          const t = observerToken.actor?.type;
+          if (t === "loot" || t === "vehicle" || t === "party") continue;
+        } catch (_) {}
         const current = getVisibilityMap(observerToken) || {};
         const currentState = current[app.observer.document.id];
         if (currentState === newVisibilityState) continue; // skip no-op
@@ -665,6 +677,10 @@ export class VisionerTokenManager extends foundry.applications.api
         )) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (!observerToken) continue;
+          try {
+            const t = observerToken.actor?.type;
+            if (t === "loot" || t === "vehicle" || t === "party") continue;
+          } catch (_) {}
           const currentState =
             getVisibilityMap(observerToken)?.[app.observer.document.id];
           if (currentState !== newVisibilityState) {
@@ -718,7 +734,9 @@ export class VisionerTokenManager extends foundry.applications.api
         if (!observerToken) continue;
         const current = getCoverMap(observerToken) || {};
         const currentState = current[app.observer.document.id];
-        if (currentState === newCoverState) continue;
+        // Always queue removals so effects get cleaned even if map already at 'none'
+        if (currentState === newCoverState && newCoverState !== "none")
+          continue;
         if (!perObserverCover.has(observerTokenId))
           perObserverCover.set(observerTokenId, {
             token: observerToken,
@@ -744,11 +762,17 @@ export class VisionerTokenManager extends foundry.applications.api
           if (!observerToken) continue;
           const current = getCoverMap(observerToken) || {};
           const currentState = current[app.observer.document.id];
-          if (currentState !== newCoverState) {
+          if (currentState !== newCoverState || newCoverState === "none") {
             observerUpdates.push({
               target: app.observer,
               state: newCoverState,
               observer: observerToken,
+            });
+            tmDebug("target-mode enqueue", {
+              observer: observerToken.name,
+              target: app.observer.name,
+              from: currentState,
+              to: newCoverState,
             });
           }
         }
@@ -773,6 +797,13 @@ export class VisionerTokenManager extends foundry.applications.api
 
           // Process each observer's batch
           for (const { observer, updates } of updatesByObserver.values()) {
+            tmDebug("target-mode batch", {
+              observer: observer.name,
+              updates: updates.map((u) => ({
+                target: u.target.name,
+                state: u.state,
+              })),
+            });
             await batchUpdateCoverEffects(observer, updates);
           }
         }
@@ -923,6 +954,10 @@ export class VisionerTokenManager extends foundry.applications.api
               continue;
             const observerToken = canvas.tokens.get(observerTokenId);
             if (!observerToken) continue;
+            try {
+              const t = observerToken.actor?.type;
+              if (t === "loot" || t === "vehicle" || t === "party") continue;
+            } catch (_) {}
 
             // Update the visibility map
             const observerVisibilityData =
@@ -1047,10 +1082,27 @@ export class VisionerTokenManager extends foundry.applications.api
               target: app.observer,
               state: newState,
             });
+
+            tmDebug("applyCurrent target-mode enqueue", {
+              observer: observerToken.name,
+              target: app.observer.name,
+              to: newState,
+            });
           }
 
           // Add batch operations for each observer
           for (const { observer, updates } of updatesByObserver.values()) {
+            try {
+              const t = observer.actor?.type;
+              if (t === "loot" || t === "vehicle" || t === "party") continue;
+            } catch (_) {}
+            tmDebug("applyCurrent target-mode batch", {
+              observer: observer.name,
+              updates: updates.map((u) => ({
+                target: u.target.name,
+                state: u.state,
+              })),
+            });
             allOperations.push(async () => {
               await batchUpdateCoverEffects(observer, updates);
             });

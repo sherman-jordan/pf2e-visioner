@@ -77,12 +77,12 @@ export function onRenderChatMessage(message, html) {
       requestGMOpenPointOut(
         actionData.actor.id,
         targetId,
-        actionData.messageId,
+        actionData.messageId
       );
     } catch (e) {
       console.warn(
         `${MODULE_TITLE}: Failed to auto-forward Point Out to GM:`,
-        e,
+        e
       );
     }
     processedMessages.add(message.id);
@@ -151,7 +151,7 @@ function extractActionData(message) {
   const isCreateADiversionAction =
     (context?.type === "skill-check" &&
       (context.options?.some((option) =>
-        option.startsWith("action:create-a-diversion"),
+        option.startsWith("action:create-a-diversion")
       ) ||
         context.slug === "create-a-diversion")) ||
     message.flavor?.toLowerCase().includes("create a diversion");
@@ -232,10 +232,10 @@ function extractActionData(message) {
     const legacyConditions = actorToken.actor.conditions?.conditions || [];
     isHiddenOrUndetectedToken =
       itemTypeConditions.some(
-        (c) => c?.slug === "hidden" || c?.slug === "undetected",
+        (c) => c?.slug === "hidden" || c?.slug === "undetected"
       ) ||
       legacyConditions.some(
-        (c) => c?.slug === "hidden" || c?.slug === "undetected",
+        (c) => c?.slug === "hidden" || c?.slug === "undetected"
       );
   }
 
@@ -249,7 +249,7 @@ function extractActionData(message) {
         option.includes("hidden-from") ||
         option.includes("undetected-from") ||
         option.includes("self:hidden") ||
-        option.includes("self:undetected"),
+        option.includes("self:undetected")
     );
 
     // Also check origin rollOptions if available
@@ -261,7 +261,7 @@ function extractActionData(message) {
           option.includes("hidden-from") ||
           option.includes("undetected-from") ||
           option.includes("self:hidden") ||
-          option.includes("self:undetected"),
+          option.includes("self:undetected")
       );
     }
 
@@ -272,7 +272,7 @@ function extractActionData(message) {
           option.includes("self:effect:hidden") ||
           option.includes("self:effect:undetected") ||
           option.includes("self:hidden") ||
-          option.includes("self:undetected"),
+          option.includes("self:undetected")
       );
     }
   }
@@ -348,7 +348,7 @@ function extractActionData(message) {
       (opt) =>
         opt.includes("effect:undetected-from") ||
         opt.includes("undetected-from") ||
-        opt.includes("self:undetected"),
+        opt.includes("self:undetected")
     );
     const indicatesHidden =
       !indicatesUndetected &&
@@ -356,7 +356,7 @@ function extractActionData(message) {
         (opt) =>
           opt.includes("effect:hidden-from") ||
           opt.includes("hidden-from") ||
-          opt.includes("self:hidden"),
+          opt.includes("self:hidden")
       );
 
     // Detect via actor conditions (v13 or legacy)
@@ -385,14 +385,14 @@ function extractActionData(message) {
       hiddenIndicator: indicatesUndetected
         ? "undetected"
         : indicatesHidden
-          ? "hidden"
-          : attackerConditionIndicator || null,
+        ? "hidden"
+        : attackerConditionIndicator || null,
     };
   }
 
   if (!actorToken) {
     console.warn(
-      `${MODULE_TITLE}: Could not find actor token for ${actionType} action`,
+      `${MODULE_TITLE}: Could not find actor token for ${actionType} action`
     );
     return null;
   }
@@ -418,7 +418,7 @@ function injectAutomationUI(message, html, actionData) {
   try {
     const enforceRAW = game.settings.get(
       "pf2e-visioner",
-      "enforceRawRequirements",
+      "enforceRawRequirements"
     );
 
     // Do not gate UI on seek template presence/targets; actor-level prerequisites handled in previews
@@ -562,7 +562,7 @@ function checkConsequencesTargets(actionData, potentialTargets) {
   // For consequences, check if any tokens see the attacker as hidden/undetected
   const enforceRAW = game.settings.get(
     "pf2e-visioner",
-    "enforceRawRequirements",
+    "enforceRawRequirements"
   );
   for (const target of potentialTargets) {
     // Respect ally-filter setting instead of raw disposition
@@ -619,7 +619,7 @@ function checkSeekTargets(actionData, potentialTargets) {
         (c) =>
           c.slug === "hidden" ||
           c.slug === "undetected" ||
-          c.slug === "concealed",
+          c.slug === "concealed"
       );
       if (isHiddenOrUndetected) return true;
     }
@@ -631,7 +631,7 @@ function checkSeekTargets(actionData, potentialTargets) {
         (option) =>
           option.includes("target:concealed") ||
           option.includes("target:hidden") ||
-          option.includes("target:undetected"),
+          option.includes("target:undetected")
       );
       if (hasHiddenOrUndetected) return true;
     }
@@ -745,7 +745,7 @@ function buildAutomationPanel(actionData, message) {
   if (isSeek) {
     label = game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS");
     tooltip = game.i18n.localize(
-      "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP",
+      "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP"
     );
     title = "Seek Results";
     icon = "fas fa-search";
@@ -835,7 +835,11 @@ function buildAutomationPanel(actionData, message) {
                     <button type=\"button\" 
                             class=\"visioner-btn ${buttonClass}\" 
                             data-action=\"open-seek-results\"
-                            title=\"${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP")}\">\n                        <i class=\"${icon}\"></i> ${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS")}\n                    </button>
+                            title=\"${game.i18n.localize(
+                              "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP"
+                            )}\">\n                        <i class=\"${icon}\"></i> ${game.i18n.localize(
+          "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS"
+        )}\n                    </button>
                     <button type=\"button\"
                             class=\"visioner-btn ${buttonClass} apply-now\"
                             data-action=\"apply-now-seek\"
@@ -848,8 +852,18 @@ function buildAutomationPanel(actionData, message) {
       actionButtonsHtml = `
                 <button type=\"button\"
                         class=\"visioner-btn ${buttonClass} setup-template\"
-                        data-action=\"${hasExistingTemplate ? "remove-seek-template" : "setup-seek-template"}\"
-                        title=\"${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP")}\">\n                    <i class=\"fas fa-bullseye\"></i> ${hasExistingTemplate ? game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE") : game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE")}\n                </button>`;
+                        data-action=\"${
+                          hasExistingTemplate
+                            ? "remove-seek-template"
+                            : "setup-seek-template"
+                        }\"
+                        title=\"${game.i18n.localize(
+                          "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP"
+                        )}\">\n                    <i class=\"fas fa-bullseye\"></i> ${
+        hasExistingTemplate
+          ? game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE")
+          : game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE")
+      }\n                </button>`;
       if (hasExistingTemplate) {
         actionButtonsHtml += `
                 <button type=\"button\"
@@ -1115,7 +1129,9 @@ function bindAutomationEvents(panel, message, actionData) {
     } catch (error) {
       console.error(`${MODULE_TITLE}: Automation error:`, error);
       ui.notifications.error(
-        `${MODULE_TITLE}: ${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.ERROR_PROCESSING")}`,
+        `${MODULE_TITLE}: ${game.i18n.localize(
+          "PF2E_VISIONER.SEEK_AUTOMATION.ERROR_PROCESSING"
+        )}`
       );
     } finally {
       button.removeClass("processing").prop("disabled", false);
@@ -1174,7 +1190,7 @@ async function previewActionResults(actionData) {
       requestGMOpenPointOut(
         actionData.actor.id,
         targetId,
-        actionData.messageId,
+        actionData.messageId
       );
       return;
     }
@@ -1189,7 +1205,7 @@ async function previewActionResults(actionData) {
   } else {
     console.warn(
       "[Chat Processor] Unknown action type:",
-      actionData.actionType,
+      actionData.actionType
     );
   }
 }
@@ -1225,7 +1241,7 @@ async function applyNowSeek(actionData, button) {
         changes.map((c) => ({
           targetId: c.target.id,
           oldVisibility: c.oldVisibility,
-        })),
+        }))
       );
     } catch (_) {}
     button
@@ -1293,7 +1309,7 @@ async function applyNowPointOut(actionData, button) {
       await applyVisibilityChanges(
         ch.target,
         [{ target: ch.targetToken, newVisibility: ch.newVisibility }],
-        { direction: "observer_to_target" },
+        { direction: "observer_to_target" }
       );
     }
     // Cache for revert
@@ -1304,7 +1320,7 @@ async function applyNowPointOut(actionData, button) {
           allyId: ch.target.id,
           targetTokenId: ch.targetToken.id,
           oldVisibility: ch.oldVisibility,
-        })),
+        }))
       );
     } catch (_) {}
     button
@@ -1334,7 +1350,7 @@ async function applyNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           o.target,
           [{ target: actionData.actor, newVisibility: o.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       // Cache applied Hide changes for revert: observer -> oldVisibility
@@ -1344,7 +1360,7 @@ async function applyNowGeneric(actionData, button) {
           changes.map((o) => ({
             observerId: o.target?.id || o.token?.id,
             oldVisibility: o.oldVisibility,
-          })),
+          }))
         );
       } catch (_) {}
       button
@@ -1370,7 +1386,7 @@ async function applyNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           observer,
           [{ target: actionData.actor, newVisibility: o.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       // Cache applied Sneak changes for revert: observer -> oldVisibility
@@ -1380,7 +1396,7 @@ async function applyNowGeneric(actionData, button) {
           changes.map((o) => ({
             observerId: o.token?.id || o.target?.id,
             oldVisibility: o.oldVisibility,
-          })),
+          }))
         );
       } catch (_) {}
       button
@@ -1394,7 +1410,7 @@ async function applyNowGeneric(actionData, button) {
         await import("./create-a-diversion-logic.js");
       const observers = discoverDiversionObservers(actionData.actor);
       const outcomes = observers.map((o) =>
-        analyzeDiversionOutcome(actionData, o),
+        analyzeDiversionOutcome(actionData, o)
       );
       const changes = outcomes.filter((o) => o.changed);
       if (!changes.length) {
@@ -1407,7 +1423,7 @@ async function applyNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           observer,
           [{ target: actionData.actor, newVisibility: o.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       try {
@@ -1416,7 +1432,7 @@ async function applyNowGeneric(actionData, button) {
           changes.map((o) => ({
             observerId: o.observer?.id || o.token?.id || o.target?.id,
             oldVisibility: o.currentVisibility,
-          })),
+          }))
         );
       } catch (_) {}
       button
@@ -1433,7 +1449,7 @@ async function applyNowGeneric(actionData, button) {
       const targets = findPotentialTargets(attacker);
       if (!targets.length) {
         ui.notifications.info(
-          `${MODULE_TITLE}: No valid targets for consequences.`,
+          `${MODULE_TITLE}: No valid targets for consequences.`
         );
         return;
       }
@@ -1441,16 +1457,16 @@ async function applyNowGeneric(actionData, button) {
         targets.map(async (target) => ({
           target,
           currentVisibility: await computeVisibilityBetween(target, attacker),
-        })),
+        }))
       );
       const changed = outcomes.filter(
         (o) =>
           o.currentVisibility === "hidden" ||
-          o.currentVisibility === "undetected",
+          o.currentVisibility === "undetected"
       );
       if (!changed.length) {
         ui.notifications.info(
-          `${MODULE_TITLE}: No visibility changes to apply.`,
+          `${MODULE_TITLE}: No visibility changes to apply.`
         );
         return;
       }
@@ -1459,7 +1475,7 @@ async function applyNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           o.target,
           [{ target: attacker, newVisibility: "observed" }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       try {
@@ -1468,7 +1484,7 @@ async function applyNowGeneric(actionData, button) {
           changed.map((o) => ({
             observerId: o.target.id,
             oldVisibility: o.currentVisibility,
-          })),
+          }))
         );
       } catch (_) {}
       button
@@ -1561,7 +1577,7 @@ async function revertNowPointOut(actionData, button) {
       const allies = discoverPointOutAllies(
         actionData.actor,
         resolvedTarget,
-        false,
+        false
       );
       const outcomes = allies.map((a) => analyzePointOutOutcome(actionData, a));
       changes = outcomes
@@ -1582,7 +1598,7 @@ async function revertNowPointOut(actionData, button) {
       await applyVisibilityChanges(
         ch.target,
         [{ target: ch.targetToken, newVisibility: ch.newVisibility }],
-        { direction: "observer_to_target" },
+        { direction: "observer_to_target" }
       );
     }
     try {
@@ -1621,7 +1637,7 @@ async function revertNowGeneric(actionData, button) {
         );
         const observers = discoverHideObservers(actionData.actor, false, false);
         const outcomes = observers.map((o) =>
-          analyzeHideOutcome(actionData, o),
+          analyzeHideOutcome(actionData, o)
         );
         changes = outcomes
           .filter((o) => o.changed)
@@ -1640,7 +1656,7 @@ async function revertNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           ch.target,
           [{ target: actionData.actor, newVisibility: ch.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       try {
@@ -1674,7 +1690,7 @@ async function revertNowGeneric(actionData, button) {
         );
         const observers = discoverSneakObservers(actionData.actor, false);
         const outcomes = observers.map((o) =>
-          analyzeSneakOutcome(actionData, o),
+          analyzeSneakOutcome(actionData, o)
         );
         changes = outcomes
           .filter((o) => o.changed)
@@ -1693,7 +1709,7 @@ async function revertNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           ch.target,
           [{ target: actionData.actor, newVisibility: ch.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       try {
@@ -1726,7 +1742,7 @@ async function revertNowGeneric(actionData, button) {
           await import("./create-a-diversion-logic.js");
         const observers = discoverDiversionObservers(actionData.actor);
         const outcomes = observers.map((o) =>
-          analyzeDiversionOutcome(actionData, o),
+          analyzeDiversionOutcome(actionData, o)
         );
         changes = outcomes
           .filter((o) => o.changed)
@@ -1745,7 +1761,7 @@ async function revertNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           ch.target,
           [{ target: actionData.actor, newVisibility: ch.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       try {
@@ -1783,13 +1799,13 @@ async function revertNowGeneric(actionData, button) {
           targets.map(async (target) => ({
             target,
             currentVisibility: await computeVisibilityBetween(target, attacker),
-          })),
+          }))
         );
         changes = outcomes
           .filter(
             (o) =>
               o.currentVisibility === "hidden" ||
-              o.currentVisibility === "undetected",
+              o.currentVisibility === "undetected"
           )
           .map((o) => ({
             target: o.target,
@@ -1806,7 +1822,7 @@ async function revertNowGeneric(actionData, button) {
         await applyVisibilityChanges(
           ch.target,
           [{ target: actionData.actor, newVisibility: ch.newVisibility }],
-          { direction: "observer_to_target" },
+          { direction: "observer_to_target" }
         );
       }
       try {
@@ -1831,7 +1847,7 @@ async function revertNowGeneric(actionData, button) {
 function updateSeekTemplateButton(actionData, hasTemplate) {
   try {
     const panel = $(
-      `.pf2e-visioner-automation-panel[data-message-id="${actionData.messageId}"]`,
+      `.pf2e-visioner-automation-panel[data-message-id="${actionData.messageId}"]`
     );
     if (!panel?.length) return;
     const btn = panel.find("button.setup-template");
@@ -1841,22 +1857,26 @@ function updateSeekTemplateButton(actionData, hasTemplate) {
       btn.attr(
         "title",
         game.i18n.localize(
-          "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP",
-        ),
+          "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP"
+        )
       );
       btn.html(
-        `<i class="fas fa-bullseye"></i> ${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE")}`,
+        `<i class="fas fa-bullseye"></i> ${game.i18n.localize(
+          "PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE"
+        )}`
       );
     } else {
       btn.attr("data-action", "setup-seek-template");
       btn.attr(
         "title",
         game.i18n.localize(
-          "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP",
-        ),
+          "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP"
+        )
       );
       btn.html(
-        `<i class="fas fa-bullseye"></i> ${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE")}`,
+        `<i class="fas fa-bullseye"></i> ${game.i18n.localize(
+          "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE"
+        )}`
       );
     }
   } catch (_) {}
@@ -1870,9 +1890,11 @@ async function setupSeekTemplate(actionData) {
   if (!canvas?.scene) return;
   try {
     ui.notifications.info(
-      `${MODULE_TITLE}: ${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP")}`,
+      `${MODULE_TITLE}: ${game.i18n.localize(
+        "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP"
+      )}`
     );
-    const distance = 30;
+    const distance = 15;
 
     // If GM, allow full measured-template placement and capture via create hook
     if (game.user.isGM) {
@@ -1912,7 +1934,7 @@ async function setupSeekTemplate(actionData) {
               actionData.actor,
               false,
               actionData.seekTemplateRadiusFeet,
-              actionData.seekTemplateCenter,
+              actionData.seekTemplateCenter
             );
             if (!dispatched && targets.length > 0) {
               dispatched = true;
@@ -1938,11 +1960,11 @@ async function setupSeekTemplate(actionData) {
               const snapped = canvas.grid?.getSnappedPosition?.(
                 local.x,
                 local.y,
-                2,
+                2
               ) || { x: local.x, y: local.y };
               const [created] = await canvas.scene.createEmbeddedDocuments(
                 "MeasuredTemplate",
-                [{ ...tplData, x: snapped.x, y: snapped.y }],
+                [{ ...tplData, x: snapped.x, y: snapped.y }]
               );
               if (created) {
                 try {
@@ -1956,7 +1978,7 @@ async function setupSeekTemplate(actionData) {
                         [`flags.pf2e-visioner.actorTokenId`]:
                           actionData.actor.id,
                       },
-                    ],
+                    ]
                   );
                 } catch (_) {}
                 actionData.seekTemplateCenter = { x: created.x, y: created.y };
@@ -1966,7 +1988,7 @@ async function setupSeekTemplate(actionData) {
                   actionData.actor,
                   false,
                   actionData.seekTemplateRadiusFeet,
-                  actionData.seekTemplateCenter,
+                  actionData.seekTemplateCenter
                 );
                 if (targets.length > 0) {
                   await previewSeekResults(actionData);
@@ -2012,7 +2034,7 @@ async function setupSeekTemplate(actionData) {
             actionData.actor,
             false,
             radius,
-            center,
+            center
           );
           const roll =
             actionData.roll ||
@@ -2028,7 +2050,7 @@ async function setupSeekTemplate(actionData) {
             radius,
             actionData.messageId,
             rollTotal,
-            dieResult,
+            dieResult
           );
         } finally {
           resolve();
@@ -2055,7 +2077,7 @@ async function setupSeekTemplate(actionData) {
             const snapped = canvas.grid?.getSnappedPosition?.(
               local.x,
               local.y,
-              2,
+              2
             ) || { x: local.x, y: local.y };
             actionData.seekTemplateCenter = { x: snapped.x, y: snapped.y };
             actionData.seekTemplateRadiusFeet = distance;
@@ -2063,7 +2085,7 @@ async function setupSeekTemplate(actionData) {
               actionData.actor,
               false,
               actionData.seekTemplateRadiusFeet,
-              actionData.seekTemplateCenter,
+              actionData.seekTemplateCenter
             );
             const roll =
               actionData.roll ||
@@ -2079,11 +2101,11 @@ async function setupSeekTemplate(actionData) {
               actionData.seekTemplateRadiusFeet,
               actionData.messageId,
               rollTotal,
-              dieResult,
+              dieResult
             );
             if (targets.length === 0) {
               ui.notifications.info(
-                `${MODULE_TITLE}: No valid targets within template`,
+                `${MODULE_TITLE}: No valid targets within template`
               );
             }
           } finally {
@@ -2107,7 +2129,7 @@ async function removeSeekTemplate(actionData) {
           t?.flags?.["pf2e-visioner"]?.seekPreviewManual &&
           t?.flags?.["pf2e-visioner"]?.messageId === actionData.messageId &&
           t?.flags?.["pf2e-visioner"]?.actorTokenId === actionData.actor.id &&
-          t?.user?.id === game.userId,
+          t?.user?.id === game.userId
       )
       .map((t) => t.id);
     if (toRemove.length) {
@@ -2116,7 +2138,9 @@ async function removeSeekTemplate(actionData) {
     delete actionData.seekTemplateCenter;
     delete actionData.seekTemplateRadiusFeet;
     ui.notifications.info(
-      `${MODULE_TITLE}: ${game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE")}`,
+      `${MODULE_TITLE}: ${game.i18n.localize(
+        "PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE"
+      )}`
     );
     // Update button to Setup state in-place
     updateSeekTemplateButton(actionData, false);

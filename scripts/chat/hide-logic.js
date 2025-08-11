@@ -25,12 +25,11 @@ import {
 export function discoverHideObservers(
   hidingToken,
   encounterOnly = false,
-  applyAllyFilter = true,
+  applyAllyFilter = true
 ) {
   if (!hidingToken) return [];
 
   const observers = [];
-  const integrate = game.settings.get(MODULE_ID, "integrateCoverVisibility");
   const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
 
   // Find all tokens on the canvas as potential observers
@@ -73,24 +72,11 @@ export function discoverHideObservers(
 
     // Apply observer inclusion gating (cover/concealment) only when enforcing RAW
     if (enforceRAW) {
-      // With integration ON: allow Hide if you either have Standard/Greater cover OR are Concealed
-      // With integration OFF: only allow Hide if Concealed (ignore cover entirely)
-      if (integrate) {
-        const cover = getCoverBetween(token, hidingToken);
-        if (
-          !(
-            cover === "standard" ||
-            cover === "greater" ||
-            currentVisibility === "concealed"
-          )
-        ) {
-          continue;
-        }
-      } else {
-        if (currentVisibility !== "concealed") {
-          continue;
-        }
-      }
+      // RAW: You can Hide when either concealed OR you have at least Standard Cover from the observer
+      const cover = getCoverBetween(token, hidingToken);
+      const hasRequiredCover = cover === "standard" || cover === "greater";
+      const isConcealed = currentVisibility === "concealed";
+      if (!isConcealed && !hasRequiredCover) continue;
     }
 
     // Get the observer's Perception DC; when RAW is OFF, tolerate missing DC
@@ -178,10 +164,10 @@ export async function previewHideResults(actionData) {
   if (!actionData || !actionData.actor || !actionData.roll) {
     console.error(
       "Invalid actionData provided to previewHideResults:",
-      actionData,
+      actionData
     );
     ui.notifications.error(
-      `${MODULE_TITLE}: Invalid hide data - cannot preview results`,
+      `${MODULE_TITLE}: Invalid hide data - cannot preview results`
     );
     return;
   }
@@ -194,7 +180,7 @@ export async function previewHideResults(actionData) {
     const hasStdCover = hasStandardCoverFromAnyObserver(actorToken);
     if (!isConcealed && !hasStdCover) {
       ui.notifications.info(
-        `${MODULE_TITLE}: Hide requires being Concealed or having Standard Cover from an observer.`,
+        `${MODULE_TITLE}: Hide requires being Concealed or having Standard Cover from an observer.`
       );
       return;
     }
@@ -206,7 +192,7 @@ export async function previewHideResults(actionData) {
 
   // Analyze all potential outcomes
   const outcomes = observers.map((observer) =>
-    analyzeHideOutcome(actionData, observer),
+    analyzeHideOutcome(actionData, observer)
   );
   const changes = outcomes.filter((outcome) => outcome.changed);
 
@@ -215,7 +201,7 @@ export async function previewHideResults(actionData) {
     actionData.actor,
     outcomes,
     changes,
-    actionData,
+    actionData
   );
   previewDialog.render(true);
 }

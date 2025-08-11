@@ -25,7 +25,7 @@ export function discoverSeekTargets(
   seekerToken,
   encounterOnly = false,
   templateRadiusFeet = null,
-  templateCenter = null,
+  templateCenter = null
 ) {
   if (!seekerToken) return [];
   const targets = [];
@@ -33,16 +33,16 @@ export function discoverSeekTargets(
   const isInCombat = hasActiveEncounter();
   const limitRangeInCombat = game.settings.get(
     MODULE_ID,
-    "limitSeekRangeInCombat",
+    "limitSeekRangeInCombat"
   );
   const limitRangeOutOfCombat = game.settings.get(
     MODULE_ID,
-    "limitSeekRangeOutOfCombat",
+    "limitSeekRangeOutOfCombat"
   );
   const customSeekDistance = game.settings.get(MODULE_ID, "customSeekDistance");
   const customSeekDistanceOOC = game.settings.get(
     MODULE_ID,
-    "customSeekDistanceOutOfCombat",
+    "customSeekDistanceOutOfCombat"
   );
   const maxSeekRange = isInCombat ? customSeekDistance : customSeekDistanceOOC; // Use appropriate distance
 
@@ -118,7 +118,7 @@ export function discoverSeekTargets(
     let stealthDC;
     if (token.actor?.type === "loot") {
       const override = Number(
-        token.document?.getFlag?.(MODULE_ID, "stealthDc"),
+        token.document?.getFlag?.(MODULE_ID, "stealthDc")
       );
       stealthDC =
         Number.isFinite(override) && override > 0
@@ -219,10 +219,10 @@ export async function previewSeekResults(actionData) {
   if (!actionData || !actionData.actor || !actionData.roll) {
     console.error(
       "Invalid actionData provided to previewSeekResults:",
-      actionData,
+      actionData
     );
     ui.notifications.error(
-      `${MODULE_TITLE}: Invalid seek data - cannot preview results`,
+      `${MODULE_TITLE}: Invalid seek data - cannot preview results`
     );
     return;
   }
@@ -231,11 +231,11 @@ export async function previewSeekResults(actionData) {
   const isInCombat = hasActiveEncounter();
   const limitRangeInCombat = game.settings.get(
     MODULE_ID,
-    "limitSeekRangeInCombat",
+    "limitSeekRangeInCombat"
   );
   const limitRangeOutOfCombat = game.settings.get(
     MODULE_ID,
-    "limitSeekRangeOutOfCombat",
+    "limitSeekRangeOutOfCombat"
   );
   const useTemplate = game.settings.get(MODULE_ID, "seekUseTemplate");
   // If template is being used (setting on) or an explicit template center was provided, disable range restriction
@@ -254,7 +254,10 @@ export async function previewSeekResults(actionData) {
       ? game.settings.get(MODULE_ID, "customSeekDistance")
       : game.settings.get(MODULE_ID, "customSeekDistanceOutOfCombat");
     ui.notifications.info(
-      `${MODULE_TITLE}: ${game.i18n.format("PF2E_VISIONER.SEEK_AUTOMATION.RANGE_LIMIT_ACTIVE_CUSTOM", { distance })}`,
+      `${MODULE_TITLE}: ${game.i18n.format(
+        "PF2E_VISIONER.SEEK_AUTOMATION.RANGE_LIMIT_ACTIVE_CUSTOM",
+        { distance }
+      )}`
     );
   }
   if (!rangeRestricted && (useTemplate || hasExplicitTemplate)) {
@@ -262,7 +265,7 @@ export async function previewSeekResults(actionData) {
     // Keep it low-noise: only show once per preview call
     const msg =
       game.i18n.localize(
-        "PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE",
+        "PF2E_VISIONER.SETTINGS.LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE"
       ) || "Range limit disabled: Using template";
     ui.notifications.info(`${MODULE_TITLE}: ${msg}`);
   }
@@ -274,25 +277,25 @@ export async function previewSeekResults(actionData) {
   if (effectiveUseTemplate && canvas.scene) {
     try {
       if (actionData.seekTemplateCenter && actionData.seekTemplateRadiusFeet) {
-        templateRadiusFeet = Number(actionData.seekTemplateRadiusFeet) || 30;
+        templateRadiusFeet = Number(actionData.seekTemplateRadiusFeet) || 15;
         templateCenter = actionData.seekTemplateCenter;
       } else if (actionData.seekManualTemplateId) {
         const doc =
           canvas.scene.templates?.get?.(actionData.seekManualTemplateId) ||
           canvas.scene.getEmbeddedDocument?.(
             "MeasuredTemplate",
-            actionData.seekManualTemplateId,
+            actionData.seekManualTemplateId
           );
         if (doc) {
           templateId = doc.id;
-          templateRadiusFeet = Number(doc.distance) || 30;
+          templateRadiusFeet = Number(doc.distance) || 15;
           templateCenter = { x: doc.x, y: doc.y };
         }
       } else {
         const tplData = {
           t: "circle",
           user: game.userId,
-          distance: 30,
+          distance: 15,
           x: actionData.actor.center.x,
           y: actionData.actor.center.y,
           fillColor: game.user?.color || "#2c5aa0",
@@ -302,10 +305,10 @@ export async function previewSeekResults(actionData) {
         };
         const created = await canvas.scene.createEmbeddedDocuments(
           "MeasuredTemplate",
-          [tplData],
+          [tplData]
         );
         templateId = created?.[0]?.id ?? null;
-        templateRadiusFeet = 30;
+        templateRadiusFeet = 15;
         templateCenter = { x: tplData.x, y: tplData.y };
       }
     } catch (e) {
@@ -317,12 +320,12 @@ export async function previewSeekResults(actionData) {
     actionData.actor,
     false,
     templateRadiusFeet,
-    templateCenter,
+    templateCenter
   );
 
   // Analyze all potential outcomes
   const outcomes = targets.map((target) =>
-    analyzeSeekOutcome(actionData, target),
+    analyzeSeekOutcome(actionData, target)
   );
   const changes = outcomes.filter((outcome) => outcome.changed);
 
@@ -338,7 +341,7 @@ export async function previewSeekResults(actionData) {
     actionData.actor,
     outcomes,
     changes,
-    actionData,
+    actionData
   );
   if (templateId) previewDialog.templateId = templateId;
   if (templateRadiusFeet != null)

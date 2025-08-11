@@ -157,38 +157,38 @@ export function initializeHoverTooltips() {
   try {
     const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
     const { fontPx, iconPx, borderPx } = computeSizesFromSetting(
-      raw ?? tooltipFontSize,
+      raw ?? tooltipFontSize
     );
     tooltipFontSize = fontPx;
     tooltipIconSize = iconPx;
     document.documentElement.style.setProperty(
       "--pf2e-visioner-tooltip-font-size",
-      `${fontPx}px`,
+      `${fontPx}px`
     );
     document.documentElement.style.setProperty(
       "--pf2e-visioner-tooltip-icon-size",
-      `${iconPx}px`,
+      `${iconPx}px`
     );
     document.documentElement.style.setProperty(
       "--pf2e-visioner-tooltip-badge-border",
-      `${borderPx}px`,
+      `${borderPx}px`
     );
   } catch (e) {
     console.warn(
       "PF2E Visioner: Error setting tooltip font size CSS variable",
-      e,
+      e
     );
     document.documentElement.style.setProperty(
       "--pf2e-visioner-tooltip-font-size",
-      "16px",
+      "16px"
     );
     document.documentElement.style.setProperty(
       "--pf2e-visioner-tooltip-icon-size",
-      "14px",
+      "14px"
     );
     document.documentElement.style.setProperty(
       "--pf2e-visioner-tooltip-badge-border",
-      "2px",
+      "2px"
     );
   }
 
@@ -234,6 +234,7 @@ function onTokenHoverEnd(token) {
   if (currentHoveredToken === token) {
     currentHoveredToken = null;
     hideAllVisibilityIndicators();
+    hideAllCoverIndicators();
   }
 }
 
@@ -275,11 +276,15 @@ export function onHighlightObjects(highlight) {
   } else {
     // First, force clean all tooltips
     hideAllVisibilityIndicators();
+    hideAllCoverIndicators();
 
     // Then, if we have a currently hovered token, restore its tooltips after a short delay
     if (currentHoveredToken) {
       setTimeout(() => {
         showVisibilityIndicators(currentHoveredToken);
+        try {
+          showCoverIndicators(currentHoveredToken);
+        } catch (_) {}
       }, 100);
     }
   }
@@ -297,10 +302,11 @@ function showVisibilityIndicators(hoveredToken) {
 
   // Clear any existing indicators
   hideAllVisibilityIndicators();
+  hideAllCoverIndicators();
 
   // Get all other tokens in the scene
   const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== hoveredToken && t.isVisible,
+    (t) => t !== hoveredToken && t.isVisible
   );
 
   if (otherTokens.length === 0) return;
@@ -324,7 +330,7 @@ function showVisibilityIndicators(hoveredToken) {
           hoveredToken,
           visibilityState,
           "observer",
-          targetToken,
+          targetToken
         );
       }
     });
@@ -336,7 +342,7 @@ function showVisibilityIndicators(hoveredToken) {
       if (hoveredToken.isOwner) {
         // Get all other tokens in the scene (not just controlled ones)
         const nonPlayerTokens = canvas.tokens.placeables.filter(
-          (t) => t !== hoveredToken && t.isVisible,
+          (t) => t !== hoveredToken && t.isVisible
         );
 
         // Show how each other token sees the player's token
@@ -352,7 +358,7 @@ function showVisibilityIndicators(hoveredToken) {
               otherToken,
               visibilityState,
               "target",
-              hoveredToken,
+              hoveredToken
             );
           }
         });
@@ -372,12 +378,17 @@ function showVisibilityIndicators(hoveredToken) {
             observerToken,
             visibilityState,
             "target",
-            hoveredToken,
+            hoveredToken
           );
         }
       });
     }
   }
+
+  // Additionally render cover-only indicators when there is cover but no visibility change
+  try {
+    showCoverIndicators(hoveredToken);
+  } catch (_) {}
 }
 
 /**
@@ -391,7 +402,7 @@ function showCoverIndicators(hoveredToken) {
   hideAllCoverIndicators();
 
   const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== hoveredToken && t.isVisible,
+    (t) => t !== hoveredToken && t.isVisible
   );
   if (otherTokens.length === 0) return;
 
@@ -399,6 +410,9 @@ function showCoverIndicators(hoveredToken) {
     // How hoveredToken sees others (cover from hoveredToken's perspective)
     if (!game.user.isGM && !hoveredToken.isOwner) return;
     otherTokens.forEach((targetToken) => {
+      // Skip duplicate if visibility badge already carries cover
+      const visInd = visibilityIndicators.get(targetToken.id);
+      if (visInd && visInd._coverBadgeEl) return;
       const coverMap = getCoverMap(hoveredToken);
       const coverState = coverMap[targetToken.document.id] || "none";
       if (coverState !== "none") {
@@ -410,9 +424,11 @@ function showCoverIndicators(hoveredToken) {
     if (!game.user.isGM) {
       if (hoveredToken.isOwner) {
         const nonPlayerTokens = canvas.tokens.placeables.filter(
-          (t) => t !== hoveredToken && t.isVisible,
+          (t) => t !== hoveredToken && t.isVisible
         );
         nonPlayerTokens.forEach((otherToken) => {
+          const visInd = visibilityIndicators.get(otherToken.id);
+          if (visInd && visInd._coverBadgeEl) return;
           const coverMap = getCoverMap(otherToken);
           const coverState = coverMap[hoveredToken.document.id] || "none";
           if (coverState !== "none") {
@@ -422,6 +438,8 @@ function showCoverIndicators(hoveredToken) {
       }
     } else {
       otherTokens.forEach((observerToken) => {
+        const visInd = visibilityIndicators.get(observerToken.id);
+        if (visInd && visInd._coverBadgeEl) return;
         const coverMap = getCoverMap(observerToken);
         const coverState = coverMap[hoveredToken.document.id] || "none";
         if (coverState !== "none") {
@@ -456,7 +474,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
 
   // Get all other tokens in the scene
   const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== observerToken && t.isVisible,
+    (t) => t !== observerToken && t.isVisible
   );
 
   if (otherTokens.length === 0) return;
@@ -474,7 +492,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
           observerToken,
           visibilityState,
           "observer",
-          targetToken,
+          targetToken
         );
       }
     });
@@ -484,7 +502,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
     if (!game.user.isGM) {
       // Get all other tokens in the scene
       const otherTokensForPlayer = canvas.tokens.placeables.filter(
-        (t) => t !== observerToken && t.isVisible,
+        (t) => t !== observerToken && t.isVisible
       );
 
       otherTokensForPlayer.forEach((otherToken) => {
@@ -499,7 +517,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
             otherToken,
             visibilityState,
             "target",
-            observerToken,
+            observerToken
           );
         }
       });
@@ -518,7 +536,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
             otherToken,
             visibilityState,
             "target",
-            observerToken,
+            observerToken
           );
         }
       });
@@ -540,7 +558,7 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
   if (!game.user.isGM && !observerToken.isOwner) return;
 
   const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== observerToken && t.isVisible,
+    (t) => t !== observerToken && t.isVisible
   );
   if (otherTokens.length === 0) return;
 
@@ -555,7 +573,7 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
   } else {
     if (!game.user.isGM) {
       const otherTokensForPlayer = canvas.tokens.placeables.filter(
-        (t) => t !== observerToken && t.isVisible,
+        (t) => t !== observerToken && t.isVisible
       );
       otherTokensForPlayer.forEach((otherToken) => {
         const coverMap = getCoverMap(otherToken);
@@ -590,6 +608,7 @@ function showControlledTokenVisibility() {
 
   // Clear any existing indicators first
   hideAllVisibilityIndicators();
+  hideAllCoverIndicators();
 
   // For each controlled token, show visibility indicators as if hovering over it
   controlledTokens.forEach((controlledToken) => {
@@ -597,6 +616,9 @@ function showControlledTokenVisibility() {
 
     // Use the existing showVisibilityIndicators logic, force target mode for Alt key
     showVisibilityIndicatorsForToken(controlledToken, "target");
+    try {
+      showCoverIndicatorsForToken(controlledToken, "target");
+    } catch (_) {}
   });
 }
 
@@ -614,6 +636,7 @@ function showControlledTokenVisibilityObserver() {
 
   // Clear any existing indicators first
   hideAllVisibilityIndicators();
+  hideAllCoverIndicators();
 
   // For each controlled token, show visibility indicators as if hovering over it
   controlledTokens.forEach((controlledToken) => {
@@ -621,6 +644,9 @@ function showControlledTokenVisibilityObserver() {
 
     // Use observer mode instead of target mode
     showVisibilityIndicatorsForToken(controlledToken, "observer");
+    try {
+      showCoverIndicatorsForToken(controlledToken, "observer");
+    } catch (_) {}
   });
 }
 
@@ -636,7 +662,7 @@ function addVisibilityIndicator(
   observerToken,
   visibilityState,
   mode = "observer",
-  relationToken = null,
+  relationToken = null
 ) {
   const config = VISIBILITY_STATES[visibilityState];
   if (!config) return;
@@ -662,10 +688,10 @@ function addVisibilityIndicator(
     };
   }
   const badgeWidth = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8,
+    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8
   );
   const badgeHeight = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6,
+    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6
   );
   const spacing = Math.max(6, Math.round(sizeConfig.iconPx / 2));
   const borderRadius = Math.round(badgeHeight / 3);
@@ -683,7 +709,7 @@ function addVisibilityIndicator(
 
   // Compute aligned positions using world->screen transform
   const globalPoint = canvas.tokens.toGlobal(
-    new PIXI.Point(indicator.x, indicator.y),
+    new PIXI.Point(indicator.x, indicator.y)
   );
   const centerX = canvasRect.left + globalPoint.x;
   // If pf2e-hud is active, nudge badges downward to sit beneath its tooltip bubble
@@ -714,13 +740,13 @@ function addVisibilityIndicator(
       visLeft,
       centerY,
       config.color,
-      config.icon,
+      config.icon
     );
     indicator._coverBadgeEl = placeBadge(
       coverLeft,
       centerY,
       coverConfig.color,
-      coverConfig.icon,
+      coverConfig.icon
     );
   } else {
     // Only visibility badge, centered
@@ -729,7 +755,7 @@ function addVisibilityIndicator(
       visLeft,
       centerY,
       config.color,
-      config.icon,
+      config.icon
     );
   }
 
@@ -765,10 +791,10 @@ function updateBadgePositions() {
     };
   }
   const badgeWidth = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8,
+    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8
   );
   const badgeHeight = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6,
+    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6
   );
   const spacing = Math.max(6, Math.round(sizeConfig.iconPx / 2));
   const hudActive = !!game.modules?.get?.("pf2e-hud")?.active;
@@ -778,7 +804,7 @@ function updateBadgePositions() {
     if (!indicator || (!indicator._visBadgeEl && !indicator._coverBadgeEl))
       return;
     const globalPoint = canvas.tokens.toGlobal(
-      new PIXI.Point(indicator.x, indicator.y),
+      new PIXI.Point(indicator.x, indicator.y)
     );
     const centerX = canvasRect.left + globalPoint.x;
     const centerY =
@@ -797,6 +823,20 @@ function updateBadgePositions() {
       indicator._visBadgeEl.style.top = `${Math.round(centerY)}px`;
     }
   });
+
+  // Also update standalone cover badges
+  coverIndicators.forEach((indicator) => {
+    if (!indicator || !indicator._coverBadgeEl) return;
+    const globalPoint = canvas.tokens.toGlobal(
+      new PIXI.Point(indicator.x, indicator.y)
+    );
+    const centerX = canvasRect.left + globalPoint.x;
+    const centerY =
+      canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
+    const left = centerX - badgeWidth / 2;
+    indicator._coverBadgeEl.style.left = `${Math.round(left)}px`;
+    indicator._coverBadgeEl.style.top = `${Math.round(centerY)}px`;
+  });
 }
 
 /**
@@ -810,195 +850,104 @@ function addCoverIndicator(
   targetToken,
   observerToken,
   coverState,
-  mode = "observer",
+  mode = "observer"
 ) {
   const config = COVER_STATES[coverState];
   if (!config) return;
 
+  // Use DOM badge with icon only (no large text), consistent with visibility badges
   const indicator = new PIXI.Container();
-  indicator.interactive = true;
-  indicator.buttonMode = true;
-  indicator.interactiveChildren = false;
+  const tokenWidth = targetToken.document.width * canvas.grid.size;
+  indicator.x = targetToken.x + tokenWidth / 2;
+  indicator.y = targetToken.y - 8; // align above token
+  canvas.tokens.addChild(indicator);
 
-  const glow = new PIXI.Graphics();
-  glow.beginFill(parseInt(config.color.replace("#", ""), 16), 0.3);
-  glow.drawCircle(0, 0, 18);
-  glow.endFill();
-
-  const background = new PIXI.Graphics();
-  background.beginFill(0x000000, 0.9);
+  const canvasRect = canvas.app.view.getBoundingClientRect();
+  let sizeConfig;
   try {
-    tooltipFontSize =
-      game.settings?.get?.(MODULE_ID, "tooltipFontSize") || tooltipFontSize;
-  } catch (_) {}
-  const coverBorderWidthOuter = Math.max(2, Math.round(tooltipFontSize / 8));
-  background.lineStyle(
-    coverBorderWidthOuter,
-    parseInt(config.color.replace("#", ""), 16),
-    1,
-  );
-  background.drawCircle(0, 0, 14);
-  background.endFill();
-
-  const highlight = new PIXI.Graphics();
-  highlight.beginFill(0xffffff, 0.2);
-  highlight.drawCircle(-3, -3, 6);
-  highlight.endFill();
-
-  const stateLabels = {
-    lesser: "Lesser Cover",
-    standard: "Standard Cover",
-    greater: "Greater Cover",
-  };
-
-  try {
-    tooltipFontSize =
-      game.settings?.get?.(MODULE_ID, "tooltipFontSize") || tooltipFontSize;
-    tooltipIconSize = Math.round(tooltipFontSize);
-  } catch (_) {}
-  const iconFontSize = Math.round(tooltipFontSize * 1.3);
-
-  const iconText = new PIXI.Text(stateLabels[coverState] || "Cover", {
-    fontFamily: "Arial, sans-serif",
-    fontSize: iconFontSize,
-    fill: 0xffffff,
-    align: "center",
-    fontWeight: "bold",
-  });
-  iconText.anchor.set(0.5);
-
-  const textWidth = iconText.width;
-  const textHeight = iconText.height;
-  const paddingX = 8;
-  const paddingY = 4;
-  const borderWidth = textWidth + paddingX * 2;
-  const borderHeight = textHeight + paddingY * 2;
-
-  glow.clear();
-  glow.beginFill(parseInt(config.color.replace("#", ""), 16), 0.3);
-  glow.drawRoundedRect(
-    -borderWidth / 2 - 2,
-    -borderHeight / 2 - 2,
-    borderWidth + 4,
-    borderHeight + 4,
-    8,
-  );
-  glow.endFill();
-
-  background.clear();
-  background.beginFill(0x000000, 0.9);
-  try {
-    tooltipFontSize =
-      game.settings?.get?.(MODULE_ID, "tooltipFontSize") || tooltipFontSize;
-  } catch (_) {}
-  const coverBorderWidthInner = Math.max(2, Math.round(tooltipFontSize / 8));
-  background.lineStyle(
-    coverBorderWidthInner,
-    parseInt(config.color.replace("#", ""), 16),
-    1,
-  );
-  background.drawRoundedRect(
-    -borderWidth / 2,
-    -borderHeight / 2,
-    borderWidth,
-    borderHeight,
-    6,
-  );
-  background.endFill();
-
-  highlight.clear();
-  highlight.beginFill(0xffffff, 0.2);
-  highlight.drawRoundedRect(
-    -borderWidth / 2 + 2,
-    -borderHeight / 2 + 2,
-    borderWidth - 4,
-    borderHeight - 4,
-    4,
-  );
-  highlight.endFill();
-
-  indicator.addChild(glow);
-  indicator.addChild(background);
-  indicator.addChild(highlight);
-  indicator.addChild(iconText);
-
-  const tokenSize = targetToken.document.width * canvas.grid.size;
-  indicator.x = targetToken.x + tokenSize / 2;
-  // Place below the token to avoid overlapping with visibility indicator
-  indicator.y =
-    targetToken.y +
-    targetToken.document.height * canvas.grid.size +
-    borderHeight / 2 +
-    8;
-  indicator.alpha = 1.0;
-  indicator.scale.set(1.0);
-  glow.alpha = 0.3;
-
-  try {
-    tooltipFontSize =
-      game.settings?.get?.(MODULE_ID, "tooltipFontSize") || tooltipFontSize;
-    tooltipIconSize = Math.round(tooltipFontSize);
-  } catch (_) {}
-  const detailFontSize = Math.max(12, tooltipFontSize - 2);
-
-  let tooltipText;
-  if (mode === "observer") {
-    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: ${tooltipFontSize}px;">
-      <i class="${config.icon}" style="font-size: ${tooltipIconSize}px;"></i> ${game.i18n.localize(config.label)}
-    </div>
-    <div style="font-size: ${detailFontSize}px; color: #ccc;">
-      ${observerToken.document.name} gives ${targetToken.document.name} ${game.i18n.localize(config.label).toLowerCase()}
-    </div>`;
-  } else {
-    tooltipText = `<div style="color: ${config.color}; font-weight: bold; margin-bottom: 4px; font-size: ${tooltipFontSize}px;">
-      <i class="${config.icon}" style="font-size: ${tooltipIconSize}px;"></i> ${game.i18n.localize(config.label)}
-    </div>
-    <div style="font-size: ${detailFontSize}px; color: #ccc;">
-      ${targetToken.document.name} has ${game.i18n.localize(config.label).toLowerCase()} against ${observerToken.document.name}
-    </div>`;
+    const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+    sizeConfig = computeSizesFromSetting(raw ?? tooltipFontSize);
+  } catch (_) {
+    sizeConfig = {
+      fontPx: tooltipFontSize,
+      iconPx: tooltipIconSize,
+      borderPx: 3,
+    };
   }
+  const badgeWidth = Math.round(
+    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8
+  );
+  const badgeHeight = Math.round(
+    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6
+  );
+  const borderRadius = Math.round(badgeHeight / 3);
+  const globalPoint = canvas.tokens.toGlobal(
+    new PIXI.Point(indicator.x, indicator.y)
+  );
+  const hudActive = !!game.modules?.get?.("pf2e-hud")?.active;
+  const verticalOffset = hudActive ? 26 : -6;
+  const centerX = canvasRect.left + globalPoint.x;
+  const centerY =
+    canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
 
-  indicator.on("pointerover", (event) => {
-    event.stopPropagation();
-    indicator.scale.set(1.2);
+  const el = document.createElement("div");
+  el.style.position = "fixed";
+  el.style.pointerEvents = "none";
+  el.style.zIndex = "60";
+  el.style.left = `${Math.round(centerX - badgeWidth / 2)}px`;
+  el.style.top = `${Math.round(centerY)}px`;
+  el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${config.color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${config.color};">
+    <i class="${config.icon}" style="font-size: var(--pf2e-visioner-tooltip-icon-size, 14px); line-height: 1;"></i>
+  </span>`;
+  document.body.appendChild(el);
+  indicator._coverBadgeEl = el;
 
-    const bounds = indicator.getBounds();
-    const canvasRect = canvas.app.view.getBoundingClientRect();
+  // Optional: tooltip text on hover of badge (not required for icon presence)
+  indicator.interactive = true;
+  indicator.on("pointerover", () => {
+    try {
+      game.tooltip.deactivate();
+    } catch (_) {}
     const anchor = document.createElement("div");
-    anchor.style.cssText = `position: fixed; left: ${canvasRect.left + bounds.x + bounds.width / 2}px; top: ${canvasRect.top + bounds.y}px; width: 1px; height: 1px; pointer-events: none; z-index: -1;`;
+    anchor.style.cssText = `position: fixed; left: ${centerX}px; top: ${centerY}px; width: 1px; height: 1px; pointer-events: none; z-index: -1;`;
     document.body.appendChild(anchor);
     indicator._tooltipAnchor = anchor;
     try {
+      const detail =
+        mode === "observer"
+          ? `${observerToken.document.name} gives ${
+              targetToken.document.name
+            } ${game.i18n.localize(config.label).toLowerCase()}`
+          : `${targetToken.document.name} has ${game.i18n
+              .localize(config.label)
+              .toLowerCase()} against ${observerToken.document.name}`;
       game.tooltip.activate(anchor, {
-        content: tooltipText,
+        content: `<div style="color:${config.color}"><i class="${
+          config.icon
+        }"></i> ${game.i18n.localize(
+          config.label
+        )}</div><div style="color:#ccc">${detail}</div>`,
         direction: game.tooltip.constructor.TOOLTIP_DIRECTIONS.UP,
         cssClass: "pf2e-visioner-tooltip",
       });
-    } catch (_) {
-      if (anchor.parentNode) anchor.parentNode.removeChild(anchor);
-      delete indicator._tooltipAnchor;
-    }
+    } catch (_) {}
   });
-
-  indicator.on("pointerout", (event) => {
-    event.stopPropagation();
-    indicator.scale.set(1.0);
+  indicator.on("pointerout", () => {
     try {
       game.tooltip.deactivate();
     } catch (_) {}
     if (indicator._tooltipAnchor) {
       try {
-        if (indicator._tooltipAnchor.parentNode)
-          indicator._tooltipAnchor.parentNode.removeChild(
-            indicator._tooltipAnchor,
-          );
+        indicator._tooltipAnchor.parentNode?.removeChild(
+          indicator._tooltipAnchor
+        );
       } catch (_) {}
       delete indicator._tooltipAnchor;
     }
   });
 
-  canvas.tokens.addChild(indicator);
   coverIndicators.set(targetToken.id + "|cover", indicator);
+  ensureBadgeTicker();
 }
 
 /**
@@ -1029,7 +978,7 @@ function hideAllVisibilityIndicators() {
       if (indicator._tooltipAnchor) {
         if (indicator._tooltipAnchor.parentNode) {
           indicator._tooltipAnchor.parentNode.removeChild(
-            indicator._tooltipAnchor,
+            indicator._tooltipAnchor
           );
         }
         delete indicator._tooltipAnchor;
@@ -1039,7 +988,7 @@ function hideAllVisibilityIndicators() {
         try {
           if (indicator._coverBadgeEl.parentNode)
             indicator._coverBadgeEl.parentNode.removeChild(
-              indicator._coverBadgeEl,
+              indicator._coverBadgeEl
             );
         } catch (_) {}
         delete indicator._coverBadgeEl;
@@ -1092,10 +1041,14 @@ function hideAllCoverIndicators() {
   } catch (_) {}
   coverIndicators.forEach((indicator) => {
     try {
+      if (indicator._coverBadgeEl && indicator._coverBadgeEl.parentNode) {
+        indicator._coverBadgeEl.parentNode.removeChild(indicator._coverBadgeEl);
+      }
+      delete indicator._coverBadgeEl;
       if (indicator._tooltipAnchor) {
         if (indicator._tooltipAnchor.parentNode) {
           indicator._tooltipAnchor.parentNode.removeChild(
-            indicator._tooltipAnchor,
+            indicator._tooltipAnchor
           );
         }
         delete indicator._tooltipAnchor;
@@ -1105,6 +1058,17 @@ function hideAllCoverIndicators() {
     } catch (_) {}
   });
   coverIndicators.clear();
+  // Stop ticker if nothing remains
+  try {
+    if (
+      badgeTicker &&
+      visibilityIndicators.size === 0 &&
+      coverIndicators.size === 0
+    ) {
+      canvas.app?.ticker?.remove?.(badgeTicker);
+      badgeTicker = null;
+    }
+  } catch (_) {}
 }
 
 /**

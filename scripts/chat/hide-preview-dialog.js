@@ -94,7 +94,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
   _attachSelectionHandlers() {
     if (this._selectionHookId) return;
     this._selectionHookId = Hooks.on("controlToken", () =>
-      this._applySelectionHighlight(),
+      this._applySelectionHighlight()
     );
   }
 
@@ -138,14 +138,11 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Get filtered outcomes using helper method
     let filteredOutcomes = this.getFilteredOutcomes();
 
-    // If integration is enabled, annotate each row with cover info
-    const integrate = game.settings.get(MODULE_ID, "integrateCoverVisibility");
-    if (integrate) {
-      filteredOutcomes = filteredOutcomes.map((o) => ({
-        ...o,
-        cover: getCoverBetween(o.target, this.actorToken),
-      }));
-    }
+    // Always annotate each row with cover info for context
+    filteredOutcomes = filteredOutcomes.map((o) => ({
+      ...o,
+      cover: getCoverBetween(o.target, this.actorToken),
+    }));
 
     // Show notification if encounter filter results in empty list
     if (
@@ -154,7 +151,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
       filteredOutcomes.length === 0
     ) {
       ui.notifications.info(
-        `${MODULE_TITLE}: No encounter observers found for this action`,
+        `${MODULE_TITLE}: No encounter observers found for this action`
       );
     }
 
@@ -187,7 +184,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     context.actorToken = this.actorToken;
     context.outcomes = processedOutcomes;
     context.changesCount = processedOutcomes.filter(
-      (outcome) => outcome.hasActionableChange,
+      (outcome) => outcome.hasActionableChange
     ).length;
     context.totalCount = processedOutcomes.length;
     context.encounterOnly = this.encounterOnly;
@@ -205,12 +202,12 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Apply ally filtering only when enforcing RAW (since we may disable it in discoverHideObservers)
     const enforceRAW = game.settings.get(
       "pf2e-visioner",
-      "enforceRawRequirements",
+      "enforceRawRequirements"
     );
     let filteredOutcomes = enforceRAW
       ? this.outcomes.filter(
           (outcome) =>
-            !shouldFilterAlly(this.actorToken, outcome.target, "enemies"),
+            !shouldFilterAlly(this.actorToken, outcome.target, "enemies")
         )
       : this.outcomes.slice();
 
@@ -218,7 +215,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     filteredOutcomes = filterOutcomesByEncounter(
       filteredOutcomes,
       this.encounterOnly,
-      "target",
+      "target"
     );
 
     return filteredOutcomes;
@@ -286,7 +283,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
   async _renderHTML(context, options) {
     const html = await renderTemplate(
       this.constructor.PARTS.content.template,
-      context,
+      context
     );
     return html;
   }
@@ -316,7 +313,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
       outcome.overrideState = outcome.newVisibility;
       // Mark the calculated outcome as selected in the UI
       const row = this.element.querySelector(
-        `tr[data-token-id="${outcome.target.id}"]`,
+        `tr[data-token-id="${outcome.target.id}"]`
       );
       if (row) {
         const container = row.querySelector(".override-icons");
@@ -325,7 +322,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             .querySelectorAll(".state-icon")
             .forEach((i) => i.classList.remove("selected"));
           const calculatedIcon = container.querySelector(
-            `.state-icon[data-state="${outcome.newVisibility}"]`,
+            `.state-icon[data-state="${outcome.newVisibility}"]`
           );
           if (calculatedIcon) {
             calculatedIcon.classList.add("selected");
@@ -357,7 +354,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
             if (nameCell) {
               const observerName = nameCell.textContent.trim();
               const outcome = this.outcomes.find(
-                (o) => o.target.name === observerName,
+                (o) => o.target.name === observerName
               );
               if (outcome) {
                 tokenId = outcome.target.id;
@@ -368,7 +365,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
           // Method 3: Use row index as fallback
           if (!tokenId) {
             const allRows = Array.from(
-              this.element.querySelectorAll("tbody tr"),
+              this.element.querySelectorAll("tbody tr")
             );
             const rowIndex = allRows.indexOf(row);
             if (rowIndex >= 0 && rowIndex < this.outcomes.length) {
@@ -436,7 +433,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
     // Update the UI
     const countElement = this.element.querySelector(
-      ".hide-preview-dialog-changes-count",
+      ".hide-preview-dialog-changes-count"
     );
     if (countElement) {
       countElement.textContent = changesCount;
@@ -444,7 +441,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
     // Enable/disable bulk action buttons based on changes count
     const applyAllButton = this.element.querySelector(
-      'button[data-action="applyAll"]',
+      'button[data-action="applyAll"]'
     );
     if (applyAllButton) {
       applyAllButton.disabled = changesCount === 0;
@@ -453,7 +450,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Also check individual Apply buttons
     this.outcomes.forEach((outcome) => {
       const row = this.element.querySelector(
-        `tr[data-token-id="${outcome.target.id}"]`,
+        `tr[data-token-id="${outcome.target.id}"]`
       );
       if (row) {
         const applyButton = row.querySelector(".row-action-btn.apply-change");
@@ -469,10 +466,10 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
   updateBulkActionButtons() {
     const applyAllButton = this.element.querySelector(
-      '.bulk-action-btn[data-action="applyAll"]',
+      '.bulk-action-btn[data-action="applyAll"]'
     );
     const revertAllButton = this.element.querySelector(
-      '.bulk-action-btn[data-action="revertAll"]',
+      '.bulk-action-btn[data-action="revertAll"]'
     );
 
     if (!applyAllButton || !revertAllButton) return;
@@ -528,7 +525,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Check if already applied
     if (app.bulkActionState === "applied") {
       ui.notifications.warn(
-        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
+        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`
       );
       return;
     }
@@ -537,7 +534,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     const filteredOutcomes = filterOutcomesByEncounter(
       app.outcomes,
       app.encounterOnly,
-      "target",
+      "target"
     );
 
     // Get filtered outcomes that have actionable changes
@@ -560,7 +557,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     app.updateRowButtonsToApplied(changedOutcomes);
 
     ui.notifications.info(
-      `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`,
+      `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`
     );
   }
 
@@ -587,7 +584,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
     if (!app || !tokenId) {
       console.error(
-        "[Hide Dialog] Could not find application instance or token ID",
+        "[Hide Dialog] Could not find application instance or token ID"
       );
       return;
     }
@@ -612,7 +609,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Check if there's actually a change to apply
     if (effectiveNewState === outcome.oldVisibility) {
       ui.notifications.info(
-        `${MODULE_TITLE}: No change needed for ${outcome.target.name}`,
+        `${MODULE_TITLE}: No change needed for ${outcome.target.name}`
       );
       return;
     }
@@ -657,7 +654,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
       outcome.oldVisibility,
       {
         direction: "observer_to_target", // Observer (target) sees the hiding token (actorToken)
-      },
+      }
     );
     refreshEveryonesPerception();
 
@@ -680,7 +677,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
           .querySelectorAll(".state-icon")
           .forEach((i) => i.classList.remove("selected"));
         const calculatedIcon = container.querySelector(
-          `.state-icon[data-state="${outcome.newVisibility}"]`,
+          `.state-icon[data-state="${outcome.newVisibility}"]`
         );
         if (calculatedIcon) calculatedIcon.classList.add("selected");
       }
@@ -700,7 +697,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Check if already reverted
     if (app.bulkActionState === "reverted") {
       ui.notifications.warn(
-        `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
+        `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`
       );
       return;
     }
@@ -709,7 +706,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     const filteredOutcomes = filterOutcomesByEncounter(
       app.outcomes,
       app.encounterOnly,
-      "target",
+      "target"
     );
 
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -736,7 +733,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     app.updateBulkActionButtons();
 
     ui.notifications.info(
-      `${MODULE_TITLE}: Reverted ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`,
+      `${MODULE_TITLE}: Reverted ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`
     );
   }
 
@@ -773,7 +770,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     app.updateRowButtonsToReverted([outcome]);
 
     ui.notifications.info(
-      `${MODULE_TITLE}: Reverted hide visibility change for ${outcome.target.name}`,
+      `${MODULE_TITLE}: Reverted hide visibility change for ${outcome.target.name}`
     );
   }
 
@@ -844,16 +841,16 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
               newVisibility: change.newVisibility,
             },
           ],
-          options,
+          options
         );
       }
     } catch (error) {
       console.error(
         `${MODULE_TITLE}: Error applying hide visibility changes:`,
-        error,
+        error
       );
       ui.notifications.error(
-        `${MODULE_TITLE}: Failed to apply hide visibility changes - ${error.message}`,
+        `${MODULE_TITLE}: Failed to apply hide visibility changes - ${error.message}`
       );
     }
   }
@@ -861,7 +858,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
   updateRowButtonsToApplied(outcomes) {
     outcomes.forEach((outcome) => {
       const row = this.element.querySelector(
-        `tr[data-token-id="${outcome.target.id}"]`,
+        `tr[data-token-id="${outcome.target.id}"]`
       );
       if (row) {
         const applyButton = row.querySelector(".row-action-btn.apply-change");
@@ -881,7 +878,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
   updateRowButtonsToReverted(outcomes) {
     outcomes.forEach((outcome) => {
       const row = this.element.querySelector(
-        `tr[data-token-id="${outcome.target.id}"]`,
+        `tr[data-token-id="${outcome.target.id}"]`
       );
       if (row) {
         const applyBtn = row.querySelector(".apply-change");
@@ -928,7 +925,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Check if already applied
     if (app.bulkActionState === "applied") {
       ui.notifications.warn(
-        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
+        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`
       );
       return;
     }
@@ -955,7 +952,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     app.updateBulkActionButtons();
     app.updateRowButtonsToApplied(changedOutcomes);
     ui.notifications.info(
-      `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`,
+      `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`
     );
   }
 
@@ -974,7 +971,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     // Check if already reverted
     if (app.bulkActionState === "reverted") {
       ui.notifications.warn(
-        `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
+        `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`
       );
       return;
     }
@@ -1005,7 +1002,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
     app.updateRowButtonsToReverted(app.outcomes);
 
     ui.notifications.info(
-      `${MODULE_TITLE}: Reverted all tokens to original visibility. Dialog remains open for further adjustments.`,
+      `${MODULE_TITLE}: Reverted all tokens to original visibility. Dialog remains open for further adjustments.`
     );
   }
 
@@ -1030,7 +1027,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
     if (!hasChange) {
       ui.notifications.warn(
-        `${MODULE_TITLE}: No change to apply for ${outcome.target.name}`,
+        `${MODULE_TITLE}: No change to apply for ${outcome.target.name}`
       );
       return;
     }
@@ -1063,7 +1060,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
       }
     } catch (error) {
       ui.notifications.error(
-        `${MODULE_TITLE}: Error applying change for ${outcome.target.name}`,
+        `${MODULE_TITLE}: Error applying change for ${outcome.target.name}`
       );
     }
   }
@@ -1080,7 +1077,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
     if (!outcome) {
       ui.notifications.warn(
-        `${MODULE_TITLE}: Could not find outcome for this token`,
+        `${MODULE_TITLE}: Could not find outcome for this token`
       );
       return;
     }
@@ -1138,7 +1135,7 @@ export class HidePreviewDialog extends foundry.applications.api.ApplicationV2 {
       }
     } catch (error) {
       ui.notifications.error(
-        `${MODULE_TITLE}: Error reverting change for ${outcome.target.name}`,
+        `${MODULE_TITLE}: Error reverting change for ${outcome.target.name}`
       );
     }
   }

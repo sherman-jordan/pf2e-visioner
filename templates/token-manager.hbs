@@ -217,6 +217,8 @@
             </div>
           {{/if}}
 
+        
+
           {{!-- NPCs Table --}}
           {{#if hasNPCs}}
             <div class="table-section">
@@ -321,6 +323,107 @@
               </div>
             </div>
           {{/if}}
+          {{!-- Loot Table --}}
+        {{#if hasLoots}}
+          <div class="table-section loot-section">
+            <div class="table-section-header">
+              <div class="header-left">
+                <i class="fas fa-box"></i>
+                <span>Loot</span>
+              </div>
+              <div class="bulk-actions-header">
+                <button type="button" class="bulk-state-header" data-action="bulkLootObserved" data-state="observed" data-target-type="loot" title="Set all Loot as Observed">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="bulk-state-header" data-action="bulkLootHidden" data-state="hidden" data-target-type="loot" title="Set all Loot as Hidden">
+                  <i class="fas fa-eye-slash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="visibility-table-container">
+              <table class="visibility-table">
+                {{#if showOutcomeColumn}}
+                <colgroup>
+                  <col style="width:10%" />
+                  <col style="width:15%" />
+                  <col style="width:26%" />
+                  <col style="width:18%" />
+                  <col style="width:12%" />
+                  <col style="width:19%" />
+                </colgroup>
+                {{else}}
+                <colgroup>
+                  <col style="width:10%" />
+                  <col style="width:20%" />
+                  <col style="width:32%" />
+                  <col style="width:22%" />
+                  <col style="width:16%" />
+                </colgroup>
+                {{/if}}
+                <thead>
+                  <tr>
+                    <th class="token-image">Token</th>
+                    <th class="token-name">Name</th>
+                    <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+                    <th class="current-state">Current State</th>
+                    <th class="dc-column">{{#if isTargetMode}}Perception DC{{else}}Stealth DC{{/if}}</th>
+                    {{#if showOutcomeColumn}}
+                      <th class="outcome-column">Outcome</th>
+                    {{/if}}
+                  </tr>
+                </thead>
+                <tbody>
+                  {{#each lootTargets as |target|}}
+                    <tr class="token-row npc-row" data-token-id="{{target.id}}">
+                      <td class="token-image">
+                        <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
+                      </td>
+                      <td class="token-name">
+                        <strong title="{{target.name}}">{{target.name}}</strong>
+                      </td>
+                      <td class="visibility-state">
+                        <div class="icon-selection" data-target="{{target.id}}">
+                          {{#each target.visibilityStates as |state|}}
+                            <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                    data-state="{{state.value}}" data-target="{{target.id}}" 
+                                    title="{{state.label}}" style="color: {{state.color}}">
+                              <i class="{{state.icon}}"></i>
+                            </button>
+                          {{/each}}
+                          <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentVisibilityState}}" />
+                        </div>
+                      </td>
+                      <td class="current-state">
+                        {{#each target.visibilityStates as |state|}}
+                          {{#if state.selected}}
+                            <span class="state-indicator" style="color: {{state.color}}">
+                              <i class="{{state.icon}}"></i>
+                              {{state.label}}
+                            </span>
+                          {{/if}}
+                        {{/each}}
+                      </td>
+                      <td class="dc-column">
+                        {{#if ../isTargetMode}}
+                          <span class="dc-value">{{target.perceptionDC}}</span>
+                        {{else}}
+                          <span class="dc-value">{{target.stealthDC}}</span>
+                        {{/if}}
+                      </td>
+                      {{#if ../showOutcomeColumn}}
+                        <td class="outcome-column">
+                          {{#if target.showOutcome}}
+                            <span class="dc-outcome {{target.outcomeClass}}" title="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                          {{/if}}
+                        </td>
+                      {{/if}}
+                    </tr>
+                  {{/each}}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {{/if}}
           
           {{!-- Walls UI temporarily disabled --}}
         {{else}}
@@ -468,6 +571,7 @@
                   </thead>
                   <tbody>
                     {{#each npcTargets as |target|}}
+                      {{#unless target.isLoot}}
                       <tr class="token-row npc-row {{target.dispositionClass}}-npc" data-token-id="{{target.id}}">
                         <td class="token-image">
                           <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
@@ -517,6 +621,7 @@
                           {{/if}}
                         </td>
                       </tr>
+                      {{/unless}}
                     {{/each}}
                   </tbody>
                 </table>

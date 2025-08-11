@@ -42,7 +42,7 @@ export function getPointOutTarget(actionData) {
   if (actionData.context?.target?.actor) {
     const targetActorId = actionData.context.target.actor;
     targetToken = canvas.tokens.placeables.find(
-      (t) => t.actor?.id === targetActorId,
+      (t) => t.actor?.id === targetActorId
     );
     if (targetToken) return targetToken;
   }
@@ -57,7 +57,7 @@ export function getPointOutTarget(actionData) {
       }
       if (targetData?.actor) {
         targetToken = canvas.tokens.placeables.find(
-          (t) => t.actor?.id === targetData.actor,
+          (t) => t.actor?.id === targetData.actor
         );
         if (targetToken) return targetToken;
       }
@@ -138,7 +138,7 @@ export function findBestPointOutTarget(pointerToken) {
 export function discoverPointOutAllies(
   pointerToken,
   targetToken,
-  encounterOnly = false,
+  encounterOnly = false
 ) {
   if (!pointerToken || !targetToken) return [];
   const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
@@ -156,6 +156,8 @@ export function discoverPointOutAllies(
   for (const token of canvas.tokens.placeables) {
     if (token === pointerToken) continue;
     if (!token.actor) continue;
+    // Only allies should be considered in outcomes
+    if (token.actor?.alliance !== pointerToken.actor?.alliance) continue;
 
     // Check encounter filtering (only when enforcing RAW)
     if (enforceRAW && encounterOnly && !isTokenInEncounter(token)) continue;
@@ -194,7 +196,7 @@ export function discoverPointOutAllies(
 export function discoverPointOutTargets(
   pointerToken,
   targetToken = null,
-  encounterOnly = false,
+  encounterOnly = false
 ) {
   // If no specific target provided, find the best one
   if (!targetToken) {
@@ -206,7 +208,7 @@ export function discoverPointOutTargets(
   const allies = discoverPointOutAllies(
     pointerToken,
     targetToken,
-    encounterOnly,
+    encounterOnly
   );
   return allies.map((ally) => ally.token);
 }
@@ -266,10 +268,10 @@ export async function previewPointOutResults(actionData) {
   if (!actionData || !actionData.actor) {
     console.error(
       "Invalid actionData provided to previewPointOutResults:",
-      actionData,
+      actionData
     );
     ui.notifications.error(
-      `${MODULE_TITLE}: Invalid Point Out data - cannot preview results`,
+      `${MODULE_TITLE}: Invalid Point Out data - cannot preview results`
     );
     return;
   }
@@ -303,7 +305,7 @@ export async function previewPointOutResults(actionData) {
       const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
       if (enforceRAW) {
         ui.notifications.info(
-          `${MODULE_TITLE}: No target found for Point Out action`,
+          `${MODULE_TITLE}: No target found for Point Out action`
         );
         return;
       }
@@ -349,7 +351,7 @@ export async function previewPointOutResults(actionData) {
 
   // Analyze all potential outcomes
   const outcomes = allies.map((allyData) =>
-    analyzePointOutOutcome(actionData, allyData),
+    analyzePointOutOutcome(actionData, allyData)
   );
   const changes = outcomes.filter((outcome) => outcome.changed);
 
@@ -358,7 +360,7 @@ export async function previewPointOutResults(actionData) {
     actionData.actor,
     outcomes,
     changes,
-    actionData,
+    actionData
   );
   previewDialog.render(true);
 }

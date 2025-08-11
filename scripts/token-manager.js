@@ -59,6 +59,9 @@ export class VisionerTokenManager extends foundry.applications.api
       bulkNPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
       bulkNPCConcealed: VisionerTokenManager.bulkSetVisibilityState,
       bulkNPCObserved: VisionerTokenManager.bulkSetVisibilityState,
+      // Loot-specific bulk actions for visibility (loot table only)
+      bulkLootObserved: VisionerTokenManager.bulkSetVisibilityState,
+      bulkLootHidden: VisionerTokenManager.bulkSetVisibilityState,
       // PC-specific bulk actions for cover
       bulkPCNoCover: VisionerTokenManager.bulkSetCoverState,
       bulkPCLesserCover: VisionerTokenManager.bulkSetCoverState,
@@ -126,8 +129,8 @@ export class VisionerTokenManager extends foundry.applications.api
     this.mode = isLootObserver
       ? "target"
       : isControlledByUser
-        ? "target"
-        : "observer";
+      ? "target"
+      : "observer";
 
     // Reset encounter filter to default for new observer
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
@@ -162,7 +165,7 @@ export class VisionerTokenManager extends foundry.applications.api
 
     if (!this.observer) {
       context.error = game.i18n.localize(
-        "PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED",
+        "PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED"
       );
       return context;
     }
@@ -229,7 +232,7 @@ export class VisionerTokenManager extends foundry.applications.api
         const stealthDC = extractStealthDC(token);
         const showOutcomeSetting = game.settings.get(
           MODULE_ID,
-          "integrateRollOutcome",
+          "integrateRollOutcome"
         );
         let showOutcome = false;
         let outcomeLabel = "";
@@ -255,10 +258,12 @@ export class VisionerTokenManager extends foundry.applications.api
             showOutcome = true;
           }
         }
-        // Limit visibility options if observer is a loot actor
-        const allowedVisKeys = isLootObserver
-          ? ["observed", "hidden"]
-          : Object.keys(VISIBILITY_STATES);
+        // Limit visibility options if observer or row is a loot actor
+        const isRowLoot = token.actor?.type === "loot";
+        const allowedVisKeys =
+          isLootObserver || isRowLoot
+            ? ["observed", "hidden"]
+            : Object.keys(VISIBILITY_STATES);
         const visibilityStates = allowedVisKeys.map((key) => ({
           value: key,
           label: game.i18n.localize(VISIBILITY_STATES[key].label),
@@ -271,8 +276,9 @@ export class VisionerTokenManager extends foundry.applications.api
           id: token.document.id,
           name: token.document.name,
           img: getTokenImage(token),
+          isLoot: !!isRowLoot,
           currentVisibilityState: allowedVisKeys.includes(
-            currentVisibilityState,
+            currentVisibilityState
           )
             ? currentVisibilityState
             : "observed",
@@ -284,8 +290,8 @@ export class VisionerTokenManager extends foundry.applications.api
             disposition === -1
               ? "hostile"
               : disposition === 1
-                ? "friendly"
-                : "neutral",
+              ? "friendly"
+              : "neutral",
           visibilityStates,
           coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
             value: key,
@@ -322,7 +328,7 @@ export class VisionerTokenManager extends foundry.applications.api
         const stealthDC = extractStealthDC(this.observer);
         const showOutcomeSetting = game.settings.get(
           MODULE_ID,
-          "integrateRollOutcome",
+          "integrateRollOutcome"
         );
         let showOutcome = false;
         let outcomeLabel = "";
@@ -368,8 +374,9 @@ export class VisionerTokenManager extends foundry.applications.api
           id: observerToken.document.id,
           name: observerToken.document.name,
           img: getTokenImage(observerToken),
+          isLoot: !!(observerToken.actor?.type === "loot"),
           currentVisibilityState: allowedVisKeys.includes(
-            currentVisibilityState,
+            currentVisibilityState
           )
             ? currentVisibilityState
             : "observed",
@@ -382,8 +389,8 @@ export class VisionerTokenManager extends foundry.applications.api
             disposition === -1
               ? "hostile"
               : disposition === 1
-                ? "friendly"
-                : "neutral",
+              ? "friendly"
+              : "neutral",
           visibilityStates,
           coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
             value: key,
@@ -443,13 +450,18 @@ export class VisionerTokenManager extends foundry.applications.api
       return a.name.localeCompare(b.name);
     };
 
-    // Split targets into PCs and NPCs and sort each group
+    // Split targets into PCs, NPCs (non-loot), and Loot; sort each group
+    // For loot observers, PC table should not show concealed/undetected options. We already limited allowed keys when observer or row is loot.
     context.pcTargets = allTargets
-      .filter((target) => target.isPC)
+      .filter((target) => target.isPC && !target.isLoot)
       .sort(sortByStatusAndName);
     context.npcTargets = allTargets
-      .filter((target) => !target.isPC)
+      .filter((target) => !target.isPC && !target.isLoot)
       .sort(sortByStatusAndName);
+    context.lootTargets =
+      this.mode === "observer"
+        ? allTargets.filter((target) => target.isLoot).sort(sortByStatusAndName)
+        : [];
     context.targets = allTargets; // Keep for backward compatibility
 
     context.visibilityStates = Object.entries(VISIBILITY_STATES).map(
@@ -458,7 +470,7 @@ export class VisionerTokenManager extends foundry.applications.api
         label: game.i18n.localize(config.label),
         icon: config.icon,
         color: config.color,
-      }),
+      })
     );
 
     context.coverStates = Object.entries(COVER_STATES).map(([key, config]) => ({
@@ -475,13 +487,15 @@ export class VisionerTokenManager extends foundry.applications.api
     context.hasTargets = allTargets.length > 0;
     context.hasPCs = context.pcTargets.length > 0;
     context.hasNPCs = context.npcTargets.length > 0;
+    context.hasLoots =
+      this.mode === "observer" && context.lootTargets.length > 0;
     // Walls UI temporarily disabled
     context.includeWalls = false;
     // Settings-driven columns
     try {
       context.showOutcomeColumn = game.settings.get(
         MODULE_ID,
-        "integrateRollOutcome",
+        "integrateRollOutcome"
       );
     } catch (_) {
       context.showOutcomeColumn = false;
@@ -489,7 +503,7 @@ export class VisionerTokenManager extends foundry.applications.api
 
     // Check if we're showing targeted tokens
     const targetedTokens = Array.from(game.user.targets).filter(
-      (token) => token.document.id !== this.observer?.document.id,
+      (token) => token.document.id !== this.observer?.document.id
     );
     context.showingTargetedTokens = targetedTokens.length > 0;
     context.targetedTokensCount = targetedTokens.length;
@@ -503,7 +517,7 @@ export class VisionerTokenManager extends foundry.applications.api
   async _renderHTML(context, options) {
     const html = await renderTemplate(
       this.constructor.PARTS.form.template,
-      context,
+      context
     );
     return html;
   }
@@ -619,7 +633,7 @@ export class VisionerTokenManager extends foundry.applications.api
       // Batch target-mode updates per observer
       const perObserverChanges = new Map();
       for (const [observerTokenId, newVisibilityState] of Object.entries(
-        visibilityChanges,
+        visibilityChanges
       )) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
@@ -647,7 +661,7 @@ export class VisionerTokenManager extends foundry.applications.api
         const observerUpdates = [];
 
         for (const [observerTokenId, newVisibilityState] of Object.entries(
-          visibilityChanges,
+          visibilityChanges
         )) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (!observerToken) continue;
@@ -690,7 +704,7 @@ export class VisionerTokenManager extends foundry.applications.api
       } catch (error) {
         console.warn(
           "Token Manager: batch visibility update failed in target mode",
-          error,
+          error
         );
       }
 
@@ -698,7 +712,7 @@ export class VisionerTokenManager extends foundry.applications.api
       // Batch target-mode cover writes
       const perObserverCover = new Map();
       for (const [observerTokenId, newCoverState] of Object.entries(
-        coverChanges,
+        coverChanges
       )) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
@@ -724,7 +738,7 @@ export class VisionerTokenManager extends foundry.applications.api
         const observerUpdates = [];
 
         for (const [observerTokenId, newCoverState] of Object.entries(
-          coverChanges,
+          coverChanges
         )) {
           const observerToken = canvas.tokens.get(observerTokenId);
           if (!observerToken) continue;
@@ -765,7 +779,7 @@ export class VisionerTokenManager extends foundry.applications.api
       } catch (error) {
         console.warn(
           "Token Manager: batch cover update failed in target mode",
-          error,
+          error
         );
       }
     }
@@ -799,7 +813,7 @@ export class VisionerTokenManager extends foundry.applications.api
     try {
       // Get all inputs from the form
       const visibilityInputs = app.element.querySelectorAll(
-        'input[name^="visibility."]',
+        'input[name^="visibility."]'
       );
       const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
       const wallInputs = app.element.querySelectorAll('input[name^="walls."]');
@@ -836,7 +850,7 @@ export class VisionerTokenManager extends foundry.applications.api
           // This is a placeholder task that will be replaced by real tasks
           await new Promise((resolve) => setTimeout(resolve, 100));
         },
-      ],
+      ]
     );
 
     // Apply current TYPE (visibility or cover) for BOTH modes (observer and target)
@@ -888,7 +902,7 @@ export class VisionerTokenManager extends foundry.applications.api
                 observerId: app.observer.id,
                 targetId: update.target.id,
                 visibility: update.state,
-              })),
+              }))
             );
           }
         }
@@ -903,7 +917,7 @@ export class VisionerTokenManager extends foundry.applications.api
             if (
               typeof newState !== "string" ||
               !["observed", "concealed", "hidden", "undetected"].includes(
-                newState,
+                newState
               )
             )
               continue;
@@ -999,7 +1013,7 @@ export class VisionerTokenManager extends foundry.applications.api
                 observerId: app.observer.id,
                 targetId: update.target.id,
                 cover: update.state,
-              })),
+              }))
             );
           }
         }
@@ -1057,7 +1071,7 @@ export class VisionerTokenManager extends foundry.applications.api
       if (allOperations.length > 0) {
         await runTasksWithProgress(
           `${MODULE_ID}: Applying Changes`,
-          allOperations,
+          allOperations
         );
 
         // Update visuals in the background
@@ -1077,7 +1091,7 @@ export class VisionerTokenManager extends foundry.applications.api
     } catch (error) {
       console.error(
         "Token Manager: Error applying current type for both modes:",
-        error,
+        error
       );
     }
 
@@ -1113,13 +1127,13 @@ export class VisionerTokenManager extends foundry.applications.api
           // This is a placeholder task that will be replaced by real tasks
           await new Promise((resolve) => setTimeout(resolve, 100));
         },
-      ],
+      ]
     );
 
     // Save current inputs first
     try {
       const visibilityInputs = app.element.querySelectorAll(
-        'input[name^="visibility."]',
+        'input[name^="visibility."]'
       );
       const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
       if (!app._savedModeData) app._savedModeData = {};
@@ -1314,7 +1328,7 @@ export class VisionerTokenManager extends foundry.applications.api
       if (allOperations.length > 0) {
         await runTasksWithProgress(
           `${MODULE_ID}: Applying Changes`,
-          allOperations,
+          allOperations
         );
 
         // Update visuals in the background
@@ -1334,7 +1348,7 @@ export class VisionerTokenManager extends foundry.applications.api
     } catch (error) {
       console.error(
         "Token Manager: Error applying both types for both modes:",
-        error,
+        error
       );
     }
 
@@ -1380,7 +1394,7 @@ export class VisionerTokenManager extends foundry.applications.api
     try {
       // Get all inputs from the form
       const visibilityInputs = app.element.querySelectorAll(
-        'input[name^="visibility."]',
+        'input[name^="visibility."]'
       );
       const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
 
@@ -1416,10 +1430,10 @@ export class VisionerTokenManager extends foundry.applications.api
       if (app._savedModeData && app._savedModeData[newMode]) {
         // Find all inputs in the newly rendered form
         const visibilityInputs = app.element.querySelectorAll(
-          'input[name^="visibility."]',
+          'input[name^="visibility."]'
         );
         const coverInputs = app.element.querySelectorAll(
-          'input[name^="cover."]',
+          'input[name^="cover."]'
         );
 
         // Set visibility values from saved data
@@ -1435,7 +1449,7 @@ export class VisionerTokenManager extends foundry.applications.api
               icons.forEach((icon) => icon.classList.remove("selected"));
 
               const targetIcon = iconContainer.querySelector(
-                `[data-state="${input.value}"]`,
+                `[data-state="${input.value}"]`
               );
               if (targetIcon) {
                 targetIcon.classList.add("selected");
@@ -1457,7 +1471,7 @@ export class VisionerTokenManager extends foundry.applications.api
               icons.forEach((icon) => icon.classList.remove("selected"));
 
               const targetIcon = iconContainer.querySelector(
-                `[data-state="${input.value}"]`,
+                `[data-state="${input.value}"]`
               );
               if (targetIcon) {
                 targetIcon.classList.add("selected");
@@ -1491,10 +1505,10 @@ export class VisionerTokenManager extends foundry.applications.api
       // 1) Save current tab inputs before switching
       try {
         const visibilityInputs = app.element.querySelectorAll(
-          'input[name^="visibility."]',
+          'input[name^="visibility."]'
         );
         const coverInputs = app.element.querySelectorAll(
-          'input[name^="cover."]',
+          'input[name^="cover."]'
         );
 
         if (!app._savedModeData) app._savedModeData = {};
@@ -1522,10 +1536,10 @@ export class VisionerTokenManager extends foundry.applications.api
       try {
         if (app._savedModeData && app._savedModeData[app.mode]) {
           const visibilityInputs = app.element.querySelectorAll(
-            'input[name^="visibility."]',
+            'input[name^="visibility."]'
           );
           const coverInputs = app.element.querySelectorAll(
-            'input[name^="cover."]',
+            'input[name^="cover."]'
           );
 
           visibilityInputs.forEach((input) => {
@@ -1538,7 +1552,7 @@ export class VisionerTokenManager extends foundry.applications.api
                 const icons = iconContainer.querySelectorAll(".state-icon");
                 icons.forEach((icon) => icon.classList.remove("selected"));
                 const targetIcon = iconContainer.querySelector(
-                  `[data-state="${saved}"]`,
+                  `[data-state="${saved}"]`
                 );
                 if (targetIcon) targetIcon.classList.add("selected");
               }
@@ -1555,7 +1569,7 @@ export class VisionerTokenManager extends foundry.applications.api
                 const icons = iconContainer.querySelectorAll(".state-icon");
                 icons.forEach((icon) => icon.classList.remove("selected"));
                 const targetIcon = iconContainer.querySelector(
-                  `[data-state="${saved}"]`,
+                  `[data-state="${saved}"]`
                 );
                 if (targetIcon) targetIcon.classList.add("selected");
               }
@@ -1586,7 +1600,7 @@ export class VisionerTokenManager extends foundry.applications.api
 
     if (newTargets.length === 0 && app.encounterOnly) {
       ui.notifications.info(
-        `${MODULE_ID}: No encounter tokens found. Filter disabled.`,
+        `${MODULE_ID}: No encounter tokens found. Filter disabled.`
       );
       // Reset to false if no targets found
       app.encounterOnly = false;
@@ -1603,7 +1617,7 @@ export class VisionerTokenManager extends foundry.applications.api
   static async bulkSetVisibilityState(event, button) {
     try {
       const state = button.dataset.state;
-      const targetType = button.dataset.targetType; // 'pc' or 'npc'
+      const targetType = button.dataset.targetType; // 'pc' | 'npc' | 'loot'
 
       if (!state) {
         return;
@@ -1621,6 +1635,9 @@ export class VisionerTokenManager extends foundry.applications.api
         } else if (targetType === "npc") {
           selector =
             ".visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection";
+        } else if (targetType === "loot") {
+          selector =
+            ".visibility-section .table-section.loot-section .icon-selection";
         }
 
         const iconSelections = form.querySelectorAll(selector);
@@ -1628,18 +1645,18 @@ export class VisionerTokenManager extends foundry.applications.api
         // Minimize DOM churn: only change rows that actually differ
         for (const iconSelection of iconSelections) {
           const hiddenInput = iconSelection.querySelector(
-            'input[type="hidden"]',
+            'input[type="hidden"]'
           );
           const current = hiddenInput?.value;
           if (current === state) continue; // skip unchanged rows
 
           // Toggle only the necessary icons instead of clearing all
           const currentSelected = iconSelection.querySelector(
-            ".state-icon.selected",
+            ".state-icon.selected"
           );
           if (currentSelected) currentSelected.classList.remove("selected");
           const targetIcon = iconSelection.querySelector(
-            `[data-state="${state}"]`,
+            `[data-state="${state}"]`
           );
           if (targetIcon) targetIcon.classList.add("selected");
 
@@ -1650,7 +1667,7 @@ export class VisionerTokenManager extends foundry.applications.api
       console.error("Error in bulk set visibility state:", error);
       showNotification(
         "An error occurred while setting bulk visibility state",
-        "error",
+        "error"
       );
     }
   }
@@ -1686,17 +1703,17 @@ export class VisionerTokenManager extends foundry.applications.api
         // Minimize DOM churn: only change rows that actually differ
         for (const iconSelection of iconSelections) {
           const hiddenInput = iconSelection.querySelector(
-            'input[type="hidden"]',
+            'input[type="hidden"]'
           );
           const current = hiddenInput?.value;
           if (current === state) continue; // skip unchanged rows
 
           const currentSelected = iconSelection.querySelector(
-            ".state-icon.selected",
+            ".state-icon.selected"
           );
           if (currentSelected) currentSelected.classList.remove("selected");
           const targetIcon = iconSelection.querySelector(
-            `[data-state="${state}"]`,
+            `[data-state="${state}"]`
           );
           if (targetIcon) targetIcon.classList.add("selected");
 
@@ -1707,7 +1724,7 @@ export class VisionerTokenManager extends foundry.applications.api
       console.error("Error in bulk set cover state:", error);
       showNotification(
         "An error occurred while setting bulk cover state",
-        "error",
+        "error"
       );
     }
   }
@@ -1772,7 +1789,7 @@ export class VisionerTokenManager extends foundry.applications.api
       const over = () => {
         try {
           const row = app.element.querySelector(
-            `tr[data-token-id="${token.id}"]`,
+            `tr[data-token-id="${token.id}"]`
           );
           if (row) {
             row.classList.add("row-hover");
@@ -1794,7 +1811,7 @@ export class VisionerTokenManager extends foundry.applications.api
       const out = () => {
         try {
           const row = app.element.querySelector(
-            `tr[data-token-id="${token.id}"]`,
+            `tr[data-token-id="${token.id}"]`
           );
           if (row) row.classList.remove("row-hover");
         } catch (_) {}
@@ -1859,7 +1876,7 @@ export class VisionerTokenManager extends foundry.applications.api
       let firstRow = null;
       for (const tok of selected) {
         const rows = app.element.querySelectorAll(
-          `tr[data-token-id="${tok.id}"]`,
+          `tr[data-token-id="${tok.id}"]`
         );
         if (rows && rows.length) {
           rows.forEach((r) => r.classList.add("row-hover"));
@@ -2012,7 +2029,7 @@ export class VisionerTokenManager extends foundry.applications.api
       -tokenHeight / 2 - padding,
       tokenWidth + padding * 2,
       tokenHeight + padding * 2,
-      8, // Corner radius
+      8 // Corner radius
     );
 
     // Position the border at the token's center

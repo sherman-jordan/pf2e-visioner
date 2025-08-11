@@ -269,16 +269,6 @@ export const DEFAULT_SETTINGS = {
     default: false,
   },
 
-  // Integration: Cover ↔ Visibility rules
-  integrateCoverVisibility: {
-    name: "PF2E_VISIONER.SETTINGS.INTEGRATE_COVER_VISIBILITY.name",
-    hint: "PF2E_VISIONER.SETTINGS.INTEGRATE_COVER_VISIBILITY.hint",
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true,
-  },
-
   // RAW enforcement toggle
   enforceRawRequirements: {
     name: "PF2E_VISIONER.SETTINGS.ENFORCE_RAW.name",

@@ -2,7 +2,8 @@
   "PF2E_VISIONER": {
     "MODULE_TITLE": "PF2 Visioner",
     "TOKEN_MANAGER": {
-      "TITLE": "Gestionnaire de vision des jetons"
+      "TITLE": "Gestionnaire de vision des jetons",
+      "OBSERVER": "Jeton observateur"
     },
     "VISIBILITY_STATES": {
     },

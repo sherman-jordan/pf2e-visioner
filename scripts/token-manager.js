@@ -827,6 +827,14 @@ export class VisionerTokenManager extends foundry.applications.api
             });
             await batchUpdateCoverEffects(observer, updates);
           }
+
+        // After batches, run a reconcile pass on the single target to purge stale rules
+        try {
+          const { reconcileCoverEffectsForTarget } = await import(
+            "./cover-ephemeral.js"
+          );
+          await reconcileCoverEffectsForTarget(app.observer);
+        } catch (_) {}
         }
       } catch (error) {
         console.warn(

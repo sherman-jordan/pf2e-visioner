@@ -667,6 +667,12 @@ export async function batchUpdateVisibilityEffects(
 ) {
   if (!observerToken?.actor || !targetUpdates?.length) return;
 
+  // Skip if observer is non-creature (loot/vehicle/party)
+  try {
+    const oType = observerToken?.actor?.type;
+    if (oType && ["loot", "vehicle", "party"].includes(oType)) return;
+  } catch (_) {}
+
   // Resolve effect target
   if (!options.effectTarget) {
     if (options.direction === "target_to_observer") {
@@ -684,6 +690,10 @@ export async function batchUpdateVisibilityEffects(
 
   for (const update of targetUpdates) {
     if (!update.target?.actor) continue;
+    try {
+      const tType = update.target.actor?.type;
+      if (tType && ["loot", "vehicle", "party"].includes(tType)) continue;
+    } catch (_) {}
 
     if (effectTarget === "observer") {
       effectReceiverToken = observerToken;

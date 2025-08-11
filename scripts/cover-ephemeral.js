@@ -1791,3 +1791,23 @@ export async function batchUpdateCoverEffects(
     });
   }
 }
+
+/**
+ * Public helper: force a reconcile/cleanup of a target token's cover aggregates
+ * against current observer→target cover maps, removing any stale entries
+ * (including those from ignored actor types like loot).
+ */
+export async function reconcileCoverEffectsForTarget(targetToken) {
+  if (!targetToken?.actor) return;
+  await runWithCoverEffectLock(targetToken.actor, async () => {
+    try {
+      coverDebug("manual reconcile start", { target: targetToken.name });
+      await updateReflexStealthAcrossCoverAggregates(targetToken);
+      await dedupeCoverAggregates(targetToken);
+      await reconcileCoverAggregatesAgainstMaps(targetToken);
+      coverDebug("manual reconcile end", { target: targetToken.name });
+    } catch (e) {
+      console.warn(`[${MODULE_ID}] reconcileCoverEffectsForTarget error`, e);
+    }
+  });
+}

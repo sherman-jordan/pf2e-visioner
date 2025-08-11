@@ -35,63 +35,54 @@ export function registerHooks() {
   ]) {
     Hooks.on(hook, (app, root) => {
       try {
-        injectVisioner(app, root);
+        injectPF2eVisionerBox(app, root);
       } catch (e) {
         console.error("[pf2e-visioner]", e);
       }
     });
   }
 
-  function injectVisioner(app, root) {
+  function injectPF2eVisionerBox(app, root) {
     const tokenDoc = app?.document;
     const actor = tokenDoc?.actor ?? tokenDoc?.parent;
     if (!actor) return;
 
-    const group = "sheet";
-
-    const visionHeader =
-      root.querySelector(
-        `nav.sheet-tabs [data-action="tab"][data-group="${group}"][data-tab="vision"]`,
-      ) ||
-      [
-        ...root.querySelectorAll(
-          `nav.sheet-tabs [data-action="tab"][data-group="${group}"]`,
-        ),
-      ].find((a) =>
-        (a.textContent || "").trim().toLowerCase().startsWith("vision"),
-      );
-    if (!visionHeader) return;
-
     const panel = root.querySelector(
-      `div.tab[data-group="${group}"][data-tab="vision"]`,
+      `div.tab[data-group="sheet"][data-tab="vision"]`
     );
-    if (!panel || panel.querySelector(".pf2e-visioner-field")) return;
+    if (!panel || panel.querySelector(".pf2e-visioner-box")) return;
 
-    const detectionFieldset = [...panel.querySelectorAll("fieldset")].find(
+    // Find the Detection Modes fieldset to anchor after
+    const detectionFS = [...panel.querySelectorAll("fieldset")].find(
       (fs) =>
+        fs.querySelector("header.detection-mode") ||
         (fs.querySelector("legend")?.textContent || "")
           .trim()
           .toLowerCase()
-          .startsWith("detection modes"),
+          .startsWith("detection")
     );
-    const targetContainer = detectionFieldset ?? panel;
+    if (!detectionFS) return;
 
     const current =
       tokenDoc.getFlag?.(MODULE_ID, "stealthDC") ??
       tokenDoc.flags?.[MODULE_ID]?.stealthDC ??
       "";
 
-    const wrap = document.createElement("div");
-    wrap.className = "form-group pf2e-visioner-field highlight"; // "highlight" lets you style in CSS
-    wrap.innerHTML = `
-    <label>Stealth DC</label>
-    <input type="number" inputmode="numeric" min="0" step="1"
-           name="flags.${MODULE_ID}.stealthDC"
-           value="${Number.isFinite(+current) ? +current : ""}">
-    <p class="hint">(PF2E Visioner) stealth dc for loot tokens</code>.</p>
-  `;
+    // Build a PF2E-style boxed section (fieldset + legend + form-group)
+    const box = document.createElement("fieldset");
+    box.className = "pf2e-visioner-box"; // for optional extra styling
+    box.innerHTML = `
+      <legend>PF2E Visioner</legend>
+      <div class="form-group">
+        <label>Stealth DC</label>
+        <input type="number" inputmode="numeric" min="0" step="1"
+               name="flags.${MODULE_ID}.stealthDC"
+               value="${Number.isFinite(+current) ? +current : ""}">
+      </div>
+    `;
 
-    targetContainer.appendChild(wrap);
+    // Insert immediately under Detection Modes
+    detectionFS.insertAdjacentElement("afterend", box);
   }
 
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
@@ -110,59 +101,6 @@ export function registerHooks() {
 
   // Try alternative HUD button approaches
   setupAlternativeHUDButton();
-}
-function onRenderTokenConfig(app, html) {
-  try {
-    const doc = app?.document || app?.object; // v13: document
-    if (!doc) return;
-    const perceptionDC =
-      Number(doc.getFlag("pf2e-visioner", "perceptionDC")) || "";
-    const stealthDc = Number(doc.getFlag("pf2e-visioner", "stealthDc")) || "";
-
-    const nav = html
-      .find("nav.sheet-tabs, nav.tabs, .sheet-tabs, .tabs")
-      .first();
-    if (!nav.length) return;
-    if (nav.find('[data-tab="pf2e-visioner"]').length) return;
-    const group = nav.data("group") || nav.attr("data-group") || "primary";
-
-    const tabButton = $(
-      `<a class="item" data-group="${group}" data-tab="pf2e-visioner"><i class="fas fa-eye"></i> PF2E Visioner</a>`,
-    );
-    nav.append(tabButton);
-
-    const tabContent = $(`
-      <section class="tab" data-group="${group}" data-tab="pf2e-visioner">
-        <div class="form-group">
-          <label>Visioner Perception DC (override)</label>
-          <div class="form-fields">
-            <input type="number" name="flags.pf2e-visioner.perceptionDC" value="${perceptionDC}" placeholder="blank = auto" min="0"/>
-          </div>
-          <p class="notes">If set, Visioner uses this value for Perception DC checks instead of the actor’s stat.</p>
-        </div>
-        <div class="form-group">
-          <label>Visioner Stealth DC (override)</label>
-          <div class="form-fields">
-            <input type="number" name="flags.pf2e-visioner.stealthDc" value="${stealthDc}" placeholder="blank = default" min="0"/>
-          </div>
-          <p class="notes">If set for loot tokens, Seek uses this DC instead of the module default.</p>
-        </div>
-      </section>
-    `);
-
-    const body = html.find(".sheet-body, .window-content form");
-    if (body.length) body.append(tabContent);
-    else html.append(tabContent);
-
-    // Rebind tabs (v13)
-    try {
-      const tabsAny = app._tabs || app.tabs;
-      if (Array.isArray(tabsAny)) tabsAny.forEach((t) => t?.bind?.(html[0]));
-      else tabsAny?.bind?.(html[0]);
-    } catch (_) {}
-  } catch (e) {
-    console.warn("[pf2e-visioner] failed to inject Token Config tab", e);
-  }
 }
 
 /**
@@ -298,7 +236,7 @@ function setupFallbackHUDButton() {
         if (isDragging) {
           const dragDistance = Math.sqrt(
             Math.pow(event.clientX - dragStartPos.x, 2) +
-              Math.pow(event.clientY - dragStartPos.y, 2),
+              Math.pow(event.clientY - dragStartPos.y, 2)
           );
 
           // If moved more than 5 pixels, consider it a drag
@@ -335,7 +273,7 @@ function setupFallbackHUDButton() {
               JSON.stringify({
                 left: button.style.left,
                 top: button.style.top,
-              }),
+              })
             );
           }
 
@@ -626,7 +564,7 @@ function onDeleteCombat(combat, options, userId) {
 function resetEncounterFiltersInDialogs() {
   // Reset Hide dialog encounter filter
   const hideDialogs = Object.values(ui.windows).filter(
-    (w) => w.constructor.name === "HidePreviewDialog",
+    (w) => w.constructor.name === "HidePreviewDialog"
   );
   hideDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
@@ -634,7 +572,7 @@ function resetEncounterFiltersInDialogs() {
 
       // Update the checkbox in the UI
       const checkbox = dialog.element?.querySelector(
-        'input[data-action="toggleEncounterFilter"]',
+        'input[data-action="toggleEncounterFilter"]'
       );
       if (checkbox) {
         checkbox.checked = false;
@@ -647,7 +585,7 @@ function resetEncounterFiltersInDialogs() {
 
   // Reset Seek dialog encounter filter
   const seekDialogs = Object.values(ui.windows).filter(
-    (w) => w.constructor.name === "SeekPreviewDialog",
+    (w) => w.constructor.name === "SeekPreviewDialog"
   );
   seekDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
@@ -655,7 +593,7 @@ function resetEncounterFiltersInDialogs() {
 
       // Update the checkbox in the UI
       const checkbox = dialog.element?.querySelector(
-        'input[data-action="toggleEncounterFilter"]',
+        'input[data-action="toggleEncounterFilter"]'
       );
       if (checkbox) {
         checkbox.checked = false;
@@ -668,7 +606,7 @@ function resetEncounterFiltersInDialogs() {
 
   // Reset Point Out dialog encounter filter if it exists
   const pointOutDialogs = Object.values(ui.windows).filter(
-    (w) => w.constructor.name === "PointOutPreviewDialog",
+    (w) => w.constructor.name === "PointOutPreviewDialog"
   );
   pointOutDialogs.forEach((dialog) => {
     if (dialog.encounterOnly) {
@@ -676,7 +614,7 @@ function resetEncounterFiltersInDialogs() {
 
       // Update the checkbox in the UI
       const checkbox = dialog.element?.querySelector(
-        'input[data-action="toggleEncounterFilter"]',
+        'input[data-action="toggleEncounterFilter"]'
       );
       if (checkbox) {
         checkbox.checked = false;

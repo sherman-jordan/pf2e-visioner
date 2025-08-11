@@ -5,18 +5,21 @@ This directory contains the modular JavaScript files for the PF2E Visioner modul
 ## File Structure
 
 ### Core Files
+
 - **`main.js`** - Main module entry point and initialization
 - **`constants.js`** - Module constants and configuration
 - **`utils.js`** - Utility functions for visibility calculations
 - **`settings.js`** - Module settings registration and management
 
 ### Feature Modules
+
 - **`off-guard-ephemeral.js`** - Off-guard condition automation using individual ephemeral effects
 - **`targeting.js`** - Token targeting event handling
 - **`visual-effects.js`** - Token visual effects and appearance management
 - **`effects-coordinator.js`** - Main effects coordinator and system integration
 
 ### Integration Modules
+
 - **`detection-wrapper.js`** - PF2E detection system integration
 - **`visibility-manager.js`** - Visibility management UI and controls
 - **`visibility-effects.js`** - Visibility state effects application
@@ -44,6 +47,7 @@ The module follows a modular architecture where each file has a specific respons
 ### Tooltip System Details
 
 The `hover-tooltips.js` module provides:
+
 - **Hover Detection**: Token pointerover/pointerout event handling
 - **Mode Switching**: O key toggles between observer and target perspectives
 - **Alt Key Integration**: Uses FoundryVTT's highlightObjects hook for controlled token tooltips

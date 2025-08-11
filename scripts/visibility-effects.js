@@ -2,8 +2,8 @@
  * Visual effects and token appearance management
  */
 
-import { MODULE_ID, VISIBILITY_STATES } from './constants.js';
-import { createVisibilityIndicator, getVisibilityMap } from './utils.js';
+import { MODULE_ID, VISIBILITY_STATES } from "./constants.js";
+import { createVisibilityIndicator, getVisibilityMap } from "./utils.js";
 
 /**
  * Apply persistent visibility effects based on all configured token relationships
@@ -15,9 +15,9 @@ export async function updateTokenVisuals() {
   if (isUpdating) {
     return;
   }
-  
+
   isUpdating = true;
-  
+
   try {
     // Apply persistent visibility effects for all users
     await applyPersistentVisibilityEffects();
@@ -32,30 +32,36 @@ export async function updateTokenVisuals() {
  */
 async function applyPersistentVisibilityEffects() {
   // Reset all tokens to their base state first
-  const resetPromises = canvas.tokens.placeables.map(token => resetTokenAppearance(token));
+  const resetPromises = canvas.tokens.placeables.map((token) =>
+    resetTokenAppearance(token),
+  );
   await Promise.all(resetPromises);
-  
+
   // Get all tokens on the canvas
   const allTokens = canvas.tokens.placeables;
-  
+
   // For each potential observer token, apply its visibility relationships
   for (const observerToken of allTokens) {
     const visibilityMap = getVisibilityMap(observerToken);
-    
+
     // Skip if this token has no configured visibility relationships
     if (!visibilityMap || Object.keys(visibilityMap).length === 0) {
       continue;
     }
-    
+
     // Apply visibility effects for each target token based on this observer's settings
     for (const targetToken of allTokens) {
       if (targetToken === observerToken) continue; // Skip self
-      
+
       const visibilityState = visibilityMap[targetToken.document.id];
-      if (visibilityState && visibilityState !== 'observed') {
+      if (visibilityState && visibilityState !== "observed") {
         // Apply the visibility effect to the target token
         // This creates the relationship: "observerToken sees targetToken as [state]"
-        await applyTokenRelationshipEffect(targetToken, observerToken, visibilityState);
+        await applyTokenRelationshipEffect(
+          targetToken,
+          observerToken,
+          visibilityState,
+        );
       }
     }
   }
@@ -67,18 +73,25 @@ async function applyPersistentVisibilityEffects() {
  * @param {Token} observerToken - The token that has the visibility perspective
  * @param {string} visibilityState - How the observer sees the target
  */
-async function applyTokenRelationshipEffect(targetToken, observerToken, visibilityState) {
+async function applyTokenRelationshipEffect(
+  targetToken,
+  observerToken,
+  visibilityState,
+) {
   // Store the relationship data on the target token for reference
   if (!targetToken._visibilityRelationships) {
     targetToken._visibilityRelationships = new Map();
   }
-  
-  targetToken._visibilityRelationships.set(observerToken.document.id, visibilityState);
-  
+
+  targetToken._visibilityRelationships.set(
+    observerToken.document.id,
+    visibilityState,
+  );
+
   // Apply the most restrictive visibility state if multiple observers see this token differently
   const allStates = Array.from(targetToken._visibilityRelationships.values());
   const mostRestrictive = getMostRestrictiveVisibilityState(allStates);
-  
+
   // Apply the visual effect
   await applyVisibilityState(targetToken, mostRestrictive);
 }
@@ -89,18 +102,18 @@ async function applyTokenRelationshipEffect(targetToken, observerToken, visibili
  * @returns {string} Most restrictive state
  */
 function getMostRestrictiveVisibilityState(states) {
-  const hierarchy = ['observed', 'concealed', 'hidden', 'undetected'];
-  
-  let mostRestrictive = 'observed';
+  const hierarchy = ["observed", "concealed", "hidden", "undetected"];
+
+  let mostRestrictive = "observed";
   for (const state of states) {
     const currentIndex = hierarchy.indexOf(state);
     const mostRestrictiveIndex = hierarchy.indexOf(mostRestrictive);
-    
+
     if (currentIndex > mostRestrictiveIndex) {
       mostRestrictive = state;
     }
   }
-  
+
   return mostRestrictive;
 }
 
@@ -114,7 +127,6 @@ function getMostRestrictiveVisibilityState(states) {
 export async function applyVisibilityState(token, state) {
   const config = VISIBILITY_STATES[state];
   if (!config) {
-
     return;
   }
 
@@ -122,7 +134,7 @@ export async function applyVisibilityState(token, state) {
   if (!token._originalAppearance) {
     token._originalAppearance = {
       alpha: token.alpha,
-      visible: token.visible
+      visible: token.visible,
     };
   }
 
@@ -133,23 +145,22 @@ export async function applyVisibilityState(token, state) {
 
   // Apply visibility effects - use real PF2E conditions for proper mechanics
 
-  
   // Apply the visual state based on visibility configuration
-  if (state === 'undetected') {
+  if (state === "undetected") {
     // GM gets full PF2E conditions, players get visual effects only
     if (game.user.isGM) {
       await applyUndetectedEffect(token);
     } else {
       applyUndetectedVisualFallback(token);
     }
-  } else if (state === 'hidden') {
+  } else if (state === "hidden") {
     // GM gets full PF2E conditions, players get visual effects only
     if (game.user.isGM) {
       await applyHiddenEffect(token);
     } else {
       applyHiddenVisualFallback(token);
     }
-  } else if (state === 'concealed') {
+  } else if (state === "concealed") {
     // GM gets full PF2E conditions, players get visual effects only
     if (game.user.isGM) {
       await applyConcealedEffect(token);
@@ -160,12 +171,9 @@ export async function applyVisibilityState(token, state) {
     // For visible state, use simple visual changes
     applySimpleVisualState(token, { visible: true });
   }
-  
-
 
   // GM hints feature was removed - no visual indicators
 }
-
 
 /**
  * Apply PF2E Undetected condition for full mechanical effect
@@ -173,51 +181,73 @@ export async function applyVisibilityState(token, state) {
  */
 async function applyUndetectedEffect(token) {
   if (!token.actor) {
-    console.warn(`${MODULE_ID} | No actor found for token "${token.document.name}"`);
+    console.warn(
+      `${MODULE_ID} | No actor found for token "${token.document.name}"`,
+    );
     applyUndetectedVisualFallback(token);
     return;
   }
-  
+
   try {
     // Check if actor already has undetected condition from another source
-    const existingUndetected = token.actor.itemTypes?.condition?.find?.(c => c.slug === 'undetected');
-    if (existingUndetected && !existingUndetected.getFlag(MODULE_ID, 'moduleApplied')) {
+    const existingUndetected = token.actor.itemTypes?.condition?.find?.(
+      (c) => c.slug === "undetected",
+    );
+    if (
+      existingUndetected &&
+      !existingUndetected.getFlag(MODULE_ID, "moduleApplied")
+    ) {
       return;
     }
-    
+
     // Remove any existing module-applied undetected condition first
-    if (existingUndetected && existingUndetected.getFlag(MODULE_ID, 'moduleApplied')) {
+    if (
+      existingUndetected &&
+      existingUndetected.getFlag(MODULE_ID, "moduleApplied")
+    ) {
       await existingUndetected.delete();
     }
-    
+
     // Try to apply Undetected condition using PF2E system's proper method
     try {
       // Look for Undetected condition in the PF2E conditions compendium
-      const undetectedCondition = game.pf2e?.ConditionManager?.getCondition('undetected') ||
-                                  game.packs.get('pf2e.conditionitems')?.index?.find(i => i.name === 'Undetected') ||
-                                  await fromUuid('Compendium.pf2e.conditionitems.Item.VRSef5y1LmL2Hkjf'); // fallback UUID
-      
+      const undetectedCondition =
+        game.pf2e?.ConditionManager?.getCondition("undetected") ||
+        game.packs
+          .get("pf2e.conditionitems")
+          ?.index?.find((i) => i.name === "Undetected") ||
+        (await fromUuid(
+          "Compendium.pf2e.conditionitems.Item.VRSef5y1LmL2Hkjf",
+        )); // fallback UUID
+
       if (undetectedCondition) {
         // Apply the condition using PF2E's system
-        const conditionSource = undetectedCondition.toObject ? undetectedCondition.toObject() : undetectedCondition;
+        const conditionSource = undetectedCondition.toObject
+          ? undetectedCondition.toObject()
+          : undetectedCondition;
         conditionSource.flags = conditionSource.flags || {};
         conditionSource.flags[MODULE_ID] = { moduleApplied: true };
-        
-        await token.actor.createEmbeddedDocuments('Item', [conditionSource]);
+
+        await token.actor.createEmbeddedDocuments("Item", [conditionSource]);
       } else {
-        throw new Error('Undetected condition not found in any method');
+        throw new Error("Undetected condition not found in any method");
       }
     } catch (conditionError) {
-      console.warn(`${MODULE_ID} | Failed to apply PF2E Undetected condition:`, conditionError);
+      console.warn(
+        `${MODULE_ID} | Failed to apply PF2E Undetected condition:`,
+        conditionError,
+      );
       applyUndetectedVisualFallback(token);
       return;
     }
-    
+
     // Apply visual hiding effect - undetected tokens should be completely hidden
     applyUndetectedVisualFallback(token);
-    
   } catch (error) {
-    console.error(`${MODULE_ID} | Error applying Undetected condition to "${token.document.name}":`, error);
+    console.error(
+      `${MODULE_ID} | Error applying Undetected condition to "${token.document.name}":`,
+      error,
+    );
     applyUndetectedVisualFallback(token);
   }
 }
@@ -230,7 +260,7 @@ function applyUndetectedVisualFallback(token) {
   // Completely hide the token for undetected
   token.mesh.visible = false;
   token.visible = false;
-  
+
   // Update document source
   token.document._source.hidden = true;
 }
@@ -242,47 +272,58 @@ function applyUndetectedVisualFallback(token) {
  */
 async function applyHiddenEffect(token, observer) {
   if (!token.actor) {
-    console.warn(`${MODULE_ID} | No actor found for token "${token.document.name}"`);
+    console.warn(
+      `${MODULE_ID} | No actor found for token "${token.document.name}"`,
+    );
     applyHiddenVisualFallback(token);
     return;
   }
-  
+
   try {
     // Check if actor already has hidden condition from another source
-    const existingHidden = token.actor.itemTypes?.condition?.find?.(c => c.slug === 'hidden');
-    if (existingHidden && !existingHidden.getFlag(MODULE_ID, 'moduleApplied')) {
+    const existingHidden = token.actor.itemTypes?.condition?.find?.(
+      (c) => c.slug === "hidden",
+    );
+    if (existingHidden && !existingHidden.getFlag(MODULE_ID, "moduleApplied")) {
       return;
     }
-    
+
     // Remove any existing module-applied hidden condition first
-    if (existingHidden && existingHidden.getFlag(MODULE_ID, 'moduleApplied')) {
+    if (existingHidden && existingHidden.getFlag(MODULE_ID, "moduleApplied")) {
       await existingHidden.delete();
     }
-    
+
     // Try to apply Hidden condition using PF2E system's proper method
     try {
       // Look for Hidden condition in the PF2E conditions compendium
-      const hiddenCondition = game.pf2e?.ConditionManager?.getCondition('hidden') ||
-                              game.packs.get('pf2e.conditionitems')?.index?.find(i => i.name === 'Hidden') ||
-                              game.packs.get('pf2e.conditionitems')?.get('ABfZLb-fJEyYhsNJ'); // fallback UUID
-      
+      const hiddenCondition =
+        game.pf2e?.ConditionManager?.getCondition("hidden") ||
+        game.packs
+          .get("pf2e.conditionitems")
+          ?.index?.find((i) => i.name === "Hidden") ||
+        game.packs.get("pf2e.conditionitems")?.get("ABfZLb-fJEyYhsNJ"); // fallback UUID
+
       if (hiddenCondition) {
         // Apply the condition using PF2E's system
-        await token.actor.increaseCondition('hidden', { value: 1 });
-        
+        await token.actor.increaseCondition("hidden", { value: 1 });
+
         // Flag the applied condition as module-applied for tracking
-        const appliedCondition = token.actor.itemTypes?.condition?.find?.(c => c.slug === 'hidden');
+        const appliedCondition = token.actor.itemTypes?.condition?.find?.(
+          (c) => c.slug === "hidden",
+        );
         if (appliedCondition) {
-          await appliedCondition.setFlag(MODULE_ID, 'moduleApplied', true);
+          await appliedCondition.setFlag(MODULE_ID, "moduleApplied", true);
         }
         return;
       }
-      
     } catch (conditionError) {
-      console.warn(`${MODULE_ID} | PF2E condition application failed:`, conditionError);
+      console.warn(
+        `${MODULE_ID} | PF2E condition application failed:`,
+        conditionError,
+      );
     }
-    
-    // Fallback: Try using FoundryVTT's standard ActiveEffect approach  
+
+    // Fallback: Try using FoundryVTT's standard ActiveEffect approach
     try {
       const hiddenEffect = {
         icon: "systems/pf2e/icons/conditions/hidden.webp",
@@ -291,25 +332,26 @@ async function applyHiddenEffect(token, observer) {
         statuses: ["hidden"],
         flags: {
           [MODULE_ID]: {
-            moduleApplied: true
+            moduleApplied: true,
           },
           core: {
-            statusId: "hidden"
-          }
-        }
+            statusId: "hidden",
+          },
+        },
       };
-      
+
       await token.actor.createEmbeddedDocuments("ActiveEffect", [hiddenEffect]);
       return;
-      
     } catch (activeEffectError) {
-      console.warn(`${MODULE_ID} | ActiveEffect condition application failed:`, activeEffectError);
+      console.warn(
+        `${MODULE_ID} | ActiveEffect condition application failed:`,
+        activeEffectError,
+      );
     }
-    
+
     // If all condition application methods failed, use visual fallback
     // console.warn(`${MODULE_ID} | Failed to apply PF2E Hidden condition, using visual fallback`);
     applyHiddenVisualFallback(token);
-    
   } catch (error) {
     console.error(`${MODULE_ID} | Error in applyHiddenEffect:`, error);
     // Fallback to visual-only effect
@@ -324,74 +366,96 @@ async function applyHiddenEffect(token, observer) {
  */
 async function applyConcealedEffect(token, observer) {
   if (!token.actor) {
-    console.warn(`${MODULE_ID} | No actor found for token "${token.document.name}"`);
+    console.warn(
+      `${MODULE_ID} | No actor found for token "${token.document.name}"`,
+    );
     applyConcealedVisualFallback(token);
     return;
   }
-  
+
   try {
     // Check if actor already has concealed condition from another source
-    const existingConcealed = token.actor.itemTypes?.condition?.find?.(c => c.slug === 'concealed');
-    if (existingConcealed && !existingConcealed.getFlag(MODULE_ID, 'moduleApplied')) {
+    const existingConcealed = token.actor.itemTypes?.condition?.find?.(
+      (c) => c.slug === "concealed",
+    );
+    if (
+      existingConcealed &&
+      !existingConcealed.getFlag(MODULE_ID, "moduleApplied")
+    ) {
       return;
     }
-    
+
     // Remove any existing module-applied concealed condition first
-    if (existingConcealed && existingConcealed.getFlag(MODULE_ID, 'moduleApplied')) {
+    if (
+      existingConcealed &&
+      existingConcealed.getFlag(MODULE_ID, "moduleApplied")
+    ) {
       await existingConcealed.delete();
     }
-    
+
     // Try to apply Concealed condition using PF2E system's proper method
     try {
       // Look for Concealed condition in the PF2E conditions compendium
-      const concealedCondition = game.pf2e?.ConditionManager?.getCondition('concealed') ||
-                                 game.packs.get('pf2e.conditionitems')?.index?.find(i => i.name === 'Concealed') ||
-                                 game.packs.get('pf2e.conditionitems')?.get('DmAIPqOBomZ7H95W'); // fallback UUID
-      
+      const concealedCondition =
+        game.pf2e?.ConditionManager?.getCondition("concealed") ||
+        game.packs
+          .get("pf2e.conditionitems")
+          ?.index?.find((i) => i.name === "Concealed") ||
+        game.packs.get("pf2e.conditionitems")?.get("DmAIPqOBomZ7H95W"); // fallback UUID
+
       if (concealedCondition) {
         // Apply the condition using PF2E's system
-        await token.actor.increaseCondition('concealed', { value: 1 });
-        
+        await token.actor.increaseCondition("concealed", { value: 1 });
+
         // Flag the applied condition as module-applied for tracking
-        const appliedCondition = token.actor.itemTypes?.condition?.find?.(c => c.slug === 'concealed');
+        const appliedCondition = token.actor.itemTypes?.condition?.find?.(
+          (c) => c.slug === "concealed",
+        );
         if (appliedCondition) {
-          await appliedCondition.setFlag(MODULE_ID, 'moduleApplied', true);
+          await appliedCondition.setFlag(MODULE_ID, "moduleApplied", true);
         }
         return;
       }
-      
     } catch (conditionError) {
-      console.warn(`${MODULE_ID} | PF2E condition application failed:`, conditionError);
+      console.warn(
+        `${MODULE_ID} | PF2E condition application failed:`,
+        conditionError,
+      );
     }
-    
+
     // Fallback: Try using FoundryVTT's standard ActiveEffect approach
     try {
       const concealedEffect = {
-        icon: "systems/pf2e/icons/conditions/concealed.webp", 
+        icon: "systems/pf2e/icons/conditions/concealed.webp",
         label: "Concealed",
         name: "Concealed",
         statuses: ["concealed"],
         flags: {
           [MODULE_ID]: {
-            moduleApplied: true
+            moduleApplied: true,
           },
           core: {
-            statusId: "concealed"
-          }
-        }
+            statusId: "concealed",
+          },
+        },
       };
-      
-      await token.actor.createEmbeddedDocuments("ActiveEffect", [concealedEffect]);
+
+      await token.actor.createEmbeddedDocuments("ActiveEffect", [
+        concealedEffect,
+      ]);
       return;
-      
     } catch (activeEffectError) {
-      console.warn(`${MODULE_ID} | ActiveEffect condition application failed:`, activeEffectError);
+      console.warn(
+        `${MODULE_ID} | ActiveEffect condition application failed:`,
+        activeEffectError,
+      );
     }
-    
+
     // If all condition application methods failed, use visual fallback
-    console.warn(`${MODULE_ID} | Failed to apply PF2E Concealed condition, using visual fallback`);
+    console.warn(
+      `${MODULE_ID} | Failed to apply PF2E Concealed condition, using visual fallback`,
+    );
     applyConcealedVisualFallback(token);
-    
   } catch (error) {
     console.error(`${MODULE_ID} | Error in applyConcealedEffect:`, error);
     // Fallback to visual-only effect
@@ -431,41 +495,56 @@ function applyHiddenVisualFallback(token) {
   // Show the token but with distinct visual effects
   token.mesh.visible = true;
   token.visible = true;
-  
+
   // Apply visual effects to simulate Hidden condition
   if (token.mesh) {
     // Create a desaturated, darkened effect
     token.mesh.alpha = 0.75;
     token.alpha = 0.75;
-    
+
     // Apply filters for a more authentic hidden effect
     if (!token.mesh.filters) {
       token.mesh.filters = [];
     }
-    
+
     // Clear any existing module filters
-    token.mesh.filters = token.mesh.filters.filter(f => !f._moduleFilter);
-    
+    token.mesh.filters = token.mesh.filters.filter((f) => !f._moduleFilter);
+
     // Create a desaturation effect (grayscale)
     const desaturateFilter = new PIXI.filters.ColorMatrixFilter();
     desaturateFilter.desaturate();
     desaturateFilter.alpha = 0.7; // Partial desaturation
     desaturateFilter._moduleFilter = true; // Mark as our filter
-    
+
     // Create a subtle glow/outline effect using ColorMatrixFilter
     const glowFilter = new PIXI.filters.ColorMatrixFilter();
     glowFilter.matrix = [
-      0.7, 0.7, 0.0, 0.0, 0.1,  // Red channel - yellow tint
-      0.7, 0.7, 0.0, 0.0, 0.1,  // Green channel - yellow tint
-      0.3, 0.3, 0.3, 0.0, 0.0,  // Blue channel - reduced
-      0.0, 0.0, 0.0, 1.0, 0.0   // Alpha channel - unchanged
+      0.7,
+      0.7,
+      0.0,
+      0.0,
+      0.1, // Red channel - yellow tint
+      0.7,
+      0.7,
+      0.0,
+      0.0,
+      0.1, // Green channel - yellow tint
+      0.3,
+      0.3,
+      0.3,
+      0.0,
+      0.0, // Blue channel - reduced
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0, // Alpha channel - unchanged
     ];
     glowFilter._moduleFilter = true; // Mark as our filter
-    
+
     // Apply the filters
     token.mesh.filters.push(desaturateFilter, glowFilter);
   }
-  
 }
 
 /**
@@ -477,39 +556,36 @@ function applyConcealedVisualFallback(token) {
   // Show the token with a "hazy" effect
   token.mesh.visible = true;
   token.visible = true;
-  
+
   // Apply visual effects to simulate Concealed condition
   if (token.mesh) {
     // Reduce alpha for the "harder to see" effect
     token.mesh.alpha = 0.65;
     token.alpha = 0.65;
-    
+
     // Apply filters for a more authentic concealed effect
     if (!token.mesh.filters) {
       token.mesh.filters = [];
     }
-    
+
     // Clear any existing module filters
-    token.mesh.filters = token.mesh.filters.filter(f => !f._moduleFilter);
-    
+    token.mesh.filters = token.mesh.filters.filter((f) => !f._moduleFilter);
+
     // Create a blur effect to simulate concealment
     const blurFilter = new PIXI.filters.BlurFilter();
     blurFilter.blur = 2; // Subtle blur
     blurFilter.quality = 1; // Low quality for performance
     blurFilter._moduleFilter = true; // Mark as our filter
-    
+
     // Create a slight brightness reduction
     const brightnessFilter = new PIXI.filters.ColorMatrixFilter();
     brightnessFilter.brightness(0.85, false); // Slightly darker
     brightnessFilter._moduleFilter = true; // Mark as our filter
-    
+
     // Apply the filters
     token.mesh.filters.push(blurFilter, brightnessFilter);
   }
-  
 }
-
-
 
 /**
  * Reset token to base state without clearing original appearance storage
@@ -521,13 +597,13 @@ async function resetTokenToBaseState(token) {
   if (game.user.isGM) {
     await removeModuleConditions(token);
   }
-  
+
   // Reset visual appearance to base state without clearing _originalAppearance
   token.mesh.alpha = 1.0;
   token.mesh.visible = true;
   token.alpha = 1.0;
   token.visible = true;
-  
+
   // Update document source
   token.document._source.alpha = 1.0;
   token.document._source.hidden = false;
@@ -535,10 +611,10 @@ async function resetTokenToBaseState(token) {
   // Clear any applied filters and tints
   if (token.mesh) {
     if (token.mesh.filters) {
-      token.mesh.filters = token.mesh.filters.filter(f => !f._moduleFilter);
+      token.mesh.filters = token.mesh.filters.filter((f) => !f._moduleFilter);
     }
     // Reset tint to white (normal)
-    token.mesh.tint = 0xFFFFFF;
+    token.mesh.tint = 0xffffff;
   }
 
   removeVisibilityIndicator(token);
@@ -553,12 +629,12 @@ export async function resetTokenAppearance(token) {
   if (game.user.isGM) {
     await removeModuleConditions(token);
   }
-  
+
   // Clear visibility relationships for this token
   if (token._visibilityRelationships) {
     token._visibilityRelationships.clear();
   }
-  
+
   // Reset visual appearance
   if (token._originalAppearance) {
     // Restore original appearance using mesh manipulation
@@ -566,11 +642,11 @@ export async function resetTokenAppearance(token) {
     token.mesh.visible = true;
     token.alpha = 1.0;
     token.visible = true;
-    
+
     // Update document source
     token.document._source.alpha = 1.0;
     token.document._source.hidden = false;
-    
+
     delete token._originalAppearance;
   } else {
     // Reset to default appearance
@@ -578,7 +654,7 @@ export async function resetTokenAppearance(token) {
     token.mesh.visible = true;
     token.alpha = 1.0;
     token.visible = true;
-    
+
     // Update document source
     token.document._source.alpha = 1.0;
     token.document._source.hidden = false;
@@ -587,10 +663,10 @@ export async function resetTokenAppearance(token) {
   // Clear any applied filters and tints
   if (token.mesh) {
     if (token.mesh.filters) {
-      token.mesh.filters = token.mesh.filters.filter(f => !f._moduleFilter);
+      token.mesh.filters = token.mesh.filters.filter((f) => !f._moduleFilter);
     }
     // Reset tint to white (normal)
-    token.mesh.tint = 0xFFFFFF;
+    token.mesh.tint = 0xffffff;
   }
 
   removeVisibilityIndicator(token);
@@ -604,40 +680,56 @@ async function removeModuleConditions(token) {
   if (!token.actor) {
     return;
   }
-  
+
   try {
-    // Find and remove module-applied ActiveEffect conditions  
-    const moduleEffects = token.actor.effects.filter(effect => 
-      effect.getFlag(MODULE_ID, 'moduleApplied') && 
-      (effect.statuses.has('hidden') || effect.statuses.has('concealed') || effect.statuses.has('undetected'))
+    // Find and remove module-applied ActiveEffect conditions
+    const moduleEffects = token.actor.effects.filter(
+      (effect) =>
+        effect.getFlag(MODULE_ID, "moduleApplied") &&
+        (effect.statuses.has("hidden") ||
+          effect.statuses.has("concealed") ||
+          effect.statuses.has("undetected")),
     );
-    
+
     for (const effect of moduleEffects) {
       await effect.delete();
     }
-    
+
     // Check for PF2E condition items and remove them properly
     if (token.actor.itemTypes?.condition) {
-      const moduleConditions = token.actor.itemTypes.condition.filter(c => 
-        c.getFlag(MODULE_ID, 'moduleApplied') && (c.slug === 'hidden' || c.slug === 'concealed' || c.slug === 'undetected')
+      const moduleConditions = token.actor.itemTypes.condition.filter(
+        (c) =>
+          c.getFlag(MODULE_ID, "moduleApplied") &&
+          (c.slug === "hidden" ||
+            c.slug === "concealed" ||
+            c.slug === "undetected"),
       );
-      
+
       for (const condition of moduleConditions) {
         // Try to remove using PF2E system methods first
         try {
           const conditionSlug = condition.slug;
-          if (token.actor.decreaseCondition && ['hidden', 'concealed'].includes(conditionSlug)) {
+          if (
+            token.actor.decreaseCondition &&
+            ["hidden", "concealed"].includes(conditionSlug)
+          ) {
             await token.actor.decreaseCondition(conditionSlug);
           } else {
             // Fallback to direct deletion
             await condition.delete();
           }
         } catch (removalError) {
-          console.warn(`${MODULE_ID} | Failed to remove condition ${condition.name}, trying direct deletion:`, removalError);
+          console.warn(
+            `${MODULE_ID} | Failed to remove condition ${condition.name}, trying direct deletion:`,
+            removalError,
+          );
           try {
             await condition.delete();
           } catch (fallbackError) {
-            console.error(`${MODULE_ID} | Complete failure to remove condition ${condition.name}:`, fallbackError);
+            console.error(
+              `${MODULE_ID} | Complete failure to remove condition ${condition.name}:`,
+              fallbackError,
+            );
           }
         }
       }
@@ -646,8 +738,6 @@ async function removeModuleConditions(token) {
     console.error(`${MODULE_ID} | Failed to remove module conditions:`, error);
   }
 }
-
-
 
 /**
  * Add visibility indicator to token

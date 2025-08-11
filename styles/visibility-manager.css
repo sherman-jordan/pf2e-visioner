@@ -117,10 +117,19 @@
   border-radius: 6px;
   padding: 4px 6px;
   background: var(--color-bg-secondary);
-  transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
-.icon-tab-navigation .icon-tab-button:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-.icon-tab-navigation .icon-tab-button:active { transform: scale(.98); }
+.icon-tab-navigation .icon-tab-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.icon-tab-navigation .icon-tab-button:active {
+  transform: scale(0.98);
+}
 
 .icon-tab-navigation .icon-tab-button[data-tab="visibility"].active {
   background: linear-gradient(135deg, #2e7d32, #43a047);
@@ -132,9 +141,15 @@
   border-color: #0d47a1;
   color: #fff;
 }
-.icon-tab-navigation .icon-tab-button[data-tab="visibility"] i { color: #2e7d32; }
-.icon-tab-navigation .icon-tab-button[data-tab="cover"] i { color: #1565c0; }
-.icon-tab-navigation .icon-tab-button.active i { color: #fff; }
+.icon-tab-navigation .icon-tab-button[data-tab="visibility"] i {
+  color: #2e7d32;
+}
+.icon-tab-navigation .icon-tab-button[data-tab="cover"] i {
+  color: #1565c0;
+}
+.icon-tab-navigation .icon-tab-button.active i {
+  color: #fff;
+}
 
 /* 2x2 legend grid */
 .observer-tools .visibility-legend,
@@ -150,7 +165,11 @@
 }
 
 /* Ensure the legend container itself takes normal flow beneath the toggle */
-.observer-tools .legend-panel { width: auto; display: block; padding-top: 50px; }
+.observer-tools .legend-panel {
+  width: auto;
+  display: block;
+  padding-top: 50px;
+}
 
 /* Tab Navigation */
 .tab-navigation {
@@ -218,8 +237,14 @@
 }
 
 @keyframes visionerFadeSlide {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Cover Legend */
@@ -283,7 +308,8 @@
   padding: 6px 8px;
   text-align: center;
   vertical-align: middle;
-  border-bottom: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+  border-bottom: 1px solid
+    var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
 }
 
 .cover-table th {
@@ -297,18 +323,45 @@
 }
 
 /* Normalize table typography and alignment across both tabs */
-.visibility-table, .cover-table { font-size: 11px; }
-.visibility-table th, .cover-table th { font-size: 13px; text-align: center; vertical-align: middle; }
-.visibility-table td, .cover-table td { text-align: center; }
-.visibility-table .token-name, .cover-table .token-name { text-align: center; }
+.visibility-table,
+.cover-table {
+  font-size: 11px;
+}
+.visibility-table th,
+.cover-table th {
+  font-size: 13px;
+  text-align: center;
+  vertical-align: middle;
+}
+.visibility-table td,
+.cover-table td {
+  text-align: center;
+}
+.visibility-table .token-name,
+.cover-table .token-name {
+  text-align: center;
+}
 
 /* Column widths for cover tables to improve alignment */
-.cover-table .cover-state { width: 28%; min-width: 130px; }
-.cover-table .current-state { width: 26%; min-width: 100px; }
-.cover-table .mechanical-effects { width: 28%; min-width: 140px; }
+.cover-table .cover-state {
+  width: 28%;
+  min-width: 130px;
+}
+.cover-table .current-state {
+  width: 26%;
+  min-width: 100px;
+}
+.cover-table .mechanical-effects {
+  width: 28%;
+  min-width: 140px;
+}
 
 /* Cover Effects */
-.cover-effect, .no-effect.cover-none, .cover-lesser, .cover-standard, .cover-greater {
+.cover-effect,
+.no-effect.cover-none,
+.cover-lesser,
+.cover-standard,
+.cover-greater {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -325,16 +378,32 @@
 }
 
 /* Colored cover effect badges matching traffic-light scheme */
-.cover-none { color: #4caf50 !important; }
-.cover-lesser { color: #ffeb3b !important; }
-.cover-standard { color: #ff6600 !important; }
-.cover-greater { color: #f44336 !important; }
+.cover-none {
+  color: #4caf50 !important;
+}
+.cover-lesser {
+  color: #ffeb3b !important;
+}
+.cover-standard {
+  color: #ff6600 !important;
+}
+.cover-greater {
+  color: #f44336 !important;
+}
 
 /* Ensure icons also follow traffic-light colors (extra specificity) */
-.cover-none i { color: #4caf50 !important; }
-.cover-lesser i { color: #ffeb3b !important; }
-.cover-standard i { color: #ff6600 !important; }
-.cover-greater i { color: #f44336 !important; }
+.cover-none i {
+  color: #4caf50 !important;
+}
+.cover-lesser i {
+  color: #ffeb3b !important;
+}
+.cover-standard i {
+  color: #ff6600 !important;
+}
+.cover-greater i {
+  color: #f44336 !important;
+}
 
 .observer-main {
   flex: 1;
@@ -417,9 +486,14 @@
   opacity: 0.7;
 }
 
-.toggle-option i { font-size: 11px; }
+.toggle-option i {
+  font-size: 11px;
+}
 
-.toggle-option span { font-size: 11px; font-weight: bold; }
+.toggle-option span {
+  font-size: 11px;
+  font-weight: bold;
+}
 
 /* Toggle Divider */
 .toggle-divider {
@@ -774,15 +848,15 @@
 
 /* Visibility Table */
 .visibility-table .visibility-state {
-text-align: center;
+  text-align: center;
 }
 
 .visibility-table .current-state {
-text-align: center;
+  text-align: center;
 }
 
 .visibility-table .mechanical-effects {
-text-align: center;
+  text-align: center;
 }
 
 /* Specific column width controls */
@@ -795,7 +869,11 @@ text-align: center;
 }
 
 .visibility-table .token-name,
-.cover-table .token-name { width: 15%; min-width: 72px; max-width: 110px; }
+.cover-table .token-name {
+  width: 15%;
+  min-width: 72px;
+  max-width: 110px;
+}
 
 .token-name strong {
   display: block;
@@ -805,13 +883,25 @@ text-align: center;
   cursor: help;
 }
 
-.visibility-table .visibility-state { width: 26%; min-width: 160px; }
+.visibility-table .visibility-state {
+  width: 26%;
+  min-width: 160px;
+}
 
-.visibility-table .current-state { width: 18%; min-width: 120px; }
+.visibility-table .current-state {
+  width: 18%;
+  min-width: 120px;
+}
 
 /* New DC and Outcome columns */
-.visibility-table .dc-column { width: 12%; min-width: 90px; }
-.visibility-table .outcome-column { width: 19%; min-width: 140px; }
+.visibility-table .dc-column {
+  width: 12%;
+  min-width: 90px;
+}
+.visibility-table .outcome-column {
+  width: 19%;
+  min-width: 140px;
+}
 
 /* Ensure Effects column header has consistent font size */
 .visibility-table th.mechanical-effects,
@@ -994,7 +1084,7 @@ tr.token-row.row-hover {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  box-shadow: 0 -4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .vm-action-button {
@@ -1083,7 +1173,8 @@ tr.token-row.row-hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: currentColor;
   border-width: 2px;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3),
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.3),
     inset 0 0 4px rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
 }
@@ -1134,7 +1225,10 @@ tr.token-row.row-hover {
 
 .cover-section .state-icon[data-state="standard"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="standard"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="standard"] i {
+.cover-section
+  .bulk-actions-header
+  .bulk-state-header[data-state="standard"]
+  i {
   color: #ff6600 !important;
   border-color: #ff6600 !important;
 }

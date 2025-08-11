@@ -19,7 +19,7 @@
     "VISIBILITY_STATES": {
       "observed": "Observed",
       "hidden": "Hidden",
-      "undetected": "Undetected", 
+      "undetected": "Undetected",
       "concealed": "Concealed"
     },
     "COVER_STATES": {
@@ -35,11 +35,11 @@
     },
     "MECHANICAL_EFFECTS": {
       "HIDDEN_FLAT_CHECK": "DC 11 flat check required for targeting",
-      "CONCEALED_FLAT_CHECK": "DC 5 flat check required for targeting", 
+      "CONCEALED_FLAT_CHECK": "DC 5 flat check required for targeting",
       "UNDETECTED_CONDITION": "Undetected condition applied with full mechanical effects",
       "VISIBLE_NO_EFFECTS": "No targeting penalties or effects",
       "HIDDEN_TOOLTIP": "Hidden: You are off-guard to the target, and you must succeed at a DC 11 flat check when targeting it with an attack, spell, or other effect",
-      "CONCEALED_TOOLTIP": "Concealed: You must succeed at a DC 5 flat check when targeting with an attack, spell, or other effect", 
+      "CONCEALED_TOOLTIP": "Concealed: You must succeed at a DC 5 flat check when targeting with an attack, spell, or other effect",
       "UNDETECTED_TOOLTIP": "Undetected: You don't know the target's location. You are off-guard to the target and you can't easily target it. Using the Seek action can help find an undetected creature",
       "VISIBLE_TOOLTIP": "Visible: No penalties or effects",
       "BLINDED_OVERRIDE": "All creatures appear Hidden due to Blinded condition",
@@ -164,17 +164,17 @@
         "name": "Allow Player Tooltips",
         "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens (requires restart)"
       },
-        "TOOLTIP_FONT_SIZE": {
-          "name": "Tooltip Size",
-          "hint": "Choose tooltip size (affects icon and border size; text adjusts accordingly)",
-          "CHOICES": {
-            "tiny": "Tiny",
-            "small": "Small",
-            "medium": "Medium",
-            "large": "Large",
-            "xlarge": "Extra Large"
-          }
-        },
+      "TOOLTIP_FONT_SIZE": {
+        "name": "Tooltip Size",
+        "hint": "Choose tooltip size (affects icon and border size; text adjusts accordingly)",
+        "CHOICES": {
+          "tiny": "Tiny",
+          "small": "Small",
+          "medium": "Medium",
+          "large": "Large",
+          "xlarge": "Extra Large"
+        }
+      },
       "COLORBLIND_MODE": {
         "name": "Colorblind Mode",
         "hint": "Select a colorblind mode to adjust colors for better visibility (client-side setting)",
@@ -238,10 +238,33 @@
       "DEBUG": {
         "name": "Debug Mode",
         "hint": "Enable detailed console logging for troubleshooting"
+      },
+      "LOOT_PERCEPTION_DC": {
+        "name": "Default Perception DC for Loot Actors",
+        "hint": "Used when a loot token needs a Perception DC and doesn't have a system stat."
+      },
+      "LOOT_STEALTH_DC": {
+        "name": "Default Stealth DC for Loot Actors",
+        "hint": "DC used when considering loot tokens as Seek targets."
+      },
+      "INCLUDE_LOOT_ACTORS": {
+        "name": "Include loot actors in visibility manager",
+        "hint": "Allow configuring visibility states for loot actors (chests, containers) per observer. Visual only; no PF2E conditions are applied."
+      },
+      "INCLUDE_WALLS": {
+        "name": "Include walls as hideable objects (experimental)",
+        "hint": "Show walls in the manager to mark them as visible/hidden per observer. Current implementation is visual-only and does not change occlusion or collision."
+      },
+      "VISUALS_USE_CONTROLLED_PERSPECTIVE": {
+        "name": "Use controlled token perspective for visuals",
+        "hint": "When enabled, the current user's controlled token determines what they can visually see for objects configured as hidden or visible."
       }
     },
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens"
+    },
+    "WALL": {
+      "VISIBLE_TO_YOU": "Hidden Wall"
     },
     "KEYBINDINGS": {
       "OPEN_TOKEN_MANAGER": {

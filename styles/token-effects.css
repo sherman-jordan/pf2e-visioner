@@ -59,7 +59,8 @@
 .token-image img {
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-light-primary);
-  transition: transform var(--transition-fast),
+  transition:
+    transform var(--transition-fast),
     box-shadow var(--transition-fast);
   width: 32px;
   height: 32px;
@@ -240,8 +241,6 @@
   padding: 8px 12px;
 }
 
-
-
 /* State Indicator Enhancements */
 .state-indicator {
   display: inline-flex;
@@ -335,5 +334,3 @@
   border: 2px solid transparent;
   transition: border-color var(--transition-fast);
 }
-
-

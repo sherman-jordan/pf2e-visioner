@@ -2,13 +2,23 @@
  * Public API for PF2E Per-Token Visibility
  */
 
-import { MODULE_ID } from './constants.js';
-import { cleanupCoverEffectsForObserver } from './cover-ephemeral.js';
-import { batchUpdateVisibilityEffects, cleanupEphemeralEffectsForTarget } from './off-guard-ephemeral.js';
-import { refreshEveryonesPerception } from './socket.js';
-import { VisionerTokenManager } from './token-manager.js';
-import { cleanupDeletedToken, getCoverBetween, getVisibilityBetween, setCoverBetween, setVisibilityBetween, showNotification } from './utils.js';
-import { updateTokenVisuals } from './visual-effects.js';
+import { MODULE_ID } from "./constants.js";
+import { cleanupCoverEffectsForObserver } from "./cover-ephemeral.js";
+import {
+  batchUpdateVisibilityEffects,
+  cleanupEphemeralEffectsForTarget,
+} from "./off-guard-ephemeral.js";
+import { refreshEveryonesPerception } from "./socket.js";
+import { VisionerTokenManager } from "./token-manager.js";
+import {
+  cleanupDeletedToken,
+  getCoverBetween,
+  getVisibilityBetween,
+  setCoverBetween,
+  setVisibilityBetween,
+  showNotification,
+} from "./utils.js";
+import { updateTokenVisuals } from "./visual-effects.js";
 
 /**
  * Main API class for the module
@@ -21,9 +31,9 @@ export class Pf2eVisionerApi {
       const updates = tokens.map((t) => ({
         _id: t.id,
         [`flags.${MODULE_ID}.-=visibility`]: null,
-        [`flags.${MODULE_ID}.-=cover`]: null
+        [`flags.${MODULE_ID}.-=cover`]: null,
       }));
-      await scene.updateEmbeddedDocuments('Token', updates, { diff: false });
+      await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
     } catch (_) {}
   }
 
@@ -49,7 +59,9 @@ export class Pf2eVisionerApi {
         if (!actor) continue;
         const toDelete = Pf2eVisionerApi._collectModuleEffectIds(actor);
         if (toDelete.length) {
-          try { await actor.deleteEmbeddedDocuments('Item', toDelete); } catch (_) {}
+          try {
+            await actor.deleteEmbeddedDocuments("Item", toDelete);
+          } catch (_) {}
         }
       }
     } catch (_) {}
@@ -62,7 +74,9 @@ export class Pf2eVisionerApi {
         if (!a) continue;
         const toDelete = Pf2eVisionerApi._collectModuleEffectIds(a);
         if (toDelete.length) {
-          try { await a.deleteEmbeddedDocuments('Item', toDelete); } catch (_) {}
+          try {
+            await a.deleteEmbeddedDocuments("Item", toDelete);
+          } catch (_) {}
         }
       }
     } catch (_) {}
@@ -73,9 +87,11 @@ export class Pf2eVisionerApi {
     try {
       const targetUpdates = tokens
         .filter((t) => t?.actor && t.id !== observerToken.id)
-        .map((t) => ({ target: t, state: 'observed' }));
+        .map((t) => ({ target: t, state: "observed" }));
       if (targetUpdates.length) {
-        await batchUpdateVisibilityEffects(observerToken, targetUpdates, { removeAllEffects: true });
+        await batchUpdateVisibilityEffects(observerToken, targetUpdates, {
+          removeAllEffects: true,
+        });
       }
     } catch (_) {}
 
@@ -90,33 +106,53 @@ export class Pf2eVisionerApi {
 
   static async _removeAllReferencesToTarget(targetToken, tokens) {
     // Remove from maps
-    try { await cleanupDeletedToken(targetToken.document); } catch (_) {}
+    try {
+      await cleanupDeletedToken(targetToken.document);
+    } catch (_) {}
 
     // Remove from visibility/cover effects on all observers
     try {
       for (const obs of tokens) {
         if (!obs?.actor || obs.id === targetToken.id) continue;
-        try { await cleanupEphemeralEffectsForTarget(obs, targetToken); } catch (_) {}
-        try { await cleanupCoverEffectsForObserver(targetToken, obs); } catch (_) {}
+        try {
+          await cleanupEphemeralEffectsForTarget(obs, targetToken);
+        } catch (_) {}
+        try {
+          await cleanupCoverEffectsForObserver(targetToken, obs);
+        } catch (_) {}
       }
     } catch (_) {}
   }
 
   static async _rebuildAndRefresh() {
-    try { const { cleanupAllCoverEffects } = await import('./cover-ephemeral.js'); await cleanupAllCoverEffects(); } catch (_) {}
-    try { const { rebuildAllEphemeralEffects } = await import('./effects-coordinator.js'); await rebuildAllEphemeralEffects(); } catch (_) {}
-    try { await updateTokenVisuals(); } catch (_) {}
-    try { refreshEveryonesPerception(); } catch (_) {}
-    try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
+    try {
+      const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+      await cleanupAllCoverEffects();
+    } catch (_) {}
+    try {
+      const { rebuildAllEphemeralEffects } = await import(
+        "./effects-coordinator.js"
+      );
+      await rebuildAllEphemeralEffects();
+    } catch (_) {}
+    try {
+      await updateTokenVisuals();
+    } catch (_) {}
+    try {
+      refreshEveryonesPerception();
+    } catch (_) {}
+    try {
+      canvas.perception.update({ refreshVision: true });
+    } catch (_) {}
   }
-  
+
   /**
    * Open the token manager for a specific observer token
    * @param {Token} observer - The observer token (optional, uses controlled tokens if not provided)
    */
   static async openTokenManager(observer = null) {
     if (!game.user.isGM) {
-      ui.notifications.warn('Only GMs can manage token visibility and cover');
+      ui.notifications.warn("Only GMs can manage token visibility and cover");
       return;
     }
 
@@ -124,13 +160,19 @@ export class Pf2eVisionerApi {
     if (!observer) {
       const controlled = canvas.tokens.controlled;
       if (controlled.length === 0) {
-        showNotification('PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED', 'warn');
+        showNotification(
+          "PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED",
+          "warn",
+        );
         return;
       }
       observer = controlled[0];
-      
+
       if (controlled.length > 1) {
-        showNotification('PF2E_VISIONER.NOTIFICATIONS.MULTIPLE_OBSERVERS', 'warn');
+        showNotification(
+          "PF2E_VISIONER.NOTIFICATIONS.MULTIPLE_OBSERVERS",
+          "warn",
+        );
         return;
       }
     }
@@ -147,7 +189,7 @@ export class Pf2eVisionerApi {
       VisionerTokenManager.currentInstance.bringToTop();
       return VisionerTokenManager.currentInstance;
     }
-    
+
     const manager = new VisionerTokenManager(observer);
     manager.render({ force: true });
     return manager;
@@ -158,14 +200,17 @@ export class Pf2eVisionerApi {
    * @param {Token} observer - The observer token
    * @param {string} mode - The mode to use ('observer' or 'target')
    */
-  static async openTokenManagerWithMode(observer, mode = 'observer') {
+  static async openTokenManagerWithMode(observer, mode = "observer") {
     if (!game.user.isGM) {
-      ui.notifications.warn('Only GMs can manage token visibility and cover');
+      ui.notifications.warn("Only GMs can manage token visibility and cover");
       return;
     }
 
     if (!observer) {
-      showNotification('PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED', 'warn');
+      showNotification(
+        "PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED",
+        "warn",
+      );
       return;
     }
 
@@ -181,11 +226,14 @@ export class Pf2eVisionerApi {
         return VisionerTokenManager.currentInstance;
       }
       // If different observer, update the existing dialog with new data and mode
-      VisionerTokenManager.currentInstance.updateObserverWithMode(observer, mode);
+      VisionerTokenManager.currentInstance.updateObserverWithMode(
+        observer,
+        mode,
+      );
       VisionerTokenManager.currentInstance.bringToTop();
       return VisionerTokenManager.currentInstance;
     }
-    
+
     const manager = new VisionerTokenManager(observer, { mode });
     manager.render({ force: true });
     return manager;
@@ -216,7 +264,7 @@ export class Pf2eVisionerApi {
       // Get visibility using utility function
       return getVisibilityBetween(observerToken, targetToken);
     } catch (error) {
-      console.error('Error getting visibility:', error);
+      console.error("Error getting visibility:", error);
       return null;
     }
   }
@@ -233,9 +281,11 @@ export class Pf2eVisionerApi {
   static async setVisibility(observerId, targetId, state, options = {}) {
     try {
       // Validate visibility state
-      const validStates = ['observed', 'hidden', 'undetected', 'concealed'];
+      const validStates = ["observed", "hidden", "undetected", "concealed"];
       if (!validStates.includes(state)) {
-        console.error(`Invalid visibility state: ${state}. Valid states are: ${validStates.join(', ')}`);
+        console.error(
+          `Invalid visibility state: ${state}. Valid states are: ${validStates.join(", ")}`,
+        );
         return false;
       }
 
@@ -256,10 +306,10 @@ export class Pf2eVisionerApi {
       // Set visibility using utility function
       await setVisibilityBetween(observerToken, targetToken, state, options);
       await updateTokenVisuals();
-      
+
       return true;
     } catch (error) {
-      console.error('Error setting visibility:', error);
+      console.error("Error setting visibility:", error);
       return false;
     }
   }
@@ -298,7 +348,7 @@ export class Pf2eVisionerApi {
       // Get cover using utility function
       return getCoverBetween(observerToken, targetToken);
     } catch (error) {
-      console.error('Error getting cover:', error);
+      console.error("Error getting cover:", error);
       return null;
     }
   }
@@ -314,9 +364,11 @@ export class Pf2eVisionerApi {
   static async setCover(observerId, targetId, state, options = {}) {
     try {
       // Validate cover state
-      const validStates = ['none', 'lesser', 'standard', 'greater'];
+      const validStates = ["none", "lesser", "standard", "greater"];
       if (!validStates.includes(state)) {
-        console.error(`Invalid cover state: ${state}. Valid states are: ${validStates.join(', ')}`);
+        console.error(
+          `Invalid cover state: ${state}. Valid states are: ${validStates.join(", ")}`,
+        );
         return false;
       }
 
@@ -337,14 +389,14 @@ export class Pf2eVisionerApi {
       // Set cover using utility function
       await setCoverBetween(observerToken, targetToken, state, options);
       await updateTokenVisuals();
-      
+
       return true;
     } catch (error) {
-      console.error('Error setting cover:', error);
+      console.error("Error setting cover:", error);
       return false;
     }
   }
-  
+
   /**
    * Request clients to refresh their canvas
    */
@@ -360,36 +412,36 @@ export class Pf2eVisionerApi {
    */
   static getRollOptions(observerId, targetId) {
     const options = [];
-    
+
     if (!observerId || !targetId) return options;
-    
+
     // Get visibility state between observer and target
     const visibilityState = this.getVisibility(observerId, targetId);
     if (visibilityState) {
       // Add visibility-specific roll options
       options.push(`per-token-visibility:target:${visibilityState}`);
     }
-    
+
     // Get cover state between observer and target
     const coverState = this.getCover(observerId, targetId);
     if (coverState) {
       // Add cover-specific roll options
       options.push(`per-token-cover:target:${coverState}`);
     }
-    
+
     // Get observer token for capabilities check
     const observerToken = canvas.tokens.get(observerId);
     if (observerToken?.actor) {
       // Add observer capabilities (if implemented)
       if (observerToken.actor.system?.traits?.senses?.darkvision) {
-        options.push('per-token-visibility:observer:has-darkvision');
+        options.push("per-token-visibility:observer:has-darkvision");
       }
-      
+
       if (observerToken.actor.system?.traits?.senses?.tremorsense) {
-        options.push('per-token-visibility:observer:has-tremorsense');
+        options.push("per-token-visibility:observer:has-tremorsense");
       }
     }
-    
+
     return options;
   }
 
@@ -402,7 +454,7 @@ export class Pf2eVisionerApi {
    */
   static addRollOptions(rollOptions, observerId, targetId) {
     const moduleOptions = this.getRollOptions(observerId, targetId);
-    moduleOptions.forEach(option => {
+    moduleOptions.forEach((option) => {
       rollOptions[option] = true;
     });
   }
@@ -412,7 +464,7 @@ export class Pf2eVisionerApi {
    * @returns {Array<string>} Array of valid visibility states
    */
   static getVisibilityStates() {
-    return ['observed', 'hidden', 'undetected', 'concealed'];
+    return ["observed", "hidden", "undetected", "concealed"];
   }
 
   /**
@@ -420,7 +472,7 @@ export class Pf2eVisionerApi {
    * @returns {Array<string>} Array of valid cover states
    */
   static getCoverStates() {
-    return ['none', 'lesser', 'standard', 'greater'];
+    return ["none", "lesser", "standard", "greater"];
   }
 
   /**
@@ -433,13 +485,13 @@ export class Pf2eVisionerApi {
   static async clearAllSceneData() {
     try {
       if (!game.user.isGM) {
-        ui.notifications.warn('Only GMs can clear Visioner scene data');
+        ui.notifications.warn("Only GMs can clear Visioner scene data");
         return false;
       }
 
       const scene = canvas?.scene;
       if (!scene) {
-        ui.notifications.warn('No active scene.');
+        ui.notifications.warn("No active scene.");
         return false;
       }
 
@@ -449,14 +501,20 @@ export class Pf2eVisionerApi {
         _id: t.id,
         // Use Foundry removal syntax to ensure full deletion of maps
         [`flags.${MODULE_ID}.-=visibility`]: null,
-        [`flags.${MODULE_ID}.-=cover`]: null
+        [`flags.${MODULE_ID}.-=cover`]: null,
       }));
       if (updates.length && scene.updateEmbeddedDocuments) {
-        try { await scene.updateEmbeddedDocuments('Token', updates, { diff: false }); } catch (_) {}
+        try {
+          await scene.updateEmbeddedDocuments("Token", updates, {
+            diff: false,
+          });
+        } catch (_) {}
       }
 
       // 2) Clear scene-level caches used by the module
-      try { await scene.setFlag(MODULE_ID, 'deletedEntryCache', {}); } catch (_) {}
+      try {
+        await scene.setFlag(MODULE_ID, "deletedEntryCache", {});
+      } catch (_) {}
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
       try {
@@ -476,7 +534,9 @@ export class Pf2eVisionerApi {
             .map((e) => e.id)
             .filter((id) => !!actor.items.get(id));
           if (toDelete.length) {
-            try { await actor.deleteEmbeddedDocuments('Item', toDelete); } catch (_) {}
+            try {
+              await actor.deleteEmbeddedDocuments("Item", toDelete);
+            } catch (_) {}
           }
         }
 
@@ -498,25 +558,43 @@ export class Pf2eVisionerApi {
             .map((e) => e.id)
             .filter((id) => !!a.items.get(id));
           if (toDelete.length) {
-            try { await a.deleteEmbeddedDocuments('Item', toDelete); } catch (_) {}
+            try {
+              await a.deleteEmbeddedDocuments("Item", toDelete);
+            } catch (_) {}
           }
         }
       } catch (_) {}
 
       // 4) Optional extra sweep for cover effects across all actors
-      try { const { cleanupAllCoverEffects } = await import('./cover-ephemeral.js'); await cleanupAllCoverEffects(); } catch (_) {}
+      try {
+        const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+        await cleanupAllCoverEffects();
+      } catch (_) {}
 
       // 5) Rebuild effects and refresh visuals/perception
-      try { const { rebuildAllEphemeralEffects } = await import('./effects-coordinator.js'); await rebuildAllEphemeralEffects(); } catch (_) {}
-      try { await updateTokenVisuals(); } catch (_) {}
-      try { refreshEveryonesPerception(); } catch (_) {}
-      try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
+      try {
+        const { rebuildAllEphemeralEffects } = await import(
+          "./effects-coordinator.js"
+        );
+        await rebuildAllEphemeralEffects();
+      } catch (_) {}
+      try {
+        await updateTokenVisuals();
+      } catch (_) {}
+      try {
+        refreshEveryonesPerception();
+      } catch (_) {}
+      try {
+        canvas.perception.update({ refreshVision: true });
+      } catch (_) {}
 
-      ui.notifications.info('PF2E Visioner: Cleared all scene data.');
+      ui.notifications.info("PF2E Visioner: Cleared all scene data.");
       return true;
     } catch (error) {
-      console.error('PF2E Visioner: Error clearing scene data:', error);
-      ui.notifications.error('PF2E Visioner: Failed to clear scene data. See console.');
+      console.error("PF2E Visioner: Error clearing scene data:", error);
+      ui.notifications.error(
+        "PF2E Visioner: Failed to clear scene data. See console.",
+      );
       return false;
     }
   }
@@ -529,7 +607,7 @@ export class Pf2eVisionerApi {
   static async clearAllDataForSelectedToken(token = null) {
     try {
       if (!game.user.isGM) {
-        ui.notifications.warn('Only GMs can clear Visioner data');
+        ui.notifications.warn("Only GMs can clear Visioner data");
         return false;
       }
 
@@ -538,7 +616,11 @@ export class Pf2eVisionerApi {
       if (!selected) {
         const controlled = canvas.tokens?.controlled ?? [];
         if (controlled.length !== 1) {
-          ui.notifications.warn(controlled.length === 0 ? 'No token selected.' : 'Select a single token.');
+          ui.notifications.warn(
+            controlled.length === 0
+              ? "No token selected."
+              : "Select a single token.",
+          );
           return false;
         }
         selected = controlled[0];
@@ -555,18 +637,20 @@ export class Pf2eVisionerApi {
         const unset = {
           _id: selected.id,
           [`flags.${MODULE_ID}.-=visibility`]: null,
-          [`flags.${MODULE_ID}.-=cover`]: null
+          [`flags.${MODULE_ID}.-=cover`]: null,
         };
-        await scene.updateEmbeddedDocuments('Token', [unset], { diff: false });
+        await scene.updateEmbeddedDocuments("Token", [unset], { diff: false });
       } catch (_) {}
 
       // Visibility effects contributed by this observer → remove from all targets
       try {
         const targetUpdates = tokens
-          .filter(t => t.id !== selected.id && t?.actor)
-          .map(t => ({ target: t, state: 'observed' }));
+          .filter((t) => t.id !== selected.id && t?.actor)
+          .map((t) => ({ target: t, state: "observed" }));
         if (targetUpdates.length) {
-          await batchUpdateOffGuardEffects(selected, targetUpdates, { removeAllEffects: true });
+          await batchUpdateOffGuardEffects(selected, targetUpdates, {
+            removeAllEffects: true,
+          });
         }
       } catch (_) {}
 
@@ -592,16 +676,32 @@ export class Pf2eVisionerApi {
       } catch (_) {}
 
       // 3) Rebuild/refresh
-      try { const { rebuildAllEphemeralEffects } = await import('./effects-coordinator.js'); await rebuildAllEphemeralEffects(); } catch (_) {}
-      try { await updateTokenVisuals(); } catch (_) {}
-      try { refreshEveryonesPerception(); } catch (_) {}
-      try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
+      try {
+        const { rebuildAllEphemeralEffects } = await import(
+          "./effects-coordinator.js"
+        );
+        await rebuildAllEphemeralEffects();
+      } catch (_) {}
+      try {
+        await updateTokenVisuals();
+      } catch (_) {}
+      try {
+        refreshEveryonesPerception();
+      } catch (_) {}
+      try {
+        canvas.perception.update({ refreshVision: true });
+      } catch (_) {}
 
-      ui.notifications.info('PF2E Visioner: Cleared data for selected token.');
+      ui.notifications.info("PF2E Visioner: Cleared data for selected token.");
       return true;
     } catch (error) {
-      console.error('PF2E Visioner: Error clearing data for selected token:', error);
-      ui.notifications.error('PF2E Visioner: Failed to clear token data. See console.');
+      console.error(
+        "PF2E Visioner: Error clearing data for selected token:",
+        error,
+      );
+      ui.notifications.error(
+        "PF2E Visioner: Failed to clear token data. See console.",
+      );
       return false;
     }
   }
@@ -611,11 +711,13 @@ export class Pf2eVisionerApi {
  * Standalone function exports for internal use
  */
 export const openTokenManager = Pf2eVisionerApi.openTokenManager;
-export const openTokenManagerWithMode = Pf2eVisionerApi.openTokenManagerWithMode;
+export const openTokenManagerWithMode =
+  Pf2eVisionerApi.openTokenManagerWithMode;
 
 // Legacy exports for backward compatibility
 export const openVisibilityManager = Pf2eVisionerApi.openTokenManager;
-export const openVisibilityManagerWithMode = Pf2eVisionerApi.openTokenManagerWithMode;
+export const openVisibilityManagerWithMode =
+  Pf2eVisionerApi.openTokenManagerWithMode;
 
 /**
  * Main API export - this is what external modules should use

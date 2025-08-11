@@ -53,11 +53,13 @@ The PF2eVisionerVisibility rule element allows you to programmatically change vi
 ### How It Works
 
 The PF2eVisionerVisibility rule element establishes a relationship between:
+
 1. A **subject** (who is being seen)
 2. **Observers** (who are doing the seeing)
 3. A **direction** (which way the visibility effect applies)
 
 When the rule element is active, it applies the specified visibility change based on the direction:
+
 - With `"from"` direction: The subject is hidden FROM the observers (observers see subject as hidden/undetected)
 - With `"to"` direction: The subject is hidden TO the observers (subject sees observers as hidden/undetected)
 
@@ -81,8 +83,6 @@ For both directions, ephemeral effects are applied to the subject token for cons
 
 This rule element makes you hidden to all observers. Ephemeral effects are applied to your token (the subject).
 
-
-
 #### Enhanced Vision (TO direction)
 
 ```json
@@ -98,8 +98,6 @@ This rule element makes you hidden to all observers. Ephemeral effects are appli
 ```
 
 This rule element improves how you see other creatures (you see them more clearly). Ephemeral effects are applied to your token (the subject).
-
-
 
 #### Gradually Become Less Visible (FROM direction)
 
@@ -125,7 +123,7 @@ This rule element makes you one step less visible to enemies (observed → conce
   "subject": "self",
   "observers": "all",
   "direction": "from",
-  "mode": "remove",
+  "mode": "remove"
 }
 ```
 
@@ -146,7 +144,6 @@ This rule element resets all visibility states to observed and removes all relat
 ```
 
 This rule element makes you hidden to currently targeted tokens. This allows for quick application of visibility effects to specific tokens without having to select them.
-
 
 ### Roll Options
 

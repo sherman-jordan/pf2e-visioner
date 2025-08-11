@@ -1,34 +1,52 @@
 # Changelog
 
+## [1.9.0] - 2025-08-11
+
+### Added
+- Stealth for loot tokens: Added possibility to hide loot from specific tokens and finding them with seek!
+- Stealth DC override for loot tokens in Token Config:
+  - Injected a Stealth DC number field into the Vision tab for loot actors.
+  - Added a dedicated “PF2E Visioner” tab fallback for loot tokens when available.
+
+### Changed
+
+- Seek and Token Manager now respect the token-level Stealth DC override for loot tokens, falling back to the world default when unset.
+
 ## [1.8.0] - 2025-08-11
 
 ### Added
+
 - API: `api.clearAllSceneData()` to clear all per-token visibility/cover maps and all module-created effects across the scene, then rebuild and refresh visuals.
 - Macros added:
   - Clear All Scene Data (calls `api.clearAllSceneData()`)
   - Open Token Manager(calls `api.openTokenManager()`)
 
 ### Improved
+
 - Effects handling: will now use batching for better performance
 
 ## [1.7.1] - 2025-08-11
 
 ### Changed
+
 - Enhanced tooltip size customization: Improved implementation of tooltip font size setting
 - Added proper scaling of tooltip icons based on font size
 - Added CSS variables for consistent tooltip sizing across all components
 - Better responsiveness for tooltip elements at different font sizes
 
 ### Fixed
+
 - Tooltips should now stick and not move with the canvas
 
 ## [1.7.0] - 2025-08-10
 
 ### Added
+
 - Enforce RAW Setting: When disabled (default) will skip some conditions checks
 - Multiple rules per effect: Instead of multiple effects, the module will now handle one effect with multiple rules per state
 
 ### Improved
+
 - Memory optimization: Batch processing for visibility changes to reduce heap usage
 - Token deletion cleanup: Automatically remove deleted tokens from visibility maps, visibility effects, and cover effects
 - Performance: Optimized effect creation and updates to use bulk operations instead of individual promises
@@ -41,29 +59,32 @@
 - Performance: Optimized cover effects system with bulk operations for better memory usage
 
 ### Fixed
+
 - Chat Automation: Fixed encounter filtering not working properly for all actions (Seek, Point Out, Sneak, Hide, Create a Diversion, Consequences)
 - Chat Automation: Fixed issue where players couldn't see the Seek template setup button when no valid targets were detected
-
 
 ## [1.6.1] - 2025-08-10
 
 ### Fixed
-- Token Manager: Cover should now support highlight and go to row as well
 
+- Token Manager: Cover should now support highlight and go to row as well
 
 ## [1.6.0] - 2025-08-10
 
 ### Added
+
 - Chat Automation: Added Apply Changes / Revert Changes to the automation panel for all actions
 
 ## [1.5.1] - 2025-08-10
 
 ### Changed
+
 - Matching color for dialog theme on highlight row
 
 ## [1.5.0] - 2025-08-10
 
 ### Added
+
 - Token Manager: Replaced Effects column with DC column in the Visibility tab.
   - Target mode shows Perception DC; Observer mode shows Stealth DC.
 - New world setting: "Integrate roll outcome in the token manager".
@@ -72,6 +93,7 @@
   - Selecting tokens on the canvas highlights matching rows and auto-scrolls them into view.
 
 ### Changed
+
 - Moved effects descriptions into the Current State tooltip.
 - Unified PC and NPC table widths; responsive colgroups when Outcome is on/off.
 - Outcome chip style matches action dialogs.
@@ -79,18 +101,21 @@
 - Removed hover-based row→token and token→row behavior to avoid conflicts; selection now drives row highlighting.
 
 ### Fixed
+
 - Correct DC tooltip text and header alignment.
 - Layout glitches when Outcome is disabled.
 
 ## [1.4.0] - 2025-08-09
 
 ### Added
+
 - Hover tooltips now show Font Awesome icon badges aligned above tokens:
   - Left badge: visibility state icon
   - Right badge: cover icon when applicable
 - PF2e hud support for tooltip position
 
 ### Changed
+
 - Hover tooltips no longer render text labels; icons are used for a cleaner, compact look.
 - Badge positioning uses world-to-screen transforms, keeping alignment stable under zoom/pan.
 - Create a Diversion discovery now considers both observed and concealed creatures as valid observers, and outcomes display only those who can currently see the diverter.
@@ -98,12 +123,14 @@
 - Effects will show token name rather than actor
 
 ### Fixed
+
 - Token Manager: resolved ReferenceError for `pairs2` in target-mode apply flows.
 - Tooltip cleanup reliably removes DOM badges to prevent lingering elements after hover/Alt/O.
 
 ## [1.3.3] - 2025-08-09
 
 ### Fixed
+
 - Damage Consequences: Only list targets that explicitly have the attacker as Hidden/Undetected; removed global condition fallback.
 - Damage Consequences button is hidden when no outcomes exist and shown when at least one target qualifies.
 - Token Manager/Visibility Manager: Reworked layout to a single outer scroll container; inner tables no longer create nested scrollbars.
@@ -112,14 +139,17 @@
 ## [1.3.2] - 2025-08-09
 
 ## Fixed
+
 - CSS class overrding default system one (sorry!)
 
 ## [1.3.1] - 2025-08-08
 
 ### Added
+
 - New world setting: Integrate Cover with Visibility Rules (`integrateCoverVisibility`). When enabled, certain actions obey cover prerequisites. Specifically, Hide is only available if the acting token has at least Standard Cover from an observer.
 
 ### Changed
+
 - Chat automation now hides the “Open Hide Results” button when no actionable changes are possible after applying visibility and cover checks (and the actual roll outcome when present).
 - Hide observer discovery uses the same cover gating as the UI check to ensure consistency.
 
@@ -128,6 +158,7 @@
 ## [1.3.0] - 2025-08-08
 
 ### Visioner Token Manager (Visibility & Cover)
+
 - Reworked Apply actions:
   - Apply Current now applies the active type (Visibility or Cover) for BOTH modes (Observer → Targets and Targets → Observer).
   - Apply Both now applies BOTH types for BOTH modes in one click.
@@ -139,7 +170,6 @@
   - Visibility order: Observed → Concealed → Hidden → Undetected.
   - Cover order: None → Lesser → Standard → Greater.
 
-
 All notable changes to the PF2E Visioner module will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -148,19 +178,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.2] - 2025-08-08
 
 ### Fixed
+
 - **Hide/Sneak/Create a diversion/Consequences Buttons**: Restored functionality of "Open Hide Results" and "Open Sneak Results" buttons in chat. Clicking now opens their preview dialogs as expected.
 - **Generic Open Actions**: Added unified handling for other `open-*` actions (e.g., Create a Diversion, Consequences) for improved resilience.
 
 ## [1.2.1] - 2025-08-08
 
 ### Changed
+
 - **Seek Template Player Logic**: Players will now be able to put their own seek templates, letting GMs open the results nicely
 - **Point out Player Logic**: Players are now able to point out themselves, letting the GM open the results nicely, added ping on the pointed out token
-
 
 ## [1.2.0] - 2025-08-08
 
 ### Added
+
 - **Seek via Template (30 ft Burst)**: Optional template-based Seek targeting
   - New setting to enable template mode for Seek
   - “Setup Seek Template” button in chat lets you place a 30 ft burst anywhere with live preview
@@ -168,29 +200,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Button toggles to “Remove Seek Template” after placement
 
 ### Changed
+
 - **Range Limitation Logic**: When using a template, combat/non-combat Seek distance limits are fully ignored
 - **Colors**: Template colors use the current player's color; fallback to themed defaults
-
 
 ---
 
 ## [1.1.0] - 2025-08-08
 
 ### Added
+
 - **Out of Combat Seek Distance Limitation**: Implemented distance limitations for Seek actions outside of combat
   - GMs can now configure maximum distance for out-of-combat Seek attempts
   - Distance is calculated automatically between seeker and potential targets
   - Setting can be adjusted in module configuration
 
-
 ## [1.0.2] - 2025-08-07
 
 ### Fixed
+
 - **Visibility Manager Actor Image**: Fixed an issue with actor images
 
 ## [1.0.1] - 2025-08-07
 
 ### Fixed
+
 - **Visibility Manager Mode Switching**: Fixed issue where toggling between observer and target mode would reset changes made in the previous mode
   - Changes in both modes are now preserved when toggling between modes
   - Apply Changes button now applies changes from both observer and target modes
@@ -199,6 +233,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0] - 2025-08-10
 
 ### Added
+
 - **Rule Element Initial Support**: Added custom rule element for controlling visibility states
   - Implemented PF2eVisionerVisibility rule element with direction control (TO/FROM)
   - Added schema with configurable options for subject, observers, mode, and status
@@ -209,11 +244,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive documentation and example items
 
 ### Fixed
+
 - **Unification**: Matching colors through all dialogs for the visibility states
 
 ## [0.7.0] - 2025-08-08
 
 ### Added
+
 - **Colorblind Mode**: Added accessibility option for different types of colorblindness
   - Multiple colorblind modes: Protanopia, Deuteranopia, Tritanopia, and Achromatopsia
   - Client-side setting that can be set individually by each user
@@ -221,6 +258,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Includes pattern indicators to help differentiate visibility states beyond color
 
 ### Fixed
+
 - **Create a Diversion Button**: Fixed issue where the Create a Diversion button would appear even when there were no valid targets (creatures that can see the actor)
 - **Create a Diversion Dialog**: Fixed issue where the Create a Diversion dialog would not open when clicking the button
 - Added notification when attempting to use Create a Diversion with no valid targets
@@ -229,22 +267,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.1] - 2025-08-07
 
 ### Changed
+
 - **Improved Dialog Visibility Logic**: Dialog buttons now only appear when there are valid targets for actions, avoiding unnecessary notifications for all dialog types (Seek, Point Out, Hide, Sneak, Create a Diversion, and Consequences)
 
 ## [0.6.0] - 2025-08-07
 
 ### Added
-- **Damage Consequences Dialog**: Added red-themed dialog that appears when a hidden or undetected token makes a damage roll, allowing the GM to update visibility states of affected targets
 
+- **Damage Consequences Dialog**: Added red-themed dialog that appears when a hidden or undetected token makes a damage roll, allowing the GM to update visibility states of affected targets
 
 ## [0.5.0] - 2025-08-07
 
 ### Added
+
 - **Block Target Tooltips for Players**: Added setting to prevent players from seeing target tooltips when hovering over tokens, while still allowing them to see tooltips when holding O key or pressing Alt
 
 ## [0.4.0] - 2025-08-07
 
 ### Added
+
 - **Custom Tooltip Size**: Added slider control for adjusting tooltip font size
 - **Client-side Setting**: Font size preference is stored per-user rather than globally
 - **Responsive Sizing**: Tooltip components scale proportionally with font size changes
@@ -252,14 +293,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2025-08-07
 
 ### Added
+
 - **Custom Seek Distance**: Added configurable distance setting for Seek range limitation
 - **Settings Organization**: Improved settings layout with logical grouping for better usability
 - **Enhanced Notifications**: Updated range limit messages to show the custom distance
 
-
 ## [0.2.18] - 2025-08-06
 
 ### Improved
+
 - **Dialog Layout**: Added scrollable table with fixed footer to action dialogs for better usability with many tokens
 - **Dialog Sizing**: Fixed dialog height and scrolling behavior to ensure proper display of large result sets
 - **Table Scrolling**: Enhanced table container to properly handle overflow with fixed headers and footers
@@ -270,23 +312,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.17] - 2025-08-06
 
 ### Fixed
-- **Point out dialog wrong application**: fixed condition(hidden\undetected) change for wrong token
 
+- **Point out dialog wrong application**: fixed condition(hidden\undetected) change for wrong token
 
 ## [0.2.15] - 2025-08-06
 
 ### Fixed
+
 - **Major bug**: Had an issue that effect would go on the defender when attacking a condition(hidden\undetected) attacker, this is now fixed
 
 ## [0.2.14] - 2025-08-06
 
 ### Added
+
 - **Combat Seek Range Limitation**: New setting to limit Seek actions to 30 feet range in combat, following PF2e rules
 - **Range Feedback**: Clear notifications when range limitation is active and targets are out of range
 
 ## [0.2.13] - 2025-08-06
 
 ### Improved
+
 - **Consolidated DC Extraction**: Centralized perception and stealth DC extraction functions in shared utilities for consistent access paths across all automation dialogs
 - **Simplified Data Access**: Optimized DC extraction to use definitive paths for both PC and NPC actors, removing complex fallback logic
 - **Code Maintainability**: Standardized DC access patterns across all visibility-related dialogs (Hide, Seek, Sneak, Create a Diversion, Point Out)
@@ -294,15 +339,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.7] - 2025-08-06
 
 ### Added
+
 - **Player Tooltip Setting**: New "Allow Player Tooltips" setting enables non-GM players to see visibility indication tooltips from their controlled tokens' perspective
 - **Ignore Allies Setting**: New "Ignore Allies" setting filters visibility dialogs so NPCs only see players and players only see NPCs, streamlining visibility management
 - **Shared Utility Functions**: Extracted common ally filtering logic into reusable utility functions for better code maintainability
 
 ### Fixed
+
 - **Hide Dialog Encounter Filter**: Fixed bug where "Apply All" button in Hide dialog ignored encounter filter and applied changes to all tokens instead of only encounter tokens
 - **Encounter Filter Logic**: Encounter filter now properly maintains its state and shows empty results when no encounter tokens match, instead of automatically disabling the filter
 
 ### Improved
+
 - **Code Organization**: Refactored all chat automation modules to use shared ally filtering utility, eliminating code duplication and ensuring consistency
 - **Player Access Control**: Players can only see tooltips for their own controlled tokens when player tooltips are enabled, preventing information leakage
 - **Setting Integration**: Both new settings require world restart and are properly integrated with the module's configuration system
@@ -310,33 +358,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.5] - 2025-08-06
 
 ### Fixed
+
 - **API**: Fixed API function with options
 
 ## [0.2.4] - 2025-08-06
 
 ### Added
+
 - **API**: Added API function to update ephemeral effects for visibility changes
 
 ## [0.2.3] - 2025-08-05
 
 ### Fixed
-- **Sneak visibility**: Fixed Sneak visibility logic to use effective new state instead of hardcoding 'undetected'
 
+- **Sneak visibility**: Fixed Sneak visibility logic to use effective new state instead of hardcoding 'undetected'
 
 ## [0.2.2] - 2025-08-05
 
 ### Fixed
-- **CSS Syntax**: Fixed CSS syntax error in chat-automation-styles.js
 
+- **CSS Syntax**: Fixed CSS syntax error in chat-automation-styles.js
 
 ## [0.2.1] - 2025-08-05
 
 ### Fixed
+
 - **Sneak perception DC calculation**: Enhanced Sneak dialog perception DC retrieval with multiple fallback paths for different PF2e system versions, matching Create a Diversion's robust implementation
 
 ## [0.2.0] - 2025-08-05
 
 ### Added
+
 - **Sneak Action Dialog**: Complete automation for PF2E Sneak actions with preview and outcome management
 - **Create a Diversion Dialog**: Complete automation for PF2E Create a Diversion actions with preview and outcome management
 - **Token hover highlighting**: Hover over token rows in dialogs to highlight tokens on canvas
@@ -344,6 +396,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Initiative-based effects**: Support for ephemeral effects that track combat initiative
 
 ### Improved
+
 - **Dialog styling consistency**: Unified text sizes, spacing, and layout across all action dialogs
 - **Token image presentation**: Removed unnecessary tooltips and borders from token images in tables
 - **UI responsiveness**: Optimized dialog width and column sizing for better proportions
@@ -353,6 +406,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Perception DC calculation**: Improved DC retrieval with multiple fallback paths for different PF2e system versions
 
 ### Technical
+
 - **ApplicationV2 compliance**: Proper use of built-in action system instead of manual event binding
 - **Error resilience**: Try-catch blocks around visibility operations to prevent dialog crashes
 - **Code organization**: Improved separation of concerns between dialog logic and template rendering
@@ -360,11 +414,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.x] - 2025-01-31
 
 ### Fixed
+
 - Resolved circular dependency issue causing "Cannot use import statement outside a module" error
 - Fixed manifest warning about unknown "system" key by using correct v13 relationships format
 - Implemented lazy loading for API components to prevent initialization conflicts
 
 ### Added
+
 - Complete rewrite for FoundryVTT v13 compatibility
 - Modern ApplicationV2-based visibility manager interface
 - ESModule architecture for better performance and maintainability
@@ -382,6 +438,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full TypeScript-style JSDoc documentation
 
 ### Changed
+
 - Upgraded from ApplicationV1 to ApplicationV2 framework
 - Improved data storage using modern flag system
 - Enhanced visual effects system with better performance
@@ -390,6 +447,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimized token visibility update logic
 
 ### Technical
+
 - Minimum FoundryVTT version: v13.341
 - Verified compatibility: v13.346
 - PF2E system compatibility: v6.0.0+
@@ -399,6 +457,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - Previous Version
 
 ### Added
+
 - Basic per-token visibility functionality
 - Simple table-based interface
 - Core visibility states (Observed, Hidden, Undetected, Concealed)
@@ -406,5 +465,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Flag-based data storage
 
 ### Compatibility
+
 - FoundryVTT v12 and earlier
 - Basic ApplicationV1 framework

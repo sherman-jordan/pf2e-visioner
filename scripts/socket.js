@@ -34,6 +34,13 @@ export function refreshLocalPerception() {
     refreshSounds: true,
     refreshOcclusion: true,
   });
+  // Also refresh wall visuals/indicators for this client
+  try {
+    (async () => {
+      const { updateWallVisuals } = await import("./visual-effects.js");
+      await updateWallVisuals();
+    })();
+  } catch (_) {}
 }
 
 /*
@@ -42,6 +49,13 @@ export function refreshLocalPerception() {
  */
 export function refreshEveryonesPerception() {
   if (visionerSocket) visionerSocket.executeForEveryone(REFRESH_CHANNEL);
+  try {
+    (async () => {
+      const observerId = canvas.tokens.controlled?.[0]?.id || null;
+      const { updateWallVisuals } = await import("./visual-effects.js");
+      await updateWallVisuals(observerId);
+    })();
+  } catch (_) {}
 }
 
 /*
@@ -63,12 +77,26 @@ function pointOutHandler(...args) {
  * @param {string} pointerTokenId
  * @param {string} messageId
  */
-export function requestGMOpenPointOut(pointerTokenId, targetTokenId, messageId) {
+export function requestGMOpenPointOut(
+  pointerTokenId,
+  targetTokenId,
+  messageId,
+) {
   if (!visionerSocket) return;
-  visionerSocket.executeAsGM(POINTOUT_REQUEST_CHANNEL, { pointerTokenId, targetTokenId, messageId, userId: game.userId });
+  visionerSocket.executeAsGM(POINTOUT_REQUEST_CHANNEL, {
+    pointerTokenId,
+    targetTokenId,
+    messageId,
+    userId: game.userId,
+  });
 }
 
-async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId, userId }) {
+async function pointOutRequestHandler({
+  pointerTokenId,
+  targetTokenId,
+  messageId,
+  userId,
+}) {
   try {
     if (!game.user.isGM) return;
     const pointerToken = canvas.tokens.get(pointerTokenId);
@@ -84,28 +112,46 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
     // Ping the target token's location so the table sees what was pointed out
     try {
       if (targetToken) {
-        const point = targetToken.center || { x: targetToken.x + (targetToken.w ?? (targetToken.width * canvas.grid.size)) / 2, y: targetToken.y + (targetToken.h ?? (targetToken.height * canvas.grid.size)) / 2 };
+        const point = targetToken.center || {
+          x:
+            targetToken.x +
+            (targetToken.w ?? targetToken.width * canvas.grid.size) / 2,
+          y:
+            targetToken.y +
+            (targetToken.h ?? targetToken.height * canvas.grid.size) / 2,
+        };
         const playerUser = game.users?.get?.(userId);
-        if (typeof canvas.ping === 'function') {
-          canvas.ping(point, { color: playerUser?.color, name: playerUser?.name || 'Point Out' });
+        if (typeof canvas.ping === "function") {
+          canvas.ping(point, {
+            color: playerUser?.color,
+            name: playerUser?.name || "Point Out",
+          });
         } else if (canvas?.pings?.create) {
           canvas.pings.create({ ...point, user: playerUser });
         }
       }
     } catch (pingErr) {
-      console.warn(`[${MODULE_ID}] Failed to ping pointed-out target:`, pingErr);
+      console.warn(
+        `[${MODULE_ID}] Failed to ping pointed-out target:`,
+        pingErr,
+      );
     }
 
     // Determine whether there are any allies that benefit from Point Out
     let hasTargets = false;
     try {
       if (targetToken) {
-        const { discoverPointOutAllies } = await import('./chat/point-out-logic.js');
+        const { discoverPointOutAllies } = await import(
+          "./chat/point-out-logic.js"
+        );
         const allies = discoverPointOutAllies(pointerToken, targetToken) || [];
         hasTargets = allies.length > 0;
       }
     } catch (calcErr) {
-      console.warn(`[${MODULE_ID}] Failed to evaluate allies for player Point Out:`, calcErr);
+      console.warn(
+        `[${MODULE_ID}] Failed to evaluate allies for player Point Out:`,
+        calcErr,
+      );
     }
 
     // Persist pending Point Out info so GM can decide when to open results
@@ -117,28 +163,36 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
         const updatedPF2eTarget = { ...currentPF2eTarget };
         if (targetToken) {
           updatedPF2eTarget.token = targetToken.id;
-          if (targetToken.actor?.id) updatedPF2eTarget.actor = targetToken.actor.id;
+          if (targetToken.actor?.id)
+            updatedPF2eTarget.actor = targetToken.actor.id;
         }
-        await msg.update({ ['flags.pf2e.target']: updatedPF2eTarget });
+        await msg.update({ ["flags.pf2e.target"]: updatedPF2eTarget });
       } catch (e) {
-        console.warn(`[${MODULE_ID}] Unable to update PF2e target flags for Point Out:`, e);
+        console.warn(
+          `[${MODULE_ID}] Unable to update PF2e target flags for Point Out:`,
+          e,
+        );
       }
       await msg.update({
         [`flags.${MODULE_ID}.pointOut`]: {
           pointerTokenId,
           targetTokenId: targetToken?.id ?? null,
           hasTargets,
-          fromUserId: userId
-        }
+          fromUserId: userId,
+        },
       });
-      try { await msg.render(true); } catch (_) {}
+      try {
+        await msg.render(true);
+      } catch (_) {}
     }
 
     // Update GM panel actions if already rendered
     try {
-      const panel = document.querySelector(`.pf2e-visioner-automation-panel[data-message-id="${messageId}"]`);
+      const panel = document.querySelector(
+        `.pf2e-visioner-automation-panel[data-message-id="${messageId}"]`,
+      );
       if (panel) {
-        const actions = panel.querySelector('.automation-actions');
+        const actions = panel.querySelector(".automation-actions");
         if (actions) {
           if (hasTargets) {
             actions.innerHTML = `
@@ -156,15 +210,25 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
               </button>
             `;
           } else {
-            try { panel.remove(); } catch (_) { actions.innerHTML = ''; }
+            try {
+              panel.remove();
+            } catch (_) {
+              actions.innerHTML = "";
+            }
           }
         }
       }
     } catch (domError) {
-      console.warn(`[${MODULE_ID}] Failed to update GM panel actions for pending Point Out:`, domError);
+      console.warn(
+        `[${MODULE_ID}] Failed to update GM panel actions for pending Point Out:`,
+        domError,
+      );
     }
   } catch (e) {
-    console.error(`[${MODULE_ID}] Failed to handle GM Point Out preview from player action:`, e);
+    console.error(
+      `[${MODULE_ID}] Failed to handle GM Point Out preview from player action:`,
+      e,
+    );
   }
 }
 
@@ -175,12 +239,35 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
  * @param {number} radiusFeet
  * @param {string} messageId
  */
-export function requestGMOpenSeekWithTemplate(actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult) {
+export function requestGMOpenSeekWithTemplate(
+  actorTokenId,
+  center,
+  radiusFeet,
+  messageId,
+  rollTotal,
+  dieResult,
+) {
   if (!visionerSocket) return;
-  visionerSocket.executeAsGM(SEEK_TEMPLATE_CHANNEL, { actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult, userId: game.userId });
+  visionerSocket.executeAsGM(SEEK_TEMPLATE_CHANNEL, {
+    actorTokenId,
+    center,
+    radiusFeet,
+    messageId,
+    rollTotal,
+    dieResult,
+    userId: game.userId,
+  });
 }
 
-async function seekTemplateHandler({ actorTokenId, center, radiusFeet, messageId, rollTotal, dieResult, userId }) {
+async function seekTemplateHandler({
+  actorTokenId,
+  center,
+  radiusFeet,
+  messageId,
+  rollTotal,
+  dieResult,
+  userId,
+}) {
   try {
     if (!game.user.isGM) return; // Only GM handles
     const actorToken = canvas.tokens.get(actorTokenId);
@@ -189,11 +276,15 @@ async function seekTemplateHandler({ actorTokenId, center, radiusFeet, messageId
     // Determine whether there are any valid targets in the provided template area
     let hasTargets = false;
     try {
-      const { discoverSeekTargets } = await import('./chat/seek-logic.js');
-      const targets = discoverSeekTargets(actorToken, false, radiusFeet, center) || [];
+      const { discoverSeekTargets } = await import("./chat/seek-logic.js");
+      const targets =
+        discoverSeekTargets(actorToken, false, radiusFeet, center) || [];
       hasTargets = targets.length > 0;
     } catch (calcErr) {
-      console.warn(`[${MODULE_ID}] Failed to evaluate targets for player-provided Seek template:`, calcErr);
+      console.warn(
+        `[${MODULE_ID}] Failed to evaluate targets for player-provided Seek template:`,
+        calcErr,
+      );
     }
 
     // Persist the pending template data on the chat message flags so the GM can decide when to open results
@@ -204,25 +295,33 @@ async function seekTemplateHandler({ actorTokenId, center, radiusFeet, messageId
           center,
           radiusFeet,
           actorTokenId,
-          rollTotal: (typeof rollTotal === 'number') ? rollTotal : null,
-          dieResult: (typeof dieResult === 'number') ? dieResult : null,
+          rollTotal: typeof rollTotal === "number" ? rollTotal : null,
+          dieResult: typeof dieResult === "number" ? dieResult : null,
           fromUserId: userId,
-          hasTargets
-        }
+          hasTargets,
+        },
       });
       // Re-render the chat message so the injected panel can be updated/removed appropriately
-      try { await msg.render(true); } catch (_) {}
+      try {
+        await msg.render(true);
+      } catch (_) {}
     }
 
     // If the automation panel is already injected for this message on the GM, swap its action to "Open Seek Results"
     try {
-      const panel = document.querySelector(`.pf2e-visioner-automation-panel[data-message-id="${messageId}"]`);
+      const panel = document.querySelector(
+        `.pf2e-visioner-automation-panel[data-message-id="${messageId}"]`,
+      );
       if (panel) {
-        const actions = panel.querySelector('.automation-actions');
+        const actions = panel.querySelector(".automation-actions");
         if (actions) {
           if (hasTargets) {
-            const label = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS');
-            const tooltip = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP');
+            const label = game.i18n.localize(
+              "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS",
+            );
+            const tooltip = game.i18n.localize(
+              "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP",
+            );
             actions.innerHTML = `
               <button type="button" 
                       class="visioner-btn visioner-btn-seek" 
@@ -233,14 +332,24 @@ async function seekTemplateHandler({ actorTokenId, center, radiusFeet, messageId
             `;
           } else {
             // No targets: remove the entire panel to avoid showing Setup Seek Template
-            try { panel.remove(); } catch (_) { actions.innerHTML = ''; }
+            try {
+              panel.remove();
+            } catch (_) {
+              actions.innerHTML = "";
+            }
           }
         }
       }
     } catch (domError) {
-      console.warn(`[${MODULE_ID}] Failed to update GM panel actions for pending Seek template:`, domError);
+      console.warn(
+        `[${MODULE_ID}] Failed to update GM panel actions for pending Seek template:`,
+        domError,
+      );
     }
   } catch (e) {
-    console.error(`[${MODULE_ID}] Failed to handle GM Seek template from player:`, e);
+    console.error(
+      `[${MODULE_ID}] Failed to handle GM Seek template from player:`,
+      e,
+    );
   }
 }

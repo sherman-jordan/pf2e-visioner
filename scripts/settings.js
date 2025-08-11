@@ -82,8 +82,18 @@ export function registerSettings() {
         };
       } else if (key === 'tooltipFontSize') {
         settingConfig.onChange = (value) => {
-          // Update CSS variable for tooltip font size
-          document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${value}px`);
+          // Map preset to sizes
+          const presets = {
+            tiny: { font: 12, icon: 10, border: 2 },
+            small: { font: 14, icon: 12, border: 2 },
+            medium: { font: 16, icon: 16, border: 3 },
+            large: { font: 18, icon: 20, border: 4 },
+            xlarge: { font: 20, icon: 24, border: 5 }
+          };
+          const preset = presets[value] ?? presets.medium;
+          document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${preset.font}px`);
+          document.documentElement.style.setProperty('--pf2e-visioner-tooltip-icon-size', `${preset.icon}px`);
+          document.documentElement.style.setProperty('--pf2e-visioner-tooltip-badge-border', `${preset.border}px`);
         };
       } else if (key === 'colorblindMode') {
         settingConfig.onChange = (value) => {

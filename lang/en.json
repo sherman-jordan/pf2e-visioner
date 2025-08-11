@@ -164,10 +164,17 @@
         "name": "Allow Player Tooltips",
         "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens (requires restart)"
       },
-      "TOOLTIP_FONT_SIZE": {
-        "name": "Tooltip Font Size",
-        "hint": "Adjust the font size of visibility tooltips (client-side setting)"
-      },
+        "TOOLTIP_FONT_SIZE": {
+          "name": "Tooltip Size",
+          "hint": "Choose tooltip size (affects icon and border size; text adjusts accordingly)",
+          "CHOICES": {
+            "tiny": "Tiny",
+            "small": "Small",
+            "medium": "Medium",
+            "large": "Large",
+            "xlarge": "Extra Large"
+          }
+        },
       "COLORBLIND_MODE": {
         "name": "Colorblind Mode",
         "hint": "Select a colorblind mode to adjust colors for better visibility (client-side setting)",

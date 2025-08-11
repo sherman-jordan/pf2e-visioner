@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.7.1] - 2025-08-11
+
+### Changed
+- Enhanced tooltip size customization: Improved implementation of tooltip font size setting
+- Added proper scaling of tooltip icons based on font size
+- Added CSS variables for consistent tooltip sizing across all components
+- Better responsiveness for tooltip elements at different font sizes
+
+### Fixed
+- Tooltips should now stick and not move with the canvas
+
 ## [1.7.0] - 2025-08-10
 
 ### Added

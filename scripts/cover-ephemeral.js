@@ -704,7 +704,11 @@ async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
     if (!effectReceiverToken?.actor) return;
     const targetId = effectReceiverToken.id || effectReceiverToken.document?.id;
     const observers = (canvas?.tokens?.placeables ?? []).filter(
-      (t) => t && t !== effectReceiverToken && t.actor
+      (t) =>
+        t &&
+        t !== effectReceiverToken &&
+        t.actor &&
+        !isIgnoredActorTypeForCover(t.actor?.type)
     );
     const aggregates = effectReceiverToken.actor.itemTypes.effect.filter(
       (e) => e.flags?.[MODULE_ID]?.aggregateCover === true

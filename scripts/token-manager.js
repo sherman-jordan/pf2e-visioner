@@ -734,6 +734,17 @@ export class VisionerTokenManager extends foundry.applications.api
         if (!observerToken) continue;
         const current = getCoverMap(observerToken) || {};
         const currentState = current[app.observer.document.id];
+        // If observer is loot/etc, zero out map entry and skip enqueueing effect updates
+        try {
+          const t = observerToken.actor?.type;
+          if (t === "loot" || t === "vehicle" || t === "party") {
+            if (currentState && currentState !== "none") {
+              current[app.observer.document.id] = "none";
+              await setCoverMap(observerToken, current);
+            }
+            continue;
+          }
+        } catch (_) {}
         // Always queue removals so effects get cleaned even if map already at 'none'
         if (currentState === newCoverState && newCoverState !== "none")
           continue;
@@ -762,6 +773,16 @@ export class VisionerTokenManager extends foundry.applications.api
           if (!observerToken) continue;
           const current = getCoverMap(observerToken) || {};
           const currentState = current[app.observer.document.id];
+          try {
+            const t = observerToken.actor?.type;
+            if (t === "loot" || t === "vehicle" || t === "party") {
+              if (currentState && currentState !== "none") {
+                current[app.observer.document.id] = "none";
+                await setCoverMap(observerToken, current);
+              }
+              continue;
+            }
+          } catch (_) {}
           if (currentState !== newCoverState || newCoverState === "none") {
             observerUpdates.push({
               target: app.observer,

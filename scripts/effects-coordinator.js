@@ -50,6 +50,10 @@ export async function rebuildAllEphemeralEffects() {
     const { batchUpdateCoverEffects } = await import("./cover-ephemeral.js");
 
     for (const observer of tokens) {
+      try {
+        const t = observer.actor?.type;
+        if (t === "loot" || t === "vehicle" || t === "party") continue;
+      } catch (_) {}
       if (!observer?.actor) continue;
       const coverMap = getCoverMap(observer) || {};
 
@@ -82,6 +86,10 @@ export async function rebuildAllEphemeralEffects() {
     ).entries()) {
       const target = idToToken.get(targetId);
       if (!target?.actor) continue;
+      try {
+        const t = target.actor?.type;
+        if (t === "loot" || t === "vehicle" || t === "party") continue;
+      } catch (_) {}
       const targetType = target.actor?.type;
       const skip =
         targetType === "loot" ||

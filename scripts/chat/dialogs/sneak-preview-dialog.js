@@ -81,31 +81,29 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Get current visibility state - how this observer sees the sneaking token
       const currentVisibility =
         getVisibilityBetween(outcome.token, this.sneakingToken) ||
-        outcome.oldVisibility;
+        outcome.oldVisibility ||
+        outcome.currentVisibility;
 
       // Prepare available states for override
-      // Sneak can result in hidden or undetected
       const desired = getDesiredOverrideStatesForAction("sneak", outcome);
       const availableStates = this.buildOverrideStates(desired, outcome);
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
       const baseOldState = outcome.oldVisibility || currentVisibility;
-      // Check if there's an actionable change - either the outcome naturally changed OR user overrode the state
       const hasActionableChange =
-        outcome.changed === true ||
-        (effectiveNewState && effectiveNewState !== baseOldState);
+        baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
 
       return {
         ...outcome,
         outcomeClass: this.getOutcomeClass(outcome.outcome),
         outcomeLabel: this.getOutcomeLabel(outcome.outcome),
-        oldVisibilityState: cfg(outcome.oldVisibility || currentVisibility),
-        newVisibilityState: cfg(outcome.newVisibility),
+        oldVisibilityState: cfg(baseOldState),
+        newVisibilityState: cfg(effectiveNewState),
         marginText: this.formatMargin(outcome.margin),
         tokenImage: this.resolveTokenImage(outcome.token),
-        availableStates: availableStates,
+        availableStates,
         overrideState: outcome.overrideState || outcome.newVisibility,
-        hasActionableChange: hasActionableChange,
+        hasActionableChange,
       };
     });
 
@@ -138,6 +136,11 @@ export class SneakPreviewDialog extends BaseActionDialog {
       context,
     );
     return html;
+  }
+
+  _replaceHTML(result, content, options) {
+    content.innerHTML = result;
+    return content;
   }
 
   getAvailableStates() {
@@ -215,25 +218,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
   }
 
   updateActionButtonsForToken(tokenId, hasActionableChange) {
-    const actionsCell = this.element.querySelector(
-      `tr[data-token-id="${tokenId}"] .actions`,
-    );
-    if (!actionsCell) return;
-
-    if (hasActionableChange) {
-      actionsCell.innerHTML = `
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility" disabled>
-                    <i class="fas fa-undo"></i>
-                </button>
-            `;
-    } else {
-      actionsCell.innerHTML = '<span class="no-action">No change</span>';
-    }
-
-    // ApplicationV2 automatically binds events for elements with data-action attributes
+    // Delegate to base which renders Apply/Revert or "No Change"
+    super.updateActionButtonsForToken(tokenId, hasActionableChange);
   }
 
   // Duplicate render methods removed (defined earlier in class)

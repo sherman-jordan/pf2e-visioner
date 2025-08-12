@@ -108,9 +108,9 @@ export class HidePreviewDialog extends BaseActionDialog {
     const processedOutcomes = filteredOutcomes.map((outcome) => {
       const availableStates = this.getAvailableStatesForOutcome(outcome);
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+      const baseOldState = outcome.oldVisibility || outcome.currentVisibility;
       const hasActionableChange =
-        outcome.changed === true ||
-        (effectiveNewState && effectiveNewState !== outcome.oldVisibility);
+        baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
 
       return {
         ...outcome,
@@ -123,10 +123,13 @@ export class HidePreviewDialog extends BaseActionDialog {
         outcomeClass: this.getOutcomeClass(outcome.outcome),
         outcomeLabel: this.getOutcomeLabel(outcome.outcome),
         marginText: this.formatMargin(outcome.margin),
-        oldVisibilityState: getVisibilityStateConfig(outcome.oldVisibility),
+        oldVisibilityState: getVisibilityStateConfig(baseOldState),
         newVisibilityState: getVisibilityStateConfig(effectiveNewState),
       };
     });
+
+    // Keep internal outcomes in sync so handlers and bulk ops use actionable rows
+    this.outcomes = processedOutcomes;
 
     // Calculate summary information
     context.actorToken = this.actorToken;
@@ -140,7 +143,13 @@ export class HidePreviewDialog extends BaseActionDialog {
    * Get filtered outcomes based on current filter settings
    * @returns {Array} Filtered outcomes
    */
-  getFilteredOutcomes() {}
+  getFilteredOutcomes() {
+    try {
+      return this.applyEncounterFilter(this.outcomes || [], "target", "No encounter observers found for this action");
+    } catch (_) {
+      return Array.isArray(this.outcomes) ? this.outcomes : [];
+    }
+  }
 
   // Token id in Hide outcomes is under `target`
   getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
@@ -226,14 +235,8 @@ export class HidePreviewDialog extends BaseActionDialog {
   // removed: addIconClickHandlers duplicated; using BaseActionDialog implementation
 
   updateActionButtonsForToken(tokenId, hasActionableChange) {
-    const row = this.element.querySelector(`tr[data-token-id="${tokenId}"]`);
-    if (row) {
-      const actionButtons = row.querySelector(".row-actions");
-      if (actionButtons) {
-        // Always show action buttons
-        actionButtons.style.display = "flex";
-      }
-    }
+    // Delegate to base which renders Apply/Revert or "No Change"
+    super.updateActionButtonsForToken(tokenId, hasActionableChange);
   }
 
   /**
@@ -336,7 +339,8 @@ export class HidePreviewDialog extends BaseActionDialog {
     // Get filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-      return effectiveNewState !== outcome.oldVisibility;
+      const baseOld = outcome.oldVisibility || outcome.currentVisibility;
+      return baseOld != null && effectiveNewState != null && effectiveNewState !== baseOld;
     });
 
     if (changedOutcomes.length === 0) {

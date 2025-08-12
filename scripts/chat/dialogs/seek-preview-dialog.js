@@ -90,30 +90,32 @@ export class SeekPreviewDialog extends BaseActionDialog {
       // Get current visibility state from the token
       const currentVisibility =
         getVisibilityBetween(this.actorToken, outcome.target) ||
-        outcome.oldVisibility;
+        outcome.oldVisibility ||
+        outcome.currentVisibility;
 
       // Prepare available states for override using per-action config
       const desired = getDesiredOverrideStatesForAction("seek", outcome);
       const availableStates = this.buildOverrideStates(desired, outcome);
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-      // Check if there's an actionable change - either the outcome naturally changed OR user overrode the state
+      const baseOldState = outcome.oldVisibility || currentVisibility;
+      // Actionable if original differs from new or override
       const hasActionableChange =
-        outcome.changed ||
-        (outcome.overrideState &&
-          outcome.overrideState !== outcome.oldVisibility);
+        baseOldState != null &&
+        effectiveNewState != null &&
+        effectiveNewState !== baseOldState;
 
       return {
         ...outcome,
         outcomeClass: this.getOutcomeClass(outcome.outcome),
         outcomeLabel: this.getOutcomeLabel(outcome.outcome),
-        oldVisibilityState: cfg(outcome.oldVisibility || outcome.currentVisibility),
-        newVisibilityState: cfg(outcome.newVisibility),
+        oldVisibilityState: cfg(baseOldState),
+        newVisibilityState: cfg(effectiveNewState),
         marginText: this.formatMargin(outcome.margin),
         tokenImage: this.resolveTokenImage(outcome.target),
         availableStates: availableStates,
         overrideState: outcome.overrideState || outcome.newVisibility,
-        hasActionableChange: hasActionableChange,
+        hasActionableChange,
       };
     });
 
@@ -408,26 +410,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Update action buttons visibility for a specific token
    */
   updateActionButtonsForToken(tokenId, hasActionableChange) {
-    const row = this.element.querySelector(`tr[data-token-id="${tokenId}"]`);
-    if (!row) return;
-
-    const actionsCell = row.querySelector(".actions");
-    if (!actionsCell) return;
-
-    if (hasActionableChange) {
-      // Show buttons if there's an actionable change
-      actionsCell.innerHTML = `
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility" disabled>
-                    <i class="fas fa-undo"></i>
-                </button>
-            `;
-    } else {
-      // Show "No change" if there's no actionable change
-      actionsCell.innerHTML = '<span class="no-action">No change</span>';
-    }
+    // Delegate to base which renders Apply/Revert or "No Change"
+    super.updateActionButtonsForToken(tokenId, hasActionableChange);
   }
 
   /**

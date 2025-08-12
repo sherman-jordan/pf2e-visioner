@@ -60,6 +60,15 @@ export class HideActionHandler extends ActionHandlerBase {
       .map((e) => ({ observer: this.getTokenById(e.observerId), target: actionData.actor, newVisibility: e.oldVisibility }))
       .filter((c) => c.observer && c.target && c.newVisibility);
   }
+
+  // Ensure fallback revert builds correct direction for Hide (observer -> actor)
+  async fallbackRevertChanges(actionData) {
+    const subjects = await this.discoverSubjects(actionData);
+    const outcomes = [];
+    for (const subject of subjects) outcomes.push(await this.analyzeOutcome(actionData, subject));
+    const filtered = outcomes.filter(Boolean).filter((o) => o.changed);
+    return filtered.map((o) => ({ observer: o.target, target: actionData.actor, newVisibility: o.oldVisibility || o.currentVisibility }));
+  }
 }
 
 

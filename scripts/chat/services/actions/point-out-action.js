@@ -8,25 +8,34 @@ export class PointOutActionHandler extends ActionHandlerBase {
   getCacheMap() { return appliedPointOutChangesByMessage; }
 
   async discoverSubjects(actionData) {
-    // Resolve target token: prefer message context or user target, then proximity heuristic
+    // Resolve pointer/actor token robustly
+    const msg = game.messages.get(actionData?.messageId);
+    let pointer = actionData?.actor || (msg?.speaker?.token ? canvas.tokens.get(msg.speaker.token) : null) || canvas.tokens.controlled?.[0] || null;
+
+    // Resolve target token: prefer user target, then PF2e-Visioner flag, then PF2e flag, then heuristic
     let target = null;
     try { if (game.user.targets?.size) target = Array.from(game.user.targets)[0]; } catch (_) {}
     if (!target) {
-      const msg = game.messages.get(actionData.messageId);
-      const flg = msg?.flags?.pf2e?.target;
-      if (flg?.token) target = canvas.tokens.get(flg.token) || null;
+      const visFlag = msg?.flags?.["pf2e-visioner"]?.pointOut?.targetTokenId;
+      if (visFlag) target = canvas.tokens.get(visFlag) || null;
+    }
+    if (!target) {
+      const pf2eFlag = msg?.flags?.pf2e?.target?.token;
+      if (pf2eFlag) target = canvas.tokens.get(pf2eFlag) || null;
     }
     if (!target) {
       const all = canvas?.tokens?.placeables || [];
-      const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
-      target = all.find((t) => t && t.actor && (actorId ? t.id !== actorId : t !== actionData.actor) && t.document.disposition !== actionData.actor.document.disposition) || null;
+      target = all.find((t) => t && t.actor && (!pointer || t.id !== pointer.id) && (!pointer || t.document?.disposition !== pointer.document?.disposition)) || null;
     }
     if (!target) return [];
+
     // Allies are same-disposition tokens that currently cannot see the target
     const { getVisibilityBetween } = await import("../../../utils.js");
     const allies = (canvas?.tokens?.placeables || []).filter((t) => {
-      const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
-      return t && t.actor && (actorId ? t.id !== actorId : t !== actionData.actor) && t.document.disposition === actionData.actor.document.disposition;
+      return (
+        t && t.actor && (!pointer || t.id !== pointer.id) &&
+        (pointer ? t.document?.disposition === pointer.document?.disposition : true)
+      );
     });
     const cannotSee = allies.filter((ally) => {
       const vis = getVisibilityBetween(ally, target);

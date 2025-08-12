@@ -113,7 +113,25 @@ export class ActionHandlerBase {
         }
       } catch (_) {}
       if (filtered.length === 0) { notify.info("No changes to apply"); return; }
-      const changes = filtered.map((o) => this.outcomeToChange(actionData, o)).filter(Boolean);
+      // Build changes; when overrides are present, also attach overrideState explicitly
+      let overridesMap = null;
+      try {
+        if (actionData?.overrides && typeof actionData.overrides === "object") {
+          overridesMap = new Map(Object.entries(actionData.overrides));
+        }
+      } catch (_) {}
+      const changes = filtered
+        .map((o) => {
+          const ch = this.outcomeToChange(actionData, o);
+          if (overridesMap) {
+            const id = this.getOutcomeTokenId(o);
+            if (id && overridesMap.has(id)) {
+              ch.overrideState = overridesMap.get(id);
+            }
+          }
+          return ch;
+        })
+        .filter(Boolean);
 
       await this.applyChangesInternal(actionData, changes);
       this.cacheAfterApply(actionData, changes);

@@ -63,17 +63,23 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
 
     // Filter outcomes with base helper
     let processedOutcomes = this.applyEncounterFilter(this.outcomes, "observer", "No encounter observers found, showing all");
+    // Ensure the acting/diverting token never appears in the list
+    try {
+      const actorId = this.divertingToken?.id || this.divertingToken?.document?.id;
+      if (actorId) {
+        processedOutcomes = processedOutcomes.filter((o) => o?.observer?.id !== actorId);
+      }
+    } catch (_) {}
 
     // Prepare outcomes with additional UI data
     processedOutcomes = processedOutcomes.map((outcome) => {
       const desired = getDesiredOverrideStatesForAction("create-a-diversion", outcome);
       const availableStates = this.buildOverrideStates(desired, outcome).map((s) => ({ key: s.value, icon: s.icon, label: s.label, selected: s.selected, calculatedOutcome: s.calculatedOutcome }));
 
-      // Make sure we consider both the changed flag and state differences
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-      const hasChange = effectiveNewState !== outcome.currentVisibility;
+      const baseOldState = outcome.currentVisibility;
       const hasActionableChange =
-        hasChange || (outcome.changed && effectiveNewState !== "observed");
+        baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
 
       return {
         ...outcome,
@@ -227,6 +233,14 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
 
     // Update button states
     app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
+    // Enable Revert All without marking bulk state as fully applied (so Apply All remains available)
+    try {
+      const revertAllButton = app.element.querySelector('.bulk-action-btn[data-action="revertAll"]');
+      if (revertAllButton) {
+        revertAllButton.disabled = false;
+        revertAllButton.innerHTML = '<i class="fas fa-undo"></i> Revert All';
+      }
+    } catch (_) {}
     app.updateChangesCount();
   }
 
@@ -247,6 +261,9 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
 
     // Update button states
     app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
+    // If at least one row was reverted, enable Apply All again
+    app.bulkActionState = "initial";
+    app.updateBulkActionButtons();
     app.updateChangesCount();
   }
 
@@ -261,11 +278,17 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
       return;
     }
 
+    // If the user already applied all previously, but then reverted some rows manually,
+    // we still allow Apply All to re-apply remaining changes. Only block if state is already "applied"
+    // AND there are no actionable changes left.
     if (app.bulkActionState === "applied") {
-      ui.notifications.warn(
-        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
-      );
-      return;
+      const anyActionable = (app.outcomes || []).some((o) => o?.hasActionableChange);
+      if (!anyActionable) {
+        ui.notifications.warn(
+          `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
+        );
+        return;
+      }
     }
 
     // Count active changes in the rendered dialog context
@@ -472,16 +495,8 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
    * Update action buttons for a specific token
    */
   updateActionButtonsForToken(tokenId, hasActionableChange) {
-    const row = this.element
-      .querySelector(`[data-token-id="${tokenId}"]`)
-      .closest("tr");
-    const actionButtons = row.querySelector(".action-buttons");
-
-    if (hasActionableChange) {
-      actionButtons.style.display = "";
-    } else {
-      actionButtons.style.display = "none";
-    }
+    // Delegate to base which renders Apply/Revert or "No Change"
+    super.updateActionButtonsForToken(tokenId, hasActionableChange);
   }
 
   /**

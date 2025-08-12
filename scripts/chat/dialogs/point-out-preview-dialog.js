@@ -73,20 +73,19 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       const desired = getDesiredOverrideStatesForAction("point-out", outcome);
       const availableStates = { hidden: this.buildOverrideStates(desired, outcome)[0] };
 
-      // Check if there's an actionable change - either the outcome naturally changed OR user overrode the state
+      const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+      const baseOldState = outcome.oldVisibility || outcome.currentVisibility;
       const hasActionableChange =
-        outcome.changed ||
-        (outcome.overrideState &&
-          outcome.overrideState !== outcome.oldVisibility);
+        baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
 
       return {
         ...outcome,
-        oldVisibilityState: cfg(outcome.oldVisibility || outcome.currentVisibility),
-        newVisibilityState: cfg(outcome.newVisibility),
+        oldVisibilityState: cfg(baseOldState),
+        newVisibilityState: cfg(effectiveNewState),
         tokenImage: this.resolveTokenImage(outcome.target),
-        availableStates: availableStates,
+        availableStates,
         overrideState: outcome.overrideState || outcome.newVisibility,
-        hasActionableChange: hasActionableChange,
+        hasActionableChange,
       };
     });
 
@@ -136,6 +135,25 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     this.updateBulkActionButtons();
     this.addIconClickHandlers();
     this.markInitialSelections();
+
+    // Ping the exact token pointed at in the chat message (speaker's target), if available
+    try {
+      if (game.user.isGM) {
+        // Best effort: use first outcome's targetToken if present; otherwise fall back to flags
+        let token = this.outcomes?.[0]?.targetToken || null;
+        if (!token) {
+          const msg = game.messages.get(this?.actionData?.messageId);
+          const pointOutFlags = msg?.flags?.["pf2e-visioner"]?.pointOut;
+          const targetTokenId = pointOutFlags?.targetTokenId || this?.actionData?.context?.target?.token || msg?.flags?.pf2e?.target?.token;
+          if (targetTokenId) token = canvas.tokens.get(targetTokenId) || null;
+        }
+        if (token) {
+          import("../services/gm-ping.js").then(({ pingTokenCenter }) => {
+            try { pingTokenCenter(token, "Point Out Target"); } catch (_) {}
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   // Token id in Point Out outcomes is under `target`
@@ -372,23 +390,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
   // Use BaseActionDialog.addIconClickHandlers
 
   updateActionButtonsForToken(tokenId, hasActionableChange) {
-    const row = this.element.querySelector(`tr[data-token-id="${tokenId}"]`);
-    if (!row) return;
-
-    const actionsCell = row.querySelector(".actions");
-    if (!actionsCell) return;
-
-    if (hasActionableChange) {
-      actionsCell.innerHTML = `
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility" disabled>
-                    <i class="fas fa-undo"></i>
-                </button>
-            `;
-    } else {
-      actionsCell.innerHTML = '<span class="no-action">No change</span>';
-    }
+    // Delegate to base which renders Apply/Revert or "No Change"
+    super.updateActionButtonsForToken(tokenId, hasActionableChange);
   }
 }

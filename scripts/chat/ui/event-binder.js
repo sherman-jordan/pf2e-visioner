@@ -88,6 +88,28 @@ export function bindAutomationEvents(panel, message, actionData) {
       } else if (typeof action === "string" && action.startsWith("open-")) {
         await previewActionResults(actionData);
       } else if (applyHandlers[action]) {
+        // For Point Out, ping the pointed target when applying from the chat panel
+        try {
+          if (action === "apply-now-point-out" && game.user.isGM) {
+            // Prefer resolved outcomes from handler if available via preview, otherwise flags
+            let token = null;
+            try {
+              const dialog = ui.windows?.find?.((w) => w?.options?.classes?.includes?.("point-out-preview-dialog"));
+              const first = dialog?.outcomes?.[0]?.targetToken;
+              if (first) token = first;
+            } catch (_) {}
+            if (!token) {
+              const msg = game.messages.get(actionData?.messageId);
+              const pointOutFlags = msg?.flags?.["pf2e-visioner"]?.pointOut;
+              const targetTokenId = pointOutFlags?.targetTokenId || actionData?.context?.target?.token || msg?.flags?.pf2e?.target?.token;
+              if (targetTokenId) token = canvas.tokens.get(targetTokenId) || null;
+            }
+            if (token) {
+              const { pingTokenCenter } = await import("../services/gm-ping.js");
+              try { pingTokenCenter(token, "Point Out Target"); } catch (_) {}
+            }
+          }
+        } catch (_) {}
         await applyHandlers[action](actionData, button);
       } else if (revertHandlers[action]) {
         await revertHandlers[action](actionData, button);

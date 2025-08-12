@@ -4,11 +4,11 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { BaseActionDialog } from "./base-action-dialog.js";
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import {
   filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
+import { BaseActionDialog } from "./base-action-dialog.js";
 
 // Store reference to current consequences dialog
 let currentConsequencesDialog = null;
@@ -74,7 +74,8 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Prepare outcomes with additional UI data (and normalize shape)
     processedOutcomes = processedOutcomes.map((outcome) => {
       const effectiveNewState = outcome.overrideState || "observed"; // Default to observed
-      const hasActionableChange = effectiveNewState !== outcome.currentVisibility;
+      const baseOldState = outcome.currentVisibility;
+      const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
       return {
         ...outcome,
         // Normalize to match BaseActionDialog helpers
@@ -82,7 +83,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
         hasActionableChange,
         overrideState: outcome.overrideState || null,
         tokenImage: this.resolveTokenImage(outcome.target),
-        oldVisibilityState: getVisibilityStateConfig(outcome.currentVisibility),
+        oldVisibilityState: getVisibilityStateConfig(baseOldState),
         newVisibilityState: getVisibilityStateConfig(effectiveNewState),
       };
     });
@@ -343,10 +344,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
   async applyVisibilityChange(_targetToken, _newVisibility) {}
 
   updateActionButtonsForToken(tokenId, hasActionableChange) {
-    const row = this.element.querySelector(`[data-token-id="${tokenId}"]`)?.closest("tr");
-    if (!row) return;
-    const actionButtons = row.querySelector(".action-buttons");
-    if (!actionButtons) return;
-    actionButtons.style.display = hasActionableChange ? "" : "none";
+    // Delegate to base which renders Apply/Revert or "No Change"
+    super.updateActionButtonsForToken(tokenId, hasActionableChange);
   }
 }

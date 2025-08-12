@@ -98,6 +98,37 @@ export class BaseActionDialog extends BasePreviewDialog {
   updateRowButtonsToReverted(outcomes) {
     import("../services/ui/dialog-utils.js").then(({ updateRowButtonsToReverted }) => {
       try { updateRowButtonsToReverted(this.element, outcomes); } catch (_) {}
+      try {
+        // After reverting, reset each row's selection to its initial calculated outcome
+        if (!Array.isArray(outcomes)) return;
+        for (const o of outcomes) {
+          const tokenId = o?.target?.id;
+          if (!tokenId) continue;
+          const row = this.element?.querySelector?.(`tr[data-token-id="${tokenId}"]`);
+          if (!row) continue;
+          const container = row.querySelector(".override-icons");
+          if (!container) continue;
+          // Clear current selection
+          container.querySelectorAll(".state-icon").forEach((i) => i.classList.remove("selected"));
+          // Prefer icon marked as calculated outcome; fallback to the hidden input's value
+          let selectedIcon = container.querySelector(".state-icon.calculated-outcome");
+          if (!selectedIcon) {
+            const hidden = container.querySelector('input[type="hidden"]');
+            if (hidden) selectedIcon = container.querySelector(`.state-icon[data-state="${hidden.value}"]`);
+          }
+          if (selectedIcon) {
+            selectedIcon.classList.add("selected");
+            const state = selectedIcon.dataset.state;
+            const hidden = container.querySelector('input[type="hidden"]');
+            if (hidden) hidden.value = state;
+          }
+          // Clear any explicit override so selection reflects initial calculated state
+          try {
+            const outcome = this.outcomes?.find?.((x) => String(this.getOutcomeTokenId(x)) === String(tokenId));
+            if (outcome) outcome.overrideState = null;
+          } catch (_) {}
+        }
+      } catch (_) {}
     });
   }
 
@@ -156,21 +187,30 @@ export class BaseActionDialog extends BasePreviewDialog {
     }
   }
 
-  // Default per-row buttons toggling. Subclasses may override for custom layouts.
+  // Default per-row buttons rendering. Subclasses may override for custom layouts.
   updateActionButtonsForToken(tokenId, hasActionableChange) {
     try {
-      const applySelector = `button[data-action="applyChange"][data-token-id="${tokenId}"]`;
-      const revertSelector = `button[data-action="revertChange"][data-token-id="${tokenId}"]`;
-      const applyBtn = this.element?.querySelector?.(applySelector);
-      const revertBtn = this.element?.querySelector?.(revertSelector);
-      if (!applyBtn && !revertBtn) return;
+      const row = this.element?.querySelector?.(`tr[data-token-id="${tokenId}"]`);
+      if (!row) return;
+
+      // Try common containers in priority order
+      let container = row.querySelector("td.actions");
+      if (!container) container = row.querySelector(".actions");
+      if (!container) container = row.querySelector(".row-actions");
+      if (!container) container = row.querySelector(".action-buttons");
+      if (!container) return;
 
       if (hasActionableChange) {
-        if (applyBtn) applyBtn.disabled = false;
-        if (revertBtn) revertBtn.disabled = true;
+        container.innerHTML = `
+          <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
+            <i class="fas fa-check"></i>
+          </button>
+          <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility">
+            <i class="fas fa-undo"></i>
+          </button>
+        `;
       } else {
-        if (applyBtn) applyBtn.disabled = true;
-        if (revertBtn) revertBtn.disabled = true;
+        container.innerHTML = '<span class="no-action">No Change</span>';
       }
     } catch (_) {}
   }
@@ -179,21 +219,28 @@ export class BaseActionDialog extends BasePreviewDialog {
     const stateIcons = this.element.querySelectorAll(".state-icon");
     stateIcons.forEach((icon) => {
       icon.addEventListener("click", (event) => {
-        const targetId = event.currentTarget.dataset.target || event.currentTarget.dataset.tokenId;
-        const newState = event.currentTarget.dataset.state;
+        // Only handle clicks within override selection container
         const overrideIcons = event.currentTarget.closest(".override-icons");
-        if (overrideIcons) {
-          overrideIcons.querySelectorAll(".state-icon").forEach((i) => i.classList.remove("selected"));
+        if (!overrideIcons) return;
+
+        // Robustly resolve target id from data attributes or row
+        let targetId = event.currentTarget.dataset.target || event.currentTarget.dataset.tokenId;
+        if (!targetId) {
+          const row = event.currentTarget.closest("tr[data-token-id]");
+          targetId = row?.dataset?.tokenId;
         }
+        const newState = event.currentTarget.dataset.state;
+        overrideIcons.querySelectorAll(".state-icon").forEach((i) => i.classList.remove("selected"));
         event.currentTarget.classList.add("selected");
         const hiddenInput = overrideIcons?.querySelector('input[type="hidden"]');
         if (hiddenInput) hiddenInput.value = newState;
-        const outcome = this.outcomes?.find?.((o) => this.getOutcomeTokenId(o) === targetId);
+        const outcome = this.outcomes?.find?.((o) => String(this.getOutcomeTokenId(o)) === String(targetId));
         if (outcome) {
           outcome.overrideState = newState;
           const oldState = outcome.oldVisibility ?? outcome.currentVisibility ?? null;
-          const effectiveNew = outcome.overrideState ?? outcome.newVisibility ?? null;
-          const hasActionableChange = oldState != null && effectiveNew != null && effectiveNew !== oldState;
+          const hasActionableChange = oldState != null && newState != null && newState !== oldState;
+          // Persist actionable state on outcome so templates and bulk ops reflect immediately
+          outcome.hasActionableChange = hasActionableChange;
           try {
             this.updateActionButtonsForToken(targetId, hasActionableChange);
           } catch (_) {}

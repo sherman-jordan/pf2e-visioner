@@ -22,7 +22,6 @@ This directory contains the modular JavaScript files for the PF2E Visioner modul
 
 - **`detection-wrapper.js`** - PF2E detection system integration
 - **`visibility-manager.js`** - Visibility management UI and controls
-- **`visibility-effects.js`** - Visibility state effects application
 - **`hover-tooltips.js`** - Interactive visibility tooltips with hover and Alt/O key support
 - **`hooks.js`** - FoundryVTT hook registrations
 - **`api.js`** - Public API for other modules

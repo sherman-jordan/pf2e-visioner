@@ -5,56 +5,65 @@
 import { getVisibilityMap } from "./utils.js";
 
 /**
- * Initialize detection system wrappers
+ * Class wrapper for PF2E detection integration to support init/teardown.
+ * The old initializeDetectionWrapper() remains for compatibility.
  */
-export function initializeDetectionWrapper() {
-  // Check if libWrapper is available
-  if (!game.modules.get("lib-wrapper")?.active) {
-    console.warn(
-      "Per-Token Visibility: libWrapper not found - visual conditions may not work properly",
-    );
-    return;
+export class DetectionWrapper {
+  constructor() {
+    this._registered = false;
   }
 
-  // Wrap the main detection mode test visibility function
-  libWrapper.register(
-    "pf2e-visioner",
-    "DetectionMode.prototype.testVisibility",
-    detectionModeTestVisibility,
-    "OVERRIDE",
-  );
+  register() {
+    if (this._registered) return;
+    if (!game.modules.get("lib-wrapper")?.active) {
+      console.warn(
+        "Per-Token Visibility: libWrapper not found - visual conditions may not work properly",
+      );
+      return;
+    }
+    libWrapper.register(
+      "pf2e-visioner",
+      "foundry.canvas.perception.DetectionMode.prototype.testVisibility",
+      detectionModeTestVisibility,
+      "OVERRIDE",
+    );
+    libWrapper.register(
+      "pf2e-visioner",
+      "CONFIG.Canvas.detectionModes.basicSight._canDetect",
+      canDetectWrapper(VISIBILITY_VALUES.hidden),
+      "WRAPPER",
+    );
+    libWrapper.register(
+      "pf2e-visioner",
+      "CONFIG.Canvas.detectionModes.lightPerception._canDetect",
+      canDetectWrapper(VISIBILITY_VALUES.hidden),
+      "WRAPPER",
+    );
+    libWrapper.register(
+      "pf2e-visioner",
+      "CONFIG.Canvas.detectionModes.hearing._canDetect",
+      canDetectWrapper(VISIBILITY_VALUES.undetected),
+      "WRAPPER",
+    );
+    libWrapper.register(
+      "pf2e-visioner",
+      "CONFIG.Canvas.detectionModes.feelTremor._canDetect",
+      canDetectWrapper(VISIBILITY_VALUES.undetected),
+      "WRAPPER",
+    );
+    this._registered = true;
+  }
 
-  // Wrap basic sight detection (hidden threshold - undetected tokens are invisible)
-  libWrapper.register(
-    "pf2e-visioner",
-    "CONFIG.Canvas.detectionModes.basicSight._canDetect",
-    canDetectWrapper(VISIBILITY_VALUES.hidden),
-    "WRAPPER",
-  );
+  /** Best-effort unregister. libWrapper doesn't expose an unregister; rely on reload lifecycle. */
+  unregister() {
+    // no-op by design; kept for symmetry and future-proofing
+  }
+}
 
-  // Wrap light perception detection (hidden threshold - undetected tokens are invisible)
-  libWrapper.register(
-    "pf2e-visioner",
-    "CONFIG.Canvas.detectionModes.lightPerception._canDetect",
-    canDetectWrapper(VISIBILITY_VALUES.hidden),
-    "WRAPPER",
-  );
-
-  // Wrap hearing detection (undetected threshold - can still hear undetected tokens)
-  libWrapper.register(
-    "pf2e-visioner",
-    "CONFIG.Canvas.detectionModes.hearing._canDetect",
-    canDetectWrapper(VISIBILITY_VALUES.undetected),
-    "WRAPPER",
-  );
-
-  // Wrap tremor detection (undetected threshold - can still feel undetected tokens)
-  libWrapper.register(
-    "pf2e-visioner",
-    "CONFIG.Canvas.detectionModes.feelTremor._canDetect",
-    canDetectWrapper(VISIBILITY_VALUES.undetected),
-    "WRAPPER",
-  );
+export function initializeDetectionWrapper() {
+  try {
+    (DetectionWrapper._instance ||= new DetectionWrapper()).register();
+  } catch (_) {}
 }
 
 /**

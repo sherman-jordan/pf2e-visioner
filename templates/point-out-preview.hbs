@@ -62,16 +62,12 @@
                         {{/if}}
                     </td>
                     <td class="actions">
-                        {{#if hasActionableChange}}
-                        <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{target.id}}" title="Apply this visibility change">
+                        <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{target.id}}" title="Apply this visibility change" {{#unless hasActionableChange}}disabled{{/unless}}>
                             <i class="fas fa-check"></i>
                         </button>
                         <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{target.id}}" title="Revert to original visibility" disabled>
                             <i class="fas fa-undo"></i>
                         </button>
-                        {{else}}
-                        <span class="no-action">No change</span>
-                        {{/if}}
                     </td>
                 </tr>
                 {{/each}}

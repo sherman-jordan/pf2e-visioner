@@ -38,18 +38,30 @@ export function onRenderTokenHUD(app, html) {
  */
 function renderVisibilityButton(app, html) {
   const token = app.object;
+  if (!token) return;
 
   // Only show for GMs
   if (!game.user.isGM) {
     return;
   }
 
+  // html is a jQuery in Foundry; normalize to a DOM element
+  const root = html?.jquery ? html[0] : html;
+  if (!root) return;
+
   // Find the left column to add the button
-  const column = html.querySelector("div.col.left");
+  let column = root.querySelector("div.col.left");
+  if (!column && html?.find) {
+    column = html.find("div.col.left")[0];
+  }
   if (!column) {
     console.warn("PF2E Visioner: Could not find left column in token HUD");
     return;
   }
+
+  // Remove any existing instance first
+  const existing = column.querySelector('[data-action="pf2e-visioner-visibility"]');
+  if (existing) existing.remove();
 
   // Create the button element
   const buttonElement = document.createElement("div");

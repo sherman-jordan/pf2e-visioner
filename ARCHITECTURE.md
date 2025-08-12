@@ -9,11 +9,40 @@ pf2e-visioner/
 ├── scripts/
 │   ├── main.js              # Entry point and module orchestration
 │   ├── constants.js         # Configuration and constants
-│   ├── utils.js             # Utility functions
+│   ├── utils.js             # Facade re-exporting stores/services + general helpers
 │   ├── api.js               # Public API and main functionality
-│   ├── token-manager.js     # ApplicationV2 UI component (renamed from visibility-manager.js)
+│   ├── token-manager.js     # ApplicationV2 UI (thin controller/view)
+│   ├── managers/token-manager/
+│   │   ├── actions.js       # Extracted action handlers (form/apply/toggles/bulk)
+│   │   └── highlighting.js  # Selection highlighting handlers
 │   ├── visual-effects.js    # Visual effects and token rendering
-│   ├── hooks.js             # FoundryVTT hooks registration
+│   ├── hooks.js             # Thin shim delegating to modular hooks in scripts/hooks/
+│   ├── hooks/               # Modular hooks by concern
+│   │   ├── registration.js  # Central registrar composing small hook modules
+│   │   ├── lifecycle.js     # ready/canvasReady + socket + hover tooltips
+│   │   ├── ui.js            # Token HUD, directory context, TokenConfig injection
+│   │   ├── token-events.js  # create/delete token handlers
+│   │   ├── combat.js        # encounter filter reset
+│   │   └── chat.js          # chat styles + processing
+│   ├── helpers/             # Pure helper utilities
+│   │   ├── cover-helpers.js
+│   │   └── visibility-helpers.js
+│   ├── cover/               # Cover effect modules
+│   │   ├── aggregates.js    # ensure aggregate, meta update, reflex/stealth dist
+│   │   ├── batch.js         # batch update + dedupe + reconcile against maps
+│   │   ├── update.js        # single-target cover update
+│   │   └── cleanup.js       # cleanup utilities
+│   ├── visibility/          # Visibility (off-guard) effect modules
+│   │   ├── utils.js         # effect lock + shared constants
+│   │   ├── update.js        # single-target visibility update
+│   │   ├── batch.js         # batch visibility updates
+│   │   └── cleanup.js       # cleanup utilities
+│   ├── stores/              # Single-responsibility state stores
+│   │   ├── visibility-map.js
+│   │   ├── cover-map.js
+│   ├── services/            # Cross-cutting operations/services
+│   │   ├── scene-cleanup.js
+│   │   └── api-internal.js  # Internal helpers for Pf2eVisionerApi
 │   └── settings.js          # Module settings and keybindings
 ├── templates/
 │   └── token-manager.hbs    # Handlebars template for UI (renamed from visibility-manager.hbs)
@@ -55,21 +84,12 @@ pf2e-visioner/
 
 #### `scripts/utils.js`
 
-- **Purpose**: Reusable utility functions
-- **Key Functions**:
-  - `getVisibilityMap()`: Get token visibility data
-  - `setVisibilityMap()`: Save token visibility data
-  - `getVisibilityBetween()`: Get visibility between two tokens
-  - `setVisibilityBetween()`: Set visibility between two tokens
-  - `getCoverMap()`: Get token cover data
-  - `setCoverMap()`: Save token cover data
-  - `getCoverBetween()`: Get cover between two tokens
-  - `setCoverBetween()`: Set cover between two tokens
-  - `applyPF2ECondition()`: Apply PF2E system conditions
-  - `createVisibilityIndicator()`: Create visual indicators
-  - `createCoverIndicator()`: Create cover visual indicators
-  - Various validation and helper functions
-- **Dependencies**: `constants.js`
+- **Purpose**: Facade for public helpers; re-exports stores/services to enforce single source of truth
+- **Re-exports**:
+  - From `stores/visibility-map.js`: `getVisibilityMap`, `setVisibilityMap`, `getVisibilityBetween`, `setVisibilityBetween`
+  - From `stores/cover-map.js`: `getCoverMap`, `setCoverMap`, `getCoverBetween`, `setCoverBetween`
+  - From `services/scene-cleanup.js`: `cleanupDeletedToken`, `restoreDeletedTokenMaps`
+- **Local helpers**: UI helpers like `createVisibilityIndicator`, `createCoverIndicator`, token filtering, etc.
 
 ### User Interface
 

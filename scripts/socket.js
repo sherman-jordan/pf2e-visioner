@@ -4,24 +4,39 @@ import { showNotification } from "./utils.js";
 // Avoid name collision with Foundry/socket.io global `socket`
 let visionerSocket = null;
 
+class SocketService {
+  constructor() {
+    this._socket = null;
+  }
+  register() {
+    if (typeof socketlib === "undefined") {
+      showNotification(
+        "PF2E_VISIONER.NOTIFICATIONS.NO_SOCKETLIB_INSTALLED",
+        "warn",
+      );
+      return null;
+    }
+    this._socket = socketlib.registerModule(MODULE_ID);
+    this._socket.register(REFRESH_CHANNEL, refreshLocalPerception);
+    this._socket.register(POINT_OUT_CHANNEL, pointOutHandler);
+    this._socket.register(SEEK_TEMPLATE_CHANNEL, seekTemplateHandler);
+    this._socket.register(POINTOUT_REQUEST_CHANNEL, pointOutRequestHandler);
+    return this._socket;
+  }
+  get socket() { return this._socket; }
+  executeForEveryone(channel, ...args) { this._socket?.executeForEveryone?.(channel, ...args); }
+  executeAsGM(channel, ...args) { this._socket?.executeAsGM?.(channel, ...args); }
+}
+
+const _socketService = new SocketService();
+
 const REFRESH_CHANNEL = "RefreshPerception";
 const POINT_OUT_CHANNEL = "PointOut";
 const SEEK_TEMPLATE_CHANNEL = "SeekTemplate";
 const POINTOUT_REQUEST_CHANNEL = "PointOutRequest";
 
 export function registerSocket() {
-  if (typeof socketlib === "undefined") {
-    showNotification(
-      "PF2E_VISIONER.NOTIFICATIONS.NO_SOCKETLIB_INSTALLED",
-      "warn",
-    );
-    return;
-  }
-  visionerSocket = socketlib.registerModule(MODULE_ID);
-  visionerSocket.register(REFRESH_CHANNEL, refreshLocalPerception);
-  visionerSocket.register(POINT_OUT_CHANNEL, pointOutHandler);
-  visionerSocket.register(SEEK_TEMPLATE_CHANNEL, seekTemplateHandler);
-  visionerSocket.register(POINTOUT_REQUEST_CHANNEL, pointOutRequestHandler);
+  visionerSocket = _socketService.register();
 }
 
 /*
@@ -48,7 +63,7 @@ export function refreshLocalPerception() {
  * (will call refreshLocalPerception on local client)
  */
 export function refreshEveryonesPerception() {
-  if (visionerSocket) visionerSocket.executeForEveryone(REFRESH_CHANNEL);
+  if (_socketService.socket) _socketService.executeForEveryone(REFRESH_CHANNEL);
   try {
     (async () => {
       const observerId = canvas.tokens.controlled?.[0]?.id || null;
@@ -62,7 +77,7 @@ export function refreshEveryonesPerception() {
  * Send a request for Point Out resolution to the GM
  */
 export function requestGMHandlePointOut(...args) {
-  if (visionerSocket) visionerSocket.executeAsGM(POINT_OUT_CHANNEL, ...args);
+  if (_socketService.socket) _socketService.executeAsGM(POINT_OUT_CHANNEL, ...args);
 }
 
 /*
@@ -82,8 +97,8 @@ export function requestGMOpenPointOut(
   targetTokenId,
   messageId,
 ) {
-  if (!visionerSocket) return;
-  visionerSocket.executeAsGM(POINTOUT_REQUEST_CHANNEL, {
+  if (!_socketService.socket) return;
+  _socketService.executeAsGM(POINTOUT_REQUEST_CHANNEL, {
     pointerTokenId,
     targetTokenId,
     messageId,
@@ -141,11 +156,13 @@ async function pointOutRequestHandler({
     let hasTargets = false;
     try {
       if (targetToken) {
-        const { discoverPointOutAllies } = await import(
-          "./chat/point-out-logic.js"
-        );
-        const allies = discoverPointOutAllies(pointerToken, targetToken) || [];
-        hasTargets = allies.length > 0;
+        const { getVisibilityBetween } = await import("./utils.js");
+        const allies = (canvas?.tokens?.placeables || []).filter((t) => t && t.actor && t.document.disposition === pointerToken.document.disposition);
+        const cannotSee = allies.filter((ally) => {
+          const vis = getVisibilityBetween(ally, targetToken);
+          return vis === "hidden" || vis === "undetected";
+        });
+        hasTargets = cannotSee.length > 0;
       }
     } catch (calcErr) {
       console.warn(
@@ -247,8 +264,8 @@ export function requestGMOpenSeekWithTemplate(
   rollTotal,
   dieResult,
 ) {
-  if (!visionerSocket) return;
-  visionerSocket.executeAsGM(SEEK_TEMPLATE_CHANNEL, {
+  if (!_socketService.socket) return;
+  _socketService.executeAsGM(SEEK_TEMPLATE_CHANNEL, {
     actorTokenId,
     center,
     radiusFeet,
@@ -276,9 +293,8 @@ async function seekTemplateHandler({
     // Determine whether there are any valid targets in the provided template area
     let hasTargets = false;
     try {
-      const { discoverSeekTargets } = await import("./chat/seek-logic.js");
-      const targets =
-        discoverSeekTargets(actorToken, false, radiusFeet, center) || [];
+      const all = canvas?.tokens?.placeables || [];
+      const targets = all.filter((t) => t && t !== actorToken && t.actor);
       hasTargets = targets.length > 0;
     } catch (calcErr) {
       console.warn(

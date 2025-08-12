@@ -62,7 +62,7 @@
             </td>
             <td class="visibility-change">
               <div class="visibility-change-with-override">
-                <i class="{{outcome.oldVisibilityState.icon}}" style="color: {{outcome.oldVisibilityState.color}}" title="{{outcome.oldVisibilityState.label}}"></i>
+                {{{visibilityIcon outcome.oldVisibility}}}
                 →
                 <div class="override-icons" data-token-id="{{outcome.token.id}}">
                   {{#each outcome.availableStates as |state|}}
@@ -77,16 +77,12 @@
               </div>
             </td>
             <td class="actions">
-              {{#if outcome.hasActionableChange}}
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.token.id}}" title="Apply this visibility change">
-                  <i class="fas fa-check"></i>
-                </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.token.id}}" title="Revert to original visibility" disabled>
-                  <i class="fas fa-undo"></i>
-                </button>
-              {{else}}
-                <span class="no-action">No change</span>
-              {{/if}}
+              <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.token.id}}" title="Apply this visibility change" {{#unless outcome.hasActionableChange}}disabled{{/unless}}>
+                <i class="fas fa-check"></i>
+              </button>
+              <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.token.id}}" title="Revert to original visibility" disabled>
+                <i class="fas fa-undo"></i>
+              </button>
             </td>
           </tr>
         {{/each}}

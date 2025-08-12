@@ -125,10 +125,8 @@ export function registerAutoCoverHooks() {
       if (state === "none") return;
       // Apply aggregate/ephemeral effect to match bulk method
       try {
-        const { updateEphemeralCoverEffects } = await import(
-          "./cover-ephemeral.js"
-        );
-        await updateEphemeralCoverEffects(target, attacker, state, {
+        const { batchUpdateCoverEffects } = await import("./cover-ephemeral.js");
+        await batchUpdateCoverEffects(attacker, [{ target, state }], {
           durationRounds: -1,
         });
       } catch (_) {}

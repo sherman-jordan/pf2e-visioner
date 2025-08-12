@@ -13,8 +13,11 @@ export async function updateTokenVisuals() {
     setTimeout(() => updateTokenVisuals(), 500);
     return;
   }
+  // Minimal per-token refresh; token.visibility managed by PF2e detection wrapper
   for (const token of canvas.tokens.placeables) {
-    if (token.visible) token.refresh();
+    try {
+      if (token?.visible) token.refresh();
+    } catch (_) {}
   }
 }
 
@@ -30,13 +33,8 @@ export async function updateSpecificTokenPairs(pairs) {
     const target = canvas.tokens.get(p.targetId);
     if (!observer || !target) continue;
     // We do not draw custom visibility rings; detection/engine visuals will handle it
-    // Cover effect only for GM
-    try {
-      if (game.user.isGM && p.cover) {
-        const { applyCoverCondition } = await import("./cover-effects.js");
-        await applyCoverCondition(target, observer, p.cover);
-      }
-    } catch (_) {}
+    // Effects are already applied by batch/single upsert paths; do not re-apply here
+    // This function should only refresh visuals to avoid double-application of rules
     // Light refresh of the two tokens
     try {
       observer.refresh();

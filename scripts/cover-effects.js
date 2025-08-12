@@ -134,10 +134,10 @@ export async function applyCoverCondition(target, observer, coverState) {
   if (!target?.actor || !observer?.actor || !game.pf2e) return;
 
   // Import the ephemeral cover effects system dynamically to avoid circular dependencies
-  const { updateEphemeralCoverEffects } = await import("./cover-ephemeral.js");
+  const { batchUpdateCoverEffects } = await import("./cover-ephemeral.js");
 
-  // Apply ephemeral cover effects
-  await updateEphemeralCoverEffects(target, observer, coverState);
+  // Apply ephemeral cover effects using batch approach
+  await batchUpdateCoverEffects(observer, [{ target, state: coverState }]);
 }
 
 /**

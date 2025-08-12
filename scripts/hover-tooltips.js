@@ -3,8 +3,55 @@
  */
 
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
+import { canShowTooltips, computeSizesFromSetting } from "./helpers/tooltip-utils.js";
 import { getCoverMap, getVisibilityMap } from "./utils.js";
 
+/**
+ * Lightweight service wrapper for lifecycle control.
+ * Keeps existing functional API intact for compatibility.
+ */
+class HoverTooltipsImpl {
+  constructor() {
+    this._initialized = false;
+    this.currentHoveredToken = null;
+    this.visibilityIndicators = new Map();
+    this.coverIndicators = new Map();
+    this.tokenEventHandlers = new Map();
+    this.tooltipMode = "target";
+    this.isShowingKeyTooltips = false;
+    this.keyTooltipTokens = new Set();
+    this.tooltipFontSize = 16;
+    this.tooltipIconSize = 14;
+    this.badgeTicker = null;
+  }
+  init() {
+    if (this._initialized) return this.refreshSizes();
+    initializeHoverTooltips();
+    this._initialized = true;
+  }
+  dispose() {
+    cleanupHoverTooltips();
+    this._initialized = false;
+  }
+  setMode(mode) { setTooltipMode(mode); }
+  refreshSizes() {
+    try {
+      const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+      const { fontPx, iconPx, borderPx } = computeSizesFromSetting(raw ?? this.tooltipFontSize);
+      this.tooltipFontSize = fontPx;
+      this.tooltipIconSize = iconPx;
+      document.documentElement.style.setProperty("--pf2e-visioner-tooltip-font-size", `${fontPx}px`);
+      document.documentElement.style.setProperty("--pf2e-visioner-tooltip-icon-size", `${iconPx}px`);
+      document.documentElement.style.setProperty("--pf2e-visioner-tooltip-badge-border", `${borderPx}px`);
+    } catch (_) {}
+  }
+}
+export const HoverTooltips = new HoverTooltipsImpl();
+
+// Backwards-compatible alias
+export const HoverTooltipsService = HoverTooltips;
+
+// DEPRECATED globals: state lives on HoverTooltips singleton now
 let currentHoveredToken = null;
 let visibilityIndicators = new Map();
 let coverIndicators = new Map();
@@ -22,34 +69,9 @@ let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 let tooltipFontSize = 16;
 let tooltipIconSize = 14; // Default icon size
 let badgeTicker = null; // Ticker for keeping DOM badges aligned on pan/zoom
+let _initialized = false; // Prevent double-binding
 
-function computeSizesFromSetting(rawValue) {
-  try {
-    if (typeof rawValue === "string") {
-      switch (rawValue) {
-        case "tiny":
-          return { fontPx: 12, iconPx: 10, borderPx: 2 };
-        case "small":
-          return { fontPx: 14, iconPx: 12, borderPx: 2 };
-        case "large":
-          return { fontPx: 18, iconPx: 20, borderPx: 4 };
-        case "xlarge":
-          return { fontPx: 20, iconPx: 24, borderPx: 5 };
-        case "medium":
-        default:
-          return { fontPx: 16, iconPx: 16, borderPx: 3 };
-      }
-    }
-    const numeric = Number(rawValue);
-    if (!Number.isNaN(numeric) && numeric > 0) {
-      const fontPx = Math.round(numeric);
-      const iconPx = Math.max(Math.round(numeric), 12);
-      const borderPx = Math.max(2, Math.round(numeric / 8));
-      return { fontPx, iconPx, borderPx };
-    }
-  } catch (_) {}
-  return { fontPx: 16, iconPx: 16, borderPx: 3 };
-}
+// size computation moved to helpers/tooltip-utils.js
 
 /**
  * Check if tooltips are allowed for the current user and token
@@ -57,49 +79,7 @@ function computeSizesFromSetting(rawValue) {
  * @param {Token} [hoveredToken=null] - The token being hovered (optional)
  * @returns {boolean} True if tooltips should be shown
  */
-function canShowTooltips(mode = "target", hoveredToken = null) {
-  // Always allow GM to see tooltips if hover tooltips are enabled
-  if (game.user.isGM) {
-    const allowed = game.settings.get(MODULE_ID, "enableHoverTooltips");
-    return allowed;
-  }
-
-  // For players, first check if hover tooltips are enabled at all
-  if (!game.settings.get(MODULE_ID, "enableHoverTooltips")) {
-    return false;
-  }
-
-  // For players, check if player tooltips are allowed
-  if (!game.settings.get(MODULE_ID, "allowPlayerTooltips")) {
-    return false;
-  }
-
-  // Special case: Observer mode (O key) is ALWAYS allowed for players
-  // regardless of blockPlayerTargetTooltips setting
-  if (mode === "observer") {
-    return true;
-  }
-
-  // For target mode (normal hover), players should only see tooltips for tokens they own
-  if (mode === "target" && hoveredToken) {
-    // If target tooltips are blocked for players, disallow
-    if (game.settings.get(MODULE_ID, "blockPlayerTargetTooltips")) {
-      return false;
-    }
-
-    // Only allow tooltips for tokens the player owns
-    const isOwned = hoveredToken.isOwner;
-    return isOwned;
-  }
-
-  // If we got here and it's target mode but no token provided, allow (for Alt key)
-  if (mode === "target" && !hoveredToken) {
-    return !game.settings.get(MODULE_ID, "blockPlayerTargetTooltips");
-  }
-
-  // Default to allowed
-  return true;
-}
+// permissions moved to helpers/tooltip-utils.js
 
 /**
  * Set the tooltip mode
@@ -111,32 +91,33 @@ export function setTooltipMode(mode) {
     return;
   }
 
-  const previousMode = tooltipMode;
-  tooltipMode = mode;
+  const previousMode = HoverTooltips.tooltipMode;
+  HoverTooltips.tooltipMode = mode;
 
   // When switching from observer to target mode (key up), clean up all indicators first
   if (previousMode === "observer" && mode === "target") {
+    // Full cleanup to prevent lingering Alt badges
     hideAllVisibilityIndicators();
-
-    // If we have a currently hovered token, refresh the indicators in target mode
-    if (currentHoveredToken) {
+    hideAllCoverIndicators();
+    // Reset Alt state
+    HoverTooltips.isShowingKeyTooltips = false;
+    HoverTooltips.keyTooltipTokens.clear();
+    // Small defer then re-render clean target-mode indicators if still hovering
+    if (HoverTooltips.currentHoveredToken) {
       setTimeout(() => {
-        showVisibilityIndicators(currentHoveredToken);
-      }, 50); // Small delay to ensure cleanup happens first
+        showVisibilityIndicators(HoverTooltips.currentHoveredToken);
+      }, 50);
     }
     return;
   }
 
   // If we have a currently hovered token, refresh the indicators
-  if (currentHoveredToken) {
-    // Force refresh with the new mode - this is critical for O key functionality
-    showVisibilityIndicators(currentHoveredToken);
-  }
+  if (HoverTooltips.currentHoveredToken) showVisibilityIndicators(HoverTooltips.currentHoveredToken);
 
   // For observer mode, also check if we need to show indicators for controlled tokens
   if (
     mode === "observer" &&
-    !currentHoveredToken &&
+    !HoverTooltips.currentHoveredToken &&
     canvas.tokens.controlled.length > 0
   ) {
     // If we're in observer mode with no hovered token but have controlled tokens,
@@ -149,6 +130,11 @@ export function setTooltipMode(mode) {
  * Initialize hover tooltip system
  */
 export function initializeHoverTooltips() {
+  if (HoverTooltips._initialized || _initialized) {
+    // Defensive: avoid duplicate listeners; refresh sizes and return
+    HoverTooltips.refreshSizes?.();
+    return;
+  }
   // Only initialize hover tooltips if allowed for this user in any mode
   // Use 'observer' mode check since we want to initialize if any mode is allowed
   if (!canShowTooltips("observer")) return;
@@ -157,22 +143,13 @@ export function initializeHoverTooltips() {
   try {
     const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
     const { fontPx, iconPx, borderPx } = computeSizesFromSetting(
-      raw ?? tooltipFontSize
+      raw ?? HoverTooltips.tooltipFontSize
     );
-    tooltipFontSize = fontPx;
-    tooltipIconSize = iconPx;
-    document.documentElement.style.setProperty(
-      "--pf2e-visioner-tooltip-font-size",
-      `${fontPx}px`
-    );
-    document.documentElement.style.setProperty(
-      "--pf2e-visioner-tooltip-icon-size",
-      `${iconPx}px`
-    );
-    document.documentElement.style.setProperty(
-      "--pf2e-visioner-tooltip-badge-border",
-      `${borderPx}px`
-    );
+    HoverTooltips.tooltipFontSize = fontPx;
+    HoverTooltips.tooltipIconSize = iconPx;
+    document.documentElement.style.setProperty("--pf2e-visioner-tooltip-font-size", `${fontPx}px`);
+    document.documentElement.style.setProperty("--pf2e-visioner-tooltip-icon-size", `${iconPx}px`);
+    document.documentElement.style.setProperty("--pf2e-visioner-tooltip-badge-border", `${borderPx}px`);
   } catch (e) {
     console.warn(
       "PF2E Visioner: Error setting tooltip font size CSS variable",
@@ -198,7 +175,7 @@ export function initializeHoverTooltips() {
     const outHandler = () => onTokenHoverEnd(token);
 
     // Store handlers for later cleanup
-    tokenEventHandlers.set(token.id, { overHandler, outHandler });
+    HoverTooltips.tokenEventHandlers.set(token.id, { overHandler, outHandler });
 
     token.on("pointerover", overHandler);
     token.on("pointerout", outHandler);
@@ -214,15 +191,17 @@ export function initializeHoverTooltips() {
  */
 function onTokenHover(hoveredToken) {
   // Only show hover tooltips if allowed for this user with current mode AND token
-  if (!canShowTooltips(tooltipMode, hoveredToken)) {
+  // Suppress hover overlays entirely while Alt overlay is active
+  if (HoverTooltips.isShowingKeyTooltips) return;
+  if (!canShowTooltips(HoverTooltips.tooltipMode, hoveredToken)) {
     return;
   }
 
-  if (currentHoveredToken === hoveredToken) {
+  if (HoverTooltips.currentHoveredToken === hoveredToken) {
     return;
   }
 
-  currentHoveredToken = hoveredToken;
+  HoverTooltips.currentHoveredToken = hoveredToken;
   showVisibilityIndicators(hoveredToken);
 }
 
@@ -231,8 +210,8 @@ function onTokenHover(hoveredToken) {
  * @param {Token} token - The token that was hovered
  */
 function onTokenHoverEnd(token) {
-  if (currentHoveredToken === token) {
-    currentHoveredToken = null;
+  if (HoverTooltips.currentHoveredToken === token) {
+    HoverTooltips.currentHoveredToken = null;
     hideAllVisibilityIndicators();
     hideAllCoverIndicators();
   }
@@ -263,29 +242,22 @@ export function onHighlightObjects(highlight) {
   }
 
   if (highlight) {
-    // Check if we should use observer mode for Alt key when target tooltips are blocked
-    const useObserverMode =
-      !game.user.isGM &&
-      game.settings.get(MODULE_ID, "blockPlayerTargetTooltips");
-
-    if (useObserverMode) {
-      showControlledTokenVisibilityObserver();
-    } else {
-      showControlledTokenVisibility();
-    }
+    // Guard: if already in Alt overlay, don't layer another
+    if (HoverTooltips.isShowingKeyTooltips) return;
+    // Alt always shows target-mode overlay from controlled token(s)
+    showControlledTokenVisibility();
   } else {
-    // First, force clean all tooltips
+    // Alt released: fully reset Alt state and clean badges
+    HoverTooltips.isShowingKeyTooltips = false;
+    HoverTooltips.keyTooltipTokens.clear();
     hideAllVisibilityIndicators();
     hideAllCoverIndicators();
-
-    // Then, if we have a currently hovered token, restore its tooltips after a short delay
-    if (currentHoveredToken) {
+    // Restore clean hover indicators if still hovering
+    if (HoverTooltips.currentHoveredToken) {
       setTimeout(() => {
-        showVisibilityIndicators(currentHoveredToken);
-        try {
-          showCoverIndicators(currentHoveredToken);
-        } catch (_) {}
-      }, 100);
+        showVisibilityIndicators(HoverTooltips.currentHoveredToken);
+        try { showCoverIndicators(HoverTooltips.currentHoveredToken); } catch (_) {}
+      }, 50);
     }
   }
 }
@@ -296,13 +268,17 @@ export function onHighlightObjects(highlight) {
  */
 function showVisibilityIndicators(hoveredToken) {
   // Check if tooltips are allowed for the current mode and token
-  const tooltipsAllowed = canShowTooltips(tooltipMode, hoveredToken);
+  // Suppress hover overlays entirely while Alt overlay is active
+  if (HoverTooltips.isShowingKeyTooltips) return;
+  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken);
 
   if (!tooltipsAllowed) return;
 
-  // Clear any existing indicators
-  hideAllVisibilityIndicators();
-  hideAllCoverIndicators();
+  // Clear any existing indicators, unless Alt overlay is active (handled separately)
+  if (!HoverTooltips.isShowingKeyTooltips) {
+    hideAllVisibilityIndicators();
+    hideAllCoverIndicators();
+  }
 
   // Get all other tokens in the scene
   const otherTokens = canvas.tokens.placeables.filter(
@@ -311,7 +287,7 @@ function showVisibilityIndicators(hoveredToken) {
 
   if (otherTokens.length === 0) return;
 
-  if (tooltipMode === "observer") {
+  if (HoverTooltips.tooltipMode === "observer") {
     // Observer mode (O key): Show how the hovered token sees others
     // For players, only allow if they control the hovered token
     if (!game.user.isGM && !hoveredToken.isOwner) {
@@ -386,9 +362,8 @@ function showVisibilityIndicators(hoveredToken) {
   }
 
   // Additionally render cover-only indicators when there is cover but no visibility change
-  try {
-    showCoverIndicators(hoveredToken);
-  } catch (_) {}
+  // Already suppressed above if Alt overlay is active
+  try { showCoverIndicators(hoveredToken); } catch (_) {}
 }
 
 /**
@@ -396,7 +371,9 @@ function showVisibilityIndicators(hoveredToken) {
  * @param {Token} hoveredToken - The token being hovered
  */
 function showCoverIndicators(hoveredToken) {
-  const tooltipsAllowed = canShowTooltips(tooltipMode, hoveredToken);
+  // Suppress hover overlays entirely while Alt overlay is active
+  if (HoverTooltips.isShowingKeyTooltips) return;
+  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken);
   if (!tooltipsAllowed) return;
 
   hideAllCoverIndicators();
@@ -406,12 +383,12 @@ function showCoverIndicators(hoveredToken) {
   );
   if (otherTokens.length === 0) return;
 
-  if (tooltipMode === "observer") {
+  if (HoverTooltips.tooltipMode === "observer") {
     // How hoveredToken sees others (cover from hoveredToken's perspective)
     if (!game.user.isGM && !hoveredToken.isOwner) return;
     otherTokens.forEach((targetToken) => {
       // Skip duplicate if visibility badge already carries cover
-      const visInd = visibilityIndicators.get(targetToken.id);
+      const visInd = HoverTooltips.visibilityIndicators.get(targetToken.id);
       if (visInd && visInd._coverBadgeEl) return;
       const coverMap = getCoverMap(hoveredToken);
       const coverState = coverMap[targetToken.document.id] || "none";
@@ -427,7 +404,7 @@ function showCoverIndicators(hoveredToken) {
           (t) => t !== hoveredToken && t.isVisible
         );
         nonPlayerTokens.forEach((otherToken) => {
-          const visInd = visibilityIndicators.get(otherToken.id);
+          const visInd = HoverTooltips.visibilityIndicators.get(otherToken.id);
           if (visInd && visInd._coverBadgeEl) return;
           const coverMap = getCoverMap(otherToken);
           const coverState = coverMap[hoveredToken.document.id] || "none";
@@ -438,7 +415,7 @@ function showCoverIndicators(hoveredToken) {
       }
     } else {
       otherTokens.forEach((observerToken) => {
-        const visInd = visibilityIndicators.get(observerToken.id);
+        const visInd = HoverTooltips.visibilityIndicators.get(observerToken.id);
         if (visInd && visInd._coverBadgeEl) return;
         const coverMap = getCoverMap(observerToken);
         const coverState = coverMap[hoveredToken.document.id] || "none";
@@ -457,7 +434,7 @@ function showCoverIndicators(hoveredToken) {
  */
 function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   // Use forced mode if provided, otherwise use current tooltipMode
-  const effectiveMode = forceMode || tooltipMode;
+  const effectiveMode = forceMode || HoverTooltips.tooltipMode;
 
   // Check if tooltips are allowed for the current mode
   if (!canShowTooltips(effectiveMode)) {
@@ -551,7 +528,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
  * @param {string} forceMode
  */
 function showCoverIndicatorsForToken(observerToken, forceMode = null) {
-  const effectiveMode = forceMode || tooltipMode;
+  const effectiveMode = forceMode || HoverTooltips.tooltipMode;
   if (!canShowTooltips(effectiveMode)) {
     if (!forceMode) return;
   }
@@ -598,13 +575,16 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
  * Show visibility indicators for controlled tokens (simulates hovering over controlled tokens)
  * Uses target mode - how others see the controlled tokens
  */
-function showControlledTokenVisibility() {
-  if (isShowingKeyTooltips) return;
+export function showControlledTokenVisibility() {
+  if (HoverTooltips.isShowingKeyTooltips) return;
 
   const controlledTokens = canvas.tokens.controlled;
 
-  isShowingKeyTooltips = true;
-  keyTooltipTokens.clear();
+  HoverTooltips.isShowingKeyTooltips = true;
+  HoverTooltips.keyTooltipTokens.clear();
+  // Ensure any hover overlays are cleared before rendering Alt overlay
+  hideAllVisibilityIndicators();
+  hideAllCoverIndicators();
 
   // Clear any existing indicators first
   hideAllVisibilityIndicators();
@@ -612,41 +592,49 @@ function showControlledTokenVisibility() {
 
   // For each controlled token, show visibility indicators as if hovering over it
   controlledTokens.forEach((controlledToken) => {
-    keyTooltipTokens.add(controlledToken.id);
+    HoverTooltips.keyTooltipTokens.add(controlledToken.id);
 
     // Use the existing showVisibilityIndicators logic, force target mode for Alt key
     showVisibilityIndicatorsForToken(controlledToken, "target");
-    try {
-      showCoverIndicatorsForToken(controlledToken, "target");
-    } catch (_) {}
+    // During Alt overlay, do NOT render cover badges; show visibility-only to avoid mixed modes
   });
+
+  HoverTooltips._initialized = true;
 }
 
 /**
  * Show visibility indicators for controlled tokens in observer mode
  * Uses observer mode - how controlled tokens see others
  */
-function showControlledTokenVisibilityObserver() {
-  if (isShowingKeyTooltips) return;
+export function showControlledTokenVisibilityObserver() {
+  if (HoverTooltips.isShowingKeyTooltips) return;
 
   const controlledTokens = canvas.tokens.controlled;
+  // Fallback: if no controlled token, use the currently hovered token as the observer
+  const tokensToUse =
+    controlledTokens.length > 0
+      ? controlledTokens
+      : HoverTooltips.currentHoveredToken
+      ? [HoverTooltips.currentHoveredToken]
+      : [];
 
-  isShowingKeyTooltips = true;
-  keyTooltipTokens.clear();
+  HoverTooltips.isShowingKeyTooltips = true;
+  HoverTooltips.keyTooltipTokens.clear();
+  // Ensure any hover overlays are cleared before rendering Alt overlay
+  hideAllVisibilityIndicators();
+  hideAllCoverIndicators();
 
   // Clear any existing indicators first
   hideAllVisibilityIndicators();
   hideAllCoverIndicators();
 
-  // For each controlled token, show visibility indicators as if hovering over it
-  controlledTokens.forEach((controlledToken) => {
-    keyTooltipTokens.add(controlledToken.id);
+  // For each chosen token, show visibility indicators as if hovering over it
+  tokensToUse.forEach((controlledToken) => {
+    HoverTooltips.keyTooltipTokens.add(controlledToken.id);
 
     // Use observer mode instead of target mode
     showVisibilityIndicatorsForToken(controlledToken, "observer");
-    try {
-      showCoverIndicatorsForToken(controlledToken, "observer");
-    } catch (_) {}
+    // During O overlay, do NOT render cover badges; show visibility-only
   });
 }
 
@@ -679,7 +667,7 @@ function addVisibilityIndicator(
   let sizeConfig;
   try {
     const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
-    sizeConfig = computeSizesFromSetting(raw ?? tooltipFontSize);
+    sizeConfig = computeSizesFromSetting(raw ?? HoverTooltips.tooltipFontSize);
   } catch (_) {
     sizeConfig = {
       fontPx: tooltipFontSize,
@@ -759,21 +747,21 @@ function addVisibilityIndicator(
     );
   }
 
-  visibilityIndicators.set(targetToken.id, indicator);
+  HoverTooltips.visibilityIndicators.set(targetToken.id, indicator);
 
   // Ensure ticker updates DOM badge positions during pan/zoom
   ensureBadgeTicker();
 }
 
 function ensureBadgeTicker() {
-  if (badgeTicker) return;
-  badgeTicker = () => {
+  if (HoverTooltips.badgeTicker) return;
+  HoverTooltips.badgeTicker = () => {
     try {
       updateBadgePositions();
     } catch (_) {}
   };
   try {
-    canvas.app.ticker.add(badgeTicker);
+    canvas.app.ticker.add(HoverTooltips.badgeTicker);
   } catch (_) {}
 }
 
@@ -782,7 +770,7 @@ function updateBadgePositions() {
   let sizeConfig;
   try {
     const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
-    sizeConfig = computeSizesFromSetting(raw ?? tooltipFontSize);
+    sizeConfig = computeSizesFromSetting(raw ?? HoverTooltips.tooltipFontSize);
   } catch (_) {
     sizeConfig = {
       fontPx: tooltipFontSize,
@@ -800,7 +788,7 @@ function updateBadgePositions() {
   const hudActive = !!game.modules?.get?.("pf2e-hud")?.active;
   const verticalOffset = hudActive ? 26 : -6;
 
-  visibilityIndicators.forEach((indicator) => {
+  HoverTooltips.visibilityIndicators.forEach((indicator) => {
     if (!indicator || (!indicator._visBadgeEl && !indicator._coverBadgeEl))
       return;
     const globalPoint = canvas.tokens.toGlobal(
@@ -825,7 +813,7 @@ function updateBadgePositions() {
   });
 
   // Also update standalone cover badges
-  coverIndicators.forEach((indicator) => {
+  HoverTooltips.coverIndicators.forEach((indicator) => {
     if (!indicator || !indicator._coverBadgeEl) return;
     const globalPoint = canvas.tokens.toGlobal(
       new PIXI.Point(indicator.x, indicator.y)
@@ -866,7 +854,7 @@ function addCoverIndicator(
   let sizeConfig;
   try {
     const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
-    sizeConfig = computeSizesFromSetting(raw ?? tooltipFontSize);
+    sizeConfig = computeSizesFromSetting(raw ?? HoverTooltips.tooltipFontSize);
   } catch (_) {
     sizeConfig = {
       fontPx: tooltipFontSize,
@@ -902,51 +890,9 @@ function addCoverIndicator(
   document.body.appendChild(el);
   indicator._coverBadgeEl = el;
 
-  // Optional: tooltip text on hover of badge (not required for icon presence)
-  indicator.interactive = true;
-  indicator.on("pointerover", () => {
-    try {
-      game.tooltip.deactivate();
-    } catch (_) {}
-    const anchor = document.createElement("div");
-    anchor.style.cssText = `position: fixed; left: ${centerX}px; top: ${centerY}px; width: 1px; height: 1px; pointer-events: none; z-index: -1;`;
-    document.body.appendChild(anchor);
-    indicator._tooltipAnchor = anchor;
-    try {
-      const detail =
-        mode === "observer"
-          ? `${observerToken.document.name} gives ${
-              targetToken.document.name
-            } ${game.i18n.localize(config.label).toLowerCase()}`
-          : `${targetToken.document.name} has ${game.i18n
-              .localize(config.label)
-              .toLowerCase()} against ${observerToken.document.name}`;
-      game.tooltip.activate(anchor, {
-        content: `<div style="color:${config.color}"><i class="${
-          config.icon
-        }"></i> ${game.i18n.localize(
-          config.label
-        )}</div><div style="color:#ccc">${detail}</div>`,
-        direction: game.tooltip.constructor.TOOLTIP_DIRECTIONS.UP,
-        cssClass: "pf2e-visioner-tooltip",
-      });
-    } catch (_) {}
-  });
-  indicator.on("pointerout", () => {
-    try {
-      game.tooltip.deactivate();
-    } catch (_) {}
-    if (indicator._tooltipAnchor) {
-      try {
-        indicator._tooltipAnchor.parentNode?.removeChild(
-          indicator._tooltipAnchor
-        );
-      } catch (_) {}
-      delete indicator._tooltipAnchor;
-    }
-  });
+  // Do not attach a Foundry tooltip on hover; the badge itself is the tooltip.
 
-  coverIndicators.set(targetToken.id + "|cover", indicator);
+  HoverTooltips.coverIndicators.set(targetToken.id + "|cover", indicator);
   ensureBadgeTicker();
 }
 
@@ -962,7 +908,7 @@ function hideAllVisibilityIndicators() {
   }
 
   // Clean up all indicators
-  visibilityIndicators.forEach((indicator, tokenId) => {
+  HoverTooltips.visibilityIndicators.forEach((indicator, tokenId) => {
     try {
       // Remove DOM badges if present
       if (indicator._visBadgeEl && indicator._visBadgeEl.parentNode) {
@@ -1007,7 +953,7 @@ function hideAllVisibilityIndicators() {
   });
 
   // Also clean up DOM-based visibility badges
-  visibilityIndicators.forEach((indicator) => {
+  HoverTooltips.visibilityIndicators.forEach((indicator) => {
     try {
       if (indicator._visBadgeEl && indicator._visBadgeEl.parentNode) {
         indicator._visBadgeEl.parentNode.removeChild(indicator._visBadgeEl);
@@ -1017,7 +963,7 @@ function hideAllVisibilityIndicators() {
   });
 
   // Clear the map
-  visibilityIndicators.clear();
+  HoverTooltips.visibilityIndicators.clear();
 
   // Reset tracking variables to ensure clean state
   isShowingKeyTooltips = false;
@@ -1025,9 +971,9 @@ function hideAllVisibilityIndicators() {
 
   // Stop ticker when no indicators remain
   try {
-    if (badgeTicker) {
-      canvas.app?.ticker?.remove?.(badgeTicker);
-      badgeTicker = null;
+    if (HoverTooltips.badgeTicker) {
+      canvas.app?.ticker?.remove?.(HoverTooltips.badgeTicker);
+      HoverTooltips.badgeTicker = null;
     }
   } catch (_) {}
 }
@@ -1039,7 +985,7 @@ function hideAllCoverIndicators() {
   try {
     game.tooltip.deactivate();
   } catch (_) {}
-  coverIndicators.forEach((indicator) => {
+  HoverTooltips.coverIndicators.forEach((indicator) => {
     try {
       if (indicator._coverBadgeEl && indicator._coverBadgeEl.parentNode) {
         indicator._coverBadgeEl.parentNode.removeChild(indicator._coverBadgeEl);
@@ -1057,16 +1003,16 @@ function hideAllCoverIndicators() {
       indicator.destroy({ children: true, texture: true, baseTexture: true });
     } catch (_) {}
   });
-  coverIndicators.clear();
+  HoverTooltips.coverIndicators.clear();
   // Stop ticker if nothing remains
   try {
     if (
-      badgeTicker &&
-      visibilityIndicators.size === 0 &&
-      coverIndicators.size === 0
+      HoverTooltips.badgeTicker &&
+      HoverTooltips.visibilityIndicators.size === 0 &&
+      HoverTooltips.coverIndicators.size === 0
     ) {
-      canvas.app?.ticker?.remove?.(badgeTicker);
-      badgeTicker = null;
+      canvas.app?.ticker?.remove?.(HoverTooltips.badgeTicker);
+      HoverTooltips.badgeTicker = null;
     }
   } catch (_) {}
 }
@@ -1077,15 +1023,15 @@ function hideAllCoverIndicators() {
 export function cleanupHoverTooltips() {
   hideAllVisibilityIndicators();
   hideAllCoverIndicators();
-  currentHoveredToken = null;
-  isShowingKeyTooltips = false;
-  keyTooltipTokens.clear();
+  HoverTooltips.currentHoveredToken = null;
+  HoverTooltips.isShowingKeyTooltips = false;
+  HoverTooltips.keyTooltipTokens.clear();
 
   // Reset tooltip mode to default
   setTooltipMode("target");
 
   // Remove only our specific event listeners from tokens
-  tokenEventHandlers.forEach((handlers, tokenId) => {
+  HoverTooltips.tokenEventHandlers.forEach((handlers, tokenId) => {
     const token = canvas.tokens.get(tokenId);
     if (token) {
       token.off("pointerover", handlers.overHandler);
@@ -1094,7 +1040,9 @@ export function cleanupHoverTooltips() {
   });
 
   // Clear the handlers map
-  tokenEventHandlers.clear();
+  HoverTooltips.tokenEventHandlers.clear();
+
+  _initialized = false;
 
   // Note: O key event listeners are managed globally in hooks.js
 }

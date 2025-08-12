@@ -3,11 +3,15 @@
  */
 
 import { MODULE_ID } from "./constants.js";
-import { cleanupCoverEffectsForObserver } from "./cover-ephemeral.js";
+import { updateTokenVisuals } from "./effects-coordinator.js";
 import {
-  batchUpdateVisibilityEffects,
-  cleanupEphemeralEffectsForTarget,
-} from "./off-guard-ephemeral.js";
+  rebuildAndRefresh,
+  removeAllReferencesToTarget,
+  removeModuleEffectsFromActors,
+  removeModuleEffectsFromTokenActors,
+  removeObserverContributions,
+  unsetMapsForTokens,
+} from "./services/api-internal.js";
 import { refreshEveryonesPerception } from "./socket.js";
 import { VisionerTokenManager } from "./token-manager.js";
 import {
@@ -18,133 +22,25 @@ import {
   setVisibilityBetween,
   showNotification,
 } from "./utils.js";
-import { updateTokenVisuals } from "./visual-effects.js";
 
 /**
  * Main API class for the module
  */
 export class Pf2eVisionerApi {
   // Internal helpers (not exported)
-  static async _unsetMapsForTokens(scene, tokens) {
-    try {
-      if (!scene || !Array.isArray(tokens) || tokens.length === 0) return;
-      const updates = tokens.map((t) => ({
-        _id: t.id,
-        [`flags.${MODULE_ID}.-=visibility`]: null,
-        [`flags.${MODULE_ID}.-=cover`]: null,
-      }));
-      await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
-    } catch (_) {}
-  }
+  static async _unsetMapsForTokens(scene, tokens) { return unsetMapsForTokens(scene, tokens); }
 
-  static _collectModuleEffectIds(actor) {
-    const effects = actor?.itemTypes?.effect ?? [];
-    return effects
-      .filter((e) => {
-        const f = e.flags?.[MODULE_ID] || {};
-        return (
-          f.isEphemeralOffGuard ||
-          f.isEphemeralCover ||
-          f.aggregateOffGuard === true ||
-          f.aggregateCover === true
-        );
-      })
-      .map((e) => e.id)
-      .filter((id) => !!actor?.items?.get?.(id));
-  }
+  static _collectModuleEffectIds(actor) { return null; }
 
-  static async _removeModuleEffectsFromActors(actors) {
-    try {
-      for (const actor of actors) {
-        if (!actor) continue;
-        const toDelete = Pf2eVisionerApi._collectModuleEffectIds(actor);
-        if (toDelete.length) {
-          try {
-            await actor.deleteEmbeddedDocuments("Item", toDelete);
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
-  }
+  static async _removeModuleEffectsFromActors(actors) { return removeModuleEffectsFromActors(actors); }
 
-  static async _removeModuleEffectsFromTokenActors(tokens) {
-    try {
-      for (const tok of tokens) {
-        const a = tok?.actor;
-        if (!a) continue;
-        const toDelete = Pf2eVisionerApi._collectModuleEffectIds(a);
-        if (toDelete.length) {
-          try {
-            await a.deleteEmbeddedDocuments("Item", toDelete);
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
-  }
+  static async _removeModuleEffectsFromTokenActors(tokens) { return removeModuleEffectsFromTokenActors(tokens); }
 
-  static async _removeObserverContributions(observerToken, tokens) {
-    // Visibility: remove all contributions using batch updater with removeAllEffects
-    try {
-      const targetUpdates = tokens
-        .filter((t) => t?.actor && t.id !== observerToken.id)
-        .map((t) => ({ target: t, state: "observed" }));
-      if (targetUpdates.length) {
-        await batchUpdateVisibilityEffects(observerToken, targetUpdates, {
-          removeAllEffects: true,
-        });
-      }
-    } catch (_) {}
+  static async _removeObserverContributions(observerToken, tokens) { return removeObserverContributions(observerToken, tokens); }
 
-    // Cover: remove observer from all targets' aggregates and ephemeral
-    try {
-      for (const t of tokens) {
-        if (!t?.actor || t.id === observerToken.id) continue;
-        await cleanupCoverEffectsForObserver(t, observerToken);
-      }
-    } catch (_) {}
-  }
+  static async _removeAllReferencesToTarget(targetToken, tokens) { return removeAllReferencesToTarget(targetToken, tokens, cleanupDeletedToken); }
 
-  static async _removeAllReferencesToTarget(targetToken, tokens) {
-    // Remove from maps
-    try {
-      await cleanupDeletedToken(targetToken.document);
-    } catch (_) {}
-
-    // Remove from visibility/cover effects on all observers
-    try {
-      for (const obs of tokens) {
-        if (!obs?.actor || obs.id === targetToken.id) continue;
-        try {
-          await cleanupEphemeralEffectsForTarget(obs, targetToken);
-        } catch (_) {}
-        try {
-          await cleanupCoverEffectsForObserver(targetToken, obs);
-        } catch (_) {}
-      }
-    } catch (_) {}
-  }
-
-  static async _rebuildAndRefresh() {
-    try {
-      const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
-      await cleanupAllCoverEffects();
-    } catch (_) {}
-    try {
-      const { rebuildAllEphemeralEffects } = await import(
-        "./effects-coordinator.js"
-      );
-      await rebuildAllEphemeralEffects();
-    } catch (_) {}
-    try {
-      await updateTokenVisuals();
-    } catch (_) {}
-    try {
-      refreshEveryonesPerception();
-    } catch (_) {}
-    try {
-      canvas.perception.update({ refreshVision: true });
-    } catch (_) {}
-  }
+  static async _rebuildAndRefresh() { return rebuildAndRefresh(); }
 
   /**
    * Open the token manager for a specific observer token
@@ -181,17 +77,34 @@ export class Pf2eVisionerApi {
     if (VisionerTokenManager.currentInstance) {
       // If the observer is the same, just bring the existing dialog to front
       if (VisionerTokenManager.currentInstance.observer === observer) {
-        VisionerTokenManager.currentInstance.bringToTop();
+        if (
+          VisionerTokenManager.currentInstance.rendered &&
+          (VisionerTokenManager.currentInstance.element ||
+            VisionerTokenManager.currentInstance.window)
+        ) {
+          VisionerTokenManager.currentInstance.bringToFront();
+        } else {
+          await VisionerTokenManager.currentInstance.render({ force: true });
+        }
         return VisionerTokenManager.currentInstance;
       }
       // If different observer, update the existing dialog with new data
       VisionerTokenManager.currentInstance.updateObserver(observer);
-      VisionerTokenManager.currentInstance.bringToTop();
+      await VisionerTokenManager.currentInstance.render({ force: true });
+      if (
+        VisionerTokenManager.currentInstance.element ||
+        VisionerTokenManager.currentInstance.window
+      ) {
+        VisionerTokenManager.currentInstance.bringToFront();
+      }
       return VisionerTokenManager.currentInstance;
     }
 
     const manager = new VisionerTokenManager(observer);
-    manager.render({ force: true });
+    await manager.render({ force: true });
+    try {
+      if (manager.element || manager.window) manager.bringToFront();
+    } catch (_) {}
     return manager;
   }
 
@@ -220,9 +133,17 @@ export class Pf2eVisionerApi {
       if (VisionerTokenManager.currentInstance.observer === observer) {
         if (VisionerTokenManager.currentInstance.mode !== mode) {
           VisionerTokenManager.currentInstance.mode = mode;
-          VisionerTokenManager.currentInstance.render({ force: true });
+          await VisionerTokenManager.currentInstance.render({ force: true });
         }
-        VisionerTokenManager.currentInstance.bringToTop();
+        if (
+          VisionerTokenManager.currentInstance.rendered &&
+          (VisionerTokenManager.currentInstance.element ||
+            VisionerTokenManager.currentInstance.window)
+        ) {
+          VisionerTokenManager.currentInstance.bringToFront();
+        } else {
+          await VisionerTokenManager.currentInstance.render({ force: true });
+        }
         return VisionerTokenManager.currentInstance;
       }
       // If different observer, update the existing dialog with new data and mode
@@ -230,12 +151,21 @@ export class Pf2eVisionerApi {
         observer,
         mode,
       );
-      VisionerTokenManager.currentInstance.bringToTop();
+      await VisionerTokenManager.currentInstance.render({ force: true });
+      if (
+        VisionerTokenManager.currentInstance.element ||
+        VisionerTokenManager.currentInstance.window
+      ) {
+        VisionerTokenManager.currentInstance.bringToFront();
+      }
       return VisionerTokenManager.currentInstance;
     }
 
     const manager = new VisionerTokenManager(observer, { mode });
-    manager.render({ force: true });
+    await manager.render({ force: true });
+    try {
+      if (manager.element || manager.window) manager.bringToFront();
+    } catch (_) {}
     return manager;
   }
 

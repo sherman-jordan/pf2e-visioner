@@ -155,14 +155,6 @@ export const DEFAULT_SETTINGS = {
   },
 
   // Loot DCs
-  lootPerceptionDC: {
-    name: "PF2E_VISIONER.SETTINGS.LOOT_PERCEPTION_DC.name",
-    hint: "PF2E_VISIONER.SETTINGS.LOOT_PERCEPTION_DC.hint",
-    scope: "world",
-    config: true,
-    type: Number,
-    default: 10,
-  },
   lootStealthDC: {
     name: "PF2E_VISIONER.SETTINGS.LOOT_STEALTH_DC.name",
     hint: "PF2E_VISIONER.SETTINGS.LOOT_STEALTH_DC.hint",

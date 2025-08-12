@@ -20,8 +20,6 @@ Hooks.once("init", async () => {
       return value !== undefined && value !== null ? value : defaultValue;
     });
 
-    registerSettings();
-
     // Register settings and keybindings
     registerSettings();
     registerKeybindings();

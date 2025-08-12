@@ -1,0 +1,394 @@
+/**
+ * Point Out Preview Dialog for Point Out action automation
+ * Uses ApplicationV2 for modern FoundryVTT compatibility
+ */
+
+import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
+import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
+import {
+  filterOutcomesByEncounter
+} from "../services/infra/shared-utils.js";
+import { BaseActionDialog } from "./base-action-dialog.js";
+// Logic now handled via services action handler; no direct logic imports
+
+// Store reference to current dialog (shared with SeekPreviewDialog)
+let currentPointOutDialog = null;
+
+export class PointOutPreviewDialog extends BaseActionDialog {
+  static DEFAULT_OPTIONS = {
+    tag: "div",
+    classes: ["point-out-preview-dialog"],
+    window: {
+      title: "Point Out Results",
+      icon: "fas fa-hand-point-right",
+      resizable: true,
+    },
+    position: {
+      width: 600,
+      height: "auto",
+    },
+    actions: {
+      close: PointOutPreviewDialog._onClose,
+      applyAll: PointOutPreviewDialog._onApplyAll,
+      revertAll: PointOutPreviewDialog._onRevertAll,
+      applyChange: PointOutPreviewDialog._onApplyChange,
+      revertChange: PointOutPreviewDialog._onRevertChange,
+      toggleEncounterFilter: PointOutPreviewDialog._onToggleEncounterFilter,
+    },
+  };
+
+  static PARTS = {
+    content: {
+      template: "modules/pf2e-visioner/templates/point-out-preview.hbs",
+    },
+  };
+
+  constructor(actorToken, outcomes, changes, actionData, options = {}) {
+    super(options);
+    this.actorToken = actorToken;
+    this.outcomes = outcomes;
+    this.changes = changes;
+    this.actionData = actionData;
+    this.bulkActionState = "initial";
+    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+
+    // Set global reference
+    currentPointOutDialog = this;
+  }
+
+  /**
+   * Add hover functionality after rendering
+   */
+  // Hover/selection behavior is provided by BasePreviewDialog
+
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+
+    // Filter outcomes with base helper
+    let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter allies found, showing all");
+
+    const cfg = (s) => this.visibilityConfig(s);
+
+    const processedOutcomes = filteredOutcomes.map((outcome) => {
+      const desired = getDesiredOverrideStatesForAction("point-out", outcome);
+      const availableStates = { hidden: this.buildOverrideStates(desired, outcome)[0] };
+
+      // Check if there's an actionable change - either the outcome naturally changed OR user overrode the state
+      const hasActionableChange =
+        outcome.changed ||
+        (outcome.overrideState &&
+          outcome.overrideState !== outcome.oldVisibility);
+
+      return {
+        ...outcome,
+        oldVisibilityState: cfg(outcome.oldVisibility || outcome.currentVisibility),
+        newVisibilityState: cfg(outcome.newVisibility),
+        tokenImage: this.resolveTokenImage(outcome.target),
+        availableStates: availableStates,
+        overrideState: outcome.overrideState || outcome.newVisibility,
+        hasActionableChange: hasActionableChange,
+      };
+    });
+
+    // Update original outcomes with hasActionableChange for Apply All button logic
+    processedOutcomes.forEach((processedOutcome, index) => {
+      if (this.outcomes[index]) {
+        this.outcomes[index].hasActionableChange =
+          processedOutcome.hasActionableChange;
+      }
+    });
+
+    context.actorName = this.actorToken.name;
+    context.actorImage = this.resolveTokenImage(this.actorToken);
+    context.outcomes = processedOutcomes;
+    context.changes = this.changes;
+    Object.assign(context, this.buildCommonContext(this.outcomes));
+
+    // Add target name and DC if all outcomes point to the same target
+    if (processedOutcomes.length > 0) {
+      const firstTargetToken = processedOutcomes[0].targetToken;
+      const allSameTarget = processedOutcomes.every(
+        (outcome) => outcome.targetToken?.id === firstTargetToken?.id,
+      );
+      if (allSameTarget && firstTargetToken) {
+        context.targetName = firstTargetToken.name;
+        context.targetDC = processedOutcomes[0].dc;
+      }
+    }
+
+    return context;
+  }
+
+  async _renderHTML(context, options) {
+    return await foundry.applications.handlebars.renderTemplate(
+      this.constructor.PARTS.content.template,
+      context,
+    );
+  }
+
+  _replaceHTML(result, content, options) {
+    content.innerHTML = result;
+    return content;
+  }
+
+  _onRender(context, options) {
+    super._onRender(context, options);
+    this.updateBulkActionButtons();
+    this.addIconClickHandlers();
+    this.markInitialSelections();
+  }
+
+  // Token id in Point Out outcomes is under `target`
+  getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
+
+  // Point Out specific action methods
+  static async _onClose(event, button) {
+    const app = currentPointOutDialog;
+    if (app) {
+      app.close();
+    }
+  }
+
+  static async _onApplyAll(event, button) {
+    const app = currentPointOutDialog;
+    if (!app || app.bulkActionState === "applied") {
+      if (app.bulkActionState === "applied") {
+        ui.notifications.warn(
+          `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
+        );
+      }
+      return;
+    }
+
+    try {
+      // Filter outcomes based on encounter filter using shared helper
+      const filteredOutcomes = filterOutcomesByEncounter(
+        app.changes,
+        app.encounterOnly,
+        "target",
+      );
+
+      // Only apply changes to filtered outcomes
+      const changedOutcomes = filteredOutcomes.filter(
+        (change) => change.hasActionableChange !== false,
+      );
+
+      // Make sure each outcome has the targetToken property
+      const processedOutcomes = changedOutcomes.map((outcome) => {
+        // If outcome doesn't have targetToken, try to get it from the original outcome
+        if (!outcome.targetToken) {
+          const originalOutcome = app.outcomes.find(
+            (o) => o.target.id === outcome.target.id,
+          );
+          if (originalOutcome && originalOutcome.targetToken) {
+            return { ...outcome, targetToken: originalOutcome.targetToken };
+          }
+        }
+        return outcome;
+      });
+
+      // Provide overrides map to services path (ally id → newVisibility). Point Out uses special mapping in handler.
+      const overrides = {};
+      for (const o of processedOutcomes) {
+        const id = o?.target?.id;
+        const state = o?.overrideState || o?.newVisibility;
+        if (id && state) overrides[id] = state;
+      }
+      const { applyNowPointOut } = await import("../services/index.js");
+      await applyNowPointOut({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+
+      app.bulkActionState = "applied";
+      app.updateBulkActionButtons();
+      app.updateRowButtonsToApplied(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
+      app.updateChangesCount();
+
+      ui.notifications.info(
+        `${MODULE_TITLE}: Applied Point Out changes for ${processedOutcomes.length} allies. Dialog remains open for further adjustments.`,
+      );
+    } catch (error) {
+      console.error(
+        `${MODULE_TITLE}: Error applying Point Out changes:`,
+        error,
+      );
+      ui.notifications.error(
+        `${MODULE_TITLE}: Failed to apply Point Out changes`,
+      );
+    }
+  }
+
+  static async _onRevertAll(event, button) {
+    const app = currentPointOutDialog;
+    if (!app || app.bulkActionState === "reverted") {
+      if (app.bulkActionState === "reverted") {
+        ui.notifications.warn(
+          `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
+        );
+      }
+      return;
+    }
+
+    try {
+      // Filter outcomes based on encounter filter using shared helper
+      const filteredOutcomes = filterOutcomesByEncounter(
+        app.changes,
+        app.encounterOnly,
+        "target",
+      );
+
+      // Only revert changes to filtered outcomes
+      const changedOutcomes = filteredOutcomes.map((change) => {
+        // Make sure to include targetToken in the change
+        const originalOutcome = app.outcomes.find(
+          (o) => o.target.id === change.target.id,
+        );
+        return {
+          ...change,
+          targetToken: originalOutcome?.targetToken || change.targetToken,
+          newVisibility: change.oldVisibility || change.currentVisibility, // Revert to original state
+        };
+      });
+
+      const { revertNowPointOut } = await import("../services/index.js");
+      await revertNowPointOut(app.actionData, { html: () => {}, attr: () => {} });
+
+      app.bulkActionState = "reverted";
+      app.updateBulkActionButtons();
+      app.updateRowButtonsToReverted(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
+      app.updateChangesCount();
+    } catch (error) {
+      console.error(
+        `${MODULE_TITLE}: Error reverting Point Out changes:`,
+        error,
+      );
+      ui.notifications.error(
+        `${MODULE_TITLE}: Failed to revert Point Out changes`,
+      );
+    }
+  }
+
+  static async _onToggleEncounterFilter(event, button) {
+    const app = currentPointOutDialog;
+    if (!app) return;
+
+    app.encounterOnly = !app.encounterOnly;
+
+    // Toggle filter and re-render; action handler context prep will apply filter
+    app.encounterOnly = !app.encounterOnly;
+    app.bulkActionState = "initial";
+    app.bulkActionState = "initial";
+    app.render({ force: true });
+  }
+
+  /**
+   * Apply individual visibility change
+   */
+  static async _onApplyChange(event, button) {
+    const app = currentPointOutDialog;
+    if (!app) return;
+
+    const tokenId = button.dataset.tokenId;
+    const outcome = app.outcomes.find((o) => o.target.id === tokenId);
+
+    if (!outcome || !outcome.hasActionableChange) {
+      ui.notifications.warn(
+        `${MODULE_TITLE}: No change to apply for this token`,
+      );
+      return;
+    }
+
+    try {
+      const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
+      const { applyNowPointOut } = await import("../services/index.js");
+      await applyNowPointOut({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+
+      // Update row using base helper
+      app.updateRowButtonsToApplied([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateChangesCount();
+    } catch (error) {
+      console.error(`${MODULE_TITLE}: Error applying change.`, error);
+      ui.notifications.error(`${MODULE_TITLE}: Error applying change.`);
+    }
+  }
+
+  /**
+   * Revert individual token to original state
+   */
+  static async _onRevertChange(event, button) {
+    const app = currentPointOutDialog;
+    if (!app) return;
+
+    const tokenId = button.dataset.tokenId;
+    const outcome = app.outcomes.find((o) => o.target.id === tokenId);
+
+    if (!outcome) {
+      ui.notifications.warn(`${MODULE_TITLE}: Token not found`);
+      return;
+    }
+
+    const revertChange = {
+      target: outcome.target,
+      targetToken: outcome.targetToken, // Include the targetToken for Point Out
+      newVisibility: outcome.oldVisibility || outcome.currentVisibility,
+      changed: true,
+    };
+
+    try {
+      const { revertNowPointOut } = await import("../services/index.js");
+      await revertNowPointOut(app.actionData, { html: () => {}, attr: () => {} });
+
+      // Update row using base helper
+      app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateChangesCount();
+    } catch (error) {
+      console.error(`${MODULE_TITLE}: Error reverting change.`, error);
+      ui.notifications.error(`${MODULE_TITLE}: Error reverting change.`);
+    }
+  }
+
+  // Use BaseActionDialog.updateChangesCount
+  close(options) {
+    if (this._selectionHookId) {
+      try {
+        Hooks.off("controlToken", this._selectionHookId);
+      } catch (_) {}
+      this._selectionHookId = null;
+    }
+    currentPointOutDialog = null;
+    return super.close(options);
+  }
+
+  getChangesCounterClass() { return "point-out-preview-dialog-changes-count"; }
+
+  // Use services path for apply/revert; no custom applyVisibilityChanges override needed
+
+  // removed: bulk row-button helpers; using BaseActionDialog batch helpers
+
+  // removed: updateRowButtonsToApplied duplicated; using BaseActionDialog implementation
+
+  // removed: updateRowButtonsToReverted duplicated; using BaseActionDialog implementation
+
+  // Use BaseActionDialog.updateBulkActionButtons
+
+  // Use BaseActionDialog.addIconClickHandlers
+
+  updateActionButtonsForToken(tokenId, hasActionableChange) {
+    const row = this.element.querySelector(`tr[data-token-id="${tokenId}"]`);
+    if (!row) return;
+
+    const actionsCell = row.querySelector(".actions");
+    if (!actionsCell) return;
+
+    if (hasActionableChange) {
+      actionsCell.innerHTML = `
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility" disabled>
+                    <i class="fas fa-undo"></i>
+                </button>
+            `;
+    } else {
+      actionsCell.innerHTML = '<span class="no-action">No change</span>';
+    }
+  }
+}

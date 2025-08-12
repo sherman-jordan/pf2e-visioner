@@ -2,16 +2,15 @@
 
 export async function previewActionResults(actionData) {
   const type = actionData.actionType;
-  const { log } = await import("../notifications.js");
+  const { log } = await import("../infra/notifications.js");
 
   try {
     switch (type) {
       case "seek": {
-        const { ensureSeekRoll } = await import("../infra/roll-utils.js");
-        ensureSeekRoll(actionData);
         const { SeekActionHandler } = await import("../actions/seek-action.js");
         const { SeekPreviewDialog } = await import("../../dialogs/seek-preview-dialog.js");
         const handler = new SeekActionHandler();
+        await handler.ensurePrerequisites(actionData);
         const subjects = await handler.discoverSubjects(actionData);
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
         const changes = outcomes.filter((o) => o && o.changed);
@@ -32,6 +31,7 @@ export async function previewActionResults(actionData) {
         const { HideActionHandler } = await import("../actions/hide-action.js");
         const { HidePreviewDialog } = await import("../../dialogs/hide-preview-dialog.js");
         const handler = new HideActionHandler();
+        await handler.ensurePrerequisites(actionData);
         const subjects = await handler.discoverSubjects(actionData);
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
         const changes = outcomes.filter((o) => o && o.changed);

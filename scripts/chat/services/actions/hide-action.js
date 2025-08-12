@@ -5,30 +5,60 @@ export class HideActionHandler extends ActionHandlerBase {
   constructor() { super("hide"); }
   getCacheMap() { return appliedHideChangesByMessage; }
   getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
+  async ensurePrerequisites(actionData) {
+    const { ensureActionRoll } = await import("../infra/roll-utils.js");
+    ensureActionRoll(actionData);
+  }
   async discoverSubjects(actionData) {
     // Observers are all other tokens; dialog filters encounter as needed
     const tokens = canvas?.tokens?.placeables || [];
-    return tokens.filter((t) => t && t !== actionData.actor && t.actor);
+    const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+    return tokens
+      .filter((t) => t && t.actor)
+      .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
+      // Hide should not list loot or hazards as observers
+      .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");
+    const { extractPerceptionDC, determineOutcome } = await import("../infra/shared-utils.js");
     const current = getVisibilityBetween(subject, actionData.actor);
-    // Hide generally moves visibility one step toward hidden if currently observed
-    let newVisibility = current;
-    if (current === "observed") newVisibility = "hidden";
-    else if (current === "concealed") newVisibility = "hidden";
-    else if (current === "hidden") newVisibility = "hidden";
-    else if (current === "undetected") newVisibility = "undetected";
-    return { target: subject, currentVisibility: current, oldVisibility: current, newVisibility, changed: newVisibility !== current };
+
+    // Calculate roll information (stealth vs observer's perception DC)
+    const dc = extractPerceptionDC(subject);
+    const total = Number(actionData?.roll?.total ?? 0);
+    const die = Number(actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0);
+    const margin = total - dc;
+    const outcome = determineOutcome(total, die, dc);
+
+    // Maintain previous behavior for visibility change while enriching display fields
+    // Use centralized mapping for defaults
+    const { getDefaultNewStateFor } = await import("../data/action-state-config.js");
+    let newVisibility = getDefaultNewStateFor("hide", current, outcome) || current;
+
+    return {
+      target: subject,
+      dc,
+      rollTotal: total,
+      dieResult: die,
+      margin,
+      outcome,
+      currentVisibility: current,
+      oldVisibility: current,
+      newVisibility,
+      changed: newVisibility !== current,
+    };
   }
   outcomeToChange(actionData, outcome) {
     return { observer: outcome.target, target: actionData.actor, newVisibility: outcome.newVisibility, oldVisibility: outcome.oldVisibility };
   }
-  entriesToRevertChanges(entries, _actionData) {
+  buildCacheEntryFromChange(change) {
+    return { observerId: change?.observer?.id ?? null, oldVisibility: change?.oldVisibility ?? null };
+  }
+  entriesToRevertChanges(entries, actionData) {
     return entries
-      .map((e) => ({ observer: this.getTokenById(e.observerId), target: null, newVisibility: e.oldVisibility, _observerId: e.observerId }))
-      .map((c) => ({ ...c, target: canvas.tokens.controlled.find((t) => t.id === c._observerId)?.target || null }))
-      .filter((c) => c.observer && c.target);
+      .map((e) => ({ observer: this.getTokenById(e.observerId), target: actionData.actor, newVisibility: e.oldVisibility }))
+      .filter((c) => c.observer && c.target && c.newVisibility);
   }
 }
 

@@ -18,12 +18,16 @@ export class PointOutActionHandler extends ActionHandlerBase {
     }
     if (!target) {
       const all = canvas?.tokens?.placeables || [];
-      target = all.find((t) => t && t !== actionData.actor && t.actor && t.document.disposition !== actionData.actor.document.disposition) || null;
+      const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+      target = all.find((t) => t && t.actor && (actorId ? t.id !== actorId : t !== actionData.actor) && t.document.disposition !== actionData.actor.document.disposition) || null;
     }
     if (!target) return [];
     // Allies are same-disposition tokens that currently cannot see the target
     const { getVisibilityBetween } = await import("../../../utils.js");
-    const allies = (canvas?.tokens?.placeables || []).filter((t) => t && t !== actionData.actor && t.actor && t.document.disposition === actionData.actor.document.disposition);
+    const allies = (canvas?.tokens?.placeables || []).filter((t) => {
+      const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+      return t && t.actor && (actorId ? t.id !== actorId : t !== actionData.actor) && t.document.disposition === actionData.actor.document.disposition;
+    });
     const cannotSee = allies.filter((ally) => {
       const vis = getVisibilityBetween(ally, target);
       return vis === "hidden" || vis === "undetected";

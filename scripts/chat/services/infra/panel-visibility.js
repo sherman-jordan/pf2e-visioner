@@ -1,4 +1,4 @@
-import { checkForValidTargets } from "./infra/target-checker.js";
+import { checkForValidTargets } from "../infra/target-checker.js";
 
 /**
  * Decide whether to inject the automation panel for a given message/action

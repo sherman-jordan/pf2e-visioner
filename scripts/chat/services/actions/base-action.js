@@ -1,6 +1,6 @@
 // Base class for action logic. Subclasses must implement abstract hooks.
 
-import { log, notify } from "../../services/notifications.js";
+import { log, notify } from "../infra/notifications.js";
 
 export class ActionHandlerBase {
   constructor(actionType) {
@@ -102,7 +102,16 @@ export class ActionHandlerBase {
       }
       // Apply overrides from the UI if provided
       this.applyOverrides(actionData, outcomes);
-      const filtered = outcomes.filter((o) => o && o.changed);
+      // Start with all changed outcomes
+      let filtered = outcomes.filter((o) => o && o.changed);
+      // If overrides were provided, restrict application strictly to those ids
+      try {
+        const overrides = actionData?.overrides;
+        if (overrides && typeof overrides === "object" && Object.keys(overrides).length > 0) {
+          const allowedIds = new Set(Object.keys(overrides));
+          filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
+        }
+      } catch (_) {}
       if (filtered.length === 0) { notify.info("No changes to apply"); return; }
       const changes = filtered.map((o) => this.outcomeToChange(actionData, o)).filter(Boolean);
 

@@ -1,4 +1,4 @@
-import { MODULE_TITLE } from "../../constants.js";
+import { MODULE_TITLE } from "../../../constants.js";
 
 export const notify = {
   info(message) {

@@ -9,15 +9,19 @@ export class SeekActionHandler extends ActionHandlerBase {
   getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
 
   async ensurePrerequisites(actionData) {
-    const { ensureSeekRoll } = await import("../infra/roll-utils.js");
-    ensureSeekRoll(actionData);
+    const { ensureActionRoll } = await import("../infra/roll-utils.js");
+    ensureActionRoll(actionData);
   }
 
   async discoverSubjects(actionData) {
     // Discover targets based on current canvas tokens and encounter settings
     const { filterOutcomesByEncounter, shouldFilterAlly } = await import("../infra/shared-utils.js");
     const allTokens = canvas?.tokens?.placeables || [];
-    const potential = allTokens.filter((t) => t && t !== actionData.actor && t.actor)
+    const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+    const potential = allTokens
+      .filter((t) => t && t.actor)
+      // Exclude the acting token reliably by id when possible
+      .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
       .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"));
     // For Seek, we do not pre-filter by encounter here; the dialog applies filter as needed
     return potential;
@@ -25,25 +29,25 @@ export class SeekActionHandler extends ActionHandlerBase {
 
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");
-    const { extractPerceptionDC, hasConcealedCondition, determineOutcome } = await import("../infra/shared-utils.js");
-    const { getVisibilityStateConfig } = await import("../data/visibility-states.js");
+    const { extractStealthDC, hasConcealedCondition, determineOutcome } = await import("../infra/shared-utils.js");
     const current = getVisibilityBetween(actionData.actor, subject);
-    const dc = extractPerceptionDC(subject);
+    // For loot actors, use the custom Stealth DC flag configured on the token; otherwise use Perception DC
+    const dc = extractStealthDC(subject);
     const total = Number(actionData?.roll?.total ?? 0);
     const die = Number(actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0);
     const outcome = determineOutcome(total, die, dc);
     // Simple mapping: success → observed; failure → concealed/hidden depending on target state; crit-failure → undetected
-    let newVisibility = current;
-    if (outcome === "critical-success") newVisibility = "observed";
-    else if (outcome === "success") newVisibility = current === "concealed" || hasConcealedCondition(subject) ? "observed" : "observed";
-    else if (outcome === "failure") newVisibility = current === "undetected" ? "hidden" : (current === "hidden" ? "hidden" : "concealed");
-    else if (outcome === "critical-failure") newVisibility = "undetected";
+    const { getDefaultNewStateFor } = await import("../data/action-state-config.js");
+    let newVisibility = getDefaultNewStateFor("seek", current, outcome) || current;
 
     return {
       target: subject,
       dc,
+      // Keep legacy fields while also providing explicit names used by templates
       roll: total,
       die,
+      rollTotal: total,
+      dieResult: die,
       margin: total - dc,
       outcome,
       currentVisibility: current,

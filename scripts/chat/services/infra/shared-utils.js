@@ -32,16 +32,17 @@ export function extractStealthDC(token) {
   // Loot actors use token override or world default; others use actor stealth DC
   if (token.actor?.type === "loot") {
     const override =
-      Number(token.document?.getFlag?.(MODULE_ID, "stealthDc")) ||
       Number(token.document?.getFlag?.(MODULE_ID, "stealthDC")) ||
-      Number(token.document?.flags?.[MODULE_ID]?.stealthDc) ||
       Number(token.document?.flags?.[MODULE_ID]?.stealthDC);
     if (Number.isFinite(override) && override > 0) return override;
     const fallback = Number(game.settings.get(MODULE_ID, "lootStealthDC"));
     return Number.isFinite(fallback) ? fallback : 15;
+  } else if (token.actor?.type === "hazard") {
+    return token.actor.system.attributes.stealth.dc;
+  } else {
+    // For both PCs and NPCs: actor.system.skills.stealth.dc
+    return token.actor.system?.skills?.stealth?.dc || 0;
   }
-  // For both PCs and NPCs: actor.system.skills.stealth.dc
-  return token.actor.system?.skills?.stealth?.dc || 0;
 }
 
 /**

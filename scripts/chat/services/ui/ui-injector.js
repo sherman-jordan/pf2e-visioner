@@ -9,7 +9,7 @@ export async function injectAutomationUI(message, html, actionData) {
         return;
       }
     }
-    const { shouldInjectPanel } = await import("../panel-visibility.js");
+    const { shouldInjectPanel } = await import("../infra/panel-visibility.js");
     if (!shouldInjectPanel(message, actionData)) {
       processedMessages.add(message.id);
       return;
@@ -24,7 +24,7 @@ export async function injectAutomationUI(message, html, actionData) {
     bindAutomationEvents(panel, message, actionData);
     processedMessages.add(message.id);
   } catch (error) {
-    const { log } = await import("../notifications.js");
+    const { log } = await import("../infra/notifications.js");
     log.error("Error injecting automation UI:", error);
   }
 }

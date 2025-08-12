@@ -173,18 +173,6 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: false,
   },
-
-  // Visuals perspective
-  visualsUseControlledPerspective: {
-    name: "PF2E_VISIONER.SETTINGS.VISUALS_USE_CONTROLLED_PERSPECTIVE.name",
-    hint: "PF2E_VISIONER.SETTINGS.VISUALS_USE_CONTROLLED_PERSPECTIVE.hint",
-    scope: "client",
-    config: true,
-    restricted: false,
-    type: Boolean,
-    default: true,
-  },
-
   defaultEncounterFilter: {
     name: "PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name",
     hint: "PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.hint",

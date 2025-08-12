@@ -255,10 +255,6 @@
         "name": "Include walls as hideable objects (experimental)",
         "hint": "Show walls in the manager to mark them as visible/hidden per observer. Current implementation is visual-only and does not change occlusion or collision."
       },
-      "VISUALS_USE_CONTROLLED_PERSPECTIVE": {
-        "name": "Use controlled token perspective for visuals",
-        "hint": "When enabled, the current user's controlled token determines what they can visually see for objects configured as hidden or visible."
-      },
       "AUTO_COVER": {
         "name": "Auto-cover",
         "hint": "When enabled, the module will automatically apply cover to tokens based on blocking token path."

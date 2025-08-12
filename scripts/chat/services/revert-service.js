@@ -6,7 +6,7 @@ import { HideActionHandler } from "./actions/hide-action.js";
 import { PointOutActionHandler } from "./actions/point-out-action.js";
 import { SeekActionHandler } from "./actions/seek-action.js";
 import { SneakActionHandler } from "./actions/sneak-action.js";
-import { log } from "./notifications.js";
+import { log } from "./infra/notifications.js";
 
 export async function revertNowSeek(actionData, button) {
   const handler = new SeekActionHandler();

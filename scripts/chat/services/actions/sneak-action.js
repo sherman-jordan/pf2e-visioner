@@ -8,18 +8,19 @@ export class SneakActionHandler extends ActionHandlerBase {
   async discoverSubjects(actionData) {
     // Observers are all other tokens; dialog filters encounter as needed
     const tokens = canvas?.tokens?.placeables || [];
-    return tokens.filter((t) => t && t !== actionData.actor && t.actor);
+    const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+    return tokens
+      .filter((t) => t && t.actor)
+      .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor));
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");
     const current = getVisibilityBetween(subject, actionData.actor);
-    // On a successful sneak, observers may lose track (hidden/undetected) based on margin
+    // Determine default state from centralized mapping using roll quality only
     const total = Number(actionData?.roll?.total ?? 0);
-    const margin = total - 0; // If we lack DC, assume thresholding purely on roll quality
-    let newVisibility = current;
-    if (margin >= 10) newVisibility = "undetected";
-    else if (margin >= 0) newVisibility = current === "observed" ? "hidden" : current;
-    else newVisibility = current;
+    const outcome = total >= 20 ? "critical-success" : (total >= 10 ? "success" : (total >= 0 ? "failure" : "critical-failure"));
+    const { getDefaultNewStateFor } = await import("../data/action-state-config.js");
+    const newVisibility = getDefaultNewStateFor("sneak", current, outcome) || current;
     return { token: subject, currentVisibility: current, oldVisibility: current, newVisibility, changed: newVisibility !== current };
   }
   outcomeToChange(actionData, outcome) {

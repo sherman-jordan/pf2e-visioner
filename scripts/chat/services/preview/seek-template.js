@@ -1,7 +1,7 @@
 // Facade around seek template helpers to keep UI layer clean
 
 export async function setupSeekTemplate(actionData) {
-  const { notify } = await import("../notifications.js");
+  const { notify } = await import("../infra/notifications.js");
   notify.info(
     game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP")
   );
@@ -123,7 +123,7 @@ export async function setupSeekTemplate(actionData) {
           requestGMOpenSeekWithTemplate(actionData.actor.id, actionData.seekTemplateCenter, actionData.seekTemplateRadiusFeet, actionData.messageId, rollTotal, dieResult);
           const tokens = canvas?.tokens?.placeables || [];
           const targets = tokens.filter((t) => t && t !== actionData.actor && t.actor);
-          if (targets.length === 0) { const { notify } = await import("../notifications.js"); notify.info("No valid targets within template"); }
+          if (targets.length === 0) { const { notify } = await import("../infra/notifications.js"); notify.info("No valid targets within template"); }
         } finally { resolve(); }
       };
       canvas.stage.on("pointerdown", pointerHandler, { once: true });
@@ -140,11 +140,11 @@ export async function removeSeekTemplate(actionData) {
     if (toRemove.length) await canvas.scene.deleteEmbeddedDocuments("MeasuredTemplate", toRemove);
     delete actionData.seekTemplateCenter;
     delete actionData.seekTemplateRadiusFeet;
-    const { notify } = await import("../notifications.js");
+    const { notify } = await import("../infra/notifications.js");
     notify.info(game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE"));
     updateSeekTemplateButton(actionData, false);
   } catch (error) {
-    const { log } = await import("../notifications.js");
+    const { log } = await import("../infra/notifications.js");
     log.error("Failed to remove Seek template:", error);
   }
 }

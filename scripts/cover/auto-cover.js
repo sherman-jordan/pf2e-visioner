@@ -108,6 +108,11 @@ function segmentIntersectsAnyBlockingWall(p1, p2) {
       try {
         const d = wall.document;
         if (!d) continue;
+        // Skip walls explicitly marked as not providing cover
+        try {
+          const provides = d.getFlag?.(MODULE_ID, 'provideCover');
+          if (provides === false) continue;
+        } catch (_) {}
         // Skip open doors; treat closed/locked doors and normal walls as blockers
         const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
         const doorState = Number(d.ds ?? d.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked

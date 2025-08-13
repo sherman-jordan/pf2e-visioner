@@ -12,6 +12,16 @@
   - Applies cover only if the line from attacker to target passes through a blocking token’s space.
   - Lesser vs Standard cover determined by relative size (blocking token ≥ 2 size categories larger => Standard).
   - Applies pre-roll via modifiers dialog or strike click capture; clears cover immediately after the roll’s message renders.
+  - Multi-side evaluation: checks all token sides for walls; tokens use center-to-center line for accurate blocking.
+  - Intersection mode for token blockers: new setting “Auto-Cover: Token Intersection Mode” with choices:
+    - Any (default): center line intersecting any token edge counts.
+    - Cross: center line must cross both opposite edges (top+bottom or left+right).
+  - Ignore undetected blockers: new setting “Auto-Cover: Ignore Undetected Tokens” (skip blockers undetected to the attacker per Visioner map).
+  - Respect token flag: new setting “Auto-Cover: Respect Token Ignore Flag”; if enabled, tokens with `flags.pf2e-visioner.ignoreAutoCover = true` will be ignored.
+  - New token setting in vision tab: ignore as auto cover blocker
+  - Wall-level toggle: per-wall flag `flags.pf2e-visioner.provideCover` (when false) makes that wall not contribute to cover. Default behavior unchanged when flag is unset.
+  - Prone blockers toggle: new setting “Auto-Cover: Prone Tokens Can Block” (default on). If disabled, tokens with a Prone condition won’t provide cover.
+  - Ally/dead filters: existing settings integrated into auto-cover token filtering (ignore allies, ignore 0-HP tokens).
   - Gated by setting and enabled GM-only to avoid duplicates.
 - Take cover action support
 

@@ -8,6 +8,7 @@ import { onRenderTokenHUD } from "../services/token-hud.js";
 export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
   Hooks.on("getTokenDirectoryEntryContext", onGetTokenDirectoryEntryContext);
+  Hooks.on("renderWallConfig", onRenderWallConfig);
   for (const hook of [
     "renderTokenConfig",
     "renderPrototypeTokenConfig",
@@ -94,6 +95,36 @@ function injectPF2eVisionerBox(app, root) {
 
   if (detectionFS) detectionFS.insertAdjacentElement("afterend", box);
   else panel.appendChild(box);
+}
+
+function onRenderWallConfig(app, html) {
+  try {
+    const root = html?.jquery ? html[0] : html;
+    if (!root) return;
+    // Avoid duplicate injection
+    if (root.querySelector(`[name="flags.${MODULE_ID}.provideCover"]`)) return;
+
+    const form = root.querySelector('form') || root;
+    const current = app?.document?.getFlag?.(MODULE_ID, 'provideCover');
+    const checked = current !== false; // default to true when undefined
+
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    group.innerHTML = `
+      <label>PF2E Visioner: Provide Cover</label>
+      <input type="checkbox" name="flags.${MODULE_ID}.provideCover" ${checked ? 'checked' : ''}>
+      <p class="notes">Uncheck to ignore this wall for auto-cover.</p>
+    `;
+
+    // Append near Door Configuration or at form end
+    const doorHeader = Array.from(form.querySelectorAll('label, h3, header, legend'))
+      .find((el) => (el.textContent || '').toLowerCase().includes('door configuration'));
+    if (doorHeader && doorHeader.parentElement) {
+      doorHeader.parentElement.insertAdjacentElement('beforebegin', group);
+    } else {
+      form.appendChild(group);
+    }
+  } catch (_) { }
 }
 
 

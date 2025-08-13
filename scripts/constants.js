@@ -364,6 +364,14 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
+  keybindingOpensTMInTargetMode: {
+    name: "Keybinding Opens Token Manager in Target Mode",
+    hint: "If enabled, the keybinding to open Token Manager in Target mode rather than Observer mode.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
 
   debug: {
     name: "Debug Mode",

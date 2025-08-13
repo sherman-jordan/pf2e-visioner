@@ -60,6 +60,9 @@ export function registerSettings() {
       } else if (key === "customSeekDistanceOutOfCombat") {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
+      } else if (key === "keybindingOpensTMInTargetMode") {
+        // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
       } else if (key === "blockPlayerTargetTooltips") {
         // No reload: will take effect on next hover; ensure initialized when allowed
         settingConfig.onChange = async () => {
@@ -129,8 +132,9 @@ export function registerKeybindings() {
     // Add appropriate handler
     if (key === "openTokenManager") {
       keybindingConfig.onDown = async () => {
+        const mode = game.settings.get(MODULE_ID, "keybindingOpensTMInTargetMode") ? "target" : "observer";
         const { api } = await import("../api.js");
-        await api.openTokenManager();
+        await api.openTokenManager(null, {mode});
       };
     } else if (key === "openVisibilityManager") {
       keybindingConfig.onDown = async () => {

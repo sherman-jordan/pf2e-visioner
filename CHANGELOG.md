@@ -18,8 +18,9 @@
     - Cross: center line must cross both opposite edges (top+bottom or left+right).
   - Ignore undetected blockers: new setting “Auto-Cover: Ignore Undetected Tokens” (skip blockers undetected to the attacker per Visioner map).
   - Respect token flag: new setting “Auto-Cover: Respect Token Ignore Flag”; if enabled, tokens with `flags.pf2e-visioner.ignoreAutoCover = true` will be ignored.
-  - New token setting in vision tab: ignore as auto cover blocker
-  - Wall-level toggle: per-wall flag `flags.pf2e-visioner.provideCover` (when false) makes that wall not contribute to cover. Default behavior unchanged when flag is unset.
+  - New token setting in vision tab: ignore as auto cover blocker.
+  - Wall-level toggle: per-wall flag `flags.pf2e-visioner.provideCover` (when false) makes that wall not contribute to cover. Default set to true.
+  - New wall setting: ignore as auto cover.
   - Prone blockers toggle: new setting “Auto-Cover: Prone Tokens Can Block” (default on). If disabled, tokens with a Prone condition won’t provide cover.
   - Ally/dead filters: existing settings integrated into auto-cover token filtering (ignore allies, ignore 0-HP tokens).
   - Gated by setting and enabled GM-only to avoid duplicates.

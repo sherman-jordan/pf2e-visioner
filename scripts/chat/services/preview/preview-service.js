@@ -32,6 +32,16 @@ export async function previewActionResults(actionData) {
         const { HidePreviewDialog } = await import("../../dialogs/hide-preview-dialog.js");
         const handler = new HideActionHandler();
         await handler.ensurePrerequisites(actionData);
+        // RAW enforcement gate: do not open dialog if prerequisites fail
+        try {
+          const { checkForValidTargets } = await import("../infra/target-checker.js");
+          const canHide = checkForValidTargets({ ...actionData, actionType: "hide" });
+          if (!canHide && game.settings.get("pf2e-visioner", "enforceRawRequirements")) {
+            const { notify } = await import("../infra/notifications.js");
+            notify.warn("The creature hiding should be Concealed from, or have Standard or Greater Cover from, at least one observed.");
+            return;
+          }
+        } catch (_) {}
         const subjects = await handler.discoverSubjects(actionData);
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
         const changes = outcomes.filter((o) => o && o.changed);

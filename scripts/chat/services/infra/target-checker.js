@@ -1,4 +1,4 @@
-import { getVisibilityBetween } from "../../../utils.js";
+import { getCoverBetween, getVisibilityBetween } from "../../../utils.js";
 import { shouldFilterAlly } from "./shared-utils.js";
 
 export function checkForValidTargets(actionData) {
@@ -85,8 +85,25 @@ function checkPointOutTargets(actionData, potentialTargets) {
   return hasAlly && hasValidTarget;
 }
 
-function checkHideTargets(_actionData, potentialTargets) {
-  return potentialTargets.length > 0;
+function checkHideTargets(actionData, potentialTargets) {
+  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  if (!enforceRAW) return potentialTargets.length > 0;
+
+  // RAW prerequisite: at least one observed creature must either see the actor as concealed
+  // OR the actor must have Standard or Greater Cover from at least one observed creature
+  try {
+    for (const observer of potentialTargets) {
+      const vis = getVisibilityBetween(observer, actionData.actor);
+      if (vis === "concealed") return true;
+      if (vis === "observed") {
+        try {
+          const cover = getCoverBetween(observer, actionData.actor);
+          if (cover === "standard" || cover === "greater") return true;
+        } catch (_) {}
+      }
+    }
+  } catch (_) {}
+  return false;
 }
 
 function checkSneakTargets(_actionData, potentialTargets) {

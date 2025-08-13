@@ -42,7 +42,7 @@ export async function formHandler(event, form, formData) {
 
       try {
         const { batchUpdateVisibilityEffects } = await import(
-          "../../../off-guard-ephemeral.js"
+          "../../../visibility/ephemeral.js"
         );
         const targetUpdates = [];
         for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
@@ -72,7 +72,7 @@ export async function formHandler(event, form, formData) {
 
       try {
         const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import(
-          "../../../cover-ephemeral.js"
+          "../../../cover/ephemeral.js"
         );
         const targetUpdates = [];
         for (const [tokenId, newState] of Object.entries(coverChanges)) {
@@ -116,7 +116,7 @@ export async function formHandler(event, form, formData) {
     }
     try {
       const { batchUpdateVisibilityEffects } = await import(
-        "../../../off-guard-ephemeral.js"
+        "../../../visibility/ephemeral.js"
       );
       const observerUpdates = [];
       for (const [observerTokenId, newVisibilityState] of Object.entries(
@@ -243,8 +243,8 @@ export async function applyCurrent(event, button) {
   runTasksWithProgress(`${MODULE_ID}: Preparing Changes`, [async () => await new Promise((r) => setTimeout(r, 100))]);
 
   try {
-    const { batchUpdateVisibilityEffects } = await import("../../../off-guard-ephemeral.js");
-    const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover-ephemeral.js");
+    const { batchUpdateVisibilityEffects } = await import("../../../visibility/ephemeral.js");
+    const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover/ephemeral.js");
     const { updateWallVisuals } = await import("../../../services/visual-effects.js");
     const isVisibility = app.activeTab === "visibility";
     const isCover = app.activeTab === "cover";
@@ -402,8 +402,8 @@ export async function applyBoth(event, button) {
   }
 
   try {
-    const { batchUpdateVisibilityEffects } = await import("../../../off-guard-ephemeral.js");
-    const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover-ephemeral.js");
+    const { batchUpdateVisibilityEffects } = await import("../../../visibility/ephemeral.js");
+    const { batchUpdateCoverEffects } = await import("../../../cover/ephemeral.js");
     const allOperations = [];
     const visualUpdatePairs = [];
 
@@ -480,7 +480,7 @@ export async function applyBoth(event, button) {
     }
     for (const { observer, updates } of targetCovUpdates.values()) {
       allOperations.push(async () => {
-        const { batchUpdateCoverEffects } = await import("../../../cover-ephemeral.js");
+        const { batchUpdateCoverEffects } = await import("../../../cover/ephemeral.js");
         await batchUpdateCoverEffects(observer, updates);
       });
     }
@@ -488,7 +488,7 @@ export async function applyBoth(event, button) {
     // Reconcile all cover targets once after all updates
     if (observerCovUpdates.length > 0 || targetCovUpdates.size > 0) {
       allOperations.push(async () => {
-        const { reconcileCoverEffectsForTarget } = await import("../../../cover-ephemeral.js");
+        const { reconcileCoverEffectsForTarget } = await import("../../../cover/ephemeral.js");
         const reconcileTargets = new Set();
         
         // Add all targets from observer cover updates

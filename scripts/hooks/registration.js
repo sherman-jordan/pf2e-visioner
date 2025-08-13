@@ -3,6 +3,7 @@
  */
 
 import { onHighlightObjects } from "../hover-tooltips.js";
+import { registerAutoCoverHooks } from "./auto-cover.js";
 import { registerChatHooks } from "./chat.js";
 import { registerCombatHooks } from "./combat.js";
 import { onCanvasReady, onReady } from "./lifecycle.js";
@@ -22,6 +23,7 @@ export function registerHooks() {
   // UI hues
   registerUIHooks();
   registerCombatHooks();
+  registerAutoCoverHooks();
 }
 
 

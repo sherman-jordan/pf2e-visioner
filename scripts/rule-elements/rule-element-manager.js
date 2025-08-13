@@ -66,7 +66,7 @@ function setupRuleElements() {
           return new game.pf2e.system.schema.fields.LaxSchemaField({
             mode: new fields.StringField({
               required: true,
-              choices: ["set", "apply", "increment", "decrement"],
+              choices: ["set", "increment", "decrement"],
               initial: "set",
             }),
             status: new fields.StringField({

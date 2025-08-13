@@ -16,7 +16,7 @@ This directory contains the modular JavaScript files for the PF2E Visioner modul
 - **`off-guard-ephemeral.js`** - Off-guard condition automation using individual ephemeral effects
 - **`targeting.js`** - Token targeting event handling
 - **`visual-effects.js`** - Token visual effects and appearance management
-- **`effects-coordinator.js`** - Main effects coordinator and system integration
+<!-- effects-coordinator.js removed in refactor; visuals handled by visual-effects.js -->
 
 ### Integration Modules
 

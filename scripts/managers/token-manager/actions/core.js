@@ -201,8 +201,8 @@ export async function formHandler(event, form, formData) {
   (async () => {
     try {
       refreshEveryonesPerception();
-      const { updateTokenVisuals } = await import("../../../effects-coordinator.js");
-      await updateTokenVisuals();
+      const { updateSpecificTokenPairs } = await import("../../../visual-effects.js");
+      try { await updateSpecificTokenPairs([]); } catch (_) {}
     } catch (_) {}
   })();
   return app.render();

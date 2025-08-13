@@ -67,17 +67,8 @@ Hooks.once("ready", async () => {
     if (game.user.isGM) {
       try {
         // Register auto-cover detection (GM only to avoid duplicates)
-        try {
-            const { registerAutoCoverHooks } = await import("./auto-cover.js");
-            registerAutoCoverHooks();
-        } catch (_) {
-          // Setting may not exist in some builds; ignore
-        }
-
-        try {
-          const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
-          await cleanupAllCoverEffects();
-        } catch (_) {}
+        const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+        await cleanupAllCoverEffects();
       } catch (error) {
         console.error(
           "PF2E Visioner: Failed to clean up cover effects:",

@@ -79,7 +79,15 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         if (!cfg) continue;
         const current = game.settings.get(MODULE_ID, key);
         let inputType = "text";
-        if (cfg.choices && typeof cfg.choices === "object") inputType = "select";
+        let choicesList = null;
+        if (cfg.choices && typeof cfg.choices === "object") {
+          inputType = "select";
+          try {
+            choicesList = Object.entries(cfg.choices).map(([val, label]) => ({ value: val, label, selected: String(current) === String(val) }));
+          } catch (_) {
+            choicesList = null;
+          }
+        }
         else if (cfg.type === Boolean) inputType = "checkbox";
         else if (cfg.type === Number) inputType = "number";
         items.push({
@@ -88,7 +96,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
           hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
           value: current,
           inputType,
-          choices: cfg.choices || null,
+          choices: choicesList,
           min: cfg.min ?? null,
           max: cfg.max ?? null,
           step: cfg.step ?? 1,

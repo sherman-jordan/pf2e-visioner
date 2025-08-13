@@ -335,16 +335,20 @@ export function shouldFilterAlly(
       const bDisp = targetToken?.document?.disposition;
       if (Number.isFinite(aDisp) && Number.isFinite(bDisp)) sameSide = aDisp === bDisp;
       else {
-        const actingLooksPC = actingToken?.actor?.hasPlayerOwner || actingToken?.actor?.type === "character";
-        const targetLooksPC = targetToken?.actor?.hasPlayerOwner || targetToken?.actor?.type === "character" || targetToken?.actor?.type === "familiar";
-        sameSide = actingLooksPC === targetLooksPC;
+        const aType = actingToken?.actor?.type;
+        const bType = targetToken?.actor?.type;
+        const aGroup = (aType === "character" || aType === "familiar") ? "pc" : "npc";
+        const bGroup = (bType === "character" || bType === "familiar") ? "pc" : "npc";
+        sameSide = aGroup === bGroup;
       }
     }
   } catch (_) {
-    // Conservative fallback
-    const actingLooksPC = actingToken?.actor?.hasPlayerOwner || actingToken?.actor?.type === "character";
-    const targetLooksPC = targetToken?.actor?.hasPlayerOwner || targetToken?.actor?.type === "character" || targetToken?.actor?.type === "familiar";
-    sameSide = actingLooksPC === targetLooksPC;
+    // Conservative fallback by actor type only (no ownership)
+    const aType = actingToken?.actor?.type;
+    const bType = targetToken?.actor?.type;
+    const aGroup = (aType === "character" || aType === "familiar") ? "pc" : "npc";
+    const bGroup = (bType === "character" || bType === "familiar") ? "pc" : "npc";
+    sameSide = aGroup === bGroup;
   }
 
   if (filterType === "enemies") return sameSide; // filter out allies

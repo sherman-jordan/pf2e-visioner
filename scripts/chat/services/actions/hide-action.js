@@ -1,4 +1,5 @@
 import { appliedHideChangesByMessage } from "../data/message-cache.js";
+import { shouldFilterAlly } from "../infra/shared-utils.js";
 import { ActionHandlerBase } from "./base-action.js";
 
 export class HideActionHandler extends ActionHandlerBase {
@@ -12,10 +13,13 @@ export class HideActionHandler extends ActionHandlerBase {
   async discoverSubjects(actionData) {
     // Observers are all other tokens; dialog filters encounter as needed
     const tokens = canvas?.tokens?.placeables || [];
-    const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+    const actorToken = actionData?.actor;
+    const actorId = actorToken?.id || actorToken?.document?.id || null;
     return tokens
       .filter((t) => t && t.actor)
-      .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
+      .filter((t) => (actorId ? t.id !== actorId : t !== actorToken))
+      // Respect ignoreAllies: when enabled, exclude allies from observers for Hide
+      .filter((t) => !shouldFilterAlly(actorToken, t, "enemies"))
       // Hide should not list loot or hazards as observers
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
   }

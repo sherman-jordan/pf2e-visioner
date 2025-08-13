@@ -134,20 +134,27 @@ export function isTokenInEncounter(token) {
  * @returns {string} Outcome string
  */
 export function determineOutcome(total, die, dc) {
-  let baseOutcome;
   const margin = total - dc;
+  // Determine base outcome by margin
+  let outcome;
+  if (margin >= 10) outcome = "critical-success";
+  else if (margin >= 0) outcome = "success";
+  else if (margin >= -10) outcome = "failure";
+  else outcome = "critical-failure";
 
-  // Determine base outcome
-  if (margin >= 10) baseOutcome = "critical-success";
-  else if (margin >= 0) baseOutcome = "success";
-  else if (margin >= -10) baseOutcome = "failure";
-  else baseOutcome = "critical-failure";
-
-  // Apply natural 20/1 adjustments
-  if (die === 20 && baseOutcome === "success") return "critical-success";
-  if (die === 1 && baseOutcome === "failure") return "critical-failure";
-
-  return baseOutcome;
+  // Natural 20/1 step adjustment across the board with extremes clamped
+  const ladder = ["critical-failure", "failure", "success", "critical-success"];
+  const idx = ladder.indexOf(outcome);
+  const natural = Number(die);
+  if (natural === 20) {
+    // Promote by one step unless already crit success
+    return ladder[Math.min(idx + 1, ladder.length - 1)];
+  }
+  if (natural === 1) {
+    // Demote by one step unless already crit failure
+    return ladder[Math.max(idx - 1, 0)];
+  }
+  return outcome;
 }
 
 /**

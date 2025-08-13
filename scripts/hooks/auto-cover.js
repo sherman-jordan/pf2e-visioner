@@ -8,6 +8,7 @@ import {
   onRenderChatMessage,
   onRenderCheckModifiersDialog,
   onStrikeClickCapture,
+  onUpdateToken,
 } from "../cover/auto-cover.js";
 
 export function registerAutoCoverHooks() {
@@ -15,6 +16,7 @@ export function registerAutoCoverHooks() {
   Hooks.on("renderChatMessage", onRenderChatMessage);
   Hooks.on("renderCheckModifiersDialog", onRenderCheckModifiersDialog);
   try { document.addEventListener("click", onStrikeClickCapture, true); } catch (_) {}
+  Hooks.on("updateToken", onUpdateToken);
 }
 
 

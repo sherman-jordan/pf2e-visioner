@@ -38,6 +38,20 @@ export function _consumePairs(attackerId) {
   return arr;
 }
 
+function _getActivePairsInvolving(tokenId) {
+  const pairs = [];
+  // As attacker
+  const tset = _activePairsByAttacker.get(tokenId);
+  if (tset && tset.size > 0) {
+    for (const targetId of tset) pairs.push([tokenId, targetId]);
+  }
+  // As target
+  for (const [attackerId, set] of _activePairsByAttacker.entries()) {
+    if (set.has(tokenId)) pairs.push([attackerId, tokenId]);
+  }
+  return pairs;
+}
+
 export function getSizeRank(token) {
   try { const v = token?.actor?.system?.traits?.size?.value ?? "med"; return SIZE_ORDER[v] ?? 2; } catch (_) { return 2; }
 }
@@ -399,6 +413,26 @@ export async function onStrikeClickCapture(ev) {
     try { const { updateEphemeralCoverEffects } = await import("../cover/ephemeral.js"); await updateEphemeralCoverEffects(target, attacker, state, { durationRounds: -1 }); } catch (_) { }
     _recordPair(attacker.id, target.id);
   } catch (_) { }
+}
+
+// Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
+export async function onUpdateToken(tokenDoc, changes) {
+  try {
+    if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
+    // Only care about position/size/rotation updates
+    const relevant = ("x" in changes) || ("y" in changes) || ("width" in changes) || ("height" in changes) || ("rotation" in changes);
+    if (!relevant) return;
+    const tokenId = tokenDoc?.id; if (!tokenId) return;
+    const pairs = _getActivePairsInvolving(tokenId); if (pairs.length === 0) return;
+    const tokens = canvas?.tokens; if (!tokens?.get) return;
+    for (const [attId, tgtId] of pairs) {
+      const attacker = tokens.get(attId); const target = tokens.get(tgtId);
+      if (!attacker || !target) continue;
+      const state = detectCoverStateForAttack(attacker, target);
+      await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
+      try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+    }
+  } catch (_) {}
 }
 
 

@@ -176,7 +176,7 @@ export class Pf2eVisionerApi {
    * @param {{direction?:"observer_to_target"|"target_to_observer", effectTarget?:"observer"|"subject"}} options
    */
   static async bulkSetVisibility(updates, options = {}) {
-    const { batchUpdateVisibilityEffects } = await import("./off-guard-ephemeral.js");
+    const { batchUpdateVisibilityEffects } = await import("./visibility/ephemeral.js");
     const groups = new Map();
     if (updates instanceof Map) {
       for (const [observerId, arr] of updates.entries()) {
@@ -534,7 +534,7 @@ export class Pf2eVisionerApi {
 
       // 4) Optional extra sweep for cover effects across all actors
       try {
-        const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+        const { cleanupAllCoverEffects } = await import("./cover/ephemeral.js");
         await cleanupAllCoverEffects();
       } catch (_) {}
 

@@ -51,7 +51,7 @@ export async function setCoverBetween(observer, target, state, options = {}) {
 
   if (options.skipEphemeralUpdate) return;
   try {
-    const { batchUpdateCoverEffects } = await import("../cover-ephemeral.js");
+    const { batchUpdateCoverEffects } = await import("../cover/ephemeral.js");
     await batchUpdateCoverEffects(observer, [{ target, state }]);
   } catch (error) {
     console.error("Error updating cover effects:", error);

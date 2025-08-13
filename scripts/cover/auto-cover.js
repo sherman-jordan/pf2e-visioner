@@ -216,7 +216,7 @@ export async function onStrikeClickCapture(ev) {
     let attacker = null; try { const appEl = el.closest?.('.app.window-app'); const appId = appEl?.dataset?.appid ? Number(appEl.dataset.appid) : null; const app = appId != null ? ui.windows?.[appId] : null; const appActor = app?.actor; attacker = appActor?.getActiveTokens?.()?.[0] || canvas?.tokens?.controlled?.[0] || null; } catch (_) { attacker = canvas?.tokens?.controlled?.[0] || null; }
     const target = (Array.from(game?.user?.targets ?? [])?.[0]) || (Array.from(canvas?.tokens?.targets ?? [])?.[0]) || null; if (!attacker || !target) return;
     const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
-    try { const { updateEphemeralCoverEffects } = await import("../cover-ephemeral.js"); await updateEphemeralCoverEffects(target, attacker, state, { durationRounds: -1 }); } catch (_) {}
+    try { const { updateEphemeralCoverEffects } = await import("../cover/ephemeral.js"); await updateEphemeralCoverEffects(target, attacker, state, { durationRounds: -1 }); } catch (_) {}
     _recordPair(attacker.id, target.id);
   } catch (_) {}
 }

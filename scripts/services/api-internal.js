@@ -103,7 +103,7 @@ export async function removeAllReferencesToTarget(targetToken, tokens, cleanupDe
 
 export async function rebuildAndRefresh() {
   try {
-    const { cleanupAllCoverEffects } = await import("../cover-ephemeral.js");
+    const { cleanupAllCoverEffects } = await import("../cover/ephemeral.js");
     await cleanupAllCoverEffects();
   } catch (_) {}
   // Removed effects-coordinator bulk rebuild

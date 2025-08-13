@@ -210,7 +210,7 @@ export function detectCoverStateForAttack(attacker, target) {
         try {
           const vis = getVisibilityBetween(attacker, blocker);
           if (vis === 'undetected') continue;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (ignoreDead && (blocker.actor?.hitPoints?.value === 0)) continue;
       if (!allowProneBlockers) {
@@ -219,7 +219,7 @@ export function detectCoverStateForAttack(attacker, target) {
           const legacyConditions = blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
           const isProne = itemConditions.some((c) => c?.slug === "prone") || legacyConditions.some((c) => c?.slug === "prone");
           if (isProne) continue;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (ignoreAllies && blocker.actor?.alliance === attackerAlliance) continue;
       const rect = getTokenRect(blocker);
@@ -262,11 +262,11 @@ export function isAttackLikeMessageData(data) {
   if (type === "attack-roll" || type === "spell-attack-roll") return true; if (Array.isArray(traits) && traits.includes("attack")) return true; return false;
 }
 export function resolveTargetTokenIdFromData(data) {
-  try { const ctxTarget = data?.flags?.pf2e?.context?.target?.token; if (ctxTarget) return normalizeTokenRef(ctxTarget); } catch (_) {}
-  try { const pf2eTarget = data?.flags?.pf2e?.target?.token; if (pf2eTarget) return normalizeTokenRef(pf2eTarget); } catch (_) {}
+  try { const ctxTarget = data?.flags?.pf2e?.context?.target?.token; if (ctxTarget) return normalizeTokenRef(ctxTarget); } catch (_) { }
+  try { const pf2eTarget = data?.flags?.pf2e?.target?.token; if (pf2eTarget) return normalizeTokenRef(pf2eTarget); } catch (_) { }
   try {
     const arr = data?.flags?.pf2e?.context?.targets; if (Array.isArray(arr) && arr.length > 0) { const first = arr[0]; if (first?.token) return normalizeTokenRef(first.token); if (typeof first === "string") return normalizeTokenRef(first); }
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }
 
@@ -281,12 +281,12 @@ export async function onPreCreateChatMessage(doc, data) {
     if (!attacker || !target) return;
     const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
     await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
-    try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+    try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
     _recordPair(attacker.id, target.id);
-  } catch (_) {}
+  } catch (_) { }
 }
 
-export function onRenderChatMessage(message, html) {
+export async function onRenderChatMessage(message) {
   if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
   const data = message?.toObject?.() || {}; if (!isAttackLikeMessageData(data)) return;
   const attackerIdRaw = data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
@@ -296,19 +296,17 @@ export function onRenderChatMessage(message, html) {
   const attacker = tokens.get(attackerId); if (!attacker) return;
   const targetIds = targetId ? [targetId] : _consumePairs(attackerId); if (targetIds.length === 0) return;
   const targets = targetIds.map((tid) => tokens.get(tid)).filter((t) => !!t); if (targets.length === 0) return;
-  setTimeout(async () => {
-    try {
-      for (const target of targets) {
-        await setCoverBetween(attacker, target, "none", { skipEphemeralUpdate: true });
-        try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state: "none" }); } catch (_) {}
-        // Remove our one-shot dialog-injected effect if present
-        try {
-          const toDelete = (target.actor?.itemTypes?.effect ?? []).filter(e => e.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true).map(e => e.id);
-          if (toDelete.length) await target.actor.deleteEmbeddedDocuments('Item', toDelete);
-        } catch (_) {}
-      }
-    } catch (_) {}
-  }, 150);
+  try {
+    for (const target of targets) {
+      await setCoverBetween(attacker, target, "none", { skipEphemeralUpdate: true });
+      try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state: "none" }); } catch (_) { }
+      // Remove our one-shot dialog-injected effect if present
+      try {
+        const toDelete = (target.actor?.itemTypes?.effect ?? []).filter(e => e.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true).map(e => e.id);
+        if (toDelete.length) await target.actor.deleteEmbeddedDocuments('Item', toDelete);
+      } catch (_) { }
+    }
+  } catch (_) { }
 }
 
 export async function onRenderCheckModifiersDialog(dialog, html) {
@@ -318,7 +316,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
     const attacker = resolveAttackerFromCtx(ctx); const target = resolveTargetFromCtx(ctx); if (!attacker || !target) return;
     const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
     await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
-    try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+    try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
     _recordPair(attacker.id, target.id);
     // Ensure current roll uses covered AC via dialog injection
     try {
@@ -331,14 +329,14 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             const dctx = dialog?.context || {}; const tgt = dctx?.target; const tgtActor = tgt?.actor; if (!tgtActor) return;
             const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
             const label = isStandard ? 'Standard Cover' : 'Lesser Cover';
-            items.push({ name: label, type: 'effect', system: { description: { value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`, gm: '' }, rules: [ { key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus } ], traits: { otherTags: [], value: [] }, level: { value: 1 }, duration: { value: -1, unit: 'unlimited' }, tokenIcon: { show: false }, unidentified: true, start: { value: 0 }, badge: null }, img: isStandard ? 'systems/pf2e/icons/equipment/shields/steel-shield.webp' : 'systems/pf2e/icons/equipment/shields/buckler.webp', flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } } });
+            items.push({ name: label, type: 'effect', system: { description: { value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`, gm: '' }, rules: [{ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus }], traits: { otherTags: [], value: [] }, level: { value: 1 }, duration: { value: -1, unit: 'unlimited' }, tokenIcon: { show: false }, unidentified: true, start: { value: 0 }, badge: null }, img: isStandard ? 'systems/pf2e/icons/equipment/shields/steel-shield.webp' : 'systems/pf2e/icons/equipment/shields/buckler.webp', flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } } });
             tgt.actor = tgtActor.clone({ items }, { keepId: true });
             const dcObj = dctx.dc; if (dcObj?.slug) { const st = tgt.actor.getStatistic(dcObj.slug)?.dc; if (st) { dcObj.value = st.value; dcObj.statistic = st; } }
           } catch (_) { }
         }, true);
       }
     } catch (_) { }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // Pre-roll capture when no modifiers dialog opens
@@ -349,9 +347,9 @@ export async function onStrikeClickCapture(ev) {
     let attacker = null; try { const appEl = el.closest?.('.app.window-app'); const appId = appEl?.dataset?.appid ? Number(appEl.dataset.appid) : null; const app = appId != null ? ui.windows?.[appId] : null; const appActor = app?.actor; attacker = appActor?.getActiveTokens?.()?.[0] || canvas?.tokens?.controlled?.[0] || null; } catch (_) { attacker = canvas?.tokens?.controlled?.[0] || null; }
     const target = (Array.from(game?.user?.targets ?? [])?.[0]) || (Array.from(canvas?.tokens?.targets ?? [])?.[0]) || null; if (!attacker || !target) return;
     const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
-    try { const { updateEphemeralCoverEffects } = await import("../cover/ephemeral.js"); await updateEphemeralCoverEffects(target, attacker, state, { durationRounds: -1 }); } catch (_) {}
+    try { const { updateEphemeralCoverEffects } = await import("../cover/ephemeral.js"); await updateEphemeralCoverEffects(target, attacker, state, { durationRounds: -1 }); } catch (_) { }
     _recordPair(attacker.id, target.id);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 

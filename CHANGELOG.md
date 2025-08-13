@@ -24,7 +24,18 @@
   - Prone blockers toggle: new setting “Auto-Cover: Prone Tokens Can Block” (default on). If disabled, tokens with a Prone condition won’t provide cover.
   - Ally/dead filters: existing settings integrated into auto-cover token filtering (ignore allies, ignore 0-HP tokens).
   - Gated by setting and enabled GM-only to avoid duplicates.
+  - Auto-Cover live recompute: cover now recalculates when attacker or target moves/resizes during an active roll flow.
+  - Auto-Cover blocker options:
+    - Any (default)
+    - Cross (ray must cross both opposite edges)
+    - Ray through token center
+    - Ray inside ≥10% of blocking token square
+    - Ray inside ≥20% of blocking token square
+  - Wall-level toggle: per-wall flag `flags.pf2e-visioner.provideCover` to exclude walls from cover.
+  - Token UI: Ignore as Auto-Cover Blocker flag in Token Config Vision tab.
 - Take cover action support
+- Grouped Settings menu (ApplicationV2), scrollable, localized labels, and reliable select persistence.
+
 
 - Seek Template and Range Improvements (stabilized from 1.x):
   - Strict filtering by player template (no generic fallback template).

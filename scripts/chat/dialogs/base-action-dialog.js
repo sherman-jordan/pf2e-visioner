@@ -1,6 +1,7 @@
 import { MODULE_TITLE } from "../../constants.js";
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import "../services/hbs-helpers.js";
+import { notify } from "../services/infra/notifications.js";
 import { filterOutcomesByEncounter, hasActiveEncounter } from "../services/infra/shared-utils.js";
 import { BasePreviewDialog } from "./base-preview-dialog.js";
 
@@ -78,7 +79,7 @@ export class BaseActionDialog extends BasePreviewDialog {
       this.encounterOnly = false;
       filtered = outcomes;
       const message = emptyNotice || "No encounter tokens found, showing all";
-      try { ui.notifications.info(`${MODULE_TITLE}: ${message}`); } catch (_) {}
+      try { notify.info(`${MODULE_TITLE}: ${message}`); } catch (_) {}
     }
     return filtered;
   }

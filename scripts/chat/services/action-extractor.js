@@ -46,7 +46,7 @@ export function extractActionData(message) {
     ((context?.type === "skill-check" &&
       (context.options?.includes("action:sneak") || context.slug === "sneak")) ||
       (message.flavor?.toLowerCase?.().includes?.("sneak") &&
-        !message.flavor?.toLowerCase?.().includes?.("create a diversion")));
+        !message.flavor?.toLowerCase?.().includes?.("sneak attack")));
 
   const firstRoll = message.rolls?.[0];
   const isDamageRoll =

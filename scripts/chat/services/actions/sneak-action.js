@@ -12,6 +12,8 @@ export class SneakActionHandler extends ActionHandlerBase {
     return tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
+      // Exclude allies (same disposition as the sneaking token)
+      .filter((t) => t.document?.disposition !== actionData.actor?.document?.disposition)
       // Exclude loot and hazards from observers list
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
   }

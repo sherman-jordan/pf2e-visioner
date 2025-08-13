@@ -9,6 +9,11 @@ export function handleRenderChatMessage(message, html) {
     actionData.actionType === "seek" &&
     game.user.isGM &&
     !!message.flags?.["pf2e-visioner"]?.seekTemplate;
+  const hasPendingSeekTemplateForPlayerAuthor =
+    actionData.actionType === "seek" &&
+    !game.user.isGM &&
+    message.user?.id === game.user.id &&
+    !!message.flags?.["pf2e-visioner"]?.seekTemplate;
   const isPlayerPointOutAuthor =
     !game.user.isGM &&
     actionData.actionType === "point-out" &&
@@ -17,12 +22,10 @@ export function handleRenderChatMessage(message, html) {
   if (isPlayerPointOutAuthor) {
     try {
       let targetId = null;
-      if (game.user.targets?.size) targetId = Array.from(game.user.targets)[0]?.id || null;
+      // Always prefer explicit PF2e target flag from the player's message; then their current target; then context
+      try { targetId = message?.flags?.pf2e?.target?.token || null; } catch (_) {}
+      if (!targetId && game.user.targets?.size) targetId = Array.from(game.user.targets)[0]?.id || null;
       if (!targetId) targetId = actionData.context?.target?.token || null;
-      if (!targetId) {
-        const flg = message?.flags?.pf2e?.target;
-        targetId = flg?.token || null;
-      }
       import("../../socket.js").then(({ requestGMOpenPointOut }) =>
         requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId)
       );
@@ -46,7 +49,7 @@ export function handleRenderChatMessage(message, html) {
   if (!game.user.isGM && !isSeekTemplatePlayer) return;
 
   if (processedMessages.has(message.id)) {
-    if (hasPendingSeekTemplateForGM || hasPendingPointOutForGM) {
+    if (hasPendingSeekTemplateForGM || hasPendingPointOutForGM || hasPendingSeekTemplateForPlayerAuthor) {
       try { processedMessages.delete(message.id); } catch (_) {}
     } else {
       return;

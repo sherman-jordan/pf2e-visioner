@@ -94,8 +94,37 @@ export async function setupSeekTemplate(actionData) {
         const radius = Number(doc.distance) || distance;
         actionData.seekTemplateCenter = center;
         actionData.seekTemplateRadiusFeet = radius;
-        try { await doc.delete(); } catch (_) {}
+        // Keep the player's template on the scene so the GM can reuse it
+        try {
+          await doc.update({
+            ["flags.pf2e-visioner.seekPreviewManual"]: true,
+            ["flags.pf2e-visioner.messageId"]: actionData.messageId,
+            ["flags.pf2e-visioner.actorTokenId"]: actionData.actor.id,
+          });
+        } catch (_) {}
+        updateSeekTemplateButton(actionData, true);
         const { requestGMOpenSeekWithTemplate } = await import("../../socket.js");
+        try {
+          // Best-effort: annotate the chat message flags immediately so GM panel can switch without relying solely on sockets
+          const msg = game.messages.get(actionData.messageId);
+          if (msg) {
+            const all = canvas?.tokens?.placeables || [];
+            const targets = all.filter((t) => t && t !== actionData.actor && t.actor);
+            const { isTokenWithinTemplate } = await import("../infra/shared-utils.js");
+            const hasTargets = targets.some((t) => isTokenWithinTemplate(center, radius, t));
+            await msg.update({
+              ["flags.pf2e-visioner.seekTemplate"]: {
+                center,
+                radiusFeet: radius,
+                actorTokenId: actionData.actor.id,
+                rollTotal: actionData.roll?.total ?? null,
+                dieResult: actionData.roll?.dice?.[0]?.total ?? actionData.roll?.terms?.[0]?.total ?? null,
+                fromUserId: game.userId,
+                hasTargets,
+              },
+            });
+          }
+        } catch (_) {}
         const roll = actionData.roll || game.messages.get(actionData.messageId)?.rolls?.[0] || null;
         const rollTotal = roll?.total ?? null;
         const dieResult = roll?.dice?.[0]?.total ?? roll?.terms?.[0]?.total ?? null;
@@ -117,6 +146,27 @@ export async function setupSeekTemplate(actionData) {
           actionData.seekTemplateCenter = { x: snapped.x, y: snapped.y };
           actionData.seekTemplateRadiusFeet = distance;
           const { requestGMOpenSeekWithTemplate } = await import("../../socket.js");
+          try {
+            // Best-effort: annotate chat message flags immediately
+            const msg = game.messages.get(actionData.messageId);
+            if (msg) {
+              const all = canvas?.tokens?.placeables || [];
+              const targets = all.filter((t) => t && t !== actionData.actor && t.actor);
+              const { isTokenWithinTemplate } = await import("../infra/shared-utils.js");
+              const hasTargets = targets.some((t) => isTokenWithinTemplate(actionData.seekTemplateCenter, distance, t));
+              await msg.update({
+                ["flags.pf2e-visioner.seekTemplate"]: {
+                  center: actionData.seekTemplateCenter,
+                  radiusFeet: distance,
+                  actorTokenId: actionData.actor.id,
+                  rollTotal: actionData.roll?.total ?? null,
+                  dieResult: actionData.roll?.dice?.[0]?.total ?? actionData.roll?.terms?.[0]?.total ?? null,
+                  fromUserId: game.userId,
+                  hasTargets,
+                },
+              });
+            }
+          } catch (_) {}
           const roll = actionData.roll || game.messages.get(actionData.messageId)?.rolls?.[0] || null;
           const rollTotal = roll?.total ?? null;
           const dieResult = roll?.dice?.[0]?.total ?? roll?.terms?.[0]?.total ?? null;

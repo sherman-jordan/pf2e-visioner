@@ -1,6 +1,7 @@
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
+import { notify } from "../services/infra/notifications.js";
 import {
   filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
@@ -266,7 +267,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Applied sneak result - ${outcome.token.name} sees ${app.sneakingToken.name} as ${effectiveNewState}`,
     );
   }
@@ -293,7 +294,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Reverted sneak result - ${outcome.token.name} sees ${app.sneakingToken.name} as ${outcome.oldVisibility}`,
     );
   }
@@ -303,7 +304,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     if (app.bulkActionState === "applied") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
       return;
@@ -344,7 +345,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Applied all sneak results (${changedOutcomes.length} changes). Dialog remains open for further adjustments.`,
     );
   }
@@ -354,7 +355,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     if (app.bulkActionState === "reverted") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
       );
       return;
@@ -389,7 +390,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Reverted all sneak results (${changedOutcomes.length} changes). Dialog remains open for further adjustments.`,
     );
   }

@@ -15,15 +15,37 @@ export class SeekActionHandler extends ActionHandlerBase {
 
   async discoverSubjects(actionData) {
     // Discover targets based on current canvas tokens and encounter settings
-    const { filterOutcomesByEncounter, shouldFilterAlly } = await import("../infra/shared-utils.js");
+    const { shouldFilterAlly, hasActiveEncounter, calculateTokenDistance } = await import("../infra/shared-utils.js");
     const allTokens = canvas?.tokens?.placeables || [];
     const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
-    const potential = allTokens
+    let potential = allTokens
       .filter((t) => t && t.actor)
       // Exclude the acting token reliably by id when possible
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
       .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"));
-    // For Seek, we do not pre-filter by encounter here; the dialog applies filter as needed
+    
+    // Optional distance limitation based on settings (combat vs out-of-combat)
+    try {
+      const inCombat = hasActiveEncounter();
+      const limitInCombat = !!game.settings.get("pf2e-visioner", "limitSeekRangeInCombat");
+      const limitOutOfCombat = !!game.settings.get("pf2e-visioner", "limitSeekRangeOutOfCombat");
+      const shouldLimit = (inCombat && limitInCombat) || (!inCombat && limitOutOfCombat);
+      if (shouldLimit) {
+        const maxFeet = Number(
+          inCombat
+            ? game.settings.get("pf2e-visioner", "customSeekDistance")
+            : game.settings.get("pf2e-visioner", "customSeekDistanceOutOfCombat"),
+        );
+        if (Number.isFinite(maxFeet) && maxFeet > 0) {
+          potential = potential.filter((t) => {
+            const d = calculateTokenDistance(actionData.actor, t);
+            return !Number.isFinite(d) || d <= maxFeet;
+          });
+        }
+      }
+    } catch (_) {}
+
+    // Do not pre-filter by encounter; the dialog applies encounter filter as needed
     return potential;
   }
 
@@ -40,7 +62,7 @@ export class SeekActionHandler extends ActionHandlerBase {
     const { getDefaultNewStateFor } = await import("../data/action-state-config.js");
     let newVisibility = getDefaultNewStateFor("seek", current, outcome) || current;
 
-    return {
+    const base = {
       target: subject,
       dc,
       // Keep legacy fields while also providing explicit names used by templates
@@ -55,6 +77,17 @@ export class SeekActionHandler extends ActionHandlerBase {
       newVisibility,
       changed: newVisibility !== current,
     };
+
+    // If a seek template was provided, ensure the target is within it; otherwise mark as unchanged to be filtered out later
+    try {
+      if (actionData.seekTemplateCenter && actionData.seekTemplateRadiusFeet) {
+        const { isTokenWithinTemplate } = await import("../infra/shared-utils.js");
+        const inside = isTokenWithinTemplate(actionData.seekTemplateCenter, actionData.seekTemplateRadiusFeet, subject);
+        if (!inside) return { ...base, changed: false };
+      }
+    } catch (_) {}
+
+    return base;
   }
 
   buildCacheEntryFromChange(change) {

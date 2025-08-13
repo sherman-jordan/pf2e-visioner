@@ -2,13 +2,6 @@ import { processedMessages } from "../data/message-cache.js";
 
 export async function injectAutomationUI(message, html, actionData) {
   try {
-    if (actionData.actionType === "seek" && game.user.isGM) {
-      const pending = message?.flags?.["pf2e-visioner"]?.seekTemplate;
-      if (pending && pending.hasTargets === false) {
-        processedMessages.add(message.id);
-        return;
-      }
-    }
     const { shouldInjectPanel } = await import("../infra/panel-visibility.js");
     if (!shouldInjectPanel(message, actionData)) {
       processedMessages.add(message.id);
@@ -20,6 +13,10 @@ export async function injectAutomationUI(message, html, actionData) {
     const messageContent = html.find(".message-content");
     if (messageContent.length === 0) return;
     messageContent.after(panel);
+    try {
+      // Ensure the panel reflects current user context so players keep their template controls
+      panel.attr("data-user-id", game.userId);
+    } catch (_) {}
     const { bindAutomationEvents } = await import("../../ui/event-binder.js");
     bindAutomationEvents(panel, message, actionData);
     processedMessages.add(message.id);

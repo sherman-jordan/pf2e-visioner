@@ -3,6 +3,8 @@
  * Stateless event binding for automation panel.
  */
 
+import { notify } from "../services/infra/notifications.js";
+
 export function bindAutomationEvents(panel, message, actionData) {
   panel.on("click", "[data-action]", async (event) => {
     event.preventDefault();
@@ -69,14 +71,62 @@ export function bindAutomationEvents(panel, message, actionData) {
           }
         } catch (_) {}
       } else if (action === "open-seek-results" && actionData.actionType === "seek") {
-        const msg = game.messages.get(actionData.messageId);
-        const pending = msg?.flags?.["pf2e-visioner"]?.seekTemplate;
-        if (pending && game.user.isGM) {
-          actionData.seekTemplateCenter = pending.center;
-          actionData.seekTemplateRadiusFeet = pending.radiusFeet;
-          if (typeof pending.rollTotal === "number") {
+        let msg = game.messages.get(actionData.messageId);
+        let pending = msg?.flags?.["pf2e-visioner"]?.seekTemplate;
+        // If authored by a player but flags haven't arrived yet, wait briefly and retry
+        if (!pending && game.user.isGM && msg?.user && msg.user.isGM === false) {
+          for (let i = 0; i < 6; i++) {
+            await new Promise((r) => setTimeout(r, 200));
+            msg = game.messages.get(actionData.messageId);
+            pending = msg?.flags?.["pf2e-visioner"]?.seekTemplate;
+            if (pending) break;
+          }
+        }
+        // Fallback: if flags are still missing, try to read an on-scene template tagged for this message/actor from the player
+        let fallbackTemplate = null;
+        if (!pending && game.user.isGM && msg?.user && msg.user.isGM === false) {
+          try {
+            fallbackTemplate = canvas.scene?.templates?.find?.((t) => {
+              const f = t?.flags?.["pf2e-visioner"];
+              return (
+                f?.seekPreviewManual === true &&
+                f?.messageId === actionData.messageId &&
+                f?.actorTokenId === actionData.actor.id &&
+                t?.user?.id === msg.user.id
+              );
+            }) || null;
+          } catch (_) {}
+        }
+        if ((pending || fallbackTemplate) && game.user.isGM) {
+          const center = pending?.center || (fallbackTemplate ? { x: fallbackTemplate.x, y: fallbackTemplate.y } : undefined);
+          const radiusFeet = pending?.radiusFeet || (fallbackTemplate ? Number(fallbackTemplate.distance) || 0 : undefined);
+          if (center && radiusFeet) {
+            actionData.seekTemplateCenter = center;
+            actionData.seekTemplateRadiusFeet = radiusFeet;
+          }
+          if (pending && typeof pending.rollTotal === "number") {
             actionData.roll = { total: pending.rollTotal, dice: [{ total: typeof pending.dieResult === "number" ? pending.dieResult : undefined }] };
           }
+          // If we used a fallback scene template and flags are missing, best-effort to write them now
+          if (!pending && fallbackTemplate) {
+            try {
+              await msg.update({
+                ["flags.pf2e-visioner.seekTemplate"]: {
+                  center,
+                  radiusFeet,
+                  actorTokenId: actionData.actor.id,
+                  rollTotal: actionData.roll?.total ?? null,
+                  dieResult: actionData.roll?.dice?.[0]?.total ?? actionData.roll?.terms?.[0]?.total ?? null,
+                  fromUserId: msg.user.id,
+                  hasTargets: true,
+                },
+              });
+            } catch (_) {}
+          }
+        } else if (game.user.isGM && game.settings.get("pf2e-visioner", "seekUseTemplate")) {
+          // Still no template data: avoid opening unfiltered results
+          notify.warn("Waiting for the player's Seek template. Please click again once it appears.");
+          return;
         }
         await previewActionResults(actionData);
       } else if (action === "open-point-out-results" && actionData.actionType === "point-out") {
@@ -110,6 +160,71 @@ export function bindAutomationEvents(panel, message, actionData) {
             }
           }
         } catch (_) {}
+
+        // For Hide: if there are no actionable changes (respecting default encounter filter),
+        // show a no-changes notification and skip applying
+        if (action === "apply-now-hide") {
+          try {
+            const { HideActionHandler } = await import("../services/actions/hide-action.js");
+            const { filterOutcomesByEncounter } = await import("../services/infra/shared-utils.js");
+            const handler = new HideActionHandler();
+            await handler.ensurePrerequisites(actionData);
+            const subjects = await handler.discoverSubjects(actionData);
+            const outcomes = await Promise.all(
+              subjects.map((s) => handler.analyzeOutcome(actionData, s)),
+            );
+            const encounterOnly = game.settings.get("pf2e-visioner", "defaultEncounterFilter");
+            let changed = outcomes.filter((o) => o && o.changed);
+            changed = filterOutcomesByEncounter(changed, encounterOnly, "target");
+            if (changed.length === 0) {
+              try {
+                notify.info("No changes to apply");
+              } catch (_) {
+                try { notify.info("No changes to apply"); } catch (_) {}
+              }
+              return;
+            }
+          } catch (_) {}
+        }
+        // For Seek: respect distance and template limits when applying directly from panel
+        if (action === "apply-now-seek") {
+          try {
+            const { SeekActionHandler } = await import("../services/actions/seek-action.js");
+            const { filterOutcomesByEncounter, filterOutcomesBySeekDistance, filterOutcomesByTemplate } = await import("../services/infra/shared-utils.js");
+            const handler = new SeekActionHandler();
+            await handler.ensurePrerequisites(actionData);
+            const subjects = await handler.discoverSubjects(actionData);
+            const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
+            const encounterOnly = game.settings.get("pf2e-visioner", "defaultEncounterFilter");
+            let actionable = outcomes.filter((o) => o && o.changed);
+            actionable = filterOutcomesByEncounter(actionable, encounterOnly, "target");
+            actionable = filterOutcomesBySeekDistance(actionable, actionData.actor, "target");
+            // Apply template filter if present (flags or fallback on-scene template)
+            const msg = game.messages.get(actionData.messageId);
+            const pending = msg?.flags?.["pf2e-visioner"]?.seekTemplate;
+            let tplCenter = pending?.center;
+            let tplRadius = pending?.radiusFeet;
+            if ((!tplCenter || !tplRadius) && game.user.isGM && msg?.user && msg.user.isGM === false) {
+              try {
+                const t = canvas.scene?.templates?.find?.((t) => {
+                  const f = t?.flags?.["pf2e-visioner"];
+                  return f?.seekPreviewManual === true && f?.messageId === actionData.messageId && f?.actorTokenId === actionData.actor.id && t?.user?.id === msg.user.id;
+                });
+                if (t) {
+                  tplCenter = { x: t.x, y: t.y };
+                  tplRadius = Number(t.distance) || 0;
+                }
+              } catch (_) {}
+            }
+            if (tplCenter && tplRadius) {
+              actionable = filterOutcomesByTemplate(actionable, tplCenter, tplRadius, "target");
+            }
+            if (actionable.length === 0) {
+              notify.info("No changes to apply");
+              return;
+            }
+          } catch (_) {}
+        }
         await applyHandlers[action](actionData, button);
       } else if (revertHandlers[action]) {
         await revertHandlers[action](actionData, button);

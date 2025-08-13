@@ -45,35 +45,20 @@ export function registerSettings() {
           });
         };
       } else if (key === "seekUseTemplate") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        // No reload needed: panel logic reads this setting at runtime
+        settingConfig.onChange = () => {};
       } else if (key === "limitSeekRangeInCombat") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
       } else if (key === "limitSeekRangeOutOfCombat") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
       } else if (key === "customSeekDistance") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
       } else if (key === "customSeekDistanceOutOfCombat") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
       } else if (key === "blockPlayerTargetTooltips") {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({

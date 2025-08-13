@@ -7,6 +7,7 @@ import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getCoverBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
+import { notify } from "../services/infra/notifications.js";
 import {
   hasActiveEncounter
 } from "../services/infra/shared-utils.js";
@@ -99,7 +100,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       hasActiveEncounter() &&
       filteredOutcomes.length === 0
     ) {
-      ui.notifications.info(
+      notify.info(
         `${MODULE_TITLE}: No encounter observers found for this action`
       );
     }
@@ -327,7 +328,7 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     // Check if already applied
     if (app.bulkActionState === "applied") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`
       );
       return;
@@ -344,7 +345,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     });
 
     if (changedOutcomes.length === 0) {
-      ui.notifications.info(`${MODULE_TITLE}: No visibility changes to apply`);
+      notify.info(`${MODULE_TITLE}: No visibility changes to apply`);
       return;
     }
 
@@ -362,7 +363,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     app.updateBulkActionButtons();
     app.updateRowButtonsToApplied(changedOutcomes);
     app.updateChangesCount();
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`
     );
   }
@@ -381,7 +382,7 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     // Check if already reverted
     if (app.bulkActionState === "reverted") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`
       );
       return;
@@ -397,7 +398,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     app.updateRowButtonsToReverted(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Reverted all tokens to original visibility. Dialog remains open for further adjustments.`
     );
   }
@@ -413,7 +414,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      ui.notifications.warn(`${MODULE_TITLE}: No outcome found for this token`);
+      notify.warn(`${MODULE_TITLE}: No outcome found for this token`);
       return;
     }
 
@@ -422,7 +423,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     const hasChange = effectiveNewState !== outcome.oldVisibility;
 
     if (!hasChange) {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: No change to apply for ${outcome.target.name}`
       );
       return;
@@ -435,7 +436,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
     } catch (error) {
-      ui.notifications.error(
+      notify.error(
         `${MODULE_TITLE}: Error applying change for ${outcome.target.name}`
       );
     }
@@ -452,7 +453,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Could not find outcome for this token`
       );
       return;
@@ -465,7 +466,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
     } catch (error) {
-      ui.notifications.error(
+      notify.error(
         `${MODULE_TITLE}: Error reverting change for ${outcome.target.name}`
       );
     }

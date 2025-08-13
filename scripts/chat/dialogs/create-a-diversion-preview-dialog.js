@@ -5,6 +5,7 @@
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
+import { notify } from "../services/infra/notifications.js";
 import { filterOutcomesByEncounter } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -284,7 +285,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     if (app.bulkActionState === "applied") {
       const anyActionable = (app.outcomes || []).some((o) => o?.hasActionableChange);
       if (!anyActionable) {
-        ui.notifications.warn(
+        notify.warn(
           `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
         );
         return;
@@ -312,7 +313,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     });
 
     if (changedOutcomes.length === 0) {
-      ui.notifications.warn(`${MODULE_TITLE}: No visibility changes to apply.`);
+      notify.warn(`${MODULE_TITLE}: No visibility changes to apply.`);
       return;
     }
 
@@ -334,7 +335,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Applied all diversion visibility changes. Dialog remains open for further adjustments.`,
     );
   }
@@ -351,7 +352,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     }
 
     if (app.bulkActionState === "reverted") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
       );
       return;
@@ -378,7 +379,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     });
 
     if (changedOutcomes.length === 0) {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: No visibility changes to revert.`,
       );
       return;
@@ -394,7 +395,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Reverted all diversion visibility changes. Dialog remains open for further adjustments.`,
     );
   }

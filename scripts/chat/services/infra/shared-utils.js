@@ -7,7 +7,7 @@ import { MODULE_ID, MODULE_TITLE } from "../../../constants.js";
 import { refreshEveryonesPerception } from "../../../socket.js";
 import { setVisibilityBetween } from "../../../utils.js";
 import { updateTokenVisuals } from "../../../visual-effects.js";
-
+import { notify } from "./notifications.js";
 /**
  * Validate if a token is a valid Seek target
  * @param {Token} token - Potential target token
@@ -258,7 +258,7 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
     refreshEveryonesPerception();
   } catch (error) {
     console.error(`${MODULE_TITLE}: Error applying visibility changes:`, error);
-    ui.notifications.error(
+    notify.error(
       `${MODULE_TITLE}: Failed to apply visibility changes - ${error.message}`,
     );
   }
@@ -388,6 +388,91 @@ export function filterOutcomesByEncounter(
     const token = outcome[tokenProperty];
     return isTokenInEncounter(token);
   });
+}
+
+
+/**
+ * Filter outcomes by Seek distance settings. Applies combat or out-of-combat
+ * limits based on whether there is an active encounter.
+ * @param {Array} outcomes - Array of outcomes to filter
+ * @param {Token} seeker - The seeking token (distance measured from this token)
+ * @param {string} tokenProperty - Property name holding the target token in each outcome
+ * @returns {Array} Filtered outcomes
+ */
+export function filterOutcomesBySeekDistance(
+  outcomes,
+  seeker,
+  tokenProperty = "target",
+) {
+  try {
+    if (!Array.isArray(outcomes) || !seeker) return outcomes;
+
+    const inCombat = hasActiveEncounter();
+    const applyInCombat = !!game.settings.get(MODULE_ID, "limitSeekRangeInCombat");
+    const applyOutOfCombat = !!game.settings.get(MODULE_ID, "limitSeekRangeOutOfCombat");
+    const shouldApply = (inCombat && applyInCombat) || (!inCombat && applyOutOfCombat);
+    if (!shouldApply) return outcomes;
+
+    const maxDistance = Number(
+      inCombat
+        ? game.settings.get(MODULE_ID, "customSeekDistance")
+        : game.settings.get(MODULE_ID, "customSeekDistanceOutOfCombat"),
+    );
+    if (!Number.isFinite(maxDistance) || maxDistance <= 0) return outcomes;
+
+    return outcomes.filter((outcome) => {
+      const token = outcome?.[tokenProperty];
+      if (!token) return false;
+      const dist = calculateTokenDistance(seeker, token);
+      return Number.isFinite(dist) ? dist <= maxDistance : true;
+    });
+  } catch (_) {
+    return outcomes;
+  }
+}
+
+/**
+ * Check whether a token's center lies within a circular template (in feet)
+ * @param {{x:number,y:number}} center - Circle center in canvas coordinates (pixels)
+ * @param {number} radiusFeet - Radius of the circle in feet
+ * @param {Token} token - Token to test for inclusion
+ * @returns {boolean}
+ */
+export function isTokenWithinTemplate(center, radiusFeet, token) {
+  try {
+    if (!center || !token) return false;
+    const tokenCenter = token.center || {
+      x: token.x + (token.w ?? token.width * canvas.grid.size) / 2,
+      y: token.y + (token.h ?? token.height * canvas.grid.size) / 2,
+    };
+    const dx = tokenCenter.x - center.x;
+    const dy = tokenCenter.y - center.y;
+    const distancePixels = Math.hypot(dx, dy);
+    const gridSize = canvas.grid?.size || 1;
+    const gridDistance = canvas.grid?.distance || 5; // Foundry scene distance per grid space (PF2e defaults to 5 ft)
+    const feetPerPixel = gridDistance / gridSize;
+    const distanceFeet = distancePixels * feetPerPixel;
+    return distanceFeet <= radiusFeet;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Filter outcomes to only those whose token lies within a circular template
+ * @param {Array} outcomes
+ * @param {{x:number,y:number}} center
+ * @param {number} radiusFeet
+ * @param {string} tokenProperty
+ * @returns {Array}
+ */
+export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProperty = "target") {
+  try {
+    if (!Array.isArray(outcomes) || !center || !Number.isFinite(radiusFeet) || radiusFeet <= 0) return outcomes;
+    return outcomes.filter((outcome) => isTokenWithinTemplate(center, radiusFeet, outcome?.[tokenProperty]));
+  } catch (_) {
+    return outcomes;
+  }
 }
 
 

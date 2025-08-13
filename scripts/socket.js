@@ -157,7 +157,7 @@ async function pointOutRequestHandler({
     try {
       if (targetToken) {
         const { getVisibilityBetween } = await import("./utils.js");
-        const allies = (canvas?.tokens?.placeables || []).filter((t) => t && t.actor && t.document.disposition === pointerToken.document.disposition);
+        const allies = (canvas?.tokens?.placeables || []).filter((t) => t && t.actor && t.actor?.type !== "loot" && t.document.disposition === pointerToken.document.disposition);
         const cannotSee = allies.filter((ally) => {
           const vis = getVisibilityBetween(ally, targetToken);
           return vis === "hidden" || vis === "undetected";
@@ -295,7 +295,8 @@ async function seekTemplateHandler({
     try {
       const all = canvas?.tokens?.placeables || [];
       const targets = all.filter((t) => t && t !== actorToken && t.actor);
-      hasTargets = targets.length > 0;
+      const { isTokenWithinTemplate } = await import("./chat/services/infra/shared-utils.js");
+      hasTargets = targets.some((t) => isTokenWithinTemplate(center, radiusFeet, t));
     } catch (calcErr) {
       console.warn(
         `[${MODULE_ID}] Failed to evaluate targets for player-provided Seek template:`,
@@ -317,6 +318,13 @@ async function seekTemplateHandler({
           hasTargets,
         },
       });
+      // Ask the player's client to re-inject the panel so their Remove Template button stays visible
+      try {
+        const playerUser = game.users?.get?.(userId);
+        if (playerUser && _socketService.socket?.executeForUser) {
+          _socketService.socket.executeForUser(userId, REFRESH_CHANNEL);
+        }
+      } catch (_) {}
       // Re-render the chat message so the injected panel can be updated/removed appropriately
       try {
         await msg.render(true);

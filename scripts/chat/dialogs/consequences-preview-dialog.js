@@ -5,6 +5,7 @@
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
+import { notify } from "../services/infra/notifications.js";
 import {
   filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
@@ -226,7 +227,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     if (app.bulkActionState === "applied") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
       return;
@@ -245,7 +246,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     });
 
     if (changedOutcomes.length === 0) {
-      ui.notifications.warn(`${MODULE_TITLE}: No visibility changes to apply.`);
+      notify.warn(`${MODULE_TITLE}: No visibility changes to apply.`);
       return;
     }
 
@@ -267,7 +268,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
-    ui.notifications.info(
+    notify.info(
       `${MODULE_TITLE}: Applied all visibility changes. Dialog remains open for further adjustments.`,
     );
   }
@@ -284,7 +285,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     if (app.bulkActionState === "reverted") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
       );
       return;
@@ -303,7 +304,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     });
 
     if (changedOutcomes.length === 0) {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: No visibility changes to revert.`,
       );
       return;

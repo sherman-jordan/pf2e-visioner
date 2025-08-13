@@ -5,6 +5,7 @@
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
+import { notify } from "../services/infra/notifications.js";
 import {
   filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
@@ -171,7 +172,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const app = currentPointOutDialog;
     if (!app || app.bulkActionState === "applied") {
       if (app.bulkActionState === "applied") {
-        ui.notifications.warn(
+        notify.warn(
           `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
         );
       }
@@ -220,7 +221,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       app.updateRowButtonsToApplied(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
       app.updateChangesCount();
 
-      ui.notifications.info(
+      notify.info(
         `${MODULE_TITLE}: Applied Point Out changes for ${processedOutcomes.length} allies. Dialog remains open for further adjustments.`,
       );
     } catch (error) {
@@ -228,7 +229,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
         `${MODULE_TITLE}: Error applying Point Out changes:`,
         error,
       );
-      ui.notifications.error(
+      notify.error(
         `${MODULE_TITLE}: Failed to apply Point Out changes`,
       );
     }
@@ -238,7 +239,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const app = currentPointOutDialog;
     if (!app || app.bulkActionState === "reverted") {
       if (app.bulkActionState === "reverted") {
-        ui.notifications.warn(
+        notify.warn(
           `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
         );
       }
@@ -278,7 +279,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
         `${MODULE_TITLE}: Error reverting Point Out changes:`,
         error,
       );
-      ui.notifications.error(
+      notify.error(
         `${MODULE_TITLE}: Failed to revert Point Out changes`,
       );
     }
@@ -308,7 +309,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome || !outcome.hasActionableChange) {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: No change to apply for this token`,
       );
       return;
@@ -324,7 +325,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       app.updateChangesCount();
     } catch (error) {
       console.error(`${MODULE_TITLE}: Error applying change.`, error);
-      ui.notifications.error(`${MODULE_TITLE}: Error applying change.`);
+      notify.error(`${MODULE_TITLE}: Error applying change.`);
     }
   }
 
@@ -339,7 +340,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      ui.notifications.warn(`${MODULE_TITLE}: Token not found`);
+      notify.warn(`${MODULE_TITLE}: Token not found`);
       return;
     }
 
@@ -359,7 +360,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       app.updateChangesCount();
     } catch (error) {
       console.error(`${MODULE_TITLE}: Error reverting change.`, error);
-      ui.notifications.error(`${MODULE_TITLE}: Error reverting change.`);
+      notify.error(`${MODULE_TITLE}: Error reverting change.`);
     }
   }
 

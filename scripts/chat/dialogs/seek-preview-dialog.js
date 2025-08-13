@@ -6,8 +6,11 @@
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
+import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter
+  filterOutcomesByEncounter,
+  filterOutcomesBySeekDistance,
+  filterOutcomesByTemplate,
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -79,8 +82,17 @@ export class SeekPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Filter outcomes with base helper
+    // Filter outcomes with encounter helper, template (if provided), then distance limits if enabled
     let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter targets found, showing all");
+    if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
+      filteredOutcomes = filterOutcomesByTemplate(
+        filteredOutcomes,
+        this.actionData.seekTemplateCenter,
+        this.actionData.seekTemplateRadiusFeet,
+        "target",
+      );
+    }
+    filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, "target");
 
     // Prepare visibility states using centralized config
     const cfg = (s) => this.visibilityConfig(s);
@@ -199,13 +211,13 @@ export class SeekPreviewDialog extends BaseActionDialog {
     );
 
     if (actionableOutcomes.length === 0) {
-      ui.notifications.info(`${MODULE_TITLE}: No changes to apply`);
+      notify.info("No changes to apply")
       return;
     }
 
     // Check if Apply All is allowed based on current state
     if (app.bulkActionState === "applied") {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
       return;
@@ -222,7 +234,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
     try {
       const { applyNowSeek } = await import("../services/index.js");
       await applyNowSeek({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
-      ui.notifications.info(
+      notify.info(
         `${MODULE_TITLE}: Applied ${actionableOutcomes.length} visibility changes. Dialog remains open for additional actions.`,
       );
 
@@ -236,7 +248,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       // Don't close dialog - allow user to continue working
     } catch (error) {
-      ui.notifications.error(`${MODULE_TITLE}: Error applying changes.`);
+      notify.error(`${MODULE_TITLE}: Error applying changes.`);
     }
   }
 
@@ -261,7 +273,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       app.updateChangesCount();
     } catch (error) {
       console.error(`${MODULE_TITLE}: Error reverting changes:`, error);
-      ui.notifications.error(`${MODULE_TITLE}: Error reverting changes.`);
+      notify.error(`${MODULE_TITLE}: Error reverting changes.`);
     }
   }
 
@@ -276,7 +288,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome || !outcome.hasActionableChange) {
-      ui.notifications.warn(
+      notify.warn(
         `${MODULE_TITLE}: No change to apply for this token`,
       );
       return;
@@ -290,7 +302,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       app.updateRowButtonsToApplied([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
       app.updateChangesCount();
     } catch (error) {
-      ui.notifications.error(`${MODULE_TITLE}: Error applying change.`);
+      notify.error(`${MODULE_TITLE}: Error applying change.`);
     }
   }
 
@@ -305,7 +317,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      ui.notifications.warn(`${MODULE_TITLE}: Token not found`);
+      notify.warn(`${MODULE_TITLE}: Token not found`);
       return;
     }
 
@@ -315,7 +327,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
       app.updateChangesCount();
     } catch (error) {
-      ui.notifications.error(`${MODULE_TITLE}: Error reverting change.`);
+      notify.error(`${MODULE_TITLE}: Error reverting change.`);
     }
   }
 

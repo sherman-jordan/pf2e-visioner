@@ -15,16 +15,20 @@ export function registerSettings() {
 
       // Add onChange handler for settings that require restart
       if (key === "enableHoverTooltips") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
+        // Live-apply without world reload
+        settingConfig.onChange = async (value) => {
+          try {
+            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("./hover-tooltips.js");
+            if (value) initializeHoverTooltips(); else cleanupHoverTooltips();
+          } catch (_) {}
         };
       } else if (key === "allowPlayerTooltips") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
+        // Live-apply without world reload for players
+        settingConfig.onChange = async (value) => {
+          try {
+            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("./hover-tooltips.js");
+            if (value && game.settings.get(MODULE_ID, "enableHoverTooltips")) initializeHoverTooltips(); else cleanupHoverTooltips();
+          } catch (_) {}
         };
       } else if (key === "useHudButton") {
         settingConfig.onChange = () => {
@@ -60,10 +64,12 @@ export function registerSettings() {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
       } else if (key === "blockPlayerTargetTooltips") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
+        // No reload: will take effect on next hover; ensure initialized when allowed
+        settingConfig.onChange = async () => {
+          try {
+            const { initializeHoverTooltips } = await import("./hover-tooltips.js");
+            if (game.settings.get(MODULE_ID, "enableHoverTooltips") && game.settings.get(MODULE_ID, "allowPlayerTooltips")) initializeHoverTooltips();
+          } catch (_) {}
         };
       } else if (key === "tooltipFontSize") {
         settingConfig.onChange = (value) => {

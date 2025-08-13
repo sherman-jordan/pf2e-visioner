@@ -4,9 +4,9 @@
 
 import { MODULE_ID } from "../constants.js";
 import { cleanupCoverEffectsForObserver } from "../cover-ephemeral.js";
-import { updateTokenVisuals } from "../effects-coordinator.js";
 import { batchUpdateVisibilityEffects, cleanupEphemeralEffectsForTarget } from "../off-guard-ephemeral.js";
 import { refreshEveryonesPerception } from "../socket.js";
+import { updateTokenVisuals } from "../visual-effects.js";
 
 export async function unsetMapsForTokens(scene, tokens) {
   try {
@@ -106,10 +106,7 @@ export async function rebuildAndRefresh() {
     const { cleanupAllCoverEffects } = await import("../cover-ephemeral.js");
     await cleanupAllCoverEffects();
   } catch (_) {}
-  try {
-    const { rebuildAllEphemeralEffects } = await import("../effects-coordinator.js");
-    await rebuildAllEphemeralEffects();
-  } catch (_) {}
+  // Removed effects-coordinator bulk rebuild
   try { await updateTokenVisuals(); } catch (_) {}
   try { refreshEveryonesPerception(); } catch (_) {}
   try { canvas.perception.update({ refreshVision: true }); } catch (_) {}

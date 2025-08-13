@@ -4,13 +4,9 @@
 
 import { injectChatAutomationStyles } from "../chat/chat-automation-styles.js";
 import { MODULE_ID } from "../constants.js";
-import {
-  rebuildAllEphemeralEffects,
-  updateTokenVisuals,
-} from "../effects-coordinator.js";
 import { initializeHoverTooltips } from "../hover-tooltips.js";
 import { registerSocket } from "../socket.js";
-import { updateWallVisuals } from "../visual-effects.js";
+import { updateTokenVisuals, updateWallVisuals } from "../visual-effects.js";
 
 export function onReady() {
   // Add CSS styles for chat automation
@@ -25,15 +21,7 @@ export function onReady() {
 }
 
 export async function onCanvasReady() {
-  if (game.user.isGM) {
-    try {
-      await rebuildAllEphemeralEffects();
-    } catch (e) {
-      console.warn("PF2E Visioner: rebuild on canvasReady failed", e);
-    }
-  } else {
-    await updateTokenVisuals();
-  }
+  await updateTokenVisuals();
   try {
     await updateWallVisuals();
   } catch (_) {}

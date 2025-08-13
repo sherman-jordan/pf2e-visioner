@@ -2,16 +2,14 @@
  * Token-related hooks: create/delete, highlight, HUD buttons
  */
 
-import { rebuildAllEphemeralEffects, updateTokenVisuals } from "../effects-coordinator.js";
 import { cleanupHoverTooltips, initializeHoverTooltips } from "../hover-tooltips.js";
+import { updateTokenVisuals } from "../visual-effects.js";
 
 export async function onTokenCreated(scene, tokenDoc) {
   try {
     const { restoreDeletedTokenMaps } = await import("../services/scene-cleanup.js");
     const restored = await restoreDeletedTokenMaps(tokenDoc);
-    if (restored && game.user.isGM) {
-      await rebuildAllEphemeralEffects();
-    }
+    // Removed bulk rebuild; visuals will refresh and ephemerals are updated by batch routines
   } catch (_) {}
   setTimeout(async () => {
     await updateTokenVisuals();
@@ -49,11 +47,7 @@ export async function onTokenDeleted(...args) {
     }
     setTimeout(async () => {
       try {
-        if (game.user.isGM) {
-          await rebuildAllEphemeralEffects();
-        } else {
-          await updateTokenVisuals();
-        }
+        await updateTokenVisuals();
       } catch (e) {
         console.warn("PF2E Visioner: post-delete rebuild failed", e);
       }

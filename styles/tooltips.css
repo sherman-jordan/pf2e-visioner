@@ -380,15 +380,6 @@
   transition: opacity 0.2s ease;
 }
 
-/* Error/Notification Styling */
-.notification.error {
-  background: var(--color-bg-btn-danger);
-  color: var(--color-text-light-primary);
-  padding: 12px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border-danger);
-  margin-bottom: 16px;
-}
 
 /* High contrast mode */
 @media (prefers-contrast: high) {

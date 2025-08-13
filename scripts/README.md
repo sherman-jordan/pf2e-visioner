@@ -16,13 +16,12 @@ This directory contains the modular JavaScript files for the PF2E Visioner modul
 - **`off-guard-ephemeral.js`** - Off-guard condition automation using individual ephemeral effects
 - **`targeting.js`** - Token targeting event handling
 - **`visual-effects.js`** - Token visual effects and appearance management
-- **`effects-coordinator.js`** - Main effects coordinator and system integration
+<!-- effects-coordinator.js removed in refactor; visuals handled by visual-effects.js -->
 
 ### Integration Modules
 
 - **`detection-wrapper.js`** - PF2E detection system integration
 - **`visibility-manager.js`** - Visibility management UI and controls
-- **`visibility-effects.js`** - Visibility state effects application
 - **`hover-tooltips.js`** - Interactive visibility tooltips with hover and Alt/O key support
 - **`hooks.js`** - FoundryVTT hook registrations
 - **`api.js`** - Public API for other modules

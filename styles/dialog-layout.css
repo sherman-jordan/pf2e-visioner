@@ -8,7 +8,8 @@
 .hide-preview-dialog,
 .sneak-preview-dialog,
 .create-a-diversion-preview-dialog,
-.consequences-preview-dialog {
+.consequences-preview-dialog,
+.take-cover-preview-dialog {
   height: 600px;
 }
 
@@ -18,7 +19,8 @@
 .hide-preview-dialog .window-content,
 .sneak-preview-dialog .window-content,
 .create-a-diversion-preview-dialog .window-content,
-.consequences-preview-dialog .window-content {
+.consequences-preview-dialog .window-content,
+.take-cover-preview-dialog .window-content {
   height: 100%;
   padding: 10px;
   overflow: hidden;
@@ -30,7 +32,8 @@
 .hide-preview-content,
 .sneak-preview-content,
 .create-a-diversion-preview-content,
-.consequences-preview-content {
+.consequences-preview-content,
+.take-cover-preview-content {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -63,7 +66,8 @@
 .hide-preview-dialog-bulk-actions-header,
 .sneak-preview-dialog-bulk-actions-header,
 .create-a-diversion-preview-dialog-bulk-actions-header,
-.consequences-preview-dialog-bulk-actions-header {
+.consequences-preview-dialog-bulk-actions-header,
+.take-cover-preview-dialog-bulk-actions-header {
   flex: 0 0 auto;
   border-top: 1px solid #666;
   padding-top: 10px;
@@ -78,7 +82,8 @@
 .hide-results-table,
 .sneak-results-table,
 .create-a-diversion-results-table,
-.consequences-results-table {
+.consequences-results-table,
+.take-cover-results-table {
   width: 100%;
 }
 
@@ -141,6 +146,15 @@
   tr[data-token-id].row-hover {
   outline-color: #dc3545;
   box-shadow: inset 0 0 0 2px rgba(220, 53, 69, 0.35);
+}
+
+/* Take Cover - Brown */
+.take-cover-preview-dialog .results-table-container tr.row-hover,
+.take-cover-preview-dialog
+  .results-table-container
+  tr[data-token-id].row-hover {
+  outline-color: #795548;
+  box-shadow: inset 0 0 0 2px rgba(121, 85, 72, 0.35);
 }
 
 /* WebKit scrollbar styling (default) */
@@ -273,6 +287,22 @@
 .consequences-preview-dialog .results-table-container thead th {
   background-color: #dc3545;
   color: white;
+}
+
+/* Take Cover - Brown theme */
+.take-cover-preview-dialog .results-table-container {
+  scrollbar-color: rgba(121, 85, 72, 0.6) transparent;
+}
+.take-cover-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+  background: rgba(121, 85, 72, 0.6);
+}
+.take-cover-preview-dialog
+  .results-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(121, 85, 72, 0.8);
+}
+.take-cover-preview-dialog .results-table-container thead th {
+  background-color: #795548;
+  color: #fff;
 }
 
 /* Visibility change layout for consequences dialog */

@@ -1,5 +1,73 @@
 # Changelog
 
+## [2.0.0] - 2025-08-12
+
+### Breaking - Full Internal Rewrite and Module Restructure
+
+- Project reorganized and rewritten for clarity and performance.
+
+### Added
+
+- Auto Cover (reworked):
+  - Applies cover only if the line from attacker to target passes through a blocking token’s space.
+  - Lesser vs Standard cover determined by relative size (blocking token ≥ 2 size categories larger => Standard).
+  - Applies pre-roll via modifiers dialog or strike click capture; clears cover immediately after the roll’s message renders.
+  - Multi-side evaluation: checks all token sides for walls; tokens use center-to-center line for accurate blocking.
+  - Intersection mode for token blockers: new setting “Auto-Cover: Token Intersection Mode” with choices:
+    - Any (default): center line intersecting any token edge counts.
+    - Cross: center line must cross both opposite edges (top+bottom or left+right).
+  - Ignore undetected blockers: new setting “Auto-Cover: Ignore Undetected Tokens” (skip blockers undetected to the attacker per Visioner map).
+  - Respect token flag: new setting “Auto-Cover: Respect Token Ignore Flag”; if enabled, tokens with `flags.pf2e-visioner.ignoreAutoCover = true` will be ignored.
+  - New token setting in vision tab: ignore as auto cover blocker.
+  - Wall-level toggle: per-wall flag `flags.pf2e-visioner.provideCover` (when false) makes that wall not contribute to cover. Default set to true.
+  - New wall setting: ignore as auto cover.
+  - Prone blockers toggle: new setting “Auto-Cover: Prone Tokens Can Block” (default on). If disabled, tokens with a Prone condition won’t provide cover.
+  - Ally/dead filters: existing settings integrated into auto-cover token filtering (ignore allies, ignore 0-HP tokens).
+  - Gated by setting and enabled GM-only to avoid duplicates.
+  - Auto-Cover live recompute: cover now recalculates when attacker or target moves/resizes during an active roll flow.
+  - Auto-Cover blocker options:
+    - Any (default)
+    - Cross (ray must cross both opposite edges)
+    - Ray through token center
+    - Ray inside ≥10% of blocking token square
+    - Ray inside ≥20% of blocking token square
+  - Wall-level toggle: per-wall flag `flags.pf2e-visioner.provideCover` to exclude walls from cover.
+  - Token UI: Ignore as Auto-Cover Blocker flag in Token Config Vision tab.
+- Take cover action support
+- Grouped Settings menu (ApplicationV2), scrollable, localized labels, and reliable select persistence.
+
+
+- Seek Template and Range Improvements (stabilized from 1.x):
+  - Strict filtering by player template (no generic fallback template).
+
+- Chat Automation Quality of Life:
+  - Point Out excludes loot, pings target on Apply.
+  - Sneak lists only enemies (no allies).
+  - Hide prerequisites enforced (concealed or standard/greater cover) and “No changes to apply” notification when relevant.
+  - Players don’t see Apply buttons in panels.
+
+- API:
+  - Bulk visibility setter to apply many observer→target updates efficiently.
+
+### Changed
+
+- No more world reloads for several settings; they are now applied at runtime:
+  - Ignore Allies, Seek template toggle, Seek range toggles, player tooltip toggles, auto cover.
+- Hook registration centralized under `scripts/hooks/` with small registrars; heavy logic moved to feature folders.
+- Imports largely hoisted to top-of-file for maintainability; kept dynamic imports only where lazy-loading is beneficial (dialogs, heavy batches).
+
+### Fixed
+
+- Hide action now respects the Ignore Allies setting (allied observers are filtered out).
+- Auto Cover reliably applies to the current roll and then cleans up; prevents lingering effects.
+- Template-based Seek respects only targets inside the player’s template and opens faster via sockets.
+- Token Manager batch operations reconciled effects reliably and reduced redundant document operations.
+- Sneak integration showing up on sneak attack damage rolls.
+
+### Removed
+
+- Legacy/unused files and integration paths related to the old effects coordinator code.
+
 ## [1.9.0] - 2025-08-11
 
 ### Added
@@ -11,6 +79,7 @@
 ### Changed
 
 - Seek and Token Manager now respect the token-level Stealth DC override for loot tokens, falling back to the world default when unset.
+- Removed Cover and visibility integration, rules will now explicitly follor enforce RAW setting
 
 ## [1.8.0] - 2025-08-11
 

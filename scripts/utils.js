@@ -2,19 +2,23 @@
  * Utility functions for PF2E Visioner Token Manager
  */
 
-import { shouldFilterAlly } from "./chat/shared-utils.js";
+import { shouldFilterAlly } from "./chat/services/infra/shared-utils.js";
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
-import { updateEphemeralEffectsForVisibility } from "./off-guard-ephemeral.js";
+// Re-export core state stores to enforce single source of truth
+export { cleanupDeletedToken, restoreDeletedTokenMaps } from "./services/scene-cleanup.js";
+export {
+  getCoverBetween, getCoverMap, setCoverBetween, setCoverMap
+} from "./stores/cover-map.js";
+export {
+  getVisibilityBetween, getVisibilityMap, setVisibilityBetween, setVisibilityMap
+} from "./stores/visibility-map.js";
 
 /**
  * Get the visibility map for a token
  * @param {Token} token - The token to get visibility data for
  * @returns {Object} Visibility map object
  */
-export function getVisibilityMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, "visibility") ?? {};
-  return map;
-}
+// getVisibilityMap → re-exported from stores/visibility-map
 
 /**
  * Set the visibility map for a token
@@ -22,15 +26,7 @@ export function getVisibilityMap(token) {
  * @param {Object} visibilityMap - The visibility map to save
  * @returns {Promise} Promise that resolves when flag is set
  */
-export async function setVisibilityMap(token, visibilityMap) {
-  if (!token?.document) return;
-  const path = `flags.${MODULE_ID}.visibility`;
-  const result = await token.document.update(
-    { [path]: visibilityMap },
-    { diff: false },
-  );
-  return result;
-}
+// setVisibilityMap → re-exported from stores/visibility-map
 
 /**
  * Get visibility state between two tokens
@@ -38,10 +34,7 @@ export async function setVisibilityMap(token, visibilityMap) {
  * @param {Token} target - The target token being observed
  * @returns {string} Visibility state
  */
-export function getVisibilityBetween(observer, target) {
-  const visibilityMap = getVisibilityMap(observer);
-  return visibilityMap[target.document.id] || "observed";
-}
+// getVisibilityBetween → re-exported from stores/visibility-map
 
 /**
  * Set visibility state between two tokens
@@ -55,111 +48,13 @@ export function getVisibilityBetween(observer, target) {
  * @param {string} options.direction - Direction of visibility check ('observer_to_target' or 'target_to_observer')
  * @returns {Promise} Promise that resolves when visibility is set
  */
-export async function setVisibilityBetween(
-  observer,
-  target,
-  state,
-  options = {
-    skipEphemeralUpdate: false,
-    direction: "observer_to_target",
-    skipCleanup: false,
-  },
-) {
-  if (!observer?.document?.id || !target?.document?.id) return;
-
-  const visibilityMap = getVisibilityMap(observer);
-  visibilityMap[target.document.id] = state;
-  await setVisibilityMap(observer, visibilityMap);
-
-  // Update off-guard effects using ephemeral approach
-  try {
-    if (!options.skipEphemeralUpdate) {
-      // Direction is already set in the options with a default value
-      await updateEphemeralEffectsForVisibility(
-        observer,
-        target,
-        state,
-        options,
-      );
-    }
-  } catch (error) {
-    console.error("PF2E Visioner: Error updating off-guard effects:", error);
-  }
-}
+// setVisibilityBetween → re-exported from stores/visibility-map
 
 /**
  * Clean up visibility and cover data when a token is deleted
  * @param {TokenDocument} tokenDoc - The token document being deleted
  */
-export async function cleanupDeletedToken(tokenDoc) {
-  if (!tokenDoc?.id) return;
-
-  try {
-    // Get all tokens on the canvas
-    const allTokens = canvas.tokens?.placeables || [];
-    const scene = tokenDoc.parent || canvas.scene;
-    const updates = [];
-
-    // Prepare a cache entry to allow restoration on undo
-    const restoreEntry = { visibilityByObserver: {}, coverByObserver: {} };
-
-    // For each token, remove the deleted token from its visibility and cover maps (collect bulk updates)
-    for (const token of allTokens) {
-      if (!token?.document) continue;
-
-      const visMap = getVisibilityMap(token);
-      const covMap = getCoverMap(token);
-      const hadVis =
-        visMap && Object.prototype.hasOwnProperty.call(visMap, tokenDoc.id);
-      const hadCov =
-        covMap && Object.prototype.hasOwnProperty.call(covMap, tokenDoc.id);
-      if (!hadVis && !hadCov) continue;
-
-      const patch = { _id: token.document.id };
-      if (hadVis) {
-        // Save for potential restoration
-        restoreEntry.visibilityByObserver[token.document.id] =
-          visMap[tokenDoc.id];
-        const newVis = { ...visMap };
-        delete newVis[tokenDoc.id];
-        patch[`flags.${MODULE_ID}.visibility`] = newVis;
-      }
-      if (hadCov) {
-        // Save for potential restoration
-        restoreEntry.coverByObserver[token.document.id] = covMap[tokenDoc.id];
-        const newCov = { ...covMap };
-        delete newCov[tokenDoc.id];
-        patch[`flags.${MODULE_ID}.cover`] = newCov;
-      }
-      updates.push(patch);
-
-      if (game.settings?.get?.("pf2e-visioner", "debug")) {
-        console.log(
-          `[Visioner-debug] Queued cleanup for deleted token ${tokenDoc.name} (${tokenDoc.id}) from token ${token.name}`,
-        );
-      }
-    }
-
-    // Apply all flag updates in one bulk scene update
-    if (updates.length && scene?.updateEmbeddedDocuments) {
-      try {
-        await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
-      } catch (_) {}
-    }
-
-    // Persist restoration cache to the scene so an immediate undo can restore entries
-    try {
-      const cache = scene?.getFlag?.(MODULE_ID, "deletedEntryCache") || {};
-      cache[tokenDoc.id] = restoreEntry;
-      await scene?.setFlag?.(MODULE_ID, "deletedEntryCache", cache);
-    } catch (_) {}
-  } catch (error) {
-    console.error(
-      "PF2E Visioner: Error cleaning up data for deleted token:",
-      error,
-    );
-  }
-}
+// cleanupDeletedToken → re-exported from services/scene-cleanup
 
 /**
  * Restore previously removed visibility/cover entries for a token that was undone/recreated
@@ -167,58 +62,7 @@ export async function cleanupDeletedToken(tokenDoc) {
  * @param {TokenDocument} tokenDoc - The recreated token document
  * @returns {Promise<boolean>} true if restoration performed
  */
-export async function restoreDeletedTokenMaps(tokenDoc) {
-  try {
-    const scene = tokenDoc?.parent || canvas.scene;
-    if (!scene) return false;
-    const cache = scene.getFlag(MODULE_ID, "deletedEntryCache") || {};
-    const entry = cache?.[tokenDoc.id];
-    if (!entry) return false;
-
-    const updates = [];
-    const observerIds = new Set([
-      ...Object.keys(entry.visibilityByObserver || {}),
-      ...Object.keys(entry.coverByObserver || {}),
-    ]);
-
-    for (const obsId of observerIds) {
-      const token = canvas.tokens?.get?.(obsId);
-      if (!token?.document) continue;
-      const patch = { _id: obsId };
-      const visState = entry.visibilityByObserver?.[obsId];
-      const covState = entry.coverByObserver?.[obsId];
-
-      if (visState !== undefined) {
-        const current = getVisibilityMap(token);
-        const newVis = { ...current, [tokenDoc.id]: visState };
-        patch[`flags.${MODULE_ID}.visibility`] = newVis;
-      }
-      if (covState !== undefined) {
-        const current = getCoverMap(token);
-        const newCov = { ...current, [tokenDoc.id]: covState };
-        patch[`flags.${MODULE_ID}.cover`] = newCov;
-      }
-      updates.push(patch);
-    }
-
-    if (updates.length) {
-      try {
-        await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
-      } catch (_) {}
-    }
-
-    // Clear cache entry for this token id
-    try {
-      delete cache[tokenDoc.id];
-      await scene.setFlag(MODULE_ID, "deletedEntryCache", cache);
-    } catch (_) {}
-
-    return updates.length > 0;
-  } catch (e) {
-    console.warn("PF2E Visioner: Failed to restore deleted token maps", e);
-    return false;
-  }
-}
+// restoreDeletedTokenMaps → re-exported from services/scene-cleanup
 
 /**
  * Create visibility indicator element
@@ -257,21 +101,6 @@ export function createVisibilityIndicator(state) {
 }
 
 /**
- * Walls visibility map (per observer)
- */
-export function getWallVisibilityMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, "walls") ?? {};
-  return map;
-}
-
-export async function setWallVisibilityMap(token, map) {
-  if (!token?.document) return;
-  const path = `flags.${MODULE_ID}.walls`;
-  const result = await token.document.update({ [path]: map }, { diff: false });
-  return result;
-}
-
-/**
  * Show a notification to the user
  * @param {string} key - The localization key
  * @param {string} type - The notification type (info, warn, error)
@@ -296,10 +125,10 @@ export function isValidToken(token) {
   // Filter out irrelevant actor types that don't need visibility management
   const actorType = token.actor.type;
 
-  // Exclude loot actors unless setting enabled
+  // Loot: include when explicitly enabled, regardless of HP or name patterns
   if (actorType === "loot") {
     try {
-      if (!game.settings.get(MODULE_ID, "includeLootActors")) return false;
+      return !!game.settings.get(MODULE_ID, "includeLootActors");
     } catch (_) {
       return false;
     }
@@ -333,14 +162,8 @@ export function isValidToken(token) {
   // If loot is included, don't auto-exclude via name patterns
   if (excludePatterns.some((pattern) => pattern.test(name))) {
     try {
-      if (
-        token.actor?.type === "loot" &&
-        game.settings.get(MODULE_ID, "includeLootActors")
-      ) {
-        // allow
-      } else {
-        return false;
-      }
+      // Non-loot: respect exclusions; loot was already handled above
+      if (token.actor?.type !== "loot") return false;
     } catch (_) {
       return false;
     }
@@ -437,10 +260,7 @@ export function capitalize(str) {
  * @param {Token} token - The token to get cover data for
  * @returns {Object} Cover map object
  */
-export function getCoverMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, "cover") ?? {};
-  return map;
-}
+// getCoverMap → re-exported from stores/cover-map
 
 /**
  * Set the cover map for a token
@@ -448,15 +268,7 @@ export function getCoverMap(token) {
  * @param {Object} coverMap - The cover map to save
  * @returns {Promise} Promise that resolves when flag is set
  */
-export async function setCoverMap(token, coverMap) {
-  if (!token?.document) return;
-  const path = `flags.${MODULE_ID}.cover`;
-  const result = await token.document.update(
-    { [path]: coverMap },
-    { diff: false },
-  );
-  return result;
-}
+// setCoverMap → re-exported from stores/cover-map
 
 /**
  * Get cover state between two tokens
@@ -464,10 +276,7 @@ export async function setCoverMap(token, coverMap) {
  * @param {Token} target - The target token being observed
  * @returns {string} Cover state
  */
-export function getCoverBetween(observer, target) {
-  const coverMap = getCoverMap(observer);
-  return coverMap[target.document.id] || "none";
-}
+// getCoverBetween → re-exported from stores/cover-map
 
 /**
  * Set cover state between two tokens
@@ -476,19 +285,7 @@ export function getCoverBetween(observer, target) {
  * @param {string} state - The cover state to set
  * @returns {Promise} Promise that resolves when cover is set
  */
-export async function setCoverBetween(observer, target, state) {
-  const coverMap = getCoverMap(observer);
-  coverMap[target.document.id] = state;
-  await setCoverMap(observer, coverMap);
-
-  // Apply PF2E condition if applicable
-  try {
-    const { applyCoverCondition } = await import("./cover-effects.js");
-    await applyCoverCondition(target, observer, state);
-  } catch (error) {
-    console.error("Error applying cover condition:", error);
-  }
-}
+// setCoverBetween → re-exported from stores/cover-map
 
 /**
  * Create cover indicator element

@@ -2,13 +2,13 @@
 import { registerKeybindings, registerSettings } from "./settings.js";
 
 // Import detection wrapper
-import { initializeDetectionWrapper } from "./detection-wrapper.js";
+import { initializeDetectionWrapper } from "./services/detection-wrapper.js";
 
 // Import hooks
 import { registerHooks } from "./hooks.js";
 
 // Import dialog scroll fix
-import { initializeDialogScrollFix } from "./dialog-scroll-fix.js";
+import { initializeDialogScrollFix } from "./services/dialog-scroll-fix.js";
 // Import rule elements
 import { initializeRuleElements } from "./rule-elements/index.js";
 
@@ -19,8 +19,6 @@ Hooks.once("init", async () => {
     Handlebars.registerHelper("default", function (value, defaultValue) {
       return value !== undefined && value !== null ? value : defaultValue;
     });
-
-    registerSettings();
 
     // Register settings and keybindings
     registerSettings();
@@ -49,7 +47,7 @@ Hooks.once("init", async () => {
     // Try to show a user notification if possible
     if (typeof ui !== "undefined" && ui.notifications) {
       ui.notifications.error(
-        `PF2E Visioner failed to initialize: ${error.message}`,
+        `PF2E Visioner failed to initialize: ${error.message}`
       );
     }
   }
@@ -68,19 +66,20 @@ Hooks.once("ready", async () => {
     // Run this on a single authoritative client (GM only) to avoid race conditions
     if (game.user.isGM) {
       try {
-        const { cleanupAllCoverEffects } = await import("./cover-ephemeral.js");
+        // Register auto-cover detection (GM only to avoid duplicates)
+        const { cleanupAllCoverEffects } = await import("./cover/ephemeral.js");
         await cleanupAllCoverEffects();
       } catch (error) {
         console.error(
           "PF2E Visioner: Failed to clean up cover effects:",
-          error,
+          error
         );
       }
     }
   } catch (error) {
     console.error(
       "PF2E Visioner: Failed to initialize colorblind mode:",
-      error,
+      error
     );
   }
 });

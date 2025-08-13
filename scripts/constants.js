@@ -155,14 +155,6 @@ export const DEFAULT_SETTINGS = {
   },
 
   // Loot DCs
-  lootPerceptionDC: {
-    name: "PF2E_VISIONER.SETTINGS.LOOT_PERCEPTION_DC.name",
-    hint: "PF2E_VISIONER.SETTINGS.LOOT_PERCEPTION_DC.hint",
-    scope: "world",
-    config: true,
-    type: Number,
-    default: 10,
-  },
   lootStealthDC: {
     name: "PF2E_VISIONER.SETTINGS.LOOT_STEALTH_DC.name",
     hint: "PF2E_VISIONER.SETTINGS.LOOT_STEALTH_DC.hint",
@@ -181,18 +173,6 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: false,
   },
-
-  // Visuals perspective
-  visualsUseControlledPerspective: {
-    name: "PF2E_VISIONER.SETTINGS.VISUALS_USE_CONTROLLED_PERSPECTIVE.name",
-    hint: "PF2E_VISIONER.SETTINGS.VISUALS_USE_CONTROLLED_PERSPECTIVE.hint",
-    scope: "client",
-    config: true,
-    restricted: false,
-    type: Boolean,
-    default: true,
-  },
-
   defaultEncounterFilter: {
     name: "PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name",
     hint: "PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.hint",
@@ -287,6 +267,72 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Boolean,
     default: false,
+  },
+
+  autoCover: {
+    name: "PF2E_VISIONER.SETTINGS.AUTO_COVER.name",
+    hint: "PF2E_VISIONER.SETTINGS.AUTO_COVER.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+
+  // Auto-Cover behavior tuning
+  autoCoverTokenIntersectionMode: {
+    name: "Auto-Cover: Token Intersection Mode",
+    hint: "Choose how token blockers are evaluated: 'Any' (any intersection), 'Cross' (single ray crosses both opposite edges), 'Center' (ray goes through token center), or side-coverage modes where the portion of the ray inside the token is measured against the token's side length (not the ray length).",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      any: "Any",
+      cross: "Cross",
+      length10: "Ray inside ≥10% of blocking token square",
+      length20: "Ray inside ≥20% of blocking token square",
+      center: "Ray through token center",
+    },
+    default: "any",
+  },
+  autoCoverIgnoreUndetected: {
+    name: "Auto-Cover: Ignore Undetected Tokens",
+    hint: "If enabled, tokens that are undetected to the attacker (per Visioner visibility map) won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+  autoCoverIgnoreDead: {
+    name: "Auto-Cover: Ignore Dead Tokens",
+    hint: "If enabled, tokens with 0 HP won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+  autoCoverIgnoreAllies: {
+    name: "Auto-Cover: Ignore Allies",
+    hint: "If enabled, allied tokens won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+  autoCoverRespectIgnoreFlag: {
+    name: "Auto-Cover: Respect Token Ignore Flag",
+    hint: "If enabled, tokens with the flag pf2e-visioner.ignoreAutoCover = true won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+  autoCoverAllowProneBlockers: {
+    name: "Auto-Cover: Prone Tokens Can Block",
+    hint: "If enabled, prone tokens can grant cover. If disabled, prone tokens are ignored as blockers.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
   },
 
   debug: {

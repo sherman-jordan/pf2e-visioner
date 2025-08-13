@@ -36,10 +36,10 @@ export const DEFAULT_OUTCOME_MAPPING = {
     undetected: { "critical-success": "undetected", success: "undetected", failure: "observed", "critical-failure": "observed" },
   },
   sneak: {
-    observed: { "critical-success": "undetected", success: "hidden", failure: "observed", "critical-failure": "observed" },
-    concealed: { "critical-success": "undetected", success: "hidden", failure: "concealed", "critical-failure": "concealed" },
-    hidden: { "critical-success": "undetected", success: "hidden", failure: "hidden", "critical-failure": "hidden" },
-    undetected: { "critical-success": "undetected", success: "undetected", failure: "undetected", "critical-failure": "undetected" },
+    observed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+    concealed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+    hidden: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+    undetected: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
   },
   "create-a-diversion": {
     observed: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },

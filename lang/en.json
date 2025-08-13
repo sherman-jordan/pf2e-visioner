@@ -86,7 +86,7 @@
       "OPEN_RESULTS_TOOLTIP": "Open the Seek results dialog to apply individual or bulk visibility changes",
       "SETUP_TEMPLATE": "Setup Seek Template",
       "REMOVE_TEMPLATE": "Remove Seek Template",
-      "SETUP_TEMPLATE_TOOLTIP": "Click to place a 30-foot burst anywhere; Seek will use tokens within it",
+      "SETUP_TEMPLATE_TOOLTIP": "Click to place a 15-foot burst anywhere; Seek will use tokens within it",
       "ENCOUNTER_ONLY": "Show only encounter tokens",
       "SETTING_NAME": "Enable Seek Automation",
       "SETTING_HINT": "Automatically add buttons to Seek chat messages for applying visibility changes",

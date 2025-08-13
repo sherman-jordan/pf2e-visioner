@@ -1,4 +1,5 @@
 import { appliedConsequencesChangesByMessage } from "../data/message-cache.js";
+import { shouldFilterAlly } from "../infra/shared-utils.js";
 import { ActionHandlerBase } from "./base-action.js";
 
 export class ConsequencesActionHandler extends ActionHandlerBase {
@@ -15,6 +16,8 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
         if (attacker && t.id === attacker.id) return false;
         const type = t.actor?.type;
         if (type === "hazard" || type === "loot") return false;
+        // Respect Ignore Allies: when enabled, filter allies (we only care about enemies noticing attacker)
+        if (shouldFilterAlly(attacker, t, "enemies")) return false;
         return true;
       } catch (_) {
         return false;

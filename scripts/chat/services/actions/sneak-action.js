@@ -6,17 +6,27 @@ export class SneakActionHandler extends ActionHandlerBase {
   constructor() { super("sneak"); }
   getCacheMap() { return appliedSneakChangesByMessage; }
   getOutcomeTokenId(outcome) { return outcome?.token?.id ?? outcome?.target?.id ?? null; }
+  async ensurePrerequisites(_actionData) {}
   async discoverSubjects(actionData) {
     // Observers are all other tokens; dialog filters encounter as needed
     const tokens = canvas?.tokens?.placeables || [];
     const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
-    return tokens
+    const base = tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
       // Respect ignoreAllies setting: filter allies only when enabled
       .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"))
       // Exclude loot and hazards from observers list
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
+    const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+    if (!enforceRAW) return base;
+    const { getVisibilityBetween } = await import("../../../utils.js");
+    return base.filter((observer) => {
+      try {
+        const vis = getVisibilityBetween(observer, actionData.actor);
+        return vis === "hidden" || vis === "undetected";
+      } catch (_) { return false; }
+    });
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");

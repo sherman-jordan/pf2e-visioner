@@ -185,7 +185,51 @@ function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add('left');
   if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add('right');
   if (mode === 'cross') return (hits.has('top') && hits.has('bottom')) || (hits.has('left') && hits.has('right'));
+  if (mode === 'center') {
+    const cx = (rect.x1 + rect.x2) / 2; const cy = (rect.y1 + rect.y2) / 2;
+    const dist = distancePointToSegment({ x: cx, y: cy }, p1, p2);
+    // Treat as pass-through if the center lies near the line segment (within 1px)
+    return dist <= 1 && pointBetweenOnSegment({ x: cx, y: cy }, p1, p2);
+  }
+  if (mode === 'length10' || mode === 'length20') {
+    const len = segmentRectIntersectionLength(p1, p2, rect);
+    if (len <= 0) return false;
+    // Normalize against the token's side length (shorter side) per requirement
+    const width = Math.abs(rect.x2 - rect.x1); const height = Math.abs(rect.y2 - rect.y1);
+    const tokenSide = Math.max(1, Math.min(width, height));
+    const ratio = len / tokenSide;
+    const threshold = mode === 'length20' ? 0.2 : 0.1;
+    return ratio >= threshold;
+  }
   return hits.size > 0;
+}
+
+function segmentRectIntersectionLength(p1, p2, rect) {
+  // Liang-Barsky clipping to get [t0,t1] of the segment inside the rect
+  const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+  let t0 = 0; let t1 = 1; const p = [-dx, dx, -dy, dy]; const q = [p1.x - rect.x1, rect.x2 - p1.x, p1.y - rect.y1, rect.y2 - p1.y];
+  for (let i = 0; i < 4; i += 1) {
+    const pi = p[i]; const qi = q[i];
+    if (pi === 0) { if (qi < 0) return 0; } else {
+      const r = qi / pi; if (pi < 0) { if (r > t1) return 0; if (r > t0) t0 = r; } else { if (r < t0) return 0; if (r < t1) t1 = r; }
+    }
+  }
+  if (t0 > t1) return 0;
+  const segLen = Math.hypot(dx, dy);
+  return Math.max(0, segLen * Math.max(0, t1 - t0));
+}
+
+function distancePointToSegment(pt, a, b) {
+  const abx = b.x - a.x; const aby = b.y - a.y; const apx = pt.x - a.x; const apy = pt.y - a.y;
+  const ab2 = abx * abx + aby * aby; if (ab2 === 0) return Math.hypot(apx, apy);
+  let t = (apx * abx + apy * aby) / ab2; t = Math.max(0, Math.min(1, t));
+  const cx = a.x + t * abx; const cy = a.y + t * aby; return Math.hypot(pt.x - cx, pt.y - cy);
+}
+
+function pointBetweenOnSegment(pt, a, b) {
+  const minX = Math.min(a.x, b.x) - 1e-6; const maxX = Math.max(a.x, b.x) + 1e-6;
+  const minY = Math.min(a.y, b.y) - 1e-6; const maxY = Math.max(a.y, b.y) + 1e-6;
+  return pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY;
 }
 
 export function detectCoverStateForAttack(attacker, target) {

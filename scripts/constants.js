@@ -281,13 +281,16 @@ export const DEFAULT_SETTINGS = {
   // Auto-Cover behavior tuning
   autoCoverTokenIntersectionMode: {
     name: "Auto-Cover: Token Intersection Mode",
-    hint: "Choose how token blockers are evaluated: 'Any' if any ray intersects the token, or 'Cross' if a single ray must cross both opposite edges (top+bottom or left+right).",
+    hint: "Choose how token blockers are evaluated: 'Any' (any intersection), 'Cross' (single ray crosses both opposite edges), 'Center' (ray goes through token center), or side-coverage modes where the portion of the ray inside the token is measured against the token's side length (not the ray length).",
     scope: "world",
     config: true,
     type: String,
     choices: {
       any: "Any",
       cross: "Cross",
+      length10: "Ray inside ≥10% of blocking token square",
+      length20: "Ray inside ≥20% of blocking token square",
+      center: "Ray through token center",
     },
     default: "any",
   },

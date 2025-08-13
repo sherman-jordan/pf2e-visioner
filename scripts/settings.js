@@ -4,6 +4,137 @@
 
 import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from "./constants.js";
 
+// Define grouped settings sections to declutter the native list.
+// All keys listed here will be hidden from the default module settings UI
+// and rendered inside our custom grouped settings form instead.
+const SETTINGS_GROUPS = {
+  General: [
+    "defaultEncounterFilter",
+    "ignoreAllies",
+    "includeLootActors",
+    "lootStealthDC",
+    "useHudButton",
+    "integrateRollOutcome",
+    "enforceRawRequirements",
+  ],
+  "Visibility & Hover": [
+    "enableHoverTooltips",
+    "allowPlayerTooltips",
+    "blockPlayerTargetTooltips",
+    "tooltipFontSize",
+    "colorblindMode",
+  ],
+  "Seek & Range": [
+    "seekUseTemplate",
+    "limitSeekRangeInCombat",
+    "limitSeekRangeOutOfCombat",
+    "customSeekDistance",
+    "customSeekDistanceOutOfCombat",
+  ],
+  "Auto-cover": [
+    "autoCover",
+    "autoCoverTokenIntersectionMode",
+    "autoCoverIgnoreUndetected",
+    "autoCoverIgnoreDead",
+    "autoCoverIgnoreAllies",
+    "autoCoverRespectIgnoreFlag",
+    "autoCoverAllowProneBlockers",
+  ],
+  Advanced: [
+    "debug",
+  ],
+};
+
+function isGroupedKey(key) {
+  return Object.values(SETTINGS_GROUPS).some((arr) => arr.includes(key));
+}
+
+let currentVisionerSettingsApp = null;
+
+class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
+  static DEFAULT_OPTIONS = {
+    id: "pf2e-visioner-settings",
+    tag: "div",
+    window: {
+      title: "PF2E Visioner Settings",
+      icon: "fas fa-sliders-h",
+      resizable: true,
+    },
+    position: { width: 640, height: 600 },
+    classes: ["pf2e-visioner-settings-window"],
+    actions: { submit: VisionerSettingsForm._onSubmit },
+  };
+
+  constructor(options = {}) {
+    super(options);
+    currentVisionerSettingsApp = this;
+  }
+
+  async _prepareContext() {
+    const groups = [];
+    for (const [groupName, keys] of Object.entries(SETTINGS_GROUPS)) {
+      const items = [];
+      for (const key of keys) {
+        const cfg = DEFAULT_SETTINGS[key];
+        if (!cfg) continue;
+        const current = game.settings.get(MODULE_ID, key);
+        let inputType = "text";
+        if (cfg.choices && typeof cfg.choices === "object") inputType = "select";
+        else if (cfg.type === Boolean) inputType = "checkbox";
+        else if (cfg.type === Number) inputType = "number";
+        items.push({
+          key,
+          name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
+          hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
+          value: current,
+          inputType,
+          choices: cfg.choices || null,
+          min: cfg.min ?? null,
+          max: cfg.max ?? null,
+          step: cfg.step ?? 1,
+        });
+      }
+      if (items.length) groups.push({ title: groupName, items });
+    }
+    return { groups };
+  }
+
+  async _renderHTML(context, _options) {
+    return await foundry.applications.handlebars.renderTemplate(
+      "modules/pf2e-visioner/templates/settings-menu.hbs",
+      context,
+    );
+  }
+
+  _replaceHTML(result, content, _options) {
+    content.innerHTML = result;
+    return content;
+  }
+
+  static async _onSubmit(event, _button) {
+    const app = currentVisionerSettingsApp || this;
+    try {
+      const formEl = app.element.querySelector("form.pf2e-visioner-settings");
+      if (!formEl) return app.close();
+      const fd = new FormData(formEl);
+      const rawMap = Object.fromEntries(fd.entries());
+      const allKeys = Object.values(SETTINGS_GROUPS).flat();
+      for (const key of allKeys) {
+        const cfg = DEFAULT_SETTINGS[key];
+        if (!cfg) continue;
+        const formKey = `settings.${key}`;
+        const raw = rawMap[formKey];
+        let value;
+        if (cfg.type === Boolean) value = raw === "on" || raw === "true" || raw === true;
+        else if (cfg.type === Number) value = raw != null && raw !== "" ? Number(raw) : game.settings.get(MODULE_ID, key);
+        else value = raw != null ? raw : game.settings.get(MODULE_ID, key);
+        await game.settings.set(MODULE_ID, key, value);
+      }
+      try { await app.close(); } catch (_) {}
+    } catch (e) { /* noop */ try { await app.close(); } catch (_) {} }
+  }
+}
+
 /**
  * Register all module settings
  */
@@ -12,6 +143,9 @@ export function registerSettings() {
     // Register each setting from the configuration
     Object.entries(DEFAULT_SETTINGS).forEach(([key, config]) => {
       const settingConfig = { ...config };
+      // Hide grouped keys from the default module settings sheet; they will
+      // be displayed inside our custom grouped settings menu instead.
+      if (isGroupedKey(key)) settingConfig.config = false;
 
       // Add onChange handler for settings that require restart
       if (key === "enableHoverTooltips") {
@@ -23,13 +157,8 @@ export function registerSettings() {
           } catch (_) {}
         };
       } else if (key === "allowPlayerTooltips") {
-        // Live-apply without world reload for players
-        settingConfig.onChange = async (value) => {
-          try {
-            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("./hover-tooltips.js");
-            if (value && game.settings.get(MODULE_ID, "enableHoverTooltips")) initializeHoverTooltips(); else cleanupHoverTooltips();
-          } catch (_) {}
-        };
+        settingConfig.onChange = () => {};
+
       } else if (key === "useHudButton") {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({
@@ -37,17 +166,11 @@ export function registerSettings() {
           });
         };
       } else if (key === "ignoreAllies") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        settingConfig.onChange = () => {};
+
       } else if (key === "defaultEncounterFilter") {
-        settingConfig.onChange = () => {
-          SettingsConfig.reloadConfirm({
-            world: true,
-          });
-        };
+        settingConfig.onChange = () => {};
+
       } else if (key === "seekUseTemplate") {
         // No reload needed: panel logic reads this setting at runtime
         settingConfig.onChange = () => {};
@@ -117,6 +240,18 @@ export function registerSettings() {
         throw settingError;
       }
     });
+
+    // Register a single grouped settings menu entry
+    try {
+      game.settings.registerMenu(MODULE_ID, "groupedSettings", {
+        name: "PF2E Visioner Settings",
+        label: "Open",
+        hint: "Grouped settings by category (General, Visibility & Hover, Seek & Range, Auto Cover, Advanced)",
+        icon: "fas fa-sliders-h",
+        type: VisionerSettingsForm,
+        restricted: true,
+      });
+    } catch (_) {}
   } catch (error) {
     throw error;
   }

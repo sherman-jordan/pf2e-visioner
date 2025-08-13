@@ -1,0 +1,32 @@
+<form class="pf2e-visioner-settings" style="max-height: 70vh; overflow-y: auto; padding-right: 6px;">
+  {{#each groups as |group|}}
+    <fieldset>
+      <legend>{{group.title}}</legend>
+      {{#each group.items as |item|}}
+        <div class="form-group">
+          <label>{{item.name}}</label>
+          {{#if (eq item.inputType "checkbox")}}
+            <input type="checkbox" name="settings.{{item.key}}" {{#if item.value}}checked{{/if}}>
+          {{else if (eq item.inputType "number")}}
+            <input type="number" name="settings.{{item.key}}" value="{{item.value}}" min="{{item.min}}" max="{{item.max}}" step="{{item.step}}">
+          {{else if (eq item.inputType "select")}}
+            <select name="settings.{{item.key}}">
+              {{#each item.choices as |label val|}}
+                <option value="{{val}}" {{#if (eq ../item.value val)}}selected{{/if}}>{{localize label}}</option>
+              {{/each}}
+            </select>
+          {{else}}
+            <input type="text" name="settings.{{item.key}}" value="{{item.value}}">
+          {{/if}}
+          {{#if item.hint}}
+            <p class="notes">{{item.hint}}</p>
+          {{/if}}
+        </div>
+      {{/each}}
+    </fieldset>
+  {{/each}}
+  <footer class="sheet-footer flexrow">
+    <button type="button" class="dialog-button" data-action="submit"><i class="fas fa-save"></i> {{localize "Save"}}</button>
+  </footer>
+</form>
+

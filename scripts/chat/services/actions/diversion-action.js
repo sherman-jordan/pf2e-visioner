@@ -1,4 +1,5 @@
 import { appliedDiversionChangesByMessage } from "../data/message-cache.js";
+import { shouldFilterAlly } from "../infra/shared-utils.js";
 import { ActionHandlerBase } from "./base-action.js";
 
 export class DiversionActionHandler extends ActionHandlerBase {
@@ -12,6 +13,8 @@ export class DiversionActionHandler extends ActionHandlerBase {
     return tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
+      // Respect ignoreAllies: when enabled, diversion ignores allies
+      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"))
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
   }
   async analyzeOutcome(actionData, subject) {

@@ -86,7 +86,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         outcome.currentVisibility;
 
       // Prepare available states for override
-      const desired = getDesiredOverrideStatesForAction("sneak", outcome);
+      const desired = getDesiredOverrideStatesForAction("sneak");
       const availableStates = this.buildOverrideStates(desired, outcome);
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;

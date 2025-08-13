@@ -47,6 +47,26 @@ export async function onCanvasReady() {
       } catch (_) {}
     }, { passive: true });
   }
+
+  // After canvas is ready, previously rendered chat messages may have been processed
+  // before tokens were available, preventing action panels (e.g., Consequences) from
+  // being injected. Reprocess existing messages once so GM sees buttons on login.
+  try {
+    if (game.user?.isGM) {
+      setTimeout(async () => {
+        try {
+          const { handleRenderChatMessage } = await import("../chat/services/entry-service.js");
+          const messages = Array.from(game.messages?.contents || []);
+          for (const msg of messages) {
+            const el = msg?.element || document.querySelector(`li.message[data-message-id="${msg.id}"]`);
+            if (!el) continue;
+            const wrapper = typeof window.$ === "function" ? window.$(el) : el;
+            await handleRenderChatMessage(msg, wrapper);
+          }
+        } catch (_) {}
+      }, 50);
+    }
+  } catch (_) {}
 }
 
 function setupFallbackHUDButton() {

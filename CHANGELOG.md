@@ -1,5 +1,50 @@
 # Changelog
 
+## [2.0.0] - 2025-08-12
+
+### Breaking - Full Internal Rewrite and Module Restructure
+
+- Project reorganized and rewritten for clarity and performance.
+
+### Added
+
+- Auto Cover (reworked):
+  - Applies cover only if the line from attacker to target passes through a blocking token’s space.
+  - Lesser vs Standard cover determined by relative size (blocking token ≥ 2 size categories larger => Standard).
+  - Applies pre-roll via modifiers dialog or strike click capture; clears cover immediately after the roll’s message renders.
+  - Gated by setting and enabled GM-only to avoid duplicates.
+
+- Seek Template and Range Improvements (stabilized from 1.x):
+  - Strict filtering by player template (no generic fallback template).
+
+- Chat Automation Quality of Life:
+  - Point Out excludes loot, pings target on Apply.
+  - Sneak lists only enemies (no allies).
+  - Hide prerequisites enforced (concealed or standard/greater cover) and “No changes to apply” notification when relevant.
+  - Players don’t see Apply buttons in panels.
+
+- API:
+  - Bulk visibility setter to apply many observer→target updates efficiently.
+
+### Changed
+
+- No more world reloads for several settings; they are now applied at runtime:
+  - Ignore Allies, Seek template toggle, Seek range toggles, player tooltip toggles, auto cover.
+- Hook registration centralized under `scripts/hooks/` with small registrars; heavy logic moved to feature folders.
+- Imports largely hoisted to top-of-file for maintainability; kept dynamic imports only where lazy-loading is beneficial (dialogs, heavy batches).
+
+### Fixed
+
+- Hide action now respects the Ignore Allies setting (allied observers are filtered out).
+- Auto Cover reliably applies to the current roll and then cleans up; prevents lingering effects.
+- Template-based Seek respects only targets inside the player’s template and opens faster via sockets.
+- Token Manager batch operations reconciled effects reliably and reduced redundant document operations.
+- Sneak integration showing up on sneak attack damage rolls.
+
+### Removed
+
+- Legacy/unused files and integration paths related to the old effects coordinator code.
+
 ## [1.9.0] - 2025-08-11
 
 ### Added

@@ -74,7 +74,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
 
     // Prepare outcomes with additional UI data
     processedOutcomes = processedOutcomes.map((outcome) => {
-      const desired = getDesiredOverrideStatesForAction("create-a-diversion", outcome);
+      const desired = getDesiredOverrideStatesForAction("create-a-diversion");
       const availableStates = this.buildOverrideStates(desired, outcome).map((s) => ({ key: s.value, icon: s.icon, label: s.label, selected: s.selected, calculatedOutcome: s.calculatedOutcome }));
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;

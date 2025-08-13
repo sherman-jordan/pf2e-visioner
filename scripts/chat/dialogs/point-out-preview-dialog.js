@@ -71,7 +71,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const cfg = (s) => this.visibilityConfig(s);
 
     const processedOutcomes = filteredOutcomes.map((outcome) => {
-      const desired = getDesiredOverrideStatesForAction("point-out", outcome);
+      const desired = getDesiredOverrideStatesForAction("point-out");
       const availableStates = { hidden: this.buildOverrideStates(desired, outcome)[0] };
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;

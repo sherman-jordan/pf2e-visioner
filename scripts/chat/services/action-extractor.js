@@ -3,7 +3,7 @@
  * Extract action data from a chat message. Supports Seek, Point Out, Hide, Sneak,
  * Create a Diversion, and damage consequences.
  */
-export function extractActionData(message) {
+export async function extractActionData(message) {
   if (!message) return null;
 
   const context = message.flags?.pf2e?.context;
@@ -105,7 +105,25 @@ export function extractActionData(message) {
   else if (isHideAction) actionType = "hide";
   else if (isSneakAction) actionType = "sneak";
   else if (isCreateADiversionAction) actionType = "create-a-diversion";
-  else if (isDamageRoll && isHiddenOrUndetectedToken) actionType = "consequences";
+  else if (isDamageRoll) {
+    if (isHiddenOrUndetectedToken) actionType = "consequences";
+    else if (actorToken) {
+      try {
+        // Fallback: if any token on the scene currently treats the attacker as hidden/undetected per Visioner map, enable consequences
+        const tokens = canvas?.tokens?.placeables || [];
+        if (tokens.length) {
+          // Lazy-load only when needed to keep extractor fast on non-damage messages
+          const { getVisibilityBetween } = await import("../../utils.js");
+          const hasHiddenVsAny = tokens.some((t) => {
+            if (!t?.actor || t === actorToken) return false;
+            const vis = getVisibilityBetween(t, actorToken);
+            return vis === "hidden" || vis === "undetected";
+          });
+          if (hasHiddenVsAny) actionType = "consequences";
+        }
+      } catch (_) {}
+    }
+  }
 
   if (!actionType) return null;
 

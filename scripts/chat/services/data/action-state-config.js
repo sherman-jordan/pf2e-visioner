@@ -1,6 +1,6 @@
 // Centralized mapping of desired override states per action type
 
-export function getDesiredOverrideStatesForAction(actionType, outcome) {
+export function getDesiredOverrideStatesForAction(actionType) {
   switch (actionType) {
     case "seek":
       return ["observed","hidden"];
@@ -49,7 +49,10 @@ export const DEFAULT_OUTCOME_MAPPING = {
   },
   // Point Out defines its own observer/target mapping; leave empty for now
   "point-out": {},
-  consequences: {},
+  consequences: {
+    hidden: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
+    undetected: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
+  },
 };
 
 export function getDefaultNewStateFor(actionType, oldState, outcomeLevel) {

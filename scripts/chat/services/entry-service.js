@@ -1,8 +1,8 @@
 import { extractActionData } from "./action-extractor.js";
 import { processedMessages } from "./data/message-cache.js";
 
-export function handleRenderChatMessage(message, html) {
-  const actionData = extractActionData(message);
+export async function handleRenderChatMessage(message, html) {
+  const actionData = await extractActionData(message);
   if (!actionData) return;
 
   const hasPendingSeekTemplateForGM =

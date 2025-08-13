@@ -106,7 +106,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
         outcome.currentVisibility;
 
       // Prepare available states for override using per-action config
-      const desired = getDesiredOverrideStatesForAction("seek", outcome);
+      const desired = getDesiredOverrideStatesForAction("seek");
       const availableStates = this.buildOverrideStates(desired, outcome);
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;

@@ -7,7 +7,19 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
   getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
   async discoverSubjects(actionData) {
     const tokens = canvas?.tokens?.placeables || [];
-    return tokens.filter((t) => t && t !== actionData.actor && t.actor);
+    const attacker = actionData?.actor || null;
+    // Exclude attacker itself, hazards, and loot tokens from observers
+    return tokens.filter((t) => {
+      try {
+        if (!t || !t.actor) return false;
+        if (attacker && t.id === attacker.id) return false;
+        const type = t.actor?.type;
+        if (type === "hazard" || type === "loot") return false;
+        return true;
+      } catch (_) {
+        return false;
+      }
+    });
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");

@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
+import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
@@ -77,6 +78,9 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       const effectiveNewState = outcome.overrideState || "observed"; // Default to observed
       const baseOldState = outcome.currentVisibility;
       const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
+      // Build override icon states for the row
+      const desired = getDesiredOverrideStatesForAction("consequences");
+      const availableStates = this.buildOverrideStates(desired, { ...outcome, newVisibility: effectiveNewState }, { selectFrom: "overrideState", calcFrom: "newVisibility" });
       return {
         ...outcome,
         // Normalize to match BaseActionDialog helpers
@@ -86,6 +90,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
         tokenImage: this.resolveTokenImage(outcome.target),
         oldVisibilityState: getVisibilityStateConfig(baseOldState),
         newVisibilityState: getVisibilityStateConfig(effectiveNewState),
+        availableStates,
       };
     });
 

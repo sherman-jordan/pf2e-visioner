@@ -160,7 +160,7 @@ export class HidePreviewDialog extends BaseActionDialog {
    * Hide can only make you hidden from observers who can currently see you
    */
   getAvailableStatesForOutcome(outcome) {
-    const desired = getDesiredOverrideStatesForAction("hide", outcome);
+    const desired = getDesiredOverrideStatesForAction("hide");
     const built = this.buildOverrideStates(desired, outcome);
     // Inject labels expected by template
     return built.map((s) => ({ ...s, label: this.getStateLabel(s.value) }));

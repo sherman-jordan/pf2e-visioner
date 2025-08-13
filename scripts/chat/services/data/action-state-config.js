@@ -25,7 +25,7 @@ export function getDesiredOverrideStatesForAction(actionType) {
 export const DEFAULT_OUTCOME_MAPPING = {
   seek: {
     observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
-    concealed: { "critical-success": "observed", success: "observed", failure: "concealed", "critical-failure": "concealed" },
+    concealed: { "critical-success": "observed", success: "concealed", failure: "concealed", "critical-failure": "concealed" },
     hidden: { "critical-success": "observed", success: "observed", failure: "hidden", "critical-failure": "hidden" },
     undetected: { "critical-success": "hidden", success: "hidden", failure: "undetected", "critical-failure": "undetected" },
   },

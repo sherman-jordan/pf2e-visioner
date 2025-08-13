@@ -1,4 +1,5 @@
 import { appliedTakeCoverChangesByMessage } from "../data/message-cache.js";
+import { shouldFilterAlly } from "../infra/shared-utils.js";
 import { ActionHandlerBase } from "./base-action.js";
 
 // Take Cover raises the cover level that the ACTOR (taking cover) has AGAINST each other token (observers).
@@ -20,6 +21,8 @@ export class TakeCoverActionHandler extends ActionHandlerBase {
     return allTokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
+      // Respect Ignore Allies: when enabled, exclude allies from observers list
+      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"))
       // Exclude loot and hazards from observers for Take Cover
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
   }

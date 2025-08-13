@@ -15,13 +15,31 @@ export class HideActionHandler extends ActionHandlerBase {
     const tokens = canvas?.tokens?.placeables || [];
     const actorToken = actionData?.actor;
     const actorId = actorToken?.id || actorToken?.document?.id || null;
-    return tokens
+    const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+    const base = tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actorToken))
       // Respect ignoreAllies: when enabled, exclude allies from observers for Hide
       .filter((t) => !shouldFilterAlly(actorToken, t, "enemies"))
       // Hide should not list loot or hazards as observers
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
+
+    if (!enforceRAW) return base;
+
+    // RAW filter: only observers that currently see the actor as Concealed
+    // OR (Observed AND actor has Standard or Greater cover) are relevant.
+    const { getVisibilityBetween, getCoverBetween } = await import("../../../utils.js");
+    return base.filter((observer) => {
+      try {
+        const vis = getVisibilityBetween(observer, actorToken);
+        if (vis === "concealed") return true;
+        if (vis === "observed") {
+          const cover = getCoverBetween(observer, actorToken);
+          return cover === "standard" || cover === "greater";
+        }
+      } catch (_) {}
+      return false;
+    });
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");

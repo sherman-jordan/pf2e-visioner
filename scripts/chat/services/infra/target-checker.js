@@ -106,8 +106,18 @@ function checkHideTargets(actionData, potentialTargets) {
   return false;
 }
 
-function checkSneakTargets(_actionData, potentialTargets) {
-  return potentialTargets.length > 0;
+function checkSneakTargets(actionData, potentialTargets) {
+  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  if (!enforceRAW) return potentialTargets.length > 0;
+  // RAW: You can attempt Sneak only against creatures you were Hidden or Undetected from at the start.
+  for (const observer of potentialTargets) {
+    try {
+      if (shouldFilterAlly(actionData.actor, observer, "enemies")) continue;
+      const vis = getVisibilityBetween(observer, actionData.actor);
+      if (vis === "hidden" || vis === "undetected") return true;
+    } catch (_) {}
+  }
+  return false;
 }
 
 function checkDiversionTargets(actionData, potentialTargets) {

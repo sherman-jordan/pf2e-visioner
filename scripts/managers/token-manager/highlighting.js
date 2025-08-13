@@ -74,34 +74,10 @@ export function applySelectionHighlight(TokenManagerClass) {
 }
 
 export function attachCanvasHoverHandlers(TokenManagerClass) {
-  if (!canvas?.tokens?.placeables?.length) return;
-  if (TokenManagerClass._canvasHoverHandlers?.size > 0) return;
+  // Disabled by design: Do not highlight/scroll rows on canvas hover. Only selection highlights rows.
+  // Ensure any previously attached hover handlers are removed.
+  try { detachCanvasHoverHandlers(TokenManagerClass); } catch (_) {}
   if (!TokenManagerClass._canvasHoverHandlers) TokenManagerClass._canvasHoverHandlers = new Map();
-  const app = TokenManagerClass.currentInstance;
-  if (!app || !app.element) return;
-  canvas.tokens.placeables.forEach((token) => {
-    const over = () => {
-      try {
-        const row = app.element.querySelector(`tr[data-token-id="${token.id}"]`);
-        if (row) {
-          row.classList.add("row-hover");
-          const scroller = app.element.querySelector(".tables-content") || row.closest(".visibility-table-container") || app.element;
-          if (scroller && typeof row.scrollIntoView === "function") {
-            row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-          }
-        }
-      } catch (_) {}
-    };
-    const out = () => {
-      try {
-        const row = app.element.querySelector(`tr[data-token-id="${token.id}"]`);
-        if (row) row.classList.remove("row-hover");
-      } catch (_) {}
-    };
-    token.on("pointerover", over);
-    token.on("pointerout", out);
-    TokenManagerClass._canvasHoverHandlers.set(token.id, { over, out });
-  });
 }
 
 export function detachCanvasHoverHandlers(TokenManagerClass) {

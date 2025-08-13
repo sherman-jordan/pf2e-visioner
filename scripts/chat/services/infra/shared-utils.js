@@ -324,20 +324,31 @@ export function shouldFilterAlly(
   const ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
   if (!ignoreAllies) return false;
 
-  const actingTokenIsPC =
-    actingToken.actor?.hasPlayerOwner ||
-    actingToken.actor?.type === "character";
-  const targetTokenIsPC =
-    targetToken.actor?.hasPlayerOwner ||
-    targetToken.actor?.type === "character";
-
-  if (filterType === "enemies") {
-    // For enemy interactions (seek, hide, sneak, diversion): PCs target NPCs, NPCs target PCs
-    return actingTokenIsPC === targetTokenIsPC;
-  } else if (filterType === "allies") {
-    // For ally interactions (point out): PCs help PCs, NPCs help NPCs
-    return actingTokenIsPC !== targetTokenIsPC;
+  // Prefer PF2e alliance when available; fall back to token disposition; finally fall back to ownership/type.
+  let sameSide = false;
+  try {
+    const aAlliance = actingToken?.actor?.alliance;
+    const bAlliance = targetToken?.actor?.alliance;
+    if (aAlliance && bAlliance) sameSide = aAlliance === bAlliance;
+    else {
+      const aDisp = actingToken?.document?.disposition;
+      const bDisp = targetToken?.document?.disposition;
+      if (Number.isFinite(aDisp) && Number.isFinite(bDisp)) sameSide = aDisp === bDisp;
+      else {
+        const actingLooksPC = actingToken?.actor?.hasPlayerOwner || actingToken?.actor?.type === "character";
+        const targetLooksPC = targetToken?.actor?.hasPlayerOwner || targetToken?.actor?.type === "character" || targetToken?.actor?.type === "familiar";
+        sameSide = actingLooksPC === targetLooksPC;
+      }
+    }
+  } catch (_) {
+    // Conservative fallback
+    const actingLooksPC = actingToken?.actor?.hasPlayerOwner || actingToken?.actor?.type === "character";
+    const targetLooksPC = targetToken?.actor?.hasPlayerOwner || targetToken?.actor?.type === "character" || targetToken?.actor?.type === "familiar";
+    sameSide = actingLooksPC === targetLooksPC;
   }
+
+  if (filterType === "enemies") return sameSide; // filter out allies
+  if (filterType === "allies") return !sameSide; // filter out enemies when looking for allies
 
   return false;
 }

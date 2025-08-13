@@ -170,7 +170,7 @@ export async function formHandler(event, form, formData) {
       await setCoverMap(observerToken, map);
     }
     try {
-      const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover-ephemeral.js");
+      const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover/ephemeral.js");
       const observerUpdates = [];
       for (const [observerTokenId, newCoverState] of Object.entries(coverChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
@@ -335,7 +335,7 @@ export async function applyCurrent(event, button) {
         for (const { observer, updates } of updatesByObserver.values()) {
           try { const t = observer.actor?.type; if (t === "loot" || t === "vehicle" || t === "party") continue; } catch (_) {}
           allOperations.push(async () => {
-            const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover-ephemeral.js");
+            const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover/ephemeral.js");
             await batchUpdateCoverEffects(observer, updates);
             for (const { target, state } of updates) {
               visualUpdatePairs.push({ observerId: observer.id, targetId: target.id, cover: state });

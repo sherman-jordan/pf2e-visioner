@@ -6,13 +6,13 @@
 import {
   getCoverMap,
   getVisibilityMap
-} from "./utils.js";
+} from "../../utils.js";
 
-import { MODULE_ID } from "./constants.js";
-import { bindTokenManagerActions } from "./managers/token-manager/actions/index.js";
-import { addTokenBorder as addBorderUtil, removeTokenBorder as removeBorderUtil } from "./managers/token-manager/borders.js";
-import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from "./managers/token-manager/config.js";
-import { applySelectionHighlight, attachCanvasHoverHandlers, attachSelectionHandlers, detachCanvasHoverHandlers, detachSelectionHandlers } from "./managers/token-manager/highlighting.js";
+import { MODULE_ID } from "../../constants.js";
+import { bindTokenManagerActions } from "./actions/index.js";
+import { addTokenBorder as addBorderUtil, removeTokenBorder as removeBorderUtil } from "./borders.js";
+import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from "./config.js";
+import { applySelectionHighlight, attachCanvasHoverHandlers, attachSelectionHandlers, detachCanvasHoverHandlers, detachSelectionHandlers } from "./highlighting.js";
 
 export class VisionerTokenManager extends foundry.applications.api
   .ApplicationV2 {
@@ -142,7 +142,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Prepare context data for the template
    */
   async _prepareContext(options) {
-    const { buildContext } = await import("./managers/token-manager/context.js");
+    const { buildContext } = await import("./context.js");
     return buildContext(this, options);
   }
 
@@ -168,7 +168,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Handle form submission
    */
   static async formHandler(event, form, formData) {
-    const { formHandler } = await import("./managers/token-manager/actions/index.js");
+    const { formHandler } = await import("./actions/index.js");
     return formHandler.call(this, event, form, formData);
   }
 
@@ -176,7 +176,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Apply changes and close
    */
   static async applyCurrent(event, button) {
-    const { applyCurrent } = await import("./managers/token-manager/actions/index.js");
+    const { applyCurrent } = await import("./actions/index.js");
     return applyCurrent.call(this, event, button);
   }
 
@@ -184,7 +184,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Apply both Visibility and Cover changes for the current mode
    */
   static async applyBoth(event, button) {
-    const { applyBoth } = await import("./managers/token-manager/actions/index.js");
+    const { applyBoth } = await import("./actions/index.js");
     return applyBoth.call(this, event, button);
   }
 
@@ -192,7 +192,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Reset all visibility and cover states
    */
   static async resetAll(event, button) {
-    const { resetAll } = await import("./managers/token-manager/actions/index.js");
+    const { resetAll } = await import("./actions/index.js");
     return resetAll.call(this, event, button);
   }
 
@@ -200,7 +200,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle between Observer and Target modes
    */
   static async toggleMode(event, button) {
-    const { toggleMode } = await import("./managers/token-manager/actions/index.js");
+    const { toggleMode } = await import("./actions/index.js");
     return toggleMode.call(this, event, button);
   }
 
@@ -208,7 +208,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle between Visibility and Cover tabs
    */
   static async toggleTab(event, button) {
-    const { toggleTab } = await import("./managers/token-manager/actions/index.js");
+    const { toggleTab } = await import("./actions/index.js");
     return toggleTab.call(this, event, button);
   }
 
@@ -216,7 +216,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle encounter filtering and refresh results
    */
   static async toggleEncounterFilter(event, button) {
-    const { toggleEncounterFilter } = await import("./managers/token-manager/actions/index.js");
+    const { toggleEncounterFilter } = await import("./actions/index.js");
     return toggleEncounterFilter.call(this, event, button);
   }
 
@@ -224,7 +224,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Bulk set visibility state for tokens
    */
   static async bulkSetVisibilityState(event, button) {
-    const { bulkSetVisibilityState } = await import("./managers/token-manager/actions/index.js");
+    const { bulkSetVisibilityState } = await import("./actions/index.js");
     return bulkSetVisibilityState.call(this, event, button);
   }
 
@@ -232,7 +232,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Bulk set cover state for tokens
    */
   static async bulkSetCoverState(event, button) {
-    const { bulkSetCoverState } = await import("./managers/token-manager/actions/index.js");
+    const { bulkSetCoverState } = await import("./actions/index.js");
     return bulkSetCoverState.call(this, event, button);
   }
 

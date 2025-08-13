@@ -1,5 +1,5 @@
-import { MODULE_ID } from "./constants.js";
-import { showNotification } from "./utils.js";
+import { MODULE_ID } from "../constants.js";
+import { showNotification } from "../utils.js";
 
 // Avoid name collision with Foundry/socket.io global `socket`
 let visionerSocket = null;

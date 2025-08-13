@@ -2,8 +2,8 @@
  * Token-related hooks: create/delete, highlight, HUD buttons
  */
 
-import { cleanupHoverTooltips, initializeHoverTooltips } from "../hover-tooltips.js";
-import { updateTokenVisuals } from "../visual-effects.js";
+import { cleanupHoverTooltips, initializeHoverTooltips } from "../services/hover-tooltips.js";
+import { updateTokenVisuals } from "../services/visual-effects.js";
 
 export async function onTokenCreated(scene, tokenDoc) {
   try {
@@ -36,8 +36,8 @@ export async function onTokenDeleted(...args) {
     }
     if (!tokenDoc?.id) return;
     const { cleanupDeletedToken } = await import("../services/scene-cleanup.js");
-    const { cleanupDeletedTokenEffects } = await import("../off-guard-ephemeral.js");
-    const { cleanupDeletedTokenCoverEffects } = await import("../cover-ephemeral.js");
+    const { cleanupDeletedTokenEffects } = await import("../visibility/ephemeral.js");
+    const { cleanupDeletedTokenCoverEffects } = await import("../cover/ephemeral.js");
     if (tokenDoc) {
       try { await cleanupDeletedToken(tokenDoc); } catch (e) { console.warn("PF2E Visioner: map cleanup failed", e); }
       await Promise.all([

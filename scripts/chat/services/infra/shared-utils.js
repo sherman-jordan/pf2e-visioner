@@ -4,9 +4,9 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from "../../../constants.js";
-import { refreshEveryonesPerception } from "../../../socket.js";
+import { refreshEveryonesPerception } from "../../../services/socket.js";
+import { updateTokenVisuals } from "../../../services/visual-effects.js";
 import { setVisibilityBetween } from "../../../utils.js";
-import { updateTokenVisuals } from "../../../visual-effects.js";
 import { notify } from "./notifications.js";
 /**
  * Validate if a token is a valid Seek target

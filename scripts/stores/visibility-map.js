@@ -3,7 +3,7 @@
  */
 
 import { MODULE_ID } from "../constants.js";
-import { updateEphemeralEffectsForVisibility } from "../off-guard-ephemeral.js";
+import { updateEphemeralEffectsForVisibility } from "../visibility/ephemeral.js";
 
 /**
  * Get the visibility map for a token

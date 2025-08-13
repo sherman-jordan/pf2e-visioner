@@ -3,7 +3,7 @@
  */
 
 import { MODULE_ID } from "../constants.js";
-import { onRenderTokenHUD } from "../token-hud.js";
+import { onRenderTokenHUD } from "../services/token-hud.js";
 
 export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);

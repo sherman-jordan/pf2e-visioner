@@ -3,10 +3,10 @@
  */
 
 import { MODULE_ID } from "../constants.js";
-import { cleanupCoverEffectsForObserver } from "../cover-ephemeral.js";
-import { batchUpdateVisibilityEffects, cleanupEphemeralEffectsForTarget } from "../off-guard-ephemeral.js";
-import { refreshEveryonesPerception } from "../socket.js";
-import { updateTokenVisuals } from "../visual-effects.js";
+import { cleanupCoverEffectsForObserver } from "../cover/ephemeral.js";
+import { batchUpdateVisibilityEffects, cleanupEphemeralEffectsForTarget } from "../visibility/ephemeral.js";
+import { refreshEveryonesPerception } from "./socket.js";
+import { updateTokenVisuals } from "./visual-effects.js";
 
 export async function unsetMapsForTokens(scene, tokens) {
   try {

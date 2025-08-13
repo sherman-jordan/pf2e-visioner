@@ -3,6 +3,7 @@
  */
 
 import { MODULE_ID } from "./constants.js";
+import { VisionerTokenManager } from "./managers/token-manager/token-manager.js";
 import {
   rebuildAndRefresh,
   removeAllReferencesToTarget,
@@ -11,8 +12,8 @@ import {
   removeObserverContributions,
   unsetMapsForTokens,
 } from "./services/api-internal.js";
-import { refreshEveryonesPerception } from "./socket.js";
-import { VisionerTokenManager } from "./token-manager.js";
+import { refreshEveryonesPerception } from "./services/socket.js";
+import { updateTokenVisuals } from "./services/visual-effects.js";
 import {
   cleanupDeletedToken,
   getCoverBetween,
@@ -21,7 +22,6 @@ import {
   setVisibilityBetween,
   showNotification,
 } from "./utils.js";
-import { updateTokenVisuals } from "./visual-effects.js";
 
 /**
  * Main API class for the module

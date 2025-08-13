@@ -2,7 +2,7 @@
  * Central registration that composes small hook modules.
  */
 
-import { onHighlightObjects } from "../hover-tooltips.js";
+import { onHighlightObjects } from "../services/hover-tooltips.js";
 import { registerAutoCoverHooks } from "./auto-cover.js";
 import { registerChatHooks } from "./chat.js";
 import { registerCombatHooks } from "./combat.js";

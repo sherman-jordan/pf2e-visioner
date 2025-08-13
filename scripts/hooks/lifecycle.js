@@ -4,9 +4,9 @@
 
 import { injectChatAutomationStyles } from "../chat/chat-automation-styles.js";
 import { MODULE_ID } from "../constants.js";
-import { initializeHoverTooltips } from "../hover-tooltips.js";
-import { registerSocket } from "../socket.js";
-import { updateTokenVisuals, updateWallVisuals } from "../visual-effects.js";
+import { initializeHoverTooltips } from "../services/hover-tooltips.js";
+import { registerSocket } from "../services/socket.js";
+import { updateTokenVisuals, updateWallVisuals } from "../services/visual-effects.js";
 
 export function onReady() {
   // Add CSS styles for chat automation
@@ -32,7 +32,7 @@ export async function onCanvasReady() {
     window.addEventListener("keydown", async (ev) => {
       if (ev.key?.toLowerCase() !== "o") return;
       try {
-        const { HoverTooltips, showControlledTokenVisibilityObserver } = await import("../hover-tooltips.js");
+        const { HoverTooltips, showControlledTokenVisibilityObserver } = await import("../services/hover-tooltips.js");
         if (!HoverTooltips.isShowingKeyTooltips && typeof showControlledTokenVisibilityObserver === "function") {
           showControlledTokenVisibilityObserver();
         }
@@ -42,7 +42,7 @@ export async function onCanvasReady() {
       if (ev.key?.toLowerCase() !== "o") return;
       try {
         // Reuse the existing release path via onHighlightObjects(false)
-        const { onHighlightObjects } = await import("../hover-tooltips.js");
+        const { onHighlightObjects } = await import("../services/hover-tooltips.js");
         onHighlightObjects(false);
       } catch (_) {}
     }, { passive: true });

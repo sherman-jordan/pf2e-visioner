@@ -3,11 +3,11 @@
  * Creates ephemeral effects for cover states using PF2e's native EphemeralEffect system
  */
 
-import { COVER_STATES, MODULE_ID } from "./constants.js";
-import { ensureAggregateCoverEffect, updateAggregateCoverMetaForState, updateReflexStealthAcrossCoverAggregates } from "./cover/aggregates.js";
-import { dedupeCoverAggregates, reconcileCoverAggregatesAgainstMaps } from "./cover/batch.js";
-import { runWithCoverEffectLock } from "./cover/utils.js";
-import { getCoverBonusByState } from "./helpers/cover-helpers.js";
+import { COVER_STATES, MODULE_ID } from "../constants.js";
+import { getCoverBonusByState } from "../helpers/cover-helpers.js";
+import { ensureAggregateCoverEffect, updateAggregateCoverMetaForState, updateReflexStealthAcrossCoverAggregates } from "./aggregates.js";
+import { dedupeCoverAggregates, reconcileCoverAggregatesAgainstMaps } from "./batch.js";
+import { runWithCoverEffectLock } from "./utils.js";
 
 // cover lock moved to cover/utils.js
 
@@ -305,7 +305,7 @@ async function addObserverToCoverAggregate(
 /**
  * Clean up all ephemeral cover effects from all actors
  */
-export { cleanupAllCoverEffects } from "./cover/cleanup.js";
+export { cleanupAllCoverEffects } from "./cleanup.js";
 
 /**
  * Clean up ephemeral cover effects for a specific observer
@@ -407,7 +407,7 @@ async function cleanupCoverEffectsForObserverUnlocked(
 // covered by export above; keep wrapper for API compatibility
 export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {
   await runWithCoverEffectLock(targetToken.actor, async () => {
-    const { cleanupCoverEffectsForObserver } = await import("./cover/cleanup.js");
+    const { cleanupCoverEffectsForObserver } = await import("./cleanup.js");
     await cleanupCoverEffectsForObserver(targetToken, observerToken);
   });
 }
@@ -425,10 +425,10 @@ export async function cleanupCoverEffectsForObserver(targetToken, observerToken)
  * Clean up all cover effects related to a deleted token
  * @param {TokenDocument} tokenDoc - The token document being deleted
  */
-export { cleanupDeletedTokenCoverEffects } from "./cover/cleanup.js";
+export { cleanupDeletedTokenCoverEffects } from "./cleanup.js";
 
 export async function updateEphemeralCoverEffects(targetToken, observerToken, coverState, options = {}) {
-  const { batchUpdateCoverEffects } = await import("./cover/batch.js");
+  const { batchUpdateCoverEffects } = await import("./batch.js");
   return batchUpdateCoverEffects(observerToken, [{ target: targetToken, state: coverState }], options);
 }
 
@@ -438,7 +438,7 @@ export async function updateEphemeralCoverEffects(targetToken, observerToken, co
  * @param {Array<Object>} targetUpdates - Array of {target: Token, state: string} objects
  * @param {Object} options - Optional configuration
  */
-export { batchUpdateCoverEffects } from "./cover/batch.js";
+export { batchUpdateCoverEffects } from "./batch.js";
 
 /**
  * Public helper: force a reconcile/cleanup of a target token's cover aggregates

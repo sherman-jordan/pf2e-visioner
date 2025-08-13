@@ -2,9 +2,9 @@
  * Hover tooltips for token visibility states
  */
 
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
-import { canShowTooltips, computeSizesFromSetting } from "./helpers/tooltip-utils.js";
-import { getCoverMap, getVisibilityMap } from "./utils.js";
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../constants.js";
+import { canShowTooltips, computeSizesFromSetting } from "../helpers/tooltip-utils.js";
+import { getCoverMap, getVisibilityMap } from "../utils.js";
 
 /**
  * Lightweight service wrapper for lifecycle control.

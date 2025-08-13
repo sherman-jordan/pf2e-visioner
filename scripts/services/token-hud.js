@@ -3,8 +3,8 @@
  * Based on the approach from pf2e-flatcheck-helper
  */
 
-import { openVisibilityManagerWithMode } from "./api.js";
-import { MODULE_ID } from "./constants.js";
+import { openVisibilityManagerWithMode } from "../api.js";
+import { MODULE_ID } from "../constants.js";
 
 /**
  * Handle rendering of token HUD to add visibility button

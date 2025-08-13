@@ -2,7 +2,7 @@
  * Detection System Wrapper - Makes PF2E system show real conditions
  */
 
-import { getVisibilityMap } from "./utils.js";
+import { getVisibilityMap } from "../utils.js";
 
 /**
  * Class wrapper for PF2E detection integration to support init/teardown.

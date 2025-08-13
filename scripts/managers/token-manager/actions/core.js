@@ -4,12 +4,12 @@
  */
 
 import { MODULE_ID } from "../../../constants.js";
-import { refreshEveryonesPerception } from "../../../socket.js";
+import { refreshEveryonesPerception } from "../../../services/socket.js";
 import {
-    getCoverMap,
-    getVisibilityMap,
-    setCoverMap,
-    setVisibilityMap,
+  getCoverMap,
+  getVisibilityMap,
+  setCoverMap,
+  setVisibilityMap,
 } from "../../../utils.js";
 
 /**
@@ -201,7 +201,7 @@ export async function formHandler(event, form, formData) {
   (async () => {
     try {
       refreshEveryonesPerception();
-      const { updateSpecificTokenPairs } = await import("../../../visual-effects.js");
+      const { updateSpecificTokenPairs } = await import("../../../services/visual-effects.js");
       try { await updateSpecificTokenPairs([]); } catch (_) {}
     } catch (_) {}
   })();
@@ -210,7 +210,7 @@ export async function formHandler(event, form, formData) {
 
 export async function applyCurrent(event, button) {
   const app = this;
-  const { runTasksWithProgress } = await import("../../../progress.js");
+  const { runTasksWithProgress } = await import("../../progress.js");
 
   try {
     const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
@@ -245,7 +245,7 @@ export async function applyCurrent(event, button) {
   try {
     const { batchUpdateVisibilityEffects } = await import("../../../off-guard-ephemeral.js");
     const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover-ephemeral.js");
-    const { updateWallVisuals } = await import("../../../visual-effects.js");
+    const { updateWallVisuals } = await import("../../../services/visual-effects.js");
     const isVisibility = app.activeTab === "visibility";
     const isCover = app.activeTab === "cover";
 
@@ -351,7 +351,7 @@ export async function applyCurrent(event, button) {
       if (visualUpdatePairs.length > 0) {
         (async () => {
           try {
-            const { updateSpecificTokenPairs } = await import("../../../visual-effects.js");
+            const { updateSpecificTokenPairs } = await import("../../../services/visual-effects.js");
             await updateSpecificTokenPairs(visualUpdatePairs);
           } catch (error) {
             console.warn("Token Manager: Error updating visuals:", error);
@@ -375,7 +375,7 @@ export async function applyCurrent(event, button) {
 
 export async function applyBoth(event, button) {
   const app = this;
-  const { runTasksWithProgress } = await import("../../../progress.js");
+  const { runTasksWithProgress } = await import("../../progress.js");
 
   try {
     app.close();
@@ -514,7 +514,7 @@ export async function applyBoth(event, button) {
       if (visualUpdatePairs.length > 0) {
         (async () => {
           try {
-            const { updateSpecificTokenPairs } = await import("../../../visual-effects.js");
+            const { updateSpecificTokenPairs } = await import("../../../services/visual-effects.js");
             await updateSpecificTokenPairs(visualUpdatePairs);
           } catch (error) {
             console.warn("Token Manager: Error updating visuals:", error);

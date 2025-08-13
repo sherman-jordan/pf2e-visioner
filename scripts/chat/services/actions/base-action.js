@@ -16,6 +16,7 @@ export class ActionHandlerBase {
       case "sneak": return "apply-now-sneak";
       case "create-a-diversion": return "apply-now-diversion";
       case "consequences": return "apply-now-consequences";
+      case "take-cover": return "apply-now-take-cover";
       default: return "";
     }
   }
@@ -27,6 +28,7 @@ export class ActionHandlerBase {
       case "sneak": return "revert-now-sneak";
       case "create-a-diversion": return "revert-now-diversion";
       case "consequences": return "revert-now-consequences";
+      case "take-cover": return "revert-now-take-cover";
       default: return "";
     }
   }
@@ -133,7 +135,7 @@ export class ActionHandlerBase {
         })
         .filter(Boolean);
 
-      await this.applyChangesInternal(actionData, changes);
+      await this.applyChangesInternal(changes);
       this.cacheAfterApply(actionData, changes);
       this.updateButtonToRevert(button);
     } catch (e) {
@@ -141,7 +143,7 @@ export class ActionHandlerBase {
     }
   }
 
-  async applyChangesInternal(actionData, changes) {
+  async applyChangesInternal(changes) {
     const { applyVisibilityChanges } = await import("../infra/shared-utils.js");
     const direction = this.getApplyDirection();
     // Group by observer and apply batched
@@ -176,7 +178,7 @@ export class ActionHandlerBase {
       const changesFromCache = await this.buildChangesFromCache(actionData);
       const changes = changesFromCache && changesFromCache.length ? changesFromCache : await this.fallbackRevertChanges(actionData);
       if (!changes || changes.length === 0) { notify.info("Nothing to revert"); return; }
-      await this.applyChangesInternal(actionData, changes);
+      await this.applyChangesInternal(changes);
       this.clearCache(actionData);
       this.updateButtonToApply(button);
     } catch (e) {

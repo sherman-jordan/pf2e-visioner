@@ -26,6 +26,13 @@ export async function extractActionData(message) {
         context.slug === "create-a-diversion")) ||
     message.flavor?.toLowerCase?.().includes?.("create a diversion");
 
+  const isTakeCoverAction =
+    (context?.type === "action" && (context.options?.includes?.("action:take-cover") || context.slug === "take-cover")) ||
+    origin?.rollOptions?.includes?.("origin:item:take-cover") ||
+    origin?.rollOptions?.includes?.("origin:item:slug:take-cover") ||
+    message.content?.includes?.("Take Cover") ||
+    message.flavor?.toLowerCase?.().includes?.("take cover");
+
   const isHideAction =
     !isCreateADiversionAction &&
     ((context?.type === "skill-check" &&
@@ -105,6 +112,7 @@ export async function extractActionData(message) {
   else if (isHideAction) actionType = "hide";
   else if (isSneakAction) actionType = "sneak";
   else if (isCreateADiversionAction) actionType = "create-a-diversion";
+  else if (isTakeCoverAction) actionType = "take-cover";
   else if (isDamageRoll) {
     if (isHiddenOrUndetectedToken) actionType = "consequences";
     else if (actorToken) {

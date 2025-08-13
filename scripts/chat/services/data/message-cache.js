@@ -20,4 +20,7 @@ export const appliedConsequencesChangesByMessage = new Map();
 // Point Out: messageId -> Array<{ allyId: string, targetTokenId: string, oldVisibility: string }>
 export const appliedPointOutChangesByMessage = new Map();
 
+// Take Cover: messageId -> Array<{ observerId: string, oldCover: string }>
+export const appliedTakeCoverChangesByMessage = new Map();
+
 

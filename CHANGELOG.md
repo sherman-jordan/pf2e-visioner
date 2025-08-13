@@ -13,6 +13,7 @@
   - Lesser vs Standard cover determined by relative size (blocking token ≥ 2 size categories larger => Standard).
   - Applies pre-roll via modifiers dialog or strike click capture; clears cover immediately after the roll’s message renders.
   - Gated by setting and enabled GM-only to avoid duplicates.
+- Take cover action support
 
 - Seek Template and Range Improvements (stabilized from 1.x):
   - Strict filtering by player template (no generic fallback template).

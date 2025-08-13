@@ -25,12 +25,14 @@ export function bindAutomationEvents(panel, message, actionData) {
         applyNowSneak,
         applyNowDiversion,
         applyNowConsequences,
+        applyNowTakeCover,
         revertNowSeek,
         revertNowPointOut,
         revertNowHide,
         revertNowSneak,
         revertNowDiversion,
         revertNowConsequences,
+        revertNowTakeCover,
         setupSeekTemplate,
         removeSeekTemplate,
         injectAutomationUI,
@@ -44,6 +46,7 @@ export function bindAutomationEvents(panel, message, actionData) {
         "apply-now-sneak": applyNowSneak,
         "apply-now-diversion": applyNowDiversion,
         "apply-now-consequences": applyNowConsequences,
+        "apply-now-take-cover": applyNowTakeCover,
       };
       const revertHandlers = {
         "revert-now-seek": revertNowSeek,
@@ -52,6 +55,7 @@ export function bindAutomationEvents(panel, message, actionData) {
         "revert-now-sneak": revertNowSneak,
         "revert-now-diversion": revertNowDiversion,
         "revert-now-consequences": revertNowConsequences,
+        "revert-now-take-cover": revertNowTakeCover,
       };
 
       if (action === "setup-seek-template" && actionData.actionType === "seek") {

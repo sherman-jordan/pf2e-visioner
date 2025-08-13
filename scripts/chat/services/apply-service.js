@@ -6,6 +6,7 @@ import { HideActionHandler } from "./actions/hide-action.js";
 import { PointOutActionHandler } from "./actions/point-out-action.js";
 import { SeekActionHandler } from "./actions/seek-action.js";
 import { SneakActionHandler } from "./actions/sneak-action.js";
+import { TakeCoverActionHandler } from "./actions/take-cover-action.js";
 
 export async function applyNowSeek(actionData, button) {
   const handler = new SeekActionHandler();
@@ -34,6 +35,11 @@ export async function applyNowDiversion(actionData, button) {
 
 export async function applyNowConsequences(actionData, button) {
   const handler = new ConsequencesActionHandler();
+  await handler.apply(actionData, button);
+}
+
+export async function applyNowTakeCover(actionData, button) {
+  const handler = new TakeCoverActionHandler();
   await handler.apply(actionData, button);
 }
 

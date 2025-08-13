@@ -113,6 +113,13 @@ function getChatAutomationCSS() {
             border: 2px solid #dc3545;
             box-shadow: 0 4px 8px rgba(220, 53, 69, 0.15);
         }
+
+        /* Take Cover Panel - Brown Theme */
+        .pf2e-visioner-automation-panel.take-cover-panel {
+            background: linear-gradient(135deg, #efebe9, #d7ccc8);
+            border: 2px solid #795548;
+            box-shadow: 0 4px 8px rgba(121, 85, 72, 0.15);
+        }
         
         .automation-header {
             display: flex;
@@ -177,6 +184,11 @@ function getChatAutomationCSS() {
         
         .visioner-btn-consequences {
             background: linear-gradient(135deg, #dc3545, #b21f2d);
+            color: white;
+        }
+
+        .visioner-btn-take-cover {
+            background: linear-gradient(135deg, #795548, #5d4037);
             color: white;
         }
         
@@ -1095,6 +1107,46 @@ function getChatAutomationCSS() {
             color: var(--color-text-primary, #f0f0f0);
             max-height: 80vh;
             overflow-y: auto;
+        }
+
+        /* ===== TAKE COVER PREVIEW DIALOG - BROWN THEME ===== */
+        .take-cover-preview-dialog .window-header {
+            background: linear-gradient(135deg, #795548 0%, #5d4037 100%);
+            color: white;
+            border-bottom: 2px solid #5d4037;
+        }
+        .take-cover-preview-content { padding: 12px; background: var(--color-bg-primary, #2a2a2a); color: var(--color-text-primary, #f0f0f0); }
+        .take-cover-preview-dialog .actor-info {
+            display: flex; align-items: center; margin-bottom: 4px; padding: 12px;
+            background: rgba(121, 85, 72, 0.15); border-radius: 6px; border-left: 4px solid #795548;
+        }
+        .take-cover-preview-dialog .hider-image img { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #795548; margin-right: 12px; }
+        .take-cover-preview-dialog .hider-name { margin: 0 0 4px 0; font-size: 16px; font-weight: bold; color: #ffcdd2; color: #ffecb3; color: #d7ccc8; color: #d7ccc8; }
+        .take-cover-preview-dialog .hider-name { color: #d7ccc8; }
+        .take-cover-results-table th { background: linear-gradient(135deg, #795548, #5d4037) !important; color: white !important; }
+        .take-cover-results-table .visibility-change, .take-cover-results-table .actions { text-align: center; }
+        .take-cover-preview-dialog .visibility-arrow { color: #bdbdbd; }
+
+        /* State icon theming based on state color using currentColor */
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="none"] { color: #4caf50; }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="lesser"] { color: #ffc107; }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="standard"] { color: #ff6600; }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="greater"] { color: #f44336; }
+
+        .take-cover-preview-dialog .override-icons .state-icon.selected {
+            border-color: currentColor !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 0 10px currentColor !important;
+            transform: scale(1.1) !important;
+        }
+        .take-cover-preview-dialog .override-icons .state-icon.calculated-outcome {
+            border-color: currentColor !important;
+            animation: tcGlow 1.5s ease-in-out infinite !important;
+        }
+        @keyframes tcGlow {
+            0% { box-shadow: 0 0 8px currentColor; transform: scale(1.05); }
+            50% { box-shadow: 0 0 18px currentColor; transform: scale(1.1); }
+            100% { box-shadow: 0 0 8px currentColor; transform: scale(1.05); }
         }
         
         .point-out-preview-content {

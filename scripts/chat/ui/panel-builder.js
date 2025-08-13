@@ -9,6 +9,7 @@ import { buildHidePanel } from "./panel/hide.js";
 import { buildPointOutPanel } from "./panel/point-out.js";
 import { buildSeekPanel } from "./panel/seek.js";
 import { buildSneakPanel } from "./panel/sneak.js";
+import { buildTakeCoverPanel } from "./panel/take-cover.js";
 
 export function buildAutomationPanel(actionData, message) {
   let config = null;
@@ -30,6 +31,9 @@ export function buildAutomationPanel(actionData, message) {
       break;
     case "consequences":
       config = buildConsequencesPanel(actionData, message);
+      break;
+    case "take-cover":
+      config = buildTakeCoverPanel(actionData, message);
       break;
     default:
       return "";

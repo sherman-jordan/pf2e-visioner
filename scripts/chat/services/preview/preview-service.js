@@ -68,6 +68,16 @@ export async function previewActionResults(actionData) {
         new CreateADiversionPreviewDialog(actionData.actor, outcomes, changes, actionData).render(true);
         return;
       }
+      case "take-cover": {
+        const { TakeCoverActionHandler } = await import("../actions/take-cover-action.js");
+        const { TakeCoverPreviewDialog } = await import("../../dialogs/take-cover-preview-dialog.js");
+        const handler = new TakeCoverActionHandler();
+        const subjects = await handler.discoverSubjects(actionData);
+        const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
+        const changes = outcomes.filter((o) => o && o.changed);
+        new TakeCoverPreviewDialog(actionData.actor, outcomes, changes, actionData).render(true);
+        return;
+      }
       case "consequences": {
         const { ConsequencesActionHandler } = await import("../actions/consequences-action.js");
         const { ConsequencesPreviewDialog } = await import("../../dialogs/consequences-preview-dialog.js");

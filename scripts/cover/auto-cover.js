@@ -3,9 +3,23 @@
  * Hook registration is done in scripts/hooks/visioner-auto-cover.js
  */
 
-import { setCoverBetween } from "../utils.js";
+import { MODULE_ID } from "../constants.js";
+import { getVisibilityBetween, setCoverBetween } from "../utils.js";
 
 // ----- helpers
+function normalizeTokenRef(ref) {
+  try {
+    if (!ref) return null;
+    let s = typeof ref === 'string' ? ref.trim() : String(ref);
+    // Strip surrounding quotes
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
+    // If it's a UUID, extract the final Token.<id> segment
+    const m = s.match(/Token\.([^\.\s]+)$/);
+    if (m && m[1]) return m[1];
+    // Otherwise assume it's already the token id
+    return s;
+  } catch (_) { return ref; }
+}
 const SIZE_ORDER = { tiny: 0, sm: 1, small: 1, med: 2, medium: 2, lg: 3, large: 3, huge: 4, grg: 5, gargantuan: 5 };
 
 // Track attacker→target pairs for cleanup when the final message lacks target info
@@ -32,6 +46,25 @@ function getTokenRect(token) {
   const width = token.document.width * canvas.grid.size; const height = token.document.height * canvas.grid.size;
   return { x1, y1, x2: x1 + width, y2: y1 + height };
 }
+function getTokenBoundaryPoints(token) {
+  try {
+    const rect = getTokenRect(token);
+    const cx = (rect.x1 + rect.x2) / 2; const cy = (rect.y1 + rect.y2) / 2;
+    return [
+      { x: rect.x1, y: rect.y1 }, // top-left
+      { x: rect.x2, y: rect.y1 }, // top-right
+      { x: rect.x2, y: rect.y2 }, // bottom-right
+      { x: rect.x1, y: rect.y2 }, // bottom-left
+      { x: cx, y: rect.y1 },      // mid-top
+      { x: rect.x2, y: cy },      // mid-right
+      { x: cx, y: rect.y2 },      // mid-bottom
+      { x: rect.x1, y: cy },      // mid-left
+      { x: cx, y: cy },           // center
+    ];
+  } catch (_) {
+    const c = token.center ?? token.getCenter?.() ?? { x: 0, y: 0 }; return [c];
+  }
+}
 function pointInRect(px, py, rect) { return px >= rect.x1 && px <= rect.x2 && py >= rect.y1 && py <= rect.y2; }
 function segmentsIntersect(p1, p2, q1, q2) {
   const o = (a, b, c) => Math.sign((b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y));
@@ -53,6 +86,18 @@ function segmentIntersectsRect(p1, p2, rect) {
     segmentsIntersect(p1, p2, r3, r4) ||
     segmentsIntersect(p1, p2, r4, r1)
   );
+}
+
+function buildRaysBetweenTokens(attacker, target) {
+  const aPts = getTokenBoundaryPoints(attacker);
+  const tPts = getTokenBoundaryPoints(target);
+  const rays = [];
+  for (const ap of aPts) {
+    for (const tp of tPts) {
+      rays.push([ap, tp]);
+    }
+  }
+  return rays;
 }
 
 function segmentIntersectsAnyBlockingWall(p1, p2) {
@@ -80,24 +125,109 @@ function segmentIntersectsAnyBlockingWall(p1, p2) {
   }
 }
 
+function anyRayIntersectsAnyBlockingWall(rays) {
+  try {
+    for (const [p1, p2] of rays) {
+      if (segmentIntersectsAnyBlockingWall(p1, p2)) return true;
+    }
+    return false;
+  } catch (_) { return false; }
+}
+
+function anyRayIntersectsRect(rays, rect) {
+  for (const [p1, p2] of rays) {
+    if (segmentIntersectsRect(p1, p2, rect)) return true;
+  }
+  return false;
+}
+
+function crossRayIntersectsRect(rays, rect) {
+  // Require one ray to cross both opposite edges either vertically or horizontally
+  const top = { x: rect.x1, y: rect.y1 }; const right = { x: rect.x2, y: rect.y1 };
+  const bottom = { x: rect.x2, y: rect.y2 }; const left = { x: rect.x1, y: rect.y2 };
+  // Edges as segments
+  const edges = {
+    top: [top, right],
+    right: [right, bottom],
+    bottom: [bottom, left],
+    left: [left, top],
+  };
+  for (const [p1, p2] of rays) {
+    const hits = new Set();
+    if (segmentsIntersect(p1, p2, edges.top[0], edges.top[1])) hits.add("top");
+    if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add("bottom");
+    if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add("left");
+    if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add("right");
+    if ((hits.has("top") && hits.has("bottom")) || (hits.has("left") && hits.has("right"))) return true;
+  }
+  return false;
+}
+
+function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
+  const topLeft = { x: rect.x1, y: rect.y1 };
+  const topRight = { x: rect.x2, y: rect.y1 };
+  const bottomRight = { x: rect.x2, y: rect.y2 };
+  const bottomLeft = { x: rect.x1, y: rect.y2 };
+  const edges = {
+    top: [topLeft, topRight],
+    right: [topRight, bottomRight],
+    bottom: [bottomRight, bottomLeft],
+    left: [bottomLeft, topLeft],
+  };
+  const hits = new Set();
+  if (segmentsIntersect(p1, p2, edges.top[0], edges.top[1])) hits.add('top');
+  if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add('bottom');
+  if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add('left');
+  if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add('right');
+  if (mode === 'cross') return (hits.has('top') && hits.has('bottom')) || (hits.has('left') && hits.has('right'));
+  return hits.size > 0;
+}
+
 export function detectCoverStateForAttack(attacker, target) {
   try {
     if (!attacker || !target) return "none";
-    const p1 = attacker.center ?? attacker.getCenter(); const p2 = target.center ?? target.getCenter();
-    if (!p1 || !p2) return "none";
+    const rays = buildRaysBetweenTokens(attacker, target);
+    const p1 = attacker.center ?? attacker.getCenter();
+    const p2 = target.center ?? target.getCenter();
     const attackerSize = getSizeRank(attacker);
+    const targetSize = getSizeRank(target);
     let hasAny = false; let hasStandard = false;
-    // Walls: any intersecting blocking wall grants at least standard cover
-    const hasWall = segmentIntersectsAnyBlockingWall(p1, p2);
+    // Walls: any ray intersecting a blocking wall grants at least standard cover
+    const hasWall = anyRayIntersectsAnyBlockingWall(rays);
     if (hasWall) { hasAny = true; hasStandard = true; }
+    const intersectionMode = (game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode") || "any");
+    const ignoreUndetected = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreUndetected");
+    const ignoreDead = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreDead");
+    const ignoreAllies = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreAllies");
+    const respectIgnoreFlag = !!game.settings?.get?.(MODULE_ID, "autoCoverRespectIgnoreFlag");
+    const allowProneBlockers = !!game.settings?.get?.(MODULE_ID, "autoCoverAllowProneBlockers");
+    const attackerAlliance = attacker.actor?.alliance;
     for (const blocker of canvas.tokens.placeables) {
       if (!blocker?.actor) continue;
       if (blocker === attacker || blocker === target || blocker.actor?.type === 'loot' || blocker.actor?.type === 'hazard') continue;
+      if (respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover')) continue;
+      if (ignoreUndetected) {
+        try {
+          const vis = getVisibilityBetween(attacker, blocker);
+          if (vis === 'undetected') continue;
+        } catch (_) {}
+      }
+      if (ignoreDead && (blocker.actor?.hitPoints?.value === 0)) continue;
+      if (!allowProneBlockers) {
+        try {
+          const itemConditions = blocker.actor?.itemTypes?.condition || [];
+          const legacyConditions = blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
+          const isProne = itemConditions.some((c) => c?.slug === "prone") || legacyConditions.some((c) => c?.slug === "prone");
+          if (isProne) continue;
+        } catch (_) {}
+      }
+      if (ignoreAllies && blocker.actor?.alliance === attackerAlliance) continue;
       const rect = getTokenRect(blocker);
-      if (!segmentIntersectsRect(p1, p2, rect)) continue;
+      const intersects = centerLineIntersectsRect(p1, p2, rect, intersectionMode);
+      if (!intersects) continue;
       hasAny = true;
       const blockerSize = getSizeRank(blocker);
-      if (blockerSize - attackerSize >= 2) hasStandard = true;
+      if (blockerSize - attackerSize >= 2 && blockerSize - targetSize >= 2) hasStandard = true;
     }
     if (!hasAny) return "none";
     return hasStandard ? "standard" : "lesser";
@@ -112,14 +242,16 @@ export function resolveAttackerFromCtx(ctx) {
   try {
     const tokenObj = ctx?.token?.object || ctx?.token; if (tokenObj?.id) return tokenObj;
     if (ctx?.token?.isEmbedded && ctx?.token?.object?.id) return ctx.token.object;
-    const tokenId = ctx?.token?.id || ctx?.tokenId || ctx?.origin?.tokenId || ctx?.actor?.getActiveTokens?.()?.[0]?.id;
+    const tokenIdRaw = ctx?.token?.id || ctx?.tokenId || ctx?.origin?.tokenId || ctx?.actor?.getActiveTokens?.()?.[0]?.id;
+    const tokenId = normalizeTokenRef(tokenIdRaw);
     return tokenId ? (canvas?.tokens?.get?.(tokenId) || null) : null;
   } catch (_) { return null; }
 }
 export function resolveTargetFromCtx(ctx) {
   try {
     const tObj = ctx?.target?.token?.object || ctx?.target?.token; if (tObj?.id) return tObj;
-    const targetId = (typeof ctx?.target?.token === "string") ? ctx.target.token : (ctx?.target?.tokenId || ctx?.targetTokenId);
+    const targetIdRaw = (typeof ctx?.target?.token === "string") ? ctx.target.token : (ctx?.target?.tokenId || ctx?.targetTokenId);
+    const targetId = normalizeTokenRef(targetIdRaw);
     if (targetId) { const byCtx = canvas?.tokens?.get?.(targetId); if (byCtx) return byCtx; }
     const t = (Array.from(game?.user?.targets ?? [])?.[0]) || (Array.from(canvas?.tokens?.targets ?? [])?.[0]);
     return t || null;
@@ -130,10 +262,10 @@ export function isAttackLikeMessageData(data) {
   if (type === "attack-roll" || type === "spell-attack-roll") return true; if (Array.isArray(traits) && traits.includes("attack")) return true; return false;
 }
 export function resolveTargetTokenIdFromData(data) {
-  try { const ctxTarget = data?.flags?.pf2e?.context?.target?.token; if (ctxTarget) return ctxTarget; } catch (_) {}
-  try { const pf2eTarget = data?.flags?.pf2e?.target?.token; if (pf2eTarget) return pf2eTarget; } catch (_) {}
+  try { const ctxTarget = data?.flags?.pf2e?.context?.target?.token; if (ctxTarget) return normalizeTokenRef(ctxTarget); } catch (_) {}
+  try { const pf2eTarget = data?.flags?.pf2e?.target?.token; if (pf2eTarget) return normalizeTokenRef(pf2eTarget); } catch (_) {}
   try {
-    const arr = data?.flags?.pf2e?.context?.targets; if (Array.isArray(arr) && arr.length > 0) { const first = arr[0]; if (first?.token) return first.token; if (typeof first === "string") return first; }
+    const arr = data?.flags?.pf2e?.context?.targets; if (Array.isArray(arr) && arr.length > 0) { const first = arr[0]; if (first?.token) return normalizeTokenRef(first.token); if (typeof first === "string") return normalizeTokenRef(first); }
   } catch (_) {}
   return null;
 }
@@ -142,7 +274,7 @@ export function resolveTargetTokenIdFromData(data) {
 export async function onPreCreateChatMessage(doc, data) {
   try {
     if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return; if (!isAttackLikeMessageData(data)) return;
-    const speakerTokenId = data?.speaker?.token; const targetTokenId = resolveTargetTokenIdFromData(data);
+    const speakerTokenId = normalizeTokenRef(data?.speaker?.token); const targetTokenId = resolveTargetTokenIdFromData(data);
     if (!speakerTokenId || !targetTokenId) return;
     const tokens = canvas?.tokens; if (!tokens?.get) return;
     const attacker = tokens.get(speakerTokenId); const target = tokens.get(targetTokenId);
@@ -157,7 +289,8 @@ export async function onPreCreateChatMessage(doc, data) {
 export function onRenderChatMessage(message, html) {
   if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
   const data = message?.toObject?.() || {}; if (!isAttackLikeMessageData(data)) return;
-  const attackerId = data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
+  const attackerIdRaw = data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
+  const attackerId = normalizeTokenRef(attackerIdRaw);
   const targetId = resolveTargetTokenIdFromData(data); if (!attackerId) return;
   const tokens = canvas?.tokens; if (!tokens?.get) return;
   const attacker = tokens.get(attackerId); if (!attacker) return;

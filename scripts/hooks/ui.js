@@ -61,24 +61,39 @@ function onGetTokenHUDButtons(hud, buttons, token) {
 function injectPF2eVisionerBox(app, root) {
   const tokenDoc = app?.document;
   const actor = tokenDoc?.actor ?? tokenDoc?.parent;
-  if (!actor || actor.type !== "loot") return;
+  if (!actor) return;
   const panel = root.querySelector(`div.tab[data-group="sheet"][data-tab="vision"]`);
   if (!panel || panel.querySelector(".pf2e-visioner-box")) return;
   const detectionFS = [...panel.querySelectorAll("fieldset")].find((fs) =>
     fs.querySelector("header.detection-mode") || (fs.querySelector("legend")?.textContent || "").trim().toLowerCase().startsWith("detection"),
   );
-  if (!detectionFS) return;
-  const current = tokenDoc.getFlag?.(MODULE_ID, "stealthDC") ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? "";
   const box = document.createElement("fieldset");
   box.className = "pf2e-visioner-box";
-  box.innerHTML = `
+
+  // Current values
+  const stealthCurrent = tokenDoc.getFlag?.(MODULE_ID, "stealthDC") ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? "";
+  const ignoreAutoCover = !!(tokenDoc.getFlag?.(MODULE_ID, "ignoreAutoCover") ?? tokenDoc.flags?.[MODULE_ID]?.ignoreAutoCover);
+
+  // Build content
+  let inner = `
     <legend>PF2E Visioner</legend>
     <div class="form-group">
-      <label>Stealth DC</label>
-      <input type="number" inputmode="numeric" min="0" step="1" name="flags.${MODULE_ID}.stealthDC" value="${Number.isFinite(+current) ? +current : ""}">
+      <label>Ignore as Auto-Cover Blocker</label>
+      <input type="checkbox" name="flags.${MODULE_ID}.ignoreAutoCover" ${ignoreAutoCover ? "checked" : ""}>
     </div>
   `;
-  detectionFS.insertAdjacentElement("afterend", box);
+  if (actor.type === "loot") {
+    inner += `
+      <div class="form-group">
+        <label>Stealth DC</label>
+        <input type="number" inputmode="numeric" min="0" step="1" name="flags.${MODULE_ID}.stealthDC" value="${Number.isFinite(+stealthCurrent) ? +stealthCurrent : ""}">
+      </div>
+    `;
+  }
+  box.innerHTML = inner;
+
+  if (detectionFS) detectionFS.insertAdjacentElement("afterend", box);
+  else panel.appendChild(box);
 }
 
 

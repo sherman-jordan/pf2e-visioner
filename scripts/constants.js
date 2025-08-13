@@ -278,6 +278,60 @@ export const DEFAULT_SETTINGS = {
     default: false,
   },
 
+  // Auto-Cover behavior tuning
+  autoCoverTokenIntersectionMode: {
+    name: "Auto-Cover: Token Intersection Mode",
+    hint: "Choose how token blockers are evaluated: 'Any' if any ray intersects the token, or 'Cross' if a single ray must cross both opposite edges (top+bottom or left+right).",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      any: "Any",
+      cross: "Cross",
+    },
+    default: "any",
+  },
+  autoCoverIgnoreUndetected: {
+    name: "Auto-Cover: Ignore Undetected Tokens",
+    hint: "If enabled, tokens that are undetected to the attacker (per Visioner visibility map) won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+  autoCoverIgnoreDead: {
+    name: "Auto-Cover: Ignore Dead Tokens",
+    hint: "If enabled, tokens with 0 HP won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+  autoCoverIgnoreAllies: {
+    name: "Auto-Cover: Ignore Allies",
+    hint: "If enabled, allied tokens won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+  autoCoverRespectIgnoreFlag: {
+    name: "Auto-Cover: Respect Token Ignore Flag",
+    hint: "If enabled, tokens with the flag pf2e-visioner.ignoreAutoCover = true won't count for auto-cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+  autoCoverAllowProneBlockers: {
+    name: "Auto-Cover: Prone Tokens Can Block",
+    hint: "If enabled, prone tokens can grant cover. If disabled, prone tokens are ignored as blockers.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+
   debug: {
     name: "Debug Mode",
     hint: "Enable detailed console logging for troubleshooting",

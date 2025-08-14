@@ -364,4 +364,10 @@ export const KEYBINDINGS = {
     hint: "PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.hint",
     editable: [{ key: "KeyO", modifiers: [] }],
   },
+  holdCoverOverride: {
+    name: "PF2E_VISIONER.KEYBINDINGS.HOLD_COVER_OVERRIDE.name",
+    hint: "PF2E_VISIONER.KEYBINDINGS.HOLD_COVER_OVERRIDE.hint",
+    // No default binding; user can configure
+    editable: [],
+  },
 };

@@ -15,7 +15,7 @@ import {
   resolveAttackerFromCtx,
   resolveTargetFromCtx,
 } from "../cover/auto-cover.js";
-import { getCoverBonusByState } from "../helpers/cover-helpers.js";
+import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from "../helpers/cover-helpers.js";
 import { setCoverBetween } from "../utils.js";
 
 export function registerAutoCoverHooks() {
@@ -39,6 +39,24 @@ export function registerAutoCoverHooks() {
             const attacker = resolveAttackerFromCtx(context);
             const target = resolveTargetFromCtx(context);
             if (attacker && target) {
+              // If user holds the configured override keybinding, force override path (skip auto-calculated add)
+              const isOverrideHeld = (() => {
+                try {
+                  const binding = game.keybindings.get(MODULE_ID, "holdCoverOverride");
+                  if (!binding || binding.length === 0) return false;
+                  // When bound, Foundry tracks pressed state; also check incoming event modifiers
+                  // Prefer Foundry's pressed state via keyboard manager if available
+                  const kb = game.keyboard;
+                  if (kb?.downKeys) {
+                    return binding.some(({ key, modifiers }) => {
+                      const code = key; // already a KeyboardEvent.code
+                      const modOk = (modifiers ?? []).every((m) => kb.downKeys.has(m));
+                      return modOk && kb.downKeys.has(code);
+                    });
+                  }
+                } catch (_) { }
+                return false;
+              })();
               // If target already has a cover effect for this attacker (aggregate or ephemeral), don't also add to DC
               let hasExistingForThisAttacker = false;
               try {
@@ -59,7 +77,7 @@ export function registerAutoCoverHooks() {
               // Track this pair so movement during the attack re-evaluates cover
               try { _recordPair(attacker.id, target.id); } catch (_) {}
               // Only adjust DC for true quick-rolls (skipDialog) and when no existing cover effect already applies
-              if (!hasExistingForThisAttacker) {
+              if (!hasExistingForThisAttacker && !isOverrideHeld) {
                 const bonus = getCoverBonusByState(state) || 0;
                 // Safely bump DC value for this roll only
                 if (context.dc && typeof context.dc.value === "number") {
@@ -104,6 +122,56 @@ export function registerAutoCoverHooks() {
                     }
                   }
                 } catch (_) {}
+              }
+              // If override key is held, open a quick override mini-dialog to choose cover, then proceed
+              if (isOverrideHeld) {
+                try {
+                  const { openCoverQuickOverrideDialog } = await import("../cover/quick-override-dialog.js");
+                  const chosen = await openCoverQuickOverrideDialog(state);
+                  if (chosen != null) {
+                    // Apply chosen cover transiently to this quick roll by bumping DC and adding ephemeral effect just like auto path
+                    const bonus = getCoverBonusByState(chosen) || 0;
+                    if (context.dc && typeof context.dc.value === "number") {
+                      context.dc.value += bonus;
+                      if (context.dc.visible == null) context.dc.visible = true;
+                    }
+                    try {
+                      if (bonus > 0 && target?.actor) {
+                        const label = getCoverLabel(chosen) || "Cover";
+                        const img = getCoverImageForState(chosen);
+                        const tgtActor = target.actor;
+                        let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
+                        // remove any one-shot effect we might have injected previously
+                        items = items.filter((i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true));
+                        if (bonus > 0) {
+                          items.push({
+                            name: label,
+                            type: "effect",
+                            system: {
+                              description: { value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`, gm: "" },
+                              rules: [{ key: "FlatModifier", selector: "ac", type: "circumstance", value: bonus }],
+                              traits: { otherTags: [], value: [] },
+                              level: { value: 1 },
+                              duration: { value: -1, unit: "unlimited" },
+                              tokenIcon: { show: false },
+                              unidentified: true,
+                              start: { value: 0 },
+                              badge: null
+                            },
+                            img,
+                            flags: { "pf2e-visioner": { forThisRoll: true, ephemeralCoverRoll: true } }
+                          });
+                        }
+                        const clonedActor = tgtActor.clone({ items }, { keepId: true });
+                        const dcObj = context.dc;
+                        if (dcObj?.slug) {
+                          const st = clonedActor.getStatistic?.(dcObj.slug)?.dc;
+                          if (st) { dcObj.value = st.value; dcObj.statistic = st; }
+                        }
+                      }
+                    } catch (_) {}
+                  }
+                } catch (_) { /* ignore */ }
               }
             }
           }

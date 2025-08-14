@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0] - 2025-08-12
+
+### Added
+
+- Auto cover:
+  - now lets you override the cover applied to a roll in the roll dialog
+  - now lets you set keybind that if held will let you override cover for the roll (for people that dont use roll dialog, you maniacs)
+
 ## [2.0.1] - 2025-08-12
 
 ### Fixed

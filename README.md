@@ -34,11 +34,18 @@ Support: [https://ko-fi.com/roileaf](https://ko-fi.com/roileaf)
 - States: Observed, Concealed, Hidden, Undetected.
 - State data lives in token flags; it’s robust across reloads and scenes.
 
-### Visibility Manager UI
+### Per‑Observer Cover States
+
+- Cover is tracked for each attacker→target pair.
+- States: None, Lesser (+1), Standard (+2), Greater (+4).
+- Cover data is stored per pair and only applied to mechanics at roll time (see Auto Cover below).
+
+### Token Manager UI (Visibility & Cover)
 
 - Modern ApplicationV2 UI with responsive layout and fixed controls.
 - Color-coded rows, hover to highlight tokens on the canvas, sortable table.
 - “Apply All” and “Revert All” flows with per‑row apply/revert.
+- Cover and visibility tabs use consistent iconography and colors.
 
 ### Visual Feedback
 
@@ -99,6 +106,44 @@ Visioner augments PF2e chat cards with buttons that open result dialogs and appl
 
 ---
 
+## 🛡️ Auto Cover & Roll Overrides
+
+When enabled, Visioner evaluates cover between the acting token and its current target and applies the appropriate bonus to the target’s AC for that roll only.
+
+### How it works
+
+- On attack/spell-attack rolls, Visioner computes cover just-in-time and injects a one‑shot effect to the target so the DC/AC reflects the chosen cover.
+- After the roll’s chat message renders, Visioner cleans up any one‑shot cover effect.
+- If a token moves during an active attack flow, Visioner clears any previously applied cover; re‑evaluation happens at the moment of rolling.
+
+### Modifiers dialog (with dialog open)
+
+- GMs see a “Visioner Cover Override” row with four icon buttons: None, Lesser, Standard, Greater.
+- The auto-calculated state is highlighted; click another icon to override for that roll.
+- Uses Visioner’s shield icons and colors throughout the module.
+
+### Quick rolls (no dialog)
+
+- Bind a key in Controls to: “Hold to Override Cover on Quick Rolls” (no default binding).
+- Hold that key while clicking a strike to open a compact override window (AppV2) with the same four icons and a Roll button.
+- Pick a cover; Visioner applies it for that roll and then cleans up automatically.
+
+### Auto‑Cover options (world settings)
+
+- Enable Auto‑Cover: master toggle.
+- Token Intersection Mode: how token blockers count (Center, ≥10%, ≥20%).
+- Ignore Undetected Blockers: attackers ignore blockers they can’t detect per Visioner visibility map.
+- Ignore Dead Tokens: skip 0‑HP blockers.
+- Ignore Allies: skip same‑alliance blockers.
+- Respect Token Ignore Flag: tokens with `flags.pf2e-visioner.ignoreAutoCover = true` won’t provide cover.
+- Prone Tokens Can Block: when off, prone tokens are skipped as blockers.
+
+Notes:
+- Auto‑Cover is GM‑only to avoid duplicates.
+- Cover application is transient; Visioner stores the computed state for UI consistency but only adjusts mechanics during the roll.
+
+---
+
 ## 🧠 Off‑Guard Automation
 
 - Applies off‑guard where appropriate based on Hidden/Undetected relationships.
@@ -119,6 +164,9 @@ Visioner augments PF2e chat cards with buttons that open result dialogs and appl
 - Seek Range Value / Out of Combat (world): range distances (ft).
 - Use Token HUD Button (world): adds a quick access button on token HUD.
 - Block Target Tooltips for Players (world): disable “target‑perspective” tooltips for players.
+- Auto‑Cover (world): enable Visioner’s cover evaluation and roll‑time application.
+- Auto‑Cover: Token Intersection Mode (world): Center / ≥10% / ≥20%.
+- Auto‑Cover: Ignore Undetected / Ignore Dead / Ignore Allies / Respect Token Ignore Flag / Prone Tokens Can Block.
 - Debug (world): verbose logging for troubleshooting.
 
 ---
@@ -127,6 +175,7 @@ Visioner augments PF2e chat cards with buttons that open result dialogs and appl
 
 - Open Visibility Manager: Ctrl+Shift+V
 - Toggle Observer Mode for Hover Tooltips: O (hold to switch to observer mode; release to return to target mode)
+- Hold to Override Cover on Quick Rolls: unbound by default; configure in Controls. Hold while clicking a strike to open the quick cover override window.
 
 ---
 
@@ -141,6 +190,9 @@ await api?.openVisibilityManager(token);
 - setVisibility(observerId, targetId, state)
 - updateTokenVisuals(token?)
 - getVisibilityStates()
+- getCoverBetween(observerId, targetId)
+- setCoverBetween(observerId, targetId, state)
+- getCoverStates()
 
 See `scripts/api.js` for the current surface.
 
@@ -179,6 +231,10 @@ Visioner ships a `PF2eVisionerVisibility` rule element for item‑driven visibil
 - Seek Template flow with GM gate, player template handoff, and “no targets → no button”.
 - Point Out flow rework with robust target resolution and single‑ping rule.
 - UI polish: scrollbars, scaling, initiative‑aware ephemeral durations.
+- Auto‑Cover with roll‑time application and instant cleanup.
+- Modifiers dialog cover override row with icon buttons.
+- Quick‑override mini dialog (AppV2) triggered by a configurable hold key.
+- Movement clears pre‑applied cover; re‑evaluation happens on roll.
 
 ---
 

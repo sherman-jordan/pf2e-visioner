@@ -3,7 +3,8 @@
  * Hook registration is done in scripts/hooks/visioner-auto-cover.js
  */
 
-import { MODULE_ID } from "../constants.js";
+import { COVER_STATES, MODULE_ID } from "../constants.js";
+import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from "../helpers/cover-helpers.js";
 import { getCoverBetween, getVisibilityBetween, setCoverBetween } from "../utils.js";
 
 // ----- helpers
@@ -378,22 +379,79 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
     if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
     const ctx = dialog?.context ?? {}; if (!isAttackContext(ctx)) return;
     const attacker = resolveAttackerFromCtx(ctx); const target = resolveTargetFromCtx(ctx); if (!attacker || !target) return;
-    const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
-    await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
-    try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
-    _recordPair(attacker.id, target.id);
-    // Ensure current roll uses covered AC via dialog injection
+    const state = detectCoverStateForAttack(attacker, target);
+    if (state !== "none") {
+      await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
+      try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
+      _recordPair(attacker.id, target.id);
+    }
+
+    // Inject cover override UI (GM-only): buttons for None/Lesser/Standard/Greater with icons
+    try {
+      if (html?.find?.('.pv-cover-override').length === 0) {
+        const current = dialog?._pvCoverOverride ?? state ?? "none";
+        const container = $(`
+          <div class="pv-cover-override" style="margin: 6px 0 8px 0;">
+            <div class="pv-cover-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div class="pv-cover-title" style="font-weight:600;">${game.i18n?.localize?.("PF2E_VISIONER.UI.COVER_OVERRIDE") ?? "Cover"}</div>
+              <div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>
+            </div>
+          </div>
+        `);
+        const btns = container.find('.pv-cover-buttons');
+        const states = ["none", "lesser", "standard", "greater"];
+        for (const s of states) {
+          const label = getCoverLabel(s);
+          const bonus = getCoverBonusByState(s);
+          const isActive = s === current;
+          const cfg = COVER_STATES?.[s] || {};
+          const iconClass = cfg.icon || ((s === 'none') ? 'fas fa-shield-slash' : (s === 'lesser') ? 'fa-regular fa-shield' : (s === 'standard') ? 'fas fa-shield-alt' : 'fas fa-shield');
+          const color = cfg.color || 'inherit';
+          const tooltip = `${label}${bonus > 0 ? ` (+${bonus})` : ''}`;
+          const btn = $(`
+            <button type="button" class="pv-cover-btn" data-state="${s}" title="${tooltip}" data-tooltip="${tooltip}" data-tooltip-direction="UP" aria-label="${tooltip}" style="width:28px; height:28px; padding:0; line-height:0; border:1px solid rgba(255,255,255,0.2); border-radius:6px; background:${isActive ? 'var(--color-bg-tertiary, rgba(0,0,0,0.2))' : 'transparent'}; color:inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
+              <i class="${iconClass}" style="color:${color}; display:block; width:18px; height:18px; line-height:18px; text-align:center; font-size:16px; margin:0;"></i>
+            </button>
+          `);
+          if (isActive) btn.addClass('active');
+          btns.append(btn);
+        }
+
+        const anchor = html.find('.roll-mode-panel');
+        if (anchor.length > 0) anchor.before(container); else html.find('.dialog-buttons').before(container);
+
+        container.on('click', '.pv-cover-btn', (ev) => {
+          try {
+            const btn = ev.currentTarget; const sel = btn?.dataset?.state || 'none';
+            dialog._pvCoverOverride = sel;
+            container.find('.pv-cover-btn').each((_, el) => {
+              const active = el.dataset?.state === sel;
+              el.classList.toggle('active', active);
+              el.style.background = active ? 'var(--color-bg-tertiary, rgba(0,0,0,0.2))' : 'transparent';
+            });
+          } catch (_) { }
+        });
+      }
+    } catch (_) { }
+
+    // Ensure current roll uses selected (or auto) cover via dialog injection
     try {
       const rollBtnEl = html?.find?.('button.roll')?.[0];
       if (rollBtnEl && !rollBtnEl.dataset?.pvCoverBind) {
         rollBtnEl.dataset.pvCoverBind = '1';
-        const isStandard = state === 'standard'; const bonus = isStandard ? 2 : 1;
         rollBtnEl.addEventListener('click', () => {
           try {
             const dctx = dialog?.context || {}; const tgt = dctx?.target; const tgtActor = tgt?.actor; if (!tgtActor) return;
-            const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
-            const label = isStandard ? 'Standard Cover' : 'Lesser Cover';
-            items.push({ name: label, type: 'effect', system: { description: { value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`, gm: '' }, rules: [{ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus }], traits: { otherTags: [], value: [] }, level: { value: 1 }, duration: { value: -1, unit: 'unlimited' }, tokenIcon: { show: false }, unidentified: true, start: { value: 0 }, badge: null }, img: isStandard ? 'systems/pf2e/icons/equipment/shields/steel-shield.webp' : 'systems/pf2e/icons/equipment/shields/buckler.webp', flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } } });
+            const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
+            const bonus = getCoverBonusByState(chosen) || 0;
+            let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
+            // Always remove any previous Visioner one-shot cover effect to ensure override takes precedence
+            items = items.filter((i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true));
+            if (bonus > 0) {
+              const label = getCoverLabel(chosen);
+              const img = getCoverImageForState(chosen);
+              items.push({ name: label, type: 'effect', system: { description: { value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`, gm: '' }, rules: [{ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus }], traits: { otherTags: [], value: [] }, level: { value: 1 }, duration: { value: -1, unit: 'unlimited' }, tokenIcon: { show: false }, unidentified: true, start: { value: 0 }, badge: null }, img, flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } } });
+            }
             tgt.actor = tgtActor.clone({ items }, { keepId: true });
             const dcObj = dctx.dc; if (dcObj?.slug) { const st = tgt.actor.getStatistic(dcObj.slug)?.dc; if (st) { dcObj.value = st.value; dcObj.statistic = st; } }
           } catch (_) { }
@@ -416,33 +474,32 @@ export async function onUpdateToken(tokenDoc, changes) {
     for (const [attId, tgtId] of pairs) {
       const attacker = tokens.get(attId); const target = tokens.get(tgtId);
       if (!attacker || !target) continue;
-      const state = detectCoverStateForAttack(attacker, target);
+      // Movement should clear any pre-applied cover. Re-application occurs only when rolling.
+      const state = "none";
       await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
       try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
     }
 
-    // Additionally, re-evaluate any existing cover map entries involving the moved token, even if not in active pairs
+    // Additionally, clear any existing cover map entries involving the moved token, even if not in active pairs
     try {
       const moved = tokens.get(tokenId) || tokenDoc?.object;
       if (moved && tokens?.placeables) {
         for (const other of tokens.placeables) {
           if (!other || other.id === moved.id || !other.actor || !moved.actor) continue;
-          // moved → other
+          // moved → other: clear
           try {
             const prevMO = getCoverBetween(moved, other);
             if (prevMO && prevMO !== "none") {
-              const st = detectCoverStateForAttack(moved, other);
-              await setCoverBetween(moved, other, st, { skipEphemeralUpdate: true });
-              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: moved.id, targetId: other.id, state: st }); } catch (_) { }
+              await setCoverBetween(moved, other, "none", { skipEphemeralUpdate: true });
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: moved.id, targetId: other.id, state: "none" }); } catch (_) { }
             }
           } catch (_) { }
-          // other → moved
+          // other → moved: clear
           try {
             const prevOM = getCoverBetween(other, moved);
             if (prevOM && prevOM !== "none") {
-              const st = detectCoverStateForAttack(other, moved);
-              await setCoverBetween(other, moved, st, { skipEphemeralUpdate: true });
-              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: other.id, targetId: moved.id, state: st }); } catch (_) { }
+              await setCoverBetween(other, moved, "none", { skipEphemeralUpdate: true });
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: other.id, targetId: moved.id, state: "none" }); } catch (_) { }
             }
           } catch (_) { }
         }

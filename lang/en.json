@@ -247,6 +247,10 @@
         "name": "Default Stealth DC for Loot Actors",
         "hint": "DC used when considering loot tokens as Seek targets."
       },
+      "WALL_STEALTH_DC": {
+        "name": "Default Stealth DC for Walls",
+        "hint": "DC used when considering hidden walls as Seek targets (when a wall has no explicit DC set)."
+      },
       "INCLUDE_LOOT_ACTORS": {
         "name": "Include loot actors in visibility manager",
         "hint": "Allow configuring visibility states for loot actors (chests, containers) per observer. Visual only; no PF2E conditions are applied."
@@ -255,9 +259,17 @@
         "name": "Include walls as hideable objects (experimental)",
         "hint": "Show walls in the manager to mark them as visible/hidden per observer. Current implementation is visual-only and does not change occlusion or collision."
       },
+      "HIDDEN_WALLS": {
+        "name": "Enable Hidden Walls",
+        "hint": "Enable per-wall Hidden toggle and player indicators. If a hidden wall is a door, it won't block sight."
+      },
       "AUTO_COVER": {
         "name": "Auto-cover",
         "hint": "When enabled, the module will automatically apply cover to tokens based on blocking token path."
+      },
+      "EXPERIMENTAL_SEE_THROUGH_WALLS": {
+        "name": "Experimental: Per-Token See-Through Walls (Client-Only)",
+        "hint": "When enabled on your client, selected token(s) will ignore walls you have marked as Observed in the Hidden Walls list. Visual-only and highly experimental."
       }
     },
     "UI": {
@@ -266,7 +278,9 @@
       "ROLL": "Roll"
     },
     "WALL": {
-      "VISIBLE_TO_YOU": "Hidden Wall"
+      "VISIBLE_TO_YOU": "Hidden Wall",
+      "observed": "Observed",
+      "hidden": "Hidden"
     },
     "KEYBINDINGS": {
       "OPEN_TOKEN_MANAGER": {

@@ -42,10 +42,18 @@
         {{#each outcomes as |outcome|}}
           <tr class="token-row" data-token-id="{{outcome.target.id}}">
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+              {{#if outcome._isWall}}
+                <img src="{{outcome.wallImg}}" data-tooltip="{{outcome.wallIdentifier}}" width="28" height="28" />
+              {{else}}
+                <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+              {{/if}}
             </td>
             <td class="token-name">
-              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              {{#if outcome._isWall}}
+                <strong title="{{outcome.wallIdentifier}}">{{outcome.wallIdentifier}}</strong>
+              {{else}}
+                <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              {{/if}}
             </td>
             <td class="roll-result">
               {{#if outcome.isPointOut}}

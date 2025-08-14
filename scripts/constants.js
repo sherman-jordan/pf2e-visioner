@@ -90,6 +90,15 @@ export const COVER_STATES = {
  */
 export const DEFAULT_SETTINGS = {
   // Visibility Indicators
+  hiddenWallsEnabled: {
+    name: "PF2E_VISIONER.SETTINGS.HIDDEN_WALLS.name",
+    hint: "PF2E_VISIONER.SETTINGS.HIDDEN_WALLS.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+  
   enableHoverTooltips: {
     name: "PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.name",
     hint: "PF2E_VISIONER.SETTINGS.ENABLE_HOVER_TOOLTIPS.hint",
@@ -162,6 +171,25 @@ export const DEFAULT_SETTINGS = {
     config: true,
     type: Number,
     default: 15,
+  },
+
+  // Walls DCs
+  wallStealthDC: {
+    name: "PF2E_VISIONER.SETTINGS.WALL_STEALTH_DC.name",
+    hint: "PF2E_VISIONER.SETTINGS.WALL_STEALTH_DC.hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 15,
+  },
+
+  experimentalSeeThroughWalls: {
+    name: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.name",
+    hint: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false,
   },
 
   // Include additional object types in managers

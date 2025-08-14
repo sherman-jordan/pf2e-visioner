@@ -23,6 +23,9 @@ const SETTINGS_GROUPS = {
     "blockPlayerTargetTooltips",
     "tooltipFontSize",
     "colorblindMode",
+    "hiddenWallsEnabled",
+    "wallStealthDC",
+    "experimentalSeeThroughWalls"
   ],
   "Seek & Range": [
     "seekUseTemplate",
@@ -200,6 +203,14 @@ export function registerSettings() {
           try {
             const { initializeHoverTooltips } = await import("./services/hover-tooltips.js");
             if (game.settings.get(MODULE_ID, "enableHoverTooltips") && game.settings.get(MODULE_ID, "allowPlayerTooltips")) initializeHoverTooltips();
+          } catch (_) {}
+        };
+      } else if (key === "hiddenWallsEnabled") {
+        // Refresh wall visuals when toggled
+        settingConfig.onChange = async () => {
+          try {
+            const { updateWallVisuals } = await import("./services/visual-effects.js");
+            await updateWallVisuals();
           } catch (_) {}
         };
       } else if (key === "tooltipFontSize") {

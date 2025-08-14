@@ -4,8 +4,8 @@
  */
 
 import {
-  getCoverMap,
-  getVisibilityMap
+    getCoverMap,
+    getVisibilityMap
 } from "../../utils.js";
 
 import { MODULE_ID } from "../../constants.js";
@@ -41,6 +41,8 @@ export class VisionerTokenManager extends foundry.applications.api
       bulkNPCObserved: VisionerTokenManager.bulkSetVisibilityState,
       bulkLootObserved: VisionerTokenManager.bulkSetVisibilityState,
       bulkLootHidden: VisionerTokenManager.bulkSetVisibilityState,
+      bulkWallsObserved: VisionerTokenManager.bulkSetVisibilityState,
+      bulkWallsHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCNoCover: VisionerTokenManager.bulkSetCoverState,
       bulkPCLesserCover: VisionerTokenManager.bulkSetCoverState,
       bulkPCStandardCover: VisionerTokenManager.bulkSetCoverState,

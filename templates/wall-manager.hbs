@@ -1,0 +1,47 @@
+<form class="pf2e-visioner-wall-manager">
+  <div class="header-actions" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+    <button type="button" class="visioner-btn" data-action="bulkHiddenOn"><i class="fas fa-eye"></i> Hidden: ON</button>
+    <button type="button" class="visioner-btn" data-action="bulkHiddenOff"><i class="fas fa-eye-slash"></i> Hidden: OFF</button>
+    <span style="flex:1"></span>
+    <button type="button" class="visioner-btn" data-action="bulkProvideCoverOn"><i class="fas fa-shield-alt"></i> Provide Cover: ON</button>
+    <button type="button" class="visioner-btn" data-action="bulkProvideCoverOff"><i class="fas fa-shield-slash"></i> Provide Cover: OFF</button>
+  </div>
+
+  <table class="visibility-table" style="width:100%">
+    <thead>
+      <tr>
+        <th style="width:22%">Identifier</th>
+        <th style="width:16%">Hidden Wall</th>
+        <th style="width:16%">Provide Cover</th>
+        <th style="width:16%">Stealth DC</th>
+        <th style="width:30%">Wall Id</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each rows as |w|}}
+        <tr>
+          <td>
+            <input type="text" name="wall.{{w.id}}.identifier" value="{{w.identifier}}" placeholder="Hidden Wall" />
+          </td>
+          <td style="text-align:center">
+            <input type="checkbox" name="wall.{{w.id}}.hiddenWall" {{#if w.hiddenWall}}checked{{/if}} />
+          </td>
+          <td style="text-align:center">
+            <input type="checkbox" name="wall.{{w.id}}.provideCover" {{#if w.provideCover}}checked{{/if}} />
+          </td>
+          <td>
+            <input type="number" min="0" step="1" name="wall.{{w.id}}.dc" value="{{w.dc}}" />
+          </td>
+          <td><code>{{w.id}}</code></td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <footer class="sheet-footer" style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
+    <button type="button" class="visioner-btn visioner-primary" data-action="apply"><i class="fas fa-check"></i> Apply</button>
+    <button type="button" class="visioner-btn" data-action="close"><i class="fas fa-times"></i> Close</button>
+  </footer>
+</form>
+
+

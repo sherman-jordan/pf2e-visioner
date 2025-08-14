@@ -23,7 +23,8 @@ export function onReady() {
 export async function onCanvasReady() {
   await updateTokenVisuals();
   try {
-    await updateWallVisuals();
+    const id = canvas.tokens.controlled?.[0]?.id || null;
+    await updateWallVisuals(id);
   } catch (_) {}
 
   if (game.settings.get(MODULE_ID, "enableHoverTooltips")) {

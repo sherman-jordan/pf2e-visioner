@@ -23,6 +23,25 @@ export function registerUIHooks() {
       }
     });
   }
+
+  // Add Walls Manager to Scene Controls for GM
+  Hooks.on("getSceneControlButtons", (controls) => {
+    if (!game.user.isGM) return;
+    try {
+      const walls = controls.find((c) => c.name === "walls");
+      if (!walls) return;
+      walls.tools.push({
+        name: "pf2e-visioner-wall-manager",
+        title: "PF2E Visioner: Wall Settings",
+        icon: "fas fa-grip-lines-vertical",
+        button: true,
+        onClick: async () => {
+          const { VisionerWallManager } = await import("../managers/wall-manager/wall-manager.js");
+          new VisionerWallManager().render(true);
+        },
+      });
+    } catch (_) {}
+  });
 }
 
 function onGetTokenDirectoryEntryContext(html, options) {
@@ -101,29 +120,42 @@ function onRenderWallConfig(app, html) {
   try {
     const root = html?.jquery ? html[0] : html;
     if (!root) return;
-    // Avoid duplicate injection
-    if (root.querySelector(`[name="flags.${MODULE_ID}.provideCover"]`)) return;
-
     const form = root.querySelector('form') || root;
-    const current = app?.document?.getFlag?.(MODULE_ID, 'provideCover');
-    const checked = current !== false; // default to true when undefined
+    // Avoid duplicate injection
+    if (form.querySelector('.pf2e-visioner-wall-settings')) return;
 
-    const group = document.createElement('div');
-    group.className = 'form-group';
-    group.innerHTML = `
-      <label>PF2E Visioner: Provide Cover</label>
-      <input type="checkbox" name="flags.${MODULE_ID}.provideCover" ${checked ? 'checked' : ''}>
-      <p class="notes">Uncheck to ignore this wall for auto-cover.</p>
+    const provideCoverCurrent = app?.document?.getFlag?.(MODULE_ID, 'provideCover');
+    const provideCoverChecked = provideCoverCurrent !== false; // default to true when undefined
+    const hiddenWallsEnabled = !!game.settings.get(MODULE_ID, "hiddenWallsEnabled");
+    const hiddenWallCurrent = !!app?.document?.getFlag?.(MODULE_ID, 'hiddenWall');
+    const wallIdentifier = app?.document?.getFlag?.(MODULE_ID, 'wallIdentifier') ?? '';
+    const dcCurrent = Number(app?.document?.getFlag?.(MODULE_ID, 'stealthDC')) || '';
+
+    // Build a single grouped fieldset with a quick settings button (no Provide Cover here)
+    const fs = document.createElement('fieldset');
+    fs.className = 'pf2e-visioner-wall-settings';
+    fs.innerHTML = `
+      <legend>PF2E Visioner</legend>
+      <div class="form-group">
+        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Visioner Wall Settings</button>
+      </div>
     `;
 
     // Append near Door Configuration or at form end
     const doorHeader = Array.from(form.querySelectorAll('label, h3, header, legend'))
       .find((el) => (el.textContent || '').toLowerCase().includes('door configuration'));
-    if (doorHeader && doorHeader.parentElement) {
-      doorHeader.parentElement.insertAdjacentElement('beforebegin', group);
-    } else {
-      form.appendChild(group);
-    }
+    if (doorHeader && doorHeader.parentElement) doorHeader.parentElement.insertAdjacentElement('beforebegin', fs);
+    else form.appendChild(fs);
+
+    // Bind quick settings button
+    try {
+      const btn = fs.querySelector('[data-action="open-visioner-wall-quick"]');
+      if (btn) btn.addEventListener('click', async (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        const { VisionerWallQuickSettings } = await import('../managers/wall-manager/wall-quick.js');
+        new VisionerWallQuickSettings(app.document).render(true);
+      });
+    } catch (_) {}
   } catch (_) { }
 }
 

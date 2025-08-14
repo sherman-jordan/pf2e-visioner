@@ -1,0 +1,33 @@
+<form class="pv-wall-quick">
+  <fieldset>
+    <legend>PF2E Visioner</legend>
+    <div class="form-group">
+      <label>Provide Cover</label>
+      <input type="checkbox" name="provideCover" {{#if provideCover}}checked{{/if}} />
+      <p class="notes">Uncheck to ignore this wall for auto-cover.</p>
+    </div>
+    {{#if hiddenWallsEnabled}}
+    <div class="form-group">
+      <label>Hidden Wall</label>
+      <input type="checkbox" name="hiddenWall" {{#if hiddenWall}}checked{{/if}} />
+      <p class="notes">Adds a visible indicator for players; if this is a door, it will not block sight.</p>
+    </div>
+    <div class="form-group">
+      <label>Wall Identifier</label>
+      <input type="text" name="identifier" value="{{identifier}}" />
+      <p class="notes">Shown in the Token Manager for observers.</p>
+    </div>
+    <div class="form-group">
+      <label>Wall Stealth DC</label>
+      <input type="number" name="dc" min="0" step="1" value="{{dc}}" />
+      <p class="notes">Optional per-wall DC for Seek; blank uses default setting.</p>
+    </div>
+    {{/if}}
+  </fieldset>
+  <footer class="sheet-footer" style="display:flex; gap:8px; justify-content:flex-end;">
+    <button type="button" data-action="apply" class="visioner-btn visioner-primary"><i class="fas fa-check"></i> Apply</button>
+    <button type="button" data-action="close" class="visioner-btn"><i class="fas fa-times"></i> Close</button>
+  </footer>
+</form>
+
+

@@ -14,7 +14,10 @@ export async function toggleMode(event, button) {
     const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
     const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
     if (!app._savedModeData) app._savedModeData = {};
-    if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
+    if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {}, walls: {} };
+    if (!app._savedModeData[app.mode].visibility) app._savedModeData[app.mode].visibility = {};
+    if (!app._savedModeData[app.mode].cover) app._savedModeData[app.mode].cover = {};
+    if (!app._savedModeData[app.mode].walls) app._savedModeData[app.mode].walls = {};
     visibilityInputs.forEach((input) => {
       const tokenId = input.name.replace("visibility.", "");
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
@@ -164,6 +167,7 @@ export async function bulkSetVisibilityState(event, button) {
       if (targetType === "pc") selector = ".visibility-section .table-section:has(.header-left .fa-users) .icon-selection";
       else if (targetType === "npc") selector = ".visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection";
       else if (targetType === "loot") selector = ".visibility-section .table-section.loot-section .icon-selection";
+      else if (targetType === "walls") selector = ".visibility-section .table-section.walls-section .icon-selection";
       const iconSelections = form.querySelectorAll(selector);
       for (const iconSelection of iconSelections) {
         const hiddenInput = iconSelection.querySelector('input[type="hidden"]');

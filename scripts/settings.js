@@ -160,7 +160,7 @@ export function registerSettings() {
         // Live-apply without world reload
         settingConfig.onChange = async (value) => {
           try {
-            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("./hover-tooltips.js");
+            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("./services/hover-tooltips.js");
             if (value) initializeHoverTooltips(); else cleanupHoverTooltips();
           } catch (_) {}
         };
@@ -198,7 +198,7 @@ export function registerSettings() {
         // No reload: will take effect on next hover; ensure initialized when allowed
         settingConfig.onChange = async () => {
           try {
-            const { initializeHoverTooltips } = await import("./hover-tooltips.js");
+            const { initializeHoverTooltips } = await import("./services/hover-tooltips.js");
             if (game.settings.get(MODULE_ID, "enableHoverTooltips") && game.settings.get(MODULE_ID, "allowPlayerTooltips")) initializeHoverTooltips();
           } catch (_) {}
         };
@@ -285,11 +285,11 @@ export function registerKeybindings() {
       };
     } else if (key === "toggleObserverMode") {
       keybindingConfig.onDown = async () => {
-        const { setTooltipMode } = await import("./hover-tooltips.js");
+        const { setTooltipMode } = await import("./services/hover-tooltips.js");
         setTooltipMode("observer");
       };
       keybindingConfig.onUp = async () => {
-        const { setTooltipMode } = await import("./hover-tooltips.js");
+        const { setTooltipMode } = await import("./services/hover-tooltips.js");
         setTooltipMode("target");
       };
     }

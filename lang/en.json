@@ -261,7 +261,9 @@
       }
     },
     "UI": {
-      "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens"
+      "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens",
+      "COVER_OVERRIDE": "Visioner Cover Override",
+      "ROLL": "Roll"
     },
     "WALL": {
       "VISIBLE_TO_YOU": "Hidden Wall"
@@ -274,6 +276,10 @@
       "OPEN_VISIBILITY_MANAGER": {
         "name": "Open Token Visibility Manager",
         "hint": "Open the visibility manager for selected tokens"
+      },
+      "HOLD_COVER_OVERRIDE": {
+        "name": "Hold to Override Cover on Quick Rolls",
+        "hint": "When held while clicking a strike/attack (no dialog), use Visioner cover override instead of auto-calculated cover. No default; configure your own key."
       },
       "TOGGLE_OBSERVER_MODE": {
         "name": "Toggle Observer Mode for Hover Tooltips",

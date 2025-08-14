@@ -183,14 +183,14 @@ export const DEFAULT_SETTINGS = {
     default: 15,
   },
 
-  experimentalSeeThroughWalls: {
-    name: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.name",
-    hint: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: false,
-  },
+  // experimentalSeeThroughWalls: {
+  //   name: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.name",
+  //   hint: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.hint",
+  //   scope: "client",
+  //   config: true,
+  //   type: Boolean,
+  //   default: false,
+  // },
 
   // Include additional object types in managers
   includeLootActors: {

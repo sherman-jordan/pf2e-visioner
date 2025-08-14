@@ -22,7 +22,10 @@ export function getCoverMap(token) {
 export async function setCoverMap(token, coverMap) {
   if (!token?.document) return;
   const path = `flags.${MODULE_ID}.cover`;
-  const result = await token.document.update({ [path]: coverMap }, { diff: false });
+  const result = await token.document.update(
+    { [path]: coverMap },
+    { diff: false, render: false, animate: false }
+  );
   return result;
 }
 
@@ -43,10 +46,22 @@ export function getCoverBetween(observer, target) {
  * @param {string} state
  */
 export async function setCoverBetween(observer, target, state, options = {}) {
-
-
   const coverMap = getCoverMap(observer);
-  coverMap[target.document.id] = state;
+  const targetId = target?.document?.id;
+  if (!targetId) return;
+  // Skip if no change
+  if (coverMap[targetId] === state) {
+    if (!options.skipEphemeralUpdate) {
+      try {
+        const { batchUpdateCoverEffects } = await import("../cover/ephemeral.js");
+        await batchUpdateCoverEffects(observer, [{ target, state }]);
+      } catch (error) {
+        console.error("Error updating cover effects:", error);
+      }
+    }
+    return;
+  }
+  coverMap[targetId] = state;
   await setCoverMap(observer, coverMap);
 
   if (options.skipEphemeralUpdate) return;

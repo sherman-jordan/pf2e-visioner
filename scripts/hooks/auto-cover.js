@@ -3,20 +3,119 @@
  * Moves hook wiring out of auto-cover logic file for better structure.
  */
 
+import { MODULE_ID } from "../constants.js";
 import {
+  detectCoverStateForAttack,
+  isAttackContext,
   onPreCreateChatMessage,
   onRenderChatMessage,
   onRenderCheckModifiersDialog,
-  onStrikeClickCapture,
   onUpdateToken,
+  resolveAttackerFromCtx,
+  resolveTargetFromCtx,
 } from "../cover/auto-cover.js";
+import { getCoverBonusByState } from "../helpers/cover-helpers.js";
+import { setCoverBetween } from "../utils.js";
 
 export function registerAutoCoverHooks() {
   Hooks.on("preCreateChatMessage", onPreCreateChatMessage);
   Hooks.on("renderChatMessage", onRenderChatMessage);
   Hooks.on("renderCheckModifiersDialog", onRenderCheckModifiersDialog);
-  try { document.addEventListener("click", onStrikeClickCapture, true); } catch (_) {}
   Hooks.on("updateToken", onUpdateToken);
+
+  // Patch PF2E Check.roll to support quick rolls (no modifiers dialog)
+  const patchCheckRoll = () => {
+    try {
+      // Support both global names used by PF2E builds
+      const Check = game?.pf2e?.Check ?? game?.pf2e?.CheckPF2e;
+      if (!Check || typeof Check.roll !== "function") return;
+      if (Check._pvVisionerPatched) return; // idempotent
+      const original = Check.roll.bind(Check);
+      Check.roll = async function patchedVisionerCheckRoll(check, context = {}, event = null, callback) {
+        try {
+          // Apply only when auto-cover is enabled and this is an attack-like roll
+          if (game?.settings?.get?.(MODULE_ID, "autoCover") && isAttackContext(context)) {
+            const attacker = resolveAttackerFromCtx(context);
+            const target = resolveTargetFromCtx(context);
+            if (attacker && target) {
+              // If target already has a cover effect for this attacker (aggregate or ephemeral), don't also add to DC
+              let hasExistingForThisAttacker = false;
+              try {
+                const sig = attacker.actor?.signature || attacker.actor?.id;
+                const effects = Array.from(target.actor?.itemTypes?.effect ?? []);
+                hasExistingForThisAttacker = effects.some((e) => {
+                  const f = e?.flags?.[MODULE_ID] || {};
+                  if (!f.aggregateCover && !f.isEphemeralCover) return false;
+                  const rules = Array.isArray(e?.system?.rules) ? e.system.rules : [];
+                  return rules.some((r) => r?.key === 'FlatModifier' && r.selector === 'ac' && Array.isArray(r.predicate) && r.predicate.some((p) => String(p).includes(`origin:signature:${sig}`)));
+                });
+              } catch (_) { hasExistingForThisAttacker = false; }
+
+              const state = detectCoverStateForAttack(attacker, target);
+              // Persist computed cover for consistency/UI without triggering ephemeral update here
+              try { await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true }); } catch (_) {}
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+              // Only adjust DC for true quick-rolls (skipDialog) and when no existing cover effect already applies
+              if (!hasExistingForThisAttacker) {
+                const bonus = getCoverBonusByState(state) || 0;
+                // Safely bump DC value for this roll only
+                if (context.dc && typeof context.dc.value === "number") {
+                  context.dc.value += bonus;
+                  // ensure visibility so players can see adjusted DC when appropriate
+                  if (context.dc.visible == null) context.dc.visible = true;
+                }
+
+                // Inject a one-shot cover effect by cloning the target's actor so covered AC is used even in quick-rolls
+                try {
+                  if (bonus > 0 && target?.actor) {
+                    const isStandard = state === "standard" || state === "greater";
+                    const coverBonus = isStandard ? 2 : 1;
+                    const label = isStandard ? "Standard Cover" : "Lesser Cover";
+                    const tgtActor = target.actor;
+                    const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
+                    items.push({
+                      name: label,
+                      type: "effect",
+                      system: {
+                        description: { value: `<p>${label}: +${coverBonus} circumstance bonus to AC for this roll.</p>`, gm: "" },
+                        rules: [{ key: "FlatModifier", selector: "ac", type: "circumstance", value: coverBonus }],
+                        traits: { otherTags: [], value: [] },
+                        level: { value: 1 },
+                        duration: { value: -1, unit: "unlimited" },
+                        tokenIcon: { show: false },
+                        unidentified: true,
+                        start: { value: 0 },
+                        badge: null
+                      },
+                      img: isStandard ? "systems/pf2e/icons/equipment/shields/steel-shield.webp" : "systems/pf2e/icons/equipment/shields/buckler.webp",
+                      flags: { "pf2e-visioner": { forThisRoll: true, ephemeralCoverRoll: true } }
+                    });
+
+                    // Clone without mutating token.actor (token.actor is a getter-only property)
+                    const clonedActor = tgtActor.clone({ items }, { keepId: true });
+
+                    const dcObj = context.dc;
+                    if (dcObj?.slug) {
+                      const st = clonedActor.getStatistic?.(dcObj.slug)?.dc;
+                      if (st) { dcObj.value = st.value; dcObj.statistic = st; }
+                    }
+                  }
+                } catch (_) {}
+              }
+            }
+          }
+        } catch (_) { /* ignore */ }
+        return await original(check, context, event, callback);
+      };
+      Check._pvVisionerPatched = true;
+    } catch (_) { /* ignore */ }
+  };
+
+  // Patch when PF2E system is ready and also attempt immediately
+  Hooks.on("pf2e.systemReady", patchCheckRoll);
+  Hooks.on("ready", patchCheckRoll);
+  // In case system is already loaded
+  patchCheckRoll();
 }
 
 

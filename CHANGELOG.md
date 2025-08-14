@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.1] - 2025-08-12
+
+### Fixed
+
+- Auto cover:
+  - now works with and without roll dialog
+  - now gets reevaluated on token movement
+  - walls intersection algorithm tuned to better check
+  - removed any and cross modes
+
 ## [2.0.0] - 2025-08-12
 
 ### Breaking - Full Internal Rewrite and Module Restructure

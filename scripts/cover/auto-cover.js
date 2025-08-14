@@ -4,7 +4,7 @@
  */
 
 import { MODULE_ID } from "../constants.js";
-import { getVisibilityBetween, setCoverBetween } from "../utils.js";
+import { getCoverBetween, getVisibilityBetween, setCoverBetween } from "../utils.js";
 
 // ----- helpers
 function normalizeTokenRef(ref) {
@@ -81,7 +81,8 @@ function getTokenBoundaryPoints(token) {
 }
 function pointInRect(px, py, rect) { return px >= rect.x1 && px <= rect.x2 && py >= rect.y1 && py <= rect.y2; }
 function segmentsIntersect(p1, p2, q1, q2) {
-  const o = (a, b, c) => Math.sign((b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y));
+  // Correct orientation test uses vectors AB and AC (not AB and BC)
+  const o = (a, b, c) => Math.sign((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
   const onSeg = (a, b, c) => Math.min(a.x, b.x) <= c.x && c.x <= Math.max(a.x, b.x) && Math.min(a.y, b.y) <= c.y && c.y <= Math.max(a.y, b.y);
   const o1 = o(p1, p2, q1); const o2 = o(p1, p2, q2); const o3 = o(q1, q2, p1); const o4 = o(q1, q2, p2);
   if (o1 !== o2 && o3 !== o4) return true;
@@ -126,7 +127,7 @@ function segmentIntersectsAnyBlockingWall(p1, p2) {
         try {
           const provides = d.getFlag?.(MODULE_ID, 'provideCover');
           if (provides === false) continue;
-        } catch (_) {}
+        } catch (_) { }
         // Skip open doors; treat closed/locked doors and normal walls as blockers
         const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
         const doorState = Number(d.ds ?? d.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
@@ -249,16 +250,16 @@ function pointBetweenOnSegment(pt, a, b) {
 export function detectCoverStateForAttack(attacker, target) {
   try {
     if (!attacker || !target) return "none";
-    const rays = buildRaysBetweenTokens(attacker, target);
     const p1 = attacker.center ?? attacker.getCenter();
     const p2 = target.center ?? target.getCenter();
     const attackerSize = getSizeRank(attacker);
     const targetSize = getSizeRank(target);
     let hasAny = false; let hasStandard = false;
-    // Walls: any ray intersecting a blocking wall grants at least standard cover
-    const hasWall = anyRayIntersectsAnyBlockingWall(rays);
+    // Walls: only consider the direct center-to-center segment
+    const hasWall = segmentIntersectsAnyBlockingWall(p1, p2);
     if (hasWall) { hasAny = true; hasStandard = true; }
-    const intersectionMode = (game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode") || "any");
+    let intersectionMode = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode");
+    if (intersectionMode === "any" || intersectionMode === "cross" || !intersectionMode) intersectionMode = "center";
     const ignoreUndetected = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreUndetected");
     const ignoreDead = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreDead");
     const ignoreAllies = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreAllies");
@@ -402,19 +403,6 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
   } catch (_) { }
 }
 
-// Pre-roll capture when no modifiers dialog opens
-export async function onStrikeClickCapture(ev) {
-  try {
-    if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
-    const el = ev?.target?.closest?.('[data-action="strike-attack"]'); if (!el) return;
-    let attacker = null; try { const appEl = el.closest?.('.app.window-app'); const appId = appEl?.dataset?.appid ? Number(appEl.dataset.appid) : null; const app = appId != null ? ui.windows?.[appId] : null; const appActor = app?.actor; attacker = appActor?.getActiveTokens?.()?.[0] || canvas?.tokens?.controlled?.[0] || null; } catch (_) { attacker = canvas?.tokens?.controlled?.[0] || null; }
-    const target = (Array.from(game?.user?.targets ?? [])?.[0]) || (Array.from(canvas?.tokens?.targets ?? [])?.[0]) || null; if (!attacker || !target) return;
-    const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
-    try { const { updateEphemeralCoverEffects } = await import("../cover/ephemeral.js"); await updateEphemeralCoverEffects(target, attacker, state, { durationRounds: -1 }); } catch (_) { }
-    _recordPair(attacker.id, target.id);
-  } catch (_) { }
-}
-
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
 export async function onUpdateToken(tokenDoc, changes) {
   try {
@@ -430,9 +418,37 @@ export async function onUpdateToken(tokenDoc, changes) {
       if (!attacker || !target) continue;
       const state = detectCoverStateForAttack(attacker, target);
       await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
-      try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+      try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
     }
-  } catch (_) {}
+
+    // Additionally, re-evaluate any existing cover map entries involving the moved token, even if not in active pairs
+    try {
+      const moved = tokens.get(tokenId) || tokenDoc?.object;
+      if (moved && tokens?.placeables) {
+        for (const other of tokens.placeables) {
+          if (!other || other.id === moved.id || !other.actor || !moved.actor) continue;
+          // moved → other
+          try {
+            const prevMO = getCoverBetween(moved, other);
+            if (prevMO && prevMO !== "none") {
+              const st = detectCoverStateForAttack(moved, other);
+              await setCoverBetween(moved, other, st, { skipEphemeralUpdate: true });
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: moved.id, targetId: other.id, state: st }); } catch (_) { }
+            }
+          } catch (_) { }
+          // other → moved
+          try {
+            const prevOM = getCoverBetween(other, moved);
+            if (prevOM && prevOM !== "none") {
+              const st = detectCoverStateForAttack(other, moved);
+              await setCoverBetween(other, moved, st, { skipEphemeralUpdate: true });
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: other.id, targetId: moved.id, state: st }); } catch (_) { }
+            }
+          } catch (_) { }
+        }
+      }
+    } catch (_) { }
+  } catch (_) { }
 }
 
 

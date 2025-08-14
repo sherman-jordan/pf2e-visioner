@@ -8,7 +8,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
     id: "pv-cover-quick-override",
     tag: "div",
     window: {
-      title: "Visioner Cover Override",
+      title: "Cover Override",
       icon: "fas fa-shield-alt",
       resizable: false,
     },

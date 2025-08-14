@@ -274,7 +274,7 @@
     },
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens",
-      "COVER_OVERRIDE": "Visioner Cover Override",
+      "COVER_OVERRIDE": "Cover Override",
       "ROLL": "Roll"
     },
     "WALL": {

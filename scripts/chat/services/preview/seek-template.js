@@ -20,6 +20,7 @@ export async function setupSeekTemplate(actionData) {
           messageId: actionData.messageId,
           actorTokenId: actionData.actor.id,
         },
+        "pf2e-toolbelt": { betterTemplate: { skip: true } },
       },
     };
     let dispatched = false;
@@ -82,7 +83,7 @@ export async function setupSeekTemplate(actionData) {
     return;
   }
   // Player path
-  const tplData = { t: "circle", user: game.userId, distance, fillColor: game.user?.color || "#ff9800", borderColor: game.user?.color || "#ff9800", texture: null };
+  const tplData = { t: "circle", user: game.userId, distance, fillColor: game.user?.color || "#ff9800", borderColor: game.user?.color || "#ff9800", texture: null, flags: { "pf2e-toolbelt": { betterTemplate: { skip: true } } } };
   let usedPreview = false;
   await new Promise((resolve) => {
     const createHookId = Hooks.on("createMeasuredTemplate", async (doc) => {

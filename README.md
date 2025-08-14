@@ -240,6 +240,6 @@ Visioner ships a `PF2eVisionerVisibility` rule element for item‑driven visibil
 
 ## 📜 License & Credits
 
-- GNU v3. See `LICENSE`.
+- GPL-3.0 license. See `LICENSE`.
 - PF2e system: community‑maintained; see their repository for credits.
 - Special thanks to contributors and testers.

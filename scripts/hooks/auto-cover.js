@@ -5,6 +5,7 @@
 
 import { MODULE_ID } from "../constants.js";
 import {
+  _recordPair,
   detectCoverStateForAttack,
   isAttackContext,
   onPreCreateChatMessage,
@@ -55,6 +56,8 @@ export function registerAutoCoverHooks() {
               // Persist computed cover for consistency/UI without triggering ephemeral update here
               try { await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true }); } catch (_) {}
               try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+              // Track this pair so movement during the attack re-evaluates cover
+              try { _recordPair(attacker.id, target.id); } catch (_) {}
               // Only adjust DC for true quick-rolls (skipDialog) and when no existing cover effect already applies
               if (!hasExistingForThisAttacker) {
                 const bonus = getCoverBonusByState(state) || 0;

@@ -172,7 +172,7 @@ export async function updateWallVisuals(observerId = null) {
         if ([x1, y1, x2, y2].every((n) => typeof n === "number")) {
           const mx = (x1 + x2) / 2; const my = (y1 + y2) / 2;
           const shouldShowIndicator = isExpandedObserved;
-          const seeThrough = shouldShowIndicator && !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls") && !!observer;
+          const seeThrough = shouldShowIndicator && false && !!observer;
           if (shouldShowIndicator) {
             // Clean previous indicator
             try {
@@ -239,7 +239,7 @@ export async function updateWallVisuals(observerId = null) {
           // when at least one player-owned token has it Observed. This controls real occlusion.
           if (isGM) {
             try {
-              const gmSeeThroughEnabled = !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls");
+              const gmSeeThroughEnabled = false;
               if (!gmSeeThroughEnabled) {
                 // Ensure any previous override is restored
                 const origSight = d.getFlag?.(MODULE_ID, "originalSight");
@@ -310,7 +310,7 @@ export async function updateWallVisuals(observerId = null) {
  */
 async function updateHiddenTokenEchoes(observer) {
   try {
-    const enabled = !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls");
+    const enabled = false;
     if (!enabled || !observer) {
       // remove any existing overlays
       for (const t of canvas.tokens.placeables) removeEcho(t);

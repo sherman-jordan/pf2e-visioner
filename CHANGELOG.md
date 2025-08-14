@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.2] - 2025-08-12
+
+### Fixed
+
+- Auto cover:
+  - allow players to set keybinds
+
+
 ## [2.1.1] - 2025-08-12
 
 ### Fixed

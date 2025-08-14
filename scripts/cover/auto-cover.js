@@ -474,33 +474,32 @@ export async function onUpdateToken(tokenDoc, changes) {
     for (const [attId, tgtId] of pairs) {
       const attacker = tokens.get(attId); const target = tokens.get(tgtId);
       if (!attacker || !target) continue;
-      const state = detectCoverStateForAttack(attacker, target);
+      // Movement should clear any pre-applied cover. Re-application occurs only when rolling.
+      const state = "none";
       await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
       try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
     }
 
-    // Additionally, re-evaluate any existing cover map entries involving the moved token, even if not in active pairs
+    // Additionally, clear any existing cover map entries involving the moved token, even if not in active pairs
     try {
       const moved = tokens.get(tokenId) || tokenDoc?.object;
       if (moved && tokens?.placeables) {
         for (const other of tokens.placeables) {
           if (!other || other.id === moved.id || !other.actor || !moved.actor) continue;
-          // moved → other
+          // moved → other: clear
           try {
             const prevMO = getCoverBetween(moved, other);
             if (prevMO && prevMO !== "none") {
-              const st = detectCoverStateForAttack(moved, other);
-              await setCoverBetween(moved, other, st, { skipEphemeralUpdate: true });
-              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: moved.id, targetId: other.id, state: st }); } catch (_) { }
+              await setCoverBetween(moved, other, "none", { skipEphemeralUpdate: true });
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: moved.id, targetId: other.id, state: "none" }); } catch (_) { }
             }
           } catch (_) { }
-          // other → moved
+          // other → moved: clear
           try {
             const prevOM = getCoverBetween(other, moved);
             if (prevOM && prevOM !== "none") {
-              const st = detectCoverStateForAttack(other, moved);
-              await setCoverBetween(other, moved, st, { skipEphemeralUpdate: true });
-              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: other.id, targetId: moved.id, state: st }); } catch (_) { }
+              await setCoverBetween(other, moved, "none", { skipEphemeralUpdate: true });
+              try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: other.id, targetId: moved.id, state: "none" }); } catch (_) { }
             }
           } catch (_) { }
         }

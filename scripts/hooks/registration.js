@@ -38,31 +38,56 @@ export function registerHooks() {
           try {
             const tokens = canvas.tokens?.placeables || [];
             const updates = [];
+            const { getConnectedWallDocsBySourceId } = await import("../services/connected-walls.js");
+            const connected = getConnectedWallDocsBySourceId(doc.id) || [];
+            const wallIds = [doc.id, ...connected.map((d) => d.id)];
             for (const t of tokens) {
               const current = t.document.getFlag?.(MODULE_ID, "walls") || {};
-              if (current[doc.id] !== "hidden") {
-                const patch = { _id: t.document.id };
-                patch[`flags.${MODULE_ID}.walls`] = { ...current, [doc.id]: "hidden" };
-                updates.push(patch);
+              const next = { ...current };
+              let changedAny = false;
+              for (const wid of wallIds) {
+                if (next[wid] !== "hidden") { next[wid] = "hidden"; changedAny = true; }
               }
-            }
-            if (updates.length) await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
-          } catch (_) {}
-        } else {
-          // If unhidden, remove entries for that wall from tokens
-          try {
-            const tokens = canvas.tokens?.placeables || [];
-            const updates = [];
-            for (const t of tokens) {
-              const current = t.document.getFlag?.(MODULE_ID, "walls") || {};
-              if (current[doc.id]) {
-                const next = { ...current }; delete next[doc.id];
+              if (changedAny) {
                 const patch = { _id: t.document.id };
                 patch[`flags.${MODULE_ID}.walls`] = next;
                 updates.push(patch);
               }
             }
             if (updates.length) await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+          } catch (_) {}
+          // Mirror hidden flag to connected walls
+          try {
+            const { mirrorHiddenFlagToConnected } = await import("../services/connected-walls.js");
+            await mirrorHiddenFlagToConnected(doc, true);
+          } catch (_) {}
+        } else {
+          // If unhidden, remove entries for that wall from tokens
+          try {
+            const tokens = canvas.tokens?.placeables || [];
+            const updates = [];
+            const { getConnectedWallDocsBySourceId } = await import("../services/connected-walls.js");
+            const connected = getConnectedWallDocsBySourceId(doc.id) || [];
+            const wallIds = [doc.id, ...connected.map((d) => d.id)];
+            for (const t of tokens) {
+              const current = t.document.getFlag?.(MODULE_ID, "walls") || {};
+              let changedAny = false;
+              const next = { ...current };
+              for (const wid of wallIds) {
+                if (next[wid]) { delete next[wid]; changedAny = true; }
+              }
+              if (changedAny) {
+                const patch = { _id: t.document.id };
+                patch[`flags.${MODULE_ID}.walls`] = next;
+                updates.push(patch);
+              }
+            }
+            if (updates.length) await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+          } catch (_) {}
+          // Mirror hidden flag to connected walls (set hidden=false)
+          try {
+            const { mirrorHiddenFlagToConnected } = await import("../services/connected-walls.js");
+            await mirrorHiddenFlagToConnected(doc, false);
           } catch (_) {}
         }
       }

@@ -207,10 +207,13 @@ export class SeekActionHandler extends ActionHandlerBase {
             if (!doc) continue;
             const current = doc.getFlag?.(MODULE_ID, "walls") || {};
             const next = { ...current };
+            const { expandWallIdWithConnected } = await import("../../../services/connected-walls.js");
             for (const [wallId, state] of walls.entries()) {
               // Default to 'observed' on success; keep 'hidden' otherwise
               const eff = typeof state === "string" ? state : "observed";
-              next[wallId] = eff === "undetected" || eff === "hidden" ? "hidden" : "observed";
+              const applied = eff === "undetected" || eff === "hidden" ? "hidden" : "observed";
+              const ids = expandWallIdWithConnected(wallId);
+              for (const id of ids) next[id] = applied;
             }
             await doc.setFlag?.(MODULE_ID, "walls", next);
             try {

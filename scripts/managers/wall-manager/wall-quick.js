@@ -35,6 +35,7 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
     const hiddenWall = d?.getFlag?.(MODULE_ID, "hiddenWall");
     const identifier = d?.getFlag?.(MODULE_ID, "wallIdentifier");
     const dc = d?.getFlag?.(MODULE_ID, "stealthDC");
+    const connected = d?.getFlag?.(MODULE_ID, "connectedWalls") || [];
     const hiddenWallsEnabled = !!game.settings.get(MODULE_ID, "hiddenWallsEnabled");
     return {
       id: d?.id,
@@ -43,6 +44,7 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
       hiddenWall: !!hiddenWall,
       identifier: identifier || "",
       dc: Number(dc) || "",
+      connectedCsv: Array.isArray(connected) ? connected.join(", ") : "",
     };
   }
 
@@ -73,6 +75,13 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
       patch[`flags.${MODULE_ID}.wallIdentifier`] = String(entries["identifier"] || "");
       const n = Number(entries["dc"]);
       patch[`flags.${MODULE_ID}.stealthDC`] = Number.isFinite(n) && n > 0 ? n : null;
+      // Connected walls parsing
+      const raw = String(entries["connected"] || "");
+      const arr = raw
+        .split(/[,\n]/)
+        .map((s) => s.trim())
+        .filter((s) => !!s);
+      patch[`flags.${MODULE_ID}.connectedWalls`] = arr;
     }
     await app.wall.parent?.updateEmbeddedDocuments?.("Wall", [patch], { diff: false });
     try { await app.close(); } catch (_) {}

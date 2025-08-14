@@ -22,6 +22,11 @@
       <input type="number" name="dc" min="0" step="1" value="{{dc}}" />
       <p class="notes">Optional per-wall DC for Seek; blank uses default setting.</p>
     </div>
+    <div class="form-group">
+      <label>Connected Walls (Identifiers)</label>
+      <input type="text" name="connected" value="{{connectedCsv}}" placeholder="comma-separated identifiers" />
+      <p class="notes">List identifiers of other walls linked to this one. Actions that affect this wall will also apply to those walls.</p>
+    </div>
     {{/if}}
   </fieldset>
   <footer class="sheet-footer" style="display:flex; gap:8px; justify-content:flex-end;">

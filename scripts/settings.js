@@ -25,7 +25,6 @@ const SETTINGS_GROUPS = {
     "colorblindMode",
     "hiddenWallsEnabled",
     "wallStealthDC",
-    "experimentalSeeThroughWalls"
   ],
   "Seek & Range": [
     "seekUseTemplate",

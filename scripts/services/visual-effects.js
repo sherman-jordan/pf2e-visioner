@@ -84,25 +84,6 @@ function isDiceSoNiceAnimating() {
 }
 
 /**
- * Apply specific visual effects to tokens based on visibility state
- * @param {Token} token - The token to apply effects to
- * @param {string} visibilityState - The visibility state (observed, concealed, hidden, undetected)
- */
-export function applyTokenVisualEffects(token, visibilityState) {
-  // Future: Could add custom visual effects here
-  // For now, this is handled by the detection wrapper
-}
-
-/**
- * Legacy function for backwards compatibility
- */
-export async function applyPersistentVisibilityEffects() {
-  // This function is kept for backwards compatibility
-  // but most functionality is now handled by other systems
-  await updateTokenVisuals();
-}
-
-/**
  * Visual-only walls toggle per observer
  * Hides walls for this client if the active observer has them set as hidden
  */
@@ -130,6 +111,24 @@ export async function updateWallVisuals(observerId = null) {
     } catch (_) { observer = null; }
     const wallMapForObserver = observer?.document?.getFlag?.(MODULE_ID, "walls") || {};
 
+    // Build an expanded set of observed wall IDs that includes any walls
+    // connected to an observed wall via the connectedWalls identifier list.
+    const observedSet = new Set(
+      Object.entries(wallMapForObserver)
+        .filter(([, v]) => v === "observed")
+        .map(([id]) => id),
+    );
+    const expandedObserved = new Set(observedSet);
+    try {
+      const { getConnectedWallDocsBySourceId } = await import("./connected-walls.js");
+      for (const wall of walls) {
+        const id = wall?.document?.id;
+        if (!id || !observedSet.has(id)) continue;
+        const connectedDocs = getConnectedWallDocsBySourceId(id) || [];
+        for (const d of connectedDocs) expandedObserved.add(d.id);
+      }
+    } catch (_) {}
+
     // Collect token flag updates for player-owned tokens that can see hidden walls
     const tokenWallFlagUpdates = [];
     for (const wall of walls) {
@@ -138,15 +137,22 @@ export async function updateWallVisuals(observerId = null) {
       let flagHidden = false;
       try { flagHidden = !!d.getFlag?.(MODULE_ID, "hiddenWall"); } catch (_) {}
 
-      // Remove previous indicator if any
+      // Remove previous indicator/masks if any (always clean before evaluating)
       try {
         if (wall._pvHiddenIndicator && wall._pvHiddenIndicator.parent) {
           wall._pvHiddenIndicator.parent.removeChild(wall._pvHiddenIndicator);
         }
         wall._pvHiddenIndicator = null;
+        if (wall._pvSeeThroughMasks && Array.isArray(wall._pvSeeThroughMasks)) {
+          for (const m of wall._pvSeeThroughMasks) {
+            try { m.parent?.removeChild(m); m.destroy?.(); } catch (_) {}
+          }
+          wall._pvSeeThroughMasks = [];
+        }
       } catch (_) {}
 
-      if (!flagHidden) {
+      const isExpandedObserved = expandedObserved.has(d.id);
+      if (!flagHidden && !isExpandedObserved) {
         // If previously stored original sight exists, restore (GM only)
         if (isGM) {
           try {
@@ -165,7 +171,7 @@ export async function updateWallVisuals(observerId = null) {
         const [x1, y1, x2, y2] = c;
         if ([x1, y1, x2, y2].every((n) => typeof n === "number")) {
           const mx = (x1 + x2) / 2; const my = (y1 + y2) / 2;
-          const shouldShowIndicator = wallMapForObserver?.[d.id] === "observed";
+          const shouldShowIndicator = isExpandedObserved;
           const seeThrough = shouldShowIndicator && !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls") && !!observer;
           if (shouldShowIndicator) {
             // Clean previous indicator
@@ -229,20 +235,18 @@ export async function updateWallVisuals(observerId = null) {
             wall._pvSeeThroughMasks = [];
           }
 
-          // As GM, optionally open the wall's sight globally for hidden non-doors when any token can see this hidden wall (Observed)
+          // As GM, optionally open the wall's sight globally for any wall (door or not)
+          // when at least one player-owned token has it Observed. This controls real occlusion.
           if (isGM) {
             try {
-              const isDoor = Number(d.door) > 0;
-              if (!isDoor) {
-                // Respect the experimental see-through checkbox (GM side). If disabled, never relax occlusion for non-doors.
-                const gmSeeThroughEnabled = !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls");
-                if (!gmSeeThroughEnabled) {
-                  // Ensure any previous override is restored
-                  const origSight = d.getFlag?.(MODULE_ID, "originalSight");
-                  if (origSight !== undefined && origSight !== null && d.sight !== origSight) {
-                    updates.push({ _id: d.id, sight: origSight, [`flags.${MODULE_ID}.originalSight`]: null });
-                  }
-                } else {
+              const gmSeeThroughEnabled = !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls");
+              if (!gmSeeThroughEnabled) {
+                // Ensure any previous override is restored
+                const origSight = d.getFlag?.(MODULE_ID, "originalSight");
+                if (origSight !== undefined && origSight !== null && d.sight !== origSight) {
+                  updates.push({ _id: d.id, sight: origSight, [`flags.${MODULE_ID}.originalSight`]: null });
+                }
+              } else {
                 // Determine if any token in the scene has this wall marked as Observed
                 let anyObserved = false;
                 try {
@@ -269,7 +273,6 @@ export async function updateWallVisuals(observerId = null) {
                     updates.push({ _id: d.id, sight: origSight, [`flags.${MODULE_ID}.originalSight`]: null });
                   }
                 }
-                }
               }
             } catch (_) {}
           }
@@ -278,22 +281,7 @@ export async function updateWallVisuals(observerId = null) {
         }
       } catch (_) {}
 
-      // If this is a door, ensure it does not block sight (GM only)
-      if (isGM) {
-        try {
-          const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret
-          if (isDoor) {
-            const currentSight = Number(d.sight ?? 1);
-            if (currentSight !== 0) {
-              const origSight = d.getFlag?.(MODULE_ID, "originalSight");
-              const toStore = (origSight === undefined || origSight === null) ? currentSight : origSight;
-              const patch = { _id: d.id, sight: 0 };
-              patch[`flags.${MODULE_ID}.originalSight`] = toStore;
-              updates.push(patch);
-            }
-          }
-        } catch (_) {}
-      }
+      // Door-specific unconditional relaxation removed; handled above under unified GM logic.
     }
 
     if (isGM && (updates.length > 0 || tokenWallFlagUpdates.length > 0)) {
@@ -326,19 +314,33 @@ async function updateHiddenTokenEchoes(observer) {
     if (!enabled || !observer) {
       // remove any existing overlays
       for (const t of canvas.tokens.placeables) removeEcho(t);
-      return;
+  return;
     }
     // Build wall sets for intersection checks
     const walls = canvas?.walls?.placeables || [];
     const wallMap = observer?.document?.getFlag?.(MODULE_ID, "walls") || {};
+    // Expanded observed set: includes connected walls of any observed wall
+    const observedSet = new Set(
+      Object.entries(wallMap)
+        .filter(([, v]) => v === "observed")
+        .map(([id]) => id),
+    );
+    const expandedObserved = new Set(observedSet);
+    try {
+      const { getConnectedWallDocsBySourceId } = await import("./connected-walls.js");
+      for (const w of walls) {
+        const id = w?.document?.id; if (!id || !observedSet.has(id)) continue;
+        const connectedDocs = getConnectedWallDocsBySourceId(id) || [];
+        for (const d of connectedDocs) expandedObserved.add(d.id);
+      }
+    } catch (_) {}
     const hiddenObservedWalls = walls.filter((w) => {
-      try { return !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall") && wallMap?.[w.document.id] === "observed"; } catch (_) { return false; }
+      try { return expandedObserved.has(w?.document?.id); } catch (_) { return false; }
     });
     const regularBlockingWalls = walls.filter((w) => {
       try {
         const d = w.document;
-        const isHiddenObserved = d.getFlag?.(MODULE_ID, "hiddenWall") && wallMap?.[d.id] === "observed";
-        if (isHiddenObserved) return false; // these are allowed
+        if (expandedObserved.has(d.id)) return false; // these are allowed
         const isDoor = Number(d.door) > 0; const doorState = Number(d.ds ?? d.doorState ?? 0); if (isDoor && doorState === 1) return false; // open door
         const sight = Number(d.sight ?? 1); if (sight === 0) return false; // non-blocking
         return true;
@@ -411,25 +413,4 @@ function segmentsIntersect(p1, p2, q1, q2) {
   if (o3 === 0 && onSeg(q1, q2, p1)) return true;
   if (o4 === 0 && onSeg(q1, q2, p2)) return true;
   return false;
-}
-
-/**
- * Handle Foundry hoverWall hook: show a tooltip at the midpoint when hovered, if visible to observer
- */
-export function handleHoverWall() {
-  return;
-}
-
-// Tooltip helpers removed for now
-
-function canvasCoordinatesToScreen(wx, wy) {
-  try {
-    const p = canvas?.stage?.toGlobal?.(new PIXI.Point(wx, wy));
-    const rect = canvas?.app?.view?.getBoundingClientRect?.();
-    if (p && rect) return { x: rect.left + p.x, y: rect.top + p.y };
-  } catch (_) {}
-  // Fallback: try to position relative to canvas element
-  const el = canvas.app?.view;
-  const rect = el?.getBoundingClientRect?.() || { left: 0, top: 0 };
-  return { x: rect.left + wx, y: rect.top + wy };
 }

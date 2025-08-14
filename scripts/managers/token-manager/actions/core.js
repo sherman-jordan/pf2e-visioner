@@ -6,10 +6,10 @@
 import { MODULE_ID } from "../../../constants.js";
 import { refreshEveryonesPerception } from "../../../services/socket.js";
 import {
-  getCoverMap,
-  getVisibilityMap,
-  setCoverMap,
-  setVisibilityMap,
+    getCoverMap,
+    getVisibilityMap,
+    setCoverMap,
+    setVisibilityMap,
 } from "../../../utils.js";
 
 /**
@@ -104,9 +104,11 @@ export async function formHandler(event, form, formData) {
       try {
         const currentWalls = (app.observer?.document?.getFlag?.(MODULE_ID, "walls")) || {};
         const merged = { ...currentWalls };
+        const { expandWallIdWithConnected } = await import("../../../services/connected-walls.js");
         for (const [wallId, state] of Object.entries(wallVisibilityChanges)) {
           if (state !== "hidden" && state !== "observed") continue;
-          merged[wallId] = state;
+          const ids = expandWallIdWithConnected(wallId);
+          for (const id of ids) merged[id] = state;
         }
         await app.observer.document.setFlag(MODULE_ID, "walls", merged);
       } catch (error) {

@@ -338,7 +338,7 @@ export function resolveTargetTokenIdFromData(data) {
 // ----- hook handlers (used by hooks/visioner-auto-cover.js)
 export async function onPreCreateChatMessage(doc, data) {
   try {
-    if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return; if (!isAttackLikeMessageData(data)) return;
+    if (!game.settings.get("pf2e-visioner", "autoCover")) return; if (!isAttackLikeMessageData(data)) return;
     const speakerTokenId = normalizeTokenRef(data?.speaker?.token); const targetTokenId = resolveTargetTokenIdFromData(data);
     if (!speakerTokenId || !targetTokenId) return;
     const tokens = canvas?.tokens; if (!tokens?.get) return;
@@ -352,7 +352,7 @@ export async function onPreCreateChatMessage(doc, data) {
 }
 
 export async function onRenderChatMessage(message) {
-  if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
+  if (!game.settings.get("pf2e-visioner", "autoCover")) return;
   const data = message?.toObject?.() || {}; if (!isAttackLikeMessageData(data)) return;
   const attackerIdRaw = data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
   const attackerId = normalizeTokenRef(attackerIdRaw);
@@ -376,7 +376,7 @@ export async function onRenderChatMessage(message) {
 
 export async function onRenderCheckModifiersDialog(dialog, html) {
   try {
-    if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
+    if (!game.settings.get("pf2e-visioner", "autoCover")) return;
     const ctx = dialog?.context ?? {}; if (!isAttackContext(ctx)) return;
     const attacker = resolveAttackerFromCtx(ctx); const target = resolveTargetFromCtx(ctx); if (!attacker || !target) return;
     const state = detectCoverStateForAttack(attacker, target);
@@ -419,7 +419,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
 
         const anchor = html.find('.roll-mode-panel');
         if (anchor.length > 0) anchor.before(container); else html.find('.dialog-buttons').before(container);
-
+        dialog.setPosition()
         container.on('click', '.pv-cover-btn', (ev) => {
           try {
             const btn = ev.currentTarget; const sel = btn?.dataset?.state || 'none';

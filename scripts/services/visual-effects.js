@@ -168,26 +168,34 @@ export async function updateWallVisuals(observerId = null) {
           const shouldShowIndicator = wallMapForObserver?.[d.id] === "observed";
           const seeThrough = shouldShowIndicator && !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls") && !!observer;
           if (shouldShowIndicator) {
-            const g = new PIXI.Graphics();
-            // Different colors for doors vs walls
+            // Clean previous indicator
+            try {
+              if (wall._pvHiddenIndicator) {
+                wall._pvHiddenIndicator.parent?.removeChild(wall._pvHiddenIndicator);
+                wall._pvHiddenIndicator.destroy?.();
+              }
+            } catch (_) {}
+
+            // Indicator uses the same geometry as see-through: a thin rectangle along the wall segment
             const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret
             const color = isDoor ? 0xffd166 : 0x9b59b6; // Yellow for doors, purple for walls
-            const size = 12;
-            g.lineStyle(3, color, 0.95);
-            g.beginFill(color, 0.35);
-            
+            const dx = x2 - x1; const dy = y2 - y1; const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len; const ny = dx / len; // unit normal
+            const half = 3; // 6px wide indicator, matching see-through mask
+            const g = new PIXI.Graphics();
+            g.lineStyle(2, color, 0.9);
+            g.beginFill(color, 0.3);
             g.drawPolygon([
-              mx, my - size,
-              mx + size, my,
-              mx, my + size,
-              mx - size, my,
+              x1 + nx * half, y1 + ny * half,
+              x2 + nx * half, y2 + ny * half,
+              x2 - nx * half, y2 - ny * half,
+              x1 - nx * half, y1 - ny * half,
             ]);
             g.endFill();
             g.zIndex = 1000;
             g.eventMode = "none";
-            g.alpha = 0.9;
-            // Attach to the walls layer so it moves with the scene
-            (canvas.walls || wall).addChild(g);
+            const parent = canvas.effects?.foreground || canvas.effects || (canvas.walls || wall);
+            parent.addChild(g);
             wall._pvHiddenIndicator = g;
           }
 
@@ -221,11 +229,20 @@ export async function updateWallVisuals(observerId = null) {
             wall._pvSeeThroughMasks = [];
           }
 
-          // As GM, open the wall's sight globally for hidden non-doors when any token can see this hidden wall (Observed)
+          // As GM, optionally open the wall's sight globally for hidden non-doors when any token can see this hidden wall (Observed)
           if (isGM) {
             try {
               const isDoor = Number(d.door) > 0;
               if (!isDoor) {
+                // Respect the experimental see-through checkbox (GM side). If disabled, never relax occlusion for non-doors.
+                const gmSeeThroughEnabled = !!game.settings?.get?.(MODULE_ID, "experimentalSeeThroughWalls");
+                if (!gmSeeThroughEnabled) {
+                  // Ensure any previous override is restored
+                  const origSight = d.getFlag?.(MODULE_ID, "originalSight");
+                  if (origSight !== undefined && origSight !== null && d.sight !== origSight) {
+                    updates.push({ _id: d.id, sight: origSight, [`flags.${MODULE_ID}.originalSight`]: null });
+                  }
+                } else {
                 // Determine if any token in the scene has this wall marked as Observed
                 let anyObserved = false;
                 try {
@@ -251,6 +268,7 @@ export async function updateWallVisuals(observerId = null) {
                   if (origSight !== undefined && origSight !== null && d.sight !== origSight) {
                     updates.push({ _id: d.id, sight: origSight, [`flags.${MODULE_ID}.originalSight`]: null });
                   }
+                }
                 }
               }
             } catch (_) {}

@@ -1,3 +1,4 @@
+import { MODULE_ID } from "../../../constants.js";
 import { appliedSeekChangesByMessage } from "../data/message-cache.js";
 import { ActionHandlerBase } from "./base-action.js";
 
@@ -135,13 +136,94 @@ export class SeekActionHandler extends ActionHandlerBase {
   }
 
   buildCacheEntryFromChange(change) {
+    // Support both token and wall changes in cache
+    if (change?.wallId) {
+      return { wallId: change.wallId, oldVisibility: change.oldVisibility };
+    }
     return { targetId: change.target?.id, oldVisibility: change.oldVisibility };
   }
 
   entriesToRevertChanges(entries, actionData) {
-    return entries
-      .map((e) => ({ observer: actionData.actor, target: this.getTokenById(e.targetId), newVisibility: e.oldVisibility }))
-      .filter((c) => c.target);
+    const changes = [];
+    for (const e of entries) {
+      if (e?.wallId) {
+        // Revert wall state on the seeker back to previous visibility (default hidden)
+        const prev = typeof e.oldVisibility === "string" ? e.oldVisibility : "hidden";
+        changes.push({ observer: actionData.actor, wallId: e.wallId, newWallState: prev });
+      } else if (e?.targetId) {
+        const tgt = this.getTokenById(e.targetId);
+        if (tgt) changes.push({ observer: actionData.actor, target: tgt, newVisibility: e.oldVisibility });
+      }
+    }
+    return changes;
+  }
+
+  // For walls, return a change describing wallId + desired state instead of token target
+  outcomeToChange(actionData, outcome) {
+    try {
+      if (outcome?._isWall && outcome?.wallId) {
+        const effective = outcome?.overrideState || outcome?.newVisibility || null;
+        return {
+          observer: actionData.actor,
+          wallId: outcome.wallId,
+          newWallState: effective,
+          oldVisibility: outcome?.oldVisibility || outcome?.currentVisibility || null,
+        };
+      }
+    } catch (_) {}
+    return super.outcomeToChange(actionData, outcome);
+  }
+
+  // Apply token visibility changes as usual, and also persist wall visibility for the seeker
+  async applyChangesInternal(changes) {
+    try {
+      const tokenChanges = [];
+      const wallChangesByObserver = new Map();
+      for (const ch of changes) {
+        if (ch?.wallId) {
+          const obsId = ch?.observer?.id;
+          if (!obsId) continue;
+          if (!wallChangesByObserver.has(obsId)) wallChangesByObserver.set(obsId, { observer: ch.observer, walls: new Map() });
+          wallChangesByObserver.get(obsId).walls.set(ch.wallId, ch.newWallState);
+        } else {
+          tokenChanges.push(ch);
+        }
+      }
+
+      // First apply token visibility changes (if any)
+      if (tokenChanges.length > 0) {
+        const { applyVisibilityChanges } = await import("../infra/shared-utils.js");
+        const groups = this.groupChangesByObserver(tokenChanges);
+        for (const group of groups) {
+          await applyVisibilityChanges(group.observer, group.items.map((i) => ({ target: i.target, newVisibility: i.newVisibility })), { direction: this.getApplyDirection() });
+        }
+      }
+
+      // Then persist wall states for each observer
+      if (wallChangesByObserver.size > 0) {
+        for (const { observer, walls } of wallChangesByObserver.values()) {
+          try {
+            const doc = observer?.document;
+            if (!doc) continue;
+            const current = doc.getFlag?.(MODULE_ID, "walls") || {};
+            const next = { ...current };
+            for (const [wallId, state] of walls.entries()) {
+              // Default to 'observed' on success; keep 'hidden' otherwise
+              const eff = typeof state === "string" ? state : "observed";
+              next[wallId] = eff === "undetected" || eff === "hidden" ? "hidden" : "observed";
+            }
+            await doc.setFlag?.(MODULE_ID, "walls", next);
+            try {
+              const { updateWallVisuals } = await import("../../../services/visual-effects.js");
+              await updateWallVisuals(observer.id);
+            } catch (_) {}
+          } catch (e) { /* ignore per-observer wall errors */ }
+        }
+      }
+    } catch (e) {
+      // Fallback to base implementation if something goes wrong
+      return super.applyChangesInternal(changes);
+    }
   }
 }
 

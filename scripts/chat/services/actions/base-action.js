@@ -157,8 +157,9 @@ export class ActionHandlerBase {
     try {
       const cache = this.getCacheMap();
       if (!cache) return;
+      const existing = cache.get(actionData.messageId) || [];
       const entries = changes.map((c) => this.buildCacheEntryFromChange(c)).filter(Boolean);
-      cache.set(actionData.messageId, entries);
+      cache.set(actionData.messageId, existing.concat(entries));
     } catch (_) {}
   }
 

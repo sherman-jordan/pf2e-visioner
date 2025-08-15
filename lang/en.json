@@ -158,11 +158,11 @@
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {
         "name": "Enable Hover Tooltips",
-        "hint": "Show visibility status tooltips when hovering over tokens (requires restart)"
+        "hint": "Show visibility status tooltips when hovering over tokens"
       },
       "ALLOW_PLAYER_TOOLTIPS": {
         "name": "Allow Player Tooltips",
-        "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens (requires restart)"
+        "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens"
       },
       "TOOLTIP_FONT_SIZE": {
         "name": "Tooltip Size",

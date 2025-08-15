@@ -34,6 +34,8 @@ const SETTINGS_GROUPS = {
   "Auto-cover": [
     "autoCover",
     "autoCoverTokenIntersectionMode",
+    "autoCoverCoverageStandardPct",
+    "autoCoverCoverageGreaterPct",
     "autoCoverIgnoreUndetected",
     "autoCoverIgnoreDead",
     "autoCoverIgnoreAllies",
@@ -116,6 +118,103 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
   _replaceHTML(result, content, _options) {
     content.innerHTML = result;
+    try {
+      // Utility: show/hide a setting's form-group wrapper
+      const toggleSettingVisibility = (name, visible) => {
+        try {
+          const input = content.querySelector(`[name="settings.${name}"]`);
+          if (!input) return;
+          const group = input.closest('.form-group') || input.parentElement;
+          if (group) group.style.display = visible ? '' : 'none';
+        } catch (_) {}
+      };
+
+      // Coverage thresholds visible only when mode === 'coverage'
+      const modeSel = content.querySelector('[name="settings.autoCoverTokenIntersectionMode"]');
+      const applyCoverageModeVisibility = () => {
+        const isCoverage = (modeSel?.value || '') === 'coverage';
+        toggleSettingVisibility('autoCoverCoverageStandardPct', isCoverage);
+        toggleSettingVisibility('autoCoverCoverageGreaterPct', isCoverage);
+      };
+      if (modeSel) {
+        modeSel.addEventListener('change', applyCoverageModeVisibility);
+        applyCoverageModeVisibility();
+      }
+
+      // Seek distances visible only when their limit toggles are enabled
+      const inCombatToggle = content.querySelector('[name="settings.limitSeekRangeInCombat"]');
+      const outCombatToggle = content.querySelector('[name="settings.limitSeekRangeOutOfCombat"]');
+      const useTemplateToggle = content.querySelector('[name="settings.seekUseTemplate"]');
+      const applySeekVisibility = () => {
+        const templateOn = !!useTemplateToggle?.checked;
+        if (templateOn) {
+          // When template is used, hide both distance fields regardless of toggles
+          toggleSettingVisibility('customSeekDistance', false);
+          toggleSettingVisibility('customSeekDistanceOutOfCombat', false);
+          return;
+        }
+        const inOn = !!inCombatToggle?.checked;
+        const outOn = !!outCombatToggle?.checked;
+        toggleSettingVisibility('customSeekDistance', inOn);
+        toggleSettingVisibility('customSeekDistanceOutOfCombat', outOn);
+      };
+      if (inCombatToggle) inCombatToggle.addEventListener('change', applySeekVisibility);
+      if (outCombatToggle) outCombatToggle.addEventListener('change', applySeekVisibility);
+      if (useTemplateToggle) useTemplateToggle.addEventListener('change', applySeekVisibility);
+      applySeekVisibility();
+
+      // Hide the seek range limitation checkboxes entirely when using template
+      const applySeekTemplateVisibility = () => {
+        const templateOn = !!useTemplateToggle?.checked;
+        toggleSettingVisibility('limitSeekRangeInCombat', !templateOn);
+        toggleSettingVisibility('limitSeekRangeOutOfCombat', !templateOn);
+        // Re-apply distances visibility after checkbox hide/show decision
+        applySeekVisibility();
+      };
+      if (useTemplateToggle) useTemplateToggle.addEventListener('change', applySeekTemplateVisibility);
+      applySeekTemplateVisibility();
+
+      // Hide "Block Player Target Tooltips" unless "Allow Player Tooltips" is enabled
+      const allowPlayerTooltipsToggle = content.querySelector('[name="settings.allowPlayerTooltips"]');
+      const applyPlayerTooltipVisibility = () => {
+        const on = !!allowPlayerTooltipsToggle?.checked;
+        toggleSettingVisibility('blockPlayerTargetTooltips', on);
+      };
+      if (allowPlayerTooltipsToggle) allowPlayerTooltipsToggle.addEventListener('change', applyPlayerTooltipVisibility);
+      applyPlayerTooltipVisibility();
+
+      // Hide tooltip size unless hover tooltips are enabled
+      const enableHoverTooltipsToggle = content.querySelector('[name="settings.enableHoverTooltips"]');
+      const applyHoverTooltipVisibility = () => {
+        const on = !!enableHoverTooltipsToggle?.checked;
+        toggleSettingVisibility('tooltipFontSize', on);
+      };
+      if (enableHoverTooltipsToggle) enableHoverTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
+      applyHoverTooltipVisibility();
+
+      // Hide all Auto-cover settings unless the main toggle is on
+      const autoCoverToggle = content.querySelector('[name="settings.autoCover"]');
+      const autoCoverDependents = [
+        'autoCoverTokenIntersectionMode',
+        'autoCoverCoverageStandardPct',
+        'autoCoverCoverageGreaterPct',
+        'autoCoverIgnoreUndetected',
+        'autoCoverIgnoreDead',
+        'autoCoverIgnoreAllies',
+        'autoCoverRespectIgnoreFlag',
+        'autoCoverAllowProneBlockers',
+      ];
+      const applyAutoCoverVisibility = () => {
+        const on = !!autoCoverToggle?.checked;
+        for (const key of autoCoverDependents) toggleSettingVisibility(key, on);
+        // Re-apply coverage sub-visibility if turning on
+        if (on) {
+          try { applyCoverageModeVisibility(); } catch (_) {}
+        }
+      };
+      if (autoCoverToggle) autoCoverToggle.addEventListener('change', applyAutoCoverVisibility);
+      applyAutoCoverVisibility();
+    } catch (_) {}
     return content;
   }
 

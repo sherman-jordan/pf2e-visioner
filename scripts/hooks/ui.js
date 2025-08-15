@@ -130,6 +130,49 @@ function onRenderWallConfig(app, html) {
 
 function onGetSceneControlButtons(controls) {
   try {
+    // --- Tokens: toggle ignore-as-auto-cover-blocker on selected tokens
+    const tokensControl = controls?.tokens;
+    const tokenTools = tokensControl?.tools;
+    if (tokensControl && tokenTools) {
+      const visible = !!game.user?.isGM;
+      const maxOrderT = Object.values(tokenTools).reduce((m, t) => Math.max(m, t?.order ?? 0), 0);
+      const toggleTokenTool = {
+        name: "pvToggleIgnoreTokenAutoCover",
+        title: "PF2E Visioner: Toggle Ignore Auto-Cover (Tokens)",
+        icon: "fa-solid fa-shield-halved",
+        order: maxOrderT + 1,
+        visible,
+        toggle: true,
+        active: false,
+        onChange: async (_event, active) => {
+          try {
+            const selected = canvas?.tokens?.controlled ?? [];
+            if (!selected.length) {
+              ui.notifications?.warn?.("Select one or more tokens first.");
+              const tool = ui.controls.control?.tools?.pvToggleIgnoreTokenAutoCover;
+              if (tool) { tool.active = !active; ui.controls.render(); }
+              return;
+            }
+            const tool = ui.controls.control?.tools?.pvToggleIgnoreTokenAutoCover;
+            if (active) {
+              await Promise.all(selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)));
+              ui.notifications?.info?.(`Ignored auto-cover for ${selected.length} token(s).`);
+              if (tool) { tool.icon = "fa-solid fa-shield-slash"; tool.active = true; ui.controls.render(); }
+            } else {
+              for (const t of selected) {
+                try { await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover"); } catch (_) {
+                  try { await t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", false); } catch (_) {}
+                }
+              }
+              ui.notifications?.info?.(`Restored auto-cover for ${selected.length} token(s).`);
+              if (tool) { tool.icon = "fa-solid fa-shield"; tool.active = false; ui.controls.render(); }
+            }
+          } catch (_) {}
+        },
+      };
+      tokenTools[toggleTokenTool.name] = toggleTokenTool;
+    }
+
     const wallsControl = controls?.walls;
     const wallTools = wallsControl?.tools;
     if (!wallsControl || !wallTools) return;

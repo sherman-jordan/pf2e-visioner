@@ -1,11 +1,34 @@
 # Changelog
 
+## [2.2.0] - 2025-08-15
+
+### Added
+
+- Auto cover:
+  - New `Token Intersection Mode: Coverage` that maps ray coverage across a blocking token to cover tiers using configurable thresholds.
+    - Standard at ≥ `Auto-Cover: Standard Cover at ≥ %` (default 50)
+    - Greater at ≥ `Auto-Cover: Greater Cover at ≥ %` (default 80)
+  - Walls tool: Single GM toggle button to Ignore/Restore Auto-Cover on selected walls; the button highlights when cover is inactive.
+  - Token tool: Single GM toggle button to Ignore/Restore Auto-Cover on selected tokens; the button highlights when cover is inactive.
+- Settings UX (grouped settings window):
+  - Auto-cover dependents are hidden unless Auto-cover is enabled.
+  - Coverage thresholds only shown when mode = Coverage.
+  - Seek: hides both limit checkboxes and distance fields when “Use Template” is enabled; distance fields only shown when their respective limit toggles are on.
+  - Tooltips: hides “Block Player Target Tooltips” unless “Allow Player Tooltips” is enabled; hides “Tooltip Font Size” unless “Enable Hover Tooltips” is enabled.
+
+### Changed
+
+- Auto-cover internals refactored into strategy helpers for readability and maintainability.
+- Check roll integration now uses a libWrapper WRAPPER when available to avoid conflicts with PF2E Ranged Combat.
+
 ## [2.1.3] - 2025-08-13
 
 ### Fixed
 
 - Auto cover:
   - respect metagaming ac reveals
+  - Walls sidebar tool: added GM toggle to Ignore/Restore Auto-Cover for selected walls
+  - new settings: coverage thresholds to map ray coverage across a blocking token to lesser/standard/greater
 
 ## [2.1.2] - 2025-08-12
 

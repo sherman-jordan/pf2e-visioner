@@ -8,8 +8,11 @@
   - New `Token Intersection Mode: Coverage` that maps ray coverage across a blocking token to cover tiers using configurable thresholds.
     - Standard at ≥ `Auto-Cover: Standard Cover at ≥ %` (default 50)
     - Greater at ≥ `Auto-Cover: Greater Cover at ≥ %` (default 80)
-  - Visioner tool: Single GM toggle buttons to Ignore/Restore Auto-Cover on selected walls and tokens; the button highlights when cover is inactive.
-    - Remove all cover or visibility for a token (observer or target mode)
+  - Visioner tool: Consolidated GM controls to Ignore/Restore Auto-Cover on selected walls and tokens (highlighted when active).
+    - Clear Cover (Target/Observer mode)
+    - Make Observed (Target/Observer mode)
+  - Hazard/Loot: Minimum Perception Proficiency (token config) required to detect (Untrained–Legendary). Enforced in live detection and Seek.
+  - Seek results now always include hazards/loot (subject to template/distance filters). Below-rank entries show outcome "No proficiency", display the correct DC, and still provide override buttons.
   - Auto-cover dependents are hidden unless Auto-cover is enabled.
   - Coverage thresholds only shown when mode = Coverage.
   - Seek: hides both limit checkboxes and distance fields when “Use Template” is enabled; distance fields only shown when their respective limit toggles are on.

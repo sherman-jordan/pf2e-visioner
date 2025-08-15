@@ -1,4 +1,5 @@
 // Centralized mapping of desired override states per action type
+import { MODULE_ID } from "../../../constants.js";
 
 export function getDesiredOverrideStatesForAction(actionType) {
   switch (actionType) {
@@ -35,9 +36,14 @@ export const DEFAULT_OUTCOME_MAPPING = {
     hidden: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
     undetected: { "critical-success": "undetected", success: "undetected", failure: "observed", "critical-failure": "observed" },
   },
-  sneak: {
+  sneak: game.settings.get(MODULE_ID, "sneakRawEnforcement") ? {
     observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
     concealed: { "critical-success": "concealed", success: "concealed", failure: "observed", "critical-failure": "observed" },
+    hidden: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+    undetected: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+  }: {
+    observed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+    concealed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
     hidden: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
     undetected: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
   },

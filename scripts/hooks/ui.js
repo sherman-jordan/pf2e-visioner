@@ -10,6 +10,39 @@ export function registerUIHooks() {
   Hooks.on("getTokenDirectoryEntryContext", onGetTokenDirectoryEntryContext);
   Hooks.on("renderWallConfig", onRenderWallConfig);
   Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
+  // Keep toolbar toggle states in sync with current selection
+  const refreshTokenTool = () => {
+    try {
+      const tools = ui.controls.controls?.tokens?.tools;
+      const tool = tools?.pvToggleIgnoreTokenAutoCover;
+      if (!tool) return;
+      const selected = canvas?.tokens?.controlled ?? [];
+      const active = selected.length > 0 && selected.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")));
+      tool.active = active;
+      tool.icon = active ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      ui.controls.render();
+    } catch (_) {}
+  };
+  const refreshWallTool = () => {
+    try {
+      const tools = ui.controls.controls?.walls?.tools;
+      const tool = tools?.pvToggleAutoCover;
+      if (!tool) return;
+      const selected = canvas?.walls?.controlled ?? [];
+      const active = selected.length > 0 && selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
+      tool.active = active;
+      tool.icon = active ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      ui.controls.render();
+    } catch (_) {}
+  };
+  Hooks.on("controlToken", refreshTokenTool);
+  Hooks.on("deleteToken", refreshTokenTool);
+  Hooks.on("createToken", refreshTokenTool);
+  Hooks.on("updateToken", refreshTokenTool);
+  Hooks.on("controlWall", refreshWallTool);
+  Hooks.on("deleteWall", refreshWallTool);
+  Hooks.on("createWall", refreshWallTool);
+  Hooks.on("updateWall", refreshWallTool);
   for (const hook of [
     "renderTokenConfig",
     "renderPrototypeTokenConfig",
@@ -136,6 +169,8 @@ function onGetSceneControlButtons(controls) {
     if (tokensControl && tokenTools) {
       const visible = !!game.user?.isGM;
       const maxOrderT = Object.values(tokenTools).reduce((m, t) => Math.max(m, t?.order ?? 0), 0);
+      const selectedTokens = canvas?.tokens?.controlled ?? [];
+      const tokensActive = selectedTokens.length > 0 && selectedTokens.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")));
       const toggleTokenTool = {
         name: "pvToggleIgnoreTokenAutoCover",
         title: "PF2E Visioner: Toggle Ignore Auto-Cover (Tokens)",
@@ -143,7 +178,7 @@ function onGetSceneControlButtons(controls) {
         order: maxOrderT + 1,
         visible,
         toggle: true,
-        active: false,
+        active: tokensActive,
         onChange: async (_event, active) => {
           try {
             const selected = canvas?.tokens?.controlled ?? [];
@@ -157,7 +192,7 @@ function onGetSceneControlButtons(controls) {
             if (active) {
               await Promise.all(selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)));
               ui.notifications?.info?.(`Ignored auto-cover for ${selected.length} token(s).`);
-              if (tool) { tool.icon = "fa-solid fa-shield-slash"; tool.active = true; ui.controls.render(); }
+              if (tool) { tool.icon = "fa-solid fa-shield-slash"; ui.controls.render(); }
             } else {
               for (const t of selected) {
                 try { await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover"); } catch (_) {
@@ -165,7 +200,7 @@ function onGetSceneControlButtons(controls) {
                 }
               }
               ui.notifications?.info?.(`Restored auto-cover for ${selected.length} token(s).`);
-              if (tool) { tool.icon = "fa-solid fa-shield"; tool.active = false; ui.controls.render(); }
+              if (tool) { tool.icon = "fa-solid fa-shield"; ui.controls.render(); }
             }
           } catch (_) {}
         },
@@ -179,6 +214,8 @@ function onGetSceneControlButtons(controls) {
     const visible = !!game.user?.isGM;
 
     const maxOrder = Object.values(wallTools).reduce((m, t) => Math.max(m, t?.order ?? 0), 0);
+    const selectedWalls = canvas?.walls?.controlled ?? [];
+    const wallsActive = selectedWalls.length > 0 && selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
     const toggleTool = {
       name: "pvToggleAutoCover",
       title: "PF2E Visioner: Ignore Auto-Cover",
@@ -186,7 +223,7 @@ function onGetSceneControlButtons(controls) {
       order: maxOrder + 1,
       visible,
       toggle: true,
-      active: false,
+      active: wallsActive,
       onChange: async (_event, active) => {
         try {
           const selected = canvas?.walls?.controlled ?? [];
@@ -200,7 +237,7 @@ function onGetSceneControlButtons(controls) {
           if (active) {
             await Promise.all(selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)));
             ui.notifications?.info?.(`Ignored auto-cover on ${selected.length} wall(s).`);
-            if (tool) { tool.icon = "fa-solid fa-shield-slash"; tool.active = true; ui.controls.render(); }
+            if (tool) { tool.icon = "fa-solid fa-shield-slash"; ui.controls.render(); }
           } else {
             for (const w of selected) {
               try { await w?.document?.unsetFlag?.(MODULE_ID, "provideCover"); } catch (_) {
@@ -208,7 +245,7 @@ function onGetSceneControlButtons(controls) {
               }
             }
             ui.notifications?.info?.(`Restored auto-cover on ${selected.length} wall(s).`);
-            if (tool) { tool.icon = "fa-solid fa-shield"; tool.active = false; ui.controls.render(); }
+            if (tool) { tool.icon = "fa-solid fa-shield"; ui.controls.render(); }
           }
         } catch (_) {}
       },

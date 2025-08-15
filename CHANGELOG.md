@@ -8,9 +8,8 @@
   - New `Token Intersection Mode: Coverage` that maps ray coverage across a blocking token to cover tiers using configurable thresholds.
     - Standard at ≥ `Auto-Cover: Standard Cover at ≥ %` (default 50)
     - Greater at ≥ `Auto-Cover: Greater Cover at ≥ %` (default 80)
-  - Walls tool: Single GM toggle button to Ignore/Restore Auto-Cover on selected walls; the button highlights when cover is inactive.
-  - Token tool: Single GM toggle button to Ignore/Restore Auto-Cover on selected tokens; the button highlights when cover is inactive.
-- Settings UX (grouped settings window):
+  - Visioner tool: Single GM toggle buttons to Ignore/Restore Auto-Cover on selected walls and tokens; the button highlights when cover is inactive.
+    - Remove all cover or visibility for a token (observer or target mode)
   - Auto-cover dependents are hidden unless Auto-cover is enabled.
   - Coverage thresholds only shown when mode = Coverage.
   - Seek: hides both limit checkboxes and distance fields when “Use Template” is enabled; distance fields only shown when their respective limit toggles are on.
@@ -20,6 +19,7 @@
 
 - Auto-cover internals refactored into strategy helpers for readability and maintainability.
 - Check roll integration now uses a libWrapper WRAPPER when available to avoid conflicts with PF2E Ranged Combat.
+- Token and Wall toolbar in visioner tool toggles now reflect the currently selected documents and stay in sync on selection changes.
 
 ## [2.1.3] - 2025-08-13
 

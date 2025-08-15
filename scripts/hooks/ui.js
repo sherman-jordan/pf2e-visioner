@@ -9,6 +9,7 @@ export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
   Hooks.on("getTokenDirectoryEntryContext", onGetTokenDirectoryEntryContext);
   Hooks.on("renderWallConfig", onRenderWallConfig);
+  Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
   for (const hook of [
     "renderTokenConfig",
     "renderPrototypeTokenConfig",
@@ -125,6 +126,53 @@ function onRenderWallConfig(app, html) {
       form.appendChild(group);
     }
   } catch (_) { }
+}
+
+function onGetSceneControlButtons(controls) {
+  try {
+    const wallsControl = controls?.walls;
+    const wallTools = wallsControl?.tools;
+    if (!wallsControl || !wallTools) return;
+    const visible = !!game.user?.isGM;
+
+    const maxOrder = Object.values(wallTools).reduce((m, t) => Math.max(m, t?.order ?? 0), 0);
+    const toggleTool = {
+      name: "pvToggleAutoCover",
+      title: "PF2E Visioner: Ignore Auto-Cover",
+      icon: "fa-solid fa-shield-slash",
+      order: maxOrder + 1,
+      visible,
+      toggle: true,
+      active: false,
+      onChange: async (_event, active) => {
+        try {
+          const selected = canvas?.walls?.controlled ?? [];
+          if (!selected.length) {
+            ui.notifications?.warn?.("Select one or more walls first.");
+            const tool = ui.controls.control?.tools?.pvToggleAutoCover;
+            if (tool) { tool.active = !active; ui.controls.render(); }
+            return;
+          }
+          const tool = ui.controls.control?.tools?.pvToggleAutoCover;
+          if (active) {
+            await Promise.all(selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)));
+            ui.notifications?.info?.(`Ignored auto-cover on ${selected.length} wall(s).`);
+            if (tool) { tool.icon = "fa-solid fa-shield-slash"; tool.active = true; ui.controls.render(); }
+          } else {
+            for (const w of selected) {
+              try { await w?.document?.unsetFlag?.(MODULE_ID, "provideCover"); } catch (_) {
+                try { await w?.document?.setFlag?.(MODULE_ID, "provideCover", true); } catch (_) {}
+              }
+            }
+            ui.notifications?.info?.(`Restored auto-cover on ${selected.length} wall(s).`);
+            if (tool) { tool.icon = "fa-solid fa-shield"; tool.active = false; ui.controls.render(); }
+          }
+        } catch (_) {}
+      },
+    };
+
+    wallTools[toggleTool.name] = toggleTool;
+  } catch (_) {}
 }
 
 

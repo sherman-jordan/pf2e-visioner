@@ -17,7 +17,8 @@ export function registerHooks() {
   Hooks.on("highlightObjects", onHighlightObjects);
 
   // Token lifecycle
-  Hooks.on("createToken", onTokenCreated);
+  // Use preCreateToken so we can set defaults (e.g., enable vision) before the doc hits the scene
+  Hooks.on("preCreateToken", onTokenCreated);
   Hooks.on("deleteToken", onTokenDeleted);
 
   // UI hues

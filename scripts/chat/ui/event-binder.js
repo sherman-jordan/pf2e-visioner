@@ -132,7 +132,7 @@ export function bindAutomationEvents(panel, message, actionData) {
           notify.warn("Waiting for the player's Seek template. Please click again once it appears.");
           return;
         }
-        await previewActionResults(actionData);
+        await previewActionResults({ ...actionData, ignoreAllies: game.settings.get("pf2e-visioner", "ignoreAllies") });
       } else if (action === "open-point-out-results" && actionData.actionType === "point-out") {
         if (game.user.isGM) {
           const { enrichPointOutActionDataForGM } = await import("../services/index.js");
@@ -140,7 +140,7 @@ export function bindAutomationEvents(panel, message, actionData) {
         }
         await previewActionResults(actionData);
       } else if (typeof action === "string" && action.startsWith("open-")) {
-        await previewActionResults(actionData);
+        await previewActionResults({ ...actionData, ignoreAllies: game.settings.get("pf2e-visioner", "ignoreAllies") });
       } else if (applyHandlers[action]) {
         // For Point Out, ping the pointed target when applying from the chat panel
         try {

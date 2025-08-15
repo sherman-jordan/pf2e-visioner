@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.3.0] - 2025-08-15
+
+### Added
+
+- Proficiency rank requirement for Seeking hazards and loot (token config). Seek will show "No proficiency" when the seeker's rank is too low and keep DC/override controls.
+- Keybind to show current calculated Auto‑Cover from all tokens (default G). Press to display cover‑only badges; release to clear.
+- Mystler Sneak RAW setting (default off) to enforce RAW outcome for Sneak.
+- New settings structure with category tabs and an emphasized Auto‑Cover section.
+
+### Changed
+
+- Ignore Allies is now per‑dialog (Seek/Hide/Sneak); the global setting only defines the default checkbox state.
+
+### Fixed
+
+- Hide dialog: restored missing "Apply Changes" button.
+- Token Manager: fixed scrolling to the bottom when selecting a token; selected row stays in view.
+- Now scrolls to bottom after injecting buttons in chat
+
 ## [2.2.0] - 2025-08-15
 
 ### Added

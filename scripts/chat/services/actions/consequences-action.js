@@ -16,8 +16,8 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
         if (attacker && t.id === attacker.id) return false;
         const type = t.actor?.type;
         if (type === "hazard" || type === "loot") return false;
-        // Respect Ignore Allies: when enabled, filter allies (we only care about enemies noticing attacker)
-        if (shouldFilterAlly(attacker, t, "enemies")) return false;
+        // Only apply ignoreAllies when explicitly provided; otherwise let dialog filter live
+        if (shouldFilterAlly(attacker, t, "enemies", (actionData?.ignoreAllies === true || actionData?.ignoreAllies === false) ? actionData.ignoreAllies : null)) return false;
         return true;
       } catch (_) {
         return false;

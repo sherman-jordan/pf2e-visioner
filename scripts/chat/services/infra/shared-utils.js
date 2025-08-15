@@ -320,8 +320,13 @@ export function shouldFilterAlly(
   actingToken,
   targetToken,
   filterType = "enemies",
+  preferIgnoreAllies = null,
 ) {
-  const ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
+  // When provided, prefer per-dialog/user choice; otherwise fall back to global setting
+  // preferIgnoreAllies is authoritative when boolean; otherwise use the setting
+  const ignoreAllies = (typeof preferIgnoreAllies === "boolean")
+    ? preferIgnoreAllies
+    : game.settings.get(MODULE_ID, "ignoreAllies") === true;
   if (!ignoreAllies) return false;
 
   // Prefer PF2e alliance when available; fall back to token disposition; finally fall back to ownership/type.
@@ -355,6 +360,29 @@ export function shouldFilterAlly(
   if (filterType === "allies") return !sameSide; // filter out enemies when looking for allies
 
   return false;
+}
+
+/**
+ * Filter outcomes by ally relationship based on a live toggle.
+ * @param {Array} outcomes
+ * @param {Token} actorToken - The acting token for the dialog
+ * @param {boolean|null} preferIgnoreAllies - If true, filter allies out; if false, keep all; if null, use setting
+ * @param {string} tokenProperty - Property name holding the target token on each outcome
+ * @returns {Array}
+ */
+export function filterOutcomesByAllies(outcomes, actorToken, preferIgnoreAllies, tokenProperty = "target") {
+  try {
+    if (!Array.isArray(outcomes)) return outcomes;
+    const doIgnore = preferIgnoreAllies === true;
+    if (!doIgnore) return outcomes;
+    return outcomes.filter((o) => {
+      const token = o?.[tokenProperty];
+      if (!token) return false;
+      return !shouldFilterAlly(actorToken, token, "enemies", true);
+    });
+  } catch (_) {
+    return outcomes;
+  }
 }
 
 /**

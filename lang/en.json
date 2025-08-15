@@ -186,9 +186,9 @@
           "achromatopsia": "Achromatopsia (Complete Color Blindness)"
         }
       },
-      "IGNORE_ALLIES": {
-        "name": "Ignore Allies",
-        "hint": "When enabled, NPCs will only see party members in dialogs, and players will only see NPCs. This simplifies visibility management by hiding ally-to-ally relationships."
+      "IGNORE_ALLIES_DEFAULT": {
+        "name": "Ignore Allies (default)",
+        "hint": "Sets the default state of the 'Ignore allies' checkbox in Visioner dialogs and the Token Manager. You can toggle it live per dialog to filter results in real time."
       },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Default Encounter Filter State",
@@ -258,6 +258,10 @@
       "AUTO_COVER": {
         "name": "Auto-cover",
         "hint": "When enabled, the module will automatically apply cover to tokens based on blocking token path."
+      },
+      "SNEAK_RAW_ENFORCEMENT": {
+        "name": "Sneak Raw Enforcement",
+        "hint": "When enabled, Sneak will follow RAW rules. When disabled, Sneak will be more forgiving."
       }
     },
     "UI": {

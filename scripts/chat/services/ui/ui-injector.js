@@ -14,6 +14,23 @@ export async function injectAutomationUI(message, html, actionData) {
     if (messageContent.length === 0) return;
     messageContent.after(panel);
     try {
+      // After injecting controls, auto-scroll chat to the bottom so buttons are visible.
+      const doScroll = () => {
+        try {
+          if (ui?.chat && typeof ui.chat.scrollBottom === "function") {
+            ui.chat.scrollBottom();
+            return;
+          }
+        } catch (_) {}
+        try {
+          const scroller = document.querySelector("#chat-log") || document.querySelector(".chat-log");
+          if (scroller) scroller.scrollTop = scroller.scrollHeight;
+        } catch (_) {}
+      };
+      // Defer to next tick to include the newly injected panel in layout
+      setTimeout(doScroll, 0);
+    } catch (_) {}
+    try {
       // Ensure the panel reflects current user context so players keep their template controls
       panel.attr("data-user-id", game.userId);
     } catch (_) {}

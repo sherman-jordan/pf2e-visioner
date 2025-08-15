@@ -8,29 +8,6 @@ import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from "./constants.js";
 // All keys listed here will be hidden from the default module settings UI
 // and rendered inside our custom grouped settings form instead.
 const SETTINGS_GROUPS = {
-  General: [
-    "defaultEncounterFilter",
-    "ignoreAllies",
-    "includeLootActors",
-    "lootStealthDC",
-    "useHudButton",
-    "integrateRollOutcome",
-    "enforceRawRequirements",
-  ],
-  "Visibility & Hover": [
-    "enableHoverTooltips",
-    "allowPlayerTooltips",
-    "blockPlayerTargetTooltips",
-    "tooltipFontSize",
-    "colorblindMode",
-  ],
-  "Seek & Range": [
-    "seekUseTemplate",
-    "limitSeekRangeInCombat",
-    "limitSeekRangeOutOfCombat",
-    "customSeekDistance",
-    "customSeekDistanceOutOfCombat",
-  ],
   "Auto-cover": [
     "autoCover",
     "autoCoverTokenIntersectionMode",
@@ -41,6 +18,30 @@ const SETTINGS_GROUPS = {
     "autoCoverIgnoreAllies",
     "autoCoverRespectIgnoreFlag",
     "autoCoverAllowProneBlockers",
+  ],
+  General: [
+    "defaultEncounterFilter",
+    "ignoreAllies",
+    "includeLootActors",
+    "lootStealthDC",
+    "useHudButton",
+    "integrateRollOutcome",
+    "enforceRawRequirements",
+    "sneakRawEnforcement",
+  ],
+  "Seek & Range": [
+    "seekUseTemplate",
+    "limitSeekRangeInCombat",
+    "limitSeekRangeOutOfCombat",
+    "customSeekDistance",
+    "customSeekDistanceOutOfCombat",
+  ],
+  "Visibility & Hover": [
+    "enableHoverTooltips",
+    "allowPlayerTooltips",
+    "blockPlayerTargetTooltips",
+    "tooltipFontSize",
+    "colorblindMode",
   ],
   Advanced: [
     "debug",
@@ -64,49 +65,53 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     },
     position: { width: 640, height: 600 },
     classes: ["pf2e-visioner-settings-window"],
-    actions: { submit: VisionerSettingsForm._onSubmit },
+    actions: { submit: VisionerSettingsForm._onSubmit, switchGroup: VisionerSettingsForm._onSwitchGroup },
   };
 
   constructor(options = {}) {
     super(options);
     currentVisionerSettingsApp = this;
+    // Default to the first defined group
+    try {
+      if (!this.activeGroupKey) this.activeGroupKey = Object.keys(SETTINGS_GROUPS)[0];
+    } catch (_) { this.activeGroupKey = "Auto-cover"; }
   }
 
   async _prepareContext() {
+    const categories = Object.keys(SETTINGS_GROUPS).map((k) => ({ key: k, title: k, active: k === this.activeGroupKey }));
     const groups = [];
-    for (const [groupName, keys] of Object.entries(SETTINGS_GROUPS)) {
-      const items = [];
-      for (const key of keys) {
-        const cfg = DEFAULT_SETTINGS[key];
-        if (!cfg) continue;
-        const current = game.settings.get(MODULE_ID, key);
-        let inputType = "text";
-        let choicesList = null;
-        if (cfg.choices && typeof cfg.choices === "object") {
-          inputType = "select";
-          try {
-            choicesList = Object.entries(cfg.choices).map(([val, label]) => ({ value: val, label, selected: String(current) === String(val) }));
-          } catch (_) {
-            choicesList = null;
-          }
+    const activeKeys = SETTINGS_GROUPS[this.activeGroupKey] || [];
+    const items = [];
+    for (const key of activeKeys) {
+      const cfg = DEFAULT_SETTINGS[key];
+      if (!cfg) continue;
+      const current = game.settings.get(MODULE_ID, key);
+      let inputType = "text";
+      let choicesList = null;
+      if (cfg.choices && typeof cfg.choices === "object") {
+        inputType = "select";
+        try {
+          choicesList = Object.entries(cfg.choices).map(([val, label]) => ({ value: val, label, selected: String(current) === String(val) }));
+        } catch (_) {
+          choicesList = null;
         }
-        else if (cfg.type === Boolean) inputType = "checkbox";
-        else if (cfg.type === Number) inputType = "number";
-        items.push({
-          key,
-          name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
-          hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
-          value: current,
-          inputType,
-          choices: choicesList,
-          min: cfg.min ?? null,
-          max: cfg.max ?? null,
-          step: cfg.step ?? 1,
-        });
       }
-      if (items.length) groups.push({ title: groupName, items });
+      else if (cfg.type === Boolean) inputType = "checkbox";
+      else if (cfg.type === Number) inputType = "number";
+      items.push({
+        key,
+        name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
+        hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
+        value: current,
+        inputType,
+        choices: choicesList,
+        min: cfg.min ?? null,
+        max: cfg.max ?? null,
+        step: cfg.step ?? 1,
+      });
     }
-    return { groups };
+    if (items.length) groups.push({ title: this.activeGroupKey, items });
+    return { groups, categories };
   }
 
   async _renderHTML(context, _options) {
@@ -119,13 +124,26 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
   _replaceHTML(result, content, _options) {
     content.innerHTML = result;
     try {
+      // Wire tabs for categories
+      const tabs = content.querySelectorAll('[data-action="switchGroup"][data-key]');
+      tabs.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          try { VisionerSettingsForm._onSwitchGroup(null, btn); } catch (_) {}
+        });
+      });
+
       // Utility: show/hide a setting's form-group wrapper
       const toggleSettingVisibility = (name, visible) => {
         try {
           const input = content.querySelector(`[name="settings.${name}"]`);
           if (!input) return;
-          const group = input.closest('.form-group') || input.parentElement;
-          if (group) group.style.display = visible ? '' : 'none';
+          const group = input.closest('.pv-form-row') || input.closest('.form-group') || input.parentElement;
+          if (!group) return;
+          if (!group.dataset.pvDisplay) {
+            const computed = getComputedStyle(group)?.display || '';
+            group.dataset.pvDisplay = group.style.display || computed || '';
+          }
+          group.style.display = visible ? group.dataset.pvDisplay : 'none';
         } catch (_) {}
       };
 
@@ -240,6 +258,17 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       try { await app.close(); } catch (_) {}
     } catch (e) { /* noop */ try { await app.close(); } catch (_) {} }
   }
+
+  static _onSwitchGroup(_event, button) {
+    try {
+      const key = button?.dataset?.key;
+      if (!key) return;
+      const app = currentVisionerSettingsApp;
+      if (!app) return;
+      app.activeGroupKey = key;
+      app.render({ force: true });
+    } catch (_) {}
+  }
 }
 
 /**
@@ -292,6 +321,9 @@ export function registerSettings() {
         settingConfig.onChange = () => {};
       } else if (key === "customSeekDistanceOutOfCombat") {
         // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
+      } else if (key === "autoCover") {
+        // No reload needed: auto-cover is read at runtime
         settingConfig.onChange = () => {};
       } else if (key === "blockPlayerTargetTooltips") {
         // No reload: will take effect on next hover; ensure initialized when allowed
@@ -390,6 +422,25 @@ export function registerKeybindings() {
       keybindingConfig.onUp = async () => {
         const { setTooltipMode } = await import("./services/hover-tooltips.js");
         setTooltipMode("target");
+      };
+    } else if (key === "showAutoCoverOverlay") {
+      keybindingConfig.onDown = async () => {
+        try {
+          const { HoverTooltips, showAutoCoverComputedOverlay, hideAutoCoverComputedOverlay } = await import("./services/hover-tooltips.js");
+          // Decide source token: hovered or first controlled
+          let token = HoverTooltips.currentHoveredToken;
+          if (!token) token = canvas.tokens.controlled?.[0] || null;
+          if (!token) return;
+          // Render fresh auto-cover computation overlay (cover-only)
+          hideAutoCoverComputedOverlay();
+          showAutoCoverComputedOverlay(token);
+        } catch (_) {}
+      };
+      keybindingConfig.onUp = async () => {
+        try {
+          const { hideAutoCoverComputedOverlay } = await import("./services/hover-tooltips.js");
+          hideAutoCoverComputedOverlay();
+        } catch (_) {}
       };
     }
 

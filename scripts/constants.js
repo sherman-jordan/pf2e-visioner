@@ -105,7 +105,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   tooltipFontSize: {
@@ -146,8 +146,17 @@ export const DEFAULT_SETTINGS = {
 
   // Token Filtering
   ignoreAllies: {
-    name: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.name",
-    hint: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.hint",
+    name: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES_DEFAULT.name",
+    hint: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES_DEFAULT.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+
+  sneakRawEnforcement: {
+    name: "PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.name",
+    hint: "PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -171,7 +180,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
   defaultEncounterFilter: {
     name: "PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name",
@@ -179,7 +188,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   // Seek Action Settings
@@ -275,7 +284,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   // Auto-Cover behavior tuning
@@ -393,6 +402,12 @@ export const KEYBINDINGS = {
     hint: "PF2E_VISIONER.KEYBINDINGS.HOLD_COVER_OVERRIDE.hint",
     // No default binding; user can configure
     editable: [],
+    restricted: false,
+  },
+  showAutoCoverOverlay: {
+    name: "Show Auto‑Cover Overlay",
+    hint: "Press to show auto‑cover badges for the hovered token (or controlled token if none).",
+    editable: [{ key: "KeyG", modifiers: [] }],
     restricted: false,
   },
 };

@@ -20,6 +20,16 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
   _onRender(context, options) {
     super._onRender?.(context, options);
     this._applySelectionHighlight();
+    // Live re-filtering for per-dialog Ignore Allies checkbox
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) {
+        cb.addEventListener('change', () => {
+          this.ignoreAllies = !!cb.checked;
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
   }
 
   async close(options) {

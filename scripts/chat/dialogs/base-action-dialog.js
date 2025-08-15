@@ -69,6 +69,8 @@ export class BaseActionDialog extends BasePreviewDialog {
       totalCount: Array.isArray(outcomes) ? outcomes.length : 0,
       showEncounterFilter: hasActiveEncounter(),
       encounterOnly: !!this.encounterOnly,
+      // Per-dialog ignore-allies checkbox state (defaults from global setting)
+      ignoreAllies: this.ignoreAllies,
       bulkActionState: this.bulkActionState ?? "initial",
     };
   }

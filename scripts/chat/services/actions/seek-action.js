@@ -23,11 +23,13 @@ export class SeekActionHandler extends ActionHandlerBase {
       // Exclude the acting token reliably by id when possible
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
       // Always include hazards and loot in seek results regardless of ally filtering
-      .filter((t) =>
-        t.actor?.type === "hazard" || t.actor?.type === "loot"
-          ? true
-          : !shouldFilterAlly(actionData.actor, t, "enemies"),
-      );
+      .filter((t) => {
+        if (t.actor?.type === "hazard" || t.actor?.type === "loot") return true;
+        // Prefer dialog's ignoreAllies when provided
+        // Discovery should not apply ignoreAllies when null/undefined; allow dialog to filter live
+        const preferIgnore = (actionData?.ignoreAllies === true || actionData?.ignoreAllies === false) ? actionData.ignoreAllies : null;
+        return !shouldFilterAlly(actionData.actor, t, "enemies", preferIgnore);
+      });
     
     // Optional distance limitation based on settings (combat vs out-of-combat)
     try {

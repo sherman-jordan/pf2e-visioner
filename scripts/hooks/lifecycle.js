@@ -18,6 +18,14 @@ export function onReady() {
   }
 
   registerSocket();
+
+  // Ensure all existing tokens and prototype tokens have vision enabled (GM only)
+  if (game.user?.isGM) {
+    // Run shortly after ready to avoid competing with other modules' migrations
+    setTimeout(() => {
+      enableVisionForAllTokensAndPrototypes().catch(() => {});
+    }, 25);
+  }
 }
 
 export async function onCanvasReady() {
@@ -65,6 +73,40 @@ export async function onCanvasReady() {
           }
         } catch (_) {}
       }, 50);
+    }
+  } catch (_) {}
+}
+
+async function enableVisionForAllTokensAndPrototypes() {
+  try {
+    // Update all scene tokens
+    const scenes = Array.from(game.scenes?.contents ?? []);
+    for (const scene of scenes) {
+      try {
+        const tokens = Array.from(scene.tokens?.contents ?? []);
+        const updates = [];
+        for (const t of tokens) {
+          const hasVision = t?.vision === true || t?.sight?.enabled === true;
+          if (!hasVision) {
+            updates.push({ _id: t.id, vision: true, sight: { enabled: true } });
+          }
+        }
+        if (updates.length) {
+          await scene.updateEmbeddedDocuments("Token", updates, { diff: false, render: false });
+        }
+      } catch (_) {}
+    }
+
+    // Update all actor prototype tokens
+    const actors = Array.from(game.actors?.contents ?? []);
+    for (const actor of actors) {
+      try {
+        const pt = actor?.prototypeToken;
+        const hasVision = pt?.vision === true || pt?.sight?.enabled === true;
+        if (!hasVision) {
+          await actor.update({ "prototypeToken.vision": true, "prototypeToken.sight.enabled": true }, { diff: false });
+        }
+      } catch (_) {}
     }
   } catch (_) {}
 }

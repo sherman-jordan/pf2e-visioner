@@ -5,11 +5,11 @@
 import { extractPerceptionDC, extractStealthDC } from "../../chat/services/infra/shared-utils.js";
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../../constants.js";
 import {
-  getCoverMap,
-  getLastRollTotalForActor,
-  getSceneTargets,
-  getVisibilityMap,
-  hasActiveEncounter,
+    getCoverMap,
+    getLastRollTotalForActor,
+    getSceneTargets,
+    getVisibilityMap,
+    hasActiveEncounter,
 } from "../../utils.js";
 
 function getTokenImage(token) {
@@ -51,8 +51,9 @@ export async function buildContext(app, options) {
 
   context.showEncounterFilter = hasActiveEncounter();
   context.encounterOnly = app.encounterOnly;
+  context.ignoreAllies = !!app.ignoreAllies;
 
-  const sceneTokens = getSceneTargets(app.observer, app.encounterOnly);
+  const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
 
   context.observer = {
     id: app.observer.document.id,

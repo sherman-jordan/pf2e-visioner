@@ -13,8 +13,8 @@ export class DiversionActionHandler extends ActionHandlerBase {
     return tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
-      // Respect ignoreAllies: when enabled, diversion ignores allies
-      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"))
+      // Only apply ignoreAllies when explicitly provided; otherwise let dialog filter live
+      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies", (actionData?.ignoreAllies === true || actionData?.ignoreAllies === false) ? actionData.ignoreAllies : null))
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
   }
   async analyzeOutcome(actionData, subject) {

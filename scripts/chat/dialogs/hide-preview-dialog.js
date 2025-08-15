@@ -9,7 +9,7 @@ import { getDesiredOverrideStatesForAction } from "../services/data/action-state
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  hasActiveEncounter
+    hasActiveEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -58,9 +58,12 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     this.actorToken = actorToken;
     this.outcomes = outcomes || [];
+    // Preserve an immutable base list for live filtering toggles
+    try { this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : []; } catch (_) { this._originalOutcomes = outcomes || []; }
     this.changes = changes || [];
     this.actionData = { ...(actionData || {}), actionType: "hide" };
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
     this.bulkActionState = "initial"; // Track bulk action state
 
     // Store reference for singleton behavior
@@ -75,6 +78,10 @@ export class HidePreviewDialog extends BaseActionDialog {
     this.addIconClickHandlers();
     this.markInitialSelections();
     this.updateChangesCount();
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) cb.addEventListener('change', () => { this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial"; this.render({ force: true }); });
+    } catch (_) {}
   }
 
   /**
@@ -85,8 +92,13 @@ export class HidePreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Get filtered outcomes using base encounter helper then extra RAW filtering
-    let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter observers found for this action");
+    // Get filtered outcomes from the original list using encounter helper, then live allies filter, then extra RAW filtering
+    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+    let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter observers found for this action");
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
+    } catch (_) {}
 
     // Always annotate each row with cover info for context
     filteredOutcomes = filteredOutcomes.map((o) => ({
@@ -129,8 +141,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       };
     });
 
-    // Keep internal outcomes in sync so handlers and bulk ops use actionable rows
-    this.outcomes = processedOutcomes;
+    // Do not overwrite the original outcomes; keep them for live re-filtering
 
     // Calculate summary information
     context.actorToken = this.actorToken;

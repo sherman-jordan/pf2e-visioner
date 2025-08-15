@@ -1,0 +1,290 @@
+{
+  "PF2E_VISIONER": {
+    "MODULE_TITLE": "PF2E Visioner",
+    "TOKEN_MANAGER": {
+      "TITLE": "Menedżer widoczności tokenów",
+      "OBSERVER": "Token obserwowany",
+      "TARGET": "Token docelowy",
+      "VISIBILITY_STATE": "Stan widoczności",
+      "COVER_STATE": "Stan osłony",
+      "NO_TOKENS": "W tej scenie nie ma dostępnych tokenów",
+      "APPLY": "Zastosuj bieżące",
+      "APPLY_BOTH": "Zastosuj oba",
+      "CANCEL": "Anuluj",
+      "RESET": "Tryb resetowania",
+      "BULK_ACTIONS": "Akcje zbiorcze",
+      "VISIBILITY_TAB": "Widoczność",
+      "COVER_TAB": "Osłona"
+    },
+    "VISIBILITY_STATES": {
+      "observed": "Obserwowany",
+      "hidden": "Ukryty",
+      "undetected": "Niewykryty",
+      "concealed": "Przysłonięty"
+    },
+    "COVER_STATES": {
+      "none": "Brak osłony",
+      "lesser": "Mniejsza osłona",
+      "standard": "Standardowa osłona",
+      "greater": "Większa osłona"
+    },
+    "VISUAL_EFFECTS": {
+      "HIDDEN_OVERLAY": "Ten token jest ukryty przed Twoim widokiem",
+      "UNDETECTED_OVERLAY": "Ten token jest niewykryty przez ciebie",
+      "CONCEALED_OVERLAY": "Ten token jest przysłonięty dla ciebie"
+    },
+    "MECHANICAL_EFFECTS": {
+      "HIDDEN_FLAT_CHECK": "Wymagany płaski test ST 11 do ustalenia celu",
+      "CONCEALED_FLAT_CHECK": "Wymagany płaski test ST 5 do ustalenia celu",
+      "UNDETECTED_CONDITION": "Niewykryty stan z pełnymi skutkami mechanicznymi",
+      "VISIBLE_NO_EFFECTS": "Brak kar ani efektów za celowanie",
+      "HIDDEN_TOOLTIP": "Ukryty: Jesteś odsłonięty przed celem i musisz wykonać test ST 11, aby trafić go atakiem, zaklęciem lub innym efektem.",
+      "CONCEALED_TOOLTIP": "Przysłonięty: Musisz wykonać test ST 5, aby trafić cel atakiem, zaklęcia lub innego efektu.",
+      "UNDETECTED_TOOLTIP": "Niewykryty: Nie znasz położenia celu. Jesteś odsłonięty przed celem i nie możesz go łatwo namierzyć. Akcja Szukanie może pomóc w znalezieniu niewykrytej istoty.",
+      "VISIBLE_TOOLTIP": "Widoczny: Brak kar lub efektów",
+      "BLINDED_OVERRIDE": "Wszystkie stworzenia są Ukryte z powodu stanu Oślepienie.",
+      "DAZZLED_OVERRIDE": "Wszystkie stworzenia są Przysłonięte z powodu stanu Zamroczony.",
+      "NO_COVER_TOOLTIP": "Bez osłony: brak premii i kar",
+      "LESSER_COVER_TOOLTIP": "Mniejsza osłona: +1 premii okolicznościowej do KP",
+      "STANDARD_COVER_TOOLTIP": "Standardowa osłona: +2 premii okolicznościowej do KP, rzutów obronnych na Refleks i testów Ukrycia. Możliwość Ukrywania się za osłoną.",
+      "GREATER_COVER_TOOLTIP": "Większa osłona: +4 premii okolicznościowej do KP, rzutów obronnych na Refleks i testów Ukrycia. Możliwość Ukrywania się za tą osłoną."
+    },
+    "CONTEXT_MENU": {
+      "MANAGE_TOKEN": "Zarządzaj tokenem",
+      "MANAGE_VISIBILITY": "Zarządzaj widocznością tokenu",
+      "MANAGE_COVER": "Zarządzaj osłoną tokenu",
+      "QUICK_HIDDEN": "Ustaw jako Ukryty",
+      "QUICK_UNDETECTED": "Ustaw jako Niewykryty",
+      "QUICK_CONCEALED": "Ustaw jako Przysłonięty",
+      "QUICK_OBSERVED": "Ustaw jako Obserwowany",
+      "QUICK_NO_COVER": "Ustaw bez Osłony",
+      "QUICK_LESSER_COVER": "Ustaw Mniejszą Osłonę",
+      "QUICK_STANDARD_COVER": "Ustaw Standardową Osłonę",
+      "QUICK_GREATER_COVER": "Ustaw Większą Osłonę"
+    },
+    "NOTIFICATIONS": {
+      "NO_OBSERVER_SELECTED": "Najpierw wybierz token obserwowany.",
+      "MULTIPLE_OBSERVERS": "Wybrano wiele tokenów obserwatora — wybierz tylko jeden",
+      "NO_SOCKETLIB_INSTALLED": "PF2E Visioner wymaga, aby moduł socketlib był aktywny, aby automatycznie odświeżać ekrany klientów. Proszę go aktywować."
+    },
+    "SEEK_AUTOMATION": {
+      "BUTTON_APPLY": "Zastosuj wyniki Szukania",
+      "BUTTON_PREVIEW": "Podgląd wyników",
+      "BUTTON_PROCESSED": "Zastosowane wyniki",
+      "BUTTON_TOOLTIP": "Zastosuj zmiany widoczności na podstawie wyników Szukania",
+      "NO_UNDETECTED_TOKENS": "Nie znaleziono żadnych Ukrytych lub Niewykrytych tokenów dla akcji Szukania użytkownika {name}",
+      "NO_CHANGES": "Nie trzeba zmieniać widoczności dla akcji Szukania użytkownika {name}.",
+      "RESULTS_APPLIED": "Zastosuj automatycznie zmiany związane z akcją Szukania: {changes}",
+      "ERROR_PROCESSING": "Błąd podczas stosowania wyników Szukania. Sprawdź konsolę, aby uzyskać szczegółowe informacje.",
+      "PROCESSING": "Przetwarzanie wyników Szukania...",
+      "PREVIEW_TITLE": "Przeglądaj wyniki Szukania",
+      "PREVIEW_HINT": "Analiza wyników podjętych działań Szukania",
+      "ROLL_VS_DC": "Rzut przeciwko ST Ukrycia",
+      "OUTCOME": "Wynik",
+      "VISIBILITY_CHANGE": "Zmiana widoczności",
+      "OPEN_RESULTS": "Otwórz wyniki Szukania",
+      "OPEN_RESULTS_TOOLTIP": "Otwórz okno dialogowe wyników Szukania, aby zastosować indywidualne lub zbiorcze zmiany widoczności.",
+      "SETUP_TEMPLATE": "Konfiguracja szablonu Szukania",
+      "REMOVE_TEMPLATE": "Usuń szablon Szukania",
+      "SETUP_TEMPLATE_TOOLTIP": "Kliknij, aby umieścić 15-stopowy wybuch w dowolnym miejscu; Szukanie użyje tokenów znajdujących się w jego zasięgu.",
+      "ENCOUNTER_ONLY": "Pokaż tylko tokeny spotkań",
+      "SETTING_NAME": "Włącz automatyzację Szukania",
+      "SETTING_HINT": "Automatycznie dodawaj przyciski do wiadomości czatu Szukania w celu zastosowania zmian widoczności.",
+      "OUT_OF_RANGE": "Poza zasięgiem",
+      "RANGE_LIMIT_ACTIVE": "Aktywne ograniczenie zasięgu: Wyświetlane są tylko cele znajdujące się w odległości do 30 stóp.",
+      "RANGE_LIMIT_ACTIVE_CUSTOM": "Aktywne ograniczenie zasięgu: Wyświetlane są tylko cele znajdujące się w odległości {distance} stóp.",
+      "NO_TARGETS_IN_RANGE": "Brak ważnych celów w zasięgu 30 stóp.",
+      "NO_TARGETS_IN_RANGE_CUSTOM": "Brak ważnych celów w zasięgu {distance} stóp."
+    },
+    "HIDE_AUTOMATION": {
+      "BUTTON_APPLY": "Zastosuj wyniki Ukrywania",
+      "BUTTON_PREVIEW": "Podgląd wyników",
+      "BUTTON_PROCESSED": "Zastosowane wyniki",
+      "BUTTON_TOOLTIP": "Zastosuj zmiany widoczności na podstawie wyników Ukrywania",
+      "NO_OBSERVERS": "Nie znaleziono obserwatorów dla akcji Ukrywanie użytkownika {name}.",
+      "NO_CHANGES": "Nie trzeba zmieniać widoczności dla akcji Ukrywanie użytkownika {name}.",
+      "RESULTS_APPLIED": "Zastosuj automatycznie zmiany związane z akcją Ukrywanie: {changes}",
+      "ERROR_PROCESSING": "Błąd podczas stosowania wyników Ukrywanie. Sprawdź konsolę, aby uzyskać szczegółowe informacje.",
+      "PROCESSING": "Przetwarzanie wyników Ukrywania...",
+      "PREVIEW_TITLE": "Przeglądaj wyniki Ukrywania",
+      "PREVIEW_HINT": "Analiza wyników podjętych działań Ukrywania",
+      "ROLL_VS_DC": "Rzut przeciwko ST Percepcji",
+      "OUTCOME": "Wynik",
+      "VISIBILITY_CHANGE": "Zmiana widoczności",
+      "OPEN_RESULTS": "Otwórz wyniki Ukrywania",
+      "OPEN_RESULTS_TOOLTIP": "Otwórz okno dialogowe wyników Ukrywania, aby zastosować indywidualne lub zbiorcze zmiany widoczności.",
+      "ENCOUNTER_ONLY": "Pokaż tylko tokeny spotkań",
+      "SETTING_NAME": "Włącz automatyzację Ukrywania",
+      "SETTING_HINT": "Automatycznie dodawaj przyciski do wiadomości czatu Ukrywania w celu zastosowania zmian widoczności."
+    },
+    "SNEAK_AUTOMATION": {
+      "BUTTON_APPLY": "Zastosuj wyniki Skradania",
+      "BUTTON_PREVIEW": "Podgląd wyników",
+      "BUTTON_PROCESSED": "Zastosowane wyniki",
+      "BUTTON_TOOLTIP": "Zastosuj zmiany widoczności na podstawie wyników Skradania",
+      "NO_OBSERVERS": "Żadne tokeny nie widzą {actor} - nie jest potrzebne skradanie",
+      "NO_CHANGES": "Skradanie nie miało wpływu na widoczność.",
+      "ERROR_PROCESSING": "Błąd podczas przetwarzania wyników Skradania",
+      "PROCESSING": "Przetwarzanie wyników Skradania...",
+      "PREVIEW_TITLE": "Przeglądaj wyniki Skradania",
+      "PREVIEW_HINT": "Analiza wyników podjętych działań Skradania",
+      "ROLL_VS_DC": "Rzut przeciwko ST Percepcji",
+      "OUTCOME": "Wynik",
+      "VISIBILITY_CHANGE": "Zmiana widoczności",
+      "OPEN_RESULTS": "Otwórz wyniki Skradania",
+      "OPEN_RESULTS_TOOLTIP": "Otwórz okno dialogowe wyników Skradania, aby zastosować indywidualne lub zbiorcze zmiany widoczności.",
+      "ENCOUNTER_ONLY": "Pokaż tylko tokeny spotkań",
+      "SETTING_NAME": "Włącz automatyzację Skradania",
+      "SETTING_HINT": "Automatycznie dodawaj przyciski do wiadomości czatu Skradania w celu zastosowania zmian widoczności."
+    },
+    "CREATE_A_DIVERSION_AUTOMATION": {
+      "BUTTON_APPLY": "Zastosuj wyniki Dywersji",
+      "BUTTON_TOOLTIP": "Zastosuj zmiany widoczności z akcji Dywersja",
+      "NO_OBSERVERS": "Żadne tokeny nie widzą {actor} - nie jest potrzebna dywersja",
+      "NO_CHANGES": "Dywersja nie miała wpływu na widoczność.",
+      "ERROR_PROCESSING": "Błąd podczas przetwarzania wyników Dywersji",
+      "PROCESSING": "Przetwarzanie wyników Dywersji...",
+      "PREVIEW_TITLE": "Przeglądaj wyniki Dywersji",
+      "PREVIEW_HINT": "Analiza wyników podjętych działań Dywersji",
+      "ROLL_VS_DC": "Rzut przeciwko ST Percepcji",
+      "OUTCOME": "Wynik",
+      "VISIBILITY_CHANGE": "Zmiana widoczności",
+      "OPEN_RESULTS": "Otwórz wyniki Dywersji",
+      "OPEN_RESULTS_TOOLTIP": "Otwórz okno dialogowe wyników Dywersji, aby zastosować indywidualne lub zbiorcze zmiany widoczności.",
+      "ENCOUNTER_ONLY": "Pokaż tylko tokeny spotkań",
+      "SETTING_NAME": "Włącz automatyzację Dywersji",
+      "SETTING_HINT": "Automatycznie dodawaj przyciski do wiadomości czatu Dywersji w celu zastosowania zmian widoczności."
+    },
+    "SETTINGS": {
+      "ENABLE_HOVER_TOOLTIPS": {
+        "name": "Włącz podpowiedzi po najechaniu kursorem",
+        "hint": "Pokaż podpowiedzi dotyczące statusu widoczności po najechaniu kursorem na tokeny"
+      },
+      "ALLOW_PLAYER_TOOLTIPS": {
+        "name": "Zezwól na podpowiedzi dla gracza",
+        "hint": "Po włączeniu tej opcji gracze mogą zobaczyć podpowiedzi dotyczące widoczności z własnej perspektywy po najechaniu kursorem na tokeny."
+      },
+      "TOOLTIP_FONT_SIZE": {
+        "name": "Rozmiar podpowiedzi",
+        "hint": "Wybierz rozmiar podpowiedzi (wpływa na rozmiar ikony i obramowania; tekst dostosowuje się odpowiednio)",
+        "CHOICES": {
+          "tiny": "Malutki",
+          "small": "Mały",
+          "medium": "Średni",
+          "large": "Duży",
+          "xlarge": "Bardzo duży"
+        }
+      },
+      "COLORBLIND_MODE": {
+        "name": "Tryb dla osób z dysfunkcją widzenia barw",
+        "hint": "Wybierz tryb dla osób z dysfunkcją widzenia barw, aby dostosować kolory dla lepszej widoczności (ustawienie po stronie klienta)",
+        "CHOICES": {
+          "none": "Brak trybu dla osób z daltonizmem",
+          "protanopia": "Protanopia (niedowidzenie barw czerwonych)",
+          "deuteranopia": "Deuteranopia (niedowidzenie barw zielonych)",
+          "tritanopia": "Tritanopia (niedowidzenie barw niebieskich)",
+          "achromatopsia": "Achromatopsja (całkowita ślepota barw)"
+        }
+      },
+      "IGNORE_ALLIES": {
+        "name": "Ignoruj sojuszników",
+        "hint": "Po włączeniu tej opcji postacie niezależne będą widzieć w oknach dialogowych wyłącznie członków drużyny, a gracze będą widzieć wyłącznie postacie niezależne. Upraszcza to zarządzanie widocznością poprzez ukrycie relacji między sojusznikami."
+      },
+      "DEFAULT_ENCOUNTER_FILTER": {
+        "name": "Domyślny stan filtru spotkań",
+        "hint": "Po włączeniu opcji, pole wyboru filtru spotkań w oknach dialogowych będzie domyślnie zaznaczone, gdy aktywne jest spotkanie."
+      },
+      "LIMIT_SEEK_RANGE": {
+        "name": "Ogranicz zakres poszukiwań w walce",
+        "hint": "Po włączeniu opcji, akcja Szukanie w walce będzie wykrywać tylko cele znajdujące się w określonej odległości."
+      },
+      "LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE": "Ograniczenie zakresu wyłączone: Korzystanie z szablonu",
+      "SEEK_USE_TEMPLATE": {
+        "name": "Użyj szablonu Szukania (30 stóp - wybuch)",
+        "hint": "Po włączeniu tej opcji będzie można skonfigurować szablon wybuchu o zasięgu 30 stóp i uwzględniać tylko cele znajdujące się w obrębie tego szablonu."
+      },
+      "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
+        "name": "Ogranicz zasięg Szukania poza walką",
+        "hint": "Po włączeniu opcji, akcja Szukanie poza walką będzie wykrywać tylko cele znajdujące się w określonej odległości."
+      },
+      "CUSTOM_SEEK_DISTANCE": {
+        "name": "Wartość zakresu Szukania",
+        "hint": "Ustaw maksymalną odległość (w stopach) dla akcji Szukania, gdy włączone jest ograniczenie zasięgu."
+      },
+      "CUSTOM_SEEK_DISTANCE_OOC": {
+        "name": "Wartość zasięgu Szukania (poza walką)",
+        "hint": "Ustaw maksymalną odległość (w stopach) dla akcji Szukania, gdy włączone jest ograniczenie zasięgu poza walką."
+      },
+      "USE_HUD_BUTTON": {
+        "name": "Użyj przycisku HUD token",
+        "hint": "Po włączeniu dodaje przycisk widoczności do HUD tokenu. Po wyłączeniu używa pływającego przycisku, gdy wybrane są tokeny."
+      },
+      "BLOCK_PLAYER_TARGET_TOOLTIPS": {
+        "name": "Blokuj podpowiedzi dotyczące celów dla graczy",
+        "hint": "Po włączeniu tej opcji gracze nie będą widzieć podpowiedzi po najechaniu kursorem na tokeny w trybie celowania (tak jak widzą je inni gracze). Podpowiedzi będą nadal widoczne po przytrzymaniu klawisza O lub naciśnięciu klawisza Alt."
+      },
+      "INTEGRATE_COVER_VISIBILITY": {
+        "name": "Zintegruj Osłonę z regułami widoczności",
+        "hint": "Po włączeniu tej opcji niektóre akcje są uzależnione od spełnienia warunków wstępnych. Na przykład akcja Ukrywanie jest dozwolona tylko wtedy, gdy token wykonujący ma co najmniej standardową osłonę od obserwatora."
+      },
+      "INTEGRATE_ROLL_OUTCOME": {
+        "name": "Zintegruj wynik rzutu w menedżerze tokenów",
+        "hint": "Dodaje kolumnę do Menedżera tokenów, aby pokazać ostatni wynik rzutu w porównaniu z aktualnym ST i wynikiem."
+      },
+      "ENFORCE_RAW": {
+        "name": "Wymuś RAW",
+        "hint": "Po włączeniu niektórych akcji muszą zostać spełnione warunki wstępne. Na przykład Ukrywanie jest dozwolone tylko wtedy, gdy token działający jest Przysłonięty lub ma Standardową osłonę od obserwatora."
+      },
+      "DEBUG": {
+        "name": "Tryb debugowania",
+        "hint": "Włącz szczegółowe logowanie konsoli w celu rozwiązywania problemów."
+      },
+      "LOOT_PERCEPTION_DC": {
+        "name": "Domyślna ST Percepcji dla aktorów łupów",
+        "hint": "Używane, gdy token łupu wymaga ST Percepcji i nie ma statystyki systemowej."
+      },
+      "LOOT_STEALTH_DC": {
+        "name": "Domyślne ST Ukrycia dla aktorów łupów",
+        "hint": "ST używane podczas traktowania tokenów łupów jako celów Szukania."
+      },
+      "INCLUDE_LOOT_ACTORS": {
+        "name": "Dodaj aktorów łupów do menedżera widoczności",
+        "hint": "Umożliwia konfigurację stanów widoczności przedmiotów łupów (skrzyń, pojemników) dla poszczególnych obserwatorów. Tylko wizualnie; nie są stosowane żadne stany PF2E."
+      },
+      "INCLUDE_WALLS": {
+        "name": "Dodaj ściany jako obiekty, które można ukryć (funkcja eksperymentalna)",
+        "hint": "Pokaż ściany w menedżerze, aby oznaczyć je jako widoczne/ukryte dla obserwatora. Obecna implementacja jest wyłącznie wizualna i nie zmienia zasłaniania ani kolizji."
+      },
+      "AUTO_COVER": {
+        "name": "Automatyczna osłona",
+        "hint": "Po włączeniu moduł automatycznie zastosuje osłonę do tokenów na podstawie ścieżki blokującej token."
+      }
+    },
+    "UI": {
+      "ENCOUNTER_FILTER_TEXT": "Pokaż tylko tokeny spotkań",
+      "COVER_OVERRIDE": "Pomijanie osłony",
+      "ROLL": "Rzut"
+    },
+    "WALL": {
+      "VISIBLE_TO_YOU": "Ukryta ściana"
+    },
+    "KEYBINDINGS": {
+      "OPEN_TOKEN_MANAGER": {
+        "name": "Otwórz menedżera widoczności tokenów",
+        "hint": "Otwórz menedżera tokenów dla wybranych tokenów"
+      },
+      "OPEN_VISIBILITY_MANAGER": {
+        "name": "Otwórz menedżera widoczności tokenów",
+        "hint": "Otwórz menedżera widoczności dla wybranych tokenów"
+      },
+      "HOLD_COVER_OVERRIDE": {
+        "name": "Przytrzymaj, aby pominąć osłonę podczas Szybkich Rzutów",
+        "hint": "Przytrzymanie podczas kliknięcia ataku (bez okna dialogowego) powoduje użycie osłony Visioner zamiast automatycznie obliczonej osłony. Brak domyślnego ustawienia; skonfiguruj własny klawisz."
+      },
+      "TOGGLE_OBSERVER_MODE": {
+        "name": "Włącz/wyłącz tryb obserwatora dla podpowiedzi po najechaniu kursorem",
+        "hint": "Przytrzymaj ten klawisz, aby przełączyć podpowiedzi po najechaniu kursorem do trybu obserwatora (jak token po najechaniu kursorem widzi inne)."
+      }
+    }
+  }
+}

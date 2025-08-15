@@ -5,7 +5,7 @@
 # PF2E Visioner – Full Feature Overview
 
 PF2E Visioner is a visibility and perception toolkit for Foundry VTT’s PF2E system. It lets you control what every creature can see, automates PF2e visibility-changing actions, and provides clean UX for GMs and players.
-
+\n
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/roileaf)
 
 ---

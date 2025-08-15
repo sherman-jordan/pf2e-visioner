@@ -27,6 +27,7 @@ const SETTINGS_GROUPS = {
     "useHudButton",
     "integrateRollOutcome",
     "enforceRawRequirements",
+    "keybindingOpensTMInTargetMode",
     "sneakRawEnforcement",
   ],
   "Seek & Range": [
@@ -412,6 +413,9 @@ export function registerSettings() {
             document.body.classList.add(`pf2e-visioner-colorblind-${value}`);
           }
         };
+      } else if (key === "keybindingOpensTMInTargetMode") {
+        // No reload needed: swap mode is read at runtime
+        settingConfig.onChange = () => {};
       }
 
       try {
@@ -447,8 +451,9 @@ export function registerKeybindings() {
     // Add appropriate handler
     if (key === "openTokenManager") {
       keybindingConfig.onDown = async () => {
+        const mode = game.settings.get(MODULE_ID, "keybindingOpensTMInTargetMode") ? "target" : "observer";
         const { api } = await import("./api.js");
-        await api.openTokenManager();
+        await api.openTokenManager(null, {mode});
       };
     } else if (key === "openVisibilityManager") {
       keybindingConfig.onDown = async () => {

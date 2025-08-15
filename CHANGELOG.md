@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.3] - 2025-08-13
+
+### Fixed
+
+- Auto cover:
+  - respect metagaming ac reveals
+
 ## [2.1.2] - 2025-08-12
 
 ### Fixed

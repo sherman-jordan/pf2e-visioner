@@ -82,8 +82,7 @@ export function registerAutoCoverHooks() {
                 // Safely bump DC value for this roll only
                 if (context.dc && typeof context.dc.value === "number") {
                   context.dc.value += bonus;
-                  // ensure visibility so players can see adjusted DC when appropriate
-                  if (context.dc.visible == null) context.dc.visible = true;
+                  // Respect PF2E metagame DC visibility; do not force visibility here
                 }
 
                 // Inject a one-shot cover effect by cloning the target's actor so covered AC is used even in quick-rolls
@@ -133,7 +132,7 @@ export function registerAutoCoverHooks() {
                     const bonus = getCoverBonusByState(chosen) || 0;
                     if (context.dc && typeof context.dc.value === "number") {
                       context.dc.value += bonus;
-                      if (context.dc.visible == null) context.dc.visible = true;
+                      // Respect PF2E metagame DC visibility; do not force visibility here
                     }
                     try {
                       if (bonus > 0 && target?.actor) {

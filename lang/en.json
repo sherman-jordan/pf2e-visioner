@@ -201,7 +201,7 @@
       "LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE": "Range limit disabled: Using template",
       "SEEK_USE_TEMPLATE": {
         "name": "Use Seek Template (15 ft Burst)",
-        "hint": "When enabled, it will be possible to setup a 30-foot burst template and only consider targets within the template"
+        "hint": "When enabled, it will be possible to setup a 15-foot burst template and only consider targets within the template"
       },
       "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
         "name": "Limit Seek Range out of Combat",

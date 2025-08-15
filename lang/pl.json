@@ -186,9 +186,9 @@
           "achromatopsia": "Achromatopsja (całkowita ślepota barw)"
         }
       },
-      "IGNORE_ALLIES": {
-        "name": "Ignoruj sojuszników",
-        "hint": "Po włączeniu tej opcji postacie niezależne będą widzieć w oknach dialogowych wyłącznie członków drużyny, a gracze będą widzieć wyłącznie postacie niezależne. Upraszcza to zarządzanie widocznością poprzez ukrycie relacji między sojusznikami."
+      "IGNORE_ALLIES_DEFAULT": {
+        "name": "Ignoruj sojuszników (domyślnie)",
+        "hint": "Ustawia domyślny stan pola wyboru „Ignoruj sojuszników” w oknach dialogowych Visioner i Menedżerze tokenów. Można przełączać tę opcję na żywo w każdym oknie dialogowym, aby filtrować wyniki w czasie rzeczywistym."
       },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Domyślny stan filtru spotkań",
@@ -258,6 +258,10 @@
       "AUTO_COVER": {
         "name": "Automatyczna osłona",
         "hint": "Po włączeniu moduł automatycznie zastosuje osłonę do tokenów na podstawie ścieżki blokującej token."
+      },
+      "SNEAK_RAW_ENFORCEMENT": {
+        "name": "Surowe egzekwowanie Skradania",
+        "hint": "Po włączeniu funkcja Skradanie będzie działać zgodnie z zasadami RAW. Po wyłączeniu funkcja Skradania będzie bardziej wyrozumiała."
       }
     },
     "UI": {

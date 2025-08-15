@@ -71,6 +71,8 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
   constructor(options = {}) {
     super(options);
     currentVisionerSettingsApp = this;
+    // Track unsaved edits across tab switches so the Save button applies all changes
+    this._pendingChanges = {};
     // Default to the first defined group
     try {
       if (!this.activeGroupKey) this.activeGroupKey = Object.keys(SETTINGS_GROUPS)[0];
@@ -85,7 +87,15 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     for (const key of activeKeys) {
       const cfg = DEFAULT_SETTINGS[key];
       if (!cfg) continue;
-      const current = game.settings.get(MODULE_ID, key);
+      // Prefer pending (unsaved) value if user edited in another tab visit
+      const pendingRaw = this?._pendingChanges?.[`settings.${key}`];
+      const saved = game.settings.get(MODULE_ID, key);
+      let current = saved;
+      if (pendingRaw !== undefined) {
+        if (cfg.type === Boolean) current = !!pendingRaw;
+        else if (cfg.type === Number) current = pendingRaw !== "" && pendingRaw != null ? Number(pendingRaw) : saved;
+        else current = String(pendingRaw);
+      }
       let inputType = "text";
       let choicesList = null;
       if (cfg.choices && typeof cfg.choices === "object") {
@@ -241,8 +251,16 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     try {
       const formEl = app.element.querySelector("form.pf2e-visioner-settings");
       if (!formEl) return app.close();
+      // Capture any unsaved edits from the currently visible group before reading form data
+      try { app._capturePendingChanges(); } catch (_) {}
       const fd = new FormData(formEl);
       const rawMap = Object.fromEntries(fd.entries());
+      // Merge previously edited values from other tabs
+      if (app?._pendingChanges) {
+        for (const [name, value] of Object.entries(app._pendingChanges)) {
+          if (!(name in rawMap)) rawMap[name] = value;
+        }
+      }
       const allKeys = Object.values(SETTINGS_GROUPS).flat();
       for (const key of allKeys) {
         const cfg = DEFAULT_SETTINGS[key];
@@ -255,6 +273,8 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         else value = raw != null ? raw : game.settings.get(MODULE_ID, key);
         await game.settings.set(MODULE_ID, key, value);
       }
+      // Reset pending after successful save
+      try { app._pendingChanges = {}; } catch (_) {}
       try { await app.close(); } catch (_) {}
     } catch (e) { /* noop */ try { await app.close(); } catch (_) {} }
   }
@@ -265,11 +285,28 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       if (!key) return;
       const app = currentVisionerSettingsApp;
       if (!app) return;
+      // Preserve edits from the current group before switching
+      try { app._capturePendingChanges(); } catch (_) {}
       app.activeGroupKey = key;
       app.render({ force: true });
     } catch (_) {}
   }
 }
+
+// Instance helpers
+VisionerSettingsForm.prototype._capturePendingChanges = function _capturePendingChanges() {
+  try {
+    const form = this.element?.querySelector?.('form.pf2e-visioner-settings');
+    if (!form) return;
+    const inputs = form.querySelectorAll('[name^="settings."]');
+    inputs.forEach((el) => {
+      const name = el.name;
+      if (!name) return;
+      if (el.type === 'checkbox') this._pendingChanges[name] = !!el.checked;
+      else this._pendingChanges[name] = el.value;
+    });
+  } catch (_) {}
+};
 
 /**
  * Register all module settings
@@ -322,7 +359,11 @@ export function registerSettings() {
       } else if (key === "customSeekDistanceOutOfCombat") {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "autoCover") {
+      } else if (key === "autoCover" || key === "autoCoverTokenIntersectionMode" || 
+        key === "autoCoverCoverageStandardPct" || key === "autoCoverCoverageGreaterPct" || 
+        key === "autoCoverIgnoreUndetected" || key === "autoCoverIgnoreDead" || 
+        key === "autoCoverIgnoreAllies" || key === "autoCoverRespectIgnoreFlag" || 
+        key === "autoCoverAllowProneBlockers") {
         // No reload needed: auto-cover is read at runtime
         settingConfig.onChange = () => {};
       } else if (key === "blockPlayerTargetTooltips") {

@@ -36,8 +36,8 @@ export const DEFAULT_OUTCOME_MAPPING = {
     undetected: { "critical-success": "undetected", success: "undetected", failure: "observed", "critical-failure": "observed" },
   },
   sneak: {
-    observed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
-    concealed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+    observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
+    concealed: { "critical-success": "concealed", success: "concealed", failure: "observed", "critical-failure": "observed" },
     hidden: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
     undetected: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
   },

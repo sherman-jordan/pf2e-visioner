@@ -1,3 +1,4 @@
+import { MODULE_ID } from "../../../constants.js";
 import { getCoverBetween, getVisibilityBetween } from "../../../utils.js";
 import { shouldFilterAlly } from "./shared-utils.js";
 
@@ -54,6 +55,22 @@ function checkConsequencesTargets(actionData, potentialTargets) {
 
 function checkSeekTargets(actionData, potentialTargets) {
   for (const target of potentialTargets) {
+    // If target is a hazard/loot with a minimum perception rank, verify the seeker's rank
+    try {
+      if (target?.actor && (target.actor.type === "hazard" || target.actor.type === "loot")) {
+        const minRank = Number(target.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+        if (Number.isFinite(minRank) && minRank > 0) {
+          const stat = actionData.actor?.actor?.getStatistic?.("perception");
+          const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+          if (!(Number.isFinite(seekerRank) && seekerRank >= minRank)) {
+            // Not enough proficiency: indicate special row action state and skip as a valid seek target
+            actionData._visionerSeekProficiencyBlocked = true;
+            continue;
+          }
+        }
+      }
+    } catch (_) {}
+
     const visibility = getVisibilityBetween(actionData.actor, target);
     if (["concealed", "hidden", "undetected"].includes(visibility)) return true;
     if (target.actor) {

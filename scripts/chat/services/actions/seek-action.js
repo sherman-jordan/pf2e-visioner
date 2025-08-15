@@ -22,7 +22,12 @@ export class SeekActionHandler extends ActionHandlerBase {
       .filter((t) => t && t.actor)
       // Exclude the acting token reliably by id when possible
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
-      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"));
+      // Always include hazards and loot in seek results regardless of ally filtering
+      .filter((t) =>
+        t.actor?.type === "hazard" || t.actor?.type === "loot"
+          ? true
+          : !shouldFilterAlly(actionData.actor, t, "enemies"),
+      );
     
     // Optional distance limitation based on settings (combat vs out-of-combat)
     try {
@@ -51,8 +56,39 @@ export class SeekActionHandler extends ActionHandlerBase {
 
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");
+    const { MODULE_ID } = await import("../../../constants.js");
     const { extractStealthDC, hasConcealedCondition, determineOutcome } = await import("../infra/shared-utils.js");
     const current = getVisibilityBetween(actionData.actor, subject);
+    // Proficiency gating for hazards/loot
+    try {
+      if (subject?.actor && (subject.actor.type === "hazard" || subject.actor.type === "loot")) {
+        const minRank = Number(subject.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+        if (Number.isFinite(minRank) && minRank > 0) {
+          const stat = actionData.actor?.actor?.getStatistic?.("perception");
+          const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+          if (!(Number.isFinite(seekerRank) && seekerRank >= minRank)) {
+            const dcBlocked = extractStealthDC(subject) || 0;
+            const total = Number(actionData?.roll?.total ?? 0);
+            const die = Number(actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0);
+            return {
+              target: subject,
+              dc: dcBlocked,
+              roll: total,
+              die,
+              rollTotal: total,
+              dieResult: die,
+              margin: total - dcBlocked,
+              outcome: "no-proficiency",
+              currentVisibility: current,
+              oldVisibility: current,
+              newVisibility: current,
+              changed: false,
+              noProficiency: true,
+            };
+          }
+        }
+      }
+    } catch (_) {}
     // For loot actors, use the custom Stealth DC flag configured on the token; otherwise use Perception DC
     const dc = extractStealthDC(subject);
     const total = Number(actionData?.roll?.total ?? 0);

@@ -109,6 +109,7 @@ function injectPF2eVisionerBox(app, root) {
   // Current values
   const stealthCurrent = tokenDoc.getFlag?.(MODULE_ID, "stealthDC") ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? "";
   const ignoreAutoCover = !!(tokenDoc.getFlag?.(MODULE_ID, "ignoreAutoCover") ?? tokenDoc.flags?.[MODULE_ID]?.ignoreAutoCover);
+  const minPerceptionRank = Number(tokenDoc.getFlag?.(MODULE_ID, "minPerceptionRank") ?? tokenDoc.flags?.[MODULE_ID]?.minPerceptionRank ?? 0);
 
   // Build content
   let inner = `
@@ -123,6 +124,20 @@ function injectPF2eVisionerBox(app, root) {
       <div class="form-group">
         <label>Stealth DC</label>
         <input type="number" inputmode="numeric" min="0" step="1" name="flags.${MODULE_ID}.stealthDC" value="${Number.isFinite(+stealthCurrent) ? +stealthCurrent : ""}">
+      </div>
+    `;
+  }
+  if (actor.type === "hazard" || actor.type === "loot") {
+    inner += `
+      <div class="form-group">
+        <label>Minimum Perception Proficiency (to detect)</label>
+        <select name="flags.${MODULE_ID}.minPerceptionRank">
+          <option value="0" ${minPerceptionRank === 0 ? 'selected' : ''}>Untrained</option>
+          <option value="1" ${minPerceptionRank === 1 ? 'selected' : ''}>Trained</option>
+          <option value="2" ${minPerceptionRank === 2 ? 'selected' : ''}>Expert</option>
+          <option value="3" ${minPerceptionRank === 3 ? 'selected' : ''}>Master</option>
+          <option value="4" ${minPerceptionRank === 4 ? 'selected' : ''}>Legendary</option>
+        </select>
       </div>
     `;
   }

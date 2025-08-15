@@ -109,7 +109,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       const desired = getDesiredOverrideStatesForAction("seek");
       const availableStates = this.buildOverrideStates(desired, outcome);
 
-      const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+      const effectiveNewState = outcome.overrideState || outcome.newVisibility || currentVisibility;
       const baseOldState = outcome.oldVisibility || currentVisibility;
       // Actionable if original differs from new or override
       const hasActionableChange =
@@ -119,8 +119,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       return {
         ...outcome,
-        outcomeClass: this.getOutcomeClass(outcome.outcome),
-        outcomeLabel: this.getOutcomeLabel(outcome.outcome),
+        outcomeClass: outcome.noProficiency ? "neutral" : this.getOutcomeClass(outcome.outcome),
+        outcomeLabel: outcome.noProficiency ? "No proficiency" : this.getOutcomeLabel(outcome.outcome),
         oldVisibilityState: cfg(baseOldState),
         newVisibilityState: cfg(effectiveNewState),
         marginText: this.formatMargin(outcome.margin),
@@ -128,6 +128,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
         availableStates: availableStates,
         overrideState: outcome.overrideState || outcome.newVisibility,
         hasActionableChange,
+        noProficiency: !!outcome.noProficiency,
       };
     });
 

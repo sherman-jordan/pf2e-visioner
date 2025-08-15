@@ -8,6 +8,8 @@
 - Keybind to show current calculated Auto‑Cover from all tokens (default G). Press to display cover‑only badges; release to clear.
 - Mystler Sneak RAW setting (default off) to enforce RAW outcome for Sneak.
 - New settings structure with category tabs and an emphasized Auto‑Cover section.
+- Add keybind to open token manager in the opposite mode (@Eligarf)
+- polish translation (@Lioheart)
 
 ### Changed
 

@@ -66,6 +66,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Track encounter filtering state
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    // Per-dialog ignore allies defaults from global setting
+    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
 
     // Set global reference
     currentSeekDialog = this;
@@ -82,8 +84,12 @@ export class SeekPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Filter outcomes with encounter helper, template (if provided), then distance limits if enabled
+    // Filter outcomes with encounter helper, allies live toggle, template (if provided), then distance limits if enabled
     let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter targets found, showing all");
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
+    } catch (_) {}
     if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
       filteredOutcomes = filterOutcomesByTemplate(
         filteredOutcomes,
@@ -109,7 +115,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       const desired = getDesiredOverrideStatesForAction("seek");
       const availableStates = this.buildOverrideStates(desired, outcome);
 
-      const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+      const effectiveNewState = outcome.overrideState || outcome.newVisibility || currentVisibility;
       const baseOldState = outcome.oldVisibility || currentVisibility;
       // Actionable if original differs from new or override
       const hasActionableChange =
@@ -119,8 +125,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       return {
         ...outcome,
-        outcomeClass: this.getOutcomeClass(outcome.outcome),
-        outcomeLabel: this.getOutcomeLabel(outcome.outcome),
+        outcomeClass: outcome.noProficiency ? "neutral" : this.getOutcomeClass(outcome.outcome),
+        outcomeLabel: outcome.noProficiency ? "No proficiency" : this.getOutcomeLabel(outcome.outcome),
         oldVisibilityState: cfg(baseOldState),
         newVisibilityState: cfg(effectiveNewState),
         marginText: this.formatMargin(outcome.margin),
@@ -128,6 +134,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
         availableStates: availableStates,
         overrideState: outcome.overrideState || outcome.newVisibility,
         hasActionableChange,
+        noProficiency: !!outcome.noProficiency,
       };
     });
 
@@ -170,6 +177,17 @@ export class SeekPreviewDialog extends BaseActionDialog {
    */
   _replaceHTML(result, content, options) {
     content.innerHTML = result;
+    // Hook up per-dialog Ignore Allies toggle
+    try {
+      const cb = content.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) {
+        cb.addEventListener('change', () => {
+          this.ignoreAllies = !!cb.checked;
+          this.bulkActionState = "initial";
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
     return content;
   }
 

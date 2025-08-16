@@ -1,5 +1,77 @@
 # Changelog
 
+## [2.4.0] - 2025-08-16
+
+### Changed
+
+- Settings menu: saving now preserves values from unvisited tabs. Only submitted or previously edited fields are persisted; untouched settings are no longer reset.
+- Added opt in for enable all tokens vision
+
+### Fixed:
+- Dialogs: fixed apply changes missing for sneak.
+
+## [2.3.0] - 2025-08-15
+
+### Added
+
+- Proficiency rank requirement for Seeking hazards and loot (token config). Seek will show "No proficiency" when the seeker's rank is too low and keep DC/override controls.
+- Keybind to show current calculated Auto‑Cover from all tokens (default G). Press to display cover‑only badges; release to clear.
+- Mystler Sneak RAW setting (default off) to enforce RAW outcome for Sneak.
+- New settings structure with category tabs and an emphasized Auto‑Cover section.
+- Add keybind to open token manager in the opposite mode (@Eligarf)
+- polish translation (@Lioheart)
+
+### Changed
+
+- Ignore Allies is now per‑dialog (Seek/Hide/Sneak); the global setting only defines the default checkbox state.
+
+### Fixed
+
+- Hide dialog: restored missing "Apply Changes" button.
+- Token Manager: fixed scrolling to the bottom when selecting a token; selected row stays in view.
+- Now scrolls to bottom after injecting buttons in chat
+
+## [2.2.0] - 2025-08-15
+
+### Added
+
+- Auto cover:
+  - New `Token Intersection Mode: Coverage` that maps ray coverage across a blocking token to cover tiers using configurable thresholds.
+    - Standard at ≥ `Auto-Cover: Standard Cover at ≥ %` (default 50)
+    - Greater at ≥ `Auto-Cover: Greater Cover at ≥ %` (default 80)
+  - Visioner tool: Consolidated GM controls to Ignore/Restore Auto-Cover on selected walls and tokens (highlighted when active).
+    - Clear Cover (Target/Observer mode)
+    - Make Observed (Target/Observer mode)
+  - Hazard/Loot: Minimum Perception Proficiency (token config) required to detect (Untrained–Legendary). Enforced in live detection and Seek.
+  - Seek results now always include hazards/loot (subject to template/distance filters). Below-rank entries show outcome "No proficiency", display the correct DC, and still provide override buttons.
+  - Auto-cover dependents are hidden unless Auto-cover is enabled.
+  - Coverage thresholds only shown when mode = Coverage.
+  - Seek: hides both limit checkboxes and distance fields when “Use Template” is enabled; distance fields only shown when their respective limit toggles are on.
+  - Tooltips: hides “Block Player Target Tooltips” unless “Allow Player Tooltips” is enabled; hides “Tooltip Font Size” unless “Enable Hover Tooltips” is enabled.
+
+### Changed
+
+- Auto-cover internals refactored into strategy helpers for readability and maintainability.
+- Check roll integration now uses a libWrapper WRAPPER when available to avoid conflicts with PF2E Ranged Combat.
+- Token and Wall toolbar in visioner tool toggles now reflect the currently selected documents and stay in sync on selection changes.
+
+## [2.1.3] - 2025-08-13
+
+### Fixed
+
+- Auto cover:
+  - respect metagaming ac reveals
+  - Walls sidebar tool: added GM toggle to Ignore/Restore Auto-Cover for selected walls
+  - new settings: coverage thresholds to map ray coverage across a blocking token to lesser/standard/greater
+
+## [2.1.2] - 2025-08-12
+
+### Fixed
+
+- Auto cover:
+  - allow players to set keybinds
+
+
 ## [2.1.1] - 2025-08-12
 
 ### Fixed

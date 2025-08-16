@@ -7,10 +7,10 @@ import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
 // Re-export core state stores to enforce single source of truth
 export { cleanupDeletedToken, restoreDeletedTokenMaps } from "./services/scene-cleanup.js";
 export {
-  getCoverBetween, getCoverMap, setCoverBetween, setCoverMap
+    getCoverBetween, getCoverMap, setCoverBetween, setCoverMap
 } from "./stores/cover-map.js";
 export {
-  getVisibilityBetween, getVisibilityMap, setVisibilityBetween, setVisibilityMap
+    getVisibilityBetween, getVisibilityMap, setVisibilityBetween, setVisibilityMap
 } from "./stores/visibility-map.js";
 
 /**
@@ -193,7 +193,7 @@ export function isValidToken(token) {
  * @param {boolean} encounterOnly - Whether to filter to encounter tokens only
  * @returns {Array} Array of target tokens
  */
-export function getSceneTargets(observer, encounterOnly = false) {
+export function getSceneTargets(observer, encounterOnly = false, ignoreAllies = null) {
   if (!observer) return [];
 
   // Get all tokens except the observer
@@ -201,9 +201,9 @@ export function getSceneTargets(observer, encounterOnly = false) {
     return token !== observer && token.actor && isValidToken(token);
   });
 
-  // Apply ally filtering if enabled
+  // Apply ally filtering: prefer per-call override, else global setting
   allTokens = allTokens.filter((token) => {
-    return !shouldFilterAlly(observer, token, "enemies");
+    return !shouldFilterAlly(observer, token, "enemies", ignoreAllies);
   });
 
   // Apply encounter filtering if requested

@@ -158,11 +158,11 @@
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {
         "name": "Enable Hover Tooltips",
-        "hint": "Show visibility status tooltips when hovering over tokens (requires restart)"
+        "hint": "Show visibility status tooltips when hovering over tokens"
       },
       "ALLOW_PLAYER_TOOLTIPS": {
         "name": "Allow Player Tooltips",
-        "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens (requires restart)"
+        "hint": "When enabled, players can see visibility indication tooltips from their perspective when hovering over tokens"
       },
       "TOOLTIP_FONT_SIZE": {
         "name": "Tooltip Size",
@@ -186,9 +186,13 @@
           "achromatopsia": "Achromatopsia (Complete Color Blindness)"
         }
       },
-      "IGNORE_ALLIES": {
-        "name": "Ignore Allies",
-        "hint": "When enabled, NPCs will only see party members in dialogs, and players will only see NPCs. This simplifies visibility management by hiding ally-to-ally relationships."
+      "IGNORE_ALLIES_DEFAULT": {
+        "name": "Ignore Allies (default)",
+        "hint": "Sets the default state of the 'Ignore allies' checkbox in Visioner dialogs and the Token Manager. You can toggle it live per dialog to filter results in real time."
+      },
+      "ENABLE_ALL_TOKENS_VISION": {
+        "name": "Enable Vision for All Tokens",
+        "hint": "When enabled, all tokens will have vision enabled by default. You can toggle it live per dialog to filter results in real time."
       },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Default Encounter Filter State",
@@ -200,8 +204,8 @@
       },
       "LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE": "Range limit disabled: Using template",
       "SEEK_USE_TEMPLATE": {
-        "name": "Use Seek Template (30 ft Burst)",
-        "hint": "When enabled, it will be possible to setup a 30-foot burst template and only consider targets within the template"
+        "name": "Use Seek Template (15 ft Burst)",
+        "hint": "When enabled, it will be possible to setup a 15-foot burst template and only consider targets within the template"
       },
       "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
         "name": "Limit Seek Range out of Combat",
@@ -270,6 +274,10 @@
       "EXPERIMENTAL_SEE_THROUGH_WALLS": {
         "name": "Experimental: Per-Token See-Through Walls (Client-Only)",
         "hint": "When enabled on your client, selected token(s) will ignore walls you have marked as Observed in the Hidden Walls list. Visual-only and highly experimental."
+      },
+      "SNEAK_RAW_ENFORCEMENT": {
+        "name": "Sneak Raw Enforcement",
+        "hint": "When enabled, Sneak will follow RAW rules. When disabled, Sneak will be more forgiving."
       }
     },
     "UI": {

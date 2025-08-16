@@ -24,10 +24,160 @@ export function registerAutoCoverHooks() {
   Hooks.on("renderCheckModifiersDialog", onRenderCheckModifiersDialog);
   Hooks.on("updateToken", onUpdateToken);
 
+  // Track registration state to avoid duplicate libWrapper registrations
+  let _pvLibWrapperRegistered = false;
+
   // Patch PF2E Check.roll to support quick rolls (no modifiers dialog)
   const patchCheckRoll = () => {
     try {
-      // Support both global names used by PF2E builds
+      // If libWrapper is available, register a WRAPPER to avoid conflicts
+      if (game.modules.get("lib-wrapper")?.active && typeof libWrapper?.register === "function") {
+        if (_pvLibWrapperRegistered) return;
+        libWrapper.register(
+          "pf2e-visioner",
+          "game.pf2e.Check.roll",
+          async function visionerAutoCoverWrapper(wrapped, check, context = {}, event = null, callback) {
+            try {
+              // Apply only when auto-cover is enabled and this is an attack-like roll
+              if (game?.settings?.get?.(MODULE_ID, "autoCover") && isAttackContext(context)) {
+                const attacker = resolveAttackerFromCtx(context);
+                const target = resolveTargetFromCtx(context);
+                if (attacker && target) {
+                  // If user holds the configured override keybinding, force override path (skip auto-calculated add)
+                  const isOverrideHeld = (() => {
+                    try {
+                      const binding = game.keybindings.get(MODULE_ID, "holdCoverOverride");
+                      if (!binding || binding.length === 0) return false;
+                      const kb = game.keyboard;
+                      if (kb?.downKeys) {
+                        return binding.some(({ key, modifiers }) => {
+                          const code = key;
+                          const modOk = (modifiers ?? []).every((m) => kb.downKeys.has(m));
+                          return modOk && kb.downKeys.has(code);
+                        });
+                      }
+                    } catch (_) {}
+                    return false;
+                  })();
+                  // If target already has a cover effect for this attacker (aggregate or ephemeral), don't also add to DC
+                  let hasExistingForThisAttacker = false;
+                  try {
+                    const sig = attacker.actor?.signature || attacker.actor?.id;
+                    const effects = Array.from(target.actor?.itemTypes?.effect ?? []);
+                    hasExistingForThisAttacker = effects.some((e) => {
+                      const f = e?.flags?.[MODULE_ID] || {};
+                      if (!f.aggregateCover && !f.isEphemeralCover) return false;
+                      const rules = Array.isArray(e?.system?.rules) ? e.system.rules : [];
+                      return rules.some((r) => r?.key === "FlatModifier" && r.selector === "ac" && Array.isArray(r.predicate) && r.predicate.some((p) => String(p).includes(`origin:signature:${sig}`)));
+                    });
+                  } catch (_) {
+                    hasExistingForThisAttacker = false;
+                  }
+
+                  const state = detectCoverStateForAttack(attacker, target);
+                  // Persist computed cover for consistency/UI without triggering ephemeral update here
+                  try { await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true }); } catch (_) {}
+                  try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) {}
+                  try { _recordPair(attacker.id, target.id); } catch (_) {}
+
+                  if (!hasExistingForThisAttacker && !isOverrideHeld) {
+                    const bonus = getCoverBonusByState(state) || 0;
+                    if (context.dc && typeof context.dc.value === "number") {
+                      context.dc.value += bonus;
+                      // Respect PF2E metagame DC visibility; do not force visibility here
+                    }
+                    try {
+                      if (bonus > 0 && target?.actor) {
+                        const isStandard = state === "standard" || state === "greater";
+                        const coverBonus = isStandard ? 2 : 1;
+                        const label = isStandard ? "Standard Cover" : "Lesser Cover";
+                        const tgtActor = target.actor;
+                        const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
+                        items.push({
+                          name: label,
+                          type: "effect",
+                          system: {
+                            description: { value: `<p>${label}: +${coverBonus} circumstance bonus to AC for this roll.</p>`, gm: "" },
+                            rules: [{ key: "FlatModifier", selector: "ac", type: "circumstance", value: coverBonus }],
+                            traits: { otherTags: [], value: [] },
+                            level: { value: 1 },
+                            duration: { value: -1, unit: "unlimited" },
+                            tokenIcon: { show: false },
+                            unidentified: true,
+                            start: { value: 0 },
+                            badge: null,
+                          },
+                          img: isStandard ? "systems/pf2e/icons/equipment/shields/steel-shield.webp" : "systems/pf2e/icons/equipment/shields/buckler.webp",
+                          flags: { "pf2e-visioner": { forThisRoll: true, ephemeralCoverRoll: true } },
+                        });
+                        const clonedActor = tgtActor.clone({ items }, { keepId: true });
+                        const dcObj = context.dc;
+                        if (dcObj?.slug) {
+                          const st = clonedActor.getStatistic?.(dcObj.slug)?.dc;
+                          if (st) { dcObj.value = st.value; dcObj.statistic = st; }
+                        }
+                      }
+                    } catch (_) {}
+                  }
+                  if (isOverrideHeld) {
+                    try {
+                      const { openCoverQuickOverrideDialog } = await import("../cover/quick-override-dialog.js");
+                      const chosen = await openCoverQuickOverrideDialog(state);
+                      if (chosen != null) {
+                        const bonus = getCoverBonusByState(chosen) || 0;
+                        if (context.dc && typeof context.dc.value === "number") {
+                          context.dc.value += bonus;
+                          // Respect PF2E metagame DC visibility; do not force visibility here
+                        }
+                        try {
+                          if (bonus > 0 && target?.actor) {
+                            const label = getCoverLabel(chosen) || "Cover";
+                            const img = getCoverImageForState(chosen);
+                            const tgtActor = target.actor;
+                            let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
+                            items = items.filter((i) => !(i?.type === "effect" && i?.flags?.["pf2e-visioner"]?.ephemeralCoverRoll === true));
+                            if (bonus > 0) {
+                              items.push({
+                                name: label,
+                                type: "effect",
+                                system: {
+                                  description: { value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`, gm: "" },
+                                  rules: [{ key: "FlatModifier", selector: "ac", type: "circumstance", value: bonus }],
+                                  traits: { otherTags: [], value: [] },
+                                  level: { value: 1 },
+                                  duration: { value: -1, unit: "unlimited" },
+                                  tokenIcon: { show: false },
+                                  unidentified: true,
+                                  start: { value: 0 },
+                                  badge: null,
+                                },
+                                img,
+                                flags: { "pf2e-visioner": { forThisRoll: true, ephemeralCoverRoll: true } },
+                              });
+                            }
+                            const clonedActor = tgtActor.clone({ items }, { keepId: true });
+                            const dcObj = context.dc;
+                            if (dcObj?.slug) {
+                              const st = clonedActor.getStatistic?.(dcObj.slug)?.dc;
+                              if (st) { dcObj.value = st.value; dcObj.statistic = st; }
+                            }
+                          }
+                        } catch (_) {}
+                      }
+                    } catch (_) {}
+                  }
+                }
+              }
+            } catch (_) {}
+            return await wrapped(check, context, event, callback);
+          },
+          "WRAPPER",
+        );
+        _pvLibWrapperRegistered = true;
+        return;
+      }
+
+      // Fallback: direct patch when libWrapper is not available
       const Check = game?.pf2e?.Check ?? game?.pf2e?.CheckPF2e;
       if (!Check || typeof Check.roll !== "function") return;
       if (Check._pvVisionerPatched) return; // idempotent
@@ -82,8 +232,7 @@ export function registerAutoCoverHooks() {
                 // Safely bump DC value for this roll only
                 if (context.dc && typeof context.dc.value === "number") {
                   context.dc.value += bonus;
-                  // ensure visibility so players can see adjusted DC when appropriate
-                  if (context.dc.visible == null) context.dc.visible = true;
+                  // Respect PF2E metagame DC visibility; do not force visibility here
                 }
 
                 // Inject a one-shot cover effect by cloning the target's actor so covered AC is used even in quick-rolls
@@ -133,7 +282,7 @@ export function registerAutoCoverHooks() {
                     const bonus = getCoverBonusByState(chosen) || 0;
                     if (context.dc && typeof context.dc.value === "number") {
                       context.dc.value += bonus;
-                      if (context.dc.visible == null) context.dc.visible = true;
+                      // Respect PF2E metagame DC visibility; do not force visibility here
                     }
                     try {
                       if (bonus > 0 && target?.actor) {

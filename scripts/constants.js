@@ -114,7 +114,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   tooltipFontSize: {
@@ -155,8 +155,26 @@ export const DEFAULT_SETTINGS = {
 
   // Token Filtering
   ignoreAllies: {
-    name: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.name",
-    hint: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES.hint",
+    name: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES_DEFAULT.name",
+    hint: "PF2E_VISIONER.SETTINGS.IGNORE_ALLIES_DEFAULT.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+  // Token Filtering
+  enableAllTokensVision: {
+    name: "PF2E_VISIONER.SETTINGS.ENABLE_ALL_TOKENS_VISION.name",
+    hint: "PF2E_VISIONER.SETTINGS.ENABLE_ALL_TOKENS_VISION.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
+
+  sneakRawEnforcement: {
+    name: "PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.name",
+    hint: "PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -199,7 +217,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
   defaultEncounterFilter: {
     name: "PF2E_VISIONER.SETTINGS.DEFAULT_ENCOUNTER_FILTER.name",
@@ -207,7 +225,7 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   // Seek Action Settings
@@ -303,13 +321,13 @@ export const DEFAULT_SETTINGS = {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
   },
 
   // Auto-Cover behavior tuning
   autoCoverTokenIntersectionMode: {
     name: "Auto-Cover: Token Intersection Mode",
-    hint: "Choose how token blockers are evaluated: 'Center' (ray goes through token center), or side-coverage modes where the portion of the ray inside the token is measured against the token's side length (not the ray length).",
+    hint: "Choose how token blockers are evaluated: 'Center' (ray through token center), length-based coverage (10%/20%), or 'Coverage' which uses custom thresholds to determine Lesser/Standard/Greater.",
     scope: "world",
     config: true,
     type: String,
@@ -317,8 +335,31 @@ export const DEFAULT_SETTINGS = {
       length10: "Ray inside ≥10% of blocking token square",
       length20: "Ray inside ≥20% of blocking token square",
       center: "Ray through token center",
+      coverage: "Coverage (use custom thresholds)",
     },
     default: "center",
+  },
+  autoCoverCoverageStandardPct: {
+    name: "Auto-Cover: Standard Cover at ≥ %",
+    hint: "Percentage of the blocking token's side length the attack ray must pass through to grant Standard cover (e.g. 50). Lesser applies below this.",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 50,
+    min: 0,
+    max: 100,
+    step: 1,
+  },
+  autoCoverCoverageGreaterPct: {
+    name: "Auto-Cover: Greater Cover at ≥ %",
+    hint: "Percentage of the blocking token's side length the attack ray must pass through to grant Greater cover (e.g. 80).",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 80,
+    min: 0,
+    max: 100,
+    step: 1,
   },
   autoCoverIgnoreUndetected: {
     name: "Auto-Cover: Ignore Undetected Tokens",
@@ -360,6 +401,14 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
+  keybindingOpensTMInTargetMode: {
+    name: "Keybinding Opens Token Manager in Target Mode",
+    hint: "If enabled, the keybinding to open Token Manager in Target mode rather than Observer mode.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
 
   debug: {
     name: "Debug Mode",
@@ -398,6 +447,12 @@ export const KEYBINDINGS = {
     hint: "PF2E_VISIONER.KEYBINDINGS.HOLD_COVER_OVERRIDE.hint",
     // No default binding; user can configure
     editable: [],
+    restricted: false,
+  },
+  showAutoCoverOverlay: {
+    name: "Show Auto‑Cover Overlay",
+    hint: "Press to show auto‑cover badges for the hovered token (or controlled token if none).",
+    editable: [{ key: "KeyG", modifiers: [] }],
     restricted: false,
   },
 };

@@ -15,6 +15,12 @@ export function buildHidePanel() {
               data-action="${actionName}"
               title="${tooltip}">
         <i class="${icon}"></i> ${label}
+      </button>
+      <button type="button"
+              class="visioner-btn ${buttonClass} apply-now"
+              data-action="apply-now-hide"
+              title="Apply all calculated changes without opening the dialog">
+        <i class="fas fa-check-double"></i> Apply Changes
       </button>`;
   }
 

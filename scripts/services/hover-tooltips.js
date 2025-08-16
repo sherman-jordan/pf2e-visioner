@@ -3,6 +3,7 @@
  */
 
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../constants.js";
+import { detectCoverStateForAttack } from "../cover/auto-cover.js";
 import { canShowTooltips, computeSizesFromSetting } from "../helpers/tooltip-utils.js";
 import { getCoverMap, getVisibilityMap } from "../utils.js";
 
@@ -569,6 +570,32 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
       });
     }
   }
+}
+
+/**
+ * Compute auto-cover fresh (ignoring stored maps) and render cover-only badges above targets.
+ * Does not affect any visibility states.
+ * @param {Token} sourceToken - The token acting as the attacker/source
+ */
+export function showAutoCoverComputedOverlay(sourceToken) {
+  try {
+    if (!sourceToken) return;
+    hideAllCoverIndicators();
+    const others = (canvas.tokens?.placeables || []).filter((t) => t && t !== sourceToken && t.isVisible);
+    for (const target of others) {
+      let state = "none";
+      try {
+        state = detectCoverStateForAttack(sourceToken, target) || "none";
+      } catch (_) { state = "none"; }
+      if (state && state !== "none") {
+        addCoverIndicator(target, sourceToken, state, "target");
+      }
+    }
+  } catch (_) {}
+}
+
+export function hideAutoCoverComputedOverlay() {
+  hideAllCoverIndicators();
 }
 
 /**

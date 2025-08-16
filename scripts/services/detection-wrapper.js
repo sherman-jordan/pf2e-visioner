@@ -2,6 +2,7 @@
  * Detection System Wrapper - Makes PF2E system show real conditions
  */
 
+import { MODULE_ID } from "../constants.js";
 import { getVisibilityMap } from "../utils.js";
 
 /**
@@ -96,6 +97,21 @@ function canDetectWrapper(threshold) {
     // Call the original function first
     const canDetect = wrapped(visionSource, target);
     if (canDetect === false) return false;
+
+    // Enforce minimum perception proficiency for hazards/loot
+    try {
+      const observerToken = visionSource?.object;
+      const targetToken = target;
+      const targetActorType = targetToken?.actor?.type;
+      if (observerToken?.actor && targetToken?.actor && (targetActorType === "hazard" || targetActorType === "loot")) {
+        const minRankFlag = Number(targetToken.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+        const stat = observerToken.actor?.getStatistic?.("perception");
+        const observerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+        if (Number.isFinite(minRankFlag) && observerRank < minRankFlag) {
+          return false;
+        }
+      }
+    } catch (_) {}
 
     // Check our module's visibility settings
     const origin = visionSource.object;

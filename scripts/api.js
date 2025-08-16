@@ -45,8 +45,9 @@ export class Pf2eVisionerApi {
   /**
    * Open the token manager for a specific observer token
    * @param {Token} observer - The observer token (optional, uses controlled tokens if not provided)
+   * @param options - data to pass to the token manager constructor. mode can be 'observer' or 'target'
    */
-  static async openTokenManager(observer = null) {
+  static async openTokenManager(observer = null, options = {mode: "observer"}) {
     if (!game.user.isGM) {
       ui.notifications.warn("Only GMs can manage token visibility and cover");
       return;
@@ -100,7 +101,7 @@ export class Pf2eVisionerApi {
       return VisionerTokenManager.currentInstance;
     }
 
-    const manager = new VisionerTokenManager(observer);
+    const manager = new VisionerTokenManager(observer, {mode: options.mode});
     await manager.render({ force: true });
     try {
       if (manager.element || manager.window) manager.bringToFront();

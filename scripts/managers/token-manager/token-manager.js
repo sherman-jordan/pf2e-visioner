@@ -76,8 +76,9 @@ export class VisionerTokenManager extends foundry.applications.api
     // Initialize active tab (visibility or cover)
     this.activeTab = options.activeTab || "visibility";
 
-    // Initialize encounter filter state based on setting
+    // Initialize filters based on settings (defaults only)
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
 
     // Initialize storage for saved mode data
     this._savedModeData = {
@@ -264,6 +265,17 @@ export class VisionerTokenManager extends foundry.applications.api
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);
+
+    // Wire per-manager Ignore Allies toggle
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) {
+        cb.addEventListener('change', () => {
+          this.ignoreAllies = !!cb.checked;
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
   }
 
   /**

@@ -248,54 +248,119 @@ function pointBetweenOnSegment(pt, a, b) {
   return pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY;
 }
 
+// ----- strategy helpers: configuration and evaluators
+
+function getIntersectionMode() {
+  let mode = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode");
+  if (mode === "any" || mode === "cross") mode = "center";
+  if (!mode) mode = "center";
+  return mode;
+}
+
+function getAutoCoverFilterSettings(attacker) {
+  const ignoreUndetected = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreUndetected");
+  const ignoreDead = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreDead");
+  const ignoreAllies = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreAllies");
+  const respectIgnoreFlag = !!game.settings?.get?.(MODULE_ID, "autoCoverRespectIgnoreFlag");
+  const allowProneBlockers = !!game.settings?.get?.(MODULE_ID, "autoCoverAllowProneBlockers");
+  return {
+    ignoreUndetected,
+    ignoreDead,
+    ignoreAllies,
+    respectIgnoreFlag,
+    allowProneBlockers,
+    attackerAlliance: attacker?.actor?.alliance,
+  };
+}
+
+function getEligibleBlockingTokens(attacker, target, filters) {
+  const out = [];
+  for (const blocker of canvas.tokens.placeables) {
+    if (!blocker?.actor) continue;
+    if (blocker === attacker || blocker === target) continue;
+    const type = blocker.actor?.type;
+    if (type === "loot" || type === "hazard") continue;
+    if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) continue;
+    if (filters.ignoreUndetected) {
+      try { const vis = getVisibilityBetween(attacker, blocker); if (vis === "undetected") continue; } catch (_) {}
+    }
+    if (filters.ignoreDead && (blocker.actor?.hitPoints?.value === 0)) continue;
+    if (!filters.allowProneBlockers) {
+      try {
+        const itemConditions = blocker.actor?.itemTypes?.condition || [];
+        const legacyConditions = blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
+        const isProne = itemConditions.some((c) => c?.slug === "prone") || legacyConditions.some((c) => c?.slug === "prone");
+        if (isProne) continue;
+      } catch (_) {}
+    }
+    if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) continue;
+    out.push(blocker);
+  }
+  return out;
+}
+
+function evaluateCoverByCoverage(p1, p2, blockers, intersectionMode, stdPct, grtPct) {
+  let any = false; let standard = false; let greater = false;
+  for (const blocker of blockers) {
+    const rect = getTokenRect(blocker);
+    if (!centerLineIntersectsRect(p1, p2, rect, intersectionMode)) continue;
+    const len = segmentRectIntersectionLength(p1, p2, rect);
+    if (len <= 0) continue; // touching corner/edge without entering shouldn't count
+    any = true;
+    const width = Math.abs(rect.x2 - rect.x1); const height = Math.abs(rect.y2 - rect.y1);
+    const side = Math.max(1, Math.min(width, height));
+    const pct = (len / side) * 100;
+    if (pct >= grtPct) { greater = true; break; }
+    if (pct >= stdPct) standard = true;
+  }
+  if (!any) return "none";
+  if (greater) return "greater";
+  return standard ? "standard" : "lesser";
+}
+
+function evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode) {
+  let any = false; let standard = false;
+  const attackerSize = getSizeRank(attacker); const targetSize = getSizeRank(target);
+  for (const blocker of blockers) {
+    const rect = getTokenRect(blocker);
+    if (!centerLineIntersectsRect(p1, p2, rect, intersectionMode)) continue;
+    any = true;
+    const blockerSize = getSizeRank(blocker);
+    if (blockerSize - attackerSize >= 2 && blockerSize - targetSize >= 2) standard = true;
+  }
+  if (!any) return "none";
+  return standard ? "standard" : "lesser";
+}
+
+function evaluateWallsCover(p1, p2) {
+  return segmentIntersectsAnyBlockingWall(p1, p2) ? "standard" : "none";
+}
+
 export function detectCoverStateForAttack(attacker, target) {
   try {
     if (!attacker || !target) return "none";
     const p1 = attacker.center ?? attacker.getCenter();
     const p2 = target.center ?? target.getCenter();
-    const attackerSize = getSizeRank(attacker);
-    const targetSize = getSizeRank(target);
-    let hasAny = false; let hasStandard = false;
-    // Walls: only consider the direct center-to-center segment
-    const hasWall = segmentIntersectsAnyBlockingWall(p1, p2);
-    if (hasWall) { hasAny = true; hasStandard = true; }
-    let intersectionMode = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode");
-    if (intersectionMode === "any" || intersectionMode === "cross" || !intersectionMode) intersectionMode = "center";
-    const ignoreUndetected = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreUndetected");
-    const ignoreDead = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreDead");
-    const ignoreAllies = !!game.settings?.get?.(MODULE_ID, "autoCoverIgnoreAllies");
-    const respectIgnoreFlag = !!game.settings?.get?.(MODULE_ID, "autoCoverRespectIgnoreFlag");
-    const allowProneBlockers = !!game.settings?.get?.(MODULE_ID, "autoCoverAllowProneBlockers");
-    const attackerAlliance = attacker.actor?.alliance;
-    for (const blocker of canvas.tokens.placeables) {
-      if (!blocker?.actor) continue;
-      if (blocker === attacker || blocker === target || blocker.actor?.type === 'loot' || blocker.actor?.type === 'hazard') continue;
-      if (respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover')) continue;
-      if (ignoreUndetected) {
-        try {
-          const vis = getVisibilityBetween(attacker, blocker);
-          if (vis === 'undetected') continue;
-        } catch (_) { }
-      }
-      if (ignoreDead && (blocker.actor?.hitPoints?.value === 0)) continue;
-      if (!allowProneBlockers) {
-        try {
-          const itemConditions = blocker.actor?.itemTypes?.condition || [];
-          const legacyConditions = blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
-          const isProne = itemConditions.some((c) => c?.slug === "prone") || legacyConditions.some((c) => c?.slug === "prone");
-          if (isProne) continue;
-        } catch (_) { }
-      }
-      if (ignoreAllies && blocker.actor?.alliance === attackerAlliance) continue;
-      const rect = getTokenRect(blocker);
-      const intersects = centerLineIntersectsRect(p1, p2, rect, intersectionMode);
-      if (!intersects) continue;
-      hasAny = true;
-      const blockerSize = getSizeRank(blocker);
-      if (blockerSize - attackerSize >= 2 && blockerSize - targetSize >= 2) hasStandard = true;
+    // Walls
+    const wallCover = evaluateWallsCover(p1, p2);
+
+    // Token blockers
+    const intersectionMode = getIntersectionMode();
+    const filters = getAutoCoverFilterSettings(attacker);
+    const blockers = getEligibleBlockingTokens(attacker, target, filters);
+
+    const useCoverage = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode") === "coverage";
+    const stdPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageStandardPct") ?? 50)));
+    const grtPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageGreaterPct") ?? 80)));
+
+    const tokenCover = useCoverage
+      ? evaluateCoverByCoverage(p1, p2, blockers, intersectionMode, stdPct, grtPct)
+      : evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode);
+
+    if (wallCover === "standard") {
+      return tokenCover === "greater" ? "greater" : "standard";
     }
-    if (!hasAny) return "none";
-    return hasStandard ? "standard" : "lesser";
+    return tokenCover;
   } catch (_) { return "none"; }
 }
 

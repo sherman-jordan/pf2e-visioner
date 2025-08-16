@@ -3,7 +3,7 @@ import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter
+    filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -46,6 +46,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     // Ensure services can resolve the correct handler
     this.actionData = { ...(sneakData || {}), actor: sneakingToken, actionType: "sneak" };
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
     this.bulkActionState = "initial"; // 'initial', 'applied', 'reverted'
 
     // Set global reference
@@ -72,8 +73,12 @@ export class SneakPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Filter outcomes with base helper
+    // Filter outcomes with base helper, then live allies filter
     let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "token", "No encounter observers found, showing all");
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.sneakingToken, this.ignoreAllies, "token");
+    } catch (_) {}
 
     const cfg = (s) => this.visibilityConfig(s);
 
@@ -161,6 +166,10 @@ export class SneakPreviewDialog extends BaseActionDialog {
     this.addIconClickHandlers();
     this.updateBulkActionButtons();
     this.markInitialSelections();
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) cb.addEventListener('change', () => { this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial"; this.render({ force: true }); });
+    } catch (_) {}
   }
 
   // Use BaseActionDialog.markInitialSelections

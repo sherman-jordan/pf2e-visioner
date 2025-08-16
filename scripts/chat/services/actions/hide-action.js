@@ -20,7 +20,8 @@ export class HideActionHandler extends ActionHandlerBase {
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actorToken))
       // Respect ignoreAllies: when enabled, exclude allies from observers for Hide
-      .filter((t) => !shouldFilterAlly(actorToken, t, "enemies"))
+      // Only apply ignoreAllies when explicitly provided; otherwise let dialog filter live
+      .filter((t) => !shouldFilterAlly(actorToken, t, "enemies", (actionData?.ignoreAllies === true || actionData?.ignoreAllies === false) ? actionData.ignoreAllies : null))
       // Hide should not list loot or hazards as observers
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
 

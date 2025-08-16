@@ -1,3 +1,4 @@
+import { MODULE_ID } from "../../../constants.js";
 import { getCoverBetween, getVisibilityBetween } from "../../../utils.js";
 import { shouldFilterAlly } from "./shared-utils.js";
 
@@ -37,7 +38,7 @@ export function checkForValidTargets(actionData) {
 function checkConsequencesTargets(actionData, potentialTargets) {
   const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
   for (const target of potentialTargets) {
-    if (enforceRAW && shouldFilterAlly(actionData.actor, target, "enemies")) continue;
+    if (enforceRAW && shouldFilterAlly(actionData.actor, target, "enemies", actionData?.ignoreAllies)) continue;
     let visibility = getVisibilityBetween(target, actionData.actor);
     try {
       const itemTypeConditions = actionData.actor?.actor?.itemTypes?.condition || [];
@@ -54,6 +55,22 @@ function checkConsequencesTargets(actionData, potentialTargets) {
 
 function checkSeekTargets(actionData, potentialTargets) {
   for (const target of potentialTargets) {
+    // If target is a hazard/loot with a minimum perception rank, verify the seeker's rank
+    try {
+      if (target?.actor && (target.actor.type === "hazard" || target.actor.type === "loot")) {
+        const minRank = Number(target.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+        if (Number.isFinite(minRank) && minRank > 0) {
+          const stat = actionData.actor?.actor?.getStatistic?.("perception");
+          const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+          if (!(Number.isFinite(seekerRank) && seekerRank >= minRank)) {
+            // Not enough proficiency: indicate special row action state and skip as a valid seek target
+            actionData._visionerSeekProficiencyBlocked = true;
+            continue;
+          }
+        }
+      }
+    } catch (_) {}
+
     const visibility = getVisibilityBetween(actionData.actor, target);
     if (["concealed", "hidden", "undetected"].includes(visibility)) return true;
     if (target.actor) {
@@ -111,7 +128,7 @@ function checkSneakTargets(actionData, potentialTargets) {
   if (!enforceRAW) return potentialTargets.length > 0;
   // RAW: You can attempt Sneak only against creatures you were Hidden or Undetected from at the start.
   try {
-    const observers = potentialTargets.filter((o) => !shouldFilterAlly(actionData.actor, o, "enemies"));
+    const observers = potentialTargets.filter((o) => !shouldFilterAlly(actionData.actor, o, "enemies", actionData?.ignoreAllies));
     return observers.some((o) => {
       const vis = getVisibilityBetween(o, actionData.actor);
       return vis === "hidden" || vis === "undetected";

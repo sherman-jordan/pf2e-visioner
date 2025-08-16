@@ -16,6 +16,9 @@ const SETTINGS_GROUPS = {
     "useHudButton",
     "integrateRollOutcome",
     "enforceRawRequirements",
+    "keybindingOpensTMInTargetMode",
+    "sneakRawEnforcement",
+    "enableAllTokensVision",
   ],
   "Visibility & Hover": [
     "enableHoverTooltips",
@@ -36,6 +39,8 @@ const SETTINGS_GROUPS = {
   "Auto-cover": [
     "autoCover",
     "autoCoverTokenIntersectionMode",
+    "autoCoverCoverageStandardPct",
+    "autoCoverCoverageGreaterPct",
     "autoCoverIgnoreUndetected",
     "autoCoverIgnoreDead",
     "autoCoverIgnoreAllies",
@@ -64,49 +69,63 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     },
     position: { width: 640, height: 600 },
     classes: ["pf2e-visioner-settings-window"],
-    actions: { submit: VisionerSettingsForm._onSubmit },
+    actions: { submit: VisionerSettingsForm._onSubmit, switchGroup: VisionerSettingsForm._onSwitchGroup },
   };
 
   constructor(options = {}) {
     super(options);
     currentVisionerSettingsApp = this;
+    // Track unsaved edits across tab switches so the Save button applies all changes
+    this._pendingChanges = {};
+    // Default to the first defined group
+    try {
+      if (!this.activeGroupKey) this.activeGroupKey = Object.keys(SETTINGS_GROUPS)[0];
+    } catch (_) { this.activeGroupKey = "General"; }
   }
 
   async _prepareContext() {
+    const categories = Object.keys(SETTINGS_GROUPS).map((k) => ({ key: k, title: k, active: k === this.activeGroupKey }));
     const groups = [];
-    for (const [groupName, keys] of Object.entries(SETTINGS_GROUPS)) {
-      const items = [];
-      for (const key of keys) {
-        const cfg = DEFAULT_SETTINGS[key];
-        if (!cfg) continue;
-        const current = game.settings.get(MODULE_ID, key);
-        let inputType = "text";
-        let choicesList = null;
-        if (cfg.choices && typeof cfg.choices === "object") {
-          inputType = "select";
-          try {
-            choicesList = Object.entries(cfg.choices).map(([val, label]) => ({ value: val, label, selected: String(current) === String(val) }));
-          } catch (_) {
-            choicesList = null;
-          }
-        }
-        else if (cfg.type === Boolean) inputType = "checkbox";
-        else if (cfg.type === Number) inputType = "number";
-        items.push({
-          key,
-          name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
-          hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
-          value: current,
-          inputType,
-          choices: choicesList,
-          min: cfg.min ?? null,
-          max: cfg.max ?? null,
-          step: cfg.step ?? 1,
-        });
+    const activeKeys = SETTINGS_GROUPS[this.activeGroupKey] || [];
+    const items = [];
+    for (const key of activeKeys) {
+      const cfg = DEFAULT_SETTINGS[key];
+      if (!cfg) continue;
+      // Prefer pending (unsaved) value if user edited in another tab visit
+      const pendingRaw = this?._pendingChanges?.[`settings.${key}`];
+      const saved = game.settings.get(MODULE_ID, key);
+      let current = saved;
+      if (pendingRaw !== undefined) {
+        if (cfg.type === Boolean) current = !!pendingRaw;
+        else if (cfg.type === Number) current = pendingRaw !== "" && pendingRaw != null ? Number(pendingRaw) : saved;
+        else current = String(pendingRaw);
       }
-      if (items.length) groups.push({ title: groupName, items });
+      let inputType = "text";
+      let choicesList = null;
+      if (cfg.choices && typeof cfg.choices === "object") {
+        inputType = "select";
+        try {
+          choicesList = Object.entries(cfg.choices).map(([val, label]) => ({ value: val, label, selected: String(current) === String(val) }));
+        } catch (_) {
+          choicesList = null;
+        }
+      }
+      else if (cfg.type === Boolean) inputType = "checkbox";
+      else if (cfg.type === Number) inputType = "number";
+      items.push({
+        key,
+        name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
+        hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
+        value: current,
+        inputType,
+        choices: choicesList,
+        min: cfg.min ?? null,
+        max: cfg.max ?? null,
+        step: cfg.step ?? 1,
+      });
     }
-    return { groups };
+    if (items.length) groups.push({ title: this.activeGroupKey, items });
+    return { groups, categories };
   }
 
   async _renderHTML(context, _options) {
@@ -118,6 +137,116 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
   _replaceHTML(result, content, _options) {
     content.innerHTML = result;
+    try {
+      // Wire tabs for categories
+      const tabs = content.querySelectorAll('[data-action="switchGroup"][data-key]');
+      tabs.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          try { VisionerSettingsForm._onSwitchGroup(null, btn); } catch (_) {}
+        });
+      });
+
+      // Utility: show/hide a setting's form-group wrapper
+      const toggleSettingVisibility = (name, visible) => {
+        try {
+          const input = content.querySelector(`[name="settings.${name}"]`);
+          if (!input) return;
+          const group = input.closest('.pv-form-row') || input.closest('.form-group') || input.parentElement;
+          if (!group) return;
+          if (!group.dataset.pvDisplay) {
+            const computed = getComputedStyle(group)?.display || '';
+            group.dataset.pvDisplay = group.style.display || computed || '';
+          }
+          group.style.display = visible ? group.dataset.pvDisplay : 'none';
+        } catch (_) {}
+      };
+
+      // Coverage thresholds visible only when mode === 'coverage'
+      const modeSel = content.querySelector('[name="settings.autoCoverTokenIntersectionMode"]');
+      const applyCoverageModeVisibility = () => {
+        const isCoverage = (modeSel?.value || '') === 'coverage';
+        toggleSettingVisibility('autoCoverCoverageStandardPct', isCoverage);
+        toggleSettingVisibility('autoCoverCoverageGreaterPct', isCoverage);
+      };
+      if (modeSel) {
+        modeSel.addEventListener('change', applyCoverageModeVisibility);
+        applyCoverageModeVisibility();
+      }
+
+      // Seek distances visible only when their limit toggles are enabled
+      const inCombatToggle = content.querySelector('[name="settings.limitSeekRangeInCombat"]');
+      const outCombatToggle = content.querySelector('[name="settings.limitSeekRangeOutOfCombat"]');
+      const useTemplateToggle = content.querySelector('[name="settings.seekUseTemplate"]');
+      const applySeekVisibility = () => {
+        const templateOn = !!useTemplateToggle?.checked;
+        if (templateOn) {
+          // When template is used, hide both distance fields regardless of toggles
+          toggleSettingVisibility('customSeekDistance', false);
+          toggleSettingVisibility('customSeekDistanceOutOfCombat', false);
+          return;
+        }
+        const inOn = !!inCombatToggle?.checked;
+        const outOn = !!outCombatToggle?.checked;
+        toggleSettingVisibility('customSeekDistance', inOn);
+        toggleSettingVisibility('customSeekDistanceOutOfCombat', outOn);
+      };
+      if (inCombatToggle) inCombatToggle.addEventListener('change', applySeekVisibility);
+      if (outCombatToggle) outCombatToggle.addEventListener('change', applySeekVisibility);
+      if (useTemplateToggle) useTemplateToggle.addEventListener('change', applySeekVisibility);
+      applySeekVisibility();
+
+      // Hide the seek range limitation checkboxes entirely when using template
+      const applySeekTemplateVisibility = () => {
+        const templateOn = !!useTemplateToggle?.checked;
+        toggleSettingVisibility('limitSeekRangeInCombat', !templateOn);
+        toggleSettingVisibility('limitSeekRangeOutOfCombat', !templateOn);
+        // Re-apply distances visibility after checkbox hide/show decision
+        applySeekVisibility();
+      };
+      if (useTemplateToggle) useTemplateToggle.addEventListener('change', applySeekTemplateVisibility);
+      applySeekTemplateVisibility();
+
+      // Hide "Block Player Target Tooltips" unless "Allow Player Tooltips" is enabled
+      const allowPlayerTooltipsToggle = content.querySelector('[name="settings.allowPlayerTooltips"]');
+      const applyPlayerTooltipVisibility = () => {
+        const on = !!allowPlayerTooltipsToggle?.checked;
+        toggleSettingVisibility('blockPlayerTargetTooltips', on);
+      };
+      if (allowPlayerTooltipsToggle) allowPlayerTooltipsToggle.addEventListener('change', applyPlayerTooltipVisibility);
+      applyPlayerTooltipVisibility();
+
+      // Hide tooltip size unless hover tooltips are enabled
+      const enableHoverTooltipsToggle = content.querySelector('[name="settings.enableHoverTooltips"]');
+      const applyHoverTooltipVisibility = () => {
+        const on = !!enableHoverTooltipsToggle?.checked;
+        toggleSettingVisibility('tooltipFontSize', on);
+      };
+      if (enableHoverTooltipsToggle) enableHoverTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
+      applyHoverTooltipVisibility();
+
+      // Hide all Auto-cover settings unless the main toggle is on
+      const autoCoverToggle = content.querySelector('[name="settings.autoCover"]');
+      const autoCoverDependents = [
+        'autoCoverTokenIntersectionMode',
+        'autoCoverCoverageStandardPct',
+        'autoCoverCoverageGreaterPct',
+        'autoCoverIgnoreUndetected',
+        'autoCoverIgnoreDead',
+        'autoCoverIgnoreAllies',
+        'autoCoverRespectIgnoreFlag',
+        'autoCoverAllowProneBlockers',
+      ];
+      const applyAutoCoverVisibility = () => {
+        const on = !!autoCoverToggle?.checked;
+        for (const key of autoCoverDependents) toggleSettingVisibility(key, on);
+        // Re-apply coverage sub-visibility if turning on
+        if (on) {
+          try { applyCoverageModeVisibility(); } catch (_) {}
+        }
+      };
+      if (autoCoverToggle) autoCoverToggle.addEventListener('change', applyAutoCoverVisibility);
+      applyAutoCoverVisibility();
+    } catch (_) {}
     return content;
   }
 
@@ -126,24 +255,65 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     try {
       const formEl = app.element.querySelector("form.pf2e-visioner-settings");
       if (!formEl) return app.close();
+      // Capture any unsaved edits from the currently visible group before reading form data
+      try { app._capturePendingChanges(); } catch (_) {}
       const fd = new FormData(formEl);
       const rawMap = Object.fromEntries(fd.entries());
+      // Merge previously edited values from other tabs
+      if (app?._pendingChanges) {
+        for (const [name, value] of Object.entries(app._pendingChanges)) {
+          if (!(name in rawMap)) rawMap[name] = value;
+        }
+      }
       const allKeys = Object.values(SETTINGS_GROUPS).flat();
       for (const key of allKeys) {
         const cfg = DEFAULT_SETTINGS[key];
         if (!cfg) continue;
         const formKey = `settings.${key}`;
         const raw = rawMap[formKey];
+        // If the key wasn't present in the merged form+pending map, don't touch it
+        if (raw === undefined) continue;
+        const saved = game.settings.get(MODULE_ID, key);
         let value;
         if (cfg.type === Boolean) value = raw === "on" || raw === "true" || raw === true;
-        else if (cfg.type === Number) value = raw != null && raw !== "" ? Number(raw) : game.settings.get(MODULE_ID, key);
-        else value = raw != null ? raw : game.settings.get(MODULE_ID, key);
-        await game.settings.set(MODULE_ID, key, value);
+        else if (cfg.type === Number) value = raw != null && raw !== "" ? Number(raw) : saved;
+        else value = raw != null ? raw : saved;
+        if (value !== saved) await game.settings.set(MODULE_ID, key, value);
       }
+      // Reset pending after successful save
+      try { app._pendingChanges = {}; } catch (_) {}
       try { await app.close(); } catch (_) {}
     } catch (e) { /* noop */ try { await app.close(); } catch (_) {} }
   }
+
+  static _onSwitchGroup(_event, button) {
+    try {
+      const key = button?.dataset?.key;
+      if (!key) return;
+      const app = currentVisionerSettingsApp;
+      if (!app) return;
+      // Preserve edits from the current group before switching
+      try { app._capturePendingChanges(); } catch (_) {}
+      app.activeGroupKey = key;
+      app.render({ force: true });
+    } catch (_) {}
+  }
 }
+
+// Instance helpers
+VisionerSettingsForm.prototype._capturePendingChanges = function _capturePendingChanges() {
+  try {
+    const form = this.element?.querySelector?.('form.pf2e-visioner-settings');
+    if (!form) return;
+    const inputs = form.querySelectorAll('[name^="settings."]');
+    inputs.forEach((el) => {
+      const name = el.name;
+      if (!name) return;
+      if (el.type === 'checkbox') this._pendingChanges[name] = !!el.checked;
+      else this._pendingChanges[name] = el.value;
+    });
+  } catch (_) {}
+};
 
 /**
  * Register all module settings
@@ -195,6 +365,13 @@ export function registerSettings() {
         settingConfig.onChange = () => {};
       } else if (key === "customSeekDistanceOutOfCombat") {
         // No reload needed: seek distance is read at runtime
+        settingConfig.onChange = () => {};
+      } else if (key === "autoCover" || key === "autoCoverTokenIntersectionMode" || 
+        key === "autoCoverCoverageStandardPct" || key === "autoCoverCoverageGreaterPct" || 
+        key === "autoCoverIgnoreUndetected" || key === "autoCoverIgnoreDead" || 
+        key === "autoCoverIgnoreAllies" || key === "autoCoverRespectIgnoreFlag" || 
+        key === "autoCoverAllowProneBlockers") {
+        // No reload needed: auto-cover is read at runtime
         settingConfig.onChange = () => {};
       } else if (key === "blockPlayerTargetTooltips") {
         // No reload: will take effect on next hover; ensure initialized when allowed
@@ -250,6 +427,9 @@ export function registerSettings() {
             document.body.classList.add(`pf2e-visioner-colorblind-${value}`);
           }
         };
+      } else if (key === "keybindingOpensTMInTargetMode") {
+        // No reload needed: swap mode is read at runtime
+        settingConfig.onChange = () => {};
       }
 
       try {
@@ -285,8 +465,9 @@ export function registerKeybindings() {
     // Add appropriate handler
     if (key === "openTokenManager") {
       keybindingConfig.onDown = async () => {
+        const mode = game.settings.get(MODULE_ID, "keybindingOpensTMInTargetMode") ? "target" : "observer";
         const { api } = await import("./api.js");
-        await api.openTokenManager();
+        await api.openTokenManager(null, {mode});
       };
     } else if (key === "openVisibilityManager") {
       keybindingConfig.onDown = async () => {
@@ -301,6 +482,25 @@ export function registerKeybindings() {
       keybindingConfig.onUp = async () => {
         const { setTooltipMode } = await import("./services/hover-tooltips.js");
         setTooltipMode("target");
+      };
+    } else if (key === "showAutoCoverOverlay") {
+      keybindingConfig.onDown = async () => {
+        try {
+          const { HoverTooltips, showAutoCoverComputedOverlay, hideAutoCoverComputedOverlay } = await import("./services/hover-tooltips.js");
+          // Decide source token: hovered or first controlled
+          let token = HoverTooltips.currentHoveredToken;
+          if (!token) token = canvas.tokens.controlled?.[0] || null;
+          if (!token) return;
+          // Render fresh auto-cover computation overlay (cover-only)
+          hideAutoCoverComputedOverlay();
+          showAutoCoverComputedOverlay(token);
+        } catch (_) {}
+      };
+      keybindingConfig.onUp = async () => {
+        try {
+          const { hideAutoCoverComputedOverlay } = await import("./services/hover-tooltips.js");
+          hideAutoCoverComputedOverlay();
+        } catch (_) {}
       };
     }
 

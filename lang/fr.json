@@ -1,77 +1,289 @@
 {
   "PF2E_VISIONER": {
-    "MODULE_TITLE": "PF2 Visioner",
+    "MODULE_TITLE": "PF2E Visioner",
     "TOKEN_MANAGER": {
-      "TITLE": "Gestionnaire de vision des jetons"
+      "TITLE": "Gestionnaire de visibilité de jeton",
+      "OBSERVER": "Jeton observateur",
+      "TARGET": "Jeton cible",
+      "VISIBILITY_STATE": "État de visibilité",
+      "COVER_STATE": "État d'abri",
+      "NO_TOKENS": "Aucun jeton disponible sur cette scène",
+      "APPLY": "Appliquer l'actuel",
+      "APPLY_BOTH": "Appliquer les deux",
+      "CANCEL": "Effacer",
+      "RESET": "Mode de réinitialisation",
+      "BULK_ACTIONS": "Actions de masse",
+      "VISIBILITY_TAB": "Visibilité",
+      "COVER_TAB": "Abri"
     },
     "VISIBILITY_STATES": {
+      "observed": "Observé",
+      "hidden": "Caché",
+      "undetected": "Non détecté",
+      "concealed": "Masqué"
     },
     "COVER_STATES": {
+      "none": "Pas d'abri",
+      "lesser": "Abri inférieur",
+      "standard": "Abri standard",
+      "greater": "Abri supérieur"
     },
     "VISUAL_EFFECTS": {
+      "HIDDEN_OVERLAY": "Ce jeton vous est caché",
+      "UNDETECTED_OVERLAY": "Vous ne détectez pas ce jeton",
+      "CONCEALED_OVERLAY": "Ce jeton vous est masqué"
     },
     "MECHANICAL_EFFECTS": {
+      "HIDDEN_FLAT_CHECK": "un test nu DD 11 est requis pour cibler",
+      "CONCEALED_FLAT_CHECK": "Un test nu DD 5 est requis pour cibler",
+      "UNDETECTED_CONDITION": "État Non détecté est appliqué avec la totalité des effets mécaniques",
+      "VISIBLE_NO_EFFECTS": "Ni pénalité pour cibler, ni effet",
+      "HIDDEN_TOOLTIP": "Caché : Vous êtes Pris au dépourvu par la cible et vous devez réussir un test nu DD 11 lorsque vous la ciblez avec une attaque, un sort ou un autre effet",
+      "CONCEALED_TOOLTIP": "Masqué : Vous devez réussir un test nu DD 5 pour cibler avec une attaque, un sort ou un autre effet",
+      "UNDETECTED_TOOLTIP": "Non détecté : Vous ignorez l'emplacement de la cible. Vous êtes Pris au dépourvu par la cible et vous ne pouvez facilement la cibler. Utiliser l'action Chercher peut aider à trouver une créature Non détectée",
+      "VISIBLE_TOOLTIP": "Visible : Ni pénalité, ni effet",
+      "BLINDED_OVERRIDE": "Toutes les créatures vous sont Cachées à cause de l'état Aveugle",
+      "DAZZLED_OVERRIDE": "Toutes les créatures vous sont Masquées à cause de l'état Ébloui",
+      "NO_COVER_TOOLTIP": "Pas d'abri : Ni pénalité, ni effet",
+      "LESSER_COVER_TOOLTIP": "Abri inférieur : bonus de circonstances de +1 à la CA",
+      "STANDARD_COVER_TOOLTIP": "Abri standard : bonus de circonstances de +2 à la CA, aux jets de Réflexes et aux tests de Discrétion. Peut se cacher derrière cet abri.",
+      "GREATER_COVER_TOOLTIP": "Abri supérieur : bonus de circonstances de +4 à la CA, aux jets de Réflexes et aux tests de Discrétion. Peut se cacher derrière cet abri."
     },
     "CONTEXT_MENU": {
+      "MANAGE_TOKEN": "Gérer le jeton",
+      "MANAGE_VISIBILITY": "Gérer la visibilité du jeton",
+      "MANAGE_COVER": "Gérer l'abri du jeton",
+      "QUICK_HIDDEN": "Régler sur Caché",
+      "QUICK_UNDETECTED": "Régler sur Non détecté",
+      "QUICK_CONCEALED": "Régler sur Masqué",
+      "QUICK_OBSERVED": "Régler sur Observé",
+      "QUICK_NO_COVER": "Régler sur pas d'abri",
+      "QUICK_LESSER_COVER": "Régler sur Abri inférieur",
+      "QUICK_STANDARD_COVER": "Régler sur Abri standard",
+      "QUICK_GREATER_COVER": "Régler sur Abri supérieur"
     },
     "NOTIFICATIONS": {
+      "NO_OBSERVER_SELECTED": "Svp, choisissez d'abor un jeton observateur",
+      "MULTIPLE_OBSERVERS": "Plusieurs jetons observateurs sélectionnés. Svp, choissez en un seul",
+      "NO_SOCKETLIB_INSTALLED": "PF2E Visioner a besoin de fonctionner avec le module socketlib pour être actif en vue de rafraichir automatiquement les écrans du client. Activez le svp."
     },
     "SEEK_AUTOMATION": {
+      "BUTTON_APPLY": "Appliquer les résultats de Chercher",
+      "BUTTON_PREVIEW": "Aperçu des résultats",
+      "BUTTON_PROCESSED": "Résultats appliqués",
+      "BUTTON_TOOLTIP": "Appliquer les changements de visibilité en fonction des résultats de Chercher",
+      "NO_UNDETECTED_TOKENS": "Aucun jeton caché ou non détecté n'a été trouvé par l'action chercher de {name}",
+      "NO_CHANGES": "Aucun changement de visibilité n'est nécessaire après l'action Chercher de {name}",
+      "RESULTS_APPLIED": "Changement de l'action Chercher appliqués automatiquement : {changes}",
+      "ERROR_PROCESSING": "Erreur en calculant les résultats de Chercher. Ouvrez la console pour les détails.",
+      "PROCESSING": "Calcul des résultats de Chercher...",
+      "PREVIEW_TITLE": "Aperçu des résultats de Chercher",
+      "PREVIEW_HINT": "Analyse des résultat de l'action Chercher",
+      "ROLL_VS_DC": "Lancer les dés contre le DD de Discrétion",
+      "OUTCOME": "Résultat",
+      "VISIBILITY_CHANGE": "Changement de visibilité",
+      "OPEN_RESULTS": "Ouvrir les résultats de Chercher",
+      "OPEN_RESULTS_TOOLTIP": "Ouvrir la boite de dialogue des résultats de Chercher pour appliquer les changements individuels ou de masse",
+      "SETUP_TEMPLATE": "Définir le gabarit de Chercher",
+      "REMOVE_TEMPLATE": "Retirer le gabatit de Chercher",
+      "SETUP_TEMPLATE_TOOLTIP": "Cliquer pour placer une explosion de 4,50 mètres quelque part. Chercher ne s'appliquera qu'aux jetons à l'intérieur de la zone",
+      "ENCOUNTER_ONLY": "Montrer seulement les jetons de la rencontre",
+      "SETTING_NAME": "Activer l'automatisation de Chercher",
+      "SETTING_HINT": "Ajoute automatiquement les boutons Chercher aux messages de la conversation pour appliquer les changements de visibilité",
+      "OUT_OF_RANGE": "Hors de portée",
+      "RANGE_LIMIT_ACTIVE": "La limite de portée est active : Montre seulement les cibles dans un rayon de 9 mètres",
+      "RANGE_LIMIT_ACTIVE_CUSTOM": "Limite de portée active : Montre seumlement les cibles dans les {distance} pieds ",
+      "NO_TARGETS_IN_RANGE": "PAs de cibles valides dans la portée de 9 mètres",
+      "NO_TARGETS_IN_RANGE_CUSTOM": "Pas de cibles valides dans la portée de {distance} pieds"
     },
     "HIDE_AUTOMATION": {
+      "BUTTON_APPLY": "Applique les résultats de Se cacher",
+      "BUTTON_PREVIEW": "Aperçu des résultats",
+      "BUTTON_PROCESSED": "Résultats Appliqués",
+      "BUTTON_TOOLTIP": "Applique les changements de visibilité en fonction des résultats de Se Cacher",
+      "NO_OBSERVERS": "Aucun observateur n'a été trouvé par l'action Se Cacher de {name}",
+      "NO_CHANGES": "Aucun changement de visibilité n'est nécessaire pour l'action Se Cacher de {name}",
+      "RESULTS_APPLIED": "Changements de l'automatisation de Se Cacher appliqués : {changes}",
+      "ERROR_PROCESSING": "Erreur en calculant les résultats de Se Cacher. Ouvrez la console pour les détails.",
+      "PROCESSING": "calcul des résultats de Se Cacher...",
+      "PREVIEW_TITLE": "Aperçu des résultats de Se Cacher",
+      "PREVIEW_HINT": "Analyse des résultats de l'action Se Cacher",
+      "ROLL_VS_DC": "Lancer les dés contre le DD de Perception",
+      "OUTCOME": "résultat",
+      "VISIBILITY_CHANGE": "Changement de visibilité",
+      "OPEN_RESULTS": "Ouvrir les résultats de Se Cacher",
+      "OPEN_RESULTS_TOOLTIP": "Ouvrir la boite de dialogue des résultats de Se Cacher pour appliquer les changements individuels ou de masse",
+      "ENCOUNTER_ONLY": "Montrer seulement les jetons de la rencontre",
+      "SETTING_NAME": "Activer l'automatisation de Se Cacher",
+      "SETTING_HINT": "Ajouter automatiquement des boutons pour Se Cacher dans les messages de la conversation pour appliquer les changements de visibilité"
     },
     "SNEAK_AUTOMATION": {
+      "BUTTON_APPLY": "Appliquer les résultats d'Être furtif",
+      "BUTTON_PREVIEW": "Aperçu des résultats",
+      "BUTTON_PROCESSED": "Résultats appliqués",
+      "BUTTON_TOOLTIP": "Appliquer les changements de visibiliten fonction des résultats d'Être furtif",
+      "NO_OBSERVERS": "Aucun jeton ne peut voir {actor} - pas besoin d'Être furtif",
+      "NO_CHANGES": "Être furtif n'a eu aucun effet sur la visibilité",
+      "ERROR_PROCESSING": "Erreur en appliquant les résultats d'Être furtif",
+      "PROCESSING": "Calcul des résultats d'Être furtif...",
+      "PREVIEW_TITLE": "Aperçu des résultats d'Être furtif",
+      "PREVIEW_HINT": "Analyse des résultats de l'action Être furtif",
+      "ROLL_VS_DC": "Lancer les dés contre le DD de Perception",
+      "OUTCOME": "Résultat",
+      "VISIBILITY_CHANGE": "Changement de visibilité",
+      "OPEN_RESULTS": "Ouvrir les résultats d'Être furtif",
+      "OPEN_RESULTS_TOOLTIP": "Ouvrir la boite de dialogue des résultats d'Être furtif pour appliquer les changements individuels ou de masse",
+      "ENCOUNTER_ONLY": "Montrer seulement les jetons de la rencontre",
+      "SETTING_NAME": "Activer l'automatisation d'Être furtif",
+      "SETTING_HINT": "Ajouter automatiquement des boutons pour Être furtif dans les messages de la conversation pour appliquer les changements de visibilité"
     },
     "CREATE_A_DIVERSION_AUTOMATION": {
+      "BUTTON_APPLY": "Appliquer les résultats de la Diversion ",
+      "BUTTON_TOOLTIP": "Appliquer les changements de visibilité de l'action Créer une diversion",
+      "NO_OBSERVERS": "Aucun jeton ne peut voir {actor} - aucune diversion n'est nécessaire",
+      "NO_CHANGES": "Créer une Diversion n'a pas eu d'effet sur la visibilité",
+      "ERROR_PROCESSING": "Erreur en calculant les résultats de Créer une diversion",
+      "PROCESSING": "Caclul des résultats de Créer une diversion...",
+      "PREVIEW_TITLE": "Aperçu des résultats de Créer une diversion",
+      "PREVIEW_HINT": "Analyse des résultats de l'action de diversion",
+      "ROLL_VS_DC": "Lancer les dés contre le DD de Perception",
+      "OUTCOME": "résultat",
+      "VISIBILITY_CHANGE": "Changement de visibilité",
+      "OPEN_RESULTS": "Ouvrir les résultats de la diversion",
+      "OPEN_RESULTS_TOOLTIP": "Ouvrir la boite de dialogue des résultats de la Diversion pour appliquer les changements individuels ou de masse",
+      "ENCOUNTER_ONLY": "Montrer seulement les jetons de la rencontre",
+      "SETTING_NAME": "Activer l'automatisation de Créer une diversion",
+      "SETTING_HINT": "Ajouter automatiquement des boutons pour Créer une diversion dans les messages de la conversation pour appliquer les changements de visibilité"
     },
     "SETTINGS": {
       "ENABLE_HOVER_TOOLTIPS": {
+        "name": "Activer les infobulles au survol",
+        "hint": "Montre les infobulles du statut de visibilité au survol des jetons (nécessite un redémarrage)"
       },
       "ALLOW_PLAYER_TOOLTIPS": {
+        "name": "Permet les infobulles pour les joueurs",
+        "hint": "Lorsque c'est activé, les joueurs euvent vois les indications de visibilité de leur perspective au survol des jetons (nécessite un redémarrage)"
       },
       "TOOLTIP_FONT_SIZE": {
+        "name": "Taille de l'infobulle",
+        "hint": "Choisissez la taille de l'infobulle (affecte la taille de l'icône et de la bordure. Le texte s'ajuste en conséquence)",
         "CHOICES": {
+          "tiny": "Très petit",
+          "small": "Petit",
+          "medium": "Moyen",
+          "large": "Grand",
+          "xlarge": "Très grand"
         }
       },
       "COLORBLIND_MODE": {
+        "name": "Mode daltonisme",
+        "hint": "Choisissez un mode daltonisme pour ajuster les couleurs pour une meilleure visibilité (réglage côté client)",
         "CHOICES": {
+          "none": "Pas de mode daltonisme",
+          "protanopia": "Protanopie (rouge non perçu)",
+          "deuteranopia": "Deutéranopie (Vert non perçu)",
+          "tritanopia": "Tritanopie (Bleu non perçu)",
+          "achromatopsia": "Achromatopsie (Couleurs complètement non perçues)"
         }
       },
       "IGNORE_ALLIES": {
+        "name": "Ignorer les alliés",
+        "hint": "S'il est activé, les PNJ ne verront que les membres du groupe dans les dialogues et les joeuurs ne verront que les PNJ. Ceci simplifie la gestion de la visibilité en cachant les relations interalliées."
       },
       "DEFAULT_ENCOUNTER_FILTER": {
+        "name": "Default Encounter Filter State",
+        "hint": "S'il est activé, la case à cocher du filtre de rencontre dans les boîtes de dialogue sera cochée par défaut lorsqu'il y a une rencontre active."
       },
       "LIMIT_SEEK_RANGE": {
+        "name": "Limiter la Portée de Chercher en combat",
+        "hint": "S'il est activé, les actions Chercher en combat ne détecteront les cibles que dans la distance spécifiée"
       },
+      "LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE": "Limite de portée désactivée : Utiliser les gabarits",
       "SEEK_USE_TEMPLATE": {
+        "name": "Utiliser le gabarit Chercher (explosion de 9 mètres)",
+        "hint": "S'il est activé, il sera possible de fixer un gabarit d'une explosion de 9 mètres et de ne prendre en compte que les cibles au sein du gabarit"
       },
       "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
+        "name": "Limiter la portée de Chercher en dehors du combat",
+        "hint": "S'il est activé, les actions Chercher en dehors du combat ne détecteront les cibles dans que la distance spécifiée"
       },
       "CUSTOM_SEEK_DISTANCE": {
+        "name": "Valeur de la portée de Chercher",
+        "hint": "Fixer la distance maximale (en pieds) pour les actions Chercher lorsque la limite de portée est active."
       },
       "CUSTOM_SEEK_DISTANCE_OOC": {
+        "name": "valeur de la portée de Chercher (En dehors du combat)",
+        "hint": "Fixer la distance maximale (en pieds) pour les actions Chercher lorsque la limite de portée en dehors du combat est active."
       },
       "USE_HUD_BUTTON": {
+        "name": "Utiliser le bouton du HUD du jeton",
+        "hint": "S'il est activé, ajoute un bouton de visibilité au HUD du jeton. S'il est désactivé, il utilise un bouton flottant lorsque les jetons sont sélectionnés."
       },
       "BLOCK_PLAYER_TARGET_TOOLTIPS": {
+        "name": "Bloquer l'infobulle cible pour les joueurs",
+        "hint": "S'il est activé, les joueurs ne verront pas les infobulles en survolant les jetons en mode cible (comment les autres voient le jeton survolé). Ils peuvent toujours voir les infobulles en pressant la clé O ou en pressant Alt."
       },
       "INTEGRATE_COVER_VISIBILITY": {
+        "name": "Intégration des règles d'abri avec la visibilité",
+        "hint": "S'il est activé, certaines actions obéissent aux prérequis d'abri. Par exemple, Se Cacher n'est permis que si le jeton qui agit bénéficie d'au moins un abri standard par rapport à un observateur."
       },
       "INTEGRATE_ROLL_OUTCOME": {
+        "name": "Intégration de l'issue du jet dans le gestionnaire de jeton",
+        "hint": "Ajoute une colonne au gestionnaire du jeton pour montrer le dernier résultat du jet contre le DD actuel et l'issue."
       },
       "ENFORCE_RAW": {
+        "name": "Appliquer les règles telles qu'elles sont écrites",
+        "hint": "S'il est activé, certaines actions obéissent aux prérequis des actions. Par exemple, Se Cacher n'est permis que si le jeton qui agit est Masqué ou bénéficie d'un abri standard par rapport à l'observateur."
       },
       "DEBUG": {
+        "name": "Mode de débogage",
+        "hint": "Active le journal détaillé dans la console pour repérer les problèmes de fonctionnement"
+      },
+      "LOOT_PERCEPTION_DC": {
+        "name": "DD de perception par défaut pour les acteurs butin",
+        "hint": "Utilisé lorsqu'un jeton de butin a besoin d'un DD de Perception et ne possède pas une statistique dans le système."
+      },
+      "LOOT_STEALTH_DC": {
+        "name": "DD de Discrétion par défaut pour les acteurs butin",
+        "hint": "Le DD utilisé lorsque vous prenez en compte les jetons de butin comme cibles de Chercher."
+      },
+      "INCLUDE_LOOT_ACTORS": {
+        "name": "Inclure les acteurs butin dans le gestionnaire de visibilité",
+        "hint": "Permet de configuer les états de visibilité des acteurs de butin (coffres, contenants) par observateur. Seulement visuel. Aucun état PF2E n'est appliqué."
+      },
+      "INCLUDE_WALLS": {
+        "name": "Inclure les murs comme objets dissimulables (expérimental)",
+        "hint": "Montre les murs dans le gestionnaire pour les marquer comme visibles/cachés en fonction de l'observateur. L'implémentation actuelle est visible uniquement et ne change ni l'occlusion ni la collision."
+      },
+      "AUTO_COVER": {
+        "name": "Abri automatique",
+        "hint": "S'il est activé, le module appliquera automatiquement l'abri aux jetons en fonction du chemin bloquant le jeton."
       }
     },
     "UI": {
+      "ENCOUNTER_FILTER_TEXT": "Montrer seulement les jetons de la rencontre",
+      "COVER_OVERRIDE": "Outrepasser l'abri",
+      "ROLL": "Lancer"
+    },
+    "WALL": {
+      "VISIBLE_TO_YOU": "Mur caché"
     },
     "KEYBINDINGS": {
       "OPEN_TOKEN_MANAGER": {
+        "name": "Ouvrir le gestionnaire du jeton",
+        "hint": "Ouvre le gestionnaire du jeton pour les jetons sélectionnés"
       },
       "OPEN_VISIBILITY_MANAGER": {
+        "name": "Ouvrir le gestionnaire de visibilité du jeton",
+        "hint": "Ouvre le gestionnaire de visibilité pour les jetons sélectionnés"
+      },
+      "HOLD_COVER_OVERRIDE": {
+        "name": "Maintenez enfoncé pour outrepasser l'abri sur les jets rapides",
+        "hint": "Lorsqu'il est pressé en cliquant sur une frappe/attaque (pas de dialogue), utilise Outrepasser l'abri de Visioner à la place de l'abri calculé automatiquement. Pas de clé par défaut - configurer votre propre clé."
       },
       "TOGGLE_OBSERVER_MODE": {
+        "name": "Activer/Désactiver le mode observateur pour les infobulles au survol",
+        "hint": "Maintenir enfoncé cette clé pour passer de l'infobulle au survol au mode observateur (comment le jeton survolé voit les autres)"
       }
     }
   }

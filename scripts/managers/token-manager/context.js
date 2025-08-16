@@ -70,8 +70,9 @@ export async function buildContext(app, options) {
 
   context.showEncounterFilter = hasActiveEncounter();
   context.encounterOnly = app.encounterOnly;
+  context.ignoreAllies = !!app.ignoreAllies;
 
-  const sceneTokens = getSceneTargets(app.observer, app.encounterOnly);
+  const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
 
   context.observer = {
     id: app.observer.document.id,

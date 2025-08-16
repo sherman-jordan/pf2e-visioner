@@ -14,8 +14,8 @@ export class SneakActionHandler extends ActionHandlerBase {
     const base = tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
-      // Respect ignoreAllies setting: filter allies only when enabled
-      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"))
+      // Only apply ignoreAllies when explicitly provided; otherwise let dialog filter live
+      .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies", (actionData?.ignoreAllies === true || actionData?.ignoreAllies === false) ? actionData.ignoreAllies : null))
       // Exclude loot and hazards from observers list
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
     const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");

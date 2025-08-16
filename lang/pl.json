@@ -190,6 +190,10 @@
         "name": "Ignoruj sojuszników (domyślnie)",
         "hint": "Ustawia domyślny stan pola wyboru „Ignoruj sojuszników” w oknach dialogowych Visioner i Menedżerze tokenów. Można przełączać tę opcję na żywo w każdym oknie dialogowym, aby filtrować wyniki w czasie rzeczywistym."
       },
+      "ENABLE_ALL_TOKENS_VISION": {
+        "name": "Włącz wizję dla wszystkich tokenów",
+        "hint": "Po włączeniu tej opcji wszystkie tokeny będą domyślnie widoczne. Możesz przełączać tę opcję na żywo w oknie dialogowym, aby filtrować wyniki w czasie rzeczywistym."
+      },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Domyślny stan filtru spotkań",
         "hint": "Po włączeniu opcji, pole wyboru filtru spotkań w oknach dialogowych będzie domyślnie zaznaczone, gdy aktywne jest spotkanie."
@@ -200,8 +204,8 @@
       },
       "LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE": "Ograniczenie zakresu wyłączone: Korzystanie z szablonu",
       "SEEK_USE_TEMPLATE": {
-        "name": "Użyj szablonu Szukania (30 stóp - wybuch)",
-        "hint": "Po włączeniu tej opcji będzie można skonfigurować szablon wybuchu o zasięgu 30 stóp i uwzględniać tylko cele znajdujące się w obrębie tego szablonu."
+        "name": "Użyj szablonu Szukania (15 stóp - wybuch)",
+        "hint": "Po włączeniu tej opcji będzie można skonfigurować szablon wybuchu o zasięgu 15 stóp i uwzględniać tylko cele znajdujące się w obrębie tego szablonu."
       },
       "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
         "name": "Ogranicz zasięg Szukania poza walką",

@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.4.0] - 2025-08-16
+
+### Changed
+
+- Settings menu: saving now preserves values from unvisited tabs. Only submitted or previously edited fields are persisted; untouched settings are no longer reset.
+- Added opt in for enable all tokens vision
+
+### Fixed:
+- Dialogs: fixed apply changes missing for sneak.
+
 ## [2.3.0] - 2025-08-15
 
 ### Added

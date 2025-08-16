@@ -1,5 +1,31 @@
 # Changelog
 
+
+## [2.4.0] - 2025-08-16
+
+### Added
+
+- Hidden walls support:
+  - Turn on in the settings
+  - Wall config -> under visioner settings turn on hidden wall checkbox
+    - This will make the wall appear in the visibility manager and seek dialog
+  - Set DC if you want
+  - Walls auto start as hidden for tokens
+  - Seek to discover wall
+  - Hidden walls will light up purple and hidden doors and secret doors will light up yellow
+  - EXPERIMENTAL: See through hidden walls you can observe!
+- Quick panel in visioner tool -> accepts selected tokens and targets an able to set visioner relationship changes quickly between them
+- Hidden wall toggle in visioner tool
+
+### Fixed
+
+- Added abunch of apply changes buttons that were missing in actions
+- Diversion outcome column populated again
+
+### Changed
+
+- Removed button title, was not needed honestly
+
 ## [2.3.1] - 2025-08-16
 
 ### Changed

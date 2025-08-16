@@ -27,6 +27,10 @@
       <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" />
       <span class="encounter-filter-label">Ignore allies</span>
     </label>
+    <label class="ignore-walls-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if ignoreWalls}}checked{{/if}} data-action="toggleIgnoreWalls" />
+      <span class="encounter-filter-label">Ignore walls</span>
+    </label>
   </div>
 
   {{!-- Results Table --}}

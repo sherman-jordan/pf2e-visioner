@@ -8,9 +8,9 @@ import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter,
-  filterOutcomesBySeekDistance,
-  filterOutcomesByTemplate,
+    filterOutcomesByEncounter,
+    filterOutcomesBySeekDistance,
+    filterOutcomesByTemplate,
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -68,6 +68,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
     // Per-dialog ignore allies defaults from global setting
     this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
+    // Per-dialog ignore walls (default off)
+    this.ignoreWalls = false;
 
     // Set global reference
     currentSeekDialog = this;
@@ -84,12 +86,16 @@ export class SeekPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Filter outcomes with encounter helper, allies live toggle, template (if provided), then distance limits if enabled
+    // Filter outcomes with encounter helper, allies live toggle, optional walls toggle, template (if provided), then distance limits if enabled
     let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter targets found, showing all");
     try {
       const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
       filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
     } catch (_) {}
+    // Optional walls exclusion for UI convenience
+    if (this.ignoreWalls === true) {
+      filteredOutcomes = Array.isArray(filteredOutcomes) ? filteredOutcomes.filter((o) => !o?._isWall && !o?.wallId) : filteredOutcomes;
+    }
     if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
       filteredOutcomes = filterOutcomesByTemplate(
         filteredOutcomes,
@@ -154,6 +160,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       actionLabel: "Seek action results analysis",
     };
     context.outcomes = processedOutcomes;
+    context.ignoreWalls = !!this.ignoreWalls;
     Object.assign(context, this.buildCommonContext(this.outcomes));
 
     return context;
@@ -183,6 +190,17 @@ export class SeekPreviewDialog extends BaseActionDialog {
       if (cb) {
         cb.addEventListener('change', () => {
           this.ignoreAllies = !!cb.checked;
+          this.bulkActionState = "initial";
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
+    // Hook up per-dialog Ignore Walls toggle
+    try {
+      const cbw = content.querySelector('input[data-action="toggleIgnoreWalls"]');
+      if (cbw) {
+        cbw.addEventListener('change', () => {
+          this.ignoreWalls = !!cbw.checked;
           this.bulkActionState = "initial";
           this.render({ force: true });
         });

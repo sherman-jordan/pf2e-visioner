@@ -5,11 +5,11 @@
 import { extractPerceptionDC, extractStealthDC } from "../../chat/services/infra/shared-utils.js";
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../../constants.js";
 import {
-    getCoverMap,
-    getLastRollTotalForActor,
-    getSceneTargets,
-    getVisibilityMap,
-    hasActiveEncounter,
+  getCoverMap,
+  getLastRollTotalForActor,
+  getSceneTargets,
+  getVisibilityMap,
+  hasActiveEncounter,
 } from "../../utils.js";
 
 function getTokenImage(token) {
@@ -71,6 +71,7 @@ export async function buildContext(app, options) {
   context.showEncounterFilter = hasActiveEncounter();
   context.encounterOnly = app.encounterOnly;
   context.ignoreAllies = !!app.ignoreAllies;
+  context.ignoreWalls = !!app.ignoreWalls;
 
   const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
 
@@ -256,7 +257,9 @@ export async function buildContext(app, options) {
   try {
     if (context.isObserverMode && game.settings.get(MODULE_ID, "hiddenWallsEnabled")) {
       const walls = canvas?.walls?.placeables || [];
-      const hiddenWalls = walls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+      // Respect UI filter: Ignore walls (visibility tab only)
+      const ignoreWalls = !!app.ignoreWalls && context.isVisibilityTab === true;
+      const hiddenWalls = ignoreWalls ? [] : walls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
       let autoIndex = 0;
       const wallMap = app.observer?.document?.getFlag?.(MODULE_ID, "walls") || {};
       context.wallTargets = hiddenWalls.map((w) => {

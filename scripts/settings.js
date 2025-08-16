@@ -268,11 +268,14 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         if (!cfg) continue;
         const formKey = `settings.${key}`;
         const raw = rawMap[formKey];
+        // If the key wasn't present in the merged form+pending map, don't touch it
+        if (raw === undefined) continue;
+        const saved = game.settings.get(MODULE_ID, key);
         let value;
         if (cfg.type === Boolean) value = raw === "on" || raw === "true" || raw === true;
-        else if (cfg.type === Number) value = raw != null && raw !== "" ? Number(raw) : game.settings.get(MODULE_ID, key);
-        else value = raw != null ? raw : game.settings.get(MODULE_ID, key);
-        await game.settings.set(MODULE_ID, key, value);
+        else if (cfg.type === Number) value = raw != null && raw !== "" ? Number(raw) : saved;
+        else value = raw != null ? raw : saved;
+        if (value !== saved) await game.settings.set(MODULE_ID, key, value);
       }
       // Reset pending after successful save
       try { app._pendingChanges = {}; } catch (_) {}

@@ -265,7 +265,8 @@ export async function buildContext(app, options) {
       context.wallTargets = hiddenWalls.map((w) => {
         const d = w.document;
         const idf = d?.getFlag?.(MODULE_ID, "wallIdentifier");
-        const fallback = `${game.i18n?.localize?.("PF2E_VISIONER.WALL.VISIBLE_TO_YOU") || "Hidden Wall"} ${++autoIndex}`;
+        const isDoor = Number(d?.door) > 0;
+        const fallback = `${game.i18n?.localize?.("PF2E_VISIONER.WALL.VISIBLE_TO_YOU") || isDoor ? "Hidden Door" : "Hidden Wall"} ${++autoIndex}`;
         const currentState = wallMap?.[d.id] || "hidden";
         const states = ["hidden", "observed"].map((key) => ({
           value: key,
@@ -274,7 +275,6 @@ export async function buildContext(app, options) {
           icon: VISIBILITY_STATES[key].icon,
           color: VISIBILITY_STATES[key].color,
         }));
-        const isDoor = Number(d?.door) > 0;
         const img = getWallImage(isDoor);
         // DC: per-wall override else global default
         const overrideDC = Number(d?.getFlag?.(MODULE_ID, "stealthDC"));

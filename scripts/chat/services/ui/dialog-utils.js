@@ -41,8 +41,10 @@ export function updateRowButtonsToApplied(rootElement, outcomes) {
   if (!rootElement || !outcomes) return;
   for (const outcome of outcomes) {
     const tokenId = outcome?.target?.id;
-    if (!tokenId) continue;
-    const row = rootElement.querySelector(`tr[data-token-id="${tokenId}"]`);
+    const wallId = outcome?.wallId;
+    let row = null;
+    if (tokenId) row = rootElement.querySelector(`tr[data-token-id="${tokenId}"]`);
+    if (!row && wallId) row = rootElement.querySelector(`tr[data-wall-id="${wallId}"]`);
     if (!row) continue;
     let applyButton = row.querySelector(".row-action-btn.apply-change");
     let revertButton = row.querySelector(".row-action-btn.revert-change");
@@ -68,8 +70,10 @@ export function updateRowButtonsToReverted(rootElement, outcomes) {
   if (!rootElement || !outcomes) return;
   for (const outcome of outcomes) {
     const tokenId = outcome?.target?.id;
-    if (!tokenId) continue;
-    const row = rootElement.querySelector(`tr[data-token-id="${tokenId}"]`);
+    const wallId = outcome?.wallId;
+    let row = null;
+    if (tokenId) row = rootElement.querySelector(`tr[data-token-id="${tokenId}"]`);
+    if (!row && wallId) row = rootElement.querySelector(`tr[data-wall-id="${wallId}"]`);
     if (!row) continue;
     let applyButton = row.querySelector(".row-action-btn.apply-change");
     let revertButton = row.querySelector(".row-action-btn.revert-change");
@@ -126,7 +130,7 @@ export function updateBulkActionButtons(rootElement, bulkActionState) {
 export function updateChangesCount(rootElement, counterClassName) {
   if (!rootElement) return 0;
   let changesCount = 0;
-  const rows = rootElement.querySelectorAll("tbody tr[data-token-id]");
+  const rows = rootElement.querySelectorAll("tbody tr[data-token-id], tbody tr[data-wall-id]");
   rows.forEach((row) => {
     let applyButton = row.querySelector(".row-action-btn.apply-change");
     let revertButton = row.querySelector(".row-action-btn.revert-change");

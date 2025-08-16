@@ -69,6 +69,7 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
         }
       }
 
+      // Do not auto-scroll to wall rows; only scroll to token rows
       if (firstRow && typeof firstRow.scrollIntoView === "function") {
         firstRow.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
       }

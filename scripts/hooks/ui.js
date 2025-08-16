@@ -24,6 +24,47 @@ export function registerUIHooks() {
       ui.controls.render();
     } catch (_) {}
   };
+  // Utility: label identifiers for selected walls on the canvas
+  const refreshWallIdentifierLabels = () => {
+    try {
+      const walls = canvas?.walls?.placeables || [];
+      const layer = canvas?.controls || canvas?.hud || canvas?.stage;
+      // Clean up labels that shouldn't exist anymore
+      for (const w of walls) {
+        const shouldShow = !!w?.controlled && !!w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
+        if (!shouldShow && w._pvIdLabel) {
+          try { w._pvIdLabel.parent?.removeChild?.(w._pvIdLabel); } catch (_) {}
+          try { w._pvIdLabel.destroy?.(); } catch (_) {}
+          delete w._pvIdLabel;
+        }
+      }
+      // Create/update labels for currently controlled walls
+      for (const w of walls) {
+        if (!w?.controlled) continue;
+        const idf = w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
+        if (!idf) continue;
+        try {
+          const [x1, y1, x2, y2] = Array.isArray(w.document?.c) ? w.document.c : [w.document?.x, w.document?.y, w.document?.x2, w.document?.y2];
+          const mx = (Number(x1) + Number(x2)) / 2;
+          const my = (Number(y1) + Number(y2)) / 2;
+          if (!w._pvIdLabel) {
+            const style = new PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, stroke: 0x000000, strokeThickness: 3 });
+            const text = new PIXI.Text(String(idf), style);
+            text.anchor.set(0.5, 1);
+            text.zIndex = 10000;
+            text.position.set(mx, my - 6);
+            // Prefer controls layer; fallback to wall container
+            if (layer?.addChild) layer.addChild(text); else w.addChild?.(text);
+            w._pvIdLabel = text;
+          } else {
+            w._pvIdLabel.text = String(idf);
+            w._pvIdLabel.position.set(mx, my - 6);
+          }
+        } catch (_) { /* ignore label errors */ }
+      }
+    } catch (_) {}
+  };
+
   const refreshWallTool = () => {
     try {
       const tools = ui.controls.controls?.visioner?.tools;
@@ -33,6 +74,8 @@ export function registerUIHooks() {
       const active = selected.length > 0 && selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
       tool.active = active;
       tool.icon = active ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      // Also refresh identifier labels on the canvas when selection changes
+      refreshWallIdentifierLabels();
       ui.controls.render();
     } catch (_) {}
   };
@@ -75,6 +118,21 @@ export function registerUIHooks() {
           new VisionerWallManager().render(true);
         },
       });
+      // When selecting walls, show wall identifier if present on the control icon tooltip
+      const showWallIdentifierTooltip = async () => {
+        try {
+          const selected = canvas?.walls?.controlled ?? [];
+          if (!selected.length) return;
+          const { MODULE_ID } = await import("../constants.js");
+          selected.forEach((w) => {
+            try {
+              const idf = w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
+              if (idf && w?.controlIcon) w.controlIcon.tooltip = String(idf);
+            } catch (_) {}
+          });
+        } catch (_) {}
+      };
+      Hooks.on("controlWall", showWallIdentifierTooltip);
     } catch (_) {}
   });
 }

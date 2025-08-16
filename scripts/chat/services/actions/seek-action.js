@@ -138,7 +138,7 @@ export class SeekActionHandler extends ActionHandlerBase {
       try {
         const d = subject.wall?.document;
         const isDoor = Number(d?.door) > 0;
-        const name = d?.getFlag?.(MODULE_ID, "wallIdentifier") || "Hidden Wall";
+        const name = d?.getFlag?.(MODULE_ID, "wallIdentifier") || (isDoor ? "Hidden Door" : "Hidden Wall");
         const svg = isDoor
           ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/><circle cx='19' cy='14' r='1.5' fill='#e6e6e6'/></svg>`
           : `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><rect x='4' y='4' width='20' height='20' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/><path d='M8 6v16M14 6v16M20 6v16' stroke='#888888' stroke-width='2'/></svg>`;

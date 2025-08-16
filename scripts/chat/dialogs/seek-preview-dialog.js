@@ -8,9 +8,9 @@ import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-    filterOutcomesByEncounter,
-    filterOutcomesBySeekDistance,
-    filterOutcomesByTemplate,
+  filterOutcomesByEncounter,
+  filterOutcomesBySeekDistance,
+  filterOutcomesByTemplate,
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -111,11 +111,11 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Prepare outcomes for template
     const processedOutcomes = filteredOutcomes.map((outcome) => {
-      // Get current visibility state from the token
-      const currentVisibility =
-        getVisibilityBetween(this.actorToken, outcome.target) ||
-        outcome.oldVisibility ||
-        outcome.currentVisibility;
+      // Get current visibility state; walls use their stored state instead of token-vs-token
+      let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+      if (!outcome._isWall) {
+        currentVisibility = getVisibilityBetween(this.actorToken, outcome.target) || currentVisibility;
+      }
 
       // Prepare available states for override using per-action config
       const desired = getDesiredOverrideStatesForAction("seek");

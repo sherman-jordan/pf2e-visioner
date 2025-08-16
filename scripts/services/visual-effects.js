@@ -187,7 +187,7 @@ export async function updateWallVisuals(observerId = null) {
             const color = isDoor ? 0xffd166 : 0x9b59b6; // Yellow for doors, purple for walls
             const dx = x2 - x1; const dy = y2 - y1; const len = Math.hypot(dx, dy) || 1;
             const nx = -dy / len; const ny = dx / len; // unit normal
-            const half = 3; // 6px wide indicator, matching see-through mask
+            const half = 10; // 6px wide indicator, matching see-through mask
             const g = new PIXI.Graphics();
             g.lineStyle(2, color, 0.9);
             g.beginFill(color, 0.3);

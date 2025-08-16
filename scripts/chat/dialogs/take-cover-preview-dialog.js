@@ -41,9 +41,17 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
 
   getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
 
-  getFilteredOutcomes() {
+  async getFilteredOutcomes() {
     try {
-      return this.applyEncounterFilter(this.outcomes || [], "target", "No encounter observers found for this action");
+      let filtered = this.applyEncounterFilter(this.outcomes || [], "target", "No encounter observers found for this action");
+      
+      // Apply ally filtering if ignore allies is enabled
+      try {
+        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, "target");
+      } catch (_) {}
+      
+      return filtered;
     } catch (_) {
       return Array.isArray(this.outcomes) ? this.outcomes : [];
     }
@@ -123,7 +131,7 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
   static async _onApplyAll(event, target) {
     const app = currentTakeCoverDialog; if (!app) return;
     if (app.bulkActionState === "applied") { (await import("../services/infra/notifications.js")).notify?.warn?.(`${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`); return; }
-    const filtered = app.getFilteredOutcomes();
+    const filtered = await app.getFilteredOutcomes();
     const changed = filtered.filter((o) => {
       const eff = o.overrideState || o.newVisibility || o.newCover;
       const base = o.oldVisibility || o.oldCover || o.currentCover;

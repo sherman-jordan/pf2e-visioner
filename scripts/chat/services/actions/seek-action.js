@@ -26,10 +26,11 @@ export class SeekActionHandler extends ActionHandlerBase {
       // Always include hazards and loot in seek results regardless of ally filtering
       .filter((t) => {
         if (t.actor?.type === "hazard" || t.actor?.type === "loot") return true;
-        // Prefer dialog's ignoreAllies when provided
-        // Discovery should not apply ignoreAllies when null/undefined; allow dialog to filter live
+        // Prefer dialog's ignoreAllies when provided; otherwise do NOT filter here.
+        // Let the dialog handle live ally filtering so the checkbox can reveal allies.
         const preferIgnore = (actionData?.ignoreAllies === true || actionData?.ignoreAllies === false) ? actionData.ignoreAllies : null;
-        return !shouldFilterAlly(actionData.actor, t, "enemies", preferIgnore);
+        if (preferIgnore !== true) return true; // keep allies when unchecked or unspecified
+        return !shouldFilterAlly(actionData.actor, t, "enemies", true);
       });
 
     // Add hidden walls as discoverable subjects (as pseudo-tokens with dc)

@@ -386,28 +386,18 @@ function onGetSceneControlButtons(controls) {
       },
     };
 
-    // Make Observed (all observers -> selected tokens)
-    vtools.pvVisionerMakeObserved = {
-      name: "pvVisionerMakeObserved",
-      title: "Make Observed (Target Mode → Selected Tokens)",
-      icon: "fa-solid fa-eye",
+    // Quick Panel (Selected ↔ Targeted)
+    vtools.pvVisionerQuickPanel = {
+      name: "pvVisionerQuickPanel",
+      title: "Quick Edit (Selected ↔ Targeted)",
+      icon: "fa-solid fa-bolt",
       order: 5,
       visible,
       button: true,
       onChange: async () => {
         try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const observers = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          // Target mode visibility (others → selected observed)
-          for (const tgt of selected) {
-            for (const obs of observers) {
-              if (!obs || obs.id === tgt.id) continue;
-              try { await setVisibilityBetween(obs, tgt, "observed"); } catch (_) {}
-            }
-          }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Set Observed (target mode) for selected tokens.");
+          const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
+          new VisionerQuickPanel({}).render(true);
         } catch (_) {}
       },
     };

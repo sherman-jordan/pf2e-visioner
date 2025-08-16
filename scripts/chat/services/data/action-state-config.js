@@ -43,7 +43,7 @@ export function getDefaultOutcomeMapping() {
       observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
       concealed: { "critical-success": "observed", success: "concealed", failure: "concealed", "critical-failure": "concealed" },
       hidden: { "critical-success": "observed", success: "observed", failure: "hidden", "critical-failure": "hidden" },
-      undetected: { "critical-success": "hidden", success: "hidden", failure: "undetected", "critical-failure": "undetected" },
+      undetected: { "critical-success": "observed", success: "hidden", failure: "undetected", "critical-failure": "undetected" },
     },
     hide: {
       observed: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },

@@ -1,0 +1,37 @@
+<div class="pf2e-visioner-quick-panel" style="padding:8px; display:flex; flex-direction:column; gap:8px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+    <div><strong>Mode:</strong> {{#if modeIsObserver}}Observer → Target{{else}}Target → Observer{{/if}}</div>
+    <button type="button" class="visioner-btn" data-action="toggleMode" title="Swap Observer/Target mode"><i class="fas fa-arrows-rotate"></i> Swap</button>
+  </div>
+  <div style="display:flex; gap:12px; align-items:center;">
+    <div title="Selected tokens count"><i class="fas fa-user-check"></i> {{selCount}}</div>
+    <div title="Targeted tokens count"><i class="fas fa-bullseye"></i> {{tgtCount}}</div>
+    <button type="button" class="visioner-btn" data-action="refreshSets" title="Refresh sets"><i class="fas fa-sync-alt"></i></button>
+  </div>
+
+  <fieldset>
+    <legend>Visibility</legend>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      {{#each visibilityStates as |s|}}
+        <button type="button" class="state-icon" data-action="setVisibility" data-state="{{s.key}}" title="{{s.label}}"
+                style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:1px solid var(--color-border-light-primary); border-radius:6px;">
+          <i class="{{s.icon}}" style="color: {{s.color}}"></i>
+        </button>
+      {{/each}}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Cover</legend>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      {{#each coverStates as |s|}}
+        <button type="button" class="state-icon" data-action="setCover" data-state="{{s.key}}" title="{{s.label}}"
+                style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:1px solid var(--color-border-light-primary); border-radius:6px;">
+          <i class="{{s.icon}}" style="color: {{s.color}}"></i>
+        </button>
+      {{/each}}
+    </div>
+  </fieldset>
+</div>
+
+ 

@@ -2,9 +2,6 @@ import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
-import {
-    filterOutcomesByEncounter
-} from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
 // Store reference to current sneak dialog
@@ -41,6 +38,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     this.sneakingToken = sneakingToken;
     this.outcomes = outcomes;
+    // Preserve original outcomes so live toggles can re-filter from a stable list
+    try { this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : []; } catch (_) { this._originalOutcomes = outcomes || []; }
     this.changes = changes;
     this.sneakData = sneakData;
     // Ensure services can resolve the correct handler
@@ -73,8 +72,11 @@ export class SneakPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Filter outcomes with base helper, then live allies filter
-    let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "token", "No encounter observers found, showing all");
+    // Start from original list if available so toggles can re-include allies
+    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+    // Filter outcomes with base helper and ally filtering
+    let filteredOutcomes = this.applyEncounterFilter(baseList, "token", "No encounter observers found, showing all");
+    // Apply ally filtering for display purposes
     try {
       const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
       filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.sneakingToken, this.ignoreAllies, "token");
@@ -131,6 +133,11 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     context.sneakingToken = this.sneakingToken;
     context.outcomes = processedOutcomes;
+    context.ignoreAllies = !!this.ignoreAllies;
+    
+    // Preserve original outcomes separate from processed
+    this.outcomes = processedOutcomes;
+    
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
     return context;
@@ -168,7 +175,11 @@ export class SneakPreviewDialog extends BaseActionDialog {
     this.markInitialSelections();
     try {
       const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
-      if (cb) cb.addEventListener('change', () => { this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial"; this.render({ force: true }); });
+      if (cb) cb.addEventListener('change', () => {
+        this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial";
+        // Recompute outcomes and preserve overrides before re-rendering
+        this.getFilteredOutcomes?.().then((list) => { if (Array.isArray(list)) this.outcomes = list; this.render({ force: true }); }).catch(() => this.render({ force: true }));
+      });
     } catch (_) {}
   }
 
@@ -319,12 +330,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    // Filter outcomes based on encounter filter using shared helper
-    const filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "token",
-    );
+    // Recompute filtered outcomes from original list using current toggles
+    let filteredOutcomes = app.getFilteredOutcomes ? await app.getFilteredOutcomes() : app.outcomes;
 
     // Only apply changes to filtered outcomes that have actual changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -340,7 +347,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         const state = o?.overrideState || o?.newVisibility;
         if (id && state) overrides[id] = state;
       }
-      await applyNowSneak({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      await applyNowSneak({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
     } catch (error) {
       console.warn("Error applying visibility changes for bulk apply:", error);
     }
@@ -370,12 +377,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    // Filter outcomes based on encounter filter using shared helper
-    const filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "token",
-    );
+    // Recompute filtered outcomes from original list using current toggles
+    let filteredOutcomes = app.getFilteredOutcomes ? await app.getFilteredOutcomes() : app.outcomes;
 
     // Only revert changes to filtered outcomes that have actual changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -385,7 +388,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowSneak } = await import("../services/index.js");
-      await revertNowSneak(app.actionData, { html: () => {}, attr: () => {} });
+      await revertNowSneak({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
     } catch (error) {
       console.warn("Error reverting visibility changes for bulk revert:", error);
     }

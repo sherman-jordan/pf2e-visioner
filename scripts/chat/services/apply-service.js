@@ -10,37 +10,37 @@ import { TakeCoverActionHandler } from "./actions/take-cover-action.js";
 
 export async function applyNowSeek(actionData, button) {
   const handler = new SeekActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 export async function applyNowPointOut(actionData, button) {
   const handler = new PointOutActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 export async function applyNowHide(actionData, button) {
   const handler = new HideActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 export async function applyNowSneak(actionData, button) {
   const handler = new SneakActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 export async function applyNowDiversion(actionData, button) {
   const handler = new DiversionActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 export async function applyNowConsequences(actionData, button) {
   const handler = new ConsequencesActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 export async function applyNowTakeCover(actionData, button) {
   const handler = new TakeCoverActionHandler();
-  await handler.apply(actionData, button);
+  return handler.apply(actionData, button);
 }
 
 

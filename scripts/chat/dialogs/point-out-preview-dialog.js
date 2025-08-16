@@ -181,11 +181,17 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     try {
       // Filter outcomes based on encounter filter using shared helper
-      const filteredOutcomes = filterOutcomesByEncounter(
+      let filteredOutcomes = filterOutcomesByEncounter(
         app.changes,
         app.encounterOnly,
         "target",
       );
+
+      // Apply ally filtering if ignore allies is enabled
+      try {
+        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+        filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+      } catch (_) {}
 
       // Only apply changes to filtered outcomes
       const changedOutcomes = filteredOutcomes.filter(
@@ -248,11 +254,17 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     try {
       // Filter outcomes based on encounter filter using shared helper
-      const filteredOutcomes = filterOutcomesByEncounter(
+      let filteredOutcomes = filterOutcomesByEncounter(
         app.changes,
         app.encounterOnly,
         "target",
       );
+
+      // Apply ally filtering if ignore allies is enabled
+      try {
+        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+        filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+      } catch (_) {}
 
       // Only revert changes to filtered outcomes
       const changedOutcomes = filteredOutcomes.map((change) => {

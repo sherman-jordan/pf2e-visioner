@@ -239,11 +239,17 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     // Filter outcomes based on encounter filter
-    const filteredOutcomes = filterOutcomesByEncounter(
+    let filteredOutcomes = filterOutcomesByEncounter(
       app.outcomes,
       app.encounterOnly,
       "target",
     );
+
+    // Apply ally filtering if ignore allies is enabled
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+    } catch (_) {}
 
     // Only apply changes to filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -297,11 +303,17 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     // Filter outcomes based on encounter filter
-    const filteredOutcomes = filterOutcomesByEncounter(
+    let filteredOutcomes = filterOutcomesByEncounter(
       app.outcomes,
       app.encounterOnly,
       "target",
     );
+
+    // Apply ally filtering if ignore allies is enabled
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+    } catch (_) {}
 
     // Only revert changes to filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {

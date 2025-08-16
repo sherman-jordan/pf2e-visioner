@@ -8,17 +8,6 @@ import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from "./constants.js";
 // All keys listed here will be hidden from the default module settings UI
 // and rendered inside our custom grouped settings form instead.
 const SETTINGS_GROUPS = {
-  "Auto-cover": [
-    "autoCover",
-    "autoCoverTokenIntersectionMode",
-    "autoCoverCoverageStandardPct",
-    "autoCoverCoverageGreaterPct",
-    "autoCoverIgnoreUndetected",
-    "autoCoverIgnoreDead",
-    "autoCoverIgnoreAllies",
-    "autoCoverRespectIgnoreFlag",
-    "autoCoverAllowProneBlockers",
-  ],
   General: [
     "defaultEncounterFilter",
     "ignoreAllies",
@@ -31,6 +20,15 @@ const SETTINGS_GROUPS = {
     "sneakRawEnforcement",
     "enableAllTokensVision",
   ],
+  "Visibility & Hover": [
+    "enableHoverTooltips",
+    "allowPlayerTooltips",
+    "blockPlayerTargetTooltips",
+    "tooltipFontSize",
+    "colorblindMode",
+    "hiddenWallsEnabled",
+    "wallStealthDC",
+  ],
   "Seek & Range": [
     "seekUseTemplate",
     "limitSeekRangeInCombat",
@@ -38,12 +36,16 @@ const SETTINGS_GROUPS = {
     "customSeekDistance",
     "customSeekDistanceOutOfCombat",
   ],
-  "Visibility & Hover": [
-    "enableHoverTooltips",
-    "allowPlayerTooltips",
-    "blockPlayerTargetTooltips",
-    "tooltipFontSize",
-    "colorblindMode",
+  "Auto-cover": [
+    "autoCover",
+    "autoCoverTokenIntersectionMode",
+    "autoCoverCoverageStandardPct",
+    "autoCoverCoverageGreaterPct",
+    "autoCoverIgnoreUndetected",
+    "autoCoverIgnoreDead",
+    "autoCoverIgnoreAllies",
+    "autoCoverRespectIgnoreFlag",
+    "autoCoverAllowProneBlockers",
   ],
   Advanced: [
     "debug",
@@ -78,7 +80,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     // Default to the first defined group
     try {
       if (!this.activeGroupKey) this.activeGroupKey = Object.keys(SETTINGS_GROUPS)[0];
-    } catch (_) { this.activeGroupKey = "Auto-cover"; }
+    } catch (_) { this.activeGroupKey = "General"; }
   }
 
   async _prepareContext() {
@@ -377,6 +379,14 @@ export function registerSettings() {
           try {
             const { initializeHoverTooltips } = await import("./services/hover-tooltips.js");
             if (game.settings.get(MODULE_ID, "enableHoverTooltips") && game.settings.get(MODULE_ID, "allowPlayerTooltips")) initializeHoverTooltips();
+          } catch (_) {}
+        };
+      } else if (key === "hiddenWallsEnabled") {
+        // Refresh wall visuals when toggled
+        settingConfig.onChange = async () => {
+          try {
+            const { updateWallVisuals } = await import("./services/visual-effects.js");
+            await updateWallVisuals();
           } catch (_) {}
         };
       } else if (key === "tooltipFontSize") {

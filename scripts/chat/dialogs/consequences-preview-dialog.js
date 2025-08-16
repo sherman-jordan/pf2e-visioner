@@ -30,6 +30,8 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       damageData,
     };
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    // Per-dialog ignore-allies (defaults to global setting, can be toggled in-dialog)
+    this.ignoreAllies = options?.ignoreAllies ?? game.settings.get(MODULE_ID, "ignoreAllies");
     this.bulkActionState = "initial"; // 'initial', 'applied', 'reverted'
 
     // Set global reference
@@ -73,6 +75,12 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Filter outcomes with base helper
     let processedOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter targets found, showing all");
 
+    // Apply ignore-allies filtering for display (walls are not part of consequences)
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      processedOutcomes = filterOutcomesByAllies(processedOutcomes, this.attackingToken, this.ignoreAllies, "target");
+    } catch (_) {}
+
     // Prepare outcomes with additional UI data (and normalize shape)
     processedOutcomes = processedOutcomes.map((outcome) => {
       const effectiveNewState = outcome.overrideState || "observed"; // Default to observed
@@ -100,6 +108,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       image: this.resolveTokenImage(this.attackingToken),
     };
     context.outcomes = processedOutcomes;
+    context.ignoreAllies = !!this.ignoreAllies;
 
     // Keep internal outcomes annotated where relevant (e.g., hasActionableChange)
     try {
@@ -169,6 +178,19 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     this.updateBulkActionButtons();
     this.addIconClickHandlers();
     this.markInitialSelections();
+
+    // Wire ignore-allies checkbox if present
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) {
+        cb.checked = !!this.ignoreAllies;
+        cb.addEventListener("change", () => {
+          this.ignoreAllies = !!cb.checked;
+          this.bulkActionState = "initial";
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
   }
 
   /**
@@ -192,7 +214,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     try {
       const { applyNowConsequences } = await import("../services/index.js");
       const overrides = { [outcome.target.id]: effectiveNewState };
-      await applyNowConsequences({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      await applyNowConsequences({ ...app.actionData, overrides, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly }, { html: () => {}, attr: () => {} });
     } catch (_) {}
 
     // Update button states
@@ -239,11 +261,17 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     // Filter outcomes based on encounter filter
-    const filteredOutcomes = filterOutcomesByEncounter(
+    let filteredOutcomes = filterOutcomesByEncounter(
       app.outcomes,
       app.encounterOnly,
       "target",
     );
+
+    // Apply ally filtering if ignore allies is enabled
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+    } catch (_) {}
 
     // Only apply changes to filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -262,7 +290,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       if (id && state) overrides[id] = state;
     }
     const { applyNowConsequences } = await import("../services/index.js");
-    await applyNowConsequences({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+    await applyNowConsequences({ ...app.actionData, overrides, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly }, { html: () => {}, attr: () => {} });
 
     // Update UI for each row
     for (const outcome of changedOutcomes) {
@@ -297,11 +325,17 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     // Filter outcomes based on encounter filter
-    const filteredOutcomes = filterOutcomesByEncounter(
+    let filteredOutcomes = filterOutcomesByEncounter(
       app.outcomes,
       app.encounterOnly,
       "target",
     );
+
+    // Apply ally filtering if ignore allies is enabled
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+    } catch (_) {}
 
     // Only revert changes to filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {

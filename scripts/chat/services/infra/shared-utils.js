@@ -322,6 +322,8 @@ export function shouldFilterAlly(
   filterType = "enemies",
   preferIgnoreAllies = null,
 ) {
+  // Non-token subjects (e.g., walls) should never be filtered by ally logic
+  try { if (!targetToken?.actor) return false; } catch (_) { return false; }
   // When provided, prefer per-dialog/user choice; otherwise fall back to global setting
   // preferIgnoreAllies is authoritative when boolean; otherwise use the setting
   const ignoreAllies = (typeof preferIgnoreAllies === "boolean")
@@ -376,6 +378,8 @@ export function filterOutcomesByAllies(outcomes, actorToken, preferIgnoreAllies,
     const doIgnore = preferIgnoreAllies === true;
     if (!doIgnore) return outcomes;
     return outcomes.filter((o) => {
+      // Do not filter wall outcomes
+      if (o?._isWall || o?.wallId) return true;
       const token = o?.[tokenProperty];
       if (!token) return false;
       return !shouldFilterAlly(actorToken, token, "enemies", true);

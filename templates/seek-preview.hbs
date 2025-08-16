@@ -27,6 +27,10 @@
       <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" />
       <span class="encounter-filter-label">Ignore allies</span>
     </label>
+    <label class="ignore-walls-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if ignoreWalls}}checked{{/if}} data-action="toggleIgnoreWalls" />
+      <span class="encounter-filter-label">Ignore walls</span>
+    </label>
   </div>
 
   {{!-- Results Table --}}
@@ -44,12 +48,20 @@
       </thead>
       <tbody>
         {{#each outcomes as |outcome|}}
-          <tr class="token-row" data-token-id="{{outcome.target.id}}">
+          <tr class="token-row" {{#unless outcome._isWall}}data-token-id="{{outcome.target.id}}"{{/unless}} {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{/if}}>
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+              {{#if outcome._isWall}}
+                <img src="{{outcome.wallImg}}" data-tooltip="{{outcome.wallIdentifier}}" width="28" height="28" />
+              {{else}}
+                <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+              {{/if}}
             </td>
             <td class="token-name">
-              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              {{#if outcome._isWall}}
+                <strong title="{{outcome.wallIdentifier}}">{{outcome.wallIdentifier}}</strong>
+              {{else}}
+                <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              {{/if}}
             </td>
             <td class="roll-result">
               {{#if outcome.isPointOut}}
@@ -73,7 +85,7 @@
               <div class="visibility-change-with-override">
                 {{{visibilityIcon outcome.oldVisibility}}}
                 →
-                <div class="override-icons" data-target="{{outcome.target.id}}">
+                <div class="override-icons" data-target="{{#unless outcome._isWall}}{{outcome.target.id}}{{/unless}}" data-wall-id="{{#if outcome._isWall}}{{outcome.wallId}}{{/if}}">
                   {{#each outcome.availableStates as |state|}}
                     <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
                             data-state="{{state.value}}" data-target="{{outcome.target.id}}" 
@@ -87,10 +99,10 @@
             </td>
             <td class="actions">
               {{#if outcome.hasActionableChange}}
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{else}}data-token-id="{{outcome.target.id}}"{{/if}} title="Apply this visibility change">
                   <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility">
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{else}}data-token-id="{{outcome.target.id}}"{{/if}} title="Revert to original visibility">
                   <i class="fas fa-undo"></i>
                 </button>
               {{else}}

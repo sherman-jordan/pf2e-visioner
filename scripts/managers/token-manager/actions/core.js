@@ -6,10 +6,10 @@
 import { MODULE_ID } from "../../../constants.js";
 import { refreshEveryonesPerception } from "../../../services/socket.js";
 import {
-  getCoverMap,
-  getVisibilityMap,
-  setCoverMap,
-  setVisibilityMap,
+    getCoverMap,
+    getVisibilityMap,
+    setCoverMap,
+    setVisibilityMap,
 } from "../../../utils.js";
 
 /**
@@ -19,6 +19,7 @@ export async function formHandler(event, form, formData) {
   const app = this;
   const visibilityChanges = {};
   const coverChanges = {};
+  const wallVisibilityChanges = {};
 
   const formDataObj = formData.object || formData;
   for (const [key, value] of Object.entries(formDataObj)) {
@@ -28,6 +29,9 @@ export async function formHandler(event, form, formData) {
     } else if (key.startsWith("cover.")) {
       const tokenId = key.replace("cover.", "");
       coverChanges[tokenId] = value;
+    } else if (key.startsWith("walls.")) {
+      const wallId = key.replace("walls.", "");
+      wallVisibilityChanges[wallId] = value;
     }
   }
 
@@ -92,6 +96,23 @@ export async function formHandler(event, form, formData) {
         }
       } catch (error) {
         console.warn("Token Manager: batch cover update failed", error);
+      }
+    }
+
+    // Persist wall visibility states under observer's flags (observer→walls map)
+    if (Object.keys(wallVisibilityChanges).length > 0) {
+      try {
+        const currentWalls = (app.observer?.document?.getFlag?.(MODULE_ID, "walls")) || {};
+        const merged = { ...currentWalls };
+        const { expandWallIdWithConnected } = await import("../../../services/connected-walls.js");
+        for (const [wallId, state] of Object.entries(wallVisibilityChanges)) {
+          if (state !== "hidden" && state !== "observed") continue;
+          const ids = expandWallIdWithConnected(wallId);
+          for (const id of ids) merged[id] = state;
+        }
+        await app.observer.document.setFlag(MODULE_ID, "walls", merged);
+      } catch (error) {
+        console.warn("Token Manager: failed to persist wall visibility states", error);
       }
     }
   } else {
@@ -201,8 +222,9 @@ export async function formHandler(event, form, formData) {
   (async () => {
     try {
       refreshEveryonesPerception();
-      const { updateSpecificTokenPairs } = await import("../../../services/visual-effects.js");
+      const { updateSpecificTokenPairs, updateWallVisuals } = await import("../../../services/visual-effects.js");
       try { await updateSpecificTokenPairs([]); } catch (_) {}
+      try { await updateWallVisuals(); } catch (_) {}
     } catch (_) {}
   })();
   return app.render();
@@ -218,6 +240,9 @@ export async function applyCurrent(event, button) {
     const wallInputs = app.element.querySelectorAll('input[name^="walls."]');
     if (!app._savedModeData) app._savedModeData = {};
     if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {}, walls: {} };
+    if (!app._savedModeData[app.mode].visibility) app._savedModeData[app.mode].visibility = {};
+    if (!app._savedModeData[app.mode].cover) app._savedModeData[app.mode].cover = {};
+    if (!app._savedModeData[app.mode].walls) app._savedModeData[app.mode].walls = {};
     visibilityInputs.forEach((input) => {
       const tokenId = input.name.replace("visibility.", "");
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
@@ -228,6 +253,7 @@ export async function applyCurrent(event, button) {
     });
     wallInputs.forEach((input) => {
       const wallId = input.name.replace("walls.", "");
+      if (!app._savedModeData[app.mode].walls) app._savedModeData[app.mode].walls = {};
       app._savedModeData[app.mode].walls[wallId] = input.value;
     });
   } catch (error) {
@@ -242,10 +268,10 @@ export async function applyCurrent(event, button) {
 
   runTasksWithProgress(`${MODULE_ID}: Preparing Changes`, [async () => await new Promise((r) => setTimeout(r, 100))]);
 
-  try {
-    const { batchUpdateVisibilityEffects } = await import("../../../visibility/ephemeral.js");
-    const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover/ephemeral.js");
-    const { updateWallVisuals } = await import("../../../services/visual-effects.js");
+    try {
+      const { batchUpdateVisibilityEffects } = await import("../../../visibility/ephemeral.js");
+      const { batchUpdateCoverEffects, reconcileCoverEffectsForTarget } = await import("../../../cover/ephemeral.js");
+      const { updateWallVisuals } = await import("../../../services/visual-effects.js");
     const isVisibility = app.activeTab === "visibility";
     const isCover = app.activeTab === "cover";
 
@@ -294,6 +320,23 @@ export async function applyCurrent(event, button) {
           }
         }
       }
+
+      // Walls (observer mode only): persist observer->walls map from saved data
+      try {
+        if (app.mode === "observer") {
+          const obsWalls = app._savedModeData.observer?.walls || {};
+          if (Object.keys(obsWalls).length > 0) {
+            const currentWalls = app.observer?.document?.getFlag?.(MODULE_ID, "walls") || {};
+            const merged = { ...currentWalls };
+            for (const [wallId, state] of Object.entries(obsWalls)) {
+              if (state === "hidden" || state === "observed") merged[wallId] = state;
+            }
+            allOperations.push(async () => {
+              await app.observer?.document?.setFlag?.(MODULE_ID, "walls", merged);
+            });
+          }
+        }
+      } catch (_) {}
     }
 
     if (isCover) {
@@ -358,6 +401,8 @@ export async function applyCurrent(event, button) {
           }
         })();
       }
+      // Refresh wall indicators for current observer
+      try { await updateWallVisuals(app.observer?.id || null); } catch (_) {}
     }
   } catch (error) {
     console.error("Token Manager: Error applying current type for both modes:", error);

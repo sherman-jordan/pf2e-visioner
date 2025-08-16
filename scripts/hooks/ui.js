@@ -4,7 +4,6 @@
 
 import { MODULE_ID } from "../constants.js";
 import { onRenderTokenHUD } from "../services/token-hud.js";
-import { setCoverBetween, setVisibilityBetween } from "../utils.js";
 
 export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
@@ -24,15 +23,71 @@ export function registerUIHooks() {
       ui.controls.render();
     } catch (_) {}
   };
+  // Utility: label identifiers for selected walls on the canvas
+  const refreshWallIdentifierLabels = () => {
+    try {
+      const walls = canvas?.walls?.placeables || [];
+      const layer = canvas?.controls || canvas?.hud || canvas?.stage;
+      // Clean up labels that shouldn't exist anymore
+      for (const w of walls) {
+        const shouldShow = !!w?.controlled && !!w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
+        if (!shouldShow && w._pvIdLabel) {
+          try { w._pvIdLabel.parent?.removeChild?.(w._pvIdLabel); } catch (_) {}
+          try { w._pvIdLabel.destroy?.(); } catch (_) {}
+          delete w._pvIdLabel;
+        }
+      }
+      // Create/update labels for currently controlled walls
+      for (const w of walls) {
+        if (!w?.controlled) continue;
+        const idf = w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
+        if (!idf) continue;
+        try {
+          const [x1, y1, x2, y2] = Array.isArray(w.document?.c) ? w.document.c : [w.document?.x, w.document?.y, w.document?.x2, w.document?.y2];
+          const mx = (Number(x1) + Number(x2)) / 2;
+          const my = (Number(y1) + Number(y2)) / 2;
+          if (!w._pvIdLabel) {
+            const style = new PIXI.TextStyle({ fill: 0xffffff, fontSize: 12, stroke: 0x000000, strokeThickness: 3 });
+            const text = new PIXI.Text(String(idf), style);
+            text.anchor.set(0.5, 1);
+            text.zIndex = 10000;
+            text.position.set(mx, my - 6);
+            // Prefer controls layer; fallback to wall container
+            if (layer?.addChild) layer.addChild(text); else w.addChild?.(text);
+            w._pvIdLabel = text;
+          } else {
+            w._pvIdLabel.text = String(idf);
+            w._pvIdLabel.position.set(mx, my - 6);
+          }
+        } catch (_) { /* ignore label errors */ }
+      }
+    } catch (_) {}
+  };
+
   const refreshWallTool = () => {
     try {
       const tools = ui.controls.controls?.visioner?.tools;
-      const tool = tools?.pvVisionerToggleWallIgnore;
-      if (!tool) return;
       const selected = canvas?.walls?.controlled ?? [];
-      const active = selected.length > 0 && selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
-      tool.active = active;
-      tool.icon = active ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      // Provide Cover toggle state
+      const provideTool = tools?.pvVisionerToggleWallIgnore;
+      if (provideTool) {
+        const provideActive =
+          selected.length > 0 &&
+          selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
+        provideTool.active = provideActive;
+        provideTool.icon = provideActive ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      }
+      // Hidden Wall toggle state
+      const hiddenTool = tools?.pvVisionerToggleHiddenWall;
+      if (hiddenTool) {
+        const hiddenActive =
+          selected.length > 0 &&
+          selected.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+        hiddenTool.active = hiddenActive;
+        hiddenTool.icon = hiddenActive ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      }
+      // Also refresh identifier labels on the canvas when selection changes
+      refreshWallIdentifierLabels();
       ui.controls.render();
     } catch (_) {}
   };
@@ -58,6 +113,40 @@ export function registerUIHooks() {
       }
     });
   }
+
+  // Add Walls Manager to Scene Controls for GM
+  Hooks.on("getSceneControlButtons", (controls) => {
+    if (!game.user.isGM) return;
+    try {
+      const walls = controls.find((c) => c.name === "walls");
+      if (!walls) return;
+      walls.tools.push({
+        name: "pf2e-visioner-wall-manager",
+        title: "PF2E Visioner: Wall Settings",
+        icon: "fas fa-grip-lines-vertical",
+        button: true,
+        onClick: async () => {
+          const { VisionerWallManager } = await import("../managers/wall-manager/wall-manager.js");
+          new VisionerWallManager().render(true);
+        },
+      });
+      // When selecting walls, show wall identifier if present on the control icon tooltip
+      const showWallIdentifierTooltip = async () => {
+        try {
+          const selected = canvas?.walls?.controlled ?? [];
+          if (!selected.length) return;
+          const { MODULE_ID } = await import("../constants.js");
+          selected.forEach((w) => {
+            try {
+              const idf = w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
+              if (idf && w?.controlIcon) w.controlIcon.tooltip = String(idf);
+            } catch (_) {}
+          });
+        } catch (_) {}
+      };
+      Hooks.on("controlWall", showWallIdentifierTooltip);
+    } catch (_) {}
+  });
 }
 
 function onGetTokenDirectoryEntryContext(html, options) {
@@ -151,29 +240,42 @@ function onRenderWallConfig(app, html) {
   try {
     const root = html?.jquery ? html[0] : html;
     if (!root) return;
-    // Avoid duplicate injection
-    if (root.querySelector(`[name="flags.${MODULE_ID}.provideCover"]`)) return;
-
     const form = root.querySelector('form') || root;
-    const current = app?.document?.getFlag?.(MODULE_ID, 'provideCover');
-    const checked = current !== false; // default to true when undefined
+    // Avoid duplicate injection
+    if (form.querySelector('.pf2e-visioner-wall-settings')) return;
 
-    const group = document.createElement('div');
-    group.className = 'form-group';
-    group.innerHTML = `
-      <label>PF2E Visioner: Provide Cover</label>
-      <input type="checkbox" name="flags.${MODULE_ID}.provideCover" ${checked ? 'checked' : ''}>
-      <p class="notes">Uncheck to ignore this wall for auto-cover.</p>
+    const provideCoverCurrent = app?.document?.getFlag?.(MODULE_ID, 'provideCover');
+    const provideCoverChecked = provideCoverCurrent !== false; // default to true when undefined
+    const hiddenWallsEnabled = !!game.settings.get(MODULE_ID, "hiddenWallsEnabled");
+    const hiddenWallCurrent = !!app?.document?.getFlag?.(MODULE_ID, 'hiddenWall');
+    const wallIdentifier = app?.document?.getFlag?.(MODULE_ID, 'wallIdentifier') ?? '';
+    const dcCurrent = Number(app?.document?.getFlag?.(MODULE_ID, 'stealthDC')) || '';
+
+    // Build a single grouped fieldset with a quick settings button (no Provide Cover here)
+    const fs = document.createElement('fieldset');
+    fs.className = 'pf2e-visioner-wall-settings';
+    fs.innerHTML = `
+      <legend>PF2E Visioner</legend>
+      <div class="form-group">
+        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Visioner Wall Settings</button>
+      </div>
     `;
 
     // Append near Door Configuration or at form end
     const doorHeader = Array.from(form.querySelectorAll('label, h3, header, legend'))
       .find((el) => (el.textContent || '').toLowerCase().includes('door configuration'));
-    if (doorHeader && doorHeader.parentElement) {
-      doorHeader.parentElement.insertAdjacentElement('beforebegin', group);
-    } else {
-      form.appendChild(group);
-    }
+    if (doorHeader && doorHeader.parentElement) doorHeader.parentElement.insertAdjacentElement('beforebegin', fs);
+    else form.appendChild(fs);
+
+    // Bind quick settings button
+    try {
+      const btn = fs.querySelector('[data-action="open-visioner-wall-quick"]');
+      if (btn) btn.addEventListener('click', async (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        const { VisionerWallQuickSettings } = await import('../managers/wall-manager/wall-quick.js');
+        new VisionerWallQuickSettings(app.document).render(true);
+      });
+    } catch (_) {}
   } catch (_) { }
 }
 
@@ -181,15 +283,19 @@ function onGetSceneControlButtons(controls) {
   try {
     const visible = !!game.user?.isGM;
     const existingOrder = Object.values(controls).reduce((m, c) => Math.max(m, c?.order ?? 0), 0);
+
+    // Ensure a Visioner control group exists (object-style)
     const visioner = controls.visioner ?? {
       name: "visioner",
       title: "PF2E Visioner",
       icon: "fas fa-face-hand-peeking",
       order: existingOrder + 1,
       visible,
+      layer: "tokens",
       tools: {},
-      activeTool: "",
+      activeTool: "pvVisionerToggleTokenIgnore",
     };
+
     const vtools = visioner.tools || {};
 
     // Token: toggle ignore
@@ -197,23 +303,50 @@ function onGetSceneControlButtons(controls) {
     vtools.pvVisionerToggleTokenIgnore = {
       name: "pvVisionerToggleTokenIgnore",
       title: "Toggle Ignore Auto-Cover (Selected Tokens)",
-      icon: (selectedTokens.length > 0 && selectedTokens.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")))) ? "fa-solid fa-shield-slash" : "fa-solid fa-shield",
+      icon:
+        selectedTokens.length > 0 &&
+        selectedTokens.every((t) => !!t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover"))
+          ? "fa-solid fa-shield-slash"
+          : "fa-solid fa-shield",
       order: 1,
       visible,
       toggle: true,
-      active: selectedTokens.length > 0 && selectedTokens.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover"))),
-      onChange: async (_event, active) => {
+      active:
+        selectedTokens.length > 0 &&
+        selectedTokens.every((t) => !!t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")),
+      onChange: async (event, active) => {
         try {
           const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          if (active) await Promise.all(selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)));
+          if (!selected.length) {
+            // Silent no-op when nothing is selected (avoid warnings on palette switches)
+            return;
+          }
+          if (active)
+            await Promise.all(
+              selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)),
+            );
           else {
             for (const t of selected) {
-              try { await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover"); } catch (_) { try { await t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", false); } catch (_) {} }
+              try {
+                await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover");
+              } catch (_) {
+                try {
+                  await t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", false);
+                } catch (_) {}
+              }
             }
           }
           ui.controls.render();
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
+          try {
+            const { updateTokenVisuals } = await import("../services/visual-effects.js");
+            const allPlaceables = canvas?.tokens?.placeables ?? [];
+            for (const t of allPlaceables) {
+              try {
+                await updateTokenVisuals(t);
+              } catch (_) {}
+            }
+            game.canvas?.perception?.refresh?.();
+          } catch (_) {}
         } catch (_) {}
       },
     };
@@ -223,19 +356,37 @@ function onGetSceneControlButtons(controls) {
     vtools.pvVisionerToggleWallIgnore = {
       name: "pvVisionerToggleWallIgnore",
       title: "Toggle Ignore Auto-Cover (Selected Walls)",
-      icon: (selectedWalls.length > 0 && selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false)) ? "fa-solid fa-shield-slash" : "fa-solid fa-shield",
+      icon:
+        selectedWalls.length > 0 &&
+        selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false)
+          ? "fa-solid fa-shield-slash"
+          : "fa-solid fa-shield",
       order: 2,
       visible,
       toggle: true,
-      active: selectedWalls.length > 0 && selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false),
-      onChange: async (_event, active) => {
+      active:
+        selectedWalls.length > 0 &&
+        selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false),
+      onChange: async (event, active) => {
         try {
           const selected = canvas?.walls?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more walls first."); return; }
-          if (active) await Promise.all(selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)));
+          if (!selected.length) {
+            // Silent no-op when nothing is selected (avoid warnings on palette switches)
+            return;
+          }
+          if (active)
+            await Promise.all(
+              selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)),
+            );
           else {
             for (const w of selected) {
-              try { await w?.document?.unsetFlag?.(MODULE_ID, "provideCover"); } catch (_) { try { await w?.document?.setFlag?.(MODULE_ID, "provideCover", true); } catch (_) {} }
+              try {
+                await w?.document?.unsetFlag?.(MODULE_ID, "provideCover");
+              } catch (_) {
+                try {
+                  await w?.document?.setFlag?.(MODULE_ID, "provideCover", true);
+                } catch (_) {}
+              }
             }
           }
           ui.controls.render();
@@ -244,113 +395,81 @@ function onGetSceneControlButtons(controls) {
       },
     };
 
-    // Clear Cover (selected tokens ↔ others)
-    vtools.pvVisionerClearCover = {
-      name: "pvVisionerClearCover",
-      title: "Clear Cover (Target Mode → Selected Tokens)",
-      icon: "fa-solid fa-shield-slash",
-      order: 3,
-      visible,
-      button: true,
-      onChange: async () => {
-        try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const allTokens = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          // Clear target-mode states (others observing selected)
-          for (const target of selected) {
-            for (const observer of allTokens) {
-              if (!observer || observer.id === target.id) continue;
-              try { await setCoverBetween(observer, target, "none", { skipEphemeralUpdate: false }); Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: observer.id, targetId: target.id, state: "none" }); } catch (_) {}
-            }
-          }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Cleared cover (target mode) for selected tokens.");
-        } catch (_) {}
-      },
-    };
-
-    // Clear Cover (Observer mode)
-    vtools.pvVisionerClearCoverObserver = {
-      name: "pvVisionerClearCoverObserver",
-      title: "Clear Cover (Observer Mode → Others)",
-      icon: "fa-solid fa-shield-slash",
-      order: 4,
-      visible,
-      button: true,
-      onChange: async () => {
-        try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const allTokens = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          // Clear observer-mode states (selected as observers)
-          for (const observer of selected) {
-            for (const target of allTokens) {
-              if (!target || target.id === observer.id) continue;
-              try { await setCoverBetween(observer, target, "none", { skipEphemeralUpdate: false }); Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: observer.id, targetId: target.id, state: "none" }); } catch (_) {}
-            }
-          }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Cleared cover (observer mode) for selected tokens.");
-        } catch (_) {}
-      },
-    };
-
-    // Make Observed (all observers -> selected tokens)
-    vtools.pvVisionerMakeObserved = {
-      name: "pvVisionerMakeObserved",
-      title: "Make Observed (Target Mode → Selected Tokens)",
-      icon: "fa-solid fa-eye",
+    // Quick Panel (Selected ↔ Targeted)
+    vtools.pvVisionerQuickPanel = {
+      name: "pvVisionerQuickPanel",
+      title: "Quick Edit (Selected ↔ Targeted)",
+      icon: "fa-solid fa-bolt",
       order: 5,
       visible,
       button: true,
-      onChange: async () => {
+      onClick: async () => {
         try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const observers = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          // Target mode visibility (others → selected observed)
-          for (const tgt of selected) {
-            for (const obs of observers) {
-              if (!obs || obs.id === tgt.id) continue;
-              try { await setVisibilityBetween(obs, tgt, "observed"); } catch (_) {}
-            }
-          }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Set Observed (target mode) for selected tokens.");
+          const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
+          new VisionerQuickPanel({}).render(true);
         } catch (_) {}
       },
+      // Safeguard for control switchers that expect onChange
+      onChange: () => {},
     };
 
-    // Make Observed (Observer mode)
-    vtools.pvVisionerMakeObservedObserver = {
-      name: "pvVisionerMakeObservedObserver",
-      title: "Make Observed (Observer Mode → Others)",
-      icon: "fa-solid fa-eye",
-      order: 6,
+
+    // Hidden Wall toggle
+    const selectedWallsForHidden = canvas?.walls?.controlled ?? [];
+    const currentHiddenState =
+      selectedWallsForHidden.length > 0 &&
+      selectedWallsForHidden.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+
+    vtools.pvVisionerToggleHiddenWall = {
+      name: "pvVisionerToggleHiddenWall",
+      title: "Toggle Hidden Wall (Selected Walls)",
+      icon: currentHiddenState ? "fa-solid fa-eye-slash" : "fa-solid fa-eye",
+      order: 3,
       visible,
-      button: true,
-      onChange: async () => {
+      toggle: true,
+      active: currentHiddenState,
+      onChange: async (event, active) => {
         try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const all = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          for (const obs of selected) {
-            for (const tgt of all) {
-              if (!tgt || tgt.id === obs.id) continue;
-              try { await setVisibilityBetween(obs, tgt, "observed"); } catch (_) {}
+          const selected = canvas?.walls?.controlled ?? [];
+          if (!selected.length) {
+            // Silent no-op when nothing is selected (avoid warnings on palette switches)
+            return;
+          }
+          if (active) {
+            await Promise.all(
+              selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "hiddenWall", true)),
+            );
+          } else {
+            for (const w of selected) {
+              try {
+                await w?.document?.unsetFlag?.(MODULE_ID, "hiddenWall");
+              } catch (_) {
+                try {
+                  await w?.document?.setFlag?.(MODULE_ID, "hiddenWall", false);
+                } catch (_) {}
+              }
             }
           }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Set Observed (observer mode) for selected tokens.");
+          ui.controls.render();
+          try {
+            game.canvas?.perception?.refresh?.();
+          } catch (_) {}
         } catch (_) {}
       },
     };
 
-    // Consolidated tools: toggles + clear actions
+    // Ensure activeTool is valid and points to a toggle tool
+    if (!visioner.activeTool || !vtools[visioner.activeTool]) {
+      visioner.activeTool = "pvVisionerToggleTokenIgnore";
+    }
+
+    // Persist tools and control back
     visioner.tools = vtools;
     controls.visioner = visioner;
-  } catch (_) {}
+  } catch (e) {
+    console.error("[pf2e-visioner] Error in scene control setup:", e);
+  }
 }
+
 
 

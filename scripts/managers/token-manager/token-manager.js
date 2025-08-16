@@ -41,6 +41,8 @@ export class VisionerTokenManager extends foundry.applications.api
       bulkNPCObserved: VisionerTokenManager.bulkSetVisibilityState,
       bulkLootObserved: VisionerTokenManager.bulkSetVisibilityState,
       bulkLootHidden: VisionerTokenManager.bulkSetVisibilityState,
+      bulkWallsObserved: VisionerTokenManager.bulkSetVisibilityState,
+      bulkWallsHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCNoCover: VisionerTokenManager.bulkSetCoverState,
       bulkPCLesserCover: VisionerTokenManager.bulkSetCoverState,
       bulkPCStandardCover: VisionerTokenManager.bulkSetCoverState,
@@ -77,6 +79,8 @@ export class VisionerTokenManager extends foundry.applications.api
     // Initialize filters based on settings (defaults only)
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
     this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
+    // Per-manager ignore walls toggle (UI convenience only)
+    this.ignoreWalls = false;
 
     // Initialize storage for saved mode data
     this._savedModeData = {
@@ -270,6 +274,16 @@ export class VisionerTokenManager extends foundry.applications.api
       if (cb) {
         cb.addEventListener('change', () => {
           this.ignoreAllies = !!cb.checked;
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
+    // Wire per-manager Ignore Walls toggle
+    try {
+      const cbw = this.element.querySelector('input[data-action="toggleIgnoreWalls"]');
+      if (cbw) {
+        cbw.addEventListener('change', () => {
+          this.ignoreWalls = !!cbw.checked;
           this.render({ force: true });
         });
       }

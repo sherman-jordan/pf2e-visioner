@@ -5,16 +5,35 @@
 import { extractPerceptionDC, extractStealthDC } from "../../chat/services/infra/shared-utils.js";
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../../constants.js";
 import {
-    getCoverMap,
-    getLastRollTotalForActor,
-    getSceneTargets,
-    getVisibilityMap,
-    hasActiveEncounter,
+  getCoverMap,
+  getLastRollTotalForActor,
+  getSceneTargets,
+  getVisibilityMap,
+  hasActiveEncounter,
 } from "../../utils.js";
 
 function getTokenImage(token) {
   if (token.actor?.img) return token.actor.img;
   return "icons/svg/book.svg";
+}
+
+function svgDataUri(svg) {
+  try { return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`; } catch (_) { return ""; }
+}
+
+function getWallImage(isDoor) {
+  if (isDoor) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
+      <rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/>
+      <circle cx='19' cy='14' r='1.5' fill='#e6e6e6'/>
+    </svg>`;
+    return svgDataUri(svg);
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
+    <rect x='4' y='4' width='20' height='20' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/>
+    <path d='M8 6v16M14 6v16M20 6v16' stroke='#888888' stroke-width='2'/>
+  </svg>`;
+  return svgDataUri(svg);
 }
 
 export async function buildContext(app, options) {
@@ -52,6 +71,7 @@ export async function buildContext(app, options) {
   context.showEncounterFilter = hasActiveEncounter();
   context.encounterOnly = app.encounterOnly;
   context.ignoreAllies = !!app.ignoreAllies;
+  context.ignoreWalls = !!app.ignoreWalls;
 
   const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
 
@@ -231,6 +251,67 @@ export async function buildContext(app, options) {
   context.lootTargets = app.mode === "observer" ? allTargets.filter((t) => t.isLoot).sort(sortByStatusAndName) : [];
   context.targets = allTargets;
 
+  // Hidden Walls (Observer Mode): list identifiers of walls marked as hidden with observed/hidden states
+  context.wallTargets = [];
+  context.includeWalls = false;
+  try {
+    if (context.isObserverMode && game.settings.get(MODULE_ID, "hiddenWallsEnabled")) {
+      const walls = canvas?.walls?.placeables || [];
+      // Respect UI filter: Ignore walls (visibility tab only)
+      const ignoreWalls = !!app.ignoreWalls && context.isVisibilityTab === true;
+      const hiddenWalls = ignoreWalls ? [] : walls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+      let autoIndex = 0;
+      const wallMap = app.observer?.document?.getFlag?.(MODULE_ID, "walls") || {};
+      context.wallTargets = hiddenWalls.map((w) => {
+        const d = w.document;
+        const idf = d?.getFlag?.(MODULE_ID, "wallIdentifier");
+        const isDoor = Number(d?.door) > 0;
+        const fallback = `${game.i18n?.localize?.("PF2E_VISIONER.WALL.VISIBLE_TO_YOU") || isDoor ? "Hidden Door" : "Hidden Wall"} ${++autoIndex}`;
+        const currentState = wallMap?.[d.id] || "hidden";
+        const states = ["hidden", "observed"].map((key) => ({
+          value: key,
+          label: game.i18n.localize(VISIBILITY_STATES[key].label),
+          selected: currentState === key,
+          icon: VISIBILITY_STATES[key].icon,
+          color: VISIBILITY_STATES[key].color,
+        }));
+        const img = getWallImage(isDoor);
+        // DC: per-wall override else global default
+        const overrideDC = Number(d?.getFlag?.(MODULE_ID, "stealthDC"));
+        const defaultWallDC = Number(game.settings.get(MODULE_ID, "wallStealthDC")) || 15;
+        const dc = Number.isFinite(overrideDC) && overrideDC > 0 ? overrideDC : defaultWallDC;
+        // Outcome (optional): compare last Perception roll of observer vs dc
+        let showOutcome = false; let outcomeLabel = ""; let outcomeClass = "";
+        try {
+          if (game.settings.get(MODULE_ID, "integrateRollOutcome")) {
+            const lastRoll = getLastRollTotalForActor(app.observer?.actor, "perception");
+            if (typeof lastRoll === "number") {
+              const diff = lastRoll - dc;
+              if (diff >= 10) { outcomeLabel = "Critical Success"; outcomeClass = "critical-success"; }
+              else if (diff >= 0) { outcomeLabel = "Success"; outcomeClass = "success"; }
+              else if (diff <= -10) { outcomeLabel = "Critical Failure"; outcomeClass = "critical-failure"; }
+              else { outcomeLabel = "Failure"; outcomeClass = "failure"; }
+              showOutcome = true;
+            }
+          }
+        } catch (_) {}
+        return {
+          id: d.id,
+          identifier: idf && String(idf).trim() ? String(idf) : fallback,
+          currentVisibilityState: currentState,
+          visibilityStates: states,
+          isDoor,
+          img,
+          dc,
+          showOutcome,
+          outcomeLabel,
+          outcomeClass,
+        };
+      });
+      context.includeWalls = context.wallTargets.length > 0;
+    }
+  } catch (_) {}
+
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,
     label: game.i18n.localize(config.label),
@@ -253,7 +334,7 @@ export async function buildContext(app, options) {
   context.hasPCs = context.pcTargets.length > 0;
   context.hasNPCs = context.npcTargets.length > 0;
   context.hasLoots = app.mode === "observer" && context.lootTargets.length > 0;
-  context.includeWalls = false;
+  context.includeWalls = context.includeWalls || false;
   try {
     context.showOutcomeColumn = game.settings.get(MODULE_ID, "integrateRollOutcome");
   } catch (_) {

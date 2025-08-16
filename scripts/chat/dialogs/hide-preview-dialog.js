@@ -9,7 +9,7 @@ import { getDesiredOverrideStatesForAction } from "../services/data/action-state
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-    hasActiveEncounter
+  hasActiveEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -80,7 +80,11 @@ export class HidePreviewDialog extends BaseActionDialog {
     this.updateChangesCount();
     try {
       const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
-      if (cb) cb.addEventListener('change', () => { this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial"; this.render({ force: true }); });
+      if (cb) cb.addEventListener('change', () => {
+        this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial";
+        // Recompute filtered list and preserve overrides before re-rendering
+        this.getFilteredOutcomes().then((list) => { this.outcomes = list; this.render({ force: true }); }).catch(() => this.render({ force: true }));
+      });
     } catch (_) {}
   }
 
@@ -92,9 +96,10 @@ export class HidePreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Get filtered outcomes from the original list using encounter helper, then live allies filter, then extra RAW filtering
+    // Get filtered outcomes from the original list using encounter helper, ally filtering, then extra RAW filtering
     const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
     let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter observers found for this action");
+    // Apply ally filtering for display purposes
     try {
       const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
       filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
@@ -146,6 +151,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     // Calculate summary information
     context.actorToken = this.actorToken;
     context.outcomes = processedOutcomes;
+    context.ignoreAllies = !!this.ignoreAllies;
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
     return context;
@@ -155,9 +161,29 @@ export class HidePreviewDialog extends BaseActionDialog {
    * Get filtered outcomes based on current filter settings
    * @returns {Array} Filtered outcomes
    */
-  getFilteredOutcomes() {
+  async getFilteredOutcomes() {
     try {
-      return this.applyEncounterFilter(this.outcomes || [], "target", "No encounter observers found for this action");
+      const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+      let filtered = this.applyEncounterFilter(baseList, "target", "No encounter observers found for this action");
+      // Apply ally filtering via live checkbox
+      try {
+        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, "target");
+      } catch (_) {}
+      if (!Array.isArray(filtered)) return [];
+      // Preserve override selections and recompute actionability
+      const merged = filtered.map((o) => {
+        try {
+          const existing = (this.outcomes || []).find((x) => x?.target?.id === o?.target?.id);
+          const overrideState = existing?.overrideState ?? o?.overrideState ?? null;
+          const currentVisibility = o.oldVisibility || o.currentVisibility;
+          const effectiveNewState = overrideState || o.newVisibility || currentVisibility;
+          const baseOldState = o.oldVisibility || currentVisibility;
+          const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
+          return { ...o, overrideState, hasActionableChange };
+        } catch (_) { return { ...o }; }
+      });
+      return merged;
     } catch (_) {
       return Array.isArray(this.outcomes) ? this.outcomes : [];
     }
@@ -346,7 +372,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     }
 
     // Get filtered outcomes based on current filter settings
-    const filteredOutcomes = app.getFilteredOutcomes();
+    const filteredOutcomes = await app.getFilteredOutcomes();
 
     // Get filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -367,7 +393,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       const state = o?.overrideState || o?.newVisibility;
       if (id && state) overrides[id] = state;
     }
-    await (await import("../services/index.js")).applyNowHide({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+    await (await import("../services/index.js")).applyNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
 
     // Update button states
     app.bulkActionState = "applied";
@@ -401,7 +427,7 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowHide } = await import("../services/index.js");
-      await revertNowHide(app.actionData, { html: () => {}, attr: () => {} });
+      await revertNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
     } catch (error) {}
 
     app.bulkActionState = "reverted";
@@ -442,7 +468,7 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     try {
       const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
-      await (await import("../services/index.js")).applyNowHide({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      await (await import("../services/index.js")).applyNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
 
       app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
@@ -472,7 +498,7 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowHide } = await import("../services/index.js");
-      await revertNowHide(app.actionData, { html: () => {}, attr: () => {} });
+      await revertNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
 
       app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();

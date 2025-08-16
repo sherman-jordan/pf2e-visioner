@@ -8,9 +8,8 @@ import { getVisibilityBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter,
   filterOutcomesBySeekDistance,
-  filterOutcomesByTemplate,
+  filterOutcomesByTemplate
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -58,6 +57,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
     super(options);
     this.actorToken = actorToken; // Renamed for clarity
     this.outcomes = outcomes;
+    // Preserve original outcomes so toggles (like Ignore Allies) can re-filter properly
+    this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : [];
     this.changes = changes;
     this.actionData = { ...actionData, actionType: "seek" }; // Store action data, ensuring actionType is always 'seek'
 
@@ -68,6 +69,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
     // Per-dialog ignore allies defaults from global setting
     this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
+    // Per-dialog ignore walls (default off)
+    this.ignoreWalls = false;
 
     // Set global reference
     currentSeekDialog = this;
@@ -84,12 +87,19 @@ export class SeekPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Filter outcomes with encounter helper, allies live toggle, template (if provided), then distance limits if enabled
-    let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter targets found, showing all");
+    // Start from original list so re-renders can re-include allies when the checkbox is unchecked
+    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+    // Filter outcomes with encounter helper, ally filtering, optional walls toggle, template (if provided), then distance limits if enabled
+    let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter targets found, showing all");
+    // Apply ally filtering for display purposes
     try {
       const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
       filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
     } catch (_) {}
+    // Optional walls exclusion for UI convenience
+    if (this.ignoreWalls === true) {
+      filteredOutcomes = Array.isArray(filteredOutcomes) ? filteredOutcomes.filter((o) => !o?._isWall && !o?.wallId) : filteredOutcomes;
+    }
     if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
       filteredOutcomes = filterOutcomesByTemplate(
         filteredOutcomes,
@@ -105,11 +115,11 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Prepare outcomes for template
     const processedOutcomes = filteredOutcomes.map((outcome) => {
-      // Get current visibility state from the token
-      const currentVisibility =
-        getVisibilityBetween(this.actorToken, outcome.target) ||
-        outcome.oldVisibility ||
-        outcome.currentVisibility;
+      // Get current visibility state; walls use their stored state instead of token-vs-token
+      let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+      if (!outcome._isWall) {
+        currentVisibility = getVisibilityBetween(this.actorToken, outcome.target) || currentVisibility;
+      }
 
       // Prepare available states for override using per-action config
       const desired = getDesiredOverrideStatesForAction("seek");
@@ -154,7 +164,13 @@ export class SeekPreviewDialog extends BaseActionDialog {
       actionLabel: "Seek action results analysis",
     };
     context.outcomes = processedOutcomes;
-    Object.assign(context, this.buildCommonContext(this.outcomes));
+    context.ignoreWalls = !!this.ignoreWalls;
+    context.ignoreAllies = !!this.ignoreAllies;
+    
+    // Keep original outcomes intact; provide common context from processed list
+    this.outcomes = processedOutcomes;
+    
+    Object.assign(context, this.buildCommonContext(processedOutcomes));
 
     return context;
   }
@@ -184,11 +200,97 @@ export class SeekPreviewDialog extends BaseActionDialog {
         cb.addEventListener('change', () => {
           this.ignoreAllies = !!cb.checked;
           this.bulkActionState = "initial";
-          this.render({ force: true });
+          // Recompute outcomes and update UI without losing overrides
+          this.getFilteredOutcomes().then((list) => {
+            this.outcomes = list;
+            this.render({ force: true });
+          }).catch(() => this.render({ force: true }));
+        });
+      }
+    } catch (_) {}
+    // Hook up per-dialog Ignore Walls toggle
+    try {
+      const cbw = content.querySelector('input[data-action="toggleIgnoreWalls"]');
+      if (cbw) {
+        cbw.addEventListener('change', () => {
+          this.ignoreWalls = !!cbw.checked;
+          this.bulkActionState = "initial";
+          // Recompute outcomes and update UI without losing overrides
+          this.getFilteredOutcomes().then((list) => {
+            this.outcomes = list;
+            this.render({ force: true });
+          }).catch(() => this.render({ force: true }));
         });
       }
     } catch (_) {}
     return content;
+  }
+
+  /**
+   * Compute filtered outcomes honoring current toggles
+   */
+  async getFilteredOutcomes() {
+    try {
+      const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+      let filtered = this.applyEncounterFilter(baseList, "target", "No encounter targets found, showing all");
+      // Ally filter via live checkbox
+      try {
+        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, "target");
+      } catch (_) {}
+      // Optional walls exclusion for UI convenience
+      if (this.ignoreWalls === true) {
+        filtered = Array.isArray(filtered) ? filtered.filter((o) => !o?._isWall && !o?.wallId) : filtered;
+      }
+      // Template filter if provided
+      if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
+        try {
+          const { filterOutcomesByTemplate } = await import("../services/infra/shared-utils.js");
+          filtered = filterOutcomesByTemplate(
+            filtered,
+            this.actionData.seekTemplateCenter,
+            this.actionData.seekTemplateRadiusFeet,
+            "target",
+          );
+        } catch (_) {}
+      }
+      // Seek distance limits
+      try {
+        const { filterOutcomesBySeekDistance } = await import("../services/infra/shared-utils.js");
+        filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, "target");
+      } catch (_) {}
+      // Compute actionability and carry over any existing overrides from the currently displayed outcomes
+      if (!Array.isArray(filtered)) return [];
+      const processed = filtered.map((o) => {
+        try {
+          // Preserve any override chosen by the user for the same token/wall
+          let existing = null;
+          if (o?._isWall && o?.wallId) {
+            existing = (this.outcomes || []).find((x) => x?.wallId === o.wallId);
+          } else {
+            const tid = o?.target?.id;
+            existing = (this.outcomes || []).find((x) => x?.target?.id === tid);
+          }
+          const overrideState = existing?.overrideState ?? o?.overrideState ?? null;
+          // Determine baseline/current visibility
+          let currentVisibility = o.oldVisibility || o.currentVisibility || null;
+          if (!o?._isWall) {
+            try {
+              currentVisibility = getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
+            } catch (_) {}
+          }
+          const effectiveNewState = overrideState || o.newVisibility || currentVisibility;
+          const baseOldState = o.oldVisibility || currentVisibility;
+          const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
+          return { ...o, overrideState, hasActionableChange };
+        } catch (_) {
+          return { ...o };
+        }
+      });
+      return processed;
+    } catch (_) {
+      return Array.isArray(this.outcomes) ? this.outcomes : [];
+    }
   }
 
   /**
@@ -216,12 +318,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    // Filter outcomes based on encounter filter using shared helper
-    const filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "target",
-    );
+    // Recompute filtered outcomes from original list using current toggles
+    let filteredOutcomes = await app.getFilteredOutcomes();
 
     // Only apply changes to filtered outcomes
     const actionableOutcomes = filteredOutcomes.filter(
@@ -243,17 +341,29 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Provide overrides map to services path
     const overrides = {};
+    const wallOverrides = {};
     for (const o of actionableOutcomes) {
-      const id = o?.target?.id;
       const state = o?.overrideState || o?.newVisibility;
-      if (id && state) overrides[id] = state;
+      if (o?._isWall && o?.wallId) {
+        if (state) wallOverrides[o.wallId] = state;
+      } else {
+        const id = o?.target?.id;
+        if (id && state) overrides[id] = state;
+      }
     }
 
     try {
       const { applyNowSeek } = await import("../services/index.js");
-      await applyNowSeek({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      const payload = { ...app.actionData, ignoreAllies: app.ignoreAllies };
+      if (!app.ignoreWalls && Object.keys(wallOverrides).length > 0) {
+        payload.overrides = { ...overrides, __wall__: wallOverrides };
+      } else {
+        payload.overrides = overrides;
+      }
+      // Pass current live ignoreAllies so discovery in apply respects checkbox state
+      const appliedCount = await applyNowSeek(payload, { html: () => {}, attr: () => {} });
       notify.info(
-        `${MODULE_TITLE}: Applied ${actionableOutcomes.length} visibility changes. Dialog remains open for additional actions.`,
+        `${MODULE_TITLE}: Applied ${appliedCount ?? actionableOutcomes.length} visibility changes. Dialog remains open for additional actions.`,
       );
 
       // Update individual row buttons to show applied state
@@ -278,12 +388,15 @@ export class SeekPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     try {
-      const changedOutcomes = app.outcomes.filter(
+      // Recompute filtered outcomes from original list using current toggles
+      let filteredOutcomes = await app.getFilteredOutcomes();
+
+      const changedOutcomes = filteredOutcomes.filter(
         (outcome) => outcome.changed && outcome.hasActionableChange,
       );
 
       const { revertNowSeek } = await import("../services/index.js");
-      await revertNowSeek(app.actionData, { html: () => {}, attr: () => {} });
+      await revertNowSeek({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
 
       app.updateRowButtonsToReverted(changedOutcomes);
       app.bulkActionState = "reverted";
@@ -303,21 +416,38 @@ export class SeekPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     const tokenId = button.dataset.tokenId;
-    const outcome = app.outcomes.find((o) => o.target.id === tokenId);
+    const wallId = button.dataset.wallId;
+    let outcome = null;
+    if (wallId) outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
+    else outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome || !outcome.hasActionableChange) {
       notify.warn(
-        `${MODULE_TITLE}: No change to apply for this token`,
+        `${MODULE_TITLE}: No change to apply for this ${wallId ? "wall" : "token"}`,
       );
       return;
     }
 
     try {
       const { applyNowSeek } = await import("../services/index.js");
-      const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
-      await applyNowSeek({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      // Use a clean actionData copy without template limits (the row was already filtered by the dialog)
+      const actionData = { ...app.actionData, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly };
+      delete actionData.seekTemplateCenter;
+      delete actionData.seekTemplateRadiusFeet;
 
-      app.updateRowButtonsToApplied([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      // For walls, pass a dedicated overrides shape the handler recognizes via outcomeToChange
+      if (outcome._isWall && outcome.wallId) {
+        const overrides = { __wall__: { [outcome.wallId]: outcome.overrideState || outcome.newVisibility } };
+        await applyNowSeek({ ...actionData, overrides }, { html: () => {}, attr: () => {} });
+        // Disable the row's Apply button for this wall
+        app.updateRowButtonsToApplied([{ wallId: outcome.wallId }]);
+      } else {
+        const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
+        await applyNowSeek({ ...actionData, overrides }, { html: () => {}, attr: () => {} });
+        // Disable the row's Apply button for this token
+        app.updateRowButtonsToApplied([{ target: { id: outcome.target.id } }]);
+      }
+
       app.updateChangesCount();
     } catch (error) {
       notify.error(`${MODULE_TITLE}: Error applying change.`);
@@ -332,17 +462,20 @@ export class SeekPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     const tokenId = button.dataset.tokenId;
-    const outcome = app.outcomes.find((o) => o.target.id === tokenId);
+    const wallId = button.dataset.wallId;
+    let outcome = null;
+    if (wallId) outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
+    else outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      notify.warn(`${MODULE_TITLE}: Token not found`);
+      notify.warn(`${MODULE_TITLE}: ${wallId ? "Wall" : "Token"} not found`);
       return;
     }
 
     try {
       const { revertNowSeek } = await import("../services/index.js");
       await revertNowSeek(app.actionData, { html: () => {}, attr: () => {} });
-      app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateRowButtonsToReverted([{ target: { id: outcome._isWall ? null : outcome.target.id }, wallId }]);
       app.updateChangesCount();
     } catch (error) {
       notify.error(`${MODULE_TITLE}: Error reverting change.`);
@@ -439,9 +572,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
   /**
    * Update action buttons visibility for a specific token
    */
-  updateActionButtonsForToken(tokenId, hasActionableChange) {
-    // Delegate to base which renders Apply/Revert or "No Change"
-    super.updateActionButtonsForToken(tokenId, hasActionableChange);
+  updateActionButtonsForToken(tokenId, hasActionableChange, opts = {}) {
+    super.updateActionButtonsForToken(tokenId, hasActionableChange, opts);
   }
 
   /**

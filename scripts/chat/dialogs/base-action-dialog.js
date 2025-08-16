@@ -191,9 +191,11 @@ export class BaseActionDialog extends BasePreviewDialog {
   }
 
   // Default per-row buttons rendering. Subclasses may override for custom layouts.
-  updateActionButtonsForToken(tokenId, hasActionableChange) {
+  updateActionButtonsForToken(tokenId, hasActionableChange, opts = {}) {
     try {
-      const row = this.element?.querySelector?.(`tr[data-token-id="${tokenId}"]`);
+      // Support wall rows by allowing caller to pass row or using wallId
+      let row = opts.row || this.element?.querySelector?.(`tr[data-token-id="${tokenId}"]`);
+      if (!row && opts.wallId) row = this.element?.querySelector?.(`tr[data-wall-id="${opts.wallId}"]`);
       if (!row) return;
 
       // Try common containers in priority order
@@ -205,10 +207,10 @@ export class BaseActionDialog extends BasePreviewDialog {
 
       if (hasActionableChange) {
         container.innerHTML = `
-          <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="${tokenId}" title="Apply this visibility change">
+          <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${opts.wallId ? `data-wall-id="${opts.wallId}"` : `data-token-id="${tokenId}"`} title="Apply this visibility change">
             <i class="fas fa-check"></i>
           </button>
-          <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="${tokenId}" title="Revert to original visibility">
+          <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${opts.wallId ? `data-wall-id="${opts.wallId}"` : `data-token-id="${tokenId}"`} title="Revert to original visibility">
             <i class="fas fa-undo"></i>
           </button>
         `;
@@ -228,6 +230,7 @@ export class BaseActionDialog extends BasePreviewDialog {
 
         // Robustly resolve target id from data attributes or row
         let targetId = event.currentTarget.dataset.target || event.currentTarget.dataset.tokenId;
+        const wallId = overrideIcons?.dataset?.wallId || event.currentTarget.dataset.wallId || event.currentTarget.closest('tr')?.dataset?.wallId || null;
         if (!targetId) {
           const row = event.currentTarget.closest("tr[data-token-id]");
           targetId = row?.dataset?.tokenId;
@@ -237,7 +240,8 @@ export class BaseActionDialog extends BasePreviewDialog {
         event.currentTarget.classList.add("selected");
         const hiddenInput = overrideIcons?.querySelector('input[type="hidden"]');
         if (hiddenInput) hiddenInput.value = newState;
-        const outcome = this.outcomes?.find?.((o) => String(this.getOutcomeTokenId(o)) === String(targetId));
+        let outcome = this.outcomes?.find?.((o) => String(this.getOutcomeTokenId(o)) === String(targetId));
+        if (!outcome && wallId) outcome = this.outcomes?.find?.((o) => o?.wallId === wallId);
         if (outcome) {
           outcome.overrideState = newState;
           const oldState = outcome.oldVisibility ?? outcome.currentVisibility ?? null;
@@ -245,7 +249,29 @@ export class BaseActionDialog extends BasePreviewDialog {
           // Persist actionable state on outcome so templates and bulk ops reflect immediately
           outcome.hasActionableChange = hasActionableChange;
           try {
-            this.updateActionButtonsForToken(targetId, hasActionableChange);
+            this.updateActionButtonsForToken(targetId || null, hasActionableChange, { wallId, row: event.currentTarget.closest('tr') });
+          } catch (_) {}
+          // Direct DOM fallback to ensure row shows buttons immediately
+          try {
+            const rowEl = event.currentTarget.closest('tr');
+            if (rowEl) {
+              let container = rowEl.querySelector('td.actions') || rowEl.querySelector('.actions');
+              if (container) {
+                if (hasActionableChange) {
+                  const idAttr = wallId ? `data-wall-id="${wallId}"` : (targetId ? `data-token-id="${targetId}"` : "");
+                  container.innerHTML = `
+                    <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${idAttr} title="Apply this visibility change">
+                      <i class=\"fas fa-check\"></i>
+                    </button>
+                    <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${idAttr} title="Revert to original visibility">
+                      <i class=\"fas fa-undo\"></i>
+                    </button>
+                  `;
+                } else {
+                  container.innerHTML = '<span class="no-action">No Change</span>';
+                }
+              }
+            }
           } catch (_) {}
           try {
             // Maintain a lightweight list of changed outcomes for convenience

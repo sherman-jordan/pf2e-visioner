@@ -114,7 +114,7 @@ export class ActionHandlerBase {
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
       } catch (_) {}
-      if (filtered.length === 0) { notify.info("No changes to apply"); return; }
+      if (filtered.length === 0) { notify.info("No changes to apply"); return 0; }
       // Build changes; when overrides are present, also attach overrideState explicitly
       let overridesMap = null;
       try {
@@ -138,8 +138,10 @@ export class ActionHandlerBase {
       await this.applyChangesInternal(changes);
       this.cacheAfterApply(actionData, changes);
       this.updateButtonToRevert(button);
+      return changes.length;
     } catch (e) {
       log.error(e);
+      return 0;
     }
   }
 
@@ -157,8 +159,9 @@ export class ActionHandlerBase {
     try {
       const cache = this.getCacheMap();
       if (!cache) return;
+      const existing = cache.get(actionData.messageId) || [];
       const entries = changes.map((c) => this.buildCacheEntryFromChange(c)).filter(Boolean);
-      cache.set(actionData.messageId, entries);
+      cache.set(actionData.messageId, existing.concat(entries));
     } catch (_) {}
   }
 

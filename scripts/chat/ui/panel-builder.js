@@ -41,10 +41,6 @@ export function buildAutomationPanel(actionData, message) {
   if (!config) return "";
   return `
     <div class="pf2e-visioner-automation-panel ${config.panelClass}" data-message-id="${actionData.messageId}" data-action-type="${actionData.actionType}" data-user-id="${game.userId}">
-      <div class="automation-header">
-        <i class="${config.icon}"></i>
-        <span class="automation-title">${config.title}</span>
-      </div>
       <div class="automation-actions">
         ${config.actionButtonsHtml}
       </div>

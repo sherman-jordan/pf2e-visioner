@@ -21,15 +21,19 @@
     </div>
   </div>
 
-  {{!-- Encounter Filter --}}
-  {{#if showEncounterFilter}}
-  <div class="encounter-filter-section">
-    <label class="encounter-filter-checkbox">
+  {{!-- Encounter Filter + Ignore Allies --}}
+  <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
+    {{#if showEncounterFilter}}
+    <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
       <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
       <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
     </label>
+    {{/if}}
+    <label class="ignore-allies-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" />
+      <span class="encounter-filter-label">Ignore allies</span>
+    </label>
   </div>
-  {{/if}}
 
   {{!-- Results Table --}}
   <div class="results-table-container">
@@ -38,6 +42,7 @@
         <tr>
           <th class="token-image">Token</th>
           <th class="token-name">Name</th>
+          <th class="outcome">Outcome</th>
           <th class="visibility-change">Visibility Change</th>
           <th class="actions">Actions</th>
         </tr>
@@ -50,6 +55,9 @@
             </td>
             <td class="token-name">
               <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+            </td>
+            <td class="outcome {{outcome.outcomeClass}}">
+              {{outcome.outcomeLabel}}
             </td>
             <td class="visibility-change">
               <div class="visibility-change-with-override">

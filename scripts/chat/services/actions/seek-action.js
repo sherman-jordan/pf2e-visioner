@@ -182,7 +182,8 @@ export class SeekActionHandler extends ActionHandlerBase {
     if (change?.wallId) {
       return { wallId: change.wallId, oldVisibility: change.oldVisibility };
     }
-    return { targetId: change.target?.id, oldVisibility: change.oldVisibility };
+    const tid = change?.target?.id || change?.targetId || null;
+    return { targetId: tid, oldVisibility: change.oldVisibility };
   }
 
   entriesToRevertChanges(entries, actionData) {
@@ -214,6 +215,28 @@ export class SeekActionHandler extends ActionHandlerBase {
       }
     } catch (_) {}
     return super.outcomeToChange(actionData, outcome);
+  }
+
+  // Override base to support wall overrides passed from UI
+  applyOverrides(actionData, outcomes) {
+    try {
+      // Standard token overrides
+      const base = super.applyOverrides(actionData, outcomes) || outcomes;
+      // Wall overrides delivered as { __wall__: { [wallId]: state } }
+      const wallMap = actionData?.overrides?.__wall__;
+      if (wallMap && typeof wallMap === "object") {
+        for (const outcome of base) {
+          if (outcome?._isWall && outcome?.wallId && wallMap[outcome.wallId]) {
+            outcome.newVisibility = wallMap[outcome.wallId];
+            outcome.changed = outcome.newVisibility !== (outcome.oldVisibility || outcome.currentVisibility);
+            outcome.overrideState = wallMap[outcome.wallId];
+          }
+        }
+      }
+      return base;
+    } catch (_) {
+      return outcomes;
+    }
   }
 
   // Apply token visibility changes as usual, and also persist wall visibility for the seeker
@@ -251,7 +274,6 @@ export class SeekActionHandler extends ActionHandlerBase {
             const next = { ...current };
             const { expandWallIdWithConnected } = await import("../../../services/connected-walls.js");
             for (const [wallId, state] of walls.entries()) {
-              // Default to 'observed' on success; keep 'hidden' otherwise
               const eff = typeof state === "string" ? state : "observed";
               const applied = eff === "undetected" || eff === "hidden" ? "hidden" : "observed";
               const ids = expandWallIdWithConnected(wallId);
@@ -268,6 +290,50 @@ export class SeekActionHandler extends ActionHandlerBase {
     } catch (e) {
       // Fallback to base implementation if something goes wrong
       return super.applyChangesInternal(changes);
+    }
+  }
+
+  // Ensure per-row apply with wall overrides is honored (skip base allowedIds filter)
+  async apply(actionData, button) {
+    try {
+      await this.ensurePrerequisites(actionData);
+
+      const subjects = await this.discoverSubjects(actionData);
+      const outcomes = [];
+      for (const subject of subjects) {
+        outcomes.push(await this.analyzeOutcome(actionData, subject));
+      }
+      // Apply overrides (supports __wall__)
+      this.applyOverrides(actionData, outcomes);
+
+      // Keep only changed outcomes
+      let filtered = outcomes.filter((o) => o && o.changed);
+
+      // If overrides specify a particular token/wall, limit to those only (per-row apply)
+      try {
+        const ov = actionData?.overrides || {};
+        const wallMap = ov?.__wall__ && typeof ov.__wall__ === "object" ? new Set(Object.keys(ov.__wall__)) : new Set();
+        const tokenMap = new Set(Object.keys(ov).filter((k) => k !== "__wall__"));
+        if (wallMap.size > 0 || tokenMap.size > 0) {
+          filtered = filtered.filter((o) => {
+            if (o?._isWall && o?.wallId) return wallMap.has(o.wallId);
+            const id = this.getOutcomeTokenId(o);
+            return id ? tokenMap.has(id) : false;
+          });
+        }
+      } catch (_) {}
+
+      if (filtered.length === 0) { (await import("../infra/notifications.js")).notify.info("No changes to apply"); return 0; }
+
+      // Build changes for tokens and walls
+      const changes = filtered.map((o) => this.outcomeToChange(actionData, o)).filter(Boolean);
+      await this.applyChangesInternal(changes);
+      this.cacheAfterApply(actionData, changes);
+      this.updateButtonToRevert(button);
+      return changes.length;
+    } catch (e) {
+      (await import("../infra/notifications.js")).log.error(e);
+      return 0;
     }
   }
 }

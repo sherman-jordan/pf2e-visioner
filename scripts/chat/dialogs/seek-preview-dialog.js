@@ -341,16 +341,27 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Provide overrides map to services path
     const overrides = {};
+    const wallOverrides = {};
     for (const o of actionableOutcomes) {
-      const id = o?.target?.id;
       const state = o?.overrideState || o?.newVisibility;
-      if (id && state) overrides[id] = state;
+      if (o?._isWall && o?.wallId) {
+        if (state) wallOverrides[o.wallId] = state;
+      } else {
+        const id = o?.target?.id;
+        if (id && state) overrides[id] = state;
+      }
     }
 
     try {
       const { applyNowSeek } = await import("../services/index.js");
+      const payload = { ...app.actionData, ignoreAllies: app.ignoreAllies };
+      if (!app.ignoreWalls && Object.keys(wallOverrides).length > 0) {
+        payload.overrides = { ...overrides, __wall__: wallOverrides };
+      } else {
+        payload.overrides = overrides;
+      }
       // Pass current live ignoreAllies so discovery in apply respects checkbox state
-      const appliedCount = await applyNowSeek({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
+      const appliedCount = await applyNowSeek(payload, { html: () => {}, attr: () => {} });
       notify.info(
         `${MODULE_TITLE}: Applied ${appliedCount ?? actionableOutcomes.length} visibility changes. Dialog remains open for additional actions.`,
       );
@@ -405,21 +416,38 @@ export class SeekPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     const tokenId = button.dataset.tokenId;
-    const outcome = app.outcomes.find((o) => o.target.id === tokenId);
+    const wallId = button.dataset.wallId;
+    let outcome = null;
+    if (wallId) outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
+    else outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome || !outcome.hasActionableChange) {
       notify.warn(
-        `${MODULE_TITLE}: No change to apply for this token`,
+        `${MODULE_TITLE}: No change to apply for this ${wallId ? "wall" : "token"}`,
       );
       return;
     }
 
     try {
       const { applyNowSeek } = await import("../services/index.js");
-      const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
-      await applyNowSeek({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      // Use a clean actionData copy without template limits (the row was already filtered by the dialog)
+      const actionData = { ...app.actionData, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly };
+      delete actionData.seekTemplateCenter;
+      delete actionData.seekTemplateRadiusFeet;
 
-      app.updateRowButtonsToApplied([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      // For walls, pass a dedicated overrides shape the handler recognizes via outcomeToChange
+      if (outcome._isWall && outcome.wallId) {
+        const overrides = { __wall__: { [outcome.wallId]: outcome.overrideState || outcome.newVisibility } };
+        await applyNowSeek({ ...actionData, overrides }, { html: () => {}, attr: () => {} });
+        // Disable the row's Apply button for this wall
+        app.updateRowButtonsToApplied([{ wallId: outcome.wallId }]);
+      } else {
+        const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
+        await applyNowSeek({ ...actionData, overrides }, { html: () => {}, attr: () => {} });
+        // Disable the row's Apply button for this token
+        app.updateRowButtonsToApplied([{ target: { id: outcome.target.id } }]);
+      }
+
       app.updateChangesCount();
     } catch (error) {
       notify.error(`${MODULE_TITLE}: Error applying change.`);
@@ -434,17 +462,20 @@ export class SeekPreviewDialog extends BaseActionDialog {
     if (!app) return;
 
     const tokenId = button.dataset.tokenId;
-    const outcome = app.outcomes.find((o) => o.target.id === tokenId);
+    const wallId = button.dataset.wallId;
+    let outcome = null;
+    if (wallId) outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
+    else outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      notify.warn(`${MODULE_TITLE}: Token not found`);
+      notify.warn(`${MODULE_TITLE}: ${wallId ? "Wall" : "Token"} not found`);
       return;
     }
 
     try {
       const { revertNowSeek } = await import("../services/index.js");
       await revertNowSeek(app.actionData, { html: () => {}, attr: () => {} });
-      app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateRowButtonsToReverted([{ target: { id: outcome._isWall ? null : outcome.target.id }, wallId }]);
       app.updateChangesCount();
     } catch (error) {
       notify.error(`${MODULE_TITLE}: Error reverting change.`);
@@ -541,9 +572,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
   /**
    * Update action buttons visibility for a specific token
    */
-  updateActionButtonsForToken(tokenId, hasActionableChange) {
-    // Delegate to base which renders Apply/Revert or "No Change"
-    super.updateActionButtonsForToken(tokenId, hasActionableChange);
+  updateActionButtonsForToken(tokenId, hasActionableChange, opts = {}) {
+    super.updateActionButtonsForToken(tokenId, hasActionableChange, opts);
   }
 
   /**

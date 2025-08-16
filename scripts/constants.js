@@ -435,6 +435,7 @@ export const KEYBINDINGS = {
     name: "PF2E_VISIONER.KEYBINDINGS.OPEN_TOKEN_MANAGER.name",
     hint: "PF2E_VISIONER.KEYBINDINGS.OPEN_TOKEN_MANAGER.hint",
     editable: [{ key: "KeyV", modifiers: ["Control", "Shift"] }],
+    restricted: true
   },
   toggleObserverMode: {
     name: "PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.name",

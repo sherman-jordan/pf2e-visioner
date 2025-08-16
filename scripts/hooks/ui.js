@@ -4,7 +4,6 @@
 
 import { MODULE_ID } from "../constants.js";
 import { onRenderTokenHUD } from "../services/token-hud.js";
-import { setCoverBetween, setVisibilityBetween } from "../utils.js";
 
 export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
@@ -68,12 +67,25 @@ export function registerUIHooks() {
   const refreshWallTool = () => {
     try {
       const tools = ui.controls.controls?.visioner?.tools;
-      const tool = tools?.pvVisionerToggleWallIgnore;
-      if (!tool) return;
       const selected = canvas?.walls?.controlled ?? [];
-      const active = selected.length > 0 && selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
-      tool.active = active;
-      tool.icon = active ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      // Provide Cover toggle state
+      const provideTool = tools?.pvVisionerToggleWallIgnore;
+      if (provideTool) {
+        const provideActive =
+          selected.length > 0 &&
+          selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
+        provideTool.active = provideActive;
+        provideTool.icon = provideActive ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      }
+      // Hidden Wall toggle state
+      const hiddenTool = tools?.pvVisionerToggleHiddenWall;
+      if (hiddenTool) {
+        const hiddenActive =
+          selected.length > 0 &&
+          selected.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+        hiddenTool.active = hiddenActive;
+        hiddenTool.icon = hiddenActive ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+      }
       // Also refresh identifier labels on the canvas when selection changes
       refreshWallIdentifierLabels();
       ui.controls.render();
@@ -271,15 +283,19 @@ function onGetSceneControlButtons(controls) {
   try {
     const visible = !!game.user?.isGM;
     const existingOrder = Object.values(controls).reduce((m, c) => Math.max(m, c?.order ?? 0), 0);
+
+    // Ensure a Visioner control group exists (object-style)
     const visioner = controls.visioner ?? {
       name: "visioner",
       title: "PF2E Visioner",
       icon: "fas fa-face-hand-peeking",
       order: existingOrder + 1,
       visible,
+      layer: "tokens",
       tools: {},
-      activeTool: "",
+      activeTool: "pvVisionerToggleTokenIgnore",
     };
+
     const vtools = visioner.tools || {};
 
     // Token: toggle ignore
@@ -287,23 +303,50 @@ function onGetSceneControlButtons(controls) {
     vtools.pvVisionerToggleTokenIgnore = {
       name: "pvVisionerToggleTokenIgnore",
       title: "Toggle Ignore Auto-Cover (Selected Tokens)",
-      icon: (selectedTokens.length > 0 && selectedTokens.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")))) ? "fa-solid fa-shield-slash" : "fa-solid fa-shield",
+      icon:
+        selectedTokens.length > 0 &&
+        selectedTokens.every((t) => !!t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover"))
+          ? "fa-solid fa-shield-slash"
+          : "fa-solid fa-shield",
       order: 1,
       visible,
       toggle: true,
-      active: selectedTokens.length > 0 && selectedTokens.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover"))),
-      onChange: async (_event, active) => {
+      active:
+        selectedTokens.length > 0 &&
+        selectedTokens.every((t) => !!t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")),
+      onChange: async (event, active) => {
         try {
           const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          if (active) await Promise.all(selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)));
+          if (!selected.length) {
+            // Silent no-op when nothing is selected (avoid warnings on palette switches)
+            return;
+          }
+          if (active)
+            await Promise.all(
+              selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)),
+            );
           else {
             for (const t of selected) {
-              try { await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover"); } catch (_) { try { await t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", false); } catch (_) {} }
+              try {
+                await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover");
+              } catch (_) {
+                try {
+                  await t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", false);
+                } catch (_) {}
+              }
             }
           }
           ui.controls.render();
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
+          try {
+            const { updateTokenVisuals } = await import("../services/visual-effects.js");
+            const allPlaceables = canvas?.tokens?.placeables ?? [];
+            for (const t of allPlaceables) {
+              try {
+                await updateTokenVisuals(t);
+              } catch (_) {}
+            }
+            game.canvas?.perception?.refresh?.();
+          } catch (_) {}
         } catch (_) {}
       },
     };
@@ -313,75 +356,41 @@ function onGetSceneControlButtons(controls) {
     vtools.pvVisionerToggleWallIgnore = {
       name: "pvVisionerToggleWallIgnore",
       title: "Toggle Ignore Auto-Cover (Selected Walls)",
-      icon: (selectedWalls.length > 0 && selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false)) ? "fa-solid fa-shield-slash" : "fa-solid fa-shield",
+      icon:
+        selectedWalls.length > 0 &&
+        selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false)
+          ? "fa-solid fa-shield-slash"
+          : "fa-solid fa-shield",
       order: 2,
       visible,
       toggle: true,
-      active: selectedWalls.length > 0 && selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false),
-      onChange: async (_event, active) => {
+      active:
+        selectedWalls.length > 0 &&
+        selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false),
+      onChange: async (event, active) => {
         try {
           const selected = canvas?.walls?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more walls first."); return; }
-          if (active) await Promise.all(selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)));
+          if (!selected.length) {
+            // Silent no-op when nothing is selected (avoid warnings on palette switches)
+            return;
+          }
+          if (active)
+            await Promise.all(
+              selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)),
+            );
           else {
             for (const w of selected) {
-              try { await w?.document?.unsetFlag?.(MODULE_ID, "provideCover"); } catch (_) { try { await w?.document?.setFlag?.(MODULE_ID, "provideCover", true); } catch (_) {} }
+              try {
+                await w?.document?.unsetFlag?.(MODULE_ID, "provideCover");
+              } catch (_) {
+                try {
+                  await w?.document?.setFlag?.(MODULE_ID, "provideCover", true);
+                } catch (_) {}
+              }
             }
           }
           ui.controls.render();
           try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-        } catch (_) {}
-      },
-    };
-
-    // Clear Cover (selected tokens ↔ others)
-    vtools.pvVisionerClearCover = {
-      name: "pvVisionerClearCover",
-      title: "Clear Cover (Target Mode → Selected Tokens)",
-      icon: "fa-solid fa-shield-slash",
-      order: 3,
-      visible,
-      button: true,
-      onChange: async () => {
-        try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const allTokens = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          // Clear target-mode states (others observing selected)
-          for (const target of selected) {
-            for (const observer of allTokens) {
-              if (!observer || observer.id === target.id) continue;
-              try { await setCoverBetween(observer, target, "none", { skipEphemeralUpdate: false }); Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: observer.id, targetId: target.id, state: "none" }); } catch (_) {}
-            }
-          }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Cleared cover (target mode) for selected tokens.");
-        } catch (_) {}
-      },
-    };
-
-    // Clear Cover (Observer mode)
-    vtools.pvVisionerClearCoverObserver = {
-      name: "pvVisionerClearCoverObserver",
-      title: "Clear Cover (Observer Mode → Others)",
-      icon: "fa-solid fa-shield-slash",
-      order: 4,
-      visible,
-      button: true,
-      onChange: async () => {
-        try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const allTokens = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          // Clear observer-mode states (selected as observers)
-          for (const observer of selected) {
-            for (const target of allTokens) {
-              if (!target || target.id === observer.id) continue;
-              try { await setCoverBetween(observer, target, "none", { skipEphemeralUpdate: false }); Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: observer.id, targetId: target.id, state: "none" }); } catch (_) {}
-            }
-          }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Cleared cover (observer mode) for selected tokens.");
         } catch (_) {}
       },
     };
@@ -394,43 +403,246 @@ function onGetSceneControlButtons(controls) {
       order: 5,
       visible,
       button: true,
-      onChange: async () => {
+      onClick: async () => {
         try {
           const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
           new VisionerQuickPanel({}).render(true);
         } catch (_) {}
       },
+      // Safeguard for control switchers that expect onChange
+      onChange: () => {},
     };
 
-    // Make Observed (Observer mode)
-    vtools.pvVisionerMakeObservedObserver = {
-      name: "pvVisionerMakeObservedObserver",
-      title: "Make Observed (Observer Mode → Others)",
-      icon: "fa-solid fa-eye",
+    // Purge Visioner data for selected tokens in this scene
+    vtools.pvVisionerPurgeSelected = {
+      name: "pvVisionerPurgeSelected",
+      title: "Clear Visioner Data (Selected Tokens)",
+      icon: "fa-solid fa-trash-can",
       order: 6,
       visible,
       button: true,
-      onChange: async () => {
+      onClick: async () => {
         try {
           const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) { ui.notifications?.warn?.("Select one or more tokens first."); return; }
-          const all = (canvas?.tokens?.placeables ?? []).filter((t) => !!t);
-          for (const obs of selected) {
-            for (const tgt of all) {
-              if (!tgt || tgt.id === obs.id) continue;
-              try { await setVisibilityBetween(obs, tgt, "observed"); } catch (_) {}
+          if (!selected.length) {
+            ui.notifications?.warn?.("Select one or more tokens first.");
+            return;
+          }
+
+          // Progress HUD
+          const hud = (() => {
+            const wrap = document.createElement("div");
+            wrap.style.cssText =
+              "position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:10000; background: rgba(20,20,20,.92); color:#fff; border:1px solid rgba(255,255,255,.15); padding:8px 12px; border-radius:8px; box-shadow: 0 2px 10px rgba(0,0,0,.35); min-width:260px; font-size:12px;";
+            wrap.innerHTML =
+              '<div style="font-weight:600; margin-bottom:6px;">Clearing Visioner Data…</div>' +
+              '<div class="pv-bar" style="width:100%; height:8px; background: rgba(255,255,255,.12); border-radius:5px; overflow:hidden;"><div class="pv-fill" style="height:100%; width:0%; background:#ff6a00;"></div></div>' +
+              '<div class="pv-meta" style="margin-top:6px; opacity:.85;">0%</div>';
+            document.body.appendChild(wrap);
+            return {
+              set(p, text) {
+                const pct = Math.max(0, Math.min(100, Math.round(p)));
+                wrap.querySelector(".pv-fill").style.width = pct + "%";
+                wrap.querySelector(".pv-meta").textContent = (text ?? "") || pct + "%";
+              },
+              done() {
+                try {
+                  wrap.remove();
+        } catch (_) {}
+      },
+    };
+          })();
+
+          const { getVisibilityMap, getCoverMap } = await import("../utils.js");
+          const all = (canvas?.tokens?.placeables ?? []).filter((tok) => !!tok?.actor);
+          const selectedIds = new Set(selected.map((t) => t?.document?.id).filter(Boolean));
+          const affected = new Set();
+
+          // 1) Batch clear selected tokens and collect updates
+          hud.set(10, "Preparing bulk updates...");
+          const tokensToUpdate = [];
+
+          for (const t of selected) {
+            try {
+              const v = getVisibilityMap(t) || {};
+              const c = getCoverMap(t) || {};
+              const hasData = (Object.keys(v).length + Object.keys(c).length) > 0;
+              if (hasData) {
+                tokensToUpdate.push({
+                  _id: t.document.id,
+                  [`flags.${MODULE_ID}.-=visibility`]: null,
+                  [`flags.${MODULE_ID}.-=cover`]: null,
+                });
+                affected.add(t);
+              }
+            } catch (e) {
+              console.error("Error preparing token", t.name, ":", e);
             }
           }
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-          ui.notifications?.info?.("Set Observed (observer mode) for selected tokens.");
+
+          // 2) Remove references to selected tokens from other tokens
+          hud.set(30, "Removing references...");
+          for (const other of all) {
+            if (selectedIds.has(other?.document?.id)) continue;
+            try {
+              const v0 = getVisibilityMap(other) || {};
+              const c0 = getCoverMap(other) || {};
+              let v = null,
+                c = null,
+                changed = false;
+
+              for (const sid of selectedIds) {
+                if (sid in v0) {
+                  if (!v) v = { ...v0 };
+                  delete v[sid];
+                  changed = true;
+                }
+                if (sid in c0) {
+                  if (!c) c = { ...c0 };
+                  delete c[sid];
+                  changed = true;
+                }
+              }
+
+              if (changed) {
+                const update = { _id: other.document.id };
+
+                if (v && Object.keys(v).length === 0) {
+                  update[`flags.${MODULE_ID}.-=visibility`] = null;
+                } else if (v) {
+                  update[`flags.${MODULE_ID}.visibility`] = v;
+                }
+
+                if (c && Object.keys(c).length === 0) {
+                  update[`flags.${MODULE_ID}.-=cover`] = null;
+                } else if (c) {
+                  update[`flags.${MODULE_ID}.cover`] = c;
+                }
+
+                tokensToUpdate.push(update);
+                affected.add(other);
+              }
+            } catch (e) {
+              console.error("Error preparing", other.name, ":", e);
+            }
+          }
+
+          // 3) Apply all updates in one batch
+          hud.set(50, "Applying bulk updates...");
+          if (tokensToUpdate.length > 0) {
+            try {
+              await canvas.scene.updateEmbeddedDocuments("Token", tokensToUpdate);
+            } catch (e) {
+              console.error("Error applying bulk updates:", e);
+            }
+          }
+
+          // 4) Remove actual cover effects from affected token actors
+          hud.set(70, "Removing cover effects...");
+          try {
+            for (const tok of affected) {
+              try {
+                const actor = tok.actor;
+                if (!actor) continue;
+
+                const effects = actor?.itemTypes?.effect ?? [];
+                const toDelete = effects
+                  .filter((e) => {
+                    const f = e.flags?.[MODULE_ID] || {};
+                    return f.isEphemeralCover || f.aggregateCover === true;
+                  })
+                  .map((e) => e.id)
+                  .filter((id) => !!actor.items.get(id));
+
+                if (toDelete.length) {
+                  await actor.deleteEmbeddedDocuments("Item", toDelete);
+                }
+              } catch (e) {
+                console.error("Error removing cover effects from", tok.name, ":", e);
+              }
+            }
+          } catch (e) {
+            console.error("Error removing cover effects:", e);
+          }
+
+          // 5) Refresh everything
+          hud.set(90, "Refreshing perception...");
+          try {
+            game.canvas?.perception?.refresh?.();
+          } catch (e) {
+            console.error("Error refreshing perception:", e);
+          }
+
+          hud.set(100, "Complete!");
+          setTimeout(() => hud.done(), 500);
+
+          ui.notifications?.info?.(`Cleared Visioner data for ${affected.size} token(s).`);
+        } catch (e) {
+          console.error("Error clearing Visioner data:", e);
+          hud?.done();
+          ui.notifications?.error?.("Error clearing Visioner data. Check console.");
+        }
+      },
+      // Safeguard for control switchers that expect onChange
+      onChange: () => {},
+    };
+
+    // Hidden Wall toggle
+    const selectedWallsForHidden = canvas?.walls?.controlled ?? [];
+    const currentHiddenState =
+      selectedWallsForHidden.length > 0 &&
+      selectedWallsForHidden.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+
+    vtools.pvVisionerToggleHiddenWall = {
+      name: "pvVisionerToggleHiddenWall",
+      title: "Toggle Hidden Wall (Selected Walls)",
+      icon: currentHiddenState ? "fa-solid fa-eye-slash" : "fa-solid fa-eye",
+      order: 3,
+      visible,
+      toggle: true,
+      active: currentHiddenState,
+      onChange: async (event, active) => {
+        try {
+          const selected = canvas?.walls?.controlled ?? [];
+          if (!selected.length) {
+            // Silent no-op when nothing is selected (avoid warnings on palette switches)
+            return;
+          }
+          if (active) {
+            await Promise.all(
+              selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "hiddenWall", true)),
+            );
+          } else {
+            for (const w of selected) {
+              try {
+                await w?.document?.unsetFlag?.(MODULE_ID, "hiddenWall");
+              } catch (_) {
+                try {
+                  await w?.document?.setFlag?.(MODULE_ID, "hiddenWall", false);
+                } catch (_) {}
+              }
+            }
+          }
+          ui.controls.render();
+          try {
+            game.canvas?.perception?.refresh?.();
+          } catch (_) {}
         } catch (_) {}
       },
     };
 
-    // Consolidated tools: toggles + clear actions
+    // Ensure activeTool is valid and points to a toggle tool
+    if (!visioner.activeTool || !vtools[visioner.activeTool]) {
+      visioner.activeTool = "pvVisionerToggleTokenIgnore";
+    }
+
+    // Persist tools and control back
     visioner.tools = vtools;
     controls.visioner = visioner;
-  } catch (_) {}
+  } catch (e) {
+    console.error("[pf2e-visioner] Error in scene control setup:", e);
+  }
 }
+
 
 

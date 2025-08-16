@@ -23,6 +23,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     // Ensure services can resolve the correct handler
     this.actionData = { ...(diversionData || {}), actor: divertingToken, actionType: "create-a-diversion" };
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
     this.bulkActionState = "initial"; // 'initial', 'applied', 'reverted'
 
     // Set global reference
@@ -72,6 +73,12 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
       }
     } catch (_) {}
 
+    // Apply ignore-allies filtering for display
+    try {
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      processedOutcomes = filterOutcomesByAllies(processedOutcomes, this.divertingToken, this.ignoreAllies, "observer");
+    } catch (_) {}
+
     // Prepare outcomes with additional UI data
     processedOutcomes = processedOutcomes.map((outcome) => {
       const desired = getDesiredOverrideStatesForAction("create-a-diversion");
@@ -91,12 +98,15 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
           outcome.observer.document?.texture?.src ||
           outcome.observer.img ||
           "icons/svg/mystery-man.svg",
+        outcomeClass: this.getOutcomeClass(outcome.outcome),
+        outcomeLabel: this.getOutcomeLabel(outcome.outcome),
       };
     });
 
     // Prepare diverting token with proper image path
     context.divertingToken = { ...this.divertingToken, image: this.resolveTokenImage(this.divertingToken) };
     context.outcomes = processedOutcomes;
+    context.ignoreAllies = !!this.ignoreAllies;
 
     Object.assign(context, this.buildCommonContext(processedOutcomes));
     context.marginText = this.getMarginText.bind(this);
@@ -170,6 +180,17 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     if (encounterFilter) {
       encounterFilter.checked = this.encounterOnly;
     }
+
+    // Wire ignore-allies checkbox if present
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) {
+        cb.checked = !!this.ignoreAllies;
+        cb.addEventListener("change", () => {
+          this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial"; this.render({ force: true });
+        });
+      }
+    } catch (_) {}
 
     // Initialize bulk action buttons and handlers
     this.updateBulkActionButtons();

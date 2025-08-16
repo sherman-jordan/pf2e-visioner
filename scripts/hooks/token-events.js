@@ -2,6 +2,7 @@
  * Token-related hooks: create/delete, highlight, HUD buttons
  */
 
+import { MODULE_ID } from "../constants.js";
 import { cleanupHoverTooltips, initializeHoverTooltips } from "../services/hover-tooltips.js";
 import { updateTokenVisuals } from "../services/visual-effects.js";
 
@@ -13,9 +14,11 @@ export async function onTokenCreated(scene, tokenDoc) {
   } catch (_) {}
   // Ensure Vision is enabled on newly created token documents
   try {
+    if (game.settings.get(MODULE_ID, "enableAllTokensVision")) {
     const currentEnabled = tokenDoc?.vision ?? tokenDoc?.sight?.enabled ?? undefined;
     if (currentEnabled !== true) {
       await tokenDoc.update?.({ vision: true, sight: { enabled: true } }, { diff: false, render: false, animate: false });
+    }
     }
   } catch (_) {}
   setTimeout(async () => {

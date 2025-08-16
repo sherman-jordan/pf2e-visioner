@@ -29,6 +29,7 @@ const SETTINGS_GROUPS = {
     "enforceRawRequirements",
     "keybindingOpensTMInTargetMode",
     "sneakRawEnforcement",
+    "enableAllTokensVision",
   ],
   "Seek & Range": [
     "seekUseTemplate",

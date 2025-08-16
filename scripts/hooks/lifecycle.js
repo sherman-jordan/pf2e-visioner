@@ -79,6 +79,7 @@ export async function onCanvasReady() {
 
 async function enableVisionForAllTokensAndPrototypes() {
   try {
+    if (game.settings.get(MODULE_ID, "enableAllTokensVision")) {
     // Update all scene tokens
     const scenes = Array.from(game.scenes?.contents ?? []);
     for (const scene of scenes) {
@@ -106,7 +107,8 @@ async function enableVisionForAllTokensAndPrototypes() {
         if (!hasVision) {
           await actor.update({ "prototypeToken.vision": true, "prototypeToken.sight.enabled": true }, { diff: false });
         }
-      } catch (_) {}
+        } catch (_) {}
+      }
     }
   } catch (_) {}
 }

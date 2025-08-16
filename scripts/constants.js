@@ -153,6 +153,15 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
+  // Token Filtering
+  enableAllTokensVision: {
+    name: "PF2E_VISIONER.SETTINGS.ENABLE_ALL_TOKENS_VISION.name",
+    hint: "PF2E_VISIONER.SETTINGS.ENABLE_ALL_TOKENS_VISION.hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  },
 
   sneakRawEnforcement: {
     name: "PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.name",

@@ -190,6 +190,10 @@
         "name": "Ignore Allies (default)",
         "hint": "Sets the default state of the 'Ignore allies' checkbox in Visioner dialogs and the Token Manager. You can toggle it live per dialog to filter results in real time."
       },
+      "ENABLE_ALL_TOKENS_VISION": {
+        "name": "Enable Vision for All Tokens",
+        "hint": "When enabled, all tokens will have vision enabled by default. You can toggle it live per dialog to filter results in real time."
+      },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Default Encounter Filter State",
         "hint": "When enabled, the encounter filter checkbox in dialogs will be checked by default when there's an active encounter"

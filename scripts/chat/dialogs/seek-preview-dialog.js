@@ -125,11 +125,27 @@ export class SeekPreviewDialog extends BaseActionDialog {
           if ((!live || live === "observed") && game.user?.isGM) {
             const actor = outcome.target?.actor;
             const hasHidden = !!actor?.conditions?.get?.("hidden") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "hidden");
-            const hasUndetected = !!actor?.conditions?.get?.("undetected") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "undetected");
+            const hasUndetected = !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "undetected");
             if (hasUndetected || hasHidden) {
               const { setVisibilityBetween } = await import("../../utils.js");
               const inferred = hasUndetected ? "undetected" : "hidden";
+              
+              // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
+              const allPCTokens = canvas.tokens?.placeables?.filter(t => t.actor?.type === "character" && t.actor?.hasPlayerOwner) || [];
+              
+              for (const pcToken of allPCTokens) {
+                // Skip if this PC already has a Visioner visibility mapping to the target
+                const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
+                if (!existingVisibility || existingVisibility === "observed") {
+                  try {
+                    await setVisibilityBetween(pcToken, outcome.target, inferred, { direction: "observer_to_target" });
+                  } catch (_) {}
+                }
+              }
+              
+              // Also set the current seeker's visibility
               try { await setVisibilityBetween(this.actorToken, outcome.target, inferred, { direction: "observer_to_target" }); } catch (_) {}
+              
               // Remove PF2e system condition to avoid double-state after Visioner owns it
               try {
                 const slug = hasUndetected ? "undetected" : "hidden";

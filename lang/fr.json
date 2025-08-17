@@ -186,12 +186,16 @@
           "achromatopsia": "Achromatopsie (Couleurs complètement non perçues)"
         }
       },
-      "IGNORE_ALLIES": {
+      "IGNORE_ALLIES_DEFAULT": {
         "name": "Ignorer les alliés",
         "hint": "S'il est activé, les PNJ ne verront que les membres du groupe dans les dialogues et les joeuurs ne verront que les PNJ. Ceci simplifie la gestion de la visibilité en cachant les relations interalliées."
       },
+      "ENABLE_ALL_TOKENS_VISION": {
+        "name": "Activer Vision pour tous les jetons",
+        "hint": "S'il est activé, tous les jetons auront la vision activée par défaut."
+      },
       "DEFAULT_ENCOUNTER_FILTER": {
-        "name": "Default Encounter Filter State",
+        "name": "État du filtre de rencontre par défaut",
         "hint": "S'il est activé, la case à cocher du filtre de rencontre dans les boîtes de dialogue sera cochée par défaut lorsqu'il y a une rencontre active."
       },
       "LIMIT_SEEK_RANGE": {
@@ -200,8 +204,8 @@
       },
       "LIMIT_SEEK_RANGE_DISABLED_BY_TEMPLATE": "Limite de portée désactivée : Utiliser les gabarits",
       "SEEK_USE_TEMPLATE": {
-        "name": "Utiliser le gabarit Chercher (explosion de 9 mètres)",
-        "hint": "S'il est activé, il sera possible de fixer un gabarit d'une explosion de 9 mètres et de ne prendre en compte que les cibles au sein du gabarit"
+        "name": "Utiliser le gabarit Chercher (explosion de 4,50 mètres)",
+        "hint": "S'il est activé, il sera possible de fixer un gabarit d'une explosion de 4,50 mètres et de ne prendre en compte que les cibles au sein du gabarit"
       },
       "LIMIT_SEEK_RANGE_OUT_OF_COMBAT": {
         "name": "Limiter la portée de Chercher en dehors du combat",
@@ -247,18 +251,34 @@
         "name": "DD de Discrétion par défaut pour les acteurs butin",
         "hint": "Le DD utilisé lorsque vous prenez en compte les jetons de butin comme cibles de Chercher."
       },
+      "WALL_STEALTH_DC": {
+        "name": "DD de Discrétion par dédfaut des murs",
+        "hint": "DD utilisé pour prendre en compte les murs cachés comme cibles de Chercher (lorsqu'un mur ne s'est pas vu attribuer un DD explicite)."
+      },
       "INCLUDE_LOOT_ACTORS": {
         "name": "Inclure les acteurs butin dans le gestionnaire de visibilité",
-        "hint": "Permet de configuer les états de visibilité des acteurs de butin (coffres, contenants) par observateur. Seulement visuel. Aucun état PF2E n'est appliqué."
+        "hint": "Permet de configuer les états de visibilité des acteurs butin (coffres, contenants) par observateur. Seulement visuel. Aucun état PF2E n'est appliqué."
       },
       "INCLUDE_WALLS": {
         "name": "Inclure les murs comme objets dissimulables (expérimental)",
-        "hint": "Montre les murs dans le gestionnaire pour les marquer comme visibles/cachés en fonction de l'observateur. L'implémentation actuelle est visible uniquement et ne change ni l'occlusion ni la collision."
+        "hint": "Montre les murs dans le gestionnaire pour les marquer comme visibles/cachés en fonction de l'observateur. L'implémentation actuelle est cosmétique uniquement et ne change ni l'occlusion ni la collision."
+      },
+      "HIDDEN_WALLS": {
+        "name": "Activer les murs cachés",
+        "hint": "Active les indicateurs Cachés et les indicateurs joueur par mur. Si un mur caché est une porte, il ne bloquera pas la vue."
       },
       "AUTO_COVER": {
         "name": "Abri automatique",
         "hint": "S'il est activé, le module appliquera automatiquement l'abri aux jetons en fonction du chemin bloquant le jeton."
-      }
+      },
+            "EXPERIMENTAL_SEE_THROUGH_WALLS": {
+        "name": "Expérimental : Vision à travers les murs par jeton (Client seulement)",
+        "hint": "Lorsque cette option est activée sur votre client, les jetons sélectionnés ignoreront les murs que vous avez marqués comme Observés dans la liste des Murs cachés. Fonctionnalité purement cosmétique et hautement expérimentale."
+      },
+      "SNEAK_RAW_ENFORCEMENT": {
+        "name": "Sneak Raw Enforcement",
+        "hint": "Si activé, Être furtif suivra les règles telles qu'écrites. Si désactivé, Être furtif sera plus indulgent."
+        }
     },
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Montrer seulement les jetons de la rencontre",
@@ -266,7 +286,9 @@
       "ROLL": "Lancer"
     },
     "WALL": {
-      "VISIBLE_TO_YOU": "Mur caché"
+      "VISIBLE_TO_YOU": "Mur caché",
+      "observed": "Observé",
+      "hidden": "Caché"
     },
     "KEYBINDINGS": {
       "OPEN_TOKEN_MANAGER": {

@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.4.1] - 2025-08-17
+## [2.5.0] - 2025-08-17
 
 ### Added
 
@@ -10,6 +10,9 @@
   - Added a keybind to open and close quick panel (default Ctrl-Shift-Q)
 - Hidden walls:
   - Per scene wall indicator width slider
+- Seek Action:
+  - Support system conditions -> if a token has been set with a system condition (hidden\undetected) and the seek dialog is opened
+    visioner will replace the system condition with it's own flags and reflect that in the results
 
 ### Changed
 

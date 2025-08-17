@@ -437,6 +437,12 @@ export const KEYBINDINGS = {
     editable: [{ key: "KeyV", modifiers: ["Control", "Shift"] }],
     restricted: true
   },
+  openQuickPanel: {
+    name: "Open Visioner Quick Panel",
+    hint: "Open the compact Visioner Quick Edit panel.",
+    editable: [{ key: "KeyQ", modifiers: ["Control", "Shift"] }],
+    restricted: true,
+  },
   toggleObserverMode: {
     name: "PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.name",
     hint: "PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.hint",

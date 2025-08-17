@@ -2,6 +2,7 @@ import { COVER_STATES, VISIBILITY_STATES } from "../constants.js";
 import { setCoverBetween, setVisibilityBetween } from "../utils.js";
 
 export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
+  static current = null;
   static DEFAULT_OPTIONS = {
     id: "pf2e-visioner-quick-panel",
     tag: "div",
@@ -10,19 +11,23 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       icon: "fas fa-eye",
       resizable: true,
     },
-    position: { width: 340, height: "auto" },
+    position: { width: "auto", height: "auto" },
     actions: {
       close: VisionerQuickPanel._onClose,
       toggleMode: VisionerQuickPanel._onToggleMode,
       setVisibility: VisionerQuickPanel._onSetVisibility,
       setCover: VisionerQuickPanel._onSetCover,
       refreshSets: VisionerQuickPanel._onRefreshSets,
+      minimize: VisionerQuickPanel._onMinimize,
     },
   };
 
   constructor(options = {}) {
     super(options);
     this.mode = options.mode || "target"; // 'observer' | 'target'
+    this._floatingBtnEl = null;
+    this._floatingPos = null;
+    try { VisionerQuickPanel.current = this; } catch (_) {}
   }
 
   get selectedTokens() {
@@ -58,8 +63,19 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
     return content;
   }
 
+  async _onRender(options) {
+    await super._onRender(options);
+    this._injectHeaderMinimizeButton();
+    try { VisionerQuickPanel.current = this; } catch (_) {}
+  }
+
   static _onClose(_event, _button) {
     try { this.close(); } catch (_) {}
+  }
+
+  async close(options) {
+    try { await super.close(options); }
+    finally { try { VisionerQuickPanel.current = null; } catch (_) {} }
   }
 
   static async _onToggleMode(_event, _button) {
@@ -69,6 +85,20 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
 
   static async _onRefreshSets(_event, _button) {
     this.render({ force: true });
+  }
+
+  static async _onMinimize(_event, _button) {
+    try {
+      // Determine current dialog position on screen so the floater appears there
+      let left = 120, top = 120;
+      try {
+        const root = document.getElementById(this.id) || this.element?.parentElement || this.element?.closest?.("section, .application, .window-app") || null;
+        const rect = root?.getBoundingClientRect?.();
+        if (rect) { left = rect.left; top = rect.top; }
+      } catch (_) {}
+      this._showFloatingButton({ left, top });
+      await this.close();
+    } catch (_) {}
   }
 
   static async _onSetVisibility(event, button) {
@@ -127,6 +157,135 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
     } catch (e) {
       console.error("[pf2e-visioner] quick cover error", e);
     }
+  }
+
+  // Floating button helpers
+  _injectHeaderMinimizeButton() {
+    try {
+      const root = document.getElementById(this.id) || this.element?.parentElement || this.element?.closest?.("section, .application, .window-app") || null;
+      const header = root?.querySelector?.(".window-header, header") || null;
+      if (!header) { setTimeout(() => this._injectHeaderMinimizeButton(), 50); return; }
+      if (header.querySelector?.(".pf2e-visioner-minimize")) return;
+      const closeBtn = header.querySelector?.("[data-action=close], .close, .window-close") || null;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pf2e-visioner-minimize";
+      btn.title = "Minimize";
+      btn.innerHTML = '<i class="fas fa-window-minimize"></i>';
+      // Minimal header style
+      btn.style.background = "transparent";
+      btn.style.border = "none";
+      btn.style.width = "24px";
+      btn.style.height = "24px";
+      btn.style.display = "grid";
+      btn.style.placeItems = "center";
+      btn.style.color = "var(--color-text-light-highlight, #fff)";
+      btn.style.marginRight = "4px";
+      btn.addEventListener("click", () => {
+        try {
+          const rect = (document.getElementById(this.id) || this.element?.parentElement)?.getBoundingClientRect?.();
+          const pos = rect ? { left: rect.left, top: rect.top } : null;
+          this._showFloatingButton(pos || undefined);
+          this.close();
+        } catch (_) {}
+      });
+      if (closeBtn && closeBtn.parentElement) closeBtn.parentElement.insertBefore(btn, closeBtn);
+      else header.appendChild(btn);
+    } catch (_) {}
+  }
+
+  _showFloatingButton(pos) {
+    try {
+      if (this._floatingBtnEl && document.body.contains(this._floatingBtnEl)) return;
+      const existing = document.getElementById("pf2e-visioner-floating-qp");
+      if (existing) { this._floatingBtnEl = existing; return; }
+
+      const btn = document.createElement("div");
+      btn.id = "pf2e-visioner-floating-qp";
+      btn.style.position = "fixed";
+      btn.style.width = "28px";
+      btn.style.height = "28px";
+      btn.style.borderRadius = "6px";
+      btn.style.display = "flex";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "center";
+      btn.style.cursor = "pointer";
+      btn.style.background = "var(--color-background, rgba(0,0,0,0.4))";
+      btn.style.border = "1px solid var(--color-border-light-2, #2b2b2b)";
+      btn.style.color = "var(--color-text-light-highlight, #fff)";
+      btn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.35)";
+      btn.style.zIndex = 10000;
+
+      // Position: restore last position if available else near current app
+      try {
+        const saved = localStorage.getItem("pf2e-visioner.qp.float.pos");
+        if (saved) this._floatingPos = JSON.parse(saved);
+      } catch (_) {}
+      const basePos = pos || this._floatingPos || this.position || { left: 120, top: 120 };
+      const left = Math.max(0, Math.round(basePos.left ?? 120));
+      const top = Math.max(0, Math.round(basePos.top ?? 120));
+      btn.style.left = `${Math.max(0, left)}px`;
+      btn.style.top = `${Math.max(0, top)}px`;
+
+      btn.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
+
+      // Click to reopen
+      btn.addEventListener("click", (ev) => {
+        if (btn._dragging) return; // ignore click after drag
+        try {
+          // Restore window near the floater position
+          const leftNow = parseInt(btn.style.left || "0", 10);
+          const topNow = parseInt(btn.style.top || "0", 10);
+          this.position = { ...(this.position || {}), left: leftNow, top: topNow };
+          this.render({ force: true });
+          this._removeFloatingButton();
+        } catch (_) {}
+      });
+
+      // Drag logic
+      btn.addEventListener("mousedown", (downEv) => {
+        if (downEv.button !== 0) return;
+        downEv.preventDefault();
+        const startX = downEv.clientX;
+        const startY = downEv.clientY;
+        const rect = btn.getBoundingClientRect();
+        const offsetX = startX - rect.left;
+        const offsetY = startY - rect.top;
+        btn._dragging = false;
+
+        const onMove = (moveEv) => {
+          const x = moveEv.clientX - offsetX;
+          const y = moveEv.clientY - offsetY;
+          const moved = Math.abs(moveEv.clientX - startX) + Math.abs(moveEv.clientY - startY);
+          if (moved > 2) btn._dragging = true;
+          btn.style.left = `${Math.max(0, x)}px`;
+          btn.style.top = `${Math.max(0, y)}px`;
+        };
+        const onUp = (upEv) => {
+          document.removeEventListener("mousemove", onMove, true);
+          document.removeEventListener("mouseup", onUp, true);
+          try {
+            this._floatingPos = { left: parseInt(btn.style.left || "0", 10), top: parseInt(btn.style.top || "0", 10) };
+            localStorage.setItem("pf2e-visioner.qp.float.pos", JSON.stringify(this._floatingPos));
+          } catch (_) {}
+          setTimeout(() => { btn._dragging = false; }, 0);
+        };
+        document.addEventListener("mousemove", onMove, true);
+        document.addEventListener("mouseup", onUp, true);
+      });
+
+      document.body.appendChild(btn);
+      this._floatingBtnEl = btn;
+    } catch (e) {
+      console.error("[pf2e-visioner] quick panel floating button error", e);
+    }
+  }
+
+  _removeFloatingButton() {
+    try {
+      if (this._floatingBtnEl && this._floatingBtnEl.parentElement) this._floatingBtnEl.parentElement.removeChild(this._floatingBtnEl);
+      this._floatingBtnEl = null;
+    } catch (_) {}
   }
 }
 

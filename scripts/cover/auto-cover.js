@@ -104,17 +104,6 @@ function segmentIntersectsRect(p1, p2, rect) {
   );
 }
 
-function buildRaysBetweenTokens(attacker, target) {
-  const aPts = getTokenBoundaryPoints(attacker);
-  const tPts = getTokenBoundaryPoints(target);
-  const rays = [];
-  for (const ap of aPts) {
-    for (const tp of tPts) {
-      rays.push([ap, tp]);
-    }
-  }
-  return rays;
-}
 
 function segmentIntersectsAnyBlockingWall(p1, p2) {
   try {
@@ -146,43 +135,6 @@ function segmentIntersectsAnyBlockingWall(p1, p2) {
   }
 }
 
-function anyRayIntersectsAnyBlockingWall(rays) {
-  try {
-    for (const [p1, p2] of rays) {
-      if (segmentIntersectsAnyBlockingWall(p1, p2)) return true;
-    }
-    return false;
-  } catch (_) { return false; }
-}
-
-function anyRayIntersectsRect(rays, rect) {
-  for (const [p1, p2] of rays) {
-    if (segmentIntersectsRect(p1, p2, rect)) return true;
-  }
-  return false;
-}
-
-function crossRayIntersectsRect(rays, rect) {
-  // Require one ray to cross both opposite edges either vertically or horizontally
-  const top = { x: rect.x1, y: rect.y1 }; const right = { x: rect.x2, y: rect.y1 };
-  const bottom = { x: rect.x2, y: rect.y2 }; const left = { x: rect.x1, y: rect.y2 };
-  // Edges as segments
-  const edges = {
-    top: [top, right],
-    right: [right, bottom],
-    bottom: [bottom, left],
-    left: [left, top],
-  };
-  for (const [p1, p2] of rays) {
-    const hits = new Set();
-    if (segmentsIntersect(p1, p2, edges.top[0], edges.top[1])) hits.add("top");
-    if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add("bottom");
-    if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add("left");
-    if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add("right");
-    if ((hits.has("top") && hits.has("bottom")) || (hits.has("left") && hits.has("right"))) return true;
-  }
-  return false;
-}
 
 function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   const topLeft = { x: rect.x1, y: rect.y1 };

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1] - 2025-08-17
+
+### Added
+
+- Quick panel:
+  - Added minimize button to keep it handy when you need it
+  - Added a keybind to open and close quick panel (default Ctrl-Shift-Q)
 
 ## [2.4.0] - 2025-08-16
 

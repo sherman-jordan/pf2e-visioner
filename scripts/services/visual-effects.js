@@ -182,12 +182,16 @@ export async function updateWallVisuals(observerId = null) {
               }
             } catch (_) {}
 
-            // Indicator uses the same geometry as see-through: a thin rectangle along the wall segment
             const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret
             const color = isDoor ? 0xffd166 : 0x9b59b6; // Yellow for doors, purple for walls
             const dx = x2 - x1; const dy = y2 - y1; const len = Math.hypot(dx, dy) || 1;
             const nx = -dy / len; const ny = dx / len; // unit normal
-            const half = 10; // 6px wide indicator, matching see-through mask
+            // Per-scene configurable indicator half-width
+            let half = 10;
+            try {
+              const flagVal = Number(canvas?.scene?.getFlag?.(MODULE_ID, "hiddenIndicatorHalf"));
+              if (Number.isFinite(flagVal) && flagVal > 0) half = flagVal;
+            } catch (_) {}
             const g = new PIXI.Graphics();
             g.lineStyle(2, color, 0.9);
             g.beginFill(color, 0.3);

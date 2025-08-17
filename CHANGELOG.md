@@ -8,6 +8,8 @@
   - Compacted the design a bit
   - Added minimize button to keep it handy when you need it
   - Added a keybind to open and close quick panel (default Ctrl-Shift-Q)
+- Hidden walls:
+  - Per scene wall indicator width slider
 
 ### Changed
 

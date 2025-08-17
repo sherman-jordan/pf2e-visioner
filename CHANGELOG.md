@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.5.0] - 2025-08-17
+
+### Added
+
+- Quick panel:
+  - Compacted the design a bit
+  - Added minimize button to keep it handy when you need it
+  - Added a keybind to open and close quick panel (default Ctrl-Shift-Q)
+- Hidden walls:
+  - Per scene wall indicator width slider
+- Seek Action:
+  - Support system conditions -> if a token has been set with a system condition (hidden\undetected) and the seek dialog is opened
+    visioner will replace the system condition with it's own flags and reflect that in the results
+- API:
+  - Add getAutoCoverState function between a token and a target
+- Enforce RAW:
+  - Will now utilize auto cover(if turned on) to pass the prequisite for hide
+- Hide:
+  - New setting to add auto cover to the dialog (it will reduce dc instead of adding modifiers to the roll , default off)
+
+### Fixed
+
+- Seek Action: Hidden walls now properly appear in Seek template results
+  - Template filtering now works correctly for both tokens and walls
+
+### Changed
+
+- Quick panel:
+  - removed refresh button, now refreshes automatically when adding\removing selected tokens and adding\removing targeted tokens
 
 ## [2.4.0] - 2025-08-16
 

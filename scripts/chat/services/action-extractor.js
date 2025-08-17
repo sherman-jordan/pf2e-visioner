@@ -11,7 +11,9 @@ export async function extractActionData(message) {
 
   const isPointOutAction =   
       message.flavor?.toLowerCase?.().includes?.("point out") ||
-      message.flavor?.toLowerCase?.().includes?.("указать"); // temporary fix for russian language
+      message.flavor?.toLowerCase?.().includes?.("указать") || // temporary fix for russian language
+      context?.options?.some(opt => opt.includes("action:point-out")) ||
+      origin?.rollOptions?.some(opt => opt.includes("item:point-out"));
  
   const isSeekAction =
     (context?.type === "perception-check" &&

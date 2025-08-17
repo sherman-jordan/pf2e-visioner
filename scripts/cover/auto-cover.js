@@ -3,6 +3,7 @@
  * Hook registration is done in scripts/hooks/visioner-auto-cover.js
  */
 
+// Debug logger removed
 import { COVER_STATES, MODULE_ID } from "../constants.js";
 import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from "../helpers/cover-helpers.js";
 import { getCoverBetween, getVisibilityBetween, setCoverBetween } from "../utils.js";
@@ -104,17 +105,6 @@ function segmentIntersectsRect(p1, p2, rect) {
   );
 }
 
-function buildRaysBetweenTokens(attacker, target) {
-  const aPts = getTokenBoundaryPoints(attacker);
-  const tPts = getTokenBoundaryPoints(target);
-  const rays = [];
-  for (const ap of aPts) {
-    for (const tp of tPts) {
-      rays.push([ap, tp]);
-    }
-  }
-  return rays;
-}
 
 function segmentIntersectsAnyBlockingWall(p1, p2) {
   try {
@@ -146,43 +136,6 @@ function segmentIntersectsAnyBlockingWall(p1, p2) {
   }
 }
 
-function anyRayIntersectsAnyBlockingWall(rays) {
-  try {
-    for (const [p1, p2] of rays) {
-      if (segmentIntersectsAnyBlockingWall(p1, p2)) return true;
-    }
-    return false;
-  } catch (_) { return false; }
-}
-
-function anyRayIntersectsRect(rays, rect) {
-  for (const [p1, p2] of rays) {
-    if (segmentIntersectsRect(p1, p2, rect)) return true;
-  }
-  return false;
-}
-
-function crossRayIntersectsRect(rays, rect) {
-  // Require one ray to cross both opposite edges either vertically or horizontally
-  const top = { x: rect.x1, y: rect.y1 }; const right = { x: rect.x2, y: rect.y1 };
-  const bottom = { x: rect.x2, y: rect.y2 }; const left = { x: rect.x1, y: rect.y2 };
-  // Edges as segments
-  const edges = {
-    top: [top, right],
-    right: [right, bottom],
-    bottom: [bottom, left],
-    left: [left, top],
-  };
-  for (const [p1, p2] of rays) {
-    const hits = new Set();
-    if (segmentsIntersect(p1, p2, edges.top[0], edges.top[1])) hits.add("top");
-    if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add("bottom");
-    if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add("left");
-    if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add("right");
-    if ((hits.has("top") && hits.has("bottom")) || (hits.has("left") && hits.has("right"))) return true;
-  }
-  return false;
-}
 
 function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   const topLeft = { x: rect.x1, y: rect.y1 };
@@ -275,27 +228,29 @@ function getAutoCoverFilterSettings(attacker) {
 
 function getEligibleBlockingTokens(attacker, target, filters) {
   const out = [];
+  
   for (const blocker of canvas.tokens.placeables) {
     if (!blocker?.actor) continue;
     if (blocker === attacker || blocker === target) continue;
     const type = blocker.actor?.type;
     if (type === "loot" || type === "hazard") continue;
-    if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) continue;
+    if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) { continue; }
     if (filters.ignoreUndetected) {
-      try { const vis = getVisibilityBetween(attacker, blocker); if (vis === "undetected") continue; } catch (_) {}
+      try { const vis = getVisibilityBetween(attacker, blocker); if (vis === "undetected") { continue; } } catch (_) {}
     }
-    if (filters.ignoreDead && (blocker.actor?.hitPoints?.value === 0)) continue;
+    if (filters.ignoreDead && (blocker.actor?.hitPoints?.value === 0)) { continue; }
     if (!filters.allowProneBlockers) {
       try {
         const itemConditions = blocker.actor?.itemTypes?.condition || [];
         const legacyConditions = blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
         const isProne = itemConditions.some((c) => c?.slug === "prone") || legacyConditions.some((c) => c?.slug === "prone");
-        if (isProne) continue;
+        if (isProne) { continue; }
       } catch (_) {}
     }
-    if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) continue;
+    if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) { continue; }
     out.push(blocker);
   }
+  
   return out;
 }
 
@@ -336,9 +291,10 @@ function evaluateWallsCover(p1, p2) {
   return segmentIntersectsAnyBlockingWall(p1, p2) ? "standard" : "none";
 }
 
-export function detectCoverStateForAttack(attacker, target) {
+export function detectCoverStateForAttack(attacker, target, options = {}) {
   try {
     if (!attacker || !target) return "none";
+    
     const p1 = attacker.center ?? attacker.getCenter();
     const p2 = target.center ?? target.getCenter();
     // Walls
@@ -353,12 +309,13 @@ export function detectCoverStateForAttack(attacker, target) {
     const stdPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageStandardPct") ?? 50)));
     const grtPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageGreaterPct") ?? 80)));
 
-    const tokenCover = useCoverage
+    let tokenCover = useCoverage
       ? evaluateCoverByCoverage(p1, p2, blockers, intersectionMode, stdPct, grtPct)
       : evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode);
 
     if (wallCover === "standard") {
-      return tokenCover === "greater" ? "greater" : "standard";
+      const res = tokenCover === "greater" ? "greater" : "standard";
+      return res;
     }
     return tokenCover;
   } catch (_) { return "none"; }
@@ -525,6 +482,56 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
     } catch (_) { }
   } catch (_) { }
 }
+
+// Intercept stealth rolls to apply DC reduction from cover
+Hooks.on?.("preCreateChatMessage", (messageData) => {
+  try {
+    if (!game.settings.get(MODULE_ID, "autoCover")) return;
+    
+    // Check if this is a stealth check
+    const flags = messageData?.flags?.pf2e || {};
+    const context = flags?.context || {};
+    const isStealthCheck = context?.type === "skill-check" && 
+                          (context?.skill === "stealth" || 
+                           context?.statistic === "stealth" ||
+                           messageData?.flavor?.toLowerCase()?.includes("stealth"));
+    
+    if (!isStealthCheck) return;
+    
+    // Look for any open stealth modifier dialog with cover bonus
+    const stealthDialog = Object.values(ui.windows).find(w => 
+      w.constructor.name === "CheckModifiersDialog" && 
+      w._pvStealthCoverBonus > 0
+    );
+    
+    if (!stealthDialog || !stealthDialog._pvStealthCoverBonus) return;
+    
+    const coverBonus = stealthDialog._pvStealthCoverBonus;
+    
+    // Reduce the DC by the cover bonus (equivalent to adding bonus to roll)
+    if (context.dc && typeof context.dc.value === "number") {
+      const originalDC = context.dc.value;
+      context.dc.value = Math.max(0, originalDC - coverBonus);
+      
+      // Add a note about the cover adjustment
+      const coverNote = coverBonus === 4 ? " (DC reduced by 4 for Greater Cover)" : 
+                       coverBonus === 2 ? " (DC reduced by 2 for Standard Cover)" : "";
+      
+      if (context.dc.label) {
+        context.dc.label += coverNote;
+      } else {
+        context.dc.label = `DC ${context.dc.value}${coverNote}`;
+      }
+      
+      // Also update the messageData flags
+      foundry.utils.setProperty(messageData, "flags.pf2e.context.dc", context.dc);
+      
+    }
+    
+  } catch (e) {
+    console.warn("PF2E Visioner | Error adjusting stealth DC for cover:", e);
+  }
+});
 
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
 export async function onUpdateToken(tokenDoc, changes) {

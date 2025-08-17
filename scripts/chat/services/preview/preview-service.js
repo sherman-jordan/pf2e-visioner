@@ -1,4 +1,5 @@
 // Unified preview dispatcher for chat automation actions
+import { MODULE_ID } from "../../../constants.js";
 
 export async function previewActionResults(actionData) {
   const type = actionData.actionType;
@@ -16,7 +17,7 @@ export async function previewActionResults(actionData) {
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
         const changes = outcomes.filter((o) => o && o.changed);
         // Pass the current desired per-dialog ignoreAllies default
-        new SeekPreviewDialog(actionData.actor, outcomes, changes, { ...actionData, ignoreAllies: actionData?.ignoreAllies ?? game.settings.get("pf2e-visioner", "ignoreAllies") }).render(true);
+        new SeekPreviewDialog(actionData.actor, outcomes, changes, { ...actionData, ignoreAllies: actionData?.ignoreAllies ?? game.settings.get(MODULE_ID, "ignoreAllies") }).render(true);
         return;
       }
       case "point-out": {
@@ -38,7 +39,7 @@ export async function previewActionResults(actionData) {
         try {
           const { checkForValidTargets } = await import("../infra/target-checker.js");
           const canHide = checkForValidTargets({ ...actionData, actionType: "hide" });
-          if (!canHide && game.settings.get("pf2e-visioner", "enforceRawRequirements")) {
+          if (!canHide && game.settings.get(MODULE_ID, "enforceRawRequirements")) {
             const { notify } = await import("../infra/notifications.js");
             notify.warn("The creature hiding should be Concealed from, or have Standard or Greater Cover from, at least one observed.");
             return;
@@ -48,13 +49,23 @@ export async function previewActionResults(actionData) {
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
         const changes = outcomes.filter((o) => o && o.changed);
-        new HidePreviewDialog(actionData.actor, outcomes, changes, { ...actionData, ignoreAllies: actionData?.ignoreAllies ?? game.settings.get("pf2e-visioner", "ignoreAllies") }).render(true);
+        new HidePreviewDialog(actionData.actor, outcomes, changes, { ...actionData, ignoreAllies: actionData?.ignoreAllies ?? game.settings.get(MODULE_ID, "ignoreAllies") }).render(true);
         return;
       }
       case "sneak": {
         const { SneakActionHandler } = await import("../actions/sneak-action.js");
         const { SneakPreviewDialog } = await import("../../dialogs/sneak-preview-dialog.js");
         const handler = new SneakActionHandler();
+        // RAW enforcement gate: do not open dialog if prerequisites fail
+        try {
+          const { checkForValidTargets } = await import("../infra/target-checker.js");
+          const canSneak = checkForValidTargets({ ...actionData, actionType: "sneak" });
+          if (!canSneak && game.settings.get(MODULE_ID, "enforceRawRequirements")) {
+            const { notify } = await import("../infra/notifications.js");
+            notify.warn("You can attempt Sneak only against creatures you were Hidden or Undetected from at the start.");
+            return;
+          }
+        } catch (_) {}
         // Do NOT pre-filter allies; let dialog control it
         const subjects = await handler.discoverSubjects({ actor: actionData.actor, ignoreAllies: false });
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome({ actor: actionData.actor, roll: actionData.roll }, s)));

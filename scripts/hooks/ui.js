@@ -104,6 +104,7 @@ export function registerUIHooks() {
     "renderPrototypeTokenConfig",
     "renderTokenConfigPF2e",
     "renderPrototypeTokenConfigPF2e",
+    "renderSceneConfig",
   ]) {
     Hooks.on(hook, (app, root) => {
       try {
@@ -128,6 +129,38 @@ export function registerUIHooks() {
         onClick: async () => {
           const { VisionerWallManager } = await import("../managers/wall-manager/wall-manager.js");
           new VisionerWallManager().render(true);
+        },
+      });
+      // Scene slider for hidden indicator half-width
+      walls.tools.push({
+        name: "pf2e-visioner-hidden-indicator-size",
+        title: "Hidden Wall Indicator Width",
+        icon: "fas fa-ruler-horizontal",
+        button: true,
+        onClick: async () => {
+          try {
+            const scene = canvas?.scene; if (!scene) return;
+            const current = Number(scene.getFlag?.(MODULE_ID, "hiddenIndicatorHalf")) || 10;
+            const content = `<div class="form-group"><label>Half width (px)</label><input type="range" min="2" max="24" step="1" value="${current}" id="pv-hidden-half" oninput="this.nextElementSibling.value=this.value"><output style="margin-left:8px">${current}</output></div>`;
+            new Dialog({
+              title: "Hidden Wall Indicator Width",
+              content,
+              buttons: {
+                ok: {
+                  label: "Save",
+                  callback: async (html) => {
+                    try {
+                      const val = Number(html[0].querySelector('#pv-hidden-half')?.value) || 10;
+                      await scene.setFlag(MODULE_ID, "hiddenIndicatorHalf", val);
+                      const { updateWallVisuals } = await import("../services/visual-effects.js");
+                      await updateWallVisuals();
+                    } catch (_) {}
+                  }
+                },
+                cancel: { label: "Cancel" }
+              }
+            }).render(true);
+          } catch (_) {}
         },
       });
       // When selecting walls, show wall identifier if present on the control icon tooltip
@@ -184,6 +217,34 @@ function onGetTokenHUDButtons(hud, buttons, token) {
 }
 
 function injectPF2eVisionerBox(app, root) {
+  // Scene Config injection
+  try {
+    if (app?.object?.documentName === "Scene" || app?.document?.documentName === "Scene") {
+      const container = (root?.jquery ? root[0] : root) || root;
+      const form = container?.querySelector?.('form') || container;
+      if (form && !form.querySelector('.pf2e-visioner-scene-settings')) {
+        const fs = document.createElement('fieldset');
+        fs.className = 'pf2e-visioner-scene-settings';
+        const scene = app?.object || app?.document || canvas?.scene;
+        const current = Number(scene?.getFlag?.(MODULE_ID, 'hiddenIndicatorHalf')) || 10;
+        fs.innerHTML = `
+          <legend>PF2E Visioner</legend>
+          <div class="form-group" style="display:flex; flex-direction:column; gap:6px;">
+            <label>Hidden Wall Indicator Width (half, px)</label>
+            <div style="display:flex; align-items:center; gap:8px; width:100%;">
+              <input type="range" min="1" max="30" step="1" name="flags.${MODULE_ID}.hiddenIndicatorHalf" value="${current}" oninput="this.nextElementSibling.value=this.value" style="flex:1 1 auto; width:100%;">
+              <output style="min-width:2ch; text-align:right;">${current}</output>
+            </div>
+          </div>
+        `;
+        try {
+          const basicsTab = form.querySelector('div.tab[data-tab="basic"], div[data-tab="basics"], section[data-tab="basics"], div.tab:first-child');
+          (basicsTab || form).appendChild(fs);
+        } catch (_) { form.appendChild(fs); }
+      }
+    }
+  } catch (_) {}
+
   const tokenDoc = app?.document;
   const actor = tokenDoc?.actor ?? tokenDoc?.parent;
   if (!actor) return;
@@ -406,6 +467,8 @@ function onGetSceneControlButtons(controls) {
       onClick: async () => {
         try {
           const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
+          // Only GM can open; don't auto-open on target events elsewhere
+          if (!game.user?.isGM) return;
           new VisionerQuickPanel({}).render(true);
         } catch (_) {}
       },

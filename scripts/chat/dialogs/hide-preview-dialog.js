@@ -4,7 +4,6 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { getCoverBetween } from "../../utils.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
@@ -96,6 +95,10 @@ export class HidePreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
+    // Check if auto-cover for hide action is enabled
+    const showAutoCover = game.settings.get(MODULE_ID, "autoCover") && game.settings.get(MODULE_ID, "autoCoverHideAction");
+    context.showAutoCover = showAutoCover;
+
     // Get filtered outcomes from the original list using encounter helper, ally filtering, then extra RAW filtering
     const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
     let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter observers found for this action");
@@ -105,11 +108,8 @@ export class HidePreviewDialog extends BaseActionDialog {
       filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
     } catch (_) {}
 
-    // Always annotate each row with cover info for context
-    filteredOutcomes = filteredOutcomes.map((o) => ({
-      ...o,
-      cover: getCoverBetween(o.target, this.actorToken),
-    }));
+    // Note: autoCover data is already calculated in hide-action.js and should be preserved
+    // No need to call getCoverBetween here as it would overwrite the rich autoCover object
 
     // Show notification if encounter filter results in empty list
     if (
@@ -135,7 +135,6 @@ export class HidePreviewDialog extends BaseActionDialog {
         availableStates,
         overrideState: effectiveNewState,
         hasActionableChange,
-        cover: outcome.cover,
         calculatedOutcome: outcome.newVisibility,
         tokenImage: this.resolveTokenImage(outcome.target),
         outcomeClass: this.getOutcomeClass(outcome.outcome),
@@ -223,6 +222,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       this.constructor.PARTS.content.template,
       context
     );
+    
     return html;
   }
 
@@ -231,6 +231,7 @@ export class HidePreviewDialog extends BaseActionDialog {
    */
   _replaceHTML(result, content, options) {
     content.innerHTML = result;
+    
     return content;
   }
 
@@ -317,7 +318,6 @@ export class HidePreviewDialog extends BaseActionDialog {
   static async _onToggleEncounterFilter(event, target) {
     const app = currentHideDialog;
     if (!app) {
-      console.warn("Hide dialog not found for encounter filter toggle");
       return;
     }
 

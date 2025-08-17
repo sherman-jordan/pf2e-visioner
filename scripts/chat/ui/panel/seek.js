@@ -14,7 +14,7 @@ export function buildSeekPanel(actionData, message) {
   const pendingSeek = msgForPanel?.flags?.["pf2e-visioner"]?.seekTemplate;
   const hasPendingTemplateFromPlayer = !!pendingSeek && game.user.isGM;
   const pendingHasTargets = !!pendingSeek?.hasTargets;
-  const isFromPlayer = game.user.isGM && !!msgForPanel?.user && msgForPanel.user.isGM === false;
+  const isFromPlayer = game.user.isGM && !!msgForPanel?.author && msgForPanel.author.isGM === false;
 
   const hasExistingTemplate =
     isSeekWithTemplateOption &&

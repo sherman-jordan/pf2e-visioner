@@ -523,8 +523,33 @@ export function isTokenWithinTemplate(center, radiusFeet, token) {
 export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProperty = "target") {
   try {
     if (!Array.isArray(outcomes) || !center || !Number.isFinite(radiusFeet) || radiusFeet <= 0) return outcomes;
-    return outcomes.filter((outcome) => isTokenWithinTemplate(center, radiusFeet, outcome?.[tokenProperty]));
-  } catch (_) {
+    
+    return outcomes.filter((outcome) => {
+      // Special handling for walls - use wall center instead of target token
+      if (outcome?._isWall && outcome?.wall) {
+        const wallCenter = outcome.wall.center;
+        if (wallCenter) {
+          const dx = wallCenter.x - center.x;
+          const dy = wallCenter.y - center.y;
+          const distanceFeet = Math.sqrt(dx * dx + dy * dy) / (canvas.scene.grid.size / 5);
+          return distanceFeet <= radiusFeet;
+        }
+        // If wall center is not accessible, exclude the wall
+        return false;
+      }
+      
+      // Standard token handling - only for non-wall outcomes
+      const token = outcome?.[tokenProperty];
+      if (!token) return false;
+      
+      // Calculate distance manually for tokens
+      const dx = token.center.x - center.x;
+      const dy = token.center.y - center.y;
+      const distanceFeet = Math.sqrt(dx * dx + dy * dy) / (canvas.scene.grid.size / 5);
+      return distanceFeet <= radiusFeet;
+    });
+  } catch (error) {
+    console.error("Error in filterOutcomesByTemplate:", error);
     return outcomes;
   }
 }

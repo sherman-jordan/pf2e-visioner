@@ -36,16 +36,30 @@ export class SeekActionHandler extends ActionHandlerBase {
     // Add hidden walls as discoverable subjects (as pseudo-tokens with dc)
     try {
       const { MODULE_ID } = await import("../../../constants.js");
-      const walls = (canvas?.walls?.placeables || []).filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
-      const wallSubjects = walls.map((w) => {
+      // Only include hidden walls as valid Seek targets
+      const allWalls = canvas?.walls?.placeables || [];
+      const hiddenWalls = allWalls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+      
+      const wallSubjects = hiddenWalls.map((w) => {
         const d = w.document;
+        // Check if this is a hidden wall with custom DC
         const dcOverride = Number(d.getFlag?.(MODULE_ID, "stealthDC"));
-        const defaultDC = Number(game.settings.get(MODULE_ID, "wallStealthDC")) || 15;
-        const dc = Number.isFinite(dcOverride) && dcOverride > 0 ? dcOverride : defaultDC;
-        return { _isWall: true, wall: w, dc };
+        const isHiddenWall = !!d.getFlag?.(MODULE_ID, "hiddenWall");
+        
+        if (isHiddenWall && Number.isFinite(dcOverride) && dcOverride > 0) {
+          // Hidden wall with custom DC
+          return { _isWall: true, _isHiddenWall: true, wall: w, dc: dcOverride };
+        } else {
+          // Hidden wall with default DC
+          const defaultDC = Number(game.settings.get(MODULE_ID, "wallStealthDC")) || 15;
+          return { _isWall: true, _isHiddenWall: true, wall: w, dc: defaultDC };
+        }
       });
+      
       potential = potential.concat(wallSubjects);
-    } catch (_) {}
+    } catch (error) {
+      console.error("Error processing walls in discoverSubjects:", error);
+    }
     
     // Optional distance limitation based on settings (combat vs out-of-combat)
     try {
@@ -144,7 +158,7 @@ export class SeekActionHandler extends ActionHandlerBase {
           ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/><circle cx='19' cy='14' r='1.5' fill='#e6e6e6'/></svg>`
           : `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><rect x='4' y='4' width='20' height='20' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/><path d='M8 6v16M14 6v16M20 6v16' stroke='#888888' stroke-width='2'/></svg>`;
         const img = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-        wallMeta = { _isWall: true, wallId: subject.wall?.id, wallIdentifier: name, wallImg: img };
+        wallMeta = { _isWall: true, wall: subject.wall, wallId: subject.wall?.id, wallIdentifier: name, wallImg: img };
       } catch (_) {}
     }
 
@@ -169,7 +183,29 @@ export class SeekActionHandler extends ActionHandlerBase {
     try {
       if (actionData.seekTemplateCenter && actionData.seekTemplateRadiusFeet) {
         const { isTokenWithinTemplate } = await import("../infra/shared-utils.js");
-        const inside = isTokenWithinTemplate(actionData.seekTemplateCenter, actionData.seekTemplateRadiusFeet, subject);
+        
+        let inside = false;
+        if (subject?._isWall) {
+          // For walls, check if the wall's center point is within the template
+          try {
+            const wallCenter = subject.wall?.center;
+            if (wallCenter) {
+              const distance = Math.sqrt(
+                Math.pow(wallCenter.x - actionData.seekTemplateCenter.x, 2) +
+                Math.pow(wallCenter.y - actionData.seekTemplateCenter.y, 2)
+              );
+              const radiusPixels = actionData.seekTemplateRadiusFeet * canvas.scene.grid.size / 5;
+              inside = distance <= radiusPixels;
+            }
+          } catch (_) {
+            // If wall center calculation fails, assume it's not in template
+            inside = false;
+          }
+        } else {
+          // For tokens, use the existing function
+          inside = isTokenWithinTemplate(actionData.seekTemplateCenter, actionData.seekTemplateRadiusFeet, subject);
+        }
+        
         if (!inside) return { ...base, changed: false };
       }
     } catch (_) {}
@@ -306,8 +342,8 @@ export class SeekActionHandler extends ActionHandlerBase {
       // Apply overrides (supports __wall__)
       this.applyOverrides(actionData, outcomes);
 
-      // Keep only changed outcomes
-      let filtered = outcomes.filter((o) => o && o.changed);
+      // Keep only changed outcomes, but always include walls for display
+      let filtered = outcomes.filter((o) => o && (o.changed || o._isWall));
 
       // If overrides specify a particular token/wall, limit to those only (per-row apply)
       try {

@@ -1,5 +1,7 @@
 import { MODULE_ID } from "../../../constants.js";
+import { detectCoverStateForAttack } from "../../../cover/auto-cover.js";
 import { getCoverBetween, getVisibilityBetween } from "../../../utils.js";
+// Debug logger removed
 import { shouldFilterAlly } from "./shared-utils.js";
 
 export function checkForValidTargets(actionData) {
@@ -36,7 +38,7 @@ export function checkForValidTargets(actionData) {
 }
 
 function checkConsequencesTargets(actionData, potentialTargets) {
-  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
   for (const target of potentialTargets) {
     if (enforceRAW && shouldFilterAlly(actionData.actor, target, "enemies", actionData?.ignoreAllies)) continue;
     let visibility = getVisibilityBetween(target, actionData.actor);
@@ -54,8 +56,47 @@ function checkConsequencesTargets(actionData, potentialTargets) {
 }
 
 function checkSeekTargets(actionData, potentialTargets) {
+  // First check if there are any walls in the scene that could be seek targets
+  try {
+    const scene = canvas?.scene;
+    if (scene) {
+      // Check for walls in the walls collection
+      const walls = canvas?.walls?.placeables || [];
+      if (walls.length > 0) {
+        // Found walls - these are always valid seek targets
+        return true;
+      }
+      
+      // Check for loot tokens (tokens without actors that might be loot)
+      const allSceneTokens = canvas.tokens?.placeables || [];
+      const lootTokens = allSceneTokens.filter(token => 
+        token !== actionData.actor && 
+        !token.actor && 
+        (token.document?.getFlag?.(MODULE_ID, "isLoot") || 
+         token.document?.getFlag?.(MODULE_ID, "minPerceptionRank"))
+      );
+      
+      if (lootTokens.length > 0) {
+        // Found loot - check if any meet perception requirements
+        for (const lootToken of lootTokens) {
+          const minRank = Number(lootToken.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+          if (Number.isFinite(minRank) && minRank > 0) {
+            const stat = actionData.actor?.actor?.getStatistic?.("perception");
+            const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+            if (Number.isFinite(seekerRank) && seekerRank >= minRank) {
+              return true; // Valid loot target found
+            }
+          } else {
+            // No rank requirement, so this is a valid seek target
+            return true;
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
   for (const target of potentialTargets) {
-    // If target is a hazard/loot with a minimum perception rank, verify the seeker's rank
+    // Check if target is a hazard/loot with a minimum perception rank
     try {
       if (target?.actor && (target.actor.type === "hazard" || target.actor.type === "loot")) {
         const minRank = Number(target.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
@@ -67,6 +108,30 @@ function checkSeekTargets(actionData, potentialTargets) {
             actionData._visionerSeekProficiencyBlocked = true;
             continue;
           }
+        }
+      }
+      
+      // Handle loot tokens and hidden walls that don't have actors
+      if (!target.actor) {
+        // Check if this is a loot token or hidden wall by looking at the token's properties
+        const isLootOrHiddenWall = target.document?.getFlag?.(MODULE_ID, "isLoot") || 
+                                  target.document?.getFlag?.(MODULE_ID, "isHiddenWall") ||
+                                  target.document?.getFlag?.(MODULE_ID, "minPerceptionRank");
+        
+        if (isLootOrHiddenWall) {
+          // Check perception rank requirement if set
+          const minRank = Number(target.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+          if (Number.isFinite(minRank) && minRank > 0) {
+            const stat = actionData.actor?.actor?.getStatistic?.("perception");
+            const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+            if (!(Number.isFinite(seekerRank) && seekerRank >= minRank)) {
+              // Not enough proficiency: indicate special row action state and skip as a valid seek target
+              actionData._visionerSeekProficiencyBlocked = true;
+              continue;
+            }
+          }
+          // If no rank requirement or requirement met, this is a valid seek target
+          return true;
         }
       }
     } catch (_) {}
@@ -103,7 +168,8 @@ function checkPointOutTargets(actionData, potentialTargets) {
 }
 
 function checkHideTargets(actionData, potentialTargets) {
-  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+  const autoCover = game.settings.get(MODULE_ID, "autoCover");
   if (!enforceRAW) return potentialTargets.length > 0;
 
   // RAW prerequisite: at least one observed creature must either see the actor as concealed
@@ -111,20 +177,23 @@ function checkHideTargets(actionData, potentialTargets) {
   try {
     for (const observer of potentialTargets) {
       const vis = getVisibilityBetween(observer, actionData.actor);
-      if (vis === "concealed") return true;
-      if (vis === "observed") {
-        try {
-          const cover = getCoverBetween(observer, actionData.actor);
-          if (cover === "standard" || cover === "greater") return true;
-        } catch (_) {}
+      if (vis === "concealed") { return true; }
+      // Prefer fresh auto-cover detection; fallback to stored map if needed
+      let cover = "none";
+      if (autoCover) {
+        try { cover = detectCoverStateForAttack(observer, actionData.actor, { rawPrereq: true }) || "none"; } catch (_) {}
       }
+      if (cover === "none") {
+        try { cover = getCoverBetween(observer, actionData.actor); } catch (_) { cover = "none"; }
+      }
+      if (cover === "standard" || cover === "greater") { return true; }
     }
   } catch (_) {}
   return false;
 }
 
 function checkSneakTargets(actionData, potentialTargets) {
-  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
   if (!enforceRAW) return potentialTargets.length > 0;
   // RAW: You can attempt Sneak only against creatures you were Hidden or Undetected from at the start.
   try {

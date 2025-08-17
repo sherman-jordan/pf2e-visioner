@@ -156,7 +156,7 @@ async function pointOutRequestHandler({
     let hasTargets = false;
     try {
       if (targetToken) {
-        const { getVisibilityBetween } = await import("./utils.js");
+        const { getVisibilityBetween } = await import("../utils.js");
         const allies = (canvas?.tokens?.placeables || []).filter((t) => t && t.actor && t.actor?.type !== "loot" && t.document.disposition === pointerToken.document.disposition);
         const cannotSee = allies.filter((ally) => {
           const vis = getVisibilityBetween(ally, targetToken);
@@ -294,9 +294,34 @@ async function seekTemplateHandler({
     let hasTargets = false;
     try {
       const all = canvas?.tokens?.placeables || [];
-      const targets = all.filter((t) => t && t !== actorToken && t.actor);
-      const { isTokenWithinTemplate } = await import("./chat/services/infra/shared-utils.js");
-      hasTargets = targets.some((t) => isTokenWithinTemplate(center, radiusFeet, t));
+      
+      // For Seek actions, include both tokens with actors AND walls from the walls collection
+      const targets = all.filter((t) => {
+        if (!t || t === actorToken) return false;
+        
+        // Include tokens with actors (creatures, hazards, etc.)
+        if (t.actor) return true;
+        
+        // Include loot tokens (tokens without actors but with loot flags)
+        const isLoot = t.document?.getFlag?.(MODULE_ID, "isLoot") || 
+                      t.document?.getFlag?.(MODULE_ID, "minPerceptionRank");
+        
+        return isLoot;
+      });
+      
+      // Also check for walls in the walls collection
+      const walls = canvas?.walls?.placeables || [];
+      
+      const { isTokenWithinTemplate } = await import("../chat/services/infra/shared-utils.js");
+      
+      // Check if any tokens are in the template
+      const tokensInTemplate = targets.some((t) => isTokenWithinTemplate(center, radiusFeet, t));
+      
+      // Check if any walls are in the template
+      const wallsInTemplate = walls.some(wall => isTokenWithinTemplate(center, radiusFeet, wall));
+      
+      // Has targets if either tokens or walls are in the template
+      hasTargets = tokensInTemplate || wallsInTemplate;
     } catch (calcErr) {
       console.warn(
         `[${MODULE_ID}] Failed to evaluate targets for player-provided Seek template:`,

@@ -78,7 +78,7 @@ export function bindAutomationEvents(panel, message, actionData) {
         let msg = game.messages.get(actionData.messageId);
         let pending = msg?.flags?.["pf2e-visioner"]?.seekTemplate;
         // If authored by a player but flags haven't arrived yet, wait briefly and retry
-        if (!pending && game.user.isGM && msg?.user && msg.user.isGM === false) {
+        if (!pending && game.user.isGM && msg?.author && msg.author.isGM === false) {
           for (let i = 0; i < 6; i++) {
             await new Promise((r) => setTimeout(r, 200));
             msg = game.messages.get(actionData.messageId);
@@ -88,7 +88,7 @@ export function bindAutomationEvents(panel, message, actionData) {
         }
         // Fallback: if flags are still missing, try to read an on-scene template tagged for this message/actor from the player
         let fallbackTemplate = null;
-        if (!pending && game.user.isGM && msg?.user && msg.user.isGM === false) {
+        if (!pending && game.user.isGM && msg?.author && msg.author.isGM === false) {
           try {
             fallbackTemplate = canvas.scene?.templates?.find?.((t) => {
               const f = t?.flags?.["pf2e-visioner"];
@@ -96,7 +96,7 @@ export function bindAutomationEvents(panel, message, actionData) {
                 f?.seekPreviewManual === true &&
                 f?.messageId === actionData.messageId &&
                 f?.actorTokenId === actionData.actor.id &&
-                t?.user?.id === msg.user.id
+                t?.user?.id === msg.author.id
               );
             }) || null;
           } catch (_) {}
@@ -121,7 +121,7 @@ export function bindAutomationEvents(panel, message, actionData) {
                   actorTokenId: actionData.actor.id,
                   rollTotal: actionData.roll?.total ?? null,
                   dieResult: actionData.roll?.dice?.[0]?.total ?? actionData.roll?.terms?.[0]?.total ?? null,
-                  fromUserId: msg.user.id,
+                  fromUserId: msg.author.id,
                   hasTargets: true,
                 },
               });
@@ -208,11 +208,11 @@ export function bindAutomationEvents(panel, message, actionData) {
             const pending = msg?.flags?.["pf2e-visioner"]?.seekTemplate;
             let tplCenter = pending?.center;
             let tplRadius = pending?.radiusFeet;
-            if ((!tplCenter || !tplRadius) && game.user.isGM && msg?.user && msg.user.isGM === false) {
+            if ((!tplCenter || !tplRadius) && game.user.isGM && msg?.author && msg.author.isGM === false) {
               try {
                 const t = canvas.scene?.templates?.find?.((t) => {
                   const f = t?.flags?.["pf2e-visioner"];
-                  return f?.seekPreviewManual === true && f?.messageId === actionData.messageId && f?.actorTokenId === actionData.actor.id && t?.user?.id === msg.user.id;
+                  return f?.seekPreviewManual === true && f?.messageId === actionData.messageId && f?.actorTokenId === actionData.actor.id && t?.user?.id === msg.author.id;
                 });
                 if (t) {
                   tplCenter = { x: t.x, y: t.y };

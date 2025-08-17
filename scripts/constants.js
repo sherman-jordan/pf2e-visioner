@@ -401,6 +401,14 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
+  autoCoverHideAction: {
+    name: "Auto-Cover: Show in Hide Results",
+    hint: "If enabled, Hide action results will show auto-cover information and apply DC reductions based on cover.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  },
   keybindingOpensTMInTargetMode: {
     name: "Keybinding Opens Token Manager in Target Mode",
     hint: "If enabled, the keybinding to open Token Manager in Target mode rather than Observer mode.",
@@ -436,6 +444,12 @@ export const KEYBINDINGS = {
     hint: "PF2E_VISIONER.KEYBINDINGS.OPEN_TOKEN_MANAGER.hint",
     editable: [{ key: "KeyV", modifiers: ["Control", "Shift"] }],
     restricted: true
+  },
+  openQuickPanel: {
+    name: "Open Visioner Quick Panel",
+    hint: "Open the compact Visioner Quick Edit panel.",
+    editable: [{ key: "KeyQ", modifiers: ["Control", "Shift"] }],
+    restricted: true,
   },
   toggleObserverMode: {
     name: "PF2E_VISIONER.KEYBINDINGS.TOGGLE_OBSERVER_MODE.name",

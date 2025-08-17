@@ -156,33 +156,109 @@ export async function bulkSetVisibilityState(event, button) {
     const state = button.dataset.state;
     const targetType = button.dataset.targetType;
     if (!state) return;
+    
+    // Add loading state to the button
+    button.classList.add('loading');
+    button.disabled = true;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
     const targetEl = button || event?.currentTarget || event?.target || null;
     const form =
       (targetEl && typeof targetEl.closest === "function" ? targetEl.closest("form") : null) ||
       this?.element?.querySelector?.("form") ||
       this?.element ||
       null;
-    if (form) {
-      let selector = ".visibility-section .icon-selection";
-      if (targetType === "pc") selector = ".visibility-section .table-section:has(.header-left .fa-users) .icon-selection";
-      else if (targetType === "npc") selector = ".visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection";
-      else if (targetType === "loot") selector = ".visibility-section .table-section.loot-section .icon-selection";
-      else if (targetType === "walls") selector = ".visibility-section .table-section.walls-section .icon-selection";
-      const iconSelections = form.querySelectorAll(selector);
-      for (const iconSelection of iconSelections) {
+      
+    if (!form) {
+      // Restore button state on error
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+      return;
+    }
+    
+    // Build selector based on target type
+    let selector = ".visibility-section .icon-selection";
+    if (targetType === "pc") selector = ".visibility-section .table-section:has(.header-left .fa-users) .icon-selection";
+    else if (targetType === "npc") selector = ".visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection";
+    else if (targetType === "loot") selector = ".visibility-section .table-section.loot-section .icon-selection";
+    else if (targetType === "walls") selector = ".visibility-section .table-section.walls-section .icon-selection";
+    
+    // Cache DOM queries to avoid repeated lookups
+    const iconSelections = form.querySelectorAll(selector);
+    if (!iconSelections.length) {
+      // Restore button state if no elements found
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+      return;
+    }
+    
+    // Pre-cache all elements that need updates
+    const updates = [];
+    const iconSelectionsArray = Array.from(iconSelections);
+    
+    // Process in chunks to avoid blocking the main thread
+    const chunkSize = 100;
+    for (let i = 0; i < iconSelectionsArray.length; i += chunkSize) {
+      const chunk = iconSelectionsArray.slice(i, i + chunkSize);
+      
+      chunk.forEach(iconSelection => {
         const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
         const current = hiddenInput?.value;
-        if (current === state) continue;
+        
+        // Skip if already in target state
+        if (current === state) return;
+        
         const currentSelected = iconSelection.querySelector(".state-icon.selected");
-        if (currentSelected) currentSelected.classList.remove("selected");
         const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
-        if (targetIcon) targetIcon.classList.add("selected");
-        if (hiddenInput) hiddenInput.value = state;
+        
+        if (hiddenInput && targetIcon) {
+          updates.push({
+            hiddenInput,
+            currentSelected,
+            targetIcon
+          });
+        }
+      });
+      
+      // Yield control to main thread every chunk
+      if (i + chunkSize < iconSelectionsArray.length) {
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
     }
+    
+    // Batch all DOM updates in a single animation frame
+    if (updates.length > 0) {
+      requestAnimationFrame(() => {
+        updates.forEach(update => {
+          if (update.currentSelected) {
+            update.currentSelected.classList.remove("selected");
+          }
+          update.targetIcon.classList.add("selected");
+          update.hiddenInput.value = state;
+        });
+      });
+    }
+    
+    // Restore button state after operation completes
+    setTimeout(() => {
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+    }, 100);
+    
   } catch (error) {
     console.error("Error in bulk set visibility state:", error);
     showNotification("An error occurred while setting bulk visibility state", "error");
+    
+    // Restore button state on error
+    if (button) {
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = button.dataset.originalText || 'Error';
+    }
   }
 }
 
@@ -191,31 +267,107 @@ export async function bulkSetCoverState(event, button) {
     const state = button.dataset.state;
     const targetType = button.dataset.targetType;
     if (!state) return;
+    
+    // Add loading state to the button
+    button.classList.add('loading');
+    button.disabled = true;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
     const targetEl = button || event?.currentTarget || event?.target || null;
     const form =
       (targetEl && typeof targetEl.closest === "function" ? targetEl.closest("form") : null) ||
       this?.element?.querySelector?.("form") ||
       this?.element ||
       null;
-    if (form) {
-      let selector = ".cover-section .icon-selection";
-      if (targetType === "pc") selector = ".cover-section .table-section:has(.header-left .fa-users) .icon-selection";
-      else if (targetType === "npc") selector = ".cover-section .table-section:has(.header-left .fa-dragon) .icon-selection";
-      const iconSelections = form.querySelectorAll(selector);
-      for (const iconSelection of iconSelections) {
+      
+    if (!form) {
+      // Restore button state on error
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+      return;
+    }
+    
+    // Build selector based on target type
+    let selector = ".cover-section .icon-selection";
+    if (targetType === "pc") selector = ".cover-section .table-section:has(.header-left .fa-users) .icon-selection";
+    else if (targetType === "npc") selector = ".cover-section .table-section:has(.header-left .fa-dragon) .icon-selection";
+    
+    // Cache DOM queries to avoid repeated lookups
+    const iconSelections = form.querySelectorAll(selector);
+    if (!iconSelections.length) {
+      // Restore button state if no elements found
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+      return;
+    }
+    
+    // Pre-cache all elements that need updates
+    const updates = [];
+    const iconSelectionsArray = Array.from(iconSelections);
+    
+    // Process in chunks to avoid blocking the main thread
+    const chunkSize = 100;
+    for (let i = 0; i < iconSelectionsArray.length; i += chunkSize) {
+      const chunk = iconSelectionsArray.slice(i, i + chunkSize);
+      
+      chunk.forEach(iconSelection => {
         const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
         const current = hiddenInput?.value;
-        if (current === state) continue;
+        
+        // Skip if already in target state
+        if (current === state) return;
+        
         const currentSelected = iconSelection.querySelector(".state-icon.selected");
-        if (currentSelected) currentSelected.classList.remove("selected");
         const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
-        if (targetIcon) targetIcon.classList.add("selected");
-        if (hiddenInput) hiddenInput.value = state;
+        
+        if (hiddenInput && targetIcon) {
+          updates.push({
+            hiddenInput,
+            currentSelected,
+            targetIcon
+          });
+        }
+      });
+      
+      // Yield control to main thread every chunk
+      if (i + chunkSize < iconSelectionsArray.length) {
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
     }
+    
+    // Batch all DOM updates in a single animation frame
+    if (updates.length > 0) {
+      requestAnimationFrame(() => {
+        updates.forEach(update => {
+          if (update.currentSelected) {
+            update.currentSelected.classList.remove("selected");
+          }
+          update.targetIcon.classList.add("selected");
+          update.hiddenInput.value = state;
+        });
+      });
+    }
+    
+    // Restore button state after operation completes
+    setTimeout(() => {
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+    }, 100);
+    
   } catch (error) {
     console.error("Error in bulk set cover state:", error);
     showNotification("An error occurred while setting bulk cover state", "error");
+    
+    // Restore button state on error
+    if (button) {
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = button.dataset.originalText || 'Error';
+    }
   }
 }
 

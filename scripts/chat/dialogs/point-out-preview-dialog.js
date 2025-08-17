@@ -7,7 +7,7 @@ import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter
+    filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 // Logic now handled via services action handler; no direct logic imports

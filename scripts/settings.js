@@ -46,6 +46,7 @@ const SETTINGS_GROUPS = {
     "autoCoverIgnoreAllies",
     "autoCoverRespectIgnoreFlag",
     "autoCoverAllowProneBlockers",
+    "autoCoverHideAction",
   ],
   Advanced: [
     "debug",
@@ -468,6 +469,31 @@ export function registerKeybindings() {
         const mode = game.settings.get(MODULE_ID, "keybindingOpensTMInTargetMode") ? "target" : "observer";
         const { api } = await import("./api.js");
         await api.openTokenManager(null, {mode});
+      };
+    } else if (key === "openQuickPanel") {
+      keybindingConfig.onDown = async () => {
+        try {
+          const { VisionerQuickPanel } = await import("./managers/quick-panel.js");
+          const existing = VisionerQuickPanel.current || Object.values(ui.windows || {}).find((w) => w instanceof VisionerQuickPanel) || null;
+          // Toggle: if open, close it
+          if (existing) { try { await existing.close(); } catch (_) {} return; }
+
+          // If minimized floater exists, restore at its position
+          const floater = document.getElementById("pf2e-visioner-floating-qp");
+          if (floater) {
+            const left = parseInt(floater.style.left || "0", 10) || 120;
+            const top = parseInt(floater.style.top || "0", 10) || 120;
+            const qp = new VisionerQuickPanel();
+            qp.position = { ...(qp.position || {}), left, top };
+            qp.render(true);
+            try { qp._removeFloatingButton(); } catch (_) {}
+            return;
+          }
+
+          // Otherwise open a new one
+          const qp = new VisionerQuickPanel();
+          qp.render(true);
+        } catch (_) {}
       };
     } else if (key === "openVisibilityManager") {
       keybindingConfig.onDown = async () => {

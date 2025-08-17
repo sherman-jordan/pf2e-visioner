@@ -5,9 +5,11 @@
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getVisibilityBetween } from "../../utils.js";
+import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesBySeekDistance
+  filterOutcomesBySeekDistance,
+  filterOutcomesByTemplate
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -82,57 +84,122 @@ export class SeekPreviewDialog extends BaseActionDialog {
   /**
    * Prepare context data for the template
    */
-  async _prepareContext() {
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+
+    // Start from original list so re-renders can re-include allies when the checkbox is unchecked
+    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+    // Filter outcomes with encounter helper, ally filtering, optional walls toggle, template (if provided), then distance limits if enabled
+    let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter targets found, showing all");
+    // Apply ally filtering for display purposes
     try {
-      // Start from original list so re-renders can re-include allies when the checkbox is unchecked
-      const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
-      
-      // Filter outcomes with encounter helper, ally filtering, optional walls toggle, template (if provided), then distance limits if enabled
-      let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter targets found, showing all");
-      
-      // Apply ally filtering for display purposes
-      try {
-        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-        filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
-      } catch (e) {
-        console.warn("Could not apply ally filtering:", e);
-      }
-
-      // Optional walls exclusion for UI convenience
-      if (this.ignoreWalls === true) {
-        filteredOutcomes = Array.isArray(filteredOutcomes) ? filteredOutcomes.filter((o) => !o?._isWall && !o?.wallId) : filteredOutcomes;
-      }
-
-      // Apply template filtering if a seek template was provided
-      if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
-        const { filterOutcomesByTemplate } = await import("../services/infra/shared-utils.js");
-        filteredOutcomes = filterOutcomesByTemplate(
-          filteredOutcomes,
-          this.actionData.seekTemplateCenter,
-          this.actionData.seekTemplateRadiusFeet,
-          "target",
-        );
-      }
-      filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, "target");
-
-      // Store filtered results for the template
-      this._filteredOutcomes = filteredOutcomes;
-
-      // Prepare context for the template
-      const context = {
-        outcomes: filteredOutcomes,
-        actorToken: this.actorToken,
-        actionData: this.actionData,
-        ignoreAllies: this.ignoreAllies,
-        ignoreWalls: this.ignoreWalls,
-        showAutoCover: false, // Seek doesn't have auto-cover
-      };
-
-      return context;
-    } catch (error) {
-      console.error("Error preparing seek preview context:", error);
-      return { outcomes: [], actorToken: null, actionData: this.actionData, ignoreAllies: false, ignoreWalls: false, showAutoCover: false };
+      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
+    } catch (_) {}
+    // Optional walls exclusion for UI convenience
+    if (this.ignoreWalls === true) {
+      filteredOutcomes = Array.isArray(filteredOutcomes) ? filteredOutcomes.filter((o) => !o?._isWall && !o?.wallId) : filteredOutcomes;
     }
+    if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
+      filteredOutcomes = filterOutcomesByTemplate(
+        filteredOutcomes,
+        this.actionData.seekTemplateCenter,
+        this.actionData.seekTemplateRadiusFeet,
+        "target",
+      );
+    }
+    filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, "target");
+
+    // Prepare visibility states using centralized config
+    const cfg = (s) => this.visibilityConfig(s);
+
+    // Prepare outcomes for template
+    const processedOutcomes = await Promise.all(filteredOutcomes.map(async (outcome) => {
+      // Get current visibility state; walls use their stored state instead of token-vs-token
+      let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+      if (!outcome._isWall) {
+        try {
+          const live = getVisibilityBetween(this.actorToken, outcome.target);
+          currentVisibility = live || currentVisibility;
+          // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
+          if ((!live || live === "observed") && game.user?.isGM) {
+            const actor = outcome.target?.actor;
+            const hasHidden = !!actor?.conditions?.get?.("hidden") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "hidden");
+            const hasUndetected = !!actor?.conditions?.get?.("undetected") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "undetected");
+            if (hasUndetected || hasHidden) {
+              const { setVisibilityBetween } = await import("../../utils.js");
+              const inferred = hasUndetected ? "undetected" : "hidden";
+              try { await setVisibilityBetween(this.actorToken, outcome.target, inferred, { direction: "observer_to_target" }); } catch (_) {}
+              // Remove PF2e system condition to avoid double-state after Visioner owns it
+              try {
+                const slug = hasUndetected ? "undetected" : "hidden";
+                // Prefer the PF2e pf2e.condition automation API if present
+                const toRemove = actor?.itemTypes?.condition?.find?.(c => c?.slug === slug);
+                if (toRemove?.delete) await toRemove.delete();
+                else if (actor?.toggleCondition) await actor.toggleCondition(slug, { active: false });
+                else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
+              } catch (_) {}
+              currentVisibility = inferred;
+              // Ensure in-memory outcomes reflect the actual new mapping right away
+              outcome.oldVisibility = currentVisibility;
+              outcome.newVisibility = currentVisibility;
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Prepare available states for override using per-action config
+      const desired = getDesiredOverrideStatesForAction("seek");
+      const availableStates = this.buildOverrideStates(desired, outcome);
+
+      const effectiveNewState = outcome.overrideState || outcome.newVisibility || currentVisibility;
+      const baseOldState = (currentVisibility != null ? currentVisibility : outcome.oldVisibility);
+      // Actionable if original differs from new or override
+      const hasActionableChange =
+        baseOldState != null &&
+        effectiveNewState != null &&
+        effectiveNewState !== baseOldState;
+
+      return {
+        ...outcome,
+        outcomeClass: outcome.noProficiency ? "neutral" : this.getOutcomeClass(outcome.outcome),
+        outcomeLabel: outcome.noProficiency ? "No proficiency" : this.getOutcomeLabel(outcome.outcome),
+        oldVisibilityState: cfg(baseOldState),
+        newVisibilityState: cfg(effectiveNewState),
+        marginText: this.formatMargin(outcome.margin),
+        tokenImage: this.resolveTokenImage(outcome.target),
+        availableStates: availableStates,
+        overrideState: outcome.overrideState || outcome.newVisibility,
+        hasActionableChange,
+        noProficiency: !!outcome.noProficiency,
+      };
+    }));
+
+    // Update original outcomes with hasActionableChange for Apply All button logic
+    processedOutcomes.forEach((processedOutcome, index) => {
+      if (this.outcomes[index]) {
+        this.outcomes[index].hasActionableChange =
+          processedOutcome.hasActionableChange;
+      }
+    });
+
+    // Set actor context for seeker
+    context.seeker = {
+      name: this.actorToken.name,
+      image: this.resolveTokenImage(this.actorToken),
+      actionType: "seek",
+      actionLabel: "Seek action results analysis",
+    };
+    context.outcomes = processedOutcomes;
+    context.ignoreWalls = !!this.ignoreWalls;
+    context.ignoreAllies = !!this.ignoreAllies;
+    
+    // Keep original outcomes intact; provide common context from processed list
+    this.outcomes = processedOutcomes;
+    
+    Object.assign(context, this.buildCommonContext(processedOutcomes));
+
+    return context;
   }
 
   // Use base outcome helpers

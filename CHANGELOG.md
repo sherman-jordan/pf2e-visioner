@@ -15,6 +15,10 @@
     visioner will replace the system condition with it's own flags and reflect that in the results
 - API:
   - Add getAutoCoverState function between a token and a target
+- Enforce RAW:
+  - Will now utilize auto cover(if turned on) to pass the prequisite for hide
+- Hide:
+  - New setting to add auto cover to the dialog (it will reduce dc instead of adding modifiers to the roll , default off)
 
 ### Fixed
 

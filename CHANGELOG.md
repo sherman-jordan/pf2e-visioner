@@ -9,6 +9,11 @@
   - Added minimize button to keep it handy when you need it
   - Added a keybind to open and close quick panel (default Ctrl-Shift-Q)
 
+### Changed
+
+- Quick panel:
+  - removed refresh button, now refreshes automatically when adding\removing selected tokens and adding\removing targeted tokens
+
 ## [2.4.0] - 2025-08-16
 
 ### Added

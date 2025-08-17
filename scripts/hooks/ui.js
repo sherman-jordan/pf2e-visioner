@@ -406,6 +406,8 @@ function onGetSceneControlButtons(controls) {
       onClick: async () => {
         try {
           const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
+          // Only GM can open; don't auto-open on target events elsewhere
+          if (!game.user?.isGM) return;
           new VisionerQuickPanel({}).render(true);
         } catch (_) {}
       },

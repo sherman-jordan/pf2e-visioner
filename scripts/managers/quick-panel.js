@@ -84,8 +84,12 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
   }
 
   async close(options) {
+    try { this._unbindAutoRefresh?.(); } catch (_) {}
     try { await super.close(options); }
-    finally { try { VisionerQuickPanel.current = null; } catch (_) {} }
+    finally {
+      try { this._unbindAutoRefresh = null; } catch (_) {}
+      try { VisionerQuickPanel.current = null; } catch (_) {}
+    }
   }
 
   static async _onToggleMode(_event, _button) {

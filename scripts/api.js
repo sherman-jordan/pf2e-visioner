@@ -3,24 +3,25 @@
  */
 
 import { MODULE_ID } from "./constants.js";
+import { detectCoverStateForAttack } from "./cover/auto-cover.js";
 import { VisionerTokenManager } from "./managers/token-manager/token-manager.js";
 import {
-    rebuildAndRefresh,
-    removeAllReferencesToTarget,
-    removeModuleEffectsFromActors,
-    removeModuleEffectsFromTokenActors,
-    removeObserverContributions,
-    unsetMapsForTokens,
+  rebuildAndRefresh,
+  removeAllReferencesToTarget,
+  removeModuleEffectsFromActors,
+  removeModuleEffectsFromTokenActors,
+  removeObserverContributions,
+  unsetMapsForTokens,
 } from "./services/api-internal.js";
 import { refreshEveryonesPerception } from "./services/socket.js";
 import { updateTokenVisuals } from "./services/visual-effects.js";
 import {
-    cleanupDeletedToken,
-    getCoverBetween,
-    getVisibilityBetween,
-    setCoverBetween,
-    setVisibilityBetween,
-    showNotification,
+  cleanupDeletedToken,
+  getCoverBetween,
+  getVisibilityBetween,
+  setCoverBetween,
+  setVisibilityBetween,
+  showNotification,
 } from "./utils.js";
 
 /**
@@ -663,6 +664,71 @@ export class Pf2eVisionerApi {
       return false;
     }
   }
+
+  /**
+   * Get the current auto-cover state from an observer token to a target token
+   * @param {Token|string} observer - The observer token or token ID
+   * @param {Token|string} target - The target token or token ID
+   * @param {Object} options - Additional options for cover detection
+   * @param {boolean} options.rawPrereq - Whether to use raw prerequisite mode (default: false)
+   * @param {boolean} options.forceRecalculate - Whether to force recalculation instead of using cached values
+   * @returns {string|null} The cover state: "none", "lesser", "standard", "greater", or null if error
+   */
+  static getAutoCoverState(observer, target, options = {}) {
+    try {
+      // Resolve tokens if IDs are provided
+      let observerToken = observer;
+      let targetToken = target;
+      
+      if (typeof observer === 'string') {
+        observerToken = canvas.tokens.get(observer);
+        if (!observerToken) {
+          console.warn(`PF2E Visioner: Observer token with ID '${observer}' not found`);
+          return null;
+        }
+      }
+      
+      if (typeof target === 'string') {
+        targetToken = canvas.tokens.get(target);
+        if (!targetToken) {
+          console.warn(`PF2E Visioner: Target token with ID '${target}' not found`);
+          return null;
+        }
+      }
+      
+      if (!observerToken || !targetToken) {
+        console.warn('PF2E Visioner: Invalid tokens provided to getAutoCoverState');
+        return null;
+      }
+      
+      // Check if auto-cover is enabled
+      if (!game.settings.get(MODULE_ID, "autoCover")) {
+        console.warn('PF2E Visioner: Auto-cover is disabled in module settings');
+        return null;
+      }
+      
+      const { rawPrereq = false, forceRecalculate = false } = options;
+      
+      let coverState = null;
+      
+      if (forceRecalculate) {
+        // Force fresh calculation
+        coverState = detectCoverStateForAttack(observerToken, targetToken, { rawPrereq });
+      } else {
+        // Try to get cached cover first, then fall back to fresh calculation
+        coverState = getCoverBetween(observerToken, targetToken);
+        if (!coverState || coverState === "none") {
+          coverState = detectCoverStateForAttack(observerToken, targetToken, { rawPrereq });
+        }
+      }
+      
+      return coverState || "none";
+      
+    } catch (error) {
+      console.error('PF2E Visioner: Error getting auto-cover state:', error);
+      return null;
+    }
+  }
 }
 
 /**
@@ -676,6 +742,15 @@ export const openTokenManagerWithMode =
 export const openVisibilityManager = Pf2eVisionerApi.openTokenManager;
 export const openVisibilityManagerWithMode =
   Pf2eVisionerApi.openTokenManagerWithMode;
+
+/**
+ * Standalone function to get auto-cover state between two tokens
+ * @param {Token|string} observer - The observer token or token ID
+ * @param {Token|string} target - The target token or token ID
+ * @param {Object} options - Additional options for cover detection
+ * @returns {string|null} The cover state: "none", "lesser", "standard", "greater", or null if error
+ */
+export const getAutoCoverState = Pf2eVisionerApi.getAutoCoverState;
 
 /**
  * Main API export - this is what external modules should use

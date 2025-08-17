@@ -46,6 +46,7 @@ const SETTINGS_GROUPS = {
     "autoCoverIgnoreAllies",
     "autoCoverRespectIgnoreFlag",
     "autoCoverAllowProneBlockers",
+    "autoCoverHideAction",
   ],
   Advanced: [
     "debug",

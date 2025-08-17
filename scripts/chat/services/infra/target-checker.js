@@ -56,8 +56,47 @@ function checkConsequencesTargets(actionData, potentialTargets) {
 }
 
 function checkSeekTargets(actionData, potentialTargets) {
+  // First check if there are any walls in the scene that could be seek targets
+  try {
+    const scene = canvas?.scene;
+    if (scene) {
+      // Check for walls in the walls collection
+      const walls = canvas?.walls?.placeables || [];
+      if (walls.length > 0) {
+        // Found walls - these are always valid seek targets
+        return true;
+      }
+      
+      // Check for loot tokens (tokens without actors that might be loot)
+      const allSceneTokens = canvas.tokens?.placeables || [];
+      const lootTokens = allSceneTokens.filter(token => 
+        token !== actionData.actor && 
+        !token.actor && 
+        (token.document?.getFlag?.(MODULE_ID, "isLoot") || 
+         token.document?.getFlag?.(MODULE_ID, "minPerceptionRank"))
+      );
+      
+      if (lootTokens.length > 0) {
+        // Found loot - check if any meet perception requirements
+        for (const lootToken of lootTokens) {
+          const minRank = Number(lootToken.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+          if (Number.isFinite(minRank) && minRank > 0) {
+            const stat = actionData.actor?.actor?.getStatistic?.("perception");
+            const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+            if (Number.isFinite(seekerRank) && seekerRank >= minRank) {
+              return true; // Valid loot target found
+            }
+          } else {
+            // No rank requirement, so this is a valid seek target
+            return true;
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
   for (const target of potentialTargets) {
-    // If target is a hazard/loot with a minimum perception rank, verify the seeker's rank
+    // Check if target is a hazard/loot with a minimum perception rank
     try {
       if (target?.actor && (target.actor.type === "hazard" || target.actor.type === "loot")) {
         const minRank = Number(target.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
@@ -69,6 +108,30 @@ function checkSeekTargets(actionData, potentialTargets) {
             actionData._visionerSeekProficiencyBlocked = true;
             continue;
           }
+        }
+      }
+      
+      // Handle loot tokens and hidden walls that don't have actors
+      if (!target.actor) {
+        // Check if this is a loot token or hidden wall by looking at the token's properties
+        const isLootOrHiddenWall = target.document?.getFlag?.(MODULE_ID, "isLoot") || 
+                                  target.document?.getFlag?.(MODULE_ID, "isHiddenWall") ||
+                                  target.document?.getFlag?.(MODULE_ID, "minPerceptionRank");
+        
+        if (isLootOrHiddenWall) {
+          // Check perception rank requirement if set
+          const minRank = Number(target.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
+          if (Number.isFinite(minRank) && minRank > 0) {
+            const stat = actionData.actor?.actor?.getStatistic?.("perception");
+            const seekerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
+            if (!(Number.isFinite(seekerRank) && seekerRank >= minRank)) {
+              // Not enough proficiency: indicate special row action state and skip as a valid seek target
+              actionData._visionerSeekProficiencyBlocked = true;
+              continue;
+            }
+          }
+          // If no rank requirement or requirement met, this is a valid seek target
+          return true;
         }
       }
     } catch (_) {}

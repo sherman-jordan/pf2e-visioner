@@ -14,6 +14,11 @@
   - Support system conditions -> if a token has been set with a system condition (hidden\undetected) and the seek dialog is opened
     visioner will replace the system condition with it's own flags and reflect that in the results
 
+### Fixed
+
+- Seek Action: Hidden walls now properly appear in Seek template results
+  - Template filtering now works correctly for both tokens and walls
+
 ### Changed
 
 - Quick panel:

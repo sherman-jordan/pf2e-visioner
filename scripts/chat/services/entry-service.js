@@ -26,7 +26,7 @@ export async function handleRenderChatMessage(message, html) {
       try { targetId = message?.flags?.pf2e?.target?.token || null; } catch (_) {}
       if (!targetId && game.user.targets?.size) targetId = Array.from(game.user.targets)[0]?.id || null;
       if (!targetId) targetId = actionData.context?.target?.token || null;
-      import("../../socket.js").then(({ requestGMOpenPointOut }) =>
+      import("../../services/socket.js").then(({ requestGMOpenPointOut }) =>
         requestGMOpenPointOut(actionData.actor.id, targetId, actionData.messageId)
       );
     } catch (e) {

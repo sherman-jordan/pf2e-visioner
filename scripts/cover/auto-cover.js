@@ -483,91 +483,54 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
   } catch (_) { }
 }
 
-// Set temporary cover flags when rolling Stealth with auto‑cover
-Hooks.on?.("renderCheckModifiersDialog", async (dialog, html) => {
+// Intercept stealth rolls to apply DC reduction from cover
+Hooks.on?.("preCreateChatMessage", (messageData) => {
   try {
     if (!game.settings.get(MODULE_ID, "autoCover")) return;
-    const ctx = dialog?.context ?? {};
-    const statSlug = ctx?.statistic?.slug || ctx?.statistic || ctx?.skill?.slug || ctx?.skillId || ctx?.slug || "";
-    if (String(statSlug) !== "stealth") return;
-
-    const attacker = resolveAttackerFromCtx(ctx); // the roller
-    if (!attacker) return;
-
-    // Find opposing tokens and determine auto‑cover state against each
-    const tokens = canvas?.tokens?.placeables || [];
-    const coverMap = new Map();
-    let hasCover = false;
-
-    for (const token of tokens) {
-      let state = "none";
-      try { 
-        state = detectCoverStateForAttack(token, attacker) || "none"; 
-      } catch (_) {}
-      coverMap.set(token.id, state);
-      if (state !== "none") hasCover = true;
-    }
-
-    if (!hasCover) return;
-
-    // Bind to the roll button to temporarily set cover flags
-    const rollBtnEl = html?.find?.('button.roll')?.[0];
-    if (!rollBtnEl || rollBtnEl.dataset?.pvStealthCoverBind) return;
-    rollBtnEl.dataset.pvStealthCoverBind = '1';
-
-    rollBtnEl.addEventListener('click', async () => {
-      try {
-        // Store original cover states
-        const originalCoverStates = new Map();
-
-        // Set temporary cover flags based on auto-cover detection
-        for (const [enemyId, coverState] of coverMap) {
-          const enemy = canvas.tokens.get(enemyId);
-          if (!enemy || coverState === "none") continue;
-
-          const originalState = getCoverBetween(attacker, enemy);
-          originalCoverStates.set(enemyId, originalState);
-          
-          await setCoverBetween(attacker, enemy, coverState);
-        }
-
-        // Listen for roll completion to restore original states
-        const hookId = Hooks.once("createChatMessage", async (message) => {
-          try {
-            // Small delay to ensure roll processing is complete
-            setTimeout(async () => {
-              for (const [enemyId, originalState] of originalCoverStates) {
-                const enemy = canvas.tokens.get(enemyId);
-                if (enemy) {
-                  await setCoverBetween(attacker, enemy, originalState);
-                }
-              }
-            }, 100);
-          } catch (e) {
-            console.warn("PF2E Visioner | Failed to restore cover states after stealth roll:", e);
-          }
-        });
-
-        // Fallback cleanup in case the hook doesn't fire
-        setTimeout(async () => {
-          try {
-            Hooks.off("createChatMessage", hookId);
-            for (const [enemyId, originalState] of originalCoverStates) {
-              const enemy = canvas.tokens.get(enemyId);
-              if (enemy) {
-                await setCoverBetween(attacker, enemy, originalState);
-              }
-            }
-          } catch (e) {
-            console.warn("PF2E Visioner | Fallback cover state restoration failed:", e);
-          }
-        }, 5000);
-
-      } catch (e) { 
-        console.warn("PF2E Visioner | Failed to set temporary cover for stealth roll:", e); 
+    
+    // Check if this is a stealth check
+    const flags = messageData?.flags?.pf2e || {};
+    const context = flags?.context || {};
+    const isStealthCheck = context?.type === "skill-check" && 
+                          (context?.skill === "stealth" || 
+                           context?.statistic === "stealth" ||
+                           messageData?.flavor?.toLowerCase()?.includes("stealth"));
+    
+    if (!isStealthCheck) return;
+    
+    // Look for any open stealth modifier dialog with cover bonus
+    const stealthDialog = Object.values(ui.windows).find(w => 
+      w.constructor.name === "CheckModifiersDialog" && 
+      w._pvStealthCoverBonus > 0
+    );
+    
+    if (!stealthDialog || !stealthDialog._pvStealthCoverBonus) return;
+    
+    const coverBonus = stealthDialog._pvStealthCoverBonus;
+    
+    // Reduce the DC by the cover bonus (equivalent to adding bonus to roll)
+    if (context.dc && typeof context.dc.value === "number") {
+      const originalDC = context.dc.value;
+      context.dc.value = Math.max(0, originalDC - coverBonus);
+      
+      // Add a note about the cover adjustment
+      const coverNote = coverBonus === 4 ? " (DC reduced by 4 for Greater Cover)" : 
+                       coverBonus === 2 ? " (DC reduced by 2 for Standard Cover)" : "";
+      
+      if (context.dc.label) {
+        context.dc.label += coverNote;
+      } else {
+        context.dc.label = `DC ${context.dc.value}${coverNote}`;
       }
-    }, true);
-  } catch (_) {}
+      
+      // Also update the messageData flags
+      foundry.utils.setProperty(messageData, "flags.pf2e.context.dc", context.dc);
+      
+    }
+    
+  } catch (e) {
+    console.warn("PF2E Visioner | Error adjusting stealth DC for cover:", e);
+  }
 });
 
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow

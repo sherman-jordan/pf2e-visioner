@@ -812,6 +812,24 @@
   color: #f44336 !important;
 }
 
+/* Loading state for bulk action buttons */
+.bulk-actions-header .bulk-state-header.loading {
+  cursor: wait !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+}
+
+.bulk-actions-header .bulk-state-header.loading i {
+  animation: spin 1s linear infinite;
+}
+
+
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .table-section-header i {
   color: var(--color-border-highlight-alt);
   font-size: 16px;
@@ -1239,6 +1257,18 @@ tr.token-row.row-hover {
   color: #f44336 !important;
   border-color: #f44336 !important;
 }
+
+/* Loading state for cover section bulk action buttons */
+.cover-section .bulk-actions-header .bulk-state-header.loading {
+  cursor: wait !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+}
+
+.cover-section .bulk-actions-header .bulk-state-header.loading i {
+  animation: spin 1s linear infinite;
+}
+
 
 /* Hide the hidden input */
 .icon-selection input[type="hidden"] {

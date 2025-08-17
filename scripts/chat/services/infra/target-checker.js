@@ -1,5 +1,7 @@
 import { MODULE_ID } from "../../../constants.js";
+import { detectCoverStateForAttack } from "../../../cover/auto-cover.js";
 import { getCoverBetween, getVisibilityBetween } from "../../../utils.js";
+// Debug logger removed
 import { shouldFilterAlly } from "./shared-utils.js";
 
 export function checkForValidTargets(actionData) {
@@ -36,7 +38,7 @@ export function checkForValidTargets(actionData) {
 }
 
 function checkConsequencesTargets(actionData, potentialTargets) {
-  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
   for (const target of potentialTargets) {
     if (enforceRAW && shouldFilterAlly(actionData.actor, target, "enemies", actionData?.ignoreAllies)) continue;
     let visibility = getVisibilityBetween(target, actionData.actor);
@@ -103,7 +105,8 @@ function checkPointOutTargets(actionData, potentialTargets) {
 }
 
 function checkHideTargets(actionData, potentialTargets) {
-  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+  const autoCover = game.settings.get(MODULE_ID, "autoCover");
   if (!enforceRAW) return potentialTargets.length > 0;
 
   // RAW prerequisite: at least one observed creature must either see the actor as concealed
@@ -111,20 +114,23 @@ function checkHideTargets(actionData, potentialTargets) {
   try {
     for (const observer of potentialTargets) {
       const vis = getVisibilityBetween(observer, actionData.actor);
-      if (vis === "concealed") return true;
-      if (vis === "observed") {
-        try {
-          const cover = getCoverBetween(observer, actionData.actor);
-          if (cover === "standard" || cover === "greater") return true;
-        } catch (_) {}
+      if (vis === "concealed") { return true; }
+      // Prefer fresh auto-cover detection; fallback to stored map if needed
+      let cover = "none";
+      if (autoCover) {
+        try { cover = detectCoverStateForAttack(observer, actionData.actor, { rawPrereq: true }) || "none"; } catch (_) {}
       }
+      if (cover === "none") {
+        try { cover = getCoverBetween(observer, actionData.actor); } catch (_) { cover = "none"; }
+      }
+      if (cover === "standard" || cover === "greater") { return true; }
     }
   } catch (_) {}
   return false;
 }
 
 function checkSneakTargets(actionData, potentialTargets) {
-  const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
   if (!enforceRAW) return potentialTargets.length > 0;
   // RAW: You can attempt Sneak only against creatures you were Hidden or Undetected from at the start.
   try {

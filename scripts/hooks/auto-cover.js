@@ -20,7 +20,7 @@ import { setCoverBetween } from "../utils.js";
 
 export function registerAutoCoverHooks() {
   Hooks.on("preCreateChatMessage", onPreCreateChatMessage);
-  Hooks.on("renderChatMessage", onRenderChatMessage);
+  Hooks.on("renderChatMessageHTML", onRenderChatMessage);
   Hooks.on("renderCheckModifiersDialog", onRenderCheckModifiersDialog);
   Hooks.on("updateToken", onUpdateToken);
 

@@ -1,3 +1,5 @@
+import { MODULE_ID } from "../../../constants.js";
+import { detectCoverStateForAttack } from "../../../cover/auto-cover.js";
 import { appliedHideChangesByMessage } from "../data/message-cache.js";
 import { shouldFilterAlly } from "../infra/shared-utils.js";
 import { ActionHandlerBase } from "./base-action.js";
@@ -15,7 +17,7 @@ export class HideActionHandler extends ActionHandlerBase {
     const tokens = canvas?.tokens?.placeables || [];
     const actorToken = actionData?.actor;
     const actorId = actorToken?.id || actorToken?.document?.id || null;
-    const enforceRAW = game.settings.get("pf2e-visioner", "enforceRawRequirements");
+    const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
     const base = tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actorToken))
@@ -29,13 +31,21 @@ export class HideActionHandler extends ActionHandlerBase {
 
     // RAW filter: only observers that currently see the actor as Concealed
     // OR (Observed AND actor has Standard or Greater cover) are relevant.
+    const autoCover = game.settings.get(MODULE_ID, "autoCover");
     const { getVisibilityBetween, getCoverBetween } = await import("../../../utils.js");
     return base.filter((observer) => {
       try {
         const vis = getVisibilityBetween(observer, actorToken);
         if (vis === "concealed") return true;
         if (vis === "observed") {
-          const cover = getCoverBetween(observer, actorToken);
+          // Prefer live auto-cover for relevance (do not mutate state), then fall back to stored map
+          let cover = "none";
+          if (autoCover) {
+            try { cover = detectCoverStateForAttack(observer, actorToken, { rawPrereq: true }) || "none"; } catch (_) {}
+          }
+          if (cover === "none") {
+            try { cover = getCoverBetween(observer, actorToken); } catch (_) { cover = "none"; }
+          }
           return cover === "standard" || cover === "greater";
         }
       } catch (_) {}

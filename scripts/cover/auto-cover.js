@@ -3,6 +3,7 @@
  * Hook registration is done in scripts/hooks/visioner-auto-cover.js
  */
 
+// Debug logger removed
 import { COVER_STATES, MODULE_ID } from "../constants.js";
 import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from "../helpers/cover-helpers.js";
 import { getCoverBetween, getVisibilityBetween, setCoverBetween } from "../utils.js";
@@ -227,27 +228,29 @@ function getAutoCoverFilterSettings(attacker) {
 
 function getEligibleBlockingTokens(attacker, target, filters) {
   const out = [];
+  
   for (const blocker of canvas.tokens.placeables) {
     if (!blocker?.actor) continue;
     if (blocker === attacker || blocker === target) continue;
     const type = blocker.actor?.type;
     if (type === "loot" || type === "hazard") continue;
-    if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) continue;
+    if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) { continue; }
     if (filters.ignoreUndetected) {
-      try { const vis = getVisibilityBetween(attacker, blocker); if (vis === "undetected") continue; } catch (_) {}
+      try { const vis = getVisibilityBetween(attacker, blocker); if (vis === "undetected") { continue; } } catch (_) {}
     }
-    if (filters.ignoreDead && (blocker.actor?.hitPoints?.value === 0)) continue;
+    if (filters.ignoreDead && (blocker.actor?.hitPoints?.value === 0)) { continue; }
     if (!filters.allowProneBlockers) {
       try {
         const itemConditions = blocker.actor?.itemTypes?.condition || [];
         const legacyConditions = blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
         const isProne = itemConditions.some((c) => c?.slug === "prone") || legacyConditions.some((c) => c?.slug === "prone");
-        if (isProne) continue;
+        if (isProne) { continue; }
       } catch (_) {}
     }
-    if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) continue;
+    if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) { continue; }
     out.push(blocker);
   }
+  
   return out;
 }
 
@@ -288,9 +291,10 @@ function evaluateWallsCover(p1, p2) {
   return segmentIntersectsAnyBlockingWall(p1, p2) ? "standard" : "none";
 }
 
-export function detectCoverStateForAttack(attacker, target) {
+export function detectCoverStateForAttack(attacker, target, options = {}) {
   try {
     if (!attacker || !target) return "none";
+    
     const p1 = attacker.center ?? attacker.getCenter();
     const p2 = target.center ?? target.getCenter();
     // Walls
@@ -305,12 +309,13 @@ export function detectCoverStateForAttack(attacker, target) {
     const stdPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageStandardPct") ?? 50)));
     const grtPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageGreaterPct") ?? 80)));
 
-    const tokenCover = useCoverage
+    let tokenCover = useCoverage
       ? evaluateCoverByCoverage(p1, p2, blockers, intersectionMode, stdPct, grtPct)
       : evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode);
 
     if (wallCover === "standard") {
-      return tokenCover === "greater" ? "greater" : "standard";
+      const res = tokenCover === "greater" ? "greater" : "standard";
+      return res;
     }
     return tokenCover;
   } catch (_) { return "none"; }
@@ -477,6 +482,93 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
     } catch (_) { }
   } catch (_) { }
 }
+
+// Set temporary cover flags when rolling Stealth with auto‑cover
+Hooks.on?.("renderCheckModifiersDialog", async (dialog, html) => {
+  try {
+    if (!game.settings.get(MODULE_ID, "autoCover")) return;
+    const ctx = dialog?.context ?? {};
+    const statSlug = ctx?.statistic?.slug || ctx?.statistic || ctx?.skill?.slug || ctx?.skillId || ctx?.slug || "";
+    if (String(statSlug) !== "stealth") return;
+
+    const attacker = resolveAttackerFromCtx(ctx); // the roller
+    if (!attacker) return;
+
+    // Find opposing tokens and determine auto‑cover state against each
+    const tokens = canvas?.tokens?.placeables || [];
+    const coverMap = new Map();
+    let hasCover = false;
+
+    for (const token of tokens) {
+      let state = "none";
+      try { 
+        state = detectCoverStateForAttack(token, attacker) || "none"; 
+      } catch (_) {}
+      coverMap.set(token.id, state);
+      if (state !== "none") hasCover = true;
+    }
+
+    if (!hasCover) return;
+
+    // Bind to the roll button to temporarily set cover flags
+    const rollBtnEl = html?.find?.('button.roll')?.[0];
+    if (!rollBtnEl || rollBtnEl.dataset?.pvStealthCoverBind) return;
+    rollBtnEl.dataset.pvStealthCoverBind = '1';
+
+    rollBtnEl.addEventListener('click', async () => {
+      try {
+        // Store original cover states
+        const originalCoverStates = new Map();
+
+        // Set temporary cover flags based on auto-cover detection
+        for (const [enemyId, coverState] of coverMap) {
+          const enemy = canvas.tokens.get(enemyId);
+          if (!enemy || coverState === "none") continue;
+
+          const originalState = getCoverBetween(attacker, enemy);
+          originalCoverStates.set(enemyId, originalState);
+          
+          await setCoverBetween(attacker, enemy, coverState);
+        }
+
+        // Listen for roll completion to restore original states
+        const hookId = Hooks.once("createChatMessage", async (message) => {
+          try {
+            // Small delay to ensure roll processing is complete
+            setTimeout(async () => {
+              for (const [enemyId, originalState] of originalCoverStates) {
+                const enemy = canvas.tokens.get(enemyId);
+                if (enemy) {
+                  await setCoverBetween(attacker, enemy, originalState);
+                }
+              }
+            }, 100);
+          } catch (e) {
+            console.warn("PF2E Visioner | Failed to restore cover states after stealth roll:", e);
+          }
+        });
+
+        // Fallback cleanup in case the hook doesn't fire
+        setTimeout(async () => {
+          try {
+            Hooks.off("createChatMessage", hookId);
+            for (const [enemyId, originalState] of originalCoverStates) {
+              const enemy = canvas.tokens.get(enemyId);
+              if (enemy) {
+                await setCoverBetween(attacker, enemy, originalState);
+              }
+            }
+          } catch (e) {
+            console.warn("PF2E Visioner | Fallback cover state restoration failed:", e);
+          }
+        }, 5000);
+
+      } catch (e) { 
+        console.warn("PF2E Visioner | Failed to set temporary cover for stealth roll:", e); 
+      }
+    }, true);
+  } catch (_) {}
+});
 
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
 export async function onUpdateToken(tokenDoc, changes) {

@@ -12,12 +12,12 @@ export async function handleRenderChatMessage(message, html) {
   const hasPendingSeekTemplateForPlayerAuthor =
     actionData.actionType === "seek" &&
     !game.user.isGM &&
-    message.user?.id === game.user.id &&
+    message.author?.id === game.user.id &&
     !!message.flags?.["pf2e-visioner"]?.seekTemplate;
   const isPlayerPointOutAuthor =
     !game.user.isGM &&
     actionData.actionType === "point-out" &&
-    message.user?.id === game.user.id;
+    message.author?.id === game.user.id;
 
   if (isPlayerPointOutAuthor) {
     try {
@@ -45,7 +45,7 @@ export async function handleRenderChatMessage(message, html) {
     !game.user.isGM &&
     actionData.actionType === "seek" &&
     game.settings.get("pf2e-visioner", "seekUseTemplate") &&
-    message.user?.id === game.user.id;
+    message.author?.id === game.user.id;
   if (!game.user.isGM && !isSeekTemplatePlayer) return;
 
   if (processedMessages.has(message.id)) {

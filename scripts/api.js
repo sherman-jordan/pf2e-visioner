@@ -5,22 +5,22 @@
 import { MODULE_ID } from "./constants.js";
 import { VisionerTokenManager } from "./managers/token-manager/token-manager.js";
 import {
-  rebuildAndRefresh,
-  removeAllReferencesToTarget,
-  removeModuleEffectsFromActors,
-  removeModuleEffectsFromTokenActors,
-  removeObserverContributions,
-  unsetMapsForTokens,
+    rebuildAndRefresh,
+    removeAllReferencesToTarget,
+    removeModuleEffectsFromActors,
+    removeModuleEffectsFromTokenActors,
+    removeObserverContributions,
+    unsetMapsForTokens,
 } from "./services/api-internal.js";
 import { refreshEveryonesPerception } from "./services/socket.js";
 import { updateTokenVisuals } from "./services/visual-effects.js";
 import {
-  cleanupDeletedToken,
-  getCoverBetween,
-  getVisibilityBetween,
-  setCoverBetween,
-  setVisibilityBetween,
-  showNotification,
+    cleanupDeletedToken,
+    getCoverBetween,
+    getVisibilityBetween,
+    setCoverBetween,
+    setVisibilityBetween,
+    showNotification,
 } from "./utils.js";
 
 /**

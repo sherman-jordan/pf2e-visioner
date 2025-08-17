@@ -9,6 +9,7 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
   constructor(options = {}) {
     super(options);
     this._selectionHookId = null;
+    this._targetHookId = null;
   }
 
   _onFirstRender(context, options) {
@@ -38,16 +39,18 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
   }
 
   _attachSelectionHandlers() {
-    if (this._selectionHookId) return;
-    this._selectionHookId = Hooks.on("controlToken", () => this._applySelectionHighlight());
+    if (this._selectionHookId && this._targetHookId) return;
+    if (!this._selectionHookId)
+      this._selectionHookId = Hooks.on("controlToken", () => this._applySelectionHighlight());
+    if (!this._targetHookId)
+      this._targetHookId = Hooks.on("targetToken", () => this._applySelectionHighlight());
   }
 
   _detachSelectionHandlers() {
-    if (!this._selectionHookId) return;
-    try {
-      Hooks.off("controlToken", this._selectionHookId);
-    } catch (_) {}
+    try { if (this._selectionHookId) Hooks.off("controlToken", this._selectionHookId); } catch (_) {}
+    try { if (this._targetHookId) Hooks.off("targetToken", this._targetHookId); } catch (_) {}
     this._selectionHookId = null;
+    this._targetHookId = null;
   }
 
   _applySelectionHighlight() {
@@ -58,10 +61,12 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
         ?.forEach((el) => el.classList.remove("row-hover"));
 
       const selectedTokens = Array.from(canvas?.tokens?.controlled ?? []);
-      if (!selectedTokens.length) return;
+      const targetedTokens = Array.from(game?.user?.targets ?? []);
+      const focusTokens = [...new Set([...selectedTokens, ...targetedTokens])];
+      if (!focusTokens.length) return;
 
       let firstRow = null;
-      for (const token of selectedTokens) {
+      for (const token of focusTokens) {
         const row = this.element.querySelector(`tr[data-token-id="${token.id}"]`);
         if (row) {
           row.classList.add("row-hover");

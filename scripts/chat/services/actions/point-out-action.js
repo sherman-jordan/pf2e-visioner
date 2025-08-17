@@ -19,13 +19,13 @@ export class PointOutActionHandler extends ActionHandlerBase {
     // - Finally fallback heuristic
     let target = null;
     try {
-      const isFromPlayer = !!msg?.user && msg.user.isGM === false;
+      const isFromPlayer = !!msg?.author && msg.author.isGM === false;
       if (isFromPlayer) {
         // Use the author's target stored on the message flags first if present
         const authorTargetId = msg?.flags?.pf2e?.target?.token;
         if (authorTargetId) target = canvas.tokens.get(authorTargetId) || null;
         // If not present, try to read the player's current target only on their client
-        if (!target && game.user.id === msg.user.id && game.user.targets?.size) target = Array.from(game.user.targets)[0];
+        if (!target && game.user.id === msg.author.id && game.user.targets?.size) target = Array.from(game.user.targets)[0];
       } else {
         // For GM-authored or unknown, fall back to this user's current target first
         if (game.user.targets?.size) target = Array.from(game.user.targets)[0];

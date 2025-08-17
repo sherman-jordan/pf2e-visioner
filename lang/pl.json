@@ -192,7 +192,7 @@
       },
       "ENABLE_ALL_TOKENS_VISION": {
         "name": "Włącz wizję dla wszystkich tokenów",
-        "hint": "Po włączeniu tej opcji wszystkie tokeny będą domyślnie widoczne. Możesz przełączać tę opcję na żywo w oknie dialogowym, aby filtrować wyniki w czasie rzeczywistym."
+        "hint": "Po włączeniu wszystkie tokeny będą miały domyślnie włączoną widoczność."
       },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Domyślny stan filtru spotkań",
@@ -251,6 +251,10 @@
         "name": "Domyślne ST Ukrycia dla aktorów łupów",
         "hint": "ST używane podczas traktowania tokenów łupów jako celów Szukania."
       },
+      "WALL_STEALTH_DC": {
+        "name": "Domyślne ST Ukrycia dla ścian",
+        "hint": "ST używane przy traktowaniu ukrytych ścian jako celów wyszukiwania (gdy ściana nie ma wyraźnie ustawionego ST)."
+      },
       "INCLUDE_LOOT_ACTORS": {
         "name": "Dodaj aktorów łupów do menedżera widoczności",
         "hint": "Umożliwia konfigurację stanów widoczności przedmiotów łupów (skrzyń, pojemników) dla poszczególnych obserwatorów. Tylko wizualnie; nie są stosowane żadne stany PF2E."
@@ -259,9 +263,17 @@
         "name": "Dodaj ściany jako obiekty, które można ukryć (funkcja eksperymentalna)",
         "hint": "Pokaż ściany w menedżerze, aby oznaczyć je jako widoczne/ukryte dla obserwatora. Obecna implementacja jest wyłącznie wizualna i nie zmienia zasłaniania ani kolizji."
       },
+      "HIDDEN_WALLS": {
+        "name": "Włącz ukryte ściany",
+        "hint": "Włącz opcję ukrywania poszczególnych ścian i wskaźników graczy. Jeśli ukryta ściana jest drzwiami, nie będzie zasłaniać widoku."
+      },
       "AUTO_COVER": {
         "name": "Automatyczna osłona",
         "hint": "Po włączeniu moduł automatycznie zastosuje osłonę do tokenów na podstawie ścieżki blokującej token."
+      },
+      "EXPERIMENTAL_SEE_THROUGH_WALLS": {
+        "name": "Eksperymentalna funkcja: Przezroczyste ściany dla tokenów (tylko dla klienta)",
+        "hint": "Po włączeniu tej opcji na kliencie wybrane tokeny będą ignorować ściany oznaczone jako Obserwowane na liście Ukryte ściany. Funkcja wyłącznie wizualna i wysoce eksperymentalna."
       },
       "SNEAK_RAW_ENFORCEMENT": {
         "name": "Surowe egzekwowanie Skradania",
@@ -274,7 +286,9 @@
       "ROLL": "Rzut"
     },
     "WALL": {
-      "VISIBLE_TO_YOU": "Ukryta ściana"
+      "VISIBLE_TO_YOU": "Ukryta ściana",
+      "observed": "Obserwowany",
+      "hidden": "Ukryty"
     },
     "KEYBINDINGS": {
       "OPEN_TOKEN_MANAGER": {

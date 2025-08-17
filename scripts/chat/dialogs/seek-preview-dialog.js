@@ -114,11 +114,38 @@ export class SeekPreviewDialog extends BaseActionDialog {
     const cfg = (s) => this.visibilityConfig(s);
 
     // Prepare outcomes for template
-    const processedOutcomes = filteredOutcomes.map((outcome) => {
+    const processedOutcomes = await Promise.all(filteredOutcomes.map(async (outcome) => {
       // Get current visibility state; walls use their stored state instead of token-vs-token
       let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
       if (!outcome._isWall) {
-        currentVisibility = getVisibilityBetween(this.actorToken, outcome.target) || currentVisibility;
+        try {
+          const live = getVisibilityBetween(this.actorToken, outcome.target);
+          currentVisibility = live || currentVisibility;
+          // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
+          if ((!live || live === "observed") && game.user?.isGM) {
+            const actor = outcome.target?.actor;
+            const hasHidden = !!actor?.conditions?.get?.("hidden") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "hidden");
+            const hasUndetected = !!actor?.conditions?.get?.("undetected") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "undetected");
+            if (hasUndetected || hasHidden) {
+              const { setVisibilityBetween } = await import("../../utils.js");
+              const inferred = hasUndetected ? "undetected" : "hidden";
+              try { await setVisibilityBetween(this.actorToken, outcome.target, inferred, { direction: "observer_to_target" }); } catch (_) {}
+              // Remove PF2e system condition to avoid double-state after Visioner owns it
+              try {
+                const slug = hasUndetected ? "undetected" : "hidden";
+                // Prefer the PF2e pf2e.condition automation API if present
+                const toRemove = actor?.itemTypes?.condition?.find?.(c => c?.slug === slug);
+                if (toRemove?.delete) await toRemove.delete();
+                else if (actor?.toggleCondition) await actor.toggleCondition(slug, { active: false });
+                else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
+              } catch (_) {}
+              currentVisibility = inferred;
+              // Ensure in-memory outcomes reflect the actual new mapping right away
+              outcome.oldVisibility = currentVisibility;
+              outcome.newVisibility = currentVisibility;
+            }
+          }
+        } catch (_) {}
       }
 
       // Prepare available states for override using per-action config
@@ -126,7 +153,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       const availableStates = this.buildOverrideStates(desired, outcome);
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility || currentVisibility;
-      const baseOldState = outcome.oldVisibility || currentVisibility;
+      const baseOldState = (currentVisibility != null ? currentVisibility : outcome.oldVisibility);
       // Actionable if original differs from new or override
       const hasActionableChange =
         baseOldState != null &&
@@ -146,7 +173,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
         hasActionableChange,
         noProficiency: !!outcome.noProficiency,
       };
-    });
+    }));
 
     // Update original outcomes with hasActionableChange for Apply All button logic
     processedOutcomes.forEach((processedOutcome, index) => {

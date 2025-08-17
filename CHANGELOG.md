@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.1] - 2025-08-17
+
+### Fixed
+
+- Seek Action: when changing system condition to visioner, change it also to any player that doesnt have it's own visioner flag with the target
+
 ## [2.5.0] - 2025-08-17
 
 ### Added

@@ -29,9 +29,8 @@
   <!-- Footer: counts on the left, mode switch + minimize on the right -->
   <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
     <div style="display:flex; gap:8px; align-items:center;">
-      <div title="Selected tokens count"><i class="fas fa-user-check"></i> {{selCount}}</div>
-      <div title="Targeted tokens count"><i class="fas fa-bullseye"></i> {{tgtCount}}</div>
-      <button type="button" class="visioner-btn" data-action="refreshSets" title="Refresh sets"><i class="fas fa-sync-alt"></i></button>
+      <div title="{{selTooltip}}"><i class="fas fa-user-check"></i> {{selCount}}</div>
+      <div title="{{tgtTooltip}}"><i class="fas fa-bullseye"></i> {{tgtCount}}</div>
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
       <div>{{#if modeIsObserver}}Observer → Target{{else}}Target → Observer{{/if}}</div>

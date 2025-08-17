@@ -17,7 +17,6 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       toggleMode: VisionerQuickPanel._onToggleMode,
       setVisibility: VisionerQuickPanel._onSetVisibility,
       setCover: VisionerQuickPanel._onSetCover,
-      refreshSets: VisionerQuickPanel._onRefreshSets,
       minimize: VisionerQuickPanel._onMinimize,
     },
   };
@@ -41,11 +40,21 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
   async _prepareContext(_options) {
     const visList = Object.entries(VISIBILITY_STATES).map(([key, cfg]) => ({ key, label: game.i18n.localize(cfg.label), icon: cfg.icon, color: cfg.color }));
     const coverList = Object.entries(COVER_STATES).map(([key, cfg]) => ({ key, label: game.i18n.localize(cfg.label), icon: cfg.icon, color: cfg.color }));
+    const selected = this.selectedTokens;
+    const targeted = this.targetedTokens;
+    const formatNames = (tokens) => {
+      try {
+        const names = Array.from(new Set(tokens.map(t => t?.name || t?.document?.name || t?.actor?.name).filter(n => !!n)));
+        return names.length ? names.join("\n") : game.i18n?.localize?.("None") || "None";
+      } catch (_) { return "None"; }
+    };
     return {
       mode: this.mode,
       modeIsObserver: this.mode === "observer",
-      selCount: this.selectedTokens.length,
-      tgtCount: this.targetedTokens.length,
+      selCount: selected.length,
+      tgtCount: targeted.length,
+      selTooltip: formatNames(selected),
+      tgtTooltip: formatNames(targeted),
       visibilityStates: visList,
       coverStates: coverList,
     };
@@ -67,6 +76,7 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
     await super._onRender(options);
     this._injectHeaderMinimizeButton();
     try { VisionerQuickPanel.current = this; } catch (_) {}
+    this._bindAutoRefresh();
   }
 
   static _onClose(_event, _button) {
@@ -160,6 +170,36 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
   }
 
   // Floating button helpers
+  _bindAutoRefresh() {
+    try {
+      // Remove previous
+      this._unbindAutoRefresh?.();
+      const rerender = () => {
+        try {
+          if (this._autoRefreshTimer) clearTimeout(this._autoRefreshTimer);
+          this._autoRefreshTimer = setTimeout(() => {
+            try { this.render({ force: true }); } catch (_) {}
+          }, 50);
+        } catch (_) {}
+      };
+      const onControlToken = () => rerender();
+      const onTargetToken = () => rerender();
+      Hooks.on("controlToken", onControlToken);
+      Hooks.on("releaseToken", onControlToken);
+      Hooks.on("targetToken", onTargetToken);
+      this._unbindAutoRefresh = () => {
+        try { Hooks.off("controlToken", onControlToken); } catch (_) {}
+        try { Hooks.off("releaseToken", onControlToken); } catch (_) {}
+        try { Hooks.off("targetToken", onTargetToken); } catch (_) {}
+        try { if (this._autoRefreshTimer) { clearTimeout(this._autoRefreshTimer); this._autoRefreshTimer = null; } } catch (_) {}
+        this._unbindAutoRefresh = null;
+      };
+      // Clean up on close
+      this.once?.("close", () => {
+        try { this._unbindAutoRefresh?.(); } catch (_) {}
+      });
+    } catch (_) {}
+  }
   _injectHeaderMinimizeButton() {
     try {
       const root = document.getElementById(this.id) || this.element?.parentElement || this.element?.closest?.("section, .application, .window-app") || null;

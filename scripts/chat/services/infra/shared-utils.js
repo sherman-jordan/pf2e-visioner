@@ -121,9 +121,49 @@ export function hasActiveEncounter() {
  */
 export function isTokenInEncounter(token) {
   if (!hasActiveEncounter()) return false;
+  try {
+    // Include companions/familiars/eidolons that are tied to combatants even if not listed in tracker
+    const id = token?.id ?? token?.document?.id;
+    const direct = game.combat.combatants.find((c) => c.tokenId === id);
+    if (direct) return true;
 
-  const combatant = game.combat.combatants.find((c) => c.tokenId === token.id);
-  return !!combatant;
+    // Check actor and actor's master (for familiar/eidolon) or companions linked to a combatant
+    const actor = token?.actor;
+    const actorId = actor?.id;
+    const isFamiliar = actor?.type === "familiar";
+    const isEidolon = actor?.type === "eidolon" || actor?.isOfType?.("eidolon");
+
+    // Always include familiars regardless of encounter filter
+    if (isFamiliar) return true;
+
+    // Try PF2e master linkage on eidolon
+    const master = isEidolon ? actor?.system?.eidolon?.master : null;
+    const masterTokenId = master?.getActiveTokens?.(true, true)?.[0]?.id;
+    if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId)) return true;
+
+    // Try linked actor id
+    if (actorId && game.combat.combatants.some((c) => c.actorId === actorId)) return true;
+
+    // As a final pass, include any token that is within the combat scene and owned by a combatant's actor (party minions)
+    return game.combat.combatants.some((c) => {
+      try {
+        const cActor = c.actor;
+        if (!cActor) return false;
+        // Companions/minions may have their actor's master/party as owner
+        const ownerIds = new Set([
+          cActor.id,
+          cActor.master?.id,
+          cActor?.system?.eidolon?.master?.id,
+        ].filter(Boolean));
+        return ownerIds.has(actorId);
+      } catch (_) {
+        return false;
+      }
+    });
+  } catch (_) {
+    const combatant = game.combat.combatants.find((c) => c.tokenId === token.id);
+    return !!combatant;
+  }
 }
 
 /**

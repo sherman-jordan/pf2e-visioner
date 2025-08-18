@@ -7,10 +7,10 @@ import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
 // Re-export core state stores to enforce single source of truth
 export { cleanupDeletedToken, restoreDeletedTokenMaps } from "./services/scene-cleanup.js";
 export {
-    getCoverBetween, getCoverMap, setCoverBetween, setCoverMap
+  getCoverBetween, getCoverMap, setCoverBetween, setCoverMap
 } from "./stores/cover-map.js";
 export {
-    getVisibilityBetween, getVisibilityMap, setVisibilityBetween, setVisibilityMap
+  getVisibilityBetween, getVisibilityMap, setVisibilityBetween, setVisibilityMap
 } from "./stores/visibility-map.js";
 
 /**
@@ -211,17 +211,38 @@ export function getSceneTargets(observer, encounterOnly = false, ignoreAllies = 
     return allTokens;
   }
 
-  // Filter to only tokens that are in the current encounter
+  // Filter to only tokens that are in the current encounter, including
+  // familiars/companions/eidolons tied to a combatant even if not listed
+  // Note: Familiars are always included regardless of encounter filter
   return allTokens.filter((token) => {
-    // Check if there's an active encounter
-    if (!game.combat || !game.combat.combatants.size) {
-      return true; // Don't filter if there isn't a meaningful encounter
-    }
-
-    // Check if this token's actor is in the encounter
-    return game.combat.combatants.some(
-      (combatant) => combatant.token?.id === token.document.id,
-    );
+    if (!game.combat || !game.combat.combatants.size) return true;
+    
+    const actor = token?.actor;
+    // Always include familiars regardless of encounter filter
+    if (actor?.type === "familiar") return true;
+    
+    const tokenId = token?.document?.id;
+    const direct = game.combat.combatants.some((c) => c.token?.id === tokenId);
+    if (direct) return true;
+    // Eidolon master linkage
+    const master = (actor?.type === "eidolon" || actor?.isOfType?.("eidolon")) ? actor?.system?.eidolon?.master : null;
+    const masterTokenId = master?.getActiveTokens?.(true, true)?.[0]?.id;
+    if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId)) return true;
+    // Actor linkage fallback
+    const actorId = actor?.id;
+    if (actorId && game.combat.combatants.some((c) => c.actorId === actorId)) return true;
+    // Owner linkage fallback (minions)
+    return game.combat.combatants.some((c) => {
+      try {
+        const cActor = c.actor; if (!cActor) return false;
+        const owners = new Set([
+          cActor.id,
+          cActor.master?.id,
+          cActor?.system?.eidolon?.master?.id,
+        ].filter(Boolean));
+        return owners.has(actorId);
+      } catch (_) { return false; }
+    });
   });
 }
 

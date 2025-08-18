@@ -448,7 +448,7 @@ export const KEYBINDINGS = {
   openQuickPanel: {
     name: "Open Visioner Quick Panel",
     hint: "Open the compact Visioner Quick Edit panel.",
-    editable: [{ key: "KeyQ", modifiers: ["Control", "Shift"] }],
+    editable: [],
     restricted: true,
   },
   toggleObserverMode: {

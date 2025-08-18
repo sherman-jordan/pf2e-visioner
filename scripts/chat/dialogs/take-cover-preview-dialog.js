@@ -44,13 +44,13 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
   async getFilteredOutcomes() {
     try {
       let filtered = this.applyEncounterFilter(this.outcomes || [], "target", "No encounter observers found for this action");
-      
+
       // Apply ally filtering if ignore allies is enabled
       try {
         const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
         filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, "target");
-      } catch (_) {}
-      
+      } catch (_) { }
+
       return filtered;
     } catch (_) {
       return Array.isArray(this.outcomes) ? this.outcomes : [];
@@ -58,26 +58,27 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
   }
 
   async _prepareContext(options) {
-    const context = await super._prepareContext(options);
+    await super._prepareContext(options);
 
     // Filter outcomes (ally/enemy filtering not required for cover; use generic encounter filter)
     const filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter observers found for this action");
+    
 
     // Map cover constants to templating-friendly config
     const coverCfg = (s) => {
       const cfg = COVER_STATES[s] || null;
       if (!cfg) return { label: String(s ?? ""), icon: "fas fa-shield-alt", color: "#795548" };
       let label = cfg.label;
-      try { label = game.i18n.localize(cfg.label); } catch (_) {}
+      try { label = game.i18n.localize(cfg.label); } catch (_) { }
       return { label, icon: cfg.icon || "fas fa-shield-alt", color: cfg.color || "#795548" };
     };
 
-    const allStates = ["none", "standard", "greater"]; // for override icons
+    const allStates = ["none", "lesser", "standard", "greater"]; // for override icons
 
-    const processed = filteredOutcomes.map((o) => {
+    const processed = filteredOutcomes.map((o, idx) => {
       const effectiveNew = o.overrideState || o.newVisibility || o.newCover;
       const baseOld = o.oldVisibility || o.oldCover || o.currentCover;
-      const hasActionableChange = baseOld != null && effectiveNew != null && effectiveNew !== baseOld;
+      let hasActionableChange = baseOld != null && effectiveNew != null && effectiveNew !== baseOld;
       const availableStates = allStates.map((s) => ({
         value: s,
         label: coverCfg(s).label,
@@ -96,6 +97,46 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
         hasActionableChange,
       };
     });
+
+    // Process system condition replacement for GM users
+    if (game.user?.isGM) {
+      const actor = this.actorToken?.actor;
+      if (actor) {
+        // Check for PF2e cover effect system
+        const coverEffect = actor?.itemTypes?.effect?.find?.(e => e.slug === "effect-cover");
+
+        if (coverEffect) {
+          // Extract cover level from PF2e flags, with robust fallbacks
+          let coverLevel = coverEffect.flags?.pf2e?.rulesSelections?.cover?.level;
+          if (!coverLevel) {
+            try {
+              // Fallback: infer from FlatModifier to AC in rules
+              const rules = Array.isArray(coverEffect.system?.rules) ? coverEffect.system.rules : [];
+              const acMods = rules.filter(r => String(r?.key) === "FlatModifier" && String(r?.selector) === "ac");
+              const val = acMods.map(r => Number(r?.value)).find(n => !Number.isNaN(n));
+              if (val === 4) coverLevel = "greater";
+              else if (val === 2) coverLevel = "standard";
+              else if (val === 1) coverLevel = "lesser";
+            } catch (_) {}
+          }
+
+          if (coverLevel) {
+            // Convert PF2e system cover to Visioner cover (no upgrade rules).
+            // Keep the original Visioner state as "old/current" and set the PF2e level as the desired new state.
+            for (const outcome of processed) {
+              const currentVisioner = outcome.currentCover ?? outcome.oldCover ?? outcome.currentVisibility ?? outcome.oldVisibility ?? "none";
+              const desired = coverLevel;
+              outcome.newCover = desired;
+              outcome.newVisibility = desired; // compatibility
+              outcome.overrideState = desired;
+              outcome.hasActionableChange = desired !== currentVisioner;
+              // Persist PF2e level to use during Apply All
+              outcome.pf2eEffectLevel = coverLevel;
+            }
+          }
+        }
+      }
+    }
 
     this.outcomes = processed;
     context.actorToken = this.actorToken;
@@ -132,24 +173,35 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
     const app = currentTakeCoverDialog; if (!app) return;
     if (app.bulkActionState === "applied") { (await import("../services/infra/notifications.js")).notify?.warn?.(`${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`); return; }
     const filtered = await app.getFilteredOutcomes();
+    // Be robust: prefer precomputed actionable flag (from context logic),
+    // but fall back to recomputing if not present
     const changed = filtered.filter((o) => {
-      const eff = o.overrideState || o.newVisibility || o.newCover;
-      const base = o.oldVisibility || o.oldCover || o.currentCover;
+      if (o?.hasActionableChange === true) return true;
+      const eff = o.overrideState ?? o.newVisibility ?? o.newCover;
+      const base = o.oldVisibility ?? o.oldCover ?? o.currentCover;
       return eff != null && base != null && eff !== base;
     });
+
     if (changed.length === 0) { (await import("../services/infra/notifications.js")).notify?.info?.(`${MODULE_TITLE}: No changes to apply`); return; }
     const overrides = {};
-    for (const o of changed) { const id = o?.target?.id; const s = o?.overrideState || o?.newVisibility || o?.newCover; if (id && s) overrides[id] = s; }
+    for (const o of changed) {
+      const id = o?.target?.id;
+      // If PF2e system cover effect exists and indicates a level, prefer that as final (bypass upgrade rules)
+      const systemOverride = o?.pf2eEffectLevel || null;
+      const s = systemOverride ?? (o?.overrideState ?? o?.newVisibility ?? o?.newCover);
+      if (id && s) overrides[id] = s;
+    }
     const { applyNowTakeCover } = await import("../services/index.js");
-    await applyNowTakeCover({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+    await applyNowTakeCover({ ...app.actionData, overrides }, { html: () => { }, attr: () => { } });
     app.bulkActionState = "applied"; app.updateBulkActionButtons(); app.updateRowButtonsToApplied(changed.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true }))); app.updateChangesCount();
+    app.close();
   }
 
   static async _onRevertAll(event, target) {
     const app = currentTakeCoverDialog; if (!app) return;
     if (app.bulkActionState === "reverted") { (await import("../services/infra/notifications.js")).notify?.warn?.(`${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`); return; }
     const { revertNowTakeCover } = await import("../services/index.js");
-    await revertNowTakeCover(app.actionData, { html: () => {}, attr: () => {} });
+    await revertNowTakeCover(app.actionData, { html: () => { }, attr: () => { } });
     app.bulkActionState = "reverted"; app.updateBulkActionButtons(); app.updateRowButtonsToReverted(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true }))); app.updateChangesCount();
   }
 
@@ -163,14 +215,14 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
     if (eff === base) return;
     const overrides = { [tokenId]: eff };
     const { applyNowTakeCover } = await import("../services/index.js");
-    await applyNowTakeCover({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+    await applyNowTakeCover({ ...app.actionData, overrides }, { html: () => { }, attr: () => { } });
     app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]); app.updateChangesCount();
   }
 
   static async _onRevertChange(event, target) {
     const app = currentTakeCoverDialog; if (!app) return;
     const { revertNowTakeCover } = await import("../services/index.js");
-    await revertNowTakeCover(app.actionData, { html: () => {}, attr: () => {} });
+    await revertNowTakeCover(app.actionData, { html: () => { }, attr: () => { } });
     const tokenId = target?.dataset?.tokenId;
     app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]); app.updateChangesCount();
   }

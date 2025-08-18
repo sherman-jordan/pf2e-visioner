@@ -340,7 +340,7 @@ export function registerSettings() {
       } else if (key === "allowPlayerTooltips") {
         settingConfig.onChange = () => {};
 
-      } else if (key === "useHudButton") {
+      } else if (key === "useHudButton" || key === "enableHoverTooltips") {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({
             world: true,

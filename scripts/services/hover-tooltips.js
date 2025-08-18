@@ -136,9 +136,8 @@ export function initializeHoverTooltips() {
     HoverTooltips.refreshSizes?.();
     return;
   }
-  // Only initialize hover tooltips if allowed for this user in any mode
-  // Use 'observer' mode check since we want to initialize if any mode is allowed
-  if (!canShowTooltips("observer")) return;
+  // Always initialize the tooltip system for keyboard shortcuts (Alt/O)
+  // Hover behavior will be conditionally enabled based on settings
 
   // Set the CSS variable for tooltip font size
   try {
@@ -184,6 +183,9 @@ export function initializeHoverTooltips() {
 
   // Note: Alt key handled via highlightObjects hook registered in main hooks
   // O key event listeners added globally in registerHooks
+  
+  // Mark as initialized
+  _initialized = true;
 }
 
 /**
@@ -223,28 +225,19 @@ function onTokenHoverEnd(token) {
  * @param {boolean} highlight - Whether objects should be highlighted
  */
 export function onHighlightObjects(highlight) {
-  // For GM, check if hover tooltips are enabled
-  if (game.user.isGM && !game.settings.get(MODULE_ID, "enableHoverTooltips")) {
+  // Alt-key tooltips should work regardless of hover tooltip settings
+  const canShow = canShowTooltips("target", null, true); // isKeyboardTooltip=true
+  
+  if (!canShow) {
+    console.warn(`[${MODULE_ID}] Alt-key tooltips blocked by permissions`);
     return;
-  }
-
-  // For players, check basic requirements
-  if (!game.user.isGM) {
-    // Basic requirements: both settings must be enabled
-    if (
-      !game.settings.get(MODULE_ID, "enableHoverTooltips") ||
-      !game.settings.get(MODULE_ID, "allowPlayerTooltips")
-    ) {
-      return;
-    }
-
-    // Alt key should always work even with blockPlayerTargetTooltips
-    // No need to check blockPlayerTargetTooltips here
   }
 
   if (highlight) {
     // Guard: if already in Alt overlay, don't layer another
-    if (HoverTooltips.isShowingKeyTooltips) return;
+    if (HoverTooltips.isShowingKeyTooltips) {
+      return;
+    }
     // Alt always shows target-mode overlay from controlled token(s)
     showControlledTokenVisibility();
   } else {
@@ -269,11 +262,17 @@ export function onHighlightObjects(highlight) {
  */
 function showVisibilityIndicators(hoveredToken) {
   // Check if tooltips are allowed for the current mode and token
-  // Suppress hover overlays entirely while Alt overlay is active
-  if (HoverTooltips.isShowingKeyTooltips) return;
-  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken);
+  // Suppress hover overlays entirely while Alt overlay is active, UNLESS this is a keyboard context
+  if (HoverTooltips.isShowingKeyTooltips && !HoverTooltips._keyboardContext) return;
+  
+  // Check if this is a keyboard-triggered call
+  const isKeyboardTooltip = !!HoverTooltips._keyboardContext;
+  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken, isKeyboardTooltip);
+  
 
-  if (!tooltipsAllowed) return;
+  if (!tooltipsAllowed) {
+    return;
+  }
 
   // Clear any existing indicators, unless Alt overlay is active (handled separately)
   if (!HoverTooltips.isShowingKeyTooltips) {
@@ -285,8 +284,11 @@ function showVisibilityIndicators(hoveredToken) {
   const otherTokens = canvas.tokens.placeables.filter(
     (t) => t !== hoveredToken && t.isVisible
   );
+  
 
-  if (otherTokens.length === 0) return;
+  if (otherTokens.length === 0) {
+    return;
+  }
 
   if (HoverTooltips.tooltipMode === "observer") {
     // Observer mode (O key): Show how the hovered token sees others
@@ -372,9 +374,12 @@ function showVisibilityIndicators(hoveredToken) {
  * @param {Token} hoveredToken - The token being hovered
  */
 function showCoverIndicators(hoveredToken) {
-  // Suppress hover overlays entirely while Alt overlay is active
-  if (HoverTooltips.isShowingKeyTooltips) return;
-  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken);
+  // Suppress hover overlays entirely while Alt overlay is active, UNLESS this is a keyboard context
+  if (HoverTooltips.isShowingKeyTooltips && !HoverTooltips._keyboardContext) return;
+  
+  // Check if this is a keyboard-triggered call
+  const isKeyboardTooltip = !!HoverTooltips._keyboardContext;
+  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken, isKeyboardTooltip);
   if (!tooltipsAllowed) return;
 
   hideAllCoverIndicators();
@@ -437,12 +442,12 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   // Use forced mode if provided, otherwise use current tooltipMode
   const effectiveMode = forceMode || HoverTooltips.tooltipMode;
 
+
   // Check if tooltips are allowed for the current mode
-  if (!canShowTooltips(effectiveMode)) {
-    // Special case: Alt key (forceMode = 'target') should always be allowed
-    if (!forceMode) {
-      return;
-    }
+  // For keyboard scenarios (when forceMode is provided), this is a keyboard tooltip
+  const isKeyboardTooltip = !!forceMode;
+  if (!canShowTooltips(effectiveMode, null, isKeyboardTooltip)) {
+    return;
   }
 
   // For players, only allow if they control the observer token
@@ -454,7 +459,6 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   const otherTokens = canvas.tokens.placeables.filter(
     (t) => t !== observerToken && t.isVisible
   );
-
   if (otherTokens.length === 0) return;
 
   if (effectiveMode === "observer") {
@@ -501,7 +505,6 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
       });
     } else {
       // GM sees all perspectives
-
       otherTokens.forEach((otherToken) => {
         const visibilityMap = getVisibilityMap(otherToken);
         const visibilityState =
@@ -530,8 +533,12 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
  */
 function showCoverIndicatorsForToken(observerToken, forceMode = null) {
   const effectiveMode = forceMode || HoverTooltips.tooltipMode;
-  if (!canShowTooltips(effectiveMode)) {
-    if (!forceMode) return;
+
+  
+  // For keyboard scenarios (when forceMode is provided), this is a keyboard tooltip
+  const isKeyboardTooltip = !!forceMode;
+  if (!canShowTooltips(effectiveMode, null, isKeyboardTooltip)) {
+    return;
   }
   if (!game.user.isGM && !observerToken.isOwner) return;
 
@@ -544,6 +551,7 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
     otherTokens.forEach((targetToken) => {
       const coverMap = getCoverMap(observerToken);
       const coverState = coverMap[targetToken.document.id] || "none";
+      
       if (coverState !== "none") {
         addCoverIndicator(targetToken, observerToken, coverState, "observer");
       }
@@ -564,6 +572,7 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
       otherTokens.forEach((otherToken) => {
         const coverMap = getCoverMap(otherToken);
         const coverState = coverMap[observerToken.document.id] || "none";
+        
         if (coverState !== "none") {
           addCoverIndicator(otherToken, otherToken, coverState, "target");
         }
@@ -603,10 +612,10 @@ export function hideAutoCoverComputedOverlay() {
  * Uses target mode - how others see the controlled tokens
  */
 export function showControlledTokenVisibility() {
-  if (HoverTooltips.isShowingKeyTooltips) return;
-
+  if (HoverTooltips.isShowingKeyTooltips) {
+    return;
+  }
   const controlledTokens = canvas.tokens.controlled;
-
   HoverTooltips.isShowingKeyTooltips = true;
   HoverTooltips.keyTooltipTokens.clear();
   // Ensure any hover overlays are cleared before rendering Alt overlay
@@ -617,13 +626,22 @@ export function showControlledTokenVisibility() {
   hideAllVisibilityIndicators();
   hideAllCoverIndicators();
 
-  // For each controlled token, show visibility indicators as if hovering over it
+  // For each controlled token, show indicators as if hovering over it
   controlledTokens.forEach((controlledToken) => {
     HoverTooltips.keyTooltipTokens.add(controlledToken.id);
 
-    // Use the existing showVisibilityIndicators logic, force target mode for Alt key
-    showVisibilityIndicatorsForToken(controlledToken, "target");
-    // During Alt overlay, do NOT render cover badges; show visibility-only to avoid mixed modes
+    // Temporarily set tooltip mode and add keyboard context flag
+    const originalMode = HoverTooltips.tooltipMode;
+    
+    HoverTooltips.tooltipMode = "target";
+    HoverTooltips._keyboardContext = true; // Flag to indicate this is keyboard-triggered
+    
+    // Use normal hover functions (which auto-combine visibility and cover)
+    showVisibilityIndicators(controlledToken);
+    
+    // Restore original state
+    HoverTooltips.tooltipMode = originalMode;
+    delete HoverTooltips._keyboardContext;
   });
 
   HoverTooltips._initialized = true;
@@ -655,13 +673,22 @@ export function showControlledTokenVisibilityObserver() {
   hideAllVisibilityIndicators();
   hideAllCoverIndicators();
 
-  // For each chosen token, show visibility indicators as if hovering over it
+  // For each chosen token, show indicators as if hovering over it
   tokensToUse.forEach((controlledToken) => {
     HoverTooltips.keyTooltipTokens.add(controlledToken.id);
 
-    // Use observer mode instead of target mode
-    showVisibilityIndicatorsForToken(controlledToken, "observer");
-    // During O overlay, do NOT render cover badges; show visibility-only
+    // Temporarily set tooltip mode and add keyboard context flag
+    const originalMode = HoverTooltips.tooltipMode;
+    
+    HoverTooltips.tooltipMode = "observer";
+    HoverTooltips._keyboardContext = true; // Flag to indicate this is keyboard-triggered
+    
+    // Use normal hover functions (which auto-combine visibility and cover)
+    showVisibilityIndicators(controlledToken);
+    
+    // Restore original state
+    HoverTooltips.tooltipMode = originalMode;
+    delete HoverTooltips._keyboardContext;
   });
 }
 

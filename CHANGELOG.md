@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.2] - 2025-08-17
+
+### Added
+
+- Take cover: support converting system effect to visioner one
+
+### Fixed
+
+- Tooltips: fixed all hover tooltips state and keyboard tooltips states (should be much more stable) 
+- Familiars will not be filtered when the encounter filter is turned on
+
+
 ## [2.5.1] - 2025-08-17
 
 ### Fixed

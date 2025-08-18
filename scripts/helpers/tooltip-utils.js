@@ -36,13 +36,27 @@ export function computeSizesFromSetting(rawValue) {
 }
 
 /**
- * Check whether hover tooltips should be shown for the current user and token in a given mode.
+ * Check whether tooltips should be shown for the current user and token in a given mode.
+ * @param {string} [mode='target'] - The tooltip mode to check ('target' or 'observer')
+ * @param {Token} [hoveredToken=null] - The token being hovered (optional)
+ * @param {boolean} [isKeyboardTooltip=false] - Whether this is for keyboard tooltips (Alt/O key) which ignore hover settings
  */
-export function canShowTooltips(mode = "target", hoveredToken = null) {
-  // Always allow GM to see tooltips if hover tooltips are enabled
+export function canShowTooltips(mode = "target", hoveredToken = null, isKeyboardTooltip = false) {
+  // Keyboard tooltips (Alt/O key) work regardless of hover tooltip settings
+  if (isKeyboardTooltip) {
+    if (game.user.isGM) {
+      return true; // GMs can always use keyboard tooltips
+    }
+    // For players, still need basic tooltip permissions enabled
+    const result = game.settings.get(MODULE_ID, "enableHoverTooltips") && 
+                   game.settings.get(MODULE_ID, "allowPlayerTooltips");
+    return result;
+  }
+  
+  // For regular hover tooltips, check all the settings
   if (game.user.isGM) {
-    const allowed = game.settings.get(MODULE_ID, "enableHoverTooltips");
-    return allowed;
+    // GMs need hover tooltips enabled for hover behavior
+    return game.settings.get(MODULE_ID, "enableHoverTooltips");
   }
 
   // For players, first check if hover tooltips are enabled at all

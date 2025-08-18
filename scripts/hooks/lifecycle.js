@@ -35,27 +35,31 @@ export async function onCanvasReady() {
     await updateWallVisuals(id);
   } catch (_) {}
 
-  if (game.settings.get(MODULE_ID, "enableHoverTooltips")) {
-    initializeHoverTooltips();
-    // Bind 'O' key on keydown/keyup for observer overlay
-    window.addEventListener("keydown", async (ev) => {
+  // Always initialize tooltip system for keyboard shortcuts
+  initializeHoverTooltips();
+  
+  // Always bind keyboard shortcuts (Alt handled via highlightObjects hook, O key handled here)
+  // Bind 'O' key on keydown/keyup for observer overlay
+  window.addEventListener("keydown", async (ev) => {
       if (ev.key?.toLowerCase() !== "o") return;
-      try {
         const { HoverTooltips, showControlledTokenVisibilityObserver } = await import("../services/hover-tooltips.js");
         if (!HoverTooltips.isShowingKeyTooltips && typeof showControlledTokenVisibilityObserver === "function") {
           showControlledTokenVisibilityObserver();
+        } else {
         }
-      } catch (_) {}
+
     }, { passive: true });
     window.addEventListener("keyup", async (ev) => {
       if (ev.key?.toLowerCase() !== "o") return;
       try {
         // Reuse the existing release path via onHighlightObjects(false)
-        const { onHighlightObjects } = await import("../services/hover-tooltips.js");
+        const { onHighlightObjects, cleanupHoverTooltips } = await import("../services/hover-tooltips.js");
         onHighlightObjects(false);
-      } catch (_) {}
+        cleanupHoverTooltips();
+      } catch (err) {
+        console.error(`[${MODULE_ID}] O key release error:`, err);
+      }
     }, { passive: true });
-  }
 
   // After canvas is ready, previously rendered chat messages may have been processed
   // before tokens were available, preventing action panels (e.g., Consequences) from

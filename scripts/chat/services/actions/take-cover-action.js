@@ -18,24 +18,73 @@ export class TakeCoverActionHandler extends ActionHandlerBase {
   async discoverSubjects(actionData) {
     const allTokens = canvas?.tokens?.placeables || [];
     const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
-    return allTokens
+    const subjects = allTokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actionData.actor))
       // Respect Ignore Allies: when enabled, exclude allies from observers list
       .filter((t) => !shouldFilterAlly(actionData.actor, t, "enemies"))
       // Exclude loot and hazards from observers for Take Cover
       .filter((t) => t.actor?.type !== "loot" && t.actor?.type !== "hazard");
+    
+    return subjects;
   }
 
   async analyzeOutcome(actionData, subject) {
     const { getCoverBetween } = await import("../../../utils.js");
     // Orientation: observer = subject (row token), target = actor (taking cover)
-    const current = getCoverBetween(subject, actionData.actor) || "none";
-    let newCover = current;
-    if (current === "lesser" || current === "none") newCover = "standard";
-    else if (current === "standard") newCover = "greater";
-    // If already greater, no change
+    let current = getCoverBetween(subject, actionData.actor) || "none";
+    
+    // Check for PF2e system cover effect on the actor taking cover
+    let hasPF2eEffect = false;
+    if (game.user?.isGM) {
+      // Try different ways to access the actor
+      let actor = actionData.actor?.actor || actionData.actor;
+      
+      if (actor?.itemTypes?.effect) {
+        const allEffects = actor.itemTypes.effect.map(e => ({ slug: e.slug, name: e.name }));
+        const coverEffect = actor.itemTypes.effect.find(e => e.slug === "effect-cover");
+        
+        if (coverEffect) {
+          const coverLevel = coverEffect.flags?.pf2e?.rulesSelections?.cover?.level;
+          if (coverLevel) {
+            current = coverLevel;
+            hasPF2eEffect = true;
+          }
+        }
+      }
+    }
+    
+    let newCover;
+    let originalCurrent = current;
+    
+    if (hasPF2eEffect) {
+      // PF2e effect present: use the PF2e level as final result (GM has already calculated it)
+      // Compare against existing Visioner cover (not the PF2e effect level)
+      const existingVisionerCover = getCoverBetween(subject, actionData.actor) || "none";
+      newCover = current; // Use PF2e effect level as new cover
+      const changed = newCover !== existingVisionerCover;
+      
+      return {
+        target: subject,
+        currentCover: existingVisionerCover,
+        oldCover: existingVisionerCover,
+        newCover,
+        // Visibility-aligned aliases so shared UI helpers work
+        currentVisibility: existingVisionerCover,
+        oldVisibility: existingVisionerCover,
+        newVisibility: newCover,
+        changed,
+      };
+    } else {
+      // No PF2e effect: apply normal Take Cover upgrade rules
+      newCover = current;
+      if (current === "lesser" || current === "none") newCover = "standard";
+      else if (current === "standard") newCover = "greater";
+      // If already greater, no change
+    }
+    
     const changed = newCover !== current;
+        
     // Mirror fields to align with BaseActionDialog utilities
     return {
       target: subject,
@@ -64,8 +113,25 @@ export class TakeCoverActionHandler extends ActionHandlerBase {
 
   async applyChangesInternal(changes) {
     const { setCoverBetween } = await import("../../../utils.js");
+
+    
     for (const ch of changes) {
       await setCoverBetween(ch.observer, ch.target, ch.newCover, { skipEphemeralUpdate: false });
+    }
+    
+    // Remove PF2e cover effect from the actor taking cover to avoid conflicts
+    if (changes.length > 0 && game.user?.isGM) {
+      const actorTakingCover = changes[0]?.target; // All changes should have the same target (actor taking cover)
+      if (actorTakingCover?.actor) {
+        const coverEffect = actorTakingCover.actor.itemTypes?.effect?.find?.(e => e.slug === "effect-cover");
+        if (coverEffect) {
+          try {
+            await coverEffect.delete();
+          } catch (error) {
+            console.warn(`[PF2E-Visioner] Failed to remove PF2e cover effect from ${actorTakingCover.name}:`, error);
+          }
+        }
+      }
     }
   }
 

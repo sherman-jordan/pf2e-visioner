@@ -133,7 +133,6 @@ export async function buildContext(app, options) {
         currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : "observed",
         currentCoverState,
         isPC: token.actor?.hasPlayerOwner || token.actor?.type === "character",
-        actorType: token.actor?.type || "unknown",
         disposition: disposition,
         dispositionClass: disposition === -1 ? "hostile" : disposition === 1 ? "friendly" : "neutral",
         visibilityStates,
@@ -208,7 +207,6 @@ export async function buildContext(app, options) {
         currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : "observed",
         currentCoverState,
         isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === "character",
-        actorType: observerToken.actor?.type || "unknown",
         disposition: disposition,
         dispositionClass: disposition === -1 ? "hostile" : disposition === 1 ? "friendly" : "neutral",
         visibilityStates,
@@ -248,17 +246,9 @@ export async function buildContext(app, options) {
     return a.name.localeCompare(b.name);
   };
 
-  // For cover tab, exclude hazards and loot as they don't participate in cover mechanics
-  const shouldExcludeFromCover = (t) => {
-    if (context.isCoverTab) {
-      return t.isLoot || t.actorType === "hazard";
-    }
-    return false;
-  };
-
-  context.pcTargets = allTargets.filter((t) => t.isPC && !t.isLoot && !shouldExcludeFromCover(t)).sort(sortByStatusAndName);
-  context.npcTargets = allTargets.filter((t) => !t.isPC && !t.isLoot && !shouldExcludeFromCover(t)).sort(sortByStatusAndName);
-  context.lootTargets = app.mode === "observer" ? allTargets.filter((t) => t.isLoot && !shouldExcludeFromCover(t)).sort(sortByStatusAndName) : [];
+  context.pcTargets = allTargets.filter((t) => t.isPC && !t.isLoot).sort(sortByStatusAndName);
+  context.npcTargets = allTargets.filter((t) => !t.isPC && !t.isLoot).sort(sortByStatusAndName);
+  context.lootTargets = app.mode === "observer" ? allTargets.filter((t) => t.isLoot).sort(sortByStatusAndName) : [];
   context.targets = allTargets;
 
   // Hidden Walls (Observer Mode): list identifiers of walls marked as hidden with observed/hidden states

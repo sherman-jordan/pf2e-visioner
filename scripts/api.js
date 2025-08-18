@@ -701,6 +701,12 @@ export class Pf2eVisionerApi {
         return null;
       }
       
+      // Exclude same token (observer and target are the same)
+      if (observerToken.id === targetToken.id) {
+        console.warn('PF2E Visioner: Cannot calculate cover between a token and itself');
+        return null;
+      }
+      
       // Check if auto-cover is enabled
       if (!game.settings.get(MODULE_ID, "autoCover")) {
         console.warn('PF2E Visioner: Auto-cover is disabled in module settings');

@@ -5,7 +5,7 @@
 ### Fixed
 
 - Tooltips: some more optimizations
-- Hazards will not show on anything cover related
+- API: make sure auto cover skips blockers that have the same id as the controlled token
 
 ## [2.5.2] - 2025-08-17
 

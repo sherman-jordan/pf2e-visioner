@@ -232,6 +232,10 @@ function getEligibleBlockingTokens(attacker, target, filters) {
   for (const blocker of canvas.tokens.placeables) {
     if (!blocker?.actor) continue;
     if (blocker === attacker || blocker === target) continue;
+    
+    // Exclude controlled/selected tokens from being blockers
+    if (canvas.tokens.controlled.includes(blocker) || blocker.id === attacker.id || blocker.id === target.id) continue;
+    
     const type = blocker.actor?.type;
     if (type === "loot" || type === "hazard") continue;
     if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) { continue; }
@@ -294,6 +298,9 @@ function evaluateWallsCover(p1, p2) {
 export function detectCoverStateForAttack(attacker, target, options = {}) {
   try {
     if (!attacker || !target) return "none";
+    
+    // Exclude same token (attacker and target are the same)
+    if (attacker.id === target.id) return "none";
     
     const p1 = attacker.center ?? attacker.getCenter();
     const p2 = target.center ?? target.getCenter();

@@ -4,7 +4,8 @@
 
 ### Added
 
-- Take cover: support converting system effect to visioner one
+- Take cover: support converting system effect to visioner one(for people that use the macro and dont just post the action in chat)
+  - will bypass visioner take cover automation and will set to the effect selected by the system effect (basicaly will not increment the cover based on the current cover state)
 
 ### Fixed
 

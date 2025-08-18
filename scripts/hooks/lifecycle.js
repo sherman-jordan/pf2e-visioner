@@ -53,9 +53,10 @@ export async function onCanvasReady() {
       if (ev.key?.toLowerCase() !== "o") return;
       try {
         // Reuse the existing release path via onHighlightObjects(false)
-        const { onHighlightObjects, cleanupHoverTooltips } = await import("../services/hover-tooltips.js");
+        const { onHighlightObjects } = await import("../services/hover-tooltips.js");
         onHighlightObjects(false);
-        cleanupHoverTooltips();
+        // Note: Don't call cleanupHoverTooltips() here as it would reset currentHoveredToken
+        // and prevent hover tooltips from being restored
       } catch (err) {
         console.error(`[${MODULE_ID}] O key release error:`, err);
       }

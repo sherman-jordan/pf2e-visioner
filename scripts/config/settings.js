@@ -15,12 +15,11 @@ export function registerSettings() {
 
       // Add onChange handler for settings that require restart
       if (key === "enableHoverTooltips") {
-        // Live-apply without world reload
-        settingConfig.onChange = async (value) => {
-          try {
-            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("../services/hover-tooltips.js");
-            if (value) initializeHoverTooltips(); else cleanupHoverTooltips();
-          } catch (_) {}
+        // Force world refresh when hover tooltips setting is changed
+        settingConfig.onChange = () => {
+          SettingsConfig.reloadConfirm({
+            world: true,
+          });
         };
       } else if (key === "allowPlayerTooltips") {
         // Live-apply without world reload for players

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.3] - 2025-08-17
+
+### Fixed
+
+- Tooltips: some more optimizations
+- Hazards will not show on anything cover related
+
 ## [2.5.2] - 2025-08-17
 
 ### Added

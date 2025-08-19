@@ -11,8 +11,12 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
   async discoverSubjects(actionData) {
     const tokens = canvas?.tokens?.placeables || [];
     const attacker = actionData?.actor || null;
+    
+    // Apply RAW enforcement if enabled
+    const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+    
     // Exclude attacker itself, hazards, and loot tokens from observers
-    return tokens.filter((t) => {
+    let potential = tokens.filter((t) => {
       try {
         if (!t || !t.actor) return false;
         if (attacker && t.id === attacker.id) return false;
@@ -25,6 +29,33 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
         return false;
       }
     });
+    
+    // Apply RAW enforcement if enabled
+    if (enforceRAW) {      
+      const { getVisibilityBetween } = await import("../../../utils.js");
+      
+      // Filter to only include targets that the attacker is Hidden or Undetected from
+      potential = potential.filter((subject) => {
+        try {
+          // Check visibility state from the subject's perspective toward the attacker
+          const visibility = getVisibilityBetween(subject, attacker);
+          const isValidTarget = visibility === "undetected" || visibility === "hidden";
+          
+          return isValidTarget;
+        } catch (error) {
+          console.warn("Error checking visibility for RAW enforcement:", error);
+          // If we can't determine visibility, exclude the target to be safe
+          return false;
+        }
+      });
+            
+      // If no valid targets found after RAW filtering, notify the user
+      if (potential.length === 0) {
+        notify.warn("No valid targets found for Attack Consequences. According to RAW, you can only see consequences from targets that you are Hidden or Undetected from.");
+      }
+    }
+    
+    return potential;
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import("../../../utils.js");

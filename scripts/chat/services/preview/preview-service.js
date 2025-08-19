@@ -139,6 +139,18 @@ export async function previewActionResults(actionData) {
         const { ConsequencesActionHandler } = await import("../actions/consequences-action.js");
         const { ConsequencesPreviewDialog } = await import("../../dialogs/consequences-preview-dialog.js");
         const handler = new ConsequencesActionHandler();
+        
+        // RAW enforcement gate: check if there are valid targets for consequences
+        try {
+          const { checkForValidTargets } = await import("../infra/target-checker.js");
+          const canShowConsequences = checkForValidTargets({ ...actionData, actionType: "consequences" });
+          if (!canShowConsequences && game.settings.get(MODULE_ID, "enforceRawRequirements")) {
+            const { notify } = await import("../infra/notifications.js");
+            notify.warn("No valid targets found for Attack Consequences. According to RAW, you can only see consequences from targets that you are Hidden or Undetected from.");
+            return;
+          }
+        } catch (_) {}
+        
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(subjects.map((s) => handler.analyzeOutcome(actionData, s)));
         const changes = outcomes.filter((o) => o && o.changed);

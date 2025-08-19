@@ -1,7 +1,10 @@
 /*
  * Token Effects and Styling
  * Token-specific visual effects and row styling
+ * All styles scoped to .pf2e-visioner to avoid conflicts
  */
+
+.pf2e-visioner {
 
 /* PC and NPC Row Styling */
 .pc-row {
@@ -334,3 +337,5 @@
   border: 2px solid transparent;
   transition: border-color var(--transition-fast);
 }
+
+} /* End .pf2e-visioner scope */

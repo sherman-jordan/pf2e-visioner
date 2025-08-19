@@ -18,7 +18,7 @@ let currentPointOutDialog = null;
 export class PointOutPreviewDialog extends BaseActionDialog {
   static DEFAULT_OPTIONS = {
     tag: "div",
-    classes: ["point-out-preview-dialog"],
+    classes: ["pf2e-visioner", "point-out-preview-dialog"],
     window: {
       title: "Point Out Results",
       icon: "fas fa-hand-point-right",

@@ -56,15 +56,14 @@ export async function extractActionData(message) {
         !message.flavor?.toLowerCase?.().includes?.("sneak attack")));
 
   const firstRoll = message.rolls?.[0];
-  const isDamageRoll =
-    context?.type === "damage-roll" ||
-    message.flags?.pf2e?.damageRoll ||
-    (firstRoll &&
-      (firstRoll.isDamage === true ||
-        (typeof DamageRoll !== "undefined" && firstRoll instanceof DamageRoll) ||
-        (typeof CONFIG?.Dice?.DamageRoll !== "undefined" && firstRoll instanceof CONFIG.Dice.DamageRoll) ||
-        (typeof firstRoll?.options?.type === "string" && firstRoll.options.type.includes("damage")))) ||
-    message.content?.includes("Damage Roll");
+  const isAttackRoll =
+    context?.type === "attack-roll" ||
+    context?.type === "spell-attack-roll" ||
+    context?.type === "strike-attack-roll" ||
+    message.content?.includes("Attack Roll") ||
+    message.content?.includes("Strike") ||
+    (context?.options?.some(opt => opt.includes("attack-roll")) ||
+     context?.options?.some(opt => opt.includes("strike")));
 
   let actorToken = null;
   if (message.token?.object) {
@@ -113,14 +112,14 @@ export async function extractActionData(message) {
   else if (isSneakAction) actionType = "sneak";
   else if (isCreateADiversionAction) actionType = "create-a-diversion";
   else if (isTakeCoverAction) actionType = "take-cover";
-  else if (isDamageRoll) {
+  else if (isAttackRoll) {
     if (isHiddenOrUndetectedToken) actionType = "consequences";
     else if (actorToken) {
       try {
         // Fallback: if any token on the scene currently treats the attacker as hidden/undetected per Visioner map, enable consequences
         const tokens = canvas?.tokens?.placeables || [];
         if (tokens.length) {
-          // Lazy-load only when needed to keep extractor fast on non-damage messages
+          // Lazy-load only when needed to keep extractor fast on non-attack messages
           const { getVisibilityBetween } = await import("../../utils.js");
           const hasHiddenVsAny = tokens.some((t) => {
             if (!t?.actor || t === actorToken) return false;
@@ -143,6 +142,11 @@ export async function extractActionData(message) {
     origin,
     actionType,
   };
+
+  // Add attack roll data for consequences
+  if (actionType === "consequences") {
+    data.attackData = { isAttackRoll: true };
+  }
 
   if (context?.type === "skill-check" && message.rolls?.[0]) {
     try {

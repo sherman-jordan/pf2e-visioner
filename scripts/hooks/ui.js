@@ -9,17 +9,34 @@ export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
   Hooks.on("getTokenDirectoryEntryContext", onGetTokenDirectoryEntryContext);
   Hooks.on("renderWallConfig", onRenderWallConfig);
-  Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
-  // Keep toolbar toggle states in sync with current selection (Visioner panel)
+  // We no longer create a separate Visioner tool; tools are injected into Tokens/Walls below
+  // Helper utilities to support both array- and object-shaped tool containers
+  const getNamedTool = (toolsContainer, name) => {
+    try {
+      if (!toolsContainer) return null;
+      if (Array.isArray(toolsContainer)) return toolsContainer.find((t) => t?.name === name) || null;
+      if (typeof toolsContainer === "object") return toolsContainer?.[name] || null;
+      return null;
+    } catch (_) { return null; }
+  };
+
+  const addTool = (toolsContainer, tool) => {
+    try {
+      if (!toolsContainer || !tool?.name) return;
+      if (Array.isArray(toolsContainer)) toolsContainer.push(tool);
+      else if (typeof toolsContainer === "object") toolsContainer[tool.name] = tool;
+    } catch (_) {}
+  };
+  // Keep toolbar toggle states in sync with current selection (Token tool)
   const refreshTokenTool = () => {
     try {
-      const tools = ui.controls.controls?.visioner?.tools;
-      const tool = tools?.pvVisionerToggleTokenIgnore;
+      const tokenTools = ui.controls.controls?.tokens?.tools;
+      const tool = getNamedTool(tokenTools, "pf2e-visioner-toggle-token-provide");
       if (!tool) return;
       const selected = canvas?.tokens?.controlled ?? [];
-      const active = selected.length > 0 && selected.every((t) => !!(t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")));
-      tool.active = active;
-      tool.icon = active ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+      const provideActive = selected.length > 0 && selected.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true);
+      tool.active = provideActive;
+      tool.icon = provideActive ? "fa-solid fa-shield" : "fa-solid fa-shield-slash";
       ui.controls.render();
     } catch (_) {}
   };
@@ -66,19 +83,21 @@ export function registerUIHooks() {
 
   const refreshWallTool = () => {
     try {
-      const tools = ui.controls.controls?.visioner?.tools;
+      const wallTools = ui.controls.controls?.walls?.tools;
       const selected = canvas?.walls?.controlled ?? [];
-      // Provide Cover toggle state
-      const provideTool = tools?.pvVisionerToggleWallIgnore;
+      
+      // Provide Cover toggle state (active = provides cover)
+      const provideTool = getNamedTool(wallTools, "pf2e-visioner-toggle-wall-provide");
       if (provideTool) {
         const provideActive =
           selected.length > 0 &&
-          selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false);
+          selected.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false);
         provideTool.active = provideActive;
-        provideTool.icon = provideActive ? "fa-solid fa-shield-slash" : "fa-solid fa-shield";
+        provideTool.icon = provideActive ? "fa-solid fa-shield" : "fa-solid fa-shield-slash";
       }
+      
       // Hidden Wall toggle state
-      const hiddenTool = tools?.pvVisionerToggleHiddenWall;
+      const hiddenTool = getNamedTool(wallTools, "pf2e-visioner-toggle-hidden-wall");
       if (hiddenTool) {
         const hiddenActive =
           selected.length > 0 &&
@@ -86,6 +105,7 @@ export function registerUIHooks() {
         hiddenTool.active = hiddenActive;
         hiddenTool.icon = hiddenActive ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
       }
+      
       // Also refresh identifier labels on the canvas when selection changes
       refreshWallIdentifierLabels();
       ui.controls.render();
@@ -115,54 +135,168 @@ export function registerUIHooks() {
     });
   }
 
-  // Add Walls Manager to Scene Controls for GM
+  // Add controls to Wall and Token tools for GM - consolidated into single hook
   Hooks.on("getSceneControlButtons", (controls) => {
     if (!game.user.isGM) return;
     try {
-      const walls = controls.find((c) => c.name === "walls");
-      if (!walls) return;
-      walls.tools.push({
-        name: "pf2e-visioner-wall-manager",
-        title: "PF2E Visioner: Wall Settings",
-        icon: "fas fa-grip-lines-vertical",
-        button: true,
-        onClick: async () => {
-          const { VisionerWallManager } = await import("../managers/wall-manager/wall-manager.js");
-          new VisionerWallManager().render(true);
-        },
-      });
-      // Scene slider for hidden indicator half-width
-      walls.tools.push({
-        name: "pf2e-visioner-hidden-indicator-size",
-        title: "Hidden Wall Indicator Width",
-        icon: "fas fa-ruler-horizontal",
-        button: true,
-        onClick: async () => {
-          try {
-            const scene = canvas?.scene; if (!scene) return;
-            const current = Number(scene.getFlag?.(MODULE_ID, "hiddenIndicatorHalf")) || 10;
-            const content = `<div class="form-group"><label>Half width (px)</label><input type="range" min="2" max="24" step="1" value="${current}" id="pv-hidden-half" oninput="this.nextElementSibling.value=this.value"><output style="margin-left:8px">${current}</output></div>`;
-            new Dialog({
-              title: "Hidden Wall Indicator Width",
-              content,
-              buttons: {
-                ok: {
-                  label: "Save",
-                  callback: async (html) => {
+      const groups = Array.isArray(controls) ? controls : Object.values(controls || {});
+      // === WALL TOOL ADDITIONS ===
+      const walls = groups.find((c) => c?.name === "walls");
+      if (walls) {
+        // Wall Manager
+        addTool(walls.tools, {
+          name: "pf2e-visioner-wall-manager",
+          title: "PF2E Visioner: Wall Settings",
+          icon: "fas fa-grip-lines-vertical",
+          button: true,
+          onChange: async () => {
+            const { VisionerWallManager } = await import("../managers/wall-manager/wall-manager.js");
+            new VisionerWallManager().render(true);
+          },
+        });
+        
+
+        // Toggle Provide Auto-Cover (Selected Walls)
+        const selectedWalls = canvas?.walls?.controlled ?? [];
+        addTool(walls.tools, {
+          name: "pf2e-visioner-toggle-wall-provide",
+          title: "Toggle Provide Auto-Cover (Selected Walls)",
+          icon: selectedWalls.length > 0 &&
+                 selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false)
+                  ? "fa-solid fa-shield"
+                  : "fa-solid fa-shield-slash",
+          toggle: true,
+          active: selectedWalls.length > 0 &&
+                  selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false),
+          onChange: async (_event, toggled) => {
+            try {
+              const selected = canvas?.walls?.controlled ?? [];
+              if (!selected.length) return;
+              
+              // Active means walls should provide cover
+              const newValue = !!toggled;
+              await Promise.all(
+                selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", newValue)),
+              );
+              ui.controls.render();
+            } catch (_) {}
+          },
+        });
+
+        // Toggle Hidden Wall (Selected Walls)  
+        const currentHiddenState = selectedWalls.length > 0 &&
+                                  selectedWalls.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+        addTool(walls.tools, {
+          name: "pf2e-visioner-toggle-hidden-wall",
+          title: "Toggle Hidden Wall (Selected Walls)",
+          icon: currentHiddenState ? "fa-solid fa-eye-slash" : "fa-solid fa-eye",
+          toggle: true,
+          active: currentHiddenState,
+          onChange: async (_event, toggled) => {
+            try {
+              const selected = canvas?.walls?.controlled ?? [];
+              if (!selected.length) return;
+              
+              if (toggled) {
+                await Promise.all(
+                  selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "hiddenWall", true)),
+                );
+              } else {
+                for (const w of selected) {
+                  try {
+                    await w?.document?.unsetFlag?.(MODULE_ID, "hiddenWall");
+                  } catch (_) {
                     try {
-                      const val = Number(html[0].querySelector('#pv-hidden-half')?.value) || 10;
-                      await scene.setFlag(MODULE_ID, "hiddenIndicatorHalf", val);
-                      const { updateWallVisuals } = await import("../services/visual-effects.js");
-                      await updateWallVisuals();
+                      await w?.document?.setFlag?.(MODULE_ID, "hiddenWall", false);
                     } catch (_) {}
                   }
-                },
-                cancel: { label: "Cancel" }
+                }
               }
-            }).render(true);
-          } catch (_) {}
-        },
-      });
+              ui.controls.render();
+            } catch (_) {}
+          },
+        });
+      }
+
+      // === TOKEN TOOL ADDITIONS ===
+      const tokens = groups.find((c) => c?.name === "tokens" || c?.name === "token");
+      if (tokens) {
+        // Quick Edit button (opens Visioner Quick Panel)
+        addTool(tokens.tools, {
+          name: "pf2e-visioner-quick-edit",
+          title: "PF2E Visioner: Quick Edit (Selected ↔ Targeted)",
+          icon: "fa-solid fa-bolt",
+          button: true,
+          onChange: async () => {
+            try {
+              const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
+              if (!game.user?.isGM) return;
+              new VisionerQuickPanel({}).render(true);
+            } catch (_) {}
+          },
+        });
+        // Toggle Provide Auto-Cover (Selected Tokens)
+        const selectedTokens = canvas?.tokens?.controlled ?? [];
+        addTool(tokens.tools, {
+          name: "pf2e-visioner-toggle-token-provide",
+          title: "Toggle Provide Auto-Cover (Selected Tokens)",
+          icon: selectedTokens.length > 0 &&
+                 selectedTokens.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true)
+                  ? "fa-solid fa-shield-slash"
+                  : "fa-solid fa-shield",
+          toggle: true,
+          active: selectedTokens.length > 0 &&
+                  selectedTokens.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true),
+          onChange: async (_event, toggled) => {
+            try {
+              const selected = canvas?.tokens?.controlled ?? [];
+              if (!selected.length) return;
+              
+              const ignoreValue = toggled ? false : true; // active = provide cover => ignore=false
+              await Promise.all(
+                selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", ignoreValue)),
+              );
+              ui.controls.render();
+              try {
+                const { updateTokenVisuals } = await import("../services/visual-effects.js");
+                const allPlaceables = canvas?.tokens?.placeables ?? [];
+                for (const t of allPlaceables) {
+                  try {
+                    await updateTokenVisuals(t);
+                  } catch (_) {}
+                }
+              } catch (_) {}
+            } catch (_) {}
+          },
+        });
+
+        // Purge: clear all Visioner scene data
+        addTool(tokens.tools, {
+          name: "pf2e-visioner-purge-scene",
+          title: "PF2E Visioner: Purge Scene Data",
+          icon: "fa-solid fa-trash",
+          button: true,
+          onChange: async () => {
+            try {
+              const confirmed = await Dialog.confirm({
+                title: "PF2E Visioner",
+                content: `<p>Clear all PF2E Visioner data for this scene? This cannot be undone.</p>`,
+                yes: () => true,
+                no: () => false,
+                defaultYes: false,
+              });
+              if (!confirmed) return;
+              const { api } = await import("../api.js");
+              await api.clearAllSceneData();
+            } catch (e) {
+              console.error("[pf2e-visioner] purge scene error", e);
+            }
+          },
+        });
+      } else {
+        console.warn("[pf2e-visioner] Tokens tool not found. Control groups:", groups.map((c) => c?.name));
+      }
+      
       // When selecting walls, show wall identifier if present on the control icon tooltip
       const showWallIdentifierTooltip = async () => {
         try {
@@ -178,7 +312,9 @@ export function registerUIHooks() {
         } catch (_) {}
       };
       Hooks.on("controlWall", showWallIdentifierTooltip);
-    } catch (_) {}
+    } catch (_) {
+      console.error("[pf2e-visioner] getSceneControlButtons error", _);
+    }
   });
 }
 
@@ -208,7 +344,7 @@ function onGetTokenHUDButtons(hud, buttons, token) {
     name: "token-manager",
     title: "Token Manager (Left: Target Mode, Right: Observer Mode)",
     icon: "fas fa-eye",
-    onClick: async () => {
+    onChange: async () => {
       const { openTokenManagerWithMode } = await import("../api.js");
       await openTokenManagerWithMode(token, "target");
     },
@@ -340,199 +476,7 @@ function onRenderWallConfig(app, html) {
   } catch (_) { }
 }
 
-function onGetSceneControlButtons(controls) {
-  try {
-    const visible = !!game.user?.isGM;
-    const existingOrder = Object.values(controls).reduce((m, c) => Math.max(m, c?.order ?? 0), 0);
-
-    // Ensure a Visioner control group exists (object-style)
-    const visioner = controls.visioner ?? {
-      name: "visioner",
-      title: "PF2E Visioner",
-      icon: "fas fa-face-hand-peeking",
-      order: existingOrder + 1,
-      visible,
-      layer: "tokens",
-      tools: {},
-      activeTool: "pvVisionerToggleTokenIgnore",
-    };
-
-    const vtools = visioner.tools || {};
-
-    // Token: toggle ignore
-    const selectedTokens = canvas?.tokens?.controlled ?? [];
-    vtools.pvVisionerToggleTokenIgnore = {
-      name: "pvVisionerToggleTokenIgnore",
-      title: "Toggle Ignore Auto-Cover (Selected Tokens)",
-      icon:
-        selectedTokens.length > 0 &&
-        selectedTokens.every((t) => !!t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover"))
-          ? "fa-solid fa-shield-slash"
-          : "fa-solid fa-shield",
-      order: 1,
-      visible,
-      toggle: true,
-      active:
-        selectedTokens.length > 0 &&
-        selectedTokens.every((t) => !!t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")),
-      onChange: async (event, active) => {
-        try {
-          const selected = canvas?.tokens?.controlled ?? [];
-          if (!selected.length) {
-            // Silent no-op when nothing is selected (avoid warnings on palette switches)
-            return;
-          }
-          if (active)
-            await Promise.all(
-              selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", true)),
-            );
-          else {
-            for (const t of selected) {
-              try {
-                await t?.document?.unsetFlag?.(MODULE_ID, "ignoreAutoCover");
-              } catch (_) {
-                try {
-                  await t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", false);
-                } catch (_) {}
-              }
-            }
-          }
-          ui.controls.render();
-          try {
-            const { updateTokenVisuals } = await import("../services/visual-effects.js");
-            const allPlaceables = canvas?.tokens?.placeables ?? [];
-            for (const t of allPlaceables) {
-              try {
-                await updateTokenVisuals(t);
-              } catch (_) {}
-            }
-            game.canvas?.perception?.refresh?.();
-          } catch (_) {}
-        } catch (_) {}
-      },
-    };
-
-    // Walls: toggle ignore
-    const selectedWalls = canvas?.walls?.controlled ?? [];
-    vtools.pvVisionerToggleWallIgnore = {
-      name: "pvVisionerToggleWallIgnore",
-      title: "Toggle Ignore Auto-Cover (Selected Walls)",
-      icon:
-        selectedWalls.length > 0 &&
-        selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false)
-          ? "fa-solid fa-shield-slash"
-          : "fa-solid fa-shield",
-      order: 2,
-      visible,
-      toggle: true,
-      active:
-        selectedWalls.length > 0 &&
-        selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") === false),
-      onChange: async (event, active) => {
-        try {
-          const selected = canvas?.walls?.controlled ?? [];
-          if (!selected.length) {
-            // Silent no-op when nothing is selected (avoid warnings on palette switches)
-            return;
-          }
-          if (active)
-            await Promise.all(
-              selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", false)),
-            );
-          else {
-            for (const w of selected) {
-              try {
-                await w?.document?.unsetFlag?.(MODULE_ID, "provideCover");
-              } catch (_) {
-                try {
-                  await w?.document?.setFlag?.(MODULE_ID, "provideCover", true);
-                } catch (_) {}
-              }
-            }
-          }
-          ui.controls.render();
-          try { game.canvas?.perception?.refresh?.(); } catch (_) {}
-        } catch (_) {}
-      },
-    };
-
-    // Quick Panel (Selected ↔ Targeted)
-    vtools.pvVisionerQuickPanel = {
-      name: "pvVisionerQuickPanel",
-      title: "Quick Edit (Selected ↔ Targeted)",
-      icon: "fa-solid fa-bolt",
-      order: 5,
-      visible,
-      button: true,
-      onClick: async () => {
-        try {
-          const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
-          // Only GM can open; don't auto-open on target events elsewhere
-          if (!game.user?.isGM) return;
-          new VisionerQuickPanel({}).render(true);
-        } catch (_) {}
-      },
-      // Safeguard for control switchers that expect onChange
-      onChange: () => {},
-    };
-
-
-    // Hidden Wall toggle
-    const selectedWallsForHidden = canvas?.walls?.controlled ?? [];
-    const currentHiddenState =
-      selectedWallsForHidden.length > 0 &&
-      selectedWallsForHidden.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
-
-    vtools.pvVisionerToggleHiddenWall = {
-      name: "pvVisionerToggleHiddenWall",
-      title: "Toggle Hidden Wall (Selected Walls)",
-      icon: currentHiddenState ? "fa-solid fa-eye-slash" : "fa-solid fa-eye",
-      order: 3,
-      visible,
-      toggle: true,
-      active: currentHiddenState,
-      onChange: async (event, active) => {
-        try {
-          const selected = canvas?.walls?.controlled ?? [];
-          if (!selected.length) {
-            // Silent no-op when nothing is selected (avoid warnings on palette switches)
-            return;
-          }
-          if (active) {
-            await Promise.all(
-              selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "hiddenWall", true)),
-            );
-          } else {
-            for (const w of selected) {
-              try {
-                await w?.document?.unsetFlag?.(MODULE_ID, "hiddenWall");
-              } catch (_) {
-                try {
-                  await w?.document?.setFlag?.(MODULE_ID, "hiddenWall", false);
-                } catch (_) {}
-              }
-            }
-          }
-          ui.controls.render();
-          try {
-            game.canvas?.perception?.refresh?.();
-          } catch (_) {}
-        } catch (_) {}
-      },
-    };
-
-    // Ensure activeTool is valid and points to a toggle tool
-    if (!visioner.activeTool || !vtools[visioner.activeTool]) {
-      visioner.activeTool = "pvVisionerToggleTokenIgnore";
-    }
-
-    // Persist tools and control back
-    visioner.tools = vtools;
-    controls.visioner = visioner;
-  } catch (e) {
-    console.error("[pf2e-visioner] Error in scene control setup:", e);
-  }
-}
+// Removed: onGetSceneControlButtons for a separate 'visioner' control group
 
 
 

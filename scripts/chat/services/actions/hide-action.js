@@ -63,9 +63,9 @@ export class HideActionHandler extends ActionHandlerBase {
     // Initialize result object for auto-cover data
     const result = {};
     
-    const enableAutoCoverHideAction = game.settings.get(MODULE_ID, "autoCoverHideAction");
+    const enableCoverHideAction = game.settings.get(MODULE_ID, "autoCoverHideAction");
 
-    if (game.settings.get(MODULE_ID, "autoCover") && enableAutoCoverHideAction) {
+    if (enableCoverHideAction) {
       try {
         // Check for stealth roll dialog override first
         const stealthDialog = Object.values(ui.windows).find(
@@ -74,15 +74,41 @@ export class HideActionHandler extends ActionHandlerBase {
         
         let coverState = null;
         let isOverride = false;
+        let coverSource = "none";
         
         if (stealthDialog?._pvStealthCoverOverride) {
           coverState = stealthDialog._pvStealthCoverOverride;
           isOverride = true;
+          coverSource = "override";
         } else {
-          // Calculate cover state using auto-cover
-          // For hide action: subject is the observer, actionData.actor is the hiding actor
-          const hidingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
-          coverState = detectCoverStateForAttack(hidingToken, subject);
+          // Try auto-cover first (if enabled)
+          if (game.settings.get(MODULE_ID, "autoCover")) {
+            try {
+              // For hide action: subject is the observer, actionData.actor is the hiding actor
+              const hidingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
+              coverState = detectCoverStateForAttack(hidingToken, subject);
+              if (coverState && coverState !== "none") {
+                coverSource = "automatic";
+              }
+            } catch (e) {
+              console.warn(`PF2E Visioner | Auto-cover calculation failed for Hide action:`, e);
+            }
+          }
+          
+          // Fall back to manual cover if no auto-cover found
+          if (!coverState || coverState === "none") {
+            try {
+              const { getCoverBetween } = await import("../../../utils.js");
+              // For hide action: hidingToken has cover FROM observer (observer to hidingToken direction)
+              const hidingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
+              coverState = getCoverBetween(hidingToken, subject);
+              if (coverState && coverState !== "none") {
+                coverSource = "manual";
+              }
+            } catch (e) {
+              console.warn(`PF2E Visioner | Manual cover lookup failed for Hide action:`, e);
+            }
+          }
         }
 
         if (coverState && coverState !== "none") {
@@ -95,13 +121,14 @@ export class HideActionHandler extends ActionHandlerBase {
             color: coverConfig.color,
             bonus: coverConfig.bonusStealth,
             isOverride,
+            source: coverSource, // Track whether this came from auto, manual, or override
           };
           
           // Apply DC reduction
           adjustedDC -= result.autoCover.bonus;
         }
       } catch (e) {
-        console.error(`PF2E Visioner | Error in auto-cover calculation for Hide action:`, e);
+        console.error(`PF2E Visioner | Error in cover calculation for Hide action:`, e);
       }
     }
 

@@ -21,11 +21,20 @@ function svgDataUri(svg) {
   try { return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`; } catch (_) { return ""; }
 }
 
-function getWallImage(isDoor) {
-  if (isDoor) {
+function getWallImage(doorType = 0) {
+  // doorType: 0 wall, 1 standard door, 2 secret door (Foundry uses 1/2 for door types)
+  if (Number(doorType) === 1) {
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
       <rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/>
       <circle cx='19' cy='14' r='1.5' fill='#e6e6e6'/>
+    </svg>`;
+    return svgDataUri(svg);
+  }
+  if (Number(doorType) === 2) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
+      <rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#d4af37' stroke-width='2'/>
+      <circle cx='19' cy='14' r='1.5' fill='#d4af37'/>
+      <path d='M7 7l14 14' stroke='#d4af37' stroke-width='1.5' opacity='0.7'/>
     </svg>`;
     return svgDataUri(svg);
   }
@@ -265,7 +274,7 @@ export async function buildContext(app, options) {
       context.wallTargets = hiddenWalls.map((w) => {
         const d = w.document;
         const idf = d?.getFlag?.(MODULE_ID, "wallIdentifier");
-        const isDoor = Number(d?.door) > 0;
+        const doorType = Number(d?.door) || 0;
         const fallback = `${game.i18n?.localize?.("PF2E_VISIONER.WALL.VISIBLE_TO_YOU") || isDoor ? "Hidden Door" : "Hidden Wall"} ${++autoIndex}`;
         const currentState = wallMap?.[d.id] || "hidden";
         const states = ["hidden", "observed"].map((key) => ({
@@ -275,7 +284,7 @@ export async function buildContext(app, options) {
           icon: VISIBILITY_STATES[key].icon,
           color: VISIBILITY_STATES[key].color,
         }));
-        const img = getWallImage(isDoor);
+        const img = getWallImage(doorType);
         // DC: per-wall override else global default
         const overrideDC = Number(d?.getFlag?.(MODULE_ID, "stealthDC"));
         const defaultWallDC = Number(game.settings.get(MODULE_ID, "wallStealthDC")) || 15;
@@ -300,7 +309,7 @@ export async function buildContext(app, options) {
           identifier: idf && String(idf).trim() ? String(idf) : fallback,
           currentVisibilityState: currentState,
           visibilityStates: states,
-          isDoor,
+          doorType,
           img,
           dc,
           showOutcome,

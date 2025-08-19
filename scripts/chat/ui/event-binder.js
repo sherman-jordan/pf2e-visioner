@@ -71,6 +71,10 @@ export function bindAutomationEvents(panel, message, actionData) {
               const html = $(message.element);
               parent.remove();
               injectAutomationUI(message, html, actionData);
+              
+              // Update button state after UI re-injection to ensure it's properly set
+              const { updateSeekTemplateButton } = await import("../services/preview/seek-template.js");
+              updateSeekTemplateButton(actionData, false);
             }
           }
         } catch (_) {}

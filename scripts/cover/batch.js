@@ -141,13 +141,11 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
             if (modified) {
               if (filteredRules.length === 0) effectsToDelete.push(aggregate.id);
               else effectsToUpdate.push({ _id: aggregate.id, "system.rules": filteredRules });
-              coverDebug("Removed observer rules from state", state, { target: target.id, removedFor: observers.map(o=>o.id) });
             }
           }
         } else {
           let targetAggregate = aggregatesByState.get(coverState);
           let rules = rulesByState.get(coverState) || [];
-          coverDebug("Upsert begin", { target: target.id, state: coverState, before: summarizeRules(rules) });
           let modified = false;
           for (const observer of observers) {
             try { if (["loot","vehicle","party"].includes(observer?.actor?.type)) continue; } catch (_) {}
@@ -159,16 +157,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
                  const hasAgainst = extractCoverAgainstFromPredicate(r.predicate).includes(tokenId);
                  if (hasSig || hasAgainst) { 
                    modified = true; 
-                   try {
-                     coverDebug("Removing existing AC rule", { 
-                       signature, 
-                       tokenId, 
-                       hasSig, 
-                       hasAgainst, 
-                       predicate: r.predicate,
-                       value: r.value
-                     });
-                   } catch (_) {}
                    return false; 
                  }
                }
@@ -182,28 +170,16 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
              const hasAC = nextRules.some((r) => r?.key === "FlatModifier" && r.selector === "ac" && extractSignaturesFromPredicate(r.predicate).includes(signature));
              if (!hasAC) {
                const newACRule = { key: "FlatModifier", selector: "ac", type: "circumstance", value: getBonus(coverState), predicate: [`origin:signature:${signature}`] };
-               try {
-                 coverDebug("Adding new AC rule", { 
-                   signature, 
-                   tokenId, 
-                   value: getBonus(coverState),
-                   predicate: newACRule.predicate,
-                   ruleJSON: JSON.stringify(newACRule)
-                 });
-               } catch (_) {}
                nextRules.push(newACRule);
              }
             rules = nextRules; modified = true;
-            coverDebug("Applied observer", { target: target.id, state: coverState, observer: tokenId, signature, afterObserver: summarizeRules(rules) });
           }
           if (modified) {
             const canonical = canonicalizeObserverRules(rules);
             if (canonical.length !== rules.length) {
-              coverDebug("Canonicalized rules", { target: target.id, state: coverState, beforeCount: rules.length, afterCount: canonical.length, before: summarizeRules(rules), after: summarizeRules(canonical) });
             }
             if (targetAggregate) effectsToUpdate.push({ _id: targetAggregate.id, "system.rules": canonical });
             else effectsToCreate.push(createAggregate(target, coverState, canonical, options));
-            coverDebug("Upsert state", coverState, { target: target.id, observers: observers.map(o=>o.id), ruleCount: rules.length });
             for (const [state, stateRules] of rulesByState.entries()) {
               if (state === coverState) continue; const aggregate = aggregatesByState.get(state); if (!aggregate) continue;
               let stateModified = false; let filteredRules = [...stateRules];
@@ -224,7 +200,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
               if (stateModified) {
                 if (filteredRules.length === 0) effectsToDelete.push(aggregate.id);
                 else effectsToUpdate.push({ _id: aggregate.id, "system.rules": filteredRules });
-                coverDebug("Removed from other state", state, { target: target.id, observers: observers.map(o=>o.id), afterOther: summarizeRules(filteredRules) });
               }
             }
           }
@@ -238,7 +213,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
       const empties = after.filter((e) => !Array.isArray(e.system?.rules) || e.system.rules.length === 0).map((e) => e.id);
       if (empties.length > 0) {
         try { await target.actor.deleteEmbeddedDocuments("Item", empties); } catch (_) {}
-        coverDebug("Deleted empty aggregates", empties, { target: target.id });
       }
       // Recompute reflex/stealth distribution and reconcile against maps
       try { await updateReflexStealthAcrossCoverAggregates(target); } catch (_) {}
@@ -251,7 +225,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
         for (const agg of finalAggs) {
           const rules = canonicalizeObserverRules(agg.system?.rules || []);
           const empty = !hasObserverPresence(rules);
-          coverDebug("Final aggregate", { target: target.id, state: agg.flags?.[MODULE_ID]?.coverState, rules: rules.length, summary: summarizeRules(rules), empty });
           if (empty) toDelete.push(agg.id);
         }
         if (toDelete.length) {

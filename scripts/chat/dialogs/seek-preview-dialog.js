@@ -14,12 +14,17 @@ import {
 import { BaseActionDialog } from "./base-action-dialog.js";
 
 // Store reference to current seek dialog
-let currentSeekDialog = null;
+let _currentSeekDialogInstance = null;
 
 export class SeekPreviewDialog extends BaseActionDialog {
+  // Static property to access the current seek dialog
+  static get currentSeekDialog() {
+    return _currentSeekDialogInstance;
+  }
+
   static DEFAULT_OPTIONS = {
     tag: "div",
-    classes: ["seek-preview-dialog"], // Keep same class for CSS compatibility
+    classes: ["pf2e-visioner", "seek-preview-dialog"], // Keep same class for CSS compatibility
     window: {
       title: "Seek Results",
       icon: "fas fa-search",
@@ -73,7 +78,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
     this.ignoreWalls = false;
 
     // Set global reference
-    currentSeekDialog = this;
+    _currentSeekDialogInstance = this;
   }
 
   /**
@@ -360,7 +365,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Apply all visibility changes
    */
   static async _onApplyAll(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
 
     if (!app) {
       return;
@@ -432,7 +437,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Revert all changes to original state
    */
   static async _onRevertAll(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
     if (!app) return;
 
     try {
@@ -460,7 +465,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Apply individual visibility change
    */
   static async _onApplyChange(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
     if (!app) return;
 
     const tokenId = button.dataset.tokenId;
@@ -506,7 +511,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Revert individual token to original state
    */
   static async _onRevertChange(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
     if (!app) return;
 
     const tokenId = button.dataset.tokenId;
@@ -564,7 +569,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       } catch (_) {}
       this._selectionHookId = null;
     }
-    currentSeekDialog = null;
+    _currentSeekDialogInstance = null;
     return super.close(options);
   }
 
@@ -603,7 +608,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Toggle encounter filtering and refresh results
    */
   static async _onToggleEncounterFilter(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
     if (!app) return;
 
     // Toggle filter and re-render; context preparation applies encounter filter
@@ -628,7 +633,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Handle state override action (for potential future use)
    */
   static async _onOverrideState(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
     if (!app) return;
 
     const targetId = button.dataset.target;
@@ -640,10 +645,10 @@ export class SeekPreviewDialog extends BaseActionDialog {
    * Handle close action
    */
   static _onClose(event, button) {
-    const app = currentSeekDialog;
+    const app = _currentSeekDialogInstance;
     if (app) {
       app.close();
-      currentSeekDialog = null; // Clear reference when closing
+      _currentSeekDialogInstance = null; // Clear reference when closing
     }
   }
 }

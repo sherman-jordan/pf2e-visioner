@@ -1,6 +1,6 @@
 /**
  * Consequences Preview Dialog
- * Shows consequences of damage rolls from hidden/undetected tokens with GM override capability
+ * Shows consequences of attack rolls from hidden/undetected tokens with GM override capability
  */
 
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
@@ -8,7 +8,7 @@ import { getDesiredOverrideStatesForAction } from "../services/data/action-state
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter
+    filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -16,18 +16,18 @@ import { BaseActionDialog } from "./base-action-dialog.js";
 let currentConsequencesDialog = null;
 
 export class ConsequencesPreviewDialog extends BaseActionDialog {
-  constructor(attackingToken, outcomes, changes, damageData, options = {}) {
+  constructor(attackingToken, outcomes, changes, attackData, options = {}) {
     super(options);
 
     this.attackingToken = attackingToken;
     this.outcomes = outcomes;
     this.changes = changes;
-    this.damageData = damageData;
+    this.attackData = attackData;
     // Ensure actionData exists for apply/revert services
     this.actionData = options.actionData || {
       actor: attackingToken,
       actionType: "consequences",
-      damageData,
+      attackData,
     };
     this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
     // Per-dialog ignore-allies (defaults to global setting, can be toggled in-dialog)
@@ -43,10 +43,10 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
 
   static DEFAULT_OPTIONS = {
     tag: "div",
-    classes: ["consequences-preview-dialog"],
+    classes: ["pf2e-visioner", "consequences-preview-dialog"],
     window: {
-      title: `Damage Consequences Results`,
-      icon: "fas fa-skull",
+      title: `Attack Consequences Results`,
+      icon: "fas fa-crosshairs",
       resizable: true,
     },
     position: {
@@ -85,7 +85,13 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     processedOutcomes = processedOutcomes.map((outcome) => {
       const effectiveNewState = outcome.overrideState || "observed"; // Default to observed
       const baseOldState = outcome.currentVisibility;
-      const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
+      // For consequences, actionable change means:
+      // 1. Token sees attacker as hidden/undetected AND will change to different state, OR
+      // 2. GM has selected an override state that differs from current state
+      const isHiddenOrUndetected = baseOldState === "hidden" || baseOldState === "undetected";
+      const hasOverrideChange = outcome.overrideState && outcome.overrideState !== baseOldState;
+      const hasActionableChange = isHiddenOrUndetected || hasOverrideChange;
+      
       // Build override icon states for the row
       const desired = getDesiredOverrideStatesForAction("consequences");
       const availableStates = this.buildOverrideStates(desired, { ...outcome, newVisibility: effectiveNewState }, { selectFrom: "overrideState", calcFrom: "newVisibility" });
@@ -155,9 +161,12 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
    * Calculate if there's an actionable change (considering overrides)
    */
   calculateHasActionableChange(outcome) {
-    // Check if the override state is different from the current state
-    const effectiveNewState = outcome.overrideState || "observed";
-    return effectiveNewState !== outcome.currentVisibility;
+    // For consequences, actionable change means:
+    // 1. Token sees attacker as hidden/undetected AND will change to different state, OR
+    // 2. GM has selected an override state that differs from current state
+    const isHiddenOrUndetected = outcome.currentVisibility === "hidden" || outcome.currentVisibility === "undetected";
+    const hasOverrideChange = outcome.overrideState && outcome.overrideState !== outcome.currentVisibility;
+    return isHiddenOrUndetected || hasOverrideChange;
   }
 
   /**
@@ -378,6 +387,44 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
   static async _onOverrideState(event, target) {
     // This is a placeholder for compatibility with the action system
     // The actual implementation is in the icon click handlers
+  }
+
+  // Override icon click handlers to use consequences-specific logic
+  addIconClickHandlers() {
+    const stateIcons = this.element.querySelectorAll(".state-icon");
+    stateIcons.forEach((icon) => {
+      icon.addEventListener("click", (event) => {
+        // Only handle clicks within override selection container
+        const overrideIcons = event.currentTarget.closest(".override-icons");
+        if (!overrideIcons) return;
+
+        // Robustly resolve target id from data attributes or row
+        let targetId = event.currentTarget.dataset.target || event.currentTarget.dataset.tokenId;
+        if (!targetId) {
+          const row = event.currentTarget.closest("tr[data-token-id]");
+          targetId = row?.dataset?.tokenId;
+        }
+        const newState = event.currentTarget.dataset.state;
+        
+        // Update UI
+        overrideIcons.querySelectorAll(".state-icon").forEach((i) => i.classList.remove("selected"));
+        event.currentTarget.classList.add("selected");
+        const hiddenInput = overrideIcons?.querySelector('input[type="hidden"]');
+        if (hiddenInput) hiddenInput.value = newState;
+        
+        // Update outcome data
+        let outcome = this.outcomes?.find?.((o) => String(this.getOutcomeTokenId(o)) === String(targetId));
+        if (outcome) {
+          outcome.overrideState = newState;
+          // Use consequences-specific logic for actionable changes
+          const hasActionableChange = this.calculateHasActionableChange(outcome);
+          // Persist actionable state on outcome so templates and bulk ops reflect immediately
+          outcome.hasActionableChange = hasActionableChange;
+          this.updateActionButtonsForToken(targetId, hasActionableChange);
+          this.updateChangesCount();
+        }
+      });
+    });
   }
 
   // Use base implementations for selection, bulk button state, and icon handlers

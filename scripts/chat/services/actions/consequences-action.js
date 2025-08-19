@@ -32,7 +32,9 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
     return { target: subject, currentVisibility, changed: currentVisibility === "hidden" || currentVisibility === "undetected", newVisibility: "observed" };
   }
   outcomeToChange(actionData, outcome) {
-    return { observer: outcome.target, target: actionData.actor, newVisibility: "observed", oldVisibility: outcome.currentVisibility };
+    // Use the outcome's newVisibility if set (from overrides), otherwise default to "observed"
+    const newVisibility = outcome.newVisibility || "observed";
+    return { observer: outcome.target, target: actionData.actor, newVisibility, oldVisibility: outcome.currentVisibility };
   }
   buildCacheEntryFromChange(change) {
     return { observerId: change.observer?.id, oldVisibility: change.oldVisibility };

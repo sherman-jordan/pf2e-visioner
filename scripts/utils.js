@@ -14,6 +14,41 @@ export {
 } from "./stores/visibility-map.js";
 
 /**
+ * Convert an SVG string into a data URI for use as an <img src>
+ */
+function svgDataUri(svg) {
+  try { return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`; } catch (_) { return ""; }
+}
+
+/**
+ * Get a representative image for a wall segment based on Foundry door type
+ * doorType: 0 wall, 1 standard door, 2 secret door
+ */
+export function getWallImage(doorType = 0) {
+  const dt = Number(doorType) || 0;
+  if (dt === 1) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
+      <rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/>
+      <circle cx='19' cy='14' r='1.5' fill='#e6e6e6'/>
+    </svg>`;
+    return svgDataUri(svg);
+  }
+  if (dt === 2) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
+      <rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#d4af37' stroke-width='2'/>
+      <circle cx='19' cy='14' r='1.5' fill='#d4af37'/>
+      <path d='M7 7l14 14' stroke='#d4af37' stroke-width='1.5' opacity='0.7'/>
+    </svg>`;
+    return svgDataUri(svg);
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>
+    <rect x='4' y='4' width='20' height='20' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/>
+    <path d='M8 6v16M14 6v16M20 6v16' stroke='#888888' stroke-width='2'/>
+  </svg>`;
+  return svgDataUri(svg);
+}
+
+/**
  * Get the visibility map for a token
  * @param {Token} token - The token to get visibility data for
  * @returns {Object} Visibility map object
@@ -213,7 +248,6 @@ export function getSceneTargets(observer, encounterOnly = false, ignoreAllies = 
 
   // Filter to only tokens that are in the current encounter, including
   // familiars/companions/eidolons tied to a combatant even if not listed
-  // Note: Familiars are always included regardless of encounter filter
   return allTokens.filter((token) => {
     if (!game.combat || !game.combat.combatants.size) return true;
     
@@ -221,28 +255,25 @@ export function getSceneTargets(observer, encounterOnly = false, ignoreAllies = 
     // Always include familiars regardless of encounter filter
     if (actor?.type === "familiar") return true;
     
-    const tokenId = token?.document?.id;
-    const direct = game.combat.combatants.some((c) => c.token?.id === tokenId);
-    if (direct) return true;
-    // Eidolon master linkage
+    // Check if this specific token (by ID) is directly in the encounter
+    const tokenId = token?.id ?? token?.document?.id;
+    if (!tokenId) return false;
+    
+    // Direct token match (primary check)
+    const directMatch = game.combat.combatants.some((c) => c.tokenId === tokenId);
+    if (directMatch) return true;
+    
+    // Eidolon master linkage - include eidolons whose masters are in combat
     const master = (actor?.type === "eidolon" || actor?.isOfType?.("eidolon")) ? actor?.system?.eidolon?.master : null;
-    const masterTokenId = master?.getActiveTokens?.(true, true)?.[0]?.id;
-    if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId)) return true;
-    // Actor linkage fallback
-    const actorId = actor?.id;
-    if (actorId && game.combat.combatants.some((c) => c.actorId === actorId)) return true;
-    // Owner linkage fallback (minions)
-    return game.combat.combatants.some((c) => {
-      try {
-        const cActor = c.actor; if (!cActor) return false;
-        const owners = new Set([
-          cActor.id,
-          cActor.master?.id,
-          cActor?.system?.eidolon?.master?.id,
-        ].filter(Boolean));
-        return owners.has(actorId);
-      } catch (_) { return false; }
-    });
+    if (master) {
+      const masterTokenId = master?.getActiveTokens?.(true, true)?.[0]?.id;
+      if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId)) {
+        return true;
+      }
+    }
+    
+    // No other fallbacks - prevents including random token copies
+    return false;
   });
 }
 

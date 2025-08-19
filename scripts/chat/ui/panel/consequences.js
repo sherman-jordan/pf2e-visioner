@@ -1,9 +1,9 @@
 export function buildConsequencesPanel() {
-  const label = "Open Damage Consequences";
+  const label = "Open Attack Consequences";
   const tooltip =
-    "Preview and apply visibility changes after damage from hidden/undetected attacker";
-  const title = "Damage Consequences";
-  const icon = "fas fa-skull";
+    "Preview and apply visibility changes after attack from hidden/undetected attacker";
+  const title = "Attack Consequences";
+  const icon = "fas fa-crosshairs";
   const actionName = "open-consequences-results";
   const buttonClass = "visioner-btn-consequences";
   const panelClass = "consequences-panel";

@@ -4,6 +4,7 @@
 
 export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
   tag: "form",
+  classes: ["pf2e-visioner", "token-visibility-manager"],
   form: {
     handler: null, // to be assigned by the class
     submitOnChange: false,

@@ -474,7 +474,7 @@
                   {{#each wallTargets as |w|}}
                     <tr class="token-row wall-row" data-wall-id="{{w.id}}">
                       <td class="token-image">
-                        <img src="{{w.img}}" data-tooltip="{{#if w.isDoor}}Door{{else}}Wall{{/if}}" width="28" height="28" />
+                        <img src="{{w.img}}" data-tooltip="{{#if (eq w.doorType 2)}}Secret Door{{else if (eq w.doorType 1)}}Door{{else}}Wall{{/if}}" width="28" height="28" />
                       </td>
                       <td class="token-name">
                         <strong title="{{w.identifier}}">{{w.identifier}}</strong>

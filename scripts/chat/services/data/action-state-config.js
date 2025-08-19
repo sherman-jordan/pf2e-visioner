@@ -27,13 +27,13 @@ export function getDefaultOutcomeMapping() {
   const sneakMapping = game.settings.get(MODULE_ID, "sneakRawEnforcement")
     ? {
         observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
-        concealed: { "critical-success": "concealed", success: "concealed", failure: "observed", "critical-failure": "observed" },
+        concealed: { "critical-success": "concealed", success: "concealed", failure: "concealed", "critical-failure": "concealed" },
         hidden: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
         undetected: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
       }
     : {
         observed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
-        concealed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
+        concealed: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "concealed" },
         hidden: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
         undetected: { "critical-success": "undetected", success: "undetected", failure: "hidden", "critical-failure": "observed" },
       };
@@ -41,13 +41,13 @@ export function getDefaultOutcomeMapping() {
   return {
     seek: {
       observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
-      concealed: { "critical-success": "observed", success: "concealed", failure: "concealed", "critical-failure": "concealed" },
+      concealed: { "critical-success": "concealed", success: "concealed", failure: "concealed", "critical-failure": "concealed" },
       hidden: { "critical-success": "observed", success: "observed", failure: "hidden", "critical-failure": "hidden" },
       undetected: { "critical-success": "observed", success: "hidden", failure: "undetected", "critical-failure": "undetected" },
     },
     hide: {
       observed: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
-      concealed: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
+      concealed: { "critical-success": "hidden", success: "hidden", failure: "concealed", "critical-failure": "concealed" },
       hidden: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
       undetected: { "critical-success": "undetected", success: "undetected", failure: "observed", "critical-failure": "observed" },
     },
@@ -55,8 +55,8 @@ export function getDefaultOutcomeMapping() {
     "create-a-diversion": {
       observed: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
       concealed: { "critical-success": "hidden", success: "hidden", failure: "concealed", "critical-failure": "concealed" },
-      hidden: { "critical-success": "hidden", success: "hidden", failure: "hidden", "critical-failure": "hidden" },
-      undetected: { "critical-success": "undetected", success: "undetected", failure: "undetected", "critical-failure": "undetected" },
+      hidden: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
+      undetected: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
     },
     // Point Out defines its own observer/target mapping; leave empty for now
     "point-out": {},

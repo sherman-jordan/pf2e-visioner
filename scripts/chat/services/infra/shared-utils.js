@@ -429,6 +429,8 @@ export function filterOutcomesByAllies(outcomes, actorToken, preferIgnoreAllies,
   }
 }
 
+
+
 /**
  * Extract Perception DC from token using the definite path
  * @param {Token} token - The token to extract DC from
@@ -472,16 +474,32 @@ export function filterOutcomesByEncounter(
   encounterOnly,
   tokenProperty = "target",
 ) {
-  // If encounter filtering is not enabled or there's no active encounter, return all outcomes
-  if (!encounterOnly || !hasActiveEncounter()) {
+  try {
+    // If encounter filtering is not enabled or there's no active encounter, return all outcomes
+    if (!encounterOnly || !hasActiveEncounter()) {
+      return outcomes;
+    }
+
+    // Filter outcomes to only include tokens in the current encounter
+    return outcomes.filter((outcome) => {
+      // Always include wall outcomes
+      if (outcome?._isWall || outcome?.wallId) return true;
+      
+      const token = outcome[tokenProperty];
+      if (!token) return false;
+      
+      // Check if this specific token (by ID) is in the encounter
+      // This fixes the issue where token copies were included just because
+      // they shared the same actor as an encounter participant
+      const tokenId = token?.id ?? token?.document?.id;
+      if (!tokenId) return false;
+      
+      // Only check by token ID to ensure we get the exact token, not copies
+      return game.combat.combatants.some((c) => c.tokenId === tokenId);
+    });
+  } catch (_) {
     return outcomes;
   }
-
-  // Filter outcomes to only include tokens in the current encounter
-  return outcomes.filter((outcome) => {
-    const token = outcome[tokenProperty];
-    return isTokenInEncounter(token);
-  });
 }
 
 

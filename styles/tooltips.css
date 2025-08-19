@@ -1,7 +1,10 @@
 /*
  * Tooltips and Help Text
  * Tooltip styling and informational overlays
+ * All styles scoped to .pf2e-visioner to avoid conflicts
  */
+
+.pf2e-visioner {
 
 /* Base Tooltip Styling */
 .tooltip {
@@ -347,6 +350,35 @@
   }
 }
 
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .tooltip::after {
+    background: black;
+    border: 2px solid white;
+    color: white;
+  }
+
+  .tooltip::before {
+    border-top-color: black;
+  }
+
+  .tooltip.tooltip-right::before {
+    border-right-color: black;
+  }
+
+  .tooltip.tooltip-left::before {
+    border-left-color: black;
+  }
+
+  .tooltip.tooltip-bottom::before {
+    border-bottom-color: black;
+  }
+}
+
+} /* End .pf2e-visioner scope */
+
+/* Global styles that need to work outside the scoped container */
+
 /* PF2E Visioner Tooltip Styling for Foundry's built-in tooltip system */
 :root {
   --pf2e-visioner-tooltip-font-size: 16px;
@@ -378,30 +410,4 @@
 
 .hover-visibility-tooltip {
   transition: opacity 0.2s ease;
-}
-
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .tooltip::after {
-    background: black;
-    border: 2px solid white;
-    color: white;
-  }
-
-  .tooltip::before {
-    border-top-color: black;
-  }
-
-  .tooltip.tooltip-right::before {
-    border-right-color: black;
-  }
-
-  .tooltip.tooltip-left::before {
-    border-left-color: black;
-  }
-
-  .tooltip.tooltip-bottom::before {
-    border-bottom-color: black;
-  }
 }

@@ -1,7 +1,10 @@
 /*
  * Responsive Design
  * Mobile and tablet adaptations for the visibility manager
+ * All styles scoped to .pf2e-visioner to avoid conflicts
  */
+
+.pf2e-visioner {
 
 /* Tablet and Mobile Breakpoints */
 @media (max-width: 700px) {
@@ -422,3 +425,5 @@
     font-size: 11px;
   }
 }
+
+} /* End .pf2e-visioner scope */

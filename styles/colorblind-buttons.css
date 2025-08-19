@@ -1,7 +1,10 @@
 /* 
  * Additional colorblind mode styles for buttons in PF2E Visioner
  * Provides support for buttons in chat messages
+ * All styles scoped to .pf2e-visioner to avoid conflicts
  */
+
+.pf2e-visioner {
 
 /* Seek Results Available Panel and Button */
 .pf2e-visioner-colorblind-protanopia .pf2e-visioner-automation-panel.seek-panel,
@@ -367,3 +370,5 @@
   color: var(--dialog-theme-color) !important;
   font-weight: bold !important;
 }
+
+} /* End .pf2e-visioner scope */

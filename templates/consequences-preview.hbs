@@ -1,5 +1,5 @@
 {{!--
-  ApplicationV2 template for Consequences Dialog for damage rolls from hidden/undetected tokens
+  ApplicationV2 template for Consequences Dialog for attack rolls from hidden/undetected tokens
   Matches the visibility manager's design and styling with red theme
 --}}
 
@@ -12,10 +12,10 @@
     <div class="attacker-details">
       <h3 class="attacker-name">{{attackingToken.name}}</h3>
       <p class="hint">
-        {{#if damageData.isAttackRoll}}
+        {{#if attackData.isAttackRoll}}
           Attack consequences for hidden/undetected attacker
         {{else}}
-          Damage consequences for hidden/undetected attacker
+          Attack consequences for hidden/undetected attacker
         {{/if}}
       </p>
     </div>
@@ -42,7 +42,6 @@
         <tr>
           <th class="token-image">Token</th>
           <th class="token-name">Name</th>
-          <th class="outcome">Outcome</th>
           <th class="visibility-change">Visibility Change</th>
           <th class="actions">Actions</th>
         </tr>
@@ -55,9 +54,6 @@
             </td>
             <td class="token-name">
               <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
-            </td>
-            <td class="outcome {{outcome.outcomeClass}}">
-              {{outcome.outcomeLabel}}
             </td>
             <td class="visibility-change">
               <div class="visibility-change-with-override">

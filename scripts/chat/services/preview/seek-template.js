@@ -2,9 +2,32 @@
 
 export async function setupSeekTemplate(actionData) {
   const { notify } = await import("../infra/notifications.js");
+  
+  // Check RAW enforcement before allowing template setup
+  const { MODULE_ID } = await import("../../../constants.js");
+  const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+  
+  if (enforceRAW) {
+    try {
+      const { checkForValidTargets } = await import("../infra/target-checker.js");
+      const canSeek = checkForValidTargets({ ...actionData, actionType: "seek" });
+      if (!canSeek) {
+        notify.warn("Cannot setup Seek template. According to RAW, you can only Seek targets that are Undetected or Hidden from you.");
+        return;
+      }
+    } catch (error) {
+      console.warn("Error checking RAW requirements for seek template:", error);
+      // Continue with template setup if we can't check RAW requirements
+    }
+  }
+  
   notify.info(
     game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP")
   );
+  
+  // Clean up any existing seek templates for this actor before creating a new one
+  await cleanupOrphanedSeekTemplates(actionData.actor?.id, game.userId);
+  
   const distance = 15;
   if (game.user.isGM) {
     const tplData = {
@@ -185,18 +208,109 @@ export async function setupSeekTemplate(actionData) {
 export async function removeSeekTemplate(actionData) {
   if (!canvas?.scene?.templates) return;
   try {
-    const toRemove = canvas.scene.templates
-      .filter((t) => t?.flags?.["pf2e-visioner"]?.seekPreviewManual && t?.flags?.["pf2e-visioner"]?.messageId === actionData.messageId && t?.flags?.["pf2e-visioner"]?.actorTokenId === actionData.actor.id && t?.user?.id === game.userId)
+    
+    // First, clean up any orphaned seek templates for this actor/user
+    await cleanupOrphanedSeekTemplates(actionData.actor?.id, game.userId);
+    
+    // Get all templates on the scene
+    const allTemplates = canvas.scene.templates;
+    
+    // First, try to remove templates by exact message ID match (most specific)
+    let toRemove = allTemplates
+      .filter((t) => {
+        const flags = t?.flags?.["pf2e-visioner"];
+        const isSeekTemplate = flags?.seekPreviewManual || flags?.seekTemplate;
+        const matchesMessage = flags?.messageId === actionData.messageId;
+        const matchesActor = flags?.actorTokenId === actionData.actor?.id;
+        const matchesUser = t?.user?.id === game.userId;
+        
+        // Exact match: seek template, same message, same actor, same user
+        return isSeekTemplate && matchesMessage && matchesActor && matchesUser;
+      })
       .map((t) => t.id);
-    if (toRemove.length) await canvas.scene.deleteEmbeddedDocuments("MeasuredTemplate", toRemove);
+    
+    
+    // If no exact matches found, try to remove by actor ID (for reroll scenarios)
+    if (toRemove.length === 0) {
+      toRemove = allTemplates
+        .filter((t) => {
+          const flags = t?.flags?.["pf2e-visioner"];
+          const isSeekTemplate = flags?.seekPreviewManual || flags?.seekTemplate;
+          const matchesActor = flags?.actorTokenId === actionData.actor?.id;
+          const matchesUser = t?.user?.id === game.userId;
+          
+          // Actor match: seek template, same actor, same user (message ID might be different due to reroll)
+          return isSeekTemplate && matchesActor && matchesUser;
+        })
+        .map((t) => t.id);
+      
+    }
+    
+    // If still no matches, try to remove any seek templates by the current user (fallback)
+    if (toRemove.length === 0) {
+      toRemove = allTemplates
+        .filter((t) => {
+          const flags = t?.flags?.["pf2e-visioner"];
+          const isSeekTemplate = flags?.seekPreviewManual || flags?.seekTemplate;
+          const matchesUser = t?.user?.id === game.userId;
+          
+          // User fallback: any seek template by the current user
+          return isSeekTemplate && matchesUser;
+        })
+        .map((t) => t.id);
+      
+    }
+    
+    if (toRemove.length) {
+      await canvas.scene.deleteEmbeddedDocuments("MeasuredTemplate", toRemove);
+    } 
+    
+    // Clear the action data
     delete actionData.seekTemplateCenter;
     delete actionData.seekTemplateRadiusFeet;
+    
     const { notify } = await import("../infra/notifications.js");
     notify.info(game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE"));
-    updateSeekTemplateButton(actionData, false);
+    
+    // Button state update is now handled in the event binder after UI re-injection
+    
+    // Force a small delay to ensure UI updates are processed
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
   } catch (error) {
     const { log } = await import("../infra/notifications.js");
     log.error("Failed to remove Seek template:", error);
+  }
+}
+
+/**
+ * Clean up any orphaned seek templates for a specific actor/user combination
+ * This helps with reroll scenarios where old templates might still exist
+ */
+async function cleanupOrphanedSeekTemplates(actorId, userId) {
+  if (!canvas?.scene?.templates || !actorId || !userId) return;
+  
+  try {
+    const allTemplates = canvas.scene.templates;
+    const orphanedTemplates = allTemplates
+      .filter((t) => {
+        const flags = t?.flags?.["pf2e-visioner"];
+        const isSeekTemplate = flags?.seekPreviewManual || flags?.seekTemplate;
+        const matchesActor = flags?.actorTokenId === actorId;
+        const matchesUser = t?.user?.id === userId;
+        
+        // Check if the message still exists
+        const messageExists = game.messages.has(flags?.messageId);
+        
+        return isSeekTemplate && matchesActor && matchesUser && !messageExists;
+      })
+      .map((t) => t.id);
+    
+    if (orphanedTemplates.length > 0) {
+      await canvas.scene.deleteEmbeddedDocuments("MeasuredTemplate", orphanedTemplates);
+    }
+  } catch (error) {
+    console.warn("Failed to cleanup orphaned seek templates:", error);
   }
 }
 
@@ -205,9 +319,17 @@ export function updateSeekTemplateButton(actionData, hasTemplate) {
     const panel = $(
       `.pf2e-visioner-automation-panel[data-message-id="${actionData.messageId}"]`
     );
-    if (!panel?.length) return;
+    if (!panel?.length) {
+      console.warn("No automation panel found for message:", actionData.messageId);
+      return;
+    }
     const btn = panel.find("button.setup-template");
-    if (!btn?.length) return;
+    if (!btn?.length) {
+      console.warn("No setup template button found in panel");
+      return;
+    }
+    
+    
     if (hasTemplate) {
       btn.attr("data-action", "remove-seek-template");
       btn.attr(
@@ -235,7 +357,9 @@ export function updateSeekTemplateButton(actionData, hasTemplate) {
         )}`
       );
     }
-  } catch (_) {}
+    
+  } catch (error) {
+    console.error("Error updating seek template button:", error);
+  }
 }
-
 

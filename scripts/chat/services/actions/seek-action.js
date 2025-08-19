@@ -17,6 +17,9 @@ export class SeekActionHandler extends ActionHandlerBase {
   async discoverSubjects(actionData) {
     // Discover targets based on current canvas tokens and encounter settings, plus hidden walls
     const { shouldFilterAlly, hasActiveEncounter, calculateTokenDistance } = await import("../infra/shared-utils.js");
+    const { getVisibilityBetween } = await import("../../../utils.js");
+    const { MODULE_ID } = await import("../../../constants.js");
+    
     const allTokens = canvas?.tokens?.placeables || [];
     const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
     let potential = allTokens
@@ -35,7 +38,6 @@ export class SeekActionHandler extends ActionHandlerBase {
 
     // Add hidden walls as discoverable subjects (as pseudo-tokens with dc)
     try {
-      const { MODULE_ID } = await import("../../../constants.js");
       // Only include hidden walls as valid Seek targets
       const allWalls = canvas?.walls?.placeables || [];
       const hiddenWalls = allWalls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
@@ -59,6 +61,41 @@ export class SeekActionHandler extends ActionHandlerBase {
       potential = potential.concat(wallSubjects);
     } catch (error) {
       console.error("Error processing walls in discoverSubjects:", error);
+    }
+    
+    // Apply RAW enforcement if enabled
+    const enforceRAW = game.settings.get(MODULE_ID, "enforceRawRequirements");
+    if (enforceRAW) {      
+      // Filter to only include targets that are Undetected or Hidden from the seeker
+      potential = potential.filter((subject) => {
+        try {
+          if (subject._isWall) {
+            // Hidden walls are always valid seek targets (they're hidden by definition)
+            return true;
+          }
+          
+          if (subject?.actor?.type === "hazard" || subject?.actor?.type === "loot") {
+            // Hazards and loot are always valid seek targets
+            return true;
+          }
+          
+          // For regular tokens, check visibility state
+          const visibility = getVisibilityBetween(actionData.actor, subject);
+          const isValidTarget = visibility === "undetected" || visibility === "hidden";
+          
+          return isValidTarget;
+        } catch (error) {
+          console.warn("Error checking visibility for RAW enforcement:", error);
+          // If we can't determine visibility, exclude the target to be safe
+          return false;
+        }
+      });
+            
+      // If no valid targets found after RAW filtering, notify the user
+      if (potential.length === 0) {
+        const { notify } = await import("../infra/notifications.js");
+        notify.warn("No valid Seek targets found. According to RAW, you can only Seek targets that are Undetected or Hidden from you.");
+      }
     }
     
     // Optional distance limitation based on settings (combat vs out-of-combat)
@@ -152,12 +189,10 @@ export class SeekActionHandler extends ActionHandlerBase {
     if (subject?._isWall) {
       try {
         const d = subject.wall?.document;
-        const isDoor = Number(d?.door) > 0;
-        const name = d?.getFlag?.(MODULE_ID, "wallIdentifier") || (isDoor ? "Hidden Door" : "Hidden Wall");
-        const svg = isDoor
-          ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><rect x='6' y='4' width='16' height='20' rx='2' ry='2' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/><circle cx='19' cy='14' r='1.5' fill='#e6e6e6'/></svg>`
-          : `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><rect x='4' y='4' width='20' height='20' fill='#1e1e1e' stroke='#cccccc' stroke-width='2'/><path d='M8 6v16M14 6v16M20 6v16' stroke='#888888' stroke-width='2'/></svg>`;
-        const img = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+        const doorType = Number(d?.door) || 0; // 0 wall, 1 door, 2 secret door
+        const name = d?.getFlag?.(MODULE_ID, "wallIdentifier") || (doorType === 2 ? "Hidden Secret Door" : doorType === 1 ? "Hidden Door" : "Hidden Wall");
+        const { getWallImage } = await import("../../../utils.js");
+        const img = getWallImage(doorType);
         wallMeta = { _isWall: true, wall: subject.wall, wallId: subject.wall?.id, wallIdentifier: name, wallImg: img };
       } catch (_) {}
     }

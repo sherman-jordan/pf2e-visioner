@@ -11,6 +11,8 @@ import { registerHooks } from "./hooks.js";
 import { initializeDialogScrollFix } from "./services/dialog-scroll-fix.js";
 // Import rule elements
 import { initializeRuleElements } from "./rule-elements/index.js";
+// Import cover visualization
+import { initCoverVisualization } from "./cover/cover-visualization.js";
 
 // Initialize the module
 Hooks.once("init", async () => {
@@ -75,6 +77,16 @@ Hooks.once("ready", async () => {
           error
         );
       }
+    }
+    
+    // Initialize cover visualization system for all users
+    try {
+      initCoverVisualization();
+    } catch (error) {
+      console.error(
+        "PF2E Visioner: Failed to initialize cover visualization:",
+        error
+      );
     }
   } catch (error) {
     console.error(

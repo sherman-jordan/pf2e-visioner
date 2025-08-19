@@ -19,6 +19,7 @@ const SETTINGS_GROUPS = {
     "keybindingOpensTMInTargetMode",
     "sneakRawEnforcement",
     "enableAllTokensVision",
+    "autoCoverHideAction",
   ],
   "Visibility & Hover": [
     "enableHoverTooltips",
@@ -42,11 +43,11 @@ const SETTINGS_GROUPS = {
     "autoCoverCoverageStandardPct",
     "autoCoverCoverageGreaterPct",
     "autoCoverIgnoreUndetected",
+    "autoCoverVisualizationOnlyInEncounter",
     "autoCoverIgnoreDead",
     "autoCoverIgnoreAllies",
     "autoCoverRespectIgnoreFlag",
     "autoCoverAllowProneBlockers",
-    "autoCoverHideAction",
   ],
   Advanced: [
     "debug",
@@ -164,11 +165,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
       // Coverage thresholds visible only when mode === 'coverage'
       const modeSel = content.querySelector('[name="settings.autoCoverTokenIntersectionMode"]');
-      const applyCoverageModeVisibility = () => {
-        const isCoverage = (modeSel?.value || '') === 'coverage';
-        toggleSettingVisibility('autoCoverCoverageStandardPct', isCoverage);
-        toggleSettingVisibility('autoCoverCoverageGreaterPct', isCoverage);
-      };
+      const applyCoverageModeVisibility = () => { /* thresholds are fixed; keep them hidden */ };
       if (modeSel) {
         modeSel.addEventListener('change', applyCoverageModeVisibility);
         applyCoverageModeVisibility();

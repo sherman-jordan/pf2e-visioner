@@ -153,23 +153,44 @@ function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add('bottom');
   if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add('left');
   if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add('right');
-  if (mode === 'cross') return (hits.has('top') && hits.has('bottom')) || (hits.has('left') && hits.has('right'));
   if (mode === 'center') {
     const cx = (rect.x1 + rect.x2) / 2; const cy = (rect.y1 + rect.y2) / 2;
     const dist = distancePointToSegment({ x: cx, y: cy }, p1, p2);
     // Treat as pass-through if the center lies near the line segment (within 1px)
     return dist <= 1 && pointBetweenOnSegment({ x: cx, y: cy }, p1, p2);
   }
-  if (mode === 'length10' || mode === 'length20') {
+  if (mode === 'any' || mode === 'length10') {
     const len = segmentRectIntersectionLength(p1, p2, rect);
     if (len <= 0) return false;
-    // Normalize against the token's side length (shorter side) per requirement
+    if (mode === 'any') return true; // any graze counts
+    
+    if (mode === 'length10') {
+      // Grid-square-based approach: 10% of total grid squares
+      const width = Math.abs(rect.x2 - rect.x1); 
+      const height = Math.abs(rect.y2 - rect.y1);
+      
+      // Calculate grid squares (assuming each square is ~50px in standard FoundryVTT)
+      const gridSize = canvas?.grid?.size || 50;
+      const widthSquares = Math.round(width / gridSize);
+      const heightSquares = Math.round(height / gridSize);
+      const totalSquares = widthSquares * heightSquares;
+      
+      // Convert intersection length to "square equivalents"
+      // A full diagonal through one square ≈ √2 * gridSize ≈ 71px
+      const squareEquivalent = len / (gridSize * Math.sqrt(2));
+      const squarePercentage = (squareEquivalent / totalSquares) * 100;
+      
+      return squarePercentage >= 10;
+    }
+    
+    // For other modes (length50), use the old diagonal approach
     const width = Math.abs(rect.x2 - rect.x1); const height = Math.abs(rect.y2 - rect.y1);
-    const tokenSide = Math.max(1, Math.min(width, height));
-    const ratio = len / tokenSide;
-    const threshold = mode === 'length20' ? 0.2 : 0.1;
+    const tokenDiagonal = Math.sqrt(width * width + height * height);
+    const ratio = len / tokenDiagonal;
+    const threshold = 0.50;
     return ratio >= threshold;
   }
+  // 'any' behaves like edge-hit (any side), not strict center capture
   return hits.size > 0;
 }
 
@@ -188,6 +209,20 @@ function segmentRectIntersectionLength(p1, p2, rect) {
   return Math.max(0, segLen * Math.max(0, t1 - t0));
 }
 
+function segmentRectIntersectionRange(p1, p2, rect) {
+  const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+  let t0 = 0; let t1 = 1; const p = [-dx, dx, -dy, dy]; const q = [p1.x - rect.x1, rect.x2 - p1.x, p1.y - rect.y1, rect.y2 - p1.y];
+  for (let i = 0; i < 4; i += 1) {
+    const pi = p[i]; const qi = q[i];
+    if (pi === 0) { if (qi < 0) return null; }
+    else {
+      const r = qi / pi; if (pi < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+    }
+  }
+  if (t0 > t1) return null;
+  return [Math.max(0, t0), Math.min(1, t1)];
+}
+
 function distancePointToSegment(pt, a, b) {
   const abx = b.x - a.x; const aby = b.y - a.y; const apx = pt.x - a.x; const apy = pt.y - a.y;
   const ab2 = abx * abx + aby * aby; if (ab2 === 0) return Math.hypot(apx, apy);
@@ -204,10 +239,8 @@ function pointBetweenOnSegment(pt, a, b) {
 // ----- strategy helpers: configuration and evaluators
 
 function getIntersectionMode() {
-  let mode = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode");
-  if (mode === "any" || mode === "cross") mode = "center";
-  if (!mode) mode = "center";
-  return mode;
+  const mode = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode");
+  return mode || "any";
 }
 
 function getAutoCoverFilterSettings(attacker) {
@@ -258,37 +291,147 @@ function getEligibleBlockingTokens(attacker, target, filters) {
   return out;
 }
 
-function evaluateCoverByCoverage(p1, p2, blockers, intersectionMode, stdPct, grtPct) {
-  let any = false; let standard = false; let greater = false;
-  for (const blocker of blockers) {
-    const rect = getTokenRect(blocker);
-    if (!centerLineIntersectsRect(p1, p2, rect, intersectionMode)) continue;
+function evaluateCoverByCoverage(p1, p2, blockers) {
+  // Fixed side coverage thresholds: Standard at 50%, Greater at 70%
+  const lesserT = 50;
+  const greaterT = 70;
+
+  let sawAny = false; let meetsStd = false; let meetsGrt = false;
+  for (const b of blockers) {
+    const rect = getTokenRect(b);
     const len = segmentRectIntersectionLength(p1, p2, rect);
-    if (len <= 0) continue; // touching corner/edge without entering shouldn't count
-    any = true;
+    if (len <= 0) continue;
+    sawAny = true;
     const width = Math.abs(rect.x2 - rect.x1); const height = Math.abs(rect.y2 - rect.y1);
-    const side = Math.max(1, Math.min(width, height));
-    const pct = (len / side) * 100;
-    if (pct >= grtPct) { greater = true; break; }
-    if (pct >= stdPct) standard = true;
+    const side = Math.max(width, height); // larger side in pixels
+    const f = (len / Math.max(1, side)) * 100; // percent side coverage    
+    if (f >= greaterT) { 
+      meetsGrt = true; break; 
+    }
+    if (f >= lesserT) {
+      meetsStd = true;
+    }
   }
-  if (!any) return "none";
-  if (greater) return "greater";
-  return standard ? "standard" : "lesser";
+  
+  const result = meetsGrt ? "greater" : (meetsStd ? "standard" : (sawAny ? "lesser" : "none"));
+  return result;
 }
 
 function evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode) {
   let any = false; let standard = false;
   const attackerSize = getSizeRank(attacker); const targetSize = getSizeRank(target);
+    
   for (const blocker of blockers) {
     const rect = getTokenRect(blocker);
     if (!centerLineIntersectsRect(p1, p2, rect, intersectionMode)) continue;
     any = true;
     const blockerSize = getSizeRank(blocker);
-    if (blockerSize - attackerSize >= 2 && blockerSize - targetSize >= 2) standard = true;
+    const sizeDiffAttacker = blockerSize - attackerSize;
+    const sizeDiffTarget = blockerSize - targetSize;
+    const grantsStandard = sizeDiffAttacker >= 2 && sizeDiffTarget >= 2;
+        
+    if (grantsStandard) standard = true;
   }
-  if (!any) return "none";
-  return standard ? "standard" : "lesser";
+  
+  const result = any ? (standard ? "standard" : "lesser") : "none";
+  return result;
+}
+
+function evaluateCoverByTactical(attacker, target, blockers) {
+  // Tactical mode: corner-to-corner calculations
+  // Choose the best corner of the attacker and check lines from all target corners to that corner
+  // This matches the "choose a corner" tactical rule
+  
+  const attackerRect = getTokenRect(attacker);
+  const targetRect = getTokenRect(target);
+  
+  // Debug token sizes and rectangles
+  const attackerSizeValue = attacker?.actor?.system?.traits?.size?.value ?? "med";
+  const targetSizeValue = target?.actor?.system?.traits?.size?.value ?? "med";
+  // Get corners for both tokens, handling tiny creatures properly
+  function getTokenCorners(token, rect, sizeValue) {
+    // For tiny creatures, use a slightly larger effective area for tactical cover calculations
+    // While they occupy 0.5 squares, they should still provide meaningful cover
+    if (sizeValue === "tiny") {
+      const centerX = (rect.x1 + rect.x2) / 2;
+      const centerY = (rect.y1 + rect.y2) / 2;
+      const gridSize = canvas.grid.size;
+      const halfEffective = gridSize * 0.35; // Use 0.7 square effective area for cover (35% from center)
+      
+      return [
+        { x: centerX - halfEffective, y: centerY - halfEffective }, // top-left
+        { x: centerX + halfEffective, y: centerY - halfEffective }, // top-right
+        { x: centerX + halfEffective, y: centerY + halfEffective }, // bottom-right
+        { x: centerX - halfEffective, y: centerY + halfEffective }, // bottom-left
+      ];
+    } else {
+      // Regular creatures use document boundaries
+      return [
+        { x: rect.x1, y: rect.y1 }, // top-left
+        { x: rect.x2, y: rect.y1 }, // top-right
+        { x: rect.x2, y: rect.y2 }, // bottom-right
+        { x: rect.x1, y: rect.y2 }, // bottom-left
+      ];
+    }
+  }
+  
+  const attackerCorners = getTokenCorners(attacker, attackerRect, attackerSizeValue);
+  const targetCorners = getTokenCorners(target, targetRect, targetSizeValue);
+  
+  let bestCover = "greater"; // Start with worst case
+  
+  // Try each attacker corner and find the one with the least cover (best for attacking)
+  for (let a = 0; a < attackerCorners.length; a++) {
+    const attackerCorner = attackerCorners[a];
+    let blockedLines = 0;
+    const totalLines = targetCorners.length;
+    
+    // Check lines from all target corners to this attacker corner
+    for (let t = 0; t < targetCorners.length; t++) {
+      const targetCorner = targetCorners[t];
+      let lineBlocked = false;
+      let blockedBy = "none";
+      
+      // Check if this line is blocked by walls
+      if (segmentIntersectsAnyBlockingWall(targetCorner, attackerCorner)) {
+        lineBlocked = true;
+        blockedBy = "wall";
+      }
+      
+      // Check if this line is blocked by any token blockers
+      if (!lineBlocked) {
+        for (const blocker of blockers) {
+          if (blocker === attacker || blocker === target) continue;
+          
+          const blockerRect = getTokenRect(blocker);
+          const intersectionLength = segmentRectIntersectionLength(targetCorner, attackerCorner, blockerRect);          
+          if (intersectionLength > 0) {
+            lineBlocked = true;
+            blockedBy = `token:${blocker.name}(${intersectionLength.toFixed(1)}px)`;
+            break;
+          }
+        }
+      }
+      
+      if (lineBlocked) blockedLines++;
+    }
+    
+    // Determine cover level for this attacker corner
+    let coverForThisCorner;
+    if (blockedLines === 0) coverForThisCorner = "none";
+    else if (blockedLines === 1) coverForThisCorner = "lesser";
+    else if (blockedLines <= 3) coverForThisCorner = "standard";
+    else coverForThisCorner = "greater";
+    
+    
+    // Keep the best (lowest) cover result
+    const coverOrder = ["none", "lesser", "standard", "greater"];
+    if (coverOrder.indexOf(coverForThisCorner) < coverOrder.indexOf(bestCover)) {
+      bestCover = coverForThisCorner;
+    }
+  }
+  
+  return bestCover;
 }
 
 function evaluateWallsCover(p1, p2) {
@@ -310,15 +453,42 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
     // Token blockers
     const intersectionMode = getIntersectionMode();
     const filters = getAutoCoverFilterSettings(attacker);
-    const blockers = getEligibleBlockingTokens(attacker, target, filters);
+    let blockers = getEligibleBlockingTokens(attacker, target, filters);
 
-    const useCoverage = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode") === "coverage";
-    const stdPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageStandardPct") ?? 50)));
-    const grtPct = Math.max(0, Math.min(100, Number(game.settings?.get?.(MODULE_ID, "autoCoverCoverageGreaterPct") ?? 80)));
+    // Strict center-to-center: only consider blockers that the exact center-to-center ray intersects,
+    // and prefer the one whose center is closest to the ray if multiple.
+    if (intersectionMode === 'center') {
+      try {
+        const candidates = [];
+        for (const b of blockers) {
+          const rect = getTokenRect(b);
+          if (segmentIntersectsRect(p1, p2, rect)) {
+            const cx = (rect.x1 + rect.x2) / 2; const cy = (rect.y1 + rect.y2) / 2;
+            const dist = distancePointToSegment({ x: cx, y: cy }, p1, p2);
+            candidates.push({ b, dist });
+          }
+        }
+        if (candidates.length > 0) {
+          candidates.sort((a, b) => a.dist - b.dist);
+          blockers = [candidates[0].b];
+        } else {
+          blockers = [];
+        }
+      } catch (_) { /* ignore */ }
+    }
 
-    let tokenCover = useCoverage
-      ? evaluateCoverByCoverage(p1, p2, blockers, intersectionMode, stdPct, grtPct)
-      : evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode);
+    const intersectionModeValue = game.settings?.get?.(MODULE_ID, "autoCoverTokenIntersectionMode");
+    const useCoverage = intersectionModeValue === "coverage";
+    const useTactical = intersectionModeValue === "tactical";
+
+    let tokenCover;
+    if (useTactical) {
+      tokenCover = evaluateCoverByTactical(attacker, target, blockers);
+    } else if (useCoverage) {
+      tokenCover = evaluateCoverByCoverage(p1, p2, blockers);
+    } else {
+      tokenCover = evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode);
+    }
 
     if (wallCover === "standard") {
       const res = tokenCover === "greater" ? "greater" : "standard";

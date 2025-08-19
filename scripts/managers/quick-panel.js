@@ -137,7 +137,6 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       for (const [obs, tgt] of pairs) {
         await setVisibilityBetween(obs, tgt, state);
       }
-      try { game.canvas?.perception?.refresh?.(); } catch (_) {}
       ui.notifications?.info?.(`Applied ${state} to ${pairs.length} pair(s).`);
     } catch (e) {
       console.error("[pf2e-visioner] quick visibility error", e);
@@ -166,7 +165,6 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       for (const [obs, tgt] of pairs) {
         await setCoverBetween(obs, tgt, state);
       }
-      try { game.canvas?.perception?.refresh?.(); } catch (_) {}
       ui.notifications?.info?.(`Applied cover ${state} to ${pairs.length} pair(s).`);
     } catch (e) {
       console.error("[pf2e-visioner] quick cover error", e);

@@ -1,1531 +1,189 @@
 /*
  * Colorblind mode styles for PF2E Visioner
  * Provides alternative color schemes for different types of colorblindness
+ * Optimized approach using CSS custom properties
+ * All styles scoped to .pf2e-visioner to avoid conflicts
  */
 
-/* Protanopia (red-blind) */
+.pf2e-visioner {
+
+/* Base colorblind mode classes - override CSS custom properties */
+
+/* Protanopia (red-blind) - Uses blues, yellows, and purples */
 .pf2e-visioner-colorblind-protanopia {
-  /* Override visibility state colors */
+  /* Visibility state colors */
   --visibility-observed: #0072b2; /* Blue */
   --visibility-concealed: #f0e442; /* Yellow */
   --visibility-hidden: #cc79a7; /* Pink */
-  --visibility-undetected: #9467bd; /* Purple - better for protanopia */
+  --visibility-undetected: #9467bd; /* Purple */
 
-  /* Override other colors */
+  /* Module colors */
   --pf2e-visioner-success: #0072b2; /* Blue */
   --pf2e-visioner-warning: #f0e442; /* Yellow */
   --pf2e-visioner-danger: #9467bd; /* Purple */
   --pf2e-visioner-info: #56b4e9; /* Light blue */
 
-  /* Override hardcoded colors in templates */
-  --template-observed: #0072b2; /* Blue */
-  --template-concealed: #f0e442; /* Yellow */
-  --template-hidden: #cc79a7; /* Pink */
-  --template-undetected: #9467bd; /* Purple */
-
-  /* Button colors */
-  --button-apply: #0072b2; /* Blue */
-  --button-apply-hover: #005b8e; /* Darker blue */
-  --dialog-theme-color: #0072b2; /* Blue */
-  --dialog-theme-hover: #005b8e; /* Darker blue */
-  --dialog-theme-color-rgb: 0, 114, 178; /* Blue RGB values */
-
-  /* Cover traffic-light substitutions */
-  --cover-none: var(--template-observed); /* None */
-  --cover-lesser: var(--template-concealed); /* Lesser */
-  --cover-standard: var(--template-hidden); /* Standard */
-  --cover-greater: var(--template-undetected); /* Greater */
-}
-
-/* Deuteranopia (green-blind) */
-.pf2e-visioner-colorblind-deuteranopia {
-  /* Override visibility state colors */
-  --visibility-observed: #0072b2; /* Blue */
-  --visibility-concealed: #f0e442; /* Yellow */
-  --visibility-hidden: #cc79a7; /* Pink */
-  --visibility-undetected: #9467bd; /* Purple - better for deuteranopia */
-
-  /* Override other colors */
-  --pf2e-visioner-success: #0072b2; /* Blue */
-  --pf2e-visioner-warning: #f0e442; /* Yellow */
-  --pf2e-visioner-danger: #9467bd; /* Purple */
-  --pf2e-visioner-info: #56b4e9; /* Light blue */
-
-  /* Override hardcoded colors in templates */
-  --template-observed: #0072b2; /* Blue */
-  --template-concealed: #f0e442; /* Yellow */
-  --template-hidden: #cc79a7; /* Pink */
-  --template-undetected: #9467bd; /* Purple */
-
-  /* Button colors */
-  --button-apply: #0072b2; /* Blue */
-  --button-apply-hover: #005b8e; /* Darker blue */
-  --dialog-theme-color: #0072b2; /* Blue */
-  --dialog-theme-hover: #005b8e; /* Darker blue */
-  --dialog-theme-color-rgb: 0, 114, 178; /* Blue RGB values */
-
-  /* Cover traffic-light substitutions */
-  --cover-none: var(--template-observed);
-  --cover-lesser: var(--template-concealed);
-  --cover-standard: var(--template-hidden);
-  --cover-greater: var(--template-undetected);
-}
-
-/* Tritanopia (blue-blind) */
-.pf2e-visioner-colorblind-tritanopia {
-  /* Override visibility state colors */
-  --visibility-observed: #009e73; /* Green */
-  --visibility-concealed: #e69f00; /* Orange */
-  --visibility-hidden: #d55e00; /* Red */
-  --visibility-undetected: #8b6d27; /* Brown - better for tritanopia on dark bg */
-
-  /* Override other colors */
-  --pf2e-visioner-success: #009e73; /* Green */
-  --pf2e-visioner-warning: #e69f00; /* Orange */
-  --pf2e-visioner-danger: #8b6d27; /* Brown */
-  --pf2e-visioner-info: #56b4e9; /* Light blue */
-
-  /* Override hardcoded colors in templates */
-  --template-observed: #009e73; /* Green */
-  --template-concealed: #e69f00; /* Orange */
-  --template-hidden: #d55e00; /* Red */
-  --template-undetected: #8b6d27; /* Brown */
-
-  /* Button colors */
-  --button-apply: #009e73; /* Green */
-  --button-apply-hover: #007f5c; /* Darker green */
-  --dialog-theme-color: #009e73; /* Green */
-  --dialog-theme-hover: #007f5c; /* Darker green */
-  --dialog-theme-color-rgb: 0, 158, 115; /* Green RGB values */
-
-  /* Cover traffic-light substitutions */
+  /* Cover colors */
   --cover-none: #009e73; /* Green */
   --cover-lesser: #e69f00; /* Orange */
   --cover-standard: #d55e00; /* Red */
   --cover-greater: #8b6d27; /* Brown */
+  
+  /* Button and dialog colors */
+  --button-apply: #0072b2;
+  --button-apply-hover: #005b8e;
+  --dialog-theme-color: #0072b2;
+  --dialog-theme-hover: #005b8e;
 }
 
-/* Achromatopsia (complete color blindness) */
+/* Deuteranopia (green-blind) - Uses blues, yellows, and magentas */
+.pf2e-visioner-colorblind-deuteranopia {
+  /* Visibility state colors */
+  --visibility-observed: #0072b2; /* Blue */
+  --visibility-concealed: #f0e442; /* Yellow */
+  --visibility-hidden: #d55e00; /* Orange-red */
+  --visibility-undetected: #cc79a7; /* Magenta */
+
+  /* Module colors */
+  --pf2e-visioner-success: #0072b2; /* Blue */
+  --pf2e-visioner-warning: #f0e442; /* Yellow */
+  --pf2e-visioner-danger: #cc79a7; /* Magenta */
+  --pf2e-visioner-info: #56b4e9; /* Light blue */
+
+  /* Cover colors */
+  --cover-none: #0072b2; /* Blue */
+  --cover-lesser: #e69f00; /* Orange */
+  --cover-standard: #d55e00; /* Red */
+  --cover-greater: #cc79a7; /* Magenta */
+  
+  /* Button and dialog colors */
+  --button-apply: #0072b2;
+  --button-apply-hover: #005b8e;
+  --dialog-theme-color: #0072b2;
+  --dialog-theme-hover: #005b8e;
+}
+
+/* Tritanopia (blue-blind) - Uses reds, greens, and yellows */
+.pf2e-visioner-colorblind-tritanopia {
+  /* Visibility state colors */
+  --visibility-observed: #009e73; /* Green */
+  --visibility-concealed: #f0e442; /* Yellow */
+  --visibility-hidden: #d55e00; /* Orange-red */
+  --visibility-undetected: #cc79a7; /* Pink */
+
+  /* Module colors */
+  --pf2e-visioner-success: #009e73; /* Green */
+  --pf2e-visioner-warning: #f0e442; /* Yellow */
+  --pf2e-visioner-danger: #d55e00; /* Orange-red */
+  --pf2e-visioner-info: #e69f00; /* Orange */
+
+  /* Cover colors */
+  --cover-none: #009e73; /* Green */
+  --cover-lesser: #e69f00; /* Orange */
+  --cover-standard: #d55e00; /* Red */
+  --cover-greater: #8b6d27; /* Brown */
+  
+  /* Button and dialog colors */
+  --button-apply: #009e73;
+  --button-apply-hover: #007a5a;
+  --dialog-theme-color: #009e73;
+  --dialog-theme-hover: #007a5a;
+}
+
+/* Achromatopsia (complete color blindness) - Uses high contrast grayscale */
 .pf2e-visioner-colorblind-achromatopsia {
-  /* Override visibility state colors with high contrast grayscale */
+  /* Visibility state colors with high contrast */
   --visibility-observed: #ffffff; /* White */
-  --visibility-concealed: #bbbbbb; /* Light gray */
-  --visibility-hidden: #777777; /* Medium gray */
-  --visibility-undetected: #aaaaaa; /* Medium-light gray - more visible on dark bg */
+  --visibility-concealed: #cccccc; /* Light gray */
+  --visibility-hidden: #888888; /* Medium gray */
+  --visibility-undetected: #444444; /* Dark gray */
 
-  /* Override other colors */
+  /* Module colors */
   --pf2e-visioner-success: #ffffff; /* White */
-  --pf2e-visioner-warning: #bbbbbb; /* Light gray */
-  --pf2e-visioner-danger: #aaaaaa; /* Medium-light gray */
-  --pf2e-visioner-info: #dddddd; /* Very light gray */
+  --pf2e-visioner-warning: #cccccc; /* Light gray */
+  --pf2e-visioner-danger: #444444; /* Dark gray */
+  --pf2e-visioner-info: #bbbbbb; /* Medium-light gray */
 
-  /* Override hardcoded colors in templates */
-  --template-observed: #ffffff; /* White */
-  --template-concealed: #bbbbbb; /* Light gray */
-  --template-hidden: #777777; /* Medium gray */
-  --template-undetected: #aaaaaa; /* Medium-light gray */
-
-  /* Button colors */
-  --button-apply: #ffffff; /* White */
-  --button-apply-hover: #dddddd; /* Light gray */
-  --dialog-theme-color: #ffffff; /* White */
-  --dialog-theme-hover: #dddddd; /* Light gray */
-  --dialog-theme-color-rgb: 255, 255, 255; /* White RGB values */
-
-  /* Cover traffic-light substitutions (grayscale) */
-  --cover-none: #ffffff;
-  --cover-lesser: #dddddd;
-  --cover-standard: #aaaaaa;
-  --cover-greater: #777777;
+  /* Cover colors */
+  --cover-none: #ffffff; /* White */
+  --cover-lesser: #cccccc; /* Light gray */
+  --cover-standard: #888888; /* Medium gray */
+  --cover-greater: #444444; /* Dark gray */
+  
+  /* Button and dialog colors */
+  --button-apply: #ffffff;
+  --button-apply-hover: #eeeeee;
+  --dialog-theme-color: #ffffff;
+  --dialog-theme-hover: #eeeeee;
 }
 
-/* Additional visual indicators for colorblind modes */
+/* Enhanced visual indicators for colorblind modes */
 .pf2e-visioner-colorblind-protanopia .state-badge,
 .pf2e-visioner-colorblind-deuteranopia .state-badge,
 .pf2e-visioner-colorblind-tritanopia .state-badge,
 .pf2e-visioner-colorblind-achromatopsia .state-badge {
-  /* Add patterns or symbols to help differentiate states */
+  /* Add subtle patterns/textures to help differentiate */
   position: relative;
-}
-
-/* Handle hardcoded colors in templates */
-.pf2e-visioner-colorblind-protanopia [style*="color: #4CAF50"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #4CAF50"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #4CAF50"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #4CAF50"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #28a745"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #28a745"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #28a745"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #28a745"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #4caf50"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #4caf50"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #4caf50"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #4caf50"] {
-  /* Observed state */
-  color: var(--template-observed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia [style*="color: #FFC107"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #FFC107"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #FFC107"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #FFC107"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #ffc107"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #ffc107"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #ffc107"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #ffc107"] {
-  /* Concealed state */
-  color: var(--template-concealed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia [style*="color: #FF9800"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #FF9800"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #FF9800"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #FF9800"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #ff9800"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #ff9800"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #ff9800"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #ff9800"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #ff6600"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #ff6600"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #ff6600"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #ff6600"] {
-  /* Hidden state */
-  color: var(--template-hidden) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia [style*="color: #F44336"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #F44336"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #F44336"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #F44336"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #f44336"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #f44336"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #f44336"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #f44336"],
-.pf2e-visioner-colorblind-protanopia [style*="color: #dc3545"],
-.pf2e-visioner-colorblind-deuteranopia [style*="color: #dc3545"],
-.pf2e-visioner-colorblind-tritanopia [style*="color: #dc3545"],
-.pf2e-visioner-colorblind-achromatopsia [style*="color: #dc3545"] {
-  /* Undetected state */
-  color: var(--template-undetected) !important;
-}
-
-/* Visibility Manager State Icons */
-.pf2e-visioner-colorblind-protanopia .state-icon[data-state="observed"],
-.pf2e-visioner-colorblind-deuteranopia .state-icon[data-state="observed"],
-.pf2e-visioner-colorblind-tritanopia .state-icon[data-state="observed"],
-.pf2e-visioner-colorblind-achromatopsia .state-icon[data-state="observed"] {
-  color: var(--template-observed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-icon[data-state="concealed"],
-.pf2e-visioner-colorblind-deuteranopia .state-icon[data-state="concealed"],
-.pf2e-visioner-colorblind-tritanopia .state-icon[data-state="concealed"],
-.pf2e-visioner-colorblind-achromatopsia .state-icon[data-state="concealed"] {
-  color: var(--template-concealed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-icon[data-state="hidden"],
-.pf2e-visioner-colorblind-deuteranopia .state-icon[data-state="hidden"],
-.pf2e-visioner-colorblind-tritanopia .state-icon[data-state="hidden"],
-.pf2e-visioner-colorblind-achromatopsia .state-icon[data-state="hidden"] {
-  color: var(--template-hidden) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-icon[data-state="undetected"],
-.pf2e-visioner-colorblind-deuteranopia .state-icon[data-state="undetected"],
-.pf2e-visioner-colorblind-tritanopia .state-icon[data-state="undetected"],
-.pf2e-visioner-colorblind-achromatopsia .state-icon[data-state="undetected"] {
-  color: var(--template-undetected) !important;
-}
-
-/* --- Cover: state icons, bulk buttons, effect badges, and legend --- */
-/* State icon buttons inside the Cover tab */
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .state-icon[data-state="none"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .state-icon[data-state="none"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .state-icon[data-state="none"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .state-icon[data-state="none"] {
-  color: var(--cover-none) !important;
-  border-color: var(--cover-none) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .state-icon[data-state="lesser"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .state-icon[data-state="lesser"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .state-icon[data-state="lesser"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .state-icon[data-state="lesser"] {
-  color: var(--cover-lesser) !important;
-  border-color: var(--cover-lesser) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .state-icon[data-state="standard"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .state-icon[data-state="standard"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .state-icon[data-state="standard"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .state-icon[data-state="standard"] {
-  color: var(--cover-standard) !important;
-  border-color: var(--cover-standard) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .state-icon[data-state="greater"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .state-icon[data-state="greater"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .state-icon[data-state="greater"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .state-icon[data-state="greater"] {
-  color: var(--cover-greater) !important;
-  border-color: var(--cover-greater) !important;
-}
-
-/* Bulk header buttons in Cover tab */
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="none"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="none"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="none"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="none"],
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="none"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="none"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="none"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="none"]
-  i {
-  color: var(--cover-none) !important;
-  border-color: var(--cover-none) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="lesser"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="lesser"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="lesser"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="lesser"],
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="lesser"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="lesser"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="lesser"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="lesser"]
-  i {
-  color: var(--cover-lesser) !important;
-  border-color: var(--cover-lesser) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="standard"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="standard"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="standard"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="standard"],
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="standard"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="standard"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="standard"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="standard"]
-  i {
-  color: var(--cover-standard) !important;
-  border-color: var(--cover-standard) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="greater"],
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="greater"],
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="greater"],
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="greater"],
-.pf2e-visioner-colorblind-protanopia
-  .cover-section
-  .bulk-state-header[data-state="greater"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .cover-section
-  .bulk-state-header[data-state="greater"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .cover-section
-  .bulk-state-header[data-state="greater"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .cover-section
-  .bulk-state-header[data-state="greater"]
-  i {
-  color: var(--cover-greater) !important;
-  border-color: var(--cover-greater) !important;
-}
-
-/* Cover effect badges ("+1 AC" etc.) */
-.pf2e-visioner-colorblind-protanopia .cover-none,
-.pf2e-visioner-colorblind-deuteranopia .cover-none,
-.pf2e-visioner-colorblind-tritanopia .cover-none,
-.pf2e-visioner-colorblind-achromatopsia .cover-none {
-  color: var(--cover-none) !important;
-}
-.pf2e-visioner-colorblind-protanopia .cover-lesser,
-.pf2e-visioner-colorblind-deuteranopia .cover-lesser,
-.pf2e-visioner-colorblind-tritanopia .cover-lesser,
-.pf2e-visioner-colorblind-achromatopsia .cover-lesser {
-  color: var(--cover-lesser) !important;
-}
-.pf2e-visioner-colorblind-protanopia .cover-standard,
-.pf2e-visioner-colorblind-deuteranopia .cover-standard,
-.pf2e-visioner-colorblind-tritanopia .cover-standard,
-.pf2e-visioner-colorblind-achromatopsia .cover-standard {
-  color: var(--cover-standard) !important;
-}
-.pf2e-visioner-colorblind-protanopia .cover-greater,
-.pf2e-visioner-colorblind-deuteranopia .cover-greater,
-.pf2e-visioner-colorblind-tritanopia .cover-greater,
-.pf2e-visioner-colorblind-achromatopsia .cover-greater {
-  color: var(--cover-greater) !important;
-}
-
-/* Override inline-colored legend icons within the Cover legend */
-.pf2e-visioner-colorblind-protanopia .cover-legend [style*="#4caf50"],
-.pf2e-visioner-colorblind-deuteranopia .cover-legend [style*="#4caf50"],
-.pf2e-visioner-colorblind-tritanopia .cover-legend [style*="#4caf50"],
-.pf2e-visioner-colorblind-achromatopsia .cover-legend [style*="#4caf50"] {
-  color: var(--cover-none) !important;
-}
-.pf2e-visioner-colorblind-protanopia .cover-legend [style*="#ffeb3b"],
-.pf2e-visioner-colorblind-deuteranopia .cover-legend [style*="#ffeb3b"],
-.pf2e-visioner-colorblind-tritanopia .cover-legend [style*="#ffeb3b"],
-.pf2e-visioner-colorblind-achromatopsia .cover-legend [style*="#ffeb3b"] {
-  color: var(--cover-lesser) !important;
-}
-.pf2e-visioner-colorblind-protanopia .cover-legend [style*="#ff6600"],
-.pf2e-visioner-colorblind-deuteranopia .cover-legend [style*="#ff6600"],
-.pf2e-visioner-colorblind-tritanopia .cover-legend [style*="#ff6600"],
-.pf2e-visioner-colorblind-achromatopsia .cover-legend [style*="#ff6600"] {
-  color: var(--cover-standard) !important;
-}
-.pf2e-visioner-colorblind-protanopia .cover-legend [style*="#f44336"],
-.pf2e-visioner-colorblind-deuteranopia .cover-legend [style*="#f44336"],
-.pf2e-visioner-colorblind-tritanopia .cover-legend [style*="#f44336"],
-.pf2e-visioner-colorblind-achromatopsia .cover-legend [style*="#f44336"] {
-  color: var(--cover-greater) !important;
-}
-
-/* Bulk Action Header Buttons */
-.pf2e-visioner-colorblind-protanopia .bulk-state-header[data-state="observed"],
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="observed"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state-header[data-state="observed"],
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="observed"],
-.pf2e-visioner-colorblind-protanopia
-  .bulk-state-header[data-state="observed"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="observed"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .bulk-state-header[data-state="observed"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="observed"]
-  i {
-  color: var(--template-observed) !important;
-  border-color: var(--template-observed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .bulk-state-header[data-state="concealed"],
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="concealed"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state-header[data-state="concealed"],
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="concealed"],
-.pf2e-visioner-colorblind-protanopia
-  .bulk-state-header[data-state="concealed"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="concealed"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .bulk-state-header[data-state="concealed"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="concealed"]
-  i {
-  color: var(--template-concealed) !important;
-  border-color: var(--template-concealed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .bulk-state-header[data-state="hidden"],
-.pf2e-visioner-colorblind-deuteranopia .bulk-state-header[data-state="hidden"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state-header[data-state="hidden"],
-.pf2e-visioner-colorblind-achromatopsia .bulk-state-header[data-state="hidden"],
-.pf2e-visioner-colorblind-protanopia .bulk-state-header[data-state="hidden"] i,
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="hidden"]
-  i,
-.pf2e-visioner-colorblind-tritanopia .bulk-state-header[data-state="hidden"] i,
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="hidden"]
-  i {
-  color: var(--template-hidden) !important;
-  border-color: var(--template-hidden) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .bulk-state-header[data-state="undetected"],
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="undetected"],
-.pf2e-visioner-colorblind-tritanopia
-  .bulk-state-header[data-state="undetected"],
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="undetected"],
-.pf2e-visioner-colorblind-protanopia
-  .bulk-state-header[data-state="undetected"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-state-header[data-state="undetected"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .bulk-state-header[data-state="undetected"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-state-header[data-state="undetected"]
-  i {
-  color: var(--template-undetected) !important;
-  border-color: var(--template-undetected) !important;
-}
-
-/* State Indicators */
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="color:"],
-.pf2e-visioner-colorblind-deuteranopia .state-indicator[style*="color:"],
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="color:"],
-.pf2e-visioner-colorblind-achromatopsia .state-indicator[style*="color:"] {
-  position: relative;
-}
-
-/* Visibility Legend */
-.pf2e-visioner-colorblind-protanopia .legend-item i,
-.pf2e-visioner-colorblind-deuteranopia .legend-item i,
-.pf2e-visioner-colorblind-tritanopia .legend-item i,
-.pf2e-visioner-colorblind-achromatopsia .legend-item i {
-  position: relative;
-}
-
-.pf2e-visioner-colorblind-protanopia .legend-item:nth-child(2) i::after,
-.pf2e-visioner-colorblind-deuteranopia .legend-item:nth-child(2) i::after,
-.pf2e-visioner-colorblind-tritanopia .legend-item:nth-child(2) i::after,
-.pf2e-visioner-colorblind-achromatopsia .legend-item:nth-child(2) i::after {
-  content: "✓";
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  font-size: 8px;
-}
-
-.pf2e-visioner-colorblind-protanopia .legend-item:nth-child(3) i::after,
-.pf2e-visioner-colorblind-deuteranopia .legend-item:nth-child(3) i::after,
-.pf2e-visioner-colorblind-tritanopia .legend-item:nth-child(3) i::after,
-.pf2e-visioner-colorblind-achromatopsia .legend-item:nth-child(3) i::after {
-  content: "~";
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  font-size: 8px;
-}
-
-.pf2e-visioner-colorblind-protanopia .legend-item:nth-child(4) i::after,
-.pf2e-visioner-colorblind-deuteranopia .legend-item:nth-child(4) i::after,
-.pf2e-visioner-colorblind-tritanopia .legend-item:nth-child(4) i::after,
-.pf2e-visioner-colorblind-achromatopsia .legend-item:nth-child(4) i::after {
-  content: "?";
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  font-size: 8px;
-}
-
-.pf2e-visioner-colorblind-protanopia .legend-item:nth-child(5) i::after,
-.pf2e-visioner-colorblind-deuteranopia .legend-item:nth-child(5) i::after,
-.pf2e-visioner-colorblind-tritanopia .legend-item:nth-child(5) i::after,
-.pf2e-visioner-colorblind-achromatopsia .legend-item:nth-child(5) i::after {
-  content: "!";
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  font-size: 8px;
-}
-
-/* Add pattern indicators for state indicators */
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#4CAF50"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#4CAF50"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#4CAF50"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#4CAF50"]::after,
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#4caf50"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#4caf50"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#4caf50"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#4caf50"]::after {
-  content: " ✓";
-  margin-left: 2px;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#FFC107"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#FFC107"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#FFC107"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#FFC107"]::after,
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#ffc107"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#ffc107"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#ffc107"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#ffc107"]::after {
-  content: " ~";
-  margin-left: 2px;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#FF9800"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#FF9800"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#FF9800"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#FF9800"]::after,
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#ff9800"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#ff9800"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#ff9800"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#ff9800"]::after,
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#ff6600"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#ff6600"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#ff6600"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#ff6600"]::after {
-  content: " ?";
-  margin-left: 2px;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#F44336"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#F44336"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#F44336"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#F44336"]::after,
-.pf2e-visioner-colorblind-protanopia .state-indicator[style*="#f44336"]::after,
-.pf2e-visioner-colorblind-deuteranopia
-  .state-indicator[style*="#f44336"]::after,
-.pf2e-visioner-colorblind-tritanopia .state-indicator[style*="#f44336"]::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .state-indicator[style*="#f44336"]::after {
-  content: " !";
-  margin-left: 2px;
-}
-
-/* Bulk State Buttons */
-.pf2e-visioner-colorblind-protanopia .bulk-state[data-state="observed"],
-.pf2e-visioner-colorblind-deuteranopia .bulk-state[data-state="observed"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state[data-state="observed"],
-.pf2e-visioner-colorblind-achromatopsia .bulk-state[data-state="observed"] {
-  border-color: var(--template-observed) !important;
-  color: var(--template-observed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .bulk-state[data-state="concealed"],
-.pf2e-visioner-colorblind-deuteranopia .bulk-state[data-state="concealed"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state[data-state="concealed"],
-.pf2e-visioner-colorblind-achromatopsia .bulk-state[data-state="concealed"] {
-  border-color: var(--template-concealed) !important;
-  color: var(--template-concealed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .bulk-state[data-state="hidden"],
-.pf2e-visioner-colorblind-deuteranopia .bulk-state[data-state="hidden"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state[data-state="hidden"],
-.pf2e-visioner-colorblind-achromatopsia .bulk-state[data-state="hidden"] {
-  border-color: var(--template-hidden) !important;
-  color: var(--template-hidden) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .bulk-state[data-state="undetected"],
-.pf2e-visioner-colorblind-deuteranopia .bulk-state[data-state="undetected"],
-.pf2e-visioner-colorblind-tritanopia .bulk-state[data-state="undetected"],
-.pf2e-visioner-colorblind-achromatopsia .bulk-state[data-state="undetected"] {
-  border-color: var(--template-undetected) !important;
-  color: var(--template-undetected) !important;
-}
-
-/* Apply buttons in dialogs */
-/* Apply All buttons */
-.pf2e-visioner-colorblind-protanopia .bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia .bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia .bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia .bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-protanopia
-  .seek-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia
-  .seek-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia
-  .seek-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia
-  .seek-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-protanopia
-  .hide-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia
-  .hide-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia
-  .hide-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia
-  .hide-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-protanopia
-  .sneak-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia
-  .sneak-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia
-  .sneak-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia
-  .sneak-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-protanopia
-  .point-out-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia
-  .point-out-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia
-  .point-out-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia
-  .point-out-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-protanopia
-  .consequences-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-deuteranopia
-  .consequences-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-tritanopia
-  .consequences-preview-dialog-bulk-action-btn.apply-all,
-.pf2e-visioner-colorblind-achromatopsia
-  .consequences-preview-dialog-bulk-action-btn.apply-all {
-  background: linear-gradient(
-    135deg,
-    var(--button-apply),
-    var(--button-apply-hover)
-  ) !important;
-  border-color: var(--button-apply-hover) !important;
-  color: white !important;
-}
-
-/* Apply All hover states */
-.pf2e-visioner-colorblind-protanopia
-  .bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .seek-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .seek-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .seek-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .seek-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .point-out-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .point-out-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .point-out-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .point-out-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .sneak-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .sneak-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .sneak-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .sneak-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all:hover:not(
-    :disabled
-  ),
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all:hover:not(
-    :disabled
-  ),
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all:hover:not(
-    :disabled
-  ),
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog-bulk-action-btn.apply-all:hover:not(
-    :disabled
-  ),
-.pf2e-visioner-colorblind-protanopia
-  .consequences-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .consequences-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .consequences-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .consequences-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-  background: linear-gradient(
-    135deg,
-    var(--button-apply-hover),
-    var(--button-apply-hover)
-  ) !important;
-  border-color: var(--button-apply-hover) !important;
-}
-
-/* Apply Change buttons */
-.pf2e-visioner-colorblind-protanopia .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-deuteranopia .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-tritanopia .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-achromatopsia .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-protanopia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-deuteranopia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-tritanopia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-achromatopsia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change,
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog
-  .apply-change,
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog
-  .apply-change,
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog
-  .apply-change,
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog
-  .apply-change {
-  background: var(--button-apply) !important;
-  border-color: var(--button-apply) !important;
-  color: white !important;
-}
-
-/* Apply Change hover states */
-.pf2e-visioner-colorblind-protanopia
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .sneak-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog
-  .row-action-btn.apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog
-  .apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog
-  .apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog
-  .apply-change:hover:not(:disabled),
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog
-  .apply-change:hover:not(:disabled) {
-  background: var(--button-apply-hover) !important;
-  border-color: var(--button-apply-hover) !important;
-}
-
-/* Dialog theme colors - Headers */
-.pf2e-visioner-colorblind-protanopia .seek-preview-dialog .window-header,
-.pf2e-visioner-colorblind-deuteranopia .seek-preview-dialog .window-header,
-.pf2e-visioner-colorblind-tritanopia .seek-preview-dialog .window-header,
-.pf2e-visioner-colorblind-achromatopsia .seek-preview-dialog .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .hide-preview-dialog .window-header,
-.pf2e-visioner-colorblind-deuteranopia .hide-preview-dialog .window-header,
-.pf2e-visioner-colorblind-tritanopia .hide-preview-dialog .window-header,
-.pf2e-visioner-colorblind-achromatopsia .hide-preview-dialog .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .sneak-preview-dialog .window-header,
-.pf2e-visioner-colorblind-deuteranopia .sneak-preview-dialog .window-header,
-.pf2e-visioner-colorblind-tritanopia .sneak-preview-dialog .window-header,
-.pf2e-visioner-colorblind-achromatopsia .sneak-preview-dialog .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia .point-out-preview-dialog .window-header,
-.pf2e-visioner-colorblind-deuteranopia .point-out-preview-dialog .window-header,
-.pf2e-visioner-colorblind-tritanopia .point-out-preview-dialog .window-header,
-.pf2e-visioner-colorblind-achromatopsia
-  .point-out-preview-dialog
-  .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog
-  .window-header,
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog
-  .window-header,
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog
-  .window-header,
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog
-  .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .consequences-preview-dialog
-  .window-header,
-.pf2e-visioner-colorblind-deuteranopia
-  .consequences-preview-dialog
-  .window-header,
-.pf2e-visioner-colorblind-tritanopia
-  .consequences-preview-dialog
-  .window-header,
-.pf2e-visioner-colorblind-achromatopsia
-  .consequences-preview-dialog
-  .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-/* Dialog content */
-.pf2e-visioner-colorblind-protanopia .seek-preview-content,
-.pf2e-visioner-colorblind-deuteranopia .seek-preview-content,
-.pf2e-visioner-colorblind-tritanopia .seek-preview-content,
-.pf2e-visioner-colorblind-achromatopsia .seek-preview-content,
-.pf2e-visioner-colorblind-protanopia .hide-preview-content,
-.pf2e-visioner-colorblind-deuteranopia .hide-preview-content,
-.pf2e-visioner-colorblind-tritanopia .hide-preview-content,
-.pf2e-visioner-colorblind-achromatopsia .hide-preview-content,
-.pf2e-visioner-colorblind-protanopia .sneak-preview-content,
-.pf2e-visioner-colorblind-deuteranopia .sneak-preview-content,
-.pf2e-visioner-colorblind-tritanopia .sneak-preview-content,
-.pf2e-visioner-colorblind-achromatopsia .sneak-preview-content,
-.pf2e-visioner-colorblind-protanopia .point-out-preview-content,
-.pf2e-visioner-colorblind-deuteranopia .point-out-preview-content,
-.pf2e-visioner-colorblind-tritanopia .point-out-preview-content,
-.pf2e-visioner-colorblind-achromatopsia .point-out-preview-content,
-.pf2e-visioner-colorblind-protanopia .create-a-diversion-preview-content,
-.pf2e-visioner-colorblind-deuteranopia .create-a-diversion-preview-content,
-.pf2e-visioner-colorblind-tritanopia .create-a-diversion-preview-content,
-.pf2e-visioner-colorblind-achromatopsia .create-a-diversion-preview-content,
-.pf2e-visioner-colorblind-protanopia .consequences-preview-content,
-.pf2e-visioner-colorblind-deuteranopia .consequences-preview-content,
-.pf2e-visioner-colorblind-tritanopia .consequences-preview-content,
-.pf2e-visioner-colorblind-achromatopsia .consequences-preview-content {
-  --dialog-theme-color: var(--dialog-theme-color);
-  --dialog-theme-hover: var(--dialog-theme-hover);
-}
-
-/* Outcome colors */
-.pf2e-visioner-colorblind-protanopia
-  .results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-protanopia
-  .seek-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-protanopia
-  .hide-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-deuteranopia
-  .results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-deuteranopia
-  .seek-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-deuteranopia
-  .hide-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-tritanopia
-  .results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-tritanopia
-  .seek-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-tritanopia
-  .hide-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-achromatopsia
-  .results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-achromatopsia
-  .seek-results-table
-  tbody
-  td.outcome.critical-success,
-.pf2e-visioner-colorblind-achromatopsia
-  .hide-results-table
-  tbody
-  td.outcome.critical-success {
-  color: var(
-    --visibility-observed
-  ) !important; /* Use observed color for critical success */
-}
-
-.pf2e-visioner-colorblind-protanopia .results-table tbody td.outcome.success,
-.pf2e-visioner-colorblind-protanopia
-  .seek-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-protanopia
-  .hide-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-deuteranopia .results-table tbody td.outcome.success,
-.pf2e-visioner-colorblind-deuteranopia
-  .seek-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-deuteranopia
-  .hide-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-tritanopia .results-table tbody td.outcome.success,
-.pf2e-visioner-colorblind-tritanopia
-  .seek-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-tritanopia
-  .hide-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-achromatopsia .results-table tbody td.outcome.success,
-.pf2e-visioner-colorblind-achromatopsia
-  .seek-results-table
-  tbody
-  td.outcome.success,
-.pf2e-visioner-colorblind-achromatopsia
-  .hide-results-table
-  tbody
-  td.outcome.success {
-  color: var(
-    --visibility-observed
-  ) !important; /* Use observed color for success */
-}
-
-.pf2e-visioner-colorblind-protanopia .results-table tbody td.outcome.failure,
-.pf2e-visioner-colorblind-protanopia
-  .seek-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-protanopia
-  .hide-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-deuteranopia .results-table tbody td.outcome.failure,
-.pf2e-visioner-colorblind-deuteranopia
-  .seek-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-deuteranopia
-  .hide-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-tritanopia .results-table tbody td.outcome.failure,
-.pf2e-visioner-colorblind-tritanopia
-  .seek-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-tritanopia
-  .hide-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-achromatopsia .results-table tbody td.outcome.failure,
-.pf2e-visioner-colorblind-achromatopsia
-  .seek-results-table
-  tbody
-  td.outcome.failure,
-.pf2e-visioner-colorblind-achromatopsia
-  .hide-results-table
-  tbody
-  td.outcome.failure {
-  color: var(
-    --visibility-concealed
-  ) !important; /* Use concealed color for failure */
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-protanopia
-  .seek-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-protanopia
-  .hide-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-deuteranopia
-  .results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-deuteranopia
-  .seek-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-deuteranopia
-  .hide-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-tritanopia
-  .results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-tritanopia
-  .seek-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-tritanopia
-  .hide-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-achromatopsia
-  .results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-achromatopsia
-  .seek-results-table
-  tbody
-  td.outcome.critical-failure,
-.pf2e-visioner-colorblind-achromatopsia
-  .hide-results-table
-  tbody
-  td.outcome.critical-failure {
-  color: var(
-    --visibility-undetected
-  ) !important; /* Use undetected color for critical failure */
-}
-
-/* DC values and roll values */
-.pf2e-visioner-colorblind-protanopia .results-table .dc-value,
-.pf2e-visioner-colorblind-protanopia .seek-results-table .dc-value,
-.pf2e-visioner-colorblind-protanopia .hide-results-table .dc-value,
-.pf2e-visioner-colorblind-deuteranopia .results-table .dc-value,
-.pf2e-visioner-colorblind-deuteranopia .seek-results-table .dc-value,
-.pf2e-visioner-colorblind-deuteranopia .hide-results-table .dc-value,
-.pf2e-visioner-colorblind-tritanopia .results-table .dc-value,
-.pf2e-visioner-colorblind-tritanopia .seek-results-table .dc-value,
-.pf2e-visioner-colorblind-tritanopia .hide-results-table .dc-value,
-.pf2e-visioner-colorblind-achromatopsia .results-table .dc-value,
-.pf2e-visioner-colorblind-achromatopsia .seek-results-table .dc-value,
-.pf2e-visioner-colorblind-achromatopsia .hide-results-table .dc-value {
-  color: var(--dialog-theme-color) !important;
+  border-width: 2px;
   font-weight: bold;
 }
 
-/* Roll values */
-.pf2e-visioner-colorblind-protanopia .roll-total,
-.pf2e-visioner-colorblind-deuteranopia .roll-total,
-.pf2e-visioner-colorblind-tritanopia .roll-total,
-.pf2e-visioner-colorblind-achromatopsia .roll-total {
-  color: var(--dialog-theme-color) !important;
-  font-weight: bold;
-}
-
-/* Action Results header */
-.pf2e-visioner-colorblind-protanopia .app.dialog .window-header,
-.pf2e-visioner-colorblind-deuteranopia .app.dialog .window-header,
-.pf2e-visioner-colorblind-tritanopia .app.dialog .window-header,
-.pf2e-visioner-colorblind-achromatopsia .app.dialog .window-header {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  border-bottom: 2px solid var(--dialog-theme-hover) !important;
-}
-
-/* Table Headers */
-.pf2e-visioner-colorblind-protanopia .seek-results-table th,
-.pf2e-visioner-colorblind-protanopia .hide-results-table th,
-.pf2e-visioner-colorblind-protanopia .point-out-results-table th,
-.pf2e-visioner-colorblind-protanopia .sneak-results-table th,
-.pf2e-visioner-colorblind-protanopia .consequences-results-table th,
-.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog
-  .results-table
-  th,
-.pf2e-visioner-colorblind-protanopia .visibility-table th,
-.pf2e-visioner-colorblind-deuteranopia .seek-results-table th,
-.pf2e-visioner-colorblind-deuteranopia .hide-results-table th,
-.pf2e-visioner-colorblind-deuteranopia .point-out-results-table th,
-.pf2e-visioner-colorblind-deuteranopia .sneak-results-table th,
-.pf2e-visioner-colorblind-deuteranopia .consequences-results-table th,
-.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog
-  .results-table
-  th,
-.pf2e-visioner-colorblind-deuteranopia .visibility-table th,
-.pf2e-visioner-colorblind-tritanopia .seek-results-table th,
-.pf2e-visioner-colorblind-tritanopia .hide-results-table th,
-.pf2e-visioner-colorblind-tritanopia .point-out-results-table th,
-.pf2e-visioner-colorblind-tritanopia .sneak-results-table th,
-.pf2e-visioner-colorblind-tritanopia .consequences-results-table th,
-.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog
-  .results-table
-  th,
-.pf2e-visioner-colorblind-tritanopia .visibility-table th,
-.pf2e-visioner-colorblind-achromatopsia .seek-results-table th,
-.pf2e-visioner-colorblind-achromatopsia .hide-results-table th,
-.pf2e-visioner-colorblind-achromatopsia .point-out-results-table th,
-.pf2e-visioner-colorblind-achromatopsia .sneak-results-table th,
-.pf2e-visioner-colorblind-achromatopsia .consequences-results-table th,
-.pf2e-visioner-colorblind-achromatopsia
-  .create-a-diversion-preview-dialog
-  .results-table
-  th,
-.pf2e-visioner-colorblind-achromatopsia .visibility-table th {
-  background: linear-gradient(
-    135deg,
-    var(--dialog-theme-color),
-    var(--dialog-theme-hover)
-  ) !important;
-  color: white !important;
-}
-
-/* =============================================
-   Toggle (top-right) color overrides for colorblind modes
-   Applies to the icon-only Visibility/Cover toggle buttons
-   ============================================= */
-/* Default mapping for all modes: use observed color for Visibility and dialog theme for Cover */
-.pf2e-visioner-colorblind-protanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"]
-  i,
-.pf2e-visioner-colorblind-tritanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"]
-  i {
-  color: var(--template-observed) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"].active,
-.pf2e-visioner-colorblind-deuteranopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"].active,
-.pf2e-visioner-colorblind-tritanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"].active,
-.pf2e-visioner-colorblind-achromatopsia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="visibility"].active {
-  background: var(--template-observed) !important;
-  border-color: var(--template-observed) !important;
-  color: #fff !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"]
-  i,
-.pf2e-visioner-colorblind-deuteranopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"]
-  i,
-.pf2e-visioner-colorblind-achromatopsia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"]
-  i {
-  color: var(--dialog-theme-color) !important;
-}
-
-.pf2e-visioner-colorblind-protanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"].active,
-.pf2e-visioner-colorblind-deuteranopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"].active,
-.pf2e-visioner-colorblind-achromatopsia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"].active {
-  background: var(--dialog-theme-color) !important;
-  border-color: var(--dialog-theme-hover) !important;
-  color: #fff !important;
-}
-
-/* Tritanopia: avoid blue for cover; use the hidden-state color for stronger distinction */
-.pf2e-visioner-colorblind-tritanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"]
-  i {
-  color: var(--template-hidden) !important;
-}
-.pf2e-visioner-colorblind-tritanopia
-  .icon-tab-navigation
-  .icon-tab-button[data-tab="cover"].active {
-  background: var(--template-hidden) !important;
-  border-color: var(--template-hidden) !important;
-  color: #fff !important;
-}
-
-/* Add pattern indicators for each state */
-.pf2e-visioner-colorblind-protanopia .state-badge.observed::after,
-.pf2e-visioner-colorblind-deuteranopia .state-badge.observed::after,
-.pf2e-visioner-colorblind-tritanopia .state-badge.observed::after,
-.pf2e-visioner-colorblind-achromatopsia .state-badge.observed::after {
-  content: "✓"; /* Checkmark for observed */
-  margin-left: 4px;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-badge.concealed::after,
-.pf2e-visioner-colorblind-deuteranopia .state-badge.concealed::after,
-.pf2e-visioner-colorblind-tritanopia .state-badge.concealed::after,
-.pf2e-visioner-colorblind-achromatopsia .state-badge.concealed::after {
-  content: "~"; /* Tilde for concealed */
-  margin-left: 4px;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-badge.hidden::after,
-.pf2e-visioner-colorblind-deuteranopia .state-badge.hidden::after,
-.pf2e-visioner-colorblind-tritanopia .state-badge.hidden::after,
-.pf2e-visioner-colorblind-achromatopsia .state-badge.hidden::after {
-  content: "?"; /* Question mark for hidden */
-  margin-left: 4px;
-}
-
-.pf2e-visioner-colorblind-protanopia .state-badge.undetected::after,
-.pf2e-visioner-colorblind-deuteranopia .state-badge.undetected::after,
-.pf2e-visioner-colorblind-tritanopia .state-badge.undetected::after,
-.pf2e-visioner-colorblind-achromatopsia .state-badge.undetected::after {
-  content: "!"; /* Exclamation mark for undetected */
-  margin-left: 4px;
-}
-
-/* Add patterns to visibility indicators on canvas */
-.pf2e-visioner-colorblind-protanopia .visibility-indicator.observed::after,
-.pf2e-visioner-colorblind-deuteranopia .visibility-indicator.observed::after,
-.pf2e-visioner-colorblind-tritanopia .visibility-indicator.observed::after,
-.pf2e-visioner-colorblind-achromatopsia .visibility-indicator.observed::after {
-  content: "✓";
+/* Pattern indicators for achromatopsia */
+.pf2e-visioner-colorblind-achromatopsia .state-badge.observed::before {
+  content: "●";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10px;
+  top: -2px;
+  right: -2px;
+  font-size: 8px;
 }
 
-.pf2e-visioner-colorblind-protanopia .visibility-indicator.concealed::after,
-.pf2e-visioner-colorblind-deuteranopia .visibility-indicator.concealed::after,
-.pf2e-visioner-colorblind-tritanopia .visibility-indicator.concealed::after,
-.pf2e-visioner-colorblind-achromatopsia .visibility-indicator.concealed::after {
-  content: "~";
+.pf2e-visioner-colorblind-achromatopsia .state-badge.concealed::before {
+  content: "◐";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10px;
+  top: -2px;
+  right: -2px;
+  font-size: 8px;
 }
 
-.pf2e-visioner-colorblind-protanopia .visibility-indicator.hidden::after,
-.pf2e-visioner-colorblind-deuteranopia .visibility-indicator.hidden::after,
-.pf2e-visioner-colorblind-tritanopia .visibility-indicator.hidden::after,
-.pf2e-visioner-colorblind-achromatopsia .visibility-indicator.hidden::after {
-  content: "?";
+.pf2e-visioner-colorblind-achromatopsia .state-badge.hidden::before {
+  content: "◑";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10px;
+  top: -2px;
+  right: -2px;
+  font-size: 8px;
 }
 
-.pf2e-visioner-colorblind-protanopia .visibility-indicator.undetected::after,
-.pf2e-visioner-colorblind-deuteranopia .visibility-indicator.undetected::after,
-.pf2e-visioner-colorblind-tritanopia .visibility-indicator.undetected::after,
-.pf2e-visioner-colorblind-achromatopsia
-  .visibility-indicator.undetected::after {
-  content: "!";
+.pf2e-visioner-colorblind-achromatopsia .state-badge.undetected::before {
+  content: "○";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10px;
+  top: -2px;
+  right: -2px;
+  font-size: 8px;
 }
+
+/* Enhanced borders for better differentiation */
+.pf2e-visioner-colorblind-protanopia .state-badge.observed,
+.pf2e-visioner-colorblind-deuteranopia .state-badge.observed,
+.pf2e-visioner-colorblind-tritanopia .state-badge.observed {
+  border-style: solid;
+}
+
+.pf2e-visioner-colorblind-protanopia .state-badge.concealed,
+.pf2e-visioner-colorblind-deuteranopia .state-badge.concealed,
+.pf2e-visioner-colorblind-tritanopia .state-badge.concealed {
+  border-style: dashed;
+}
+
+.pf2e-visioner-colorblind-protanopia .state-badge.hidden,
+.pf2e-visioner-colorblind-deuteranopia .state-badge.hidden,
+.pf2e-visioner-colorblind-tritanopia .state-badge.hidden {
+  border-style: dotted;
+}
+
+.pf2e-visioner-colorblind-protanopia .state-badge.undetected,
+.pf2e-visioner-colorblind-deuteranopia .state-badge.undetected,
+.pf2e-visioner-colorblind-tritanopia .state-badge.undetected {
+  border-style: double;
+}
+
+} /* End .pf2e-visioner scope */

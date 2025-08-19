@@ -32,7 +32,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
 
   static DEFAULT_OPTIONS = {
     tag: "div",
-    classes: ["create-a-diversion-preview-dialog"],
+    classes: ["pf2e-visioner", "create-a-diversion-preview-dialog"],
     window: {
       title: `Create a Diversion Results`,
       icon: "fas fa-theater-masks",

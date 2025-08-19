@@ -4,7 +4,7 @@
  * Core styling foundation used across all components
  */
 
-/* CSS Custom Properties - Foundry VTT Integration */
+/* CSS Custom Properties - Foundry VTT Integration (Global) */
 :root {
   /* Module-specific color overrides if needed */
   --pf2e-visioner-primary: var(--color-border-highlight, #ff6400);
@@ -63,6 +63,8 @@
   --color-bg-btn-danger: #dc3545;
   --color-border-danger: #dc3545;
 }
+
+.pf2e-visioner {
 
 /* Common utility classes */
 .pf2e-visioner-flex {
@@ -250,3 +252,5 @@
   border-radius: 4px;
   background: rgba(255, 215, 0, 0.05); /* subtle gold tint */
 }
+
+} /* End .pf2e-visioner scope */

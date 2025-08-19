@@ -1,5 +1,56 @@
 # Changelog
 
+## [2.6.0] - 2025-08-19
+
+### Added
+
+- Toolbars reorganization:
+  - Moved Visioner controls into native Foundry tool groups:
+    - Tokens: Quick Edit, Provide Auto‑Cover toggle, Purge Scene Data
+    - Walls: Wall Manager, Provide Auto‑Cover toggle, Hidden Wall toggle
+  - Removed the standalone Visioner tool
+- Wall Manager QoL:
+  - Row highlight sync when selecting walls on the canvas
+  - New Type column with icons/images for Wall, Door, Secret Door
+- Consistent wall imagery via shared `getWallImage(doorType)` used across Visibility Manager and Wall Manager (Secret Door now distinct)
+
+- **Cover Visualization System**: Interactive tactical positioning aid for cover analysis
+  - Hold configurable keybind (default: Shift) while hovering over targets to activate
+  - Shows colored grid overlay indicating cover levels at each position against hovered token
+  - Color coding: Green (No Cover), Yellow (Lesser +1 AC), Orange (Standard +2 AC), Red (Greater +4 AC)
+  - White square highlights selected token's current position
+  - Dynamic range calculation automatically expands to cover all tokens on scene
+  - Works for all auto-cover intersection modes (Any, 10%, Coverage, Center, Tactical)
+  - Client-specific rendering - each player sees only their own visualization
+  - Player-configurable keybindings via FoundryVTT's native Controls settings
+  - Optional encounter-only restriction setting
+  - Smart occupation filtering - excludes squares occupied by other tokens (except tiny creatures sharing space)
+
+- **Enhanced Auto-Cover Modes**: Refined intersection algorithms and added tactical for better tactical accuracy (NOT as pf2e rules)
+  - **Tactical Mode**: Corner-to-corner line-of-sight calculations using "best attacker corner" rule
+  - **Coverage Mode**: Side coverage algorithm with fixed 50% (Standard) and 70% (Greater) thresholds  
+  - **Any Mode**: Attack ray passes through blocker with any %
+  - **10% Mode**: Grid-square-based intersection threshold - default mode
+  - **Center Mode**: Strict center-to-center ray intersection
+
+
+### Changed
+
+- Token and Wall toggles semantics unified to “Provide Auto‑Cover” (ON = provides cover):
+  - Tokens: invert `ignoreAutoCover` flag handling; active shows shield icon
+  - Walls: `provideCover` true when active; shield icon when ON
+- Increased Type icon size in Wall Manager for readability
+- Hide auto cover dc reduction now also applies for manual cover (if the setting is on)
+- Damage consequences changed to Attack consequences
+- Aligned outcome for concealed and some action states
+
+### Fixed
+
+- Removed deprecated PerceptionManager.refresh calls; visuals update without deprecation warnings
+- Encounter filter: ensured token‑ID matching to prevent non encounter copies of the same token filtered correctly
+- **Tiny Creature Handling**: Improved calculations for tiny creatures auto cover
+- Seek templates on rerolls now behave better
+
 ## [2.5.3] - 2025-08-17
 
 ### Fixed

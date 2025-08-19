@@ -6,7 +6,7 @@ let currentTakeCoverDialog = null;
 export class TakeCoverPreviewDialog extends BaseActionDialog {
   static DEFAULT_OPTIONS = {
     tag: "div",
-    classes: ["take-cover-preview-dialog"],
+    classes: ["pf2e-visioner", "take-cover-preview-dialog"],
     window: {
       title: "Take Cover Results",
       icon: "fas fa-shield-alt",

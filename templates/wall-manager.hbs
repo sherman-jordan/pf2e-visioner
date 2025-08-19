@@ -10,6 +10,7 @@
   <table class="visibility-table" style="width:100%">
     <thead>
       <tr>
+        <th>Type</th>
         <th style="width:22%">Identifier</th>
         <th style="width:16%">Hidden Wall</th>
         <th style="width:16%">Provide Cover</th>
@@ -19,7 +20,10 @@
     </thead>
     <tbody>
       {{#each rows as |w|}}
-        <tr>
+        <tr data-wall-id="{{w.id}}">
+          <td style="text-align:center">
+            <img src="{{w.img}}" width="32" height="32" title="{{#if (eq w.doorType 2)}}Secret Door{{else if (eq w.doorType 1)}}Door{{else}}Wall{{/if}}" />
+          </td>
           <td>
             <input type="text" name="wall.{{w.id}}.identifier" value="{{w.identifier}}" placeholder="Hidden Wall" />
           </td>

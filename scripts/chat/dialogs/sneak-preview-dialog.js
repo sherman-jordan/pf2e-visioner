@@ -32,7 +32,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         submitOnChange: false,
         closeOnSubmit: false,
       },
-      classes: ["sneak-preview-dialog"],
+      classes: ["pf2e-visioner", "sneak-preview-dialog"],
       ...options,
     });
 

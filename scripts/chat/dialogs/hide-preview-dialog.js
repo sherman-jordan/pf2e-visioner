@@ -18,7 +18,7 @@ let currentHideDialog = null;
 export class HidePreviewDialog extends BaseActionDialog {
   static DEFAULT_OPTIONS = {
     tag: "div",
-    classes: ["hide-preview-dialog"],
+    classes: ["pf2e-visioner", "hide-preview-dialog"],
     window: {
       title: "Hide Results",
       icon: "fas fa-eye-slash",
@@ -95,9 +95,9 @@ export class HidePreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Check if auto-cover for hide action is enabled
-    const showAutoCover = game.settings.get(MODULE_ID, "autoCover") && game.settings.get(MODULE_ID, "autoCoverHideAction");
-    context.showAutoCover = showAutoCover;
+    // Check if cover for hide action is enabled (works with both auto and manual cover)
+    const showCover = game.settings.get(MODULE_ID, "autoCoverHideAction");
+    context.showAutoCover = showCover;
 
     // Get filtered outcomes from the original list using encounter helper, ally filtering, then extra RAW filtering
     const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);

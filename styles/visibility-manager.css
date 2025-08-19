@@ -1,7 +1,10 @@
 /*
  * Visibility Manager UI Components
  * Main interface styling for the token visibility manager
+ * All styles scoped to .pf2e-visioner to avoid conflicts
  */
+
+.pf2e-visioner {
 
 /* Responsive Window Sizing */
 .token-visibility-manager {
@@ -951,6 +954,7 @@ tr.token-row.row-hover {
   outline: 2px solid var(--pf2e-visioner-primary, #ff9800);
   outline-offset: -2px;
   box-shadow: inset 0 0 0 2px rgba(255, 152, 0, 0.3);
+  background: rgba(255, 152, 0, 0.1) !important;
 }
 
 /* Form Controls */
@@ -1281,3 +1285,5 @@ tr.token-row.row-hover {
   border-left: 3px solid #ffff00;
   cursor: pointer;
 }
+
+} /* End .pf2e-visioner scope */

@@ -88,9 +88,17 @@ export function registerAutoCoverHooks() {
                     }
                     try {
                       if (bonus > 0 && target?.actor) {
-                        const isStandard = state === "standard" || state === "greater";
-                        const coverBonus = isStandard ? 2 : 1;
-                        const label = isStandard ? "Standard Cover" : "Lesser Cover";
+                        let coverBonus, label;
+                        if (state === "greater") {
+                          coverBonus = 4;
+                          label = "Greater Cover";
+                        } else if (state === "standard") {
+                          coverBonus = 2;
+                          label = "Standard Cover";
+                        } else {
+                          coverBonus = 1;
+                          label = "Lesser Cover";
+                        }
                         const tgtActor = target.actor;
                         const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
                         items.push({
@@ -238,9 +246,17 @@ export function registerAutoCoverHooks() {
                 // Inject a one-shot cover effect by cloning the target's actor so covered AC is used even in quick-rolls
                 try {
                   if (bonus > 0 && target?.actor) {
-                    const isStandard = state === "standard" || state === "greater";
-                    const coverBonus = isStandard ? 2 : 1;
-                    const label = isStandard ? "Standard Cover" : "Lesser Cover";
+                    let coverBonus, label;
+                    if (state === "greater") {
+                      coverBonus = 4;
+                      label = "Greater Cover";
+                    } else if (state === "standard") {
+                      coverBonus = 2;
+                      label = "Standard Cover";
+                    } else {
+                      coverBonus = 1;
+                      label = "Lesser Cover";
+                    }
                     const tgtActor = target.actor;
                     const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
                     items.push({

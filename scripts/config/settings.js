@@ -149,6 +149,11 @@ export function registerKeybindings() {
         const { setTooltipMode } = await import("../services/hover-tooltips.js");
         setTooltipMode("target");
       };
+    } else if (key === "holdCoverVisualization") {
+      // The cover visualization handles its own key events, so we don't need handlers here
+      // But we need to register it so Foundry knows about it
+      keybindingConfig.onDown = () => {}; // No-op handler
+      keybindingConfig.onUp = () => {};   // No-op handler
     }
 
     game.keybindings.register(MODULE_ID, key, keybindingConfig);

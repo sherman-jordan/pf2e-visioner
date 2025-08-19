@@ -1,4 +1,5 @@
 import { MODULE_ID } from "../constants.js";
+import { HoverTooltips } from "../services/hover-tooltips.js";
 import { detectCoverStateForAttack } from "./auto-cover.js";
 
 /**
@@ -19,42 +20,70 @@ class CoverVisualization {
   }
   
   init() {
-    // Bind event listeners
-    document.addEventListener('keydown', this.onKeyDown.bind(this));
-    document.addEventListener('keyup', this.onKeyUp.bind(this));
+    // Store bound method references for proper cleanup
+    this.boundOnKeyDown = this.onKeyDown.bind(this);
+    this.boundOnKeyUp = this.onKeyUp.bind(this);
+    this.boundOnTokenHover = this.onTokenHover.bind(this);
+    this.boundOnCanvasRender = this.onCanvasRender.bind(this);
+    
+    // Bind event listeners - use capture phase to ensure we get events before Foundry
+    document.addEventListener('keydown', this.boundOnKeyDown, true);
+    document.addEventListener('keyup', this.boundOnKeyUp, true);
     
     // Hook into token hover events
-    Hooks.on('hoverToken', this.onTokenHover.bind(this));
-    Hooks.on('renderCanvas', this.onCanvasRender.bind(this));
+    Hooks.on('hoverToken', this.boundOnTokenHover);
+    Hooks.on('renderCanvas', this.boundOnCanvasRender);
+    
+    // Set up periodic validation of hover state
+    this.hoverValidationInterval = setInterval(() => {
+      this.validateHoverState();
+    }, 100); // Check every 100ms
   }
   
   onKeyDown(event) {
     // Check if this key matches the configured keybinding
     const keybindings = game.keybindings?.get?.(MODULE_ID, "holdCoverVisualization") || [];
     
+    // If no keybinding configured, don't do anything
     if (keybindings.length === 0) {
-      // Fallback to Shift if no keybinding configured
-      if (event.key === "Shift" && !this.keyPressed) {
-        this.keyPressed = true;
-        this.tryActivateVisualizationDebounced();
-      }
       return;
     }
     
     const keybinding = keybindings[0]; // Use first keybinding
     
-    // Check both the configured key and modifiers properly
-    const keyMatches = event.code === keybinding.key;
-    const ctrlMatches = event.ctrlKey === (keybinding.modifiers || []).includes("Control");
-    const shiftMatches = event.shiftKey === (keybinding.modifiers || []).includes("Shift");
-    const altMatches = event.altKey === (keybinding.modifiers || []).includes("Alt");
-    const metaMatches = event.metaKey === (keybinding.modifiers || []).includes("Meta");
+    // Check if the key matches (using both code and key for better compatibility)
+    // This helps with different keyboard layouts like AZERTY
+    const keyMatches = event.code === keybinding.key || event.key === keybinding.key ||
+      // Additional fallback for physical key position matching
+      (keybinding.key.startsWith('Key') && event.code === keybinding.key) ||
+      (keybinding.key.startsWith('Digit') && event.code === keybinding.key) ||
+      // Handle left/right modifier keys
+      (keybinding.key === 'ShiftLeft' && (event.code === 'ShiftLeft' || event.key === 'Shift')) ||
+      (keybinding.key === 'ShiftRight' && (event.code === 'ShiftRight' || event.key === 'Shift')) ||
+      (keybinding.key === 'AltLeft' && (event.code === 'AltLeft' || event.key === 'Alt')) ||
+      (keybinding.key === 'AltRight' && (event.code === 'AltRight' || event.key === 'Alt')) ||
+      (keybinding.key === 'ControlLeft' && (event.code === 'ControlLeft' || event.key === 'Control')) ||
+      (keybinding.key === 'ControlRight' && (event.code === 'ControlRight' || event.key === 'Control')) ||
+      (keybinding.key === 'MetaLeft' && (event.code === 'MetaLeft' || event.key === 'Meta')) ||
+      (keybinding.key === 'MetaRight' && (event.code === 'MetaRight' || event.key === 'Meta'));
+    
+    // Check modifiers - a modifier should be pressed if it's in the keybinding
+    const requiredModifiers = keybinding.modifiers || [];
+    const ctrlMatches = requiredModifiers.includes("Control") ? event.ctrlKey : !event.ctrlKey;
+    const shiftMatches = requiredModifiers.includes("Shift") ? event.shiftKey : !event.shiftKey;
+    const altMatches = requiredModifiers.includes("Alt") ? event.altKey : !event.altKey;
+    const metaMatches = requiredModifiers.includes("Meta") ? event.metaKey : !event.metaKey;
     
     const isCorrectKey = keyMatches && ctrlMatches && shiftMatches && altMatches && metaMatches;
     
     if (isCorrectKey && !this.keyPressed) {
       this.keyPressed = true;
-      this.tryActivateVisualizationDebounced();
+      // Force refresh of hover state to ensure we have the most up-to-date information
+      this.refreshCurrentHoverState();
+      // Check if we're already hovering over a token and activate visualization for it
+      if (this.currentTarget) {
+        this.tryActivateVisualizationDebounced();
+      }
     }
   }
   
@@ -62,23 +91,35 @@ class CoverVisualization {
     // Check if this key matches the configured keybinding
     const keybindings = game.keybindings?.get?.(MODULE_ID, "holdCoverVisualization") || [];
     
+    // If no keybinding configured, don't do anything
     if (keybindings.length === 0) {
-      // Fallback to Shift if no keybinding configured
-      if (event.key === "Shift") {
-        this.keyPressed = false;
-        this.deactivateVisualization();
-      }
       return;
     }
     
     const keybinding = keybindings[0]; // Use first keybinding
+
+    // Check if the key matches (using both code and key for better compatibility)
+    // This helps with different keyboard layouts like AZERTY
+    const keyMatches = event.code === keybinding.key || event.key === keybinding.key ||
+      // Additional fallback for physical key position matching
+      (keybinding.key.startsWith('Key') && event.code === keybinding.key) ||
+      (keybinding.key.startsWith('Digit') && event.code === keybinding.key) ||
+      // Handle left/right modifier keys
+      (keybinding.key === 'ShiftLeft' && (event.code === 'ShiftLeft' || event.key === 'Shift')) ||
+      (keybinding.key === 'ShiftRight' && (event.code === 'ShiftRight' || event.key === 'Shift')) ||
+      (keybinding.key === 'AltLeft' && (event.code === 'AltLeft' || event.key === 'Alt')) ||
+      (keybinding.key === 'AltRight' && (event.code === 'AltRight' || event.key === 'Alt')) ||
+      (keybinding.key === 'ControlLeft' && (event.code === 'ControlLeft' || event.key === 'Control')) ||
+      (keybinding.key === 'ControlRight' && (event.code === 'ControlRight' || event.key === 'Control')) ||
+      (keybinding.key === 'MetaLeft' && (event.code === 'MetaLeft' || event.key === 'Meta')) ||
+      (keybinding.key === 'MetaRight' && (event.code === 'MetaRight' || event.key === 'Meta'));
     
-    // Check both the configured key and modifiers properly
-    const keyMatches = event.code === keybinding.key;
-    const ctrlMatches = event.ctrlKey === (keybinding.modifiers || []).includes("Control");
-    const shiftMatches = event.shiftKey === (keybinding.modifiers || []).includes("Shift");
-    const altMatches = event.altKey === (keybinding.modifiers || []).includes("Alt");
-    const metaMatches = event.metaKey === (keybinding.modifiers || []).includes("Meta");
+    // Check modifiers - a modifier should be pressed if it's in the keybinding
+    const requiredModifiers = keybinding.modifiers || [];
+    const ctrlMatches = requiredModifiers.includes("Control") ? event.ctrlKey : !event.ctrlKey;
+    const shiftMatches = requiredModifiers.includes("Shift") ? event.shiftKey : !event.shiftKey;
+    const altMatches = requiredModifiers.includes("Alt") ? event.altKey : !event.altKey;
+    const metaMatches = requiredModifiers.includes("Meta") ? event.metaKey : !event.metaKey;
     
     const wasCorrectKey = keyMatches && ctrlMatches && shiftMatches && altMatches && metaMatches;
     
@@ -89,15 +130,86 @@ class CoverVisualization {
   }
   
   onTokenHover(token, hovered) {
-    if (hovered && this.keyPressed) {
+    if (hovered) {
       this.currentTarget = token;
-      this.tryActivateVisualizationDebounced();
+      // Only show visualization when key is pressed (keybinding-based behavior)
+      if (this.keyPressed) {
+        this.tryActivateVisualizationDebounced();
+      }
     } else if (!hovered && this.currentTarget === token) {
       this.currentTarget = null;
       this.deactivateVisualization();
     }
   }
   
+  /**
+   * Get the currently hovered token from the canvas
+   * This is a fallback method in case HoverTooltips.currentHoveredToken is not available
+   */
+  getCurrentHoveredToken() {
+    // First try to get from HoverTooltips service
+    if (HoverTooltips.currentHoveredToken) {
+      return HoverTooltips.currentHoveredToken;
+    }
+    
+    // Fallback: check if any token is currently being hovered
+    // This is a bit of a hack since Foundry doesn't expose hover state directly
+    // We'll use the currentTarget if it exists and the key is pressed
+    if (this.keyPressed && this.currentTarget) {
+      return this.currentTarget;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Force refresh of the current hover state
+   * This is called when a key is pressed to ensure we have the most up-to-date hover information
+   */
+  refreshCurrentHoverState() {
+    // If we don't have a currentTarget but there's a hovered token in HoverTooltips, use that
+    if (!this.currentTarget && HoverTooltips.currentHoveredToken) {
+      this.currentTarget = HoverTooltips.currentHoveredToken;
+    }
+    
+    // If we still don't have a currentTarget, try to find any token under the cursor
+    // This is a fallback for cases where the hover state might not be properly tracked
+    if (!this.currentTarget && this.keyPressed) {
+      try {
+        const mousePosition = canvas.app?.renderer?.plugins?.interaction?.mouse?.global;
+        if (mousePosition && mousePosition.x !== undefined && mousePosition.y !== undefined) {
+          const tokens = canvas.tokens.placeables.filter(token => 
+            token.isVisible && 
+            token.bounds && 
+            token.bounds.contains(mousePosition.x, mousePosition.y)
+          );
+          if (tokens.length > 0) {
+            this.currentTarget = tokens[0];
+          }
+        }
+      } catch (error) {
+        // Silently fail if mouse position detection fails
+        console.debug("PF2E Visioner: Could not detect mouse position for token detection");
+      }
+    }
+    
+    // Validate that the currentTarget is still valid (mouse is still over it)
+    if (this.currentTarget && this.keyPressed) {
+      try {
+        const mousePosition = canvas.app?.renderer?.plugins?.interaction?.mouse?.global;
+        if (mousePosition && mousePosition.x !== undefined && mousePosition.y !== undefined) {
+          if (!this.currentTarget.bounds || !this.currentTarget.bounds.contains(mousePosition.x, mousePosition.y)) {
+            // Mouse is no longer over the currentTarget, clear it
+            this.currentTarget = null;
+          }
+        }
+      } catch (error) {
+        // Silently fail if mouse position detection fails
+        console.debug("PF2E Visioner: Could not validate mouse position for token detection");
+      }
+    }
+  }
+
   onCanvasRender() {
     // Clean up graphics when canvas re-renders
     this.deactivateVisualization();
@@ -179,6 +291,54 @@ class CoverVisualization {
       this.overlayGraphics.destroy();
       this.overlayGraphics = null;
     }
+  }
+  
+  /**
+   * Validate that the current hover state is still valid
+   * This is called periodically to ensure the visualization is properly managed
+   */
+  validateHoverState() {
+    // Only validate if we have an active visualization and a currentTarget
+    if (!this.isActive || !this.currentTarget || !this.keyPressed) {
+      return;
+    }
+    
+    try {
+      const mousePosition = canvas.app?.renderer?.plugins?.interaction?.mouse?.global;
+      if (mousePosition && mousePosition.x !== undefined && mousePosition.y !== undefined) {
+        // Check if mouse is still over the currentTarget
+        if (!this.currentTarget.bounds || !this.currentTarget.bounds.contains(mousePosition.x, mousePosition.y)) {
+          // Mouse is no longer over the currentTarget, deactivate visualization
+          this.deactivateVisualization();
+          this.currentTarget = null;
+        }
+      }
+    } catch (error) {
+      // Silently fail if mouse position detection fails
+      console.debug("PF2E Visioner: Could not validate hover state");
+    }
+  }
+  
+  /**
+   * Clean up resources when the visualization is destroyed
+   */
+  cleanup() {
+    // Clear the validation interval
+    if (this.hoverValidationInterval) {
+      clearInterval(this.hoverValidationInterval);
+      this.hoverValidationInterval = null;
+    }
+    
+    // Deactivate visualization
+    this.deactivateVisualization();
+    
+    // Remove event listeners
+    document.removeEventListener('keydown', this.boundOnKeyDown);
+    document.removeEventListener('keyup', this.boundOnKeyUp);
+    
+    // Remove hooks
+    Hooks.off('hoverToken', this.boundOnTokenHover);
+    Hooks.off('renderCanvas', this.boundOnCanvasRender);
   }
   
   isPositionOccupied(worldX, worldY, selectedToken, canvas) {
@@ -391,7 +551,7 @@ export function initCoverVisualization() {
 
 export function destroyCoverVisualization() {
   if (coverVisualization) {
-    coverVisualization.deactivateVisualization();
+    coverVisualization.cleanup();
     coverVisualization = null;
   }
 }

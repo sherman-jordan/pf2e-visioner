@@ -463,7 +463,7 @@ export const KEYBINDINGS = {
   holdCoverVisualization: {
     name: "Hold for Cover Visualization",
     hint: "Hold this key while hovering over tokens to visualize cover fields. Shows optimal positioning for attacks.",
-    editable: [{ key: "ShiftLeft", modifiers: [] }],
+    editable: [{ key: "KeyY", modifiers: [] }],
     restricted: false,
   },
 };

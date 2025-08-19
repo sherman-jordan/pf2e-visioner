@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.1] - 2025-08-19
+
+### Fixed
+
+- AZERTY keyboard support (maybe??)
+- Dont show attack consequences on damage taken messages
+- Cover Visualization:
+  - Allow hover and then hold keybind and not just keybind and then hover, also change default to Y
+
 ## [2.6.0] - 2025-08-19
 
 ### Added

@@ -65,6 +65,11 @@ export async function extractActionData(message) {
     (context?.options?.some(opt => opt.includes("attack-roll")) ||
      context?.options?.some(opt => opt.includes("strike")));
 
+  // Skip attack consequences for damage-taken messages
+  const isDamageTakenMessage = 
+    context?.type === "damage-taken" ||
+    message.flags?.pf2e?.appliedDamage;
+
   let actorToken = null;
   if (message.token?.object) {
     actorToken = message.token.object;
@@ -112,7 +117,7 @@ export async function extractActionData(message) {
   else if (isSneakAction) actionType = "sneak";
   else if (isCreateADiversionAction) actionType = "create-a-diversion";
   else if (isTakeCoverAction) actionType = "take-cover";
-  else if (isAttackRoll) {
+  else if (isAttackRoll && !isDamageTakenMessage) {
     if (isHiddenOrUndetectedToken) actionType = "consequences";
     else if (actorToken) {
       try {

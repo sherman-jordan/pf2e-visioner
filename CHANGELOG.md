@@ -16,6 +16,12 @@
 
 - **Auto cover visualization**: undetected or foundry hidden will show as no cover
 
+- **Enhanced Purge Functionality**:
+  - Purge tool now intelligently detects selected tokens
+  - Any tokens selected: Offers to clear all selected tokens' Visioner data with comprehensive cleanup (same as scene purge)
+  - No tokens selected: Offers to clear entire scene data
+  - More targeted cleanup options for better workflow efficiency
+
 - **Comprehensive Testing Coverage Added**:
   - Added 586 comprehensive tests across 26 test suites
   - Real HTML5 canvas integration testing with actual drawing operations

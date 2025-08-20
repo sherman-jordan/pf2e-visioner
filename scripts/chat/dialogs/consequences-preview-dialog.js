@@ -8,7 +8,7 @@ import { getDesiredOverrideStatesForAction } from "../services/data/action-state
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-    filterOutcomesByEncounter
+  filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -279,7 +279,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Apply ally filtering if ignore allies is enabled
     try {
       const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.attackingToken, app.ignoreAllies, "target");
     } catch (_) {}
 
     // Only apply changes to filtered outcomes that have actionable changes
@@ -343,7 +343,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Apply ally filtering if ignore allies is enabled
     try {
       const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.attackingToken, app.ignoreAllies, "target");
     } catch (_) {}
 
     // Only revert changes to filtered outcomes that have actionable changes

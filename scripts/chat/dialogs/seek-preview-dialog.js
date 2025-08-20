@@ -529,17 +529,42 @@ export class SeekPreviewDialog extends BaseActionDialog {
       // Apply the original visibility state for just this specific token/wall
       if (outcome._isWall) {
         // For walls, revert wall visibility
-        const { updateWallVisuals } = await import("../../../services/visual-effects.js");
+        const { updateWallVisuals } = await import("../../services/visual-effects.js");
         await updateWallVisuals(outcome.wall, outcome.oldVisibility || "observed");
       } else {
         // For tokens, apply the original visibility state
-        const { applyVisibilityChanges } = await import("../../services/infra/shared-utils.js");
         const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
-        const changes = [{ target: outcome.target, newVisibility: revertVisibility }];
         
-        await applyVisibilityChanges(app.actionData.actor, changes, { 
-          direction: "observer_to_target" 
-        });
+        // Check if we have a valid actor for the revert operation
+        if (app.actionData?.actor) {
+          // Use the original applyVisibilityChanges if actor is available
+          const { applyVisibilityChanges } = await import("../services/infra/shared-utils.js");
+          const changes = [{ target: outcome.target, newVisibility: revertVisibility }];
+          
+          await applyVisibilityChanges(app.actionData.actor, changes, { 
+            direction: "observer_to_target" 
+          });
+        } else {
+          // Fallback: directly update token visibility when actor is not available
+          // This handles the case where actionData.actor becomes undefined after apply-all
+          const { updateTokenVisuals } = await import("../../services/visual-effects.js");
+          const { setVisibilityBetween } = await import("../../utils.js");
+          
+          // Use the current user's controlled token as fallback observer, or canvas.tokens.controlled[0]
+          const fallbackObserver = canvas.tokens.controlled[0] || game.user.character?.getActiveTokens()[0];
+          
+          if (fallbackObserver) {
+            await setVisibilityBetween(
+              fallbackObserver,
+              outcome.target,
+              revertVisibility,
+              { direction: "observer_to_target" }
+            );
+          }
+          
+          // Update the target token's visuals directly
+          await updateTokenVisuals(outcome.target);
+        }
       }
       
       app.updateRowButtonsToReverted([{ target: { id: outcome._isWall ? null : outcome.target.id }, wallId }]);

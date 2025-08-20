@@ -339,6 +339,264 @@ class CoverVisualization {
     Hooks.off('renderCanvas', this.boundOnCanvasRender);
   }
   
+  /**
+   * Check if a line of sight between two points is blocked by walls
+   * @param {Object} p1 - First point {x, y}
+   * @param {Object} p2 - Second point {x, y}
+   * @param {Canvas} canvas - The canvas instance
+   * @returns {boolean} True if line of sight is blocked by walls
+   */
+  isLineOfSightBlockedByWalls(p1, p2, canvas) {
+    try {
+      const walls = canvas?.walls?.placeables || [];
+      if (!walls.length) {
+        return false;
+      }
+      
+      for (const wall of walls) {
+        try {
+          const d = wall.document;
+          if (!d) continue;
+          
+          // Skip open doors; treat closed/locked doors and normal walls as blockers
+          const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
+          const doorState = Number(d.ds ?? d.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
+          if (isDoor && doorState === 1) continue; // open door → no blocking
+          
+          // Get wall endpoints
+          const x1 = d.x;
+          const y1 = d.y;
+          const x2 = d.x2;
+          const y2 = d.y2;
+          
+          // Handle different wall coordinate formats
+          let wallX1, wallY1, wallX2, wallY2;
+          
+          if (typeof x1 === 'number' && typeof y1 === 'number' && 
+              typeof x2 === 'number' && typeof y2 === 'number') {
+            // Standard format: x, y, x2, y2
+            wallX1 = x1;
+            wallY1 = y1;
+            wallX2 = x2;
+            wallY2 = y2;
+          } else if (Array.isArray(d.c) && d.c.length >= 4) {
+            // Alternative format: c array [x1, y1, x2, y2, ...]
+            wallX1 = d.c[0];
+            wallY1 = d.c[1];
+            wallX2 = d.c[2];
+            wallY2 = d.c[3];
+          } else {
+            continue;
+          }
+          
+          // Validate coordinates
+          if ([wallX1, wallY1, wallX2, wallY2].some(coord => 
+              typeof coord !== 'number' || !isFinite(coord))) {
+            continue;
+          }
+          
+                      // Check if the line of sight intersects with this wall
+          if (this.segmentsIntersect(p1, p2, {x: wallX1, y: wallY1}, {x: wallX2, y: wallY2})) {
+            return true;
+          }
+        } catch (error) {
+          console.warn("PF2E Visioner: Error checking wall for LOS:", error);
+          continue;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.warn("PF2E Visioner: Error in isLineOfSightBlockedByWalls:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Determine if a grid square should be blocked - aggressive approach.
+   * If the center OR any corner ray is blocked, consider the whole square blocked.
+   * This ensures areas behind walls show as black rather than green.
+   * @param {{x:number,y:number}} squareCenter
+   * @param {{x:number,y:number}} targetCenter
+   * @param {number} gridSize
+   * @param {Canvas} canvas
+   * @returns {boolean}
+   */
+  isAggressivelyBlockedByWalls(squareCenter, targetCenter, gridSize, canvas) {
+    try {
+      const half = gridSize / 2;
+      const inset = half * 0.8; // sample points inside the square
+      const samplePoints = [
+        { x: squareCenter.x, y: squareCenter.y }, // center
+        { x: squareCenter.x - inset, y: squareCenter.y - inset }, // top-left
+        { x: squareCenter.x + inset, y: squareCenter.y - inset }, // top-right
+        { x: squareCenter.x - inset, y: squareCenter.y + inset }, // bottom-left
+        { x: squareCenter.x + inset, y: squareCenter.y + inset }  // bottom-right
+      ];
+
+      // If ANY sample ray is blocked, consider the square blocked
+      for (const sample of samplePoints) {
+        if (this.isLineOfSightBlockedByWalls(sample, targetCenter, canvas)) {
+          return true; // at least one ray is blocked → square is blocked
+        }
+      }
+      return false; // all rays are clear
+    } catch (error) {
+      console.warn("PF2E Visioner: Error in isAggressivelyBlockedByWalls:", error);
+      return false;
+    }
+  }
+  
+  /**
+   * Check if a grid position is currently visible to the player (considering fog of war)
+   * @param {number} worldX - World X coordinate
+   * @param {number} worldY - World Y coordinate  
+   * @param {Canvas} canvas - Foundry canvas object
+   * @returns {boolean} True if position is visible
+   */
+  isGridPositionVisible(worldX, worldY, canvas) {
+    try {
+      // For GMs, everything is visible
+      if (game.user.isGM) {
+        return true;
+      }
+      
+      // Check if the position is in explored (but not necessarily currently visible) area
+      // by checking if the canvas fog layer has revealed this position
+      if (canvas.fog && canvas.fog.exploration) {
+        // Get the pixel position in the exploration texture
+        const fogTexture = canvas.fog.exploration;
+        if (fogTexture && fogTexture.getPixel) {
+          try {
+            const pixel = fogTexture.getPixel(worldX, worldY);
+            // If pixel alpha is 0, the area is unexplored/fogged
+            if (pixel && pixel.a === 0) {
+              return false;
+            }
+          } catch (e) {
+            // Fallback if getPixel fails
+          }
+        }
+      }
+      
+      // Alternative approach: check visibility through canvas layers
+      if (canvas.visibility && canvas.visibility.testVisibility) {
+        const point = { x: worldX, y: worldY };
+        return canvas.visibility.testVisibility(point);
+      }
+      
+      // Try the sight layer approach
+      if (canvas.sight && canvas.sight.testVisibility) {
+        const point = { x: worldX, y: worldY };
+        return canvas.sight.testVisibility(point, { tolerance: 0 });
+      }
+      
+      // Check against token vision polygons
+      const controlledTokens = canvas.tokens.controlled;
+      if (controlledTokens.length > 0) {
+        for (const token of controlledTokens) {
+          if (token.vision && token.vision.fov) {
+            // Check if point is in field of view
+            if (token.vision.fov.contains(worldX, worldY)) {
+              return true;
+            }
+          }
+        }
+        // If no controlled token can see it, it's not visible
+        return false;
+      }
+      
+      // If no controlled tokens, default to not visible for players
+      return false;
+    } catch (error) {
+      console.warn("PF2E Visioner: Error checking grid position visibility:", error);
+      // More conservative - if we can't determine visibility, hide it
+      return false;
+    }
+  }
+  
+  /**
+   * Check if two line segments intersect using a more robust algorithm
+   * @param {Object} p1 - First point of first line {x, y}
+   * @param {Object} p2 - Second point of first line {x, y}
+   * @param {Object} p3 - First point of second line {x, y}
+   * @param {Object} p4 - Second point of second line {x, y}
+   * @returns {boolean} True if segments intersect
+   */
+  segmentsIntersect(p1, p2, p3, p4) {
+    const EPSILON = 1e-6; // Larger tolerance for more robust intersection detection
+    
+    
+    // Use parametric line intersection for more robust results
+    const x1 = p1.x, y1 = p1.y;
+    const x2 = p2.x, y2 = p2.y;
+    const x3 = p3.x, y3 = p3.y;
+    const x4 = p4.x, y4 = p4.y;
+    
+    // Calculate direction vectors
+    const dx1 = x2 - x1;
+    const dy1 = y2 - y1;
+    const dx2 = x4 - x3;
+    const dy2 = y4 - y3;
+    
+    // Calculate denominator for parametric equations
+    const denominator = dx1 * dy2 - dy1 * dx2;
+    
+    // If denominator is 0, lines are parallel
+    if (Math.abs(denominator) < EPSILON) {
+
+      
+      // Check if lines are collinear
+      const dx13 = x3 - x1;
+      const dy13 = y3 - y1;
+      const cross = dx13 * dy1 - dy13 * dx1;
+      
+      if (Math.abs(cross) < EPSILON) {
+
+        
+        // Lines are collinear, check if they overlap
+        // Project points onto the longer axis
+        const useX = Math.abs(dx1) > Math.abs(dy1);
+        
+        let seg1_start, seg1_end, seg2_start, seg2_end;
+        if (useX) {
+          seg1_start = Math.min(x1, x2);
+          seg1_end = Math.max(x1, x2);
+          seg2_start = Math.min(x3, x4);
+          seg2_end = Math.max(x3, x4);
+        } else {
+          seg1_start = Math.min(y1, y2);
+          seg1_end = Math.max(y1, y2);
+          seg2_start = Math.min(y3, y4);
+          seg2_end = Math.max(y3, y4);
+        }
+        
+        // Check for overlap
+        const overlap = seg1_end >= seg2_start - EPSILON && seg2_end >= seg1_start - EPSILON;
+        if (overlap) {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    // Calculate parameters for intersection point
+    const t = ((x3 - x1) * dy2 - (y3 - y1) * dx2) / denominator;
+    const u = ((x3 - x1) * dy1 - (y3 - y1) * dx1) / denominator;
+    
+    
+    // Check if intersection occurs within both line segments
+    const intersects = (t >= -EPSILON && t <= 1 + EPSILON) && 
+                      (u >= -EPSILON && u <= 1 + EPSILON);
+    
+    if (intersects) {
+      return true;
+    }
+    
+    return false;
+  }
+
   isPositionOccupied(worldX, worldY, selectedToken, canvas) {
     const gridSize = canvas.grid.size;
     
@@ -346,6 +604,12 @@ class CoverVisualization {
     for (const token of canvas.tokens.placeables) {
       if (!token?.actor) continue;
       if (token.id === selectedToken.id) continue; // Skip the selected token itself
+      
+      // Skip loot tokens and hazards - they don't block movement for cover visualization
+      const actorType = token.actor.type;
+      if (actorType === "loot" || actorType === "hazard") {
+        continue;
+      }
       
       // Check if the token is hidden or undetected from the selected token's perspective
       try {
@@ -417,17 +681,25 @@ class CoverVisualization {
     }
     
     const selectedToken = selectedTokens[0]; // Use first selected token
+    const selectedCenter = selectedToken.center ?? selectedToken.getCenter();
+    
+    // For players: Only show cover overlay for tokens that are currently visible (respects fog of war)
+    // GMs can see cover overlay for all tokens regardless of vision
+    if (!game.user.isGM && !hoveredToken.isVisible) {
+      // Player cannot see this token due to current vision/fog of war, don't show cover overlay
+      return;
+    }
     
     // Allow visualization for all users
     
     // Create graphics container on the interface layer to be client-specific
     // This ensures each client only sees their own visualization
     this.overlayGraphics = new PIXI.Graphics();
+    this.overlayGraphics.clear(); // Ensure clean slate
     canvas.interface.addChild(this.overlayGraphics);
         
     // Sample grid positions around the selected token's current position
     const gridSize = canvas.grid.size;
-    const selectedCenter = selectedToken.center ?? selectedToken.getCenter();
     
     // Calculate dynamic range based on furthest token from selected token
     let maxDistance = 8; // Minimum range
@@ -444,7 +716,8 @@ class CoverVisualization {
     }
     
     // Add some padding around the furthest token
-    const range = maxDistance + 3;
+    // Increase padding to ensure we cover areas behind walls
+    const range = maxDistance + 8;
     
     for (let x = -range; x <= range; x++) {
       for (let y = -range; y <= range; y++) {
@@ -475,15 +748,31 @@ class CoverVisualization {
         // Calculate what cover the selected token would have at this position from the hovered token
         // For visualization, always ignore undetected/hidden tokens regardless of settings
         // Use the selected token's perspective for visibility checks
-        const coverLevel = detectCoverStateForAttack(hoveredToken, tempAttacker, {
-          filterOverrides: { 
-            ignoreUndetected: true,
-            visibilityPerspective: selectedToken 
+        
+        // Check if the grid position is currently visible to the player (respects fog of war)
+        let shouldShowCover = true;
+        if (!game.user.isGM) {
+          // Check if this grid position is currently visible considering fog of war
+          const isPositionVisible = this.isGridPositionVisible(worldX, worldY, canvas);
+          
+          if (!isPositionVisible) {
+            // Player cannot see this grid position due to current vision/fog of war
+            shouldShowCover = false;
           }
-        });
-                
-        // Draw colored square based on cover level
-        this.drawCoverSquare(worldX, worldY, gridSize, coverLevel);
+        }
+        
+        if (shouldShowCover) {
+          const coverLevel = detectCoverStateForAttack(hoveredToken, tempAttacker, {
+            filterOverrides: { 
+              ignoreUndetected: true,
+              visibilityPerspective: selectedToken 
+            }
+          });
+                  
+          // Draw colored square based on cover level
+          this.drawCoverSquare(worldX, worldY, gridSize, coverLevel);
+        }
+        // If shouldShowCover is false (position not visible due to fog of war), draw nothing
       }
     }
 
@@ -491,6 +780,8 @@ class CoverVisualization {
     this.drawCurrentPosition(selectedToken);
     
     // Info panel removed - colors are self-explanatory
+    // Note: Black squares indicate positions where walls block line of sight (players only)
+    // GMs can see cover information for all positions regardless of wall blocking
   }
   
   drawCoverSquare(x, y, size, coverLevel) {
@@ -525,7 +816,38 @@ class CoverVisualization {
       size
     );
   }
-  
+
+  /**
+   * Draw a square indicating that line of sight is blocked by walls
+   * @param {number} x - X coordinate of the square center
+   * @param {number} y - Y coordinate of the square center
+   * @param {number} size - Size of the square
+   */
+  drawBlockedSquare(x, y, size) {
+    if (!this.overlayGraphics) return;
+    
+    const color = 0x000000; // Black
+    const alpha = 0.7; // More opaque to fully cover any underlying colors
+    
+    this.overlayGraphics.beginFill(color, alpha);
+    this.overlayGraphics.drawRect(
+      x - size/2, 
+      y - size/2, 
+      size, 
+      size
+    );
+    this.overlayGraphics.endFill();
+    
+    // Add a more visible border to indicate it's blocked
+    this.overlayGraphics.lineStyle(2, 0x333333, 0.9);
+    this.overlayGraphics.drawRect(
+      x - size/2, 
+      y - size/2, 
+      size, 
+      size
+    );
+  }
+
   drawCurrentPosition(selectedToken) {
     if (!this.overlayGraphics) return;
     

@@ -485,9 +485,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   
   // Reset global state
-  global.game.settings.get.mockClear();
-  global.game.settings.set.mockClear();
-  global.game.settings.register.mockClear();
+  // Note: Temporarily commented out due to mock setup issues
+  // global.game.settings.get?.mockClear?.();
+  // global.game.settings.set?.mockClear?.();
+  // global.game.settings.register?.mockClear?.();
   
   // Reset canvas state
   global.canvas.tokens.controlled = [];

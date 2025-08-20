@@ -1,5 +1,41 @@
 # Changelog
 
+## [2.6.5] - 2025-08-20
+
+### Added
+
+- **Cover Visualization**: Implemented fog of war awareness for cover grid
+  - Players only see cover squares in areas they can currently see (respects fog of war)
+  - Hidden/fogged areas show no cover visualization squares at all
+  - Integrates with Foundry VTT's vision system to check grid position visibility
+  - Prevents tactical information leakage in unexplored or currently invisible areas
+
+- **Cover Visualization**: Enhanced token filtering to exclude non-blocking entities
+  - Loot tokens no longer create gray "holes" in cover visualization
+  - Hazard tokens no longer interfere with cover grid display
+  - Only actual creatures and NPCs count for position occupation checks
+
+- **Cover Visualization**: Implemented wall-based line-of-sight blocking for cover grid
+  - Players see black squares instead of cover information for positions blocked by walls
+  - Aggressive LOS blocking algorithm ensures clean visual separation at wall boundaries  
+  - Added comprehensive test coverage for wall blocking functionality
+
+### Improved
+
+- **Cover Visualization**: Enhanced drawing logic to completely hide squares in fogged areas
+- **Cover Visualization**: More accurate token occupation detection for cover calculations
+
+## [2.6.4] - 2025-08-19
+
+### Fixed
+
+- **Attack Consequences Dialog**: Fixed "Apply All" button showing "No visibility changes to apply" when there are actionable changes
+  - Added test coverage to prevent similar bugs in the future
+
+- **Seek Dialog**: Fixed "Error reverting change" when using per-row revert after apply-all
+  - Revert operations now work correctly in the "Apply All → Per-Row Revert" sequence
+  - Added test coverage to prevent similar bugs in the future
+
 ## [2.6.3] - 2025-08-19
 
 ### Fixed

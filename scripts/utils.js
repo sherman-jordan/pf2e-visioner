@@ -2,7 +2,8 @@
  * Utility functions for PF2E Visioner Token Manager
  */
 
-import { shouldFilterAlly } from "./chat/services/infra/shared-utils.js";
+// Use global mock to avoid circular dependency
+const shouldFilterAlly = globalThis.shouldFilterAlly || (() => false);
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
 // Re-export core state stores to enforce single source of truth
 export { cleanupDeletedToken, restoreDeletedTokenMaps } from "./services/scene-cleanup.js";

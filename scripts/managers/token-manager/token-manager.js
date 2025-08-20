@@ -4,8 +4,8 @@
  */
 
 import {
-    getCoverMap,
-    getVisibilityMap
+  getCoverMap,
+  getVisibilityMap
 } from "../../utils.js";
 
 import { MODULE_ID } from "../../constants.js";
@@ -22,7 +22,7 @@ export class VisionerTokenManager extends foundry.applications.api
   static _selectionHookId = null;
 
   static DEFAULT_OPTIONS = (() => {
-    const cfg = structuredClone(TOKEN_MANAGER_DEFAULT_OPTIONS);
+    const cfg = JSON.parse(JSON.stringify(TOKEN_MANAGER_DEFAULT_OPTIONS));
     cfg.form.handler = VisionerTokenManager.formHandler;
     cfg.actions = {
       applyCurrent: VisionerTokenManager.applyCurrent,

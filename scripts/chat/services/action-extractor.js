@@ -31,7 +31,8 @@ export async function extractActionData(message) {
     origin?.rollOptions?.includes?.("origin:item:take-cover") ||
     origin?.rollOptions?.includes?.("origin:item:slug:take-cover") ||
     message.content?.includes?.("Take Cover") ||
-    message.flavor?.toLowerCase?.().includes?.("take cover");
+    message.flavor?.toLowerCase?.().includes?.("take cover") ||
+    message.flavor?.includes?.("Mise à l'abri");
 
   const isHideAction =
     !isCreateADiversionAction &&

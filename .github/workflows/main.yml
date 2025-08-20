@@ -30,7 +30,7 @@
 #   - Has the module's entry on FoundryVTT's module administration site
 #     (https://foundryvtt.com/admin) been updated?
 #
-name: Create Module Files For GitHub Release
+name: PF2E Visioner Release Pipeline
 
 env:
   # The URL used for the module's "Project URL" link on FoundryVTT's website.
@@ -47,21 +47,77 @@ env:
   release_module_url: "https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.zip"
 
 on:
-  # Only run this workflow when a release is published.
-  # To modify this workflow when other events occur, see:
-  #   - https://docs.github.com/en/actions/using-workflows/triggering-a-workflow
-  #   - https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows
-  #   - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#on
-  #
-  # Note that some steps may depend on context variables that are only
-  # available for release events, so if you add other events, you may need to
-  # alter other parts of this workflow.
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
   release:
     types: [published]
 
 jobs:
+  # Run tests and linting as prerequisite
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20.x]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm run test:ci
+      
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        
+  # Security and dependency checks
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+      
+    - name: Run dependency check
+      run: npx audit-ci --moderate
+
+  # Build and release (only on release events)
   build:
     runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.event_name == 'release'
     permissions:
       contents: write
 
@@ -136,3 +192,16 @@ jobs:
           artifacts: "./module.json, ./module.zip"
           tag: ${{ github.event.release.tag_name }}
           body: ${{ github.event.release.body }}
+
+  # Publish to Foundry VTT (only after successful build)
+  publish-to-foundry:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Publish to Foundry VTT
+        uses: JamesIves/fetch-api-data-action@v2
+        with:
+          endpoint: https://foundryvtt.com/_api/packages/release_version/
+          configuration: '{ "method": "POST", "headers": { "Content-Type": "application/json", "Authorization": "${{ secrets.FVTT_API_TOKEN }}" }, "body": { "id": "pf2e-visioner", "dry-run": false, "release": { "version": "${{github.event.release.tag_name}}", "manifest": "https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.json", "notes": "https://github.com/${{github.repository}}/blob/main/CHANGELOG.md", "compatibility": { "minimum": "13", "verified": "13", "maximum": "" } } } }'

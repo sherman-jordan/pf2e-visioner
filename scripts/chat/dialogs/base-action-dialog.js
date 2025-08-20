@@ -261,10 +261,10 @@ export class BaseActionDialog extends BasePreviewDialog {
                   const idAttr = wallId ? `data-wall-id="${wallId}"` : (targetId ? `data-token-id="${targetId}"` : "");
                   container.innerHTML = `
                     <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${idAttr} title="Apply this visibility change">
-                      <i class=\"fas fa-check\"></i>
+                      <i class="fas fa-check"></i>
                     </button>
                     <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${idAttr} title="Revert to original visibility">
-                      <i class=\"fas fa-undo\"></i>
+                      <i class="fas fa-undo"></i>
                     </button>
                   `;
                 } else {

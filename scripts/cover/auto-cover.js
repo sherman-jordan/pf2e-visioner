@@ -16,7 +16,7 @@ function normalizeTokenRef(ref) {
     // Strip surrounding quotes
     if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
     // If it's a UUID, extract the final Token.<id> segment
-    const m = s.match(/Token\.([^\.\s]+)$/);
+    const m = s.match(/Token\.([^.\s]+)$/);
     if (m && m[1]) return m[1];
     // Otherwise assume it's already the token id
     return s;

@@ -120,8 +120,14 @@ jobs:
     if: github.event_name == 'release'
     permissions:
       contents: write
-
+      
     steps:
+      - name: Shrink the files
+        uses: nizarmah/auto-minify@v3
+        with:
+          overwrite: true
+          js_engine: 'uglify-js'
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 

@@ -270,24 +270,44 @@ export function registerUIHooks() {
           },
         });
 
-        // Purge: clear all Visioner scene data
+        // Purge: clear all Visioner scene data or selected token data
         addTool(tokens.tools, {
           name: "pf2e-visioner-purge-scene",
-          title: "PF2E Visioner: Purge Scene Data",
+          title: "PF2E Visioner: Purge Data (Scene/Selected Tokens)",
           icon: "fa-solid fa-trash",
           button: true,
           onChange: async () => {
             try {
-              const confirmed = await Dialog.confirm({
-                title: "PF2E Visioner",
-                content: `<p>Clear all PF2E Visioner data for this scene? This cannot be undone.</p>`,
-                yes: () => true,
-                no: () => false,
-                defaultYes: false,
-              });
-              if (!confirmed) return;
-              const { api } = await import("../api.js");
-              await api.clearAllSceneData();
+              const selectedTokens = canvas.tokens?.controlled ?? [];
+              
+              if (selectedTokens.length > 0) {
+                // Tokens selected - offer to clear all selected tokens' data
+                const tokenNames = selectedTokens.map(t => t.name).join(', ');
+                const confirmed = await Dialog.confirm({
+                  title: "PF2E Visioner",
+                  content: `<p>Clear all PF2E Visioner data for <strong>${selectedTokens.length === 1 ? tokenNames : `${selectedTokens.length} selected tokens`}</strong>? This will reset all visibility and cover relationships for ${selectedTokens.length === 1 ? 'this token' : 'all selected tokens'}.</p>`,
+                  yes: () => true,
+                  no: () => false,
+                  defaultYes: false,
+                });
+                if (!confirmed) return;
+                const { api } = await import("../api.js");
+                
+                // Clear data for all selected tokens with comprehensive cleanup
+                await api.clearAllDataForSelectedTokens(selectedTokens);
+              } else {
+                // No tokens or multiple tokens selected - offer to clear entire scene
+                const confirmed = await Dialog.confirm({
+                  title: "PF2E Visioner",
+                  content: `<p>Clear all PF2E Visioner data for this scene? This cannot be undone.</p>`,
+                  yes: () => true,
+                  no: () => false,
+                  defaultYes: false,
+                });
+                if (!confirmed) return;
+                const { api } = await import("../api.js");
+                await api.clearAllSceneData();
+              }
             } catch (e) {
               console.error("[pf2e-visioner] purge scene error", e);
             }

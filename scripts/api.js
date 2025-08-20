@@ -735,6 +735,165 @@ export class Pf2eVisionerApi {
       return null;
     }
   }
+
+  /**
+   * Clear all PF2E Visioner data for multiple selected tokens with comprehensive cleanup
+   * - Removes visibility/cover maps from selected tokens
+   * - Removes module-created effects from all actors (same as clearAllSceneData)
+   * - Clears scene-level caches
+   * - Rebuilds effects and refreshes visuals/perception
+   */
+  static async clearAllDataForSelectedTokens(tokens = []) {
+    try {
+      if (!game.user.isGM) {
+        ui.notifications.warn("Only GMs can clear Visioner data");
+        return false;
+      }
+
+      if (!tokens || tokens.length === 0) {
+        ui.notifications.warn("No tokens provided for cleanup");
+        return false;
+      }
+
+      const scene = canvas?.scene;
+      if (!scene) {
+        ui.notifications.warn("No active scene.");
+        return false;
+      }
+
+      // 1) Bulk-reset flags on selected tokens (hard remove the maps)
+      const updates = tokens.map((t) => ({
+        _id: t.id,
+        // Use Foundry removal syntax to ensure full deletion of maps
+        [`flags.${MODULE_ID}.-=visibility`]: null,
+        [`flags.${MODULE_ID}.-=cover`]: null,
+      }));
+      if (updates.length && scene.updateEmbeddedDocuments) {
+        try {
+          await scene.updateEmbeddedDocuments("Token", updates, {
+            diff: false,
+          });
+        } catch (_) {}
+      }
+
+      // 2) Clear scene-level caches used by the module
+      try {
+        await scene.setFlag(MODULE_ID, "deletedEntryCache", {});
+      } catch (_) {}
+
+      // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
+      try {
+        const actors = Array.from(game.actors ?? []);
+        for (const actor of actors) {
+          const effects = actor?.itemTypes?.effect ?? [];
+          const toDelete = effects
+            .filter((e) => {
+              const f = e.flags?.[MODULE_ID] || {};
+              return (
+                f.isEphemeralOffGuard ||
+                f.isEphemeralCover ||
+                f.aggregateOffGuard === true ||
+                f.aggregateCover === true
+              );
+            })
+            .map((e) => e.id)
+            .filter((id) => !!actor.items.get(id));
+          if (toDelete.length) {
+            try {
+              await actor.deleteEmbeddedDocuments("Item", toDelete);
+            } catch (_) {}
+          }
+        }
+
+        // Also purge effects on token-actors (unlinked tokens won't be in game.actors)
+        const allTokens = canvas.tokens?.placeables ?? [];
+        for (const tok of allTokens) {
+          const a = tok?.actor;
+          if (!a) continue;
+          const effects = a?.itemTypes?.effect ?? [];
+          const toDelete = effects
+            .filter((e) => {
+              const f = e.flags?.[MODULE_ID] || {};
+              return (
+                f.isEphemeralOffGuard ||
+                f.isEphemeralCover ||
+                f.aggregateOffGuard === true ||
+                f.aggregateCover === true
+              );
+            })
+            .map((e) => e.id)
+            .filter((id) => !!a.items.get(id));
+          if (toDelete.length) {
+            try {
+              await a.deleteEmbeddedDocuments("Item", toDelete);
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+
+      // 4) Clean up any remaining effects related to the selected tokens specifically
+      try {
+        const { cleanupDeletedToken } = await import("./utils.js");
+        for (const token of tokens) {
+          if (!token?.actor) continue;
+          // Clean up this token from all other tokens' maps and effects
+          await cleanupDeletedToken(token.document);
+        }
+      } catch (_) {}
+
+      // 5) Also remove the selected tokens from ALL other tokens' visibility/cover maps
+      try {
+        const allTokens = canvas.tokens?.placeables ?? [];
+        const otherTokens = allTokens.filter(t => !tokens.some(selected => selected.id === t.id));
+        
+        if (otherTokens.length > 0) {
+          const updates = otherTokens.map((t) => {
+            const update = { _id: t.id };
+            
+            // Get current visibility map for this token
+            const currentVisibility = t.document.getFlag(MODULE_ID, "visibility") || {};
+            const currentCover = t.document.getFlag(MODULE_ID, "cover") || {};
+            
+            // Remove entries for all selected tokens
+            for (const selectedToken of tokens) {
+              if (currentVisibility[selectedToken.id]) {
+                update[`flags.${MODULE_ID}.visibility.${selectedToken.id}`] = null;
+              }
+              if (currentCover[selectedToken.id]) {
+                update[`flags.${MODULE_ID}.cover.${selectedToken.id}`] = null;
+              }
+            }
+            
+            return update;
+          }).filter(update => Object.keys(update).length > 1); // Only include updates that have changes
+          
+          if (updates.length > 0 && scene.updateEmbeddedDocuments) {
+            await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+          }
+        }
+      } catch (_) {}
+
+      // 6) Rebuild effects and refresh visuals/perception
+      try {
+        await updateTokenVisuals();
+      } catch (_) {}
+      try {
+        refreshEveryonesPerception();
+      } catch (_) {}
+      try {
+        canvas.perception.update({ refreshVision: true });
+      } catch (_) {}
+
+      ui.notifications.info(`PF2E Visioner: Cleared all data for ${tokens.length} selected token${tokens.length === 1 ? '' : 's'}.`);
+      return true;
+    } catch (error) {
+      console.error("PF2E Visioner: Error clearing data for selected tokens:", error);
+      ui.notifications.error(
+        "PF2E Visioner: Failed to clear token data. See console.",
+      );
+      return false;
+    }
+  }
 }
 
 /**

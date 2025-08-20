@@ -8,6 +8,7 @@ import { onRenderTokenHUD } from "../services/token-hud.js";
 export function registerUIHooks() {
   Hooks.on("renderTokenHUD", onRenderTokenHUD);
   Hooks.on("getTokenDirectoryEntryContext", onGetTokenDirectoryEntryContext);
+  Hooks.on("getTokenHUDContext", onGetTokenHUDContext);
   Hooks.on("renderWallConfig", onRenderWallConfig);
   // We no longer create a separate Visioner tool; tools are injected into Tokens/Walls below
   // Helper utilities to support both array- and object-shaped tool containers
@@ -25,7 +26,7 @@ export function registerUIHooks() {
       if (!toolsContainer || !tool?.name) return;
       if (Array.isArray(toolsContainer)) toolsContainer.push(tool);
       else if (typeof toolsContainer === "object") toolsContainer[tool.name] = tool;
-    } catch (_) {}
+    } catch (_) { }
   };
   // Keep toolbar toggle states in sync with current selection (Token tool)
   const refreshTokenTool = () => {
@@ -38,7 +39,7 @@ export function registerUIHooks() {
       tool.active = provideActive;
       tool.icon = provideActive ? "fa-solid fa-shield" : "fa-solid fa-shield-slash";
       ui.controls.render();
-    } catch (_) {}
+    } catch (_) { }
   };
   // Utility: label identifiers for selected walls on the canvas
   const refreshWallIdentifierLabels = () => {
@@ -49,8 +50,8 @@ export function registerUIHooks() {
       for (const w of walls) {
         const shouldShow = !!w?.controlled && !!w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
         if (!shouldShow && w._pvIdLabel) {
-          try { w._pvIdLabel.parent?.removeChild?.(w._pvIdLabel); } catch (_) {}
-          try { w._pvIdLabel.destroy?.(); } catch (_) {}
+          try { w._pvIdLabel.parent?.removeChild?.(w._pvIdLabel); } catch (_) { }
+          try { w._pvIdLabel.destroy?.(); } catch (_) { }
           delete w._pvIdLabel;
         }
       }
@@ -78,14 +79,14 @@ export function registerUIHooks() {
           }
         } catch (_) { /* ignore label errors */ }
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const refreshWallTool = () => {
     try {
       const wallTools = ui.controls.controls?.walls?.tools;
       const selected = canvas?.walls?.controlled ?? [];
-      
+
       // Provide Cover toggle state (active = provides cover)
       const provideTool = getNamedTool(wallTools, "pf2e-visioner-toggle-wall-provide");
       if (provideTool) {
@@ -95,7 +96,7 @@ export function registerUIHooks() {
         provideTool.active = provideActive;
         provideTool.icon = provideActive ? "fa-solid fa-shield" : "fa-solid fa-shield-slash";
       }
-      
+
       // Hidden Wall toggle state
       const hiddenTool = getNamedTool(wallTools, "pf2e-visioner-toggle-hidden-wall");
       if (hiddenTool) {
@@ -105,11 +106,11 @@ export function registerUIHooks() {
         hiddenTool.active = hiddenActive;
         hiddenTool.icon = hiddenActive ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
       }
-      
+
       // Also refresh identifier labels on the canvas when selection changes
       refreshWallIdentifierLabels();
       ui.controls.render();
-    } catch (_) {}
+    } catch (_) { }
   };
   Hooks.on("controlToken", refreshTokenTool);
   Hooks.on("deleteToken", refreshTokenTool);
@@ -154,7 +155,7 @@ export function registerUIHooks() {
             new VisionerWallManager().render(true);
           },
         });
-        
+
 
         // Toggle Provide Auto-Cover (Selected Walls)
         const selectedWalls = canvas?.walls?.controlled ?? [];
@@ -162,30 +163,30 @@ export function registerUIHooks() {
           name: "pf2e-visioner-toggle-wall-provide",
           title: "Toggle Provide Auto-Cover (Selected Walls)",
           icon: selectedWalls.length > 0 &&
-                 selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false)
-                  ? "fa-solid fa-shield"
-                  : "fa-solid fa-shield-slash",
+            selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false)
+            ? "fa-solid fa-shield"
+            : "fa-solid fa-shield-slash",
           toggle: true,
           active: selectedWalls.length > 0 &&
-                  selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false),
+            selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, "provideCover") !== false),
           onChange: async (_event, toggled) => {
             try {
               const selected = canvas?.walls?.controlled ?? [];
               if (!selected.length) return;
-              
+
               // Active means walls should provide cover
               const newValue = !!toggled;
               await Promise.all(
                 selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "provideCover", newValue)),
               );
               ui.controls.render();
-            } catch (_) {}
+            } catch (_) { }
           },
         });
 
         // Toggle Hidden Wall (Selected Walls)  
         const currentHiddenState = selectedWalls.length > 0 &&
-                                  selectedWalls.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+          selectedWalls.every((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
         addTool(walls.tools, {
           name: "pf2e-visioner-toggle-hidden-wall",
           title: "Toggle Hidden Wall (Selected Walls)",
@@ -196,7 +197,7 @@ export function registerUIHooks() {
             try {
               const selected = canvas?.walls?.controlled ?? [];
               if (!selected.length) return;
-              
+
               if (toggled) {
                 await Promise.all(
                   selected.map((w) => w?.document?.setFlag?.(MODULE_ID, "hiddenWall", true)),
@@ -208,12 +209,12 @@ export function registerUIHooks() {
                   } catch (_) {
                     try {
                       await w?.document?.setFlag?.(MODULE_ID, "hiddenWall", false);
-                    } catch (_) {}
+                    } catch (_) { }
                   }
                 }
               }
               ui.controls.render();
-            } catch (_) {}
+            } catch (_) { }
           },
         });
       }
@@ -232,26 +233,40 @@ export function registerUIHooks() {
               const { VisionerQuickPanel } = await import("../managers/quick-panel.js");
               if (!game.user?.isGM) return;
               new VisionerQuickPanel({}).render(true);
-            } catch (_) {}
+            } catch (_) { }
           },
         });
-        // Toggle Provide Auto-Cover (Selected Tokens)
+        // Multi Token Manager - only show when multiple tokens are selected
         const selectedTokens = canvas?.tokens?.controlled ?? [];
+        addTool(tokens.tools, {
+          name: "pf2e-visioner-multi-token-manager",
+          title: "PF2E Visioner: Multi Token Manager",
+          icon: "fa-solid fa-users-cog",
+          button: true,
+          onChange: async () => {
+            try {
+              const { openMultiTokenManager } = await import("../api.js");
+              await openMultiTokenManager();
+            } catch (_) { }
+          },
+        });
+
+        // Toggle Provide Auto-Cover (Selected Tokens)
         addTool(tokens.tools, {
           name: "pf2e-visioner-toggle-token-provide",
           title: "Toggle Provide Auto-Cover (Selected Tokens)",
           icon: selectedTokens.length > 0 &&
-                 selectedTokens.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true)
-                  ? "fa-solid fa-shield-slash"
-                  : "fa-solid fa-shield",
+            selectedTokens.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true)
+            ? "fa-solid fa-shield-slash"
+            : "fa-solid fa-shield",
           toggle: true,
           active: selectedTokens.length > 0 &&
-                  selectedTokens.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true),
+            selectedTokens.every((t) => t?.document?.getFlag?.(MODULE_ID, "ignoreAutoCover") !== true),
           onChange: async (_event, toggled) => {
             try {
               const selected = canvas?.tokens?.controlled ?? [];
               if (!selected.length) return;
-              
+
               const ignoreValue = toggled ? false : true; // active = provide cover => ignore=false
               await Promise.all(
                 selected.map((t) => t?.document?.setFlag?.(MODULE_ID, "ignoreAutoCover", ignoreValue)),
@@ -263,10 +278,10 @@ export function registerUIHooks() {
                 for (const t of allPlaceables) {
                   try {
                     await updateTokenVisuals(t);
-                  } catch (_) {}
+                  } catch (_) { }
                 }
-              } catch (_) {}
-            } catch (_) {}
+              } catch (_) { }
+            } catch (_) { }
           },
         });
 
@@ -279,7 +294,7 @@ export function registerUIHooks() {
           onChange: async () => {
             try {
               const selectedTokens = canvas.tokens?.controlled ?? [];
-              
+
               if (selectedTokens.length > 0) {
                 // Tokens selected - offer to clear all selected tokens' data
                 const tokenNames = selectedTokens.map(t => t.name).join(', ');
@@ -292,7 +307,7 @@ export function registerUIHooks() {
                 });
                 if (!confirmed) return;
                 const { api } = await import("../api.js");
-                
+
                 // Clear data for all selected tokens with comprehensive cleanup
                 await api.clearAllDataForSelectedTokens(selectedTokens);
               } else {
@@ -316,7 +331,7 @@ export function registerUIHooks() {
       } else {
         console.warn("[pf2e-visioner] Tokens tool not found. Control groups:", groups.map((c) => c?.name));
       }
-      
+
       // When selecting walls, show wall identifier if present on the control icon tooltip
       const showWallIdentifierTooltip = async () => {
         try {
@@ -327,9 +342,9 @@ export function registerUIHooks() {
             try {
               const idf = w?.document?.getFlag?.(MODULE_ID, "wallIdentifier");
               if (idf && w?.controlIcon) w.controlIcon.tooltip = String(idf);
-            } catch (_) {}
+            } catch (_) { }
           });
-        } catch (_) {}
+        } catch (_) { }
       };
       Hooks.on("controlWall", showWallIdentifierTooltip);
     } catch (_) {
@@ -354,12 +369,29 @@ function onGetTokenDirectoryEntryContext(html, options) {
   });
 }
 
+function onGetTokenHUDContext(html, options) {
+  if (!game.user.isGM) return;
+
+  // Check if multiple tokens are selected for multi-token manager
+  const selectedTokens = canvas.tokens.controlled;
+  if (selectedTokens.length >= 2) {
+    options.push({
+      name: game.i18n.localize("PF2E_VISIONER.MULTI_TOKEN_MANAGER.CONTEXT_MENU"),
+      icon: '<i class="fas fa-users-cog"></i>',
+      callback: async () => {
+        const { openMultiTokenManager } = await import("../api.js");
+        await openMultiTokenManager();
+      },
+    });
+  }
+}
+
 function onGetTokenHUDButtons(hud, buttons, token) {
   try {
     if (token?.actor?.type === "loot") {
       if (!game.settings.get(MODULE_ID, "includeLootActors")) return;
     }
-  } catch (_) {}
+  } catch (_) { }
   buttons.push({
     name: "token-manager",
     title: "Token Manager (Left: Target Mode, Right: Observer Mode)",
@@ -399,7 +431,7 @@ function injectPF2eVisionerBox(app, root) {
         } catch (_) { form.appendChild(fs); }
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const tokenDoc = app?.document;
   const actor = tokenDoc?.actor ?? tokenDoc?.parent;
@@ -492,7 +524,7 @@ function onRenderWallConfig(app, html) {
         const { VisionerWallQuickSettings } = await import('../managers/wall-manager/wall-quick.js');
         new VisionerWallQuickSettings(app.document).render(true);
       });
-    } catch (_) {}
+    } catch (_) { }
   } catch (_) { }
 }
 

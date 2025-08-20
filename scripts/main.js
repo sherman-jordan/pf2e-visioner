@@ -22,6 +22,9 @@ Hooks.once("init", async () => {
       return value !== undefined && value !== null ? value : defaultValue;
     });
 
+    // Import and register other Handlebars helpers (only visibilityIcon, others removed due to conflicts)
+    await import("./chat/services/hbs-helpers.js");
+
     // Register settings and keybindings
     registerSettings();
     registerKeybindings();

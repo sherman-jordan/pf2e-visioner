@@ -1,0 +1,603 @@
+{{!--
+  Modern ApplicationV2 template for Visioner Multi Token Manager
+  Provides comprehensive interface for managing token visibility and cover relationships with pagination
+--}}
+
+{{#if error}}
+  <div class="notification error">
+    <p>{{error}}</p>
+  </div>
+{{else}}
+  <div class="visioner-multi-token-manager">
+
+  {{!-- Current Token Information with Pagination Controls --}}
+  <div class="current-token-info">
+    <div class="token-display">
+      <div class="token-image">
+        <img src="{{currentToken.img}}" data-tooltip="{{currentToken.name}}" />
+      </div>
+      <div class="token-content">
+        <h3 class="token-name">{{currentToken.name}}</h3>
+        <p class="hint">
+          {{#if isVisibilityTab}}
+            {{#if observerTargetMode}}
+              How other tokens see <em>{{currentToken.name}}</em>
+            {{else}}
+              How <em>{{currentToken.name}}</em> sees other placeables
+            {{/if}}
+          {{else}}
+            {{#if observerTargetMode}}
+              How much cover <em>{{currentToken.name}}</em> has against other tokens
+            {{else}}
+              How much cover other tokens have against <em>{{currentToken.name}}</em>
+            {{/if}}
+          {{/if}}
+        </p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      {{!-- Encounter Filter and Observer Toggle --}}
+      <div class="filter-section">
+        {{#if showEncounterFilter}}
+        <label class="encounter-filter-checkbox">
+          <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+          <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+        </label>
+        {{/if}}
+        
+                  <button type="button" class="mode-toggle {{#if observerTargetMode}}target-active{{else}}observer-active{{/if}}" data-action="toggleObserverTarget" title="Click to switch between Observer and Target modes">
+            <div class="toggle-option {{#unless observerTargetMode}}active{{/unless}}">
+              <i class="fas fa-eye"></i>
+              <span>Observer</span>
+            </div>
+            <div class="toggle-divider">|</div>
+            <div class="toggle-option {{#if observerTargetMode}}active{{/if}}">
+              <i class="fas fa-user-secret"></i>
+              <span>Target</span>
+            </div>
+          </button>
+      </div>
+
+      {{!-- Right side controls: Pagination, Tabs, and Legend --}}
+      <div class="right-controls">
+        {{!-- Compact Tab Navigation --}}
+        <div class="compact-tab-navigation">
+          <button type="button" class="compact-tab-button {{#if isVisibilityTab}}active{{/if}}" data-action="toggleTab" data-tab="visibility" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_TAB"}}">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button type="button" class="compact-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
+            <i class="fas fa-shield-alt"></i>
+          </button>
+        </div>
+
+        {{!-- Compact Legend --}}
+        <div class="compact-legend">
+          {{#if isVisibilityTab}}
+            {{#each visibilityStates as |state|}}
+              <div class="compact-legend-item" title="{{state.label}}">
+                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+              </div>
+            {{/each}}
+          {{else}}
+            {{#each coverStates as |state|}}
+              <div class="compact-legend-item" title="{{state.label}}{{#if state.bonusAC}} (+{{state.bonusAC}} AC{{#if state.bonusReflex}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if state.bonusStealth}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
+                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+              </div>
+            {{/each}}
+          {{/if}}
+        </div>
+
+        {{!-- Page Counter Only --}}
+        <div class="pagination-controls">
+          <div class="page-info">
+            <span class="page-counter">{{currentPage}} / {{totalPages}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{!-- Tab Content --}}
+  <div class="visioner-tab-content">
+    {{!-- Visibility Tab --}}
+    <div class="tab-panel visibility-section {{#if isVisibilityTab}}active{{/if}}">
+      {{!-- Bulk Actions for Targets --}}
+      <div class="bulk-actions-bar">
+        <div class="bulk-actions-group">
+          <span class="bulk-actions-label">1. Change:</span>
+          <button type="button" class="bulk-action-button target-group" data-action="selectTargetGroup" data-group="all" title="Select all targets">
+            <i class="fas fa-globe"></i>
+          </button>
+          <button type="button" class="bulk-action-button target-group" data-action="selectTargetGroup" data-group="allies" title="Select ally targets">
+            <i class="fas fa-handshake"></i>
+          </button>
+          <button type="button" class="bulk-action-button target-group" data-action="selectTargetGroup" data-group="enemies" title="Select enemy targets">
+            <i class="fas fa-skull"></i>
+          </button>
+        </div>
+        <div class="bulk-actions-group">
+          <span class="bulk-actions-label">{{#if observerTargetMode}}2. To which I am:{{else}}2. That are:{{/if}}</span>
+          <button type="button" class="bulk-action-button condition-filter" data-action="selectCondition" data-condition="observedTo" title="{{#if observerTargetMode}}Filter by: They see me as Observed{{else}}Filter by: I see them as Observed{{/if}}">
+            <i class="fas fa-eye" style="color: #4caf50;"></i>
+          </button>
+          <button type="button" class="bulk-action-button condition-filter" data-action="selectCondition" data-condition="concealedTo" title="{{#if observerTargetMode}}Filter by: They see me as Concealed{{else}}Filter by: I see them as Concealed{{/if}}">
+            <i class="fas fa-cloud" style="color: #FFC107;"></i>
+          </button>
+          <button type="button" class="bulk-action-button condition-filter" data-action="selectCondition" data-condition="hiddenTo" title="{{#if observerTargetMode}}Filter by: They see me as Hidden{{else}}Filter by: I see them as Hidden{{/if}}">
+            <i class="fas fa-eye-slash" style="color: #ff6600;"></i>
+          </button>
+          <button type="button" class="bulk-action-button condition-filter" data-action="selectCondition" data-condition="undetectedTo" title="{{#if observerTargetMode}}Filter by: They see me as Undetected{{else}}Filter by: I see them as Undetected{{/if}}">
+            <i class="fas fa-ghost" style="color: #f44336;"></i>
+          </button>
+          {{#unless observerTargetMode}}<span class="workflow-clarification">to me</span>{{/unless}}
+        </div>
+        <div class="bulk-actions-group">
+          <span class="bulk-actions-label">{{#if observerTargetMode}}3. To treat me as:{{else}}3. To be:{{/if}}</span>
+          <button type="button" class="bulk-action-button visibility-state" data-action="selectVisibilityState" data-state="observed" title="Select Observed state" style="border-color: #4caf50;">
+            <i class="fas fa-eye" style="color: #4caf50;"></i>
+          </button>
+          <button type="button" class="bulk-action-button visibility-state" data-action="selectVisibilityState" data-state="concealed" title="Select Concealed state" style="border-color: #FFC107;">
+            <i class="fas fa-cloud" style="color: #FFC107;"></i>
+          </button>
+          <button type="button" class="bulk-action-button visibility-state" data-action="selectVisibilityState" data-state="hidden" title="Select Hidden state" style="border-color: #ff6600;">
+            <i class="fas fa-eye-slash" style="color: #ff6600;"></i>
+          </button>
+          <button type="button" class="bulk-action-button visibility-state" data-action="selectVisibilityState" data-state="undetected" title="Select Undetected state" style="border-color: #f44336;">
+            <i class="fas fa-ghost" style="color: #f44336;"></i>
+          </button>
+        </div>
+        <div class="bulk-actions-group">
+          <span class="bulk-actions-label">4. Apply:</span>
+          <button type="button" class="bulk-action-button apply-changes" data-action="applyBulkChanges" title="Apply selected state to filtered targets">
+            <i class="fas fa-check"></i>
+          </button>
+          <button type="button" class="bulk-action-button clear-selection" data-action="clearBulkSelection" title="Clear current selections">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      {{!-- Scrollable tables area for visibility --}}
+      <div class="tables-content">
+        {{#if hasTargets}}
+          
+          {{!-- Player Characters Table --}}
+          {{#if hasPCs}}
+            <div class="table-section">
+              <div class="table-section-header">
+                <div class="header-left">
+                  <i class="fas fa-users"></i>
+                  <span>Player Characters</span>
+                </div>
+              </div>
+              <div class="visibility-table-container">
+                <table class="visibility-table">
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:20%" />
+                    <col style="width:32%" />
+                    <col style="width:22%" />
+                    <col style="width:16%" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th class="token-image">Token</th>
+                      <th class="token-name">Name</th>
+                      <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+                      <th class="current-state">Current State</th>
+                      <th class="dc-column">Stealth DC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each pcTargets as |target|}}
+                      <tr class="token-row pc-row" data-token-id="{{target.id}}">
+                        <td class="token-image">
+                          <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
+                        </td>
+                        <td class="token-name">
+                          <strong title="{{target.name}}">{{target.name}}</strong>
+                        </td>
+                        <td class="visibility-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.visibilityStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      title="{{state.label}}" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentVisibilityState}}" />
+                          </div>
+                        </td>
+                        <td class="current-state">
+                          {{#each target.visibilityStates as |state|}}
+                            {{#if state.selected}}
+                              <span class="state-indicator" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                                {{state.label}}
+                              </span>
+                            {{/if}}
+                          {{/each}}
+                        </td>
+                        <td class="dc-column">
+                          <span class="dc-value">{{target.stealthDC}}</span>
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+
+          {{!-- NPCs Table --}}
+          {{#if hasNPCs}}
+            <div class="table-section">
+              <div class="table-section-header">
+                <div class="header-left">
+                  <i class="fas fa-dragon"></i>
+                  <span>NPCs</span>
+                </div>
+              </div>
+              <div class="visibility-table-container">
+                <table class="visibility-table">
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:20%" />
+                    <col style="width:32%" />
+                    <col style="width:22%" />
+                    <col style="width:16%" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th class="token-image">Token</th>
+                      <th class="token-name">Name</th>
+                      <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+                      <th class="current-state">Current State</th>
+                      <th class="dc-column">Stealth DC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each npcTargets as |target|}}
+                      <tr class="token-row npc-row {{target.dispositionClass}}-npc" data-token-id="{{target.id}}">
+                        <td class="token-image">
+                          <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
+                        </td>
+                        <td class="token-name">
+                          <strong title="{{target.name}}">{{target.name}}</strong>
+                        </td>
+                        <td class="visibility-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.visibilityStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      title="{{state.label}}" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentVisibilityState}}" />
+                          </div>
+                        </td>
+                        <td class="current-state">
+                          {{#each target.visibilityStates as |state|}}
+                            {{#if state.selected}}
+                              <span class="state-indicator" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                                {{state.label}}
+                              </span>
+                            {{/if}}
+                          {{/each}}
+                        </td>
+                        <td class="dc-column">
+                          <span class="dc-value">{{target.stealthDC}}</span>
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+          
+          {{!-- Loot Table --}}
+          {{#if hasLoots}}
+            <div class="table-section loot-section">
+              <div class="table-section-header">
+                <div class="header-left">
+                  <i class="fas fa-box"></i>
+                  <span>Loot</span>
+                </div>
+              </div>
+              <div class="visibility-table-container">
+                <table class="visibility-table">
+                  <colgroup>
+                    <col style="width:10%" />
+                    <col style="width:20%" />
+                    <col style="width:32%" />
+                    <col style="width:22%" />
+                    <col style="width:16%" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th class="token-image">Token</th>
+                      <th class="token-name">Name</th>
+                      <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+                      <th class="current-state">Current State</th>
+                      <th class="dc-column">Stealth DC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each lootTargets as |target|}}
+                      <tr class="token-row loot-row" data-token-id="{{target.id}}">
+                        <td class="token-image">
+                          <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
+                        </td>
+                        <td class="token-name">
+                          <strong title="{{target.name}}">{{target.name}}</strong>
+                        </td>
+                        <td class="visibility-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.visibilityStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      title="{{state.label}}" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentVisibilityState}}" />
+                          </div>
+                        </td>
+                        <td class="current-state">
+                          {{#each target.visibilityStates as |state|}}
+                            {{#if state.selected}}
+                              <span class="state-indicator" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                                {{state.label}}
+                              </span>
+                            {{/if}}
+                          {{/each}}
+                        </td>
+                        <td class="dc-column">
+                          <span class="dc-value">{{target.stealthDC}}</span>
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+        {{else}}
+          <div class="no-targets">
+            <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    {{!-- Cover Tab --}}
+    <div class="tab-panel cover-section {{#if isCoverTab}}active{{/if}}">
+      {{!-- Bulk Actions for Cover --}}
+      <div class="bulk-actions-bar">
+        <div class="bulk-actions-group">
+          <span class="bulk-actions-label">Set all targets as:</span>
+          <button type="button" class="bulk-action-button" data-action="bulkNoCover" title="Set all targets as No Cover">
+            <i class="fas fa-check-circle"></i> No Cover
+          </button>
+          <button type="button" class="bulk-action-button" data-action="bulkLesserCover" title="Set all targets as Lesser Cover">
+            <i class="fas fa-shield-alt"></i> Lesser
+          </button>
+          <button type="button" class="bulk-action-button" data-action="bulkStandardCover" title="Set all targets as Standard Cover">
+            <i class="fas fa-shield-alt"></i> Standard
+          </button>
+          <button type="button" class="bulk-action-button" data-action="bulkGreaterCover" title="Set all targets as Greater Cover">
+            <i class="fas fa-shield"></i> Greater
+          </button>
+        </div>
+      </div>
+
+      {{!-- Scrollable tables area for cover --}}
+      <div class="tables-content">
+        {{#if hasTargets}}
+          
+          {{!-- Player Characters Table --}}
+          {{#if hasPCs}}
+            <div class="table-section">
+              <div class="table-section-header">
+                <div class="header-left">
+                  <i class="fas fa-users"></i>
+                  <span>Player Characters</span>
+                </div>
+              </div>
+              <div class="cover-table-container">
+                <table class="cover-table">
+                  <thead>
+                    <tr>
+                      <th class="token-image">Token</th>
+                      <th class="token-name">Name</th>
+                      <th class="cover-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_STATE"}}</th>
+                      <th class="current-state">Current State</th>
+                      <th class="mechanical-effects">Effects</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each pcTargets as |target|}}
+                      <tr class="token-row pc-row" data-token-id="{{target.id}}">
+                        <td class="token-image">
+                          <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
+                        </td>
+                        <td class="token-name">
+                          <strong title="{{target.name}}">{{target.name}}</strong>
+                        </td>
+                        <td class="cover-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.coverStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      title="{{state.label}}" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="cover.{{target.id}}" value="{{target.currentCoverState}}" />
+                          </div>
+                        </td>
+                        <td class="current-state">
+                          {{#each target.coverStates as |state|}}
+                            {{#if state.selected}}
+                              <span class="state-indicator" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                                {{state.label}}
+                              </span>
+                            {{/if}}
+                          {{/each}}
+                        </td>
+                        <td class="mechanical-effects">
+                          {{#if target.coverStateFlags.none}}
+                            <span class="no-effect cover-none">
+                              <i class="fas fa-check-circle"></i> No cover
+                            </span>
+                          {{else if target.coverStateFlags.lesser}}
+                            <span class="cover-effect cover-lesser">
+                              <i class="fas fa-shield-alt"></i> +1 AC
+                            </span>
+                          {{else if target.coverStateFlags.standard}}
+                            <span class="cover-effect cover-standard">
+                              <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
+                            </span>
+                          {{else if target.coverStateFlags.greater}}
+                            <span class="cover-effect cover-greater">
+                              <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
+                            </span>
+                          {{/if}}
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+
+          {{!-- NPCs Table --}}
+          {{#if hasNPCs}}
+            <div class="table-section">
+              <div class="table-section-header">
+                <div class="header-left">
+                  <i class="fas fa-dragon"></i>
+                  <span>NPCs</span>
+                </div>
+              </div>
+              <div class="cover-table-container">
+                <table class="cover-table">
+                  <thead>
+                    <tr>
+                      <th class="token-image">Token</th>
+                      <th class="token-name">Name</th>
+                      <th class="cover-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_STATE"}}</th>
+                      <th class="current-state">Current State</th>
+                      <th class="mechanical-effects">Effects</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each npcTargets as |target|}}
+                      <tr class="token-row npc-row {{target.dispositionClass}}-npc" data-token-id="{{target.id}}">
+                        <td class="token-image">
+                          <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
+                        </td>
+                        <td class="token-name">
+                          <strong title="{{target.name}}">{{target.name}}</strong>
+                        </td>
+                        <td class="cover-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.coverStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      title="{{state.label}}" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="cover.{{target.id}}" value="{{target.currentCoverState}}" />
+                          </div>
+                        </td>
+                        <td class="current-state">
+                          {{#each target.coverStates as |state|}}
+                            {{#if state.selected}}
+                              <span class="state-indicator" style="color: {{state.color}}">
+                                <i class="{{state.icon}}"></i>
+                                {{state.label}}
+                              </span>
+                            {{/if}}
+                          {{/each}}
+                        </td>
+                        <td class="mechanical-effects">
+                          {{#if target.coverStateFlags.none}}
+                            <span class="no-effect cover-none">
+                              <i class="fas fa-check-circle"></i> No cover
+                            </span>
+                          {{else if target.coverStateFlags.lesser}}
+                            <span class="cover-effect cover-lesser">
+                              <i class="fas fa-shield-alt"></i> +1 AC
+                            </span>
+                          {{else if target.coverStateFlags.standard}}
+                            <span class="cover-effect cover-standard">
+                              <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
+                            </span>
+                          {{else if target.coverStateFlags.greater}}
+                            <span class="cover-effect cover-greater">
+                              <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
+                            </span>
+                          {{/if}}
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+          
+        {{else}}
+          <div class="no-targets">
+            <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+
+  {{!-- Full-width pagination row --}}
+  <div class="page-numbers-row">
+    <button type="button" class="page-nav-button" data-action="previousPage" {{#unless hasPreviousPage}}disabled{{/unless}} title="Previous Token">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    
+    <div class="page-numbers-container">
+      {{#each pageNumbers as |pageNum|}}
+        <button type="button" class="page-number {{#if pageNum.isActive}}active{{/if}}" 
+                data-action="goToPage" data-page="{{pageNum.number}}" title="Go to token {{pageNum.number}}">
+          {{pageNum.number}}
+        </button>
+      {{/each}}
+    </div>
+    
+    <button type="button" class="page-nav-button" data-action="nextPage" {{#unless hasNextPage}}disabled{{/unless}} title="Next Token">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+
+  {{!-- Action Buttons --}}
+  <footer class="sheet-footer flexrow">
+    <button type="button" class="vm-action-button confirm-changes" data-action="confirmChanges" {{#unless hasChanges}}disabled{{/unless}}>
+      <i class="fas fa-eye"></i>
+      Preview Changes
+    </button>
+    <button type="button" class="vm-action-button cancel" data-action="cancel">
+      <i class="fas fa-times"></i>
+      {{localize "PF2E_VISIONER.TOKEN_MANAGER.CANCEL"}}
+    </button>
+  </footer>
+
+  </div>
+
+{{/if}}

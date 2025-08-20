@@ -4,6 +4,7 @@
 
 import { MODULE_ID } from "./constants.js";
 import { detectCoverStateForAttack } from "./cover/auto-cover.js";
+import { VisionerMultiTokenManager } from "./managers/multi-token-manager/multi-token-manager.js";
 import { VisionerTokenManager } from "./managers/token-manager/token-manager.js";
 import {
   rebuildAndRefresh,
@@ -31,7 +32,7 @@ export class Pf2eVisionerApi {
   // Internal helpers (not exported)
   static async _unsetMapsForTokens(scene, tokens) { return unsetMapsForTokens(scene, tokens); }
 
-  static _collectModuleEffectIds(actor) { return null; }
+  static _collectModuleEffectIds(_actor) { return null; }
 
   static async _removeModuleEffectsFromActors(actors) { return removeModuleEffectsFromActors(actors); }
 
@@ -103,6 +104,61 @@ export class Pf2eVisionerApi {
     }
 
     const manager = new VisionerTokenManager(observer, {mode: options.mode});
+    await manager.render({ force: true });
+    try {
+      if (manager.element || manager.window) manager.bringToFront();
+    } catch (_) {}
+    return manager;
+  }
+
+  /**
+   * Open the multi token manager for multiple selected tokens
+   * @param {Array<Token>} selectedTokens - Array of selected tokens (optional, uses controlled tokens if not provided)
+   * @param {Object} options - Configuration options for the multi token manager
+   */
+  static async openMultiTokenManager(selectedTokens = null, options = {}) {
+    if (!game.user.isGM) {
+      ui.notifications.warn("Only GMs can manage token visibility and cover");
+      return;
+    }
+
+    // Use provided tokens or get from controlled tokens
+    let tokens = selectedTokens;
+    if (!tokens) {
+      const controlled = canvas.tokens.controlled;
+      if (controlled.length === 0) {
+        showNotification(
+          "PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED",
+          "warn",
+        );
+        return;
+      }
+      if (controlled.length === 1) {
+        showNotification(
+          "Select multiple tokens to use the Multi Token Manager",
+          "warn",
+        );
+        return;
+      }
+      tokens = controlled;
+    }
+
+    if (!tokens || tokens.length < 2) {
+      showNotification(
+        "Multi Token Manager requires at least 2 tokens",
+        "warn",
+      );
+      return;
+    }
+
+    // Check if there's already an open instance and close it
+    if (VisionerMultiTokenManager.currentInstance) {
+      try {
+        await VisionerMultiTokenManager.currentInstance.close();
+      } catch (_) {}
+    }
+
+    const manager = new VisionerMultiTokenManager(tokens, options);
     await manager.render({ force: true });
     try {
       if (manager.element || manager.window) manager.bringToFront();
@@ -902,6 +958,7 @@ export class Pf2eVisionerApi {
 export const openTokenManager = Pf2eVisionerApi.openTokenManager;
 export const openTokenManagerWithMode =
   Pf2eVisionerApi.openTokenManagerWithMode;
+export const openMultiTokenManager = Pf2eVisionerApi.openMultiTokenManager;
 
 // Legacy exports for backward compatibility
 export const openVisibilityManager = Pf2eVisionerApi.openTokenManager;

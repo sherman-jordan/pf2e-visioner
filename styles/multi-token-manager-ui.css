@@ -1,0 +1,1370 @@
+/*
+ * Multi Token Manager UI Styling - Modern & Beautiful Design
+ * All styles scoped to .pf2e-visioner to avoid conflicts
+ */
+
+/* Main Container - Modern glassmorphism design */
+.pf2e-visioner .visioner-multi-token-manager {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(17, 25, 40, 0.95) 0%, rgba(17, 25, 40, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Header Section - Elegant gradient */
+.pf2e-visioner .current-token-info {
+  padding: 6px 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated gradient background */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Decorative overlay */
+.pf2e-visioner .current-token-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Token Display - Modern card style */
+.pf2e-visioner .token-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.pf2e-visioner .token-display .token-image {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.pf2e-visioner .token-display .token-image img {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .token-display .token-image::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 18px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+  background-size: 400% 400%;
+  animation: borderGlow 3s ease infinite;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+@keyframes borderGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.pf2e-visioner .token-display .token-content {
+  flex-shrink: 0;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Header controls row for filters and right-side controls */
+.pf2e-visioner .header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Right-side controls container */
+.pf2e-visioner .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Compact Tab Navigation */
+.pf2e-visioner .compact-tab-navigation {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.pf2e-visioner .compact-tab-button {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pf2e-visioner .compact-tab-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: scale(1.1);
+}
+
+.pf2e-visioner .compact-tab-button.active {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4);
+}
+
+/* Compact Legend */
+.pf2e-visioner .compact-legend {
+  display: flex;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.pf2e-visioner .compact-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  font-size: 8px;
+}
+
+.pf2e-visioner .compact-legend-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.2);
+}
+
+.pf2e-visioner .token-display .token-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.2px;
+}
+
+.pf2e-visioner .token-display .hint {
+  margin: 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Filter Section - Glass card */
+.pf2e-visioner .filter-section {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.pf2e-visioner .encounter-filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .encounter-filter-checkbox:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pf2e-visioner .encounter-filter-label {
+  color: white;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Mode Toggle Button */
+.pf2e-visioner .mode-toggle {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+/* Workflow Clarification Text */
+.pf2e-visioner .workflow-clarification {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 4px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-visioner .mode-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pf2e-visioner .mode-toggle .toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .mode-toggle .toggle-option.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.pf2e-visioner .mode-toggle .toggle-divider {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  margin: 0 2px;
+}
+
+/* Pagination - Compact horizontal design */
+.pf2e-visioner .pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.pf2e-visioner .page-navigation-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf2e-visioner .page-nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Full-width page numbers row with nav buttons on sides */
+.pf2e-visioner .page-numbers-row {
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.pf2e-visioner .page-numbers-container {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.pf2e-visioner .page-info .page-counter {
+  font-weight: 600;
+  font-size: 11px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.pf2e-visioner .page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pf2e-visioner .page-nav-button {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  color: white;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pf2e-visioner .page-nav-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.pf2e-visioner .page-nav-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+
+.pf2e-visioner .page-number {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pf2e-visioner .page-number:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  transform: translateY(-1px) scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pf2e-visioner .page-number.active {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 
+    0 4px 15px rgba(255, 107, 107, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+/* Tab Navigation - Modern floating tabs */
+.pf2e-visioner .manager-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.pf2e-visioner .manager-tools .icon-tab-navigation {
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.pf2e-visioner .manager-tools .icon-tab-button {
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  position: relative;
+  overflow: hidden;
+}
+
+.pf2e-visioner .manager-tools .icon-tab-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pf2e-visioner .manager-tools .icon-tab-button:hover::before {
+  opacity: 1;
+}
+
+.pf2e-visioner .manager-tools .icon-tab-button:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+.pf2e-visioner .manager-tools .icon-tab-button.active {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  color: white;
+  box-shadow: 
+    0 4px 15px rgba(78, 205, 196, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+}
+
+/* Legend Panel - Floating badges */
+.pf2e-visioner .manager-tools .legend-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pf2e-visioner .legend-panel .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-size: 12px;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .legend-panel .legend-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pf2e-visioner .legend-panel .legend-item i {
+  font-size: 14px;
+}
+
+.pf2e-visioner .legend-panel .bonus-badge {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: bold;
+  margin-left: 4px;
+  color: white;
+  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.3);
+}
+
+/* Main Content Area - Clean and spacious */
+.pf2e-visioner .visioner-tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Tab Panels */
+.pf2e-visioner .tab-panel {
+  display: none;
+}
+
+.pf2e-visioner .tab-panel.active {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Fallback to show visibility-section by default */
+.pf2e-visioner .visibility-section {
+  flex: 1;
+  display: flex !important;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Bulk Actions - Beautiful floating bar */
+.pf2e-visioner .bulk-actions-bar {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pf2e-visioner .bulk-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pf2e-visioner .bulk-actions-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-right: 8px;
+  white-space: nowrap;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-visioner .bulk-action-button {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: white;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pf2e-visioner .bulk-action-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.pf2e-visioner .bulk-action-button:hover::before {
+  left: 100%;
+}
+
+.pf2e-visioner .bulk-action-button:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.pf2e-visioner .bulk-action-button.allies {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(76, 175, 80, 0.1) 100%);
+  border-color: rgba(76, 175, 80, 0.5);
+  color: #4caf50;
+}
+
+.pf2e-visioner .bulk-action-button.allies:hover {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.4) 0%, rgba(76, 175, 80, 0.2) 100%);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+}
+
+.pf2e-visioner .bulk-action-button.enemies {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.1) 100%);
+  border-color: rgba(244, 67, 54, 0.5);
+  color: #f44336;
+}
+
+.pf2e-visioner .bulk-action-button.enemies:hover {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.4) 0%, rgba(244, 67, 54, 0.2) 100%);
+  box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+}
+
+.pf2e-visioner .bulk-action-button.all {
+  background: linear-gradient(135deg, rgba(103, 126, 234, 0.3) 0%, rgba(103, 126, 234, 0.1) 100%);
+  border-color: rgba(103, 126, 234, 0.5);
+  color: #677eea;
+}
+
+.pf2e-visioner .bulk-action-button.all:hover {
+  background: linear-gradient(135deg, rgba(103, 126, 234, 0.4) 0%, rgba(103, 126, 234, 0.2) 100%);
+  box-shadow: 0 8px 25px rgba(103, 126, 234, 0.3);
+}
+
+/* Visibility State Buttons - Start greyed out like All button */
+.pf2e-visioner .bulk-action-button.visibility-state {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.2) 0%, rgba(158, 158, 158, 0.05) 100%);
+  border-color: rgba(158, 158, 158, 0.4);
+  color: #9e9e9e;
+}
+
+.pf2e-visioner .bulk-action-button.visibility-state:hover {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.3) 0%, rgba(158, 158, 158, 0.1) 100%);
+  border-color: rgba(158, 158, 158, 0.6);
+  box-shadow: 0 4px 15px rgba(158, 158, 158, 0.3);
+}
+
+/* Selected state styling using the state's own color */
+.pf2e-visioner .bulk-action-button.visibility-state.selected {
+  transform: scale(1.08) !important;
+  box-shadow: 0 0 15px currentColor !important;
+  border-width: 3px !important;
+  border-style: solid !important;
+  position: relative !important;
+}
+
+/* Add a subtle inner glow effect */
+.pf2e-visioner .bulk-action-button.visibility-state.selected::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, transparent 0%, currentColor 50%, transparent 100%);
+  border-radius: inherit;
+  opacity: 0.3;
+  z-index: -1;
+}
+
+/* State-specific selected styling - Use semantic colors */
+.pf2e-visioner .bulk-action-button.visibility-state.selected[data-state="observed"] {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(76, 175, 80, 0.6) 100%) !important;
+  border: 3px solid rgba(76, 175, 80, 1) !important;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.pf2e-visioner .bulk-action-button.visibility-state.selected[data-state="concealed"] {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%) !important;
+  border: 3px solid rgba(255, 193, 7, 1) !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: #1a1a1a !important;
+  font-weight: 700 !important;
+}
+
+.pf2e-visioner .bulk-action-button.visibility-state.selected[data-state="hidden"] {
+  background: linear-gradient(135deg, rgba(255, 102, 0, 0.8) 0%, rgba(255, 102, 0, 0.6) 100%) !important;
+  border: 3px solid rgba(255, 102, 0, 1) !important;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.pf2e-visioner .bulk-action-button.visibility-state.selected[data-state="undetected"] {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.8) 0%, rgba(244, 67, 54, 0.6) 100%) !important;
+  border: 3px solid rgba(244, 67, 54, 1) !important;
+  box-shadow: 0 0 20px rgba(244, 67, 54, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+/* Target Group Buttons - Start greyed out like All button */
+.pf2e-visioner .bulk-action-button.target-group {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.2) 0%, rgba(158, 158, 158, 0.05) 100%);
+  border: 2px solid rgba(158, 158, 158, 0.4);
+  color: #9e9e9e;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pf2e-visioner .bulk-action-button.target-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(33, 150, 243, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.pf2e-visioner .bulk-action-button.target-group:hover {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.3) 0%, rgba(158, 158, 158, 0.1) 100%);
+  border-color: rgba(158, 158, 158, 0.6);
+  box-shadow: 0 4px 15px rgba(158, 158, 158, 0.3);
+  transform: translateY(-1px);
+}
+
+.pf2e-visioner .bulk-action-button.target-group:hover::before {
+  left: 100%;
+}
+
+/* Selected Target Group buttons light up with semantic colors */
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="all"] {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.8) 0%, rgba(158, 158, 158, 0.6) 100%) !important;
+  border: 3px solid rgba(158, 158, 158, 1) !important;
+  box-shadow: 0 0 20px rgba(158, 158, 158, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="allies"] {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(76, 175, 80, 0.6) 100%) !important;
+  border: 3px solid rgba(76, 175, 80, 1) !important;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="enemies"] {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.8) 0%, rgba(244, 67, 54, 0.6) 100%) !important;
+  border: 3px solid rgba(244, 67, 54, 1) !important;
+  box-shadow: 0 0 20px rgba(244, 67, 54, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+/* Directional Buttons */
+.pf2e-visioner .bulk-action-button.directional {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 193, 7, 0.1) 100%);
+  border-color: rgba(255, 193, 7, 0.5);
+  color: #ffc107;
+}
+
+.pf2e-visioner .bulk-action-button.directional:hover {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.4) 0%, rgba(255, 193, 7, 0.2) 100%);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+}
+
+/* Condition Filter Buttons - Start greyed out like All button */
+.pf2e-visioner .bulk-action-button.condition-filter {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.2) 0%, rgba(158, 158, 158, 0.05) 100%);
+  border: 2px solid rgba(158, 158, 158, 0.4);
+  color: #9e9e9e;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  transition: all 0.4s ease;
+  transform: translate(-50%, -50%);
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter:hover {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.3) 0%, rgba(158, 158, 158, 0.1) 100%);
+  border-color: rgba(158, 158, 158, 0.6);
+  box-shadow: 0 4px 15px rgba(158, 158, 158, 0.3);
+  transform: translateY(-1px);
+  color: #9e9e9e;
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter:hover::after {
+  width: 100%;
+  height: 100%;
+}
+
+/* Selected Condition Filter buttons light up with semantic colors */
+.pf2e-visioner .bulk-action-button.condition-filter.selected[data-condition="observedTo"] {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(76, 175, 80, 0.6) 100%) !important;
+  border: 3px solid rgba(76, 175, 80, 1) !important;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter.selected[data-condition="concealedTo"] {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%) !important;
+  border: 3px solid rgba(255, 193, 7, 1) !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: #1a1a1a !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter.selected[data-condition="hiddenTo"] {
+  background: linear-gradient(135deg, rgba(255, 102, 0, 0.8) 0%, rgba(255, 102, 0, 0.6) 100%) !important;
+  border: 3px solid rgba(255, 102, 0, 1) !important;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter.selected[data-condition="undetectedTo"] {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.8) 0%, rgba(244, 67, 54, 0.6) 100%) !important;
+  border: 3px solid rgba(244, 67, 54, 1) !important;
+  box-shadow: 0 0 20px rgba(244, 67, 54, 0.6) !important;
+  transform: scale(1.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+.pf2e-visioner .bulk-action-button.condition-filter.selected::after {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 193, 7, 0.3) 0%, transparent 70%);
+}
+
+/* Apply Changes Button */
+.pf2e-visioner .bulk-action-button.apply-changes {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(76, 175, 80, 0.15) 100%);
+  border: 2px solid rgba(76, 175, 80, 0.6);
+  color: #4caf50;
+  font-weight: 600;
+  font-size: 0.95em;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .bulk-action-button.apply-changes::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.pf2e-visioner .bulk-action-button.apply-changes:hover {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.4) 0%, rgba(76, 175, 80, 0.25) 100%);
+  border-color: rgba(76, 175, 80, 0.8);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+  color: #388e3c;
+}
+
+.pf2e-visioner .bulk-action-button.apply-changes:hover::before {
+  left: 100%;
+}
+
+/* Clear Selection Button */
+.pf2e-visioner .bulk-action-button.clear-selection {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(244, 67, 54, 0.1) 100%);
+  border: 2px solid rgba(244, 67, 54, 0.4);
+  color: #f44336;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .bulk-action-button.clear-selection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(244, 67, 54, 0.15), transparent);
+  transition: left 0.6s ease;
+}
+
+.pf2e-visioner .bulk-action-button.clear-selection:hover {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.15) 100%);
+  border-color: rgba(244, 67, 54, 0.6);
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+  transform: translateY(-1px);
+  color: #d32f2f;
+}
+
+.pf2e-visioner .bulk-action-button.clear-selection:hover::before {
+  left: 100%;
+}
+
+/* Target group selected states - consistent golden highlight */
+.pf2e-visioner .bulk-action-button.target-group.selected {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%) !important;
+  border: 3px solid rgba(255, 193, 7, 1) !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.6) !important;
+  transform: scale(1.02) !important;
+  font-weight: 700 !important;
+}
+
+/* Black text for readability, but preserve icon colors */
+.pf2e-visioner .bulk-action-button.target-group.selected {
+  color: #1a1a1a !important;
+}
+
+/* Keep original icon colors for semantic meaning */
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="all"] i {
+  color: #9e9e9e !important;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="allies"] i {
+  color: #4caf50 !important;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="enemies"] i {
+  color: #f44336 !important;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected::before {
+  left: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.3), transparent) !important;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="all"] {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
+  border: 3px solid rgba(255, 193, 7, 1);
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+  transform: scale(1.02);
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="all"]::before {
+  left: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.3), transparent);
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="allies"] {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
+  border: 3px solid rgba(255, 193, 7, 1);
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+  transform: scale(1.02);
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="allies"]::before {
+  left: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.3), transparent);
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="enemies"] {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.8) 0%, rgba(255, 193, 7, 0.6) 100%);
+  border: 3px solid rgba(255, 193, 7, 1);
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+  transform: scale(1.02);
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.pf2e-visioner .bulk-action-button.target-group.selected[data-group="enemies"]::before {
+  left: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.3), transparent);
+}
+
+/* Target Selection Active State */
+.pf2e-visioner .bulk-action-button.target-selected {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Tables - Beautiful modern design */
+.pf2e-visioner .tables-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-right: -8px;
+}
+
+.pf2e-visioner .tables-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pf2e-visioner .tables-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.pf2e-visioner .tables-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 3px;
+}
+
+.pf2e-visioner .tables-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+}
+
+.pf2e-visioner .table-section {
+  margin-bottom: 32px;
+}
+
+.pf2e-visioner .table-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.pf2e-visioner .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-visioner .header-left i {
+  font-size: 18px;
+  color: #4ecdc4;
+}
+
+.pf2e-visioner .visibility-table,
+.pf2e-visioner .cover-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pf2e-visioner .visibility-table th,
+.pf2e-visioner .cover-table th {
+  padding: 16px 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  font-weight: 700;
+  font-size: 13px;
+  color: white;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pf2e-visioner .visibility-table td,
+.pf2e-visioner .cover-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.pf2e-visioner .token-row:hover td {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.pf2e-visioner .token-row.pc-row:hover td {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.pf2e-visioner .token-row.npc-row:hover td {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.pf2e-visioner .token-image img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pf2e-visioner .state-icon {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 8px;
+  margin: 0 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.pf2e-visioner .state-icon:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: white;
+}
+
+.pf2e-visioner .state-icon.selected {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 
+    0 4px 15px rgba(78, 205, 196, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.pf2e-visioner .icon-selection {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Footer - Floating action bar */
+.pf2e-visioner .sheet-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, rgba(17, 25, 40, 0.95) 0%, rgba(17, 25, 40, 0.98) 100%);
+  padding: 20px 24px;
+  box-shadow: 
+    0 -8px 32px rgba(0, 0, 0, 0.3),
+    0 -2px 8px rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  backdrop-filter: blur(20px);
+}
+
+.pf2e-visioner .vm-action-button {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.pf2e-visioner .vm-action-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.pf2e-visioner .vm-action-button:hover::before {
+  left: 100%;
+}
+
+.pf2e-visioner .vm-action-button.confirm-changes {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.pf2e-visioner .vm-action-button.confirm-changes:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff5252 0%, #e53e3e 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 8px 25px rgba(255, 107, 107, 0.4),
+    0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.pf2e-visioner .vm-action-button.confirm-changes:disabled {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.pf2e-visioner .vm-action-button.cancel {
+  background: linear-gradient(135deg, rgba(108, 117, 125, 0.8) 0%, rgba(108, 117, 125, 0.6) 100%);
+  color: white;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+.pf2e-visioner .vm-action-button.cancel:hover {
+  background: linear-gradient(135deg, rgba(90, 98, 104, 0.9) 0%, rgba(90, 98, 104, 0.7) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pf2e-visioner .current-token-info {
+    padding: 16px;
+  }
+  
+  .pf2e-visioner .token-display {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pf2e-visioner .pagination-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .pf2e-visioner .manager-tools {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+  
+  .pf2e-visioner .bulk-actions-group {
+    justify-content: center;
+  }
+  
+
+  
+  .pf2e-visioner .sheet-footer {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .pf2e-visioner .vm-action-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Loading and transition animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pf2e-visioner .table-section {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.pf2e-visioner .bulk-actions-bar {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+/* No targets message */
+.pf2e-visioner .no-targets {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* End of Multi Token Manager CSS */

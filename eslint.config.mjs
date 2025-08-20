@@ -48,7 +48,8 @@ export default [
       "no-console": "off",
       "no-empty": "off", // Common in Foundry VTT modules for try/catch blocks
       "no-useless-catch": "off", // Common pattern in Foundry VTT for error handling
-      "no-constant-binary-expression": "off" // Sometimes used intentionally in Foundry VTT
+      "no-constant-binary-expression": "off", // Sometimes used intentionally in Foundry VTT
+      "no-debugger": "off" // Sometimes used intentionally in Foundry VTT
     }
   }
 ];

@@ -526,8 +526,22 @@ export class SeekPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      const { revertNowSeek } = await import("../services/index.js");
-      await revertNowSeek(app.actionData, { html: () => {}, attr: () => {} });
+      // Apply the original visibility state for just this specific token/wall
+      if (outcome._isWall) {
+        // For walls, revert wall visibility
+        const { updateWallVisuals } = await import("../../../services/visual-effects.js");
+        await updateWallVisuals(outcome.wall, outcome.oldVisibility || "observed");
+      } else {
+        // For tokens, apply the original visibility state
+        const { applyVisibilityChanges } = await import("../../services/infra/shared-utils.js");
+        const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
+        const changes = [{ target: outcome.target, newVisibility: revertVisibility }];
+        
+        await applyVisibilityChanges(app.actionData.actor, changes, { 
+          direction: "observer_to_target" 
+        });
+      }
+      
       app.updateRowButtonsToReverted([{ target: { id: outcome._isWall ? null : outcome.target.id }, wallId }]);
       app.updateChangesCount();
     } catch (error) {

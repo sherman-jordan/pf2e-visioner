@@ -302,9 +302,14 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!outcome) return;
 
     try {
-      // Revert via services to centralize logic
-      const { revertNowSneak } = await import("../services/index.js");
-      await revertNowSneak(app.actionData, { html: () => {}, attr: () => {} });
+      // Apply the original visibility state for just this specific token
+      const { applyVisibilityChanges } = await import("../services/infra/shared-utils.js");
+      const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
+      const changes = [{ target: outcome.token, newVisibility: revertVisibility }];
+      
+      await applyVisibilityChanges(app.sneakingToken, changes, { 
+        direction: "observer_to_target" 
+      });
     } catch (error) {
       console.warn("Error reverting visibility changes:", error);
       // Continue execution even if visibility changes fail
@@ -330,14 +335,20 @@ export class SneakPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    // Recompute filtered outcomes from original list using current toggles
-    let filteredOutcomes = app.getFilteredOutcomes ? await app.getFilteredOutcomes() : app.outcomes;
+    // Use the current filtered outcomes that are already displayed in the dialog
+    // These have already been filtered by encounter and ignore allies settings
+    const filteredOutcomes = app.outcomes || [];
 
     // Only apply changes to filtered outcomes that have actual changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-      return effectiveNewState !== outcome.oldVisibility;
+      return effectiveNewState !== outcome.oldVisibility && outcome.hasActionableChange;
     });
+
+    if (changedOutcomes.length === 0) {
+      notify.info(`${MODULE_TITLE}: No changes to apply`);
+      return;
+    }
 
     try {
       const { applyNowSneak } = await import("../services/index.js");
@@ -347,6 +358,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         const state = o?.overrideState || o?.newVisibility;
         if (id && state) overrides[id] = state;
       }
+      // Pass the dialog's current ignoreAllies state to ensure consistency
       await applyNowSneak({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
     } catch (error) {
       console.warn("Error applying visibility changes for bulk apply:", error);
@@ -377,14 +389,20 @@ export class SneakPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    // Recompute filtered outcomes from original list using current toggles
-    let filteredOutcomes = app.getFilteredOutcomes ? await app.getFilteredOutcomes() : app.outcomes;
+    // Use the current filtered outcomes that are already displayed in the dialog
+    // These have already been filtered by encounter and ignore allies settings
+    const filteredOutcomes = app.outcomes || [];
 
     // Only revert changes to filtered outcomes that have actual changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
-      return effectiveNewState !== outcome.oldVisibility;
+      return effectiveNewState !== outcome.oldVisibility && outcome.hasActionableChange;
     });
+
+    if (changedOutcomes.length === 0) {
+      notify.info(`${MODULE_TITLE}: No changes to revert`);
+      return;
+    }
 
     try {
       const { revertNowSneak } = await import("../services/index.js");

@@ -1,5 +1,6 @@
 import { MODULE_ID } from "../constants.js";
 import { HoverTooltips } from "../services/hover-tooltips.js";
+import { getVisibilityBetween } from "../utils.js";
 import { detectCoverStateForAttack } from "./auto-cover.js";
 
 /**
@@ -243,9 +244,6 @@ class CoverVisualization {
       return;
     }
     
-    // Allow all users to use visualization with their controlled tokens
-    const selectedToken = selectedTokens[0];
-    
     // Check if visualization should only work in encounters
     const visualizationOnlyInEncounter = game.settings?.get?.(MODULE_ID, "autoCoverVisualizationOnlyInEncounter");
     if (visualizationOnlyInEncounter) {
@@ -349,6 +347,25 @@ class CoverVisualization {
       if (!token?.actor) continue;
       if (token.id === selectedToken.id) continue; // Skip the selected token itself
       
+      // Check if the token is hidden or undetected from the selected token's perspective
+      try {
+        // Check if the token is foundry hidden first (simple check)
+        if (token.document.hidden) {
+          continue;
+        }
+        
+        // Check PF2e visibility state using the imported utility
+        const visibility = getVisibilityBetween(selectedToken, token);
+        
+        // If the token is undetected, it doesn't block movement
+        if (visibility === "undetected") {
+          continue;
+        }
+      } catch (error) {
+        // If visibility check fails, proceed with normal blocking logic
+        console.warn("PF2e Visioner: Error checking token visibility for cover visualization:", error);
+      }
+      
       // Get token's bounds
       const tokenRect = {
         x1: token.document.x,
@@ -429,13 +446,8 @@ class CoverVisualization {
     // Add some padding around the furthest token
     const range = maxDistance + 3;
     
-    let totalSquares = 0;
-    let occupiedSquares = 0;
-    let coloredSquares = 0;
-    
     for (let x = -range; x <= range; x++) {
       for (let y = -range; y <= range; y++) {
-        totalSquares++;
         const worldX = selectedCenter.x + (x * gridSize);
         const worldY = selectedCenter.y + (y * gridSize);
         
@@ -443,7 +455,6 @@ class CoverVisualization {
         const isOccupied = this.isPositionOccupied(worldX, worldY, selectedToken, canvas);
         if (isOccupied) {
           // Skip coloring occupied squares - tokens can't move there
-          occupiedSquares++;
           continue;
         }
         
@@ -462,11 +473,17 @@ class CoverVisualization {
         };
         
         // Calculate what cover the selected token would have at this position from the hovered token
-        const coverLevel = detectCoverStateForAttack(hoveredToken, tempAttacker);
+        // For visualization, always ignore undetected/hidden tokens regardless of settings
+        // Use the selected token's perspective for visibility checks
+        const coverLevel = detectCoverStateForAttack(hoveredToken, tempAttacker, {
+          filterOverrides: { 
+            ignoreUndetected: true,
+            visibilityPerspective: selectedToken 
+          }
+        });
                 
         // Draw colored square based on cover level
         this.drawCoverSquare(worldX, worldY, gridSize, coverLevel);
-        coloredSquares++;
       }
     }
 

@@ -170,7 +170,6 @@ export async function updateWallVisuals(observerId = null) {
         const c = Array.isArray(d.c) ? d.c : [d.x, d.y, d.x2, d.y2];
         const [x1, y1, x2, y2] = c;
         if ([x1, y1, x2, y2].every((n) => typeof n === "number")) {
-          const mx = (x1 + x2) / 2; const my = (y1 + y2) / 2;
           const shouldShowIndicator = isExpandedObserved;
           const seeThrough = shouldShowIndicator && false && !!observer;
           if (shouldShowIndicator) {
@@ -202,8 +201,140 @@ export async function updateWallVisuals(observerId = null) {
               x1 - nx * half, y1 - ny * half,
             ]);
             g.endFill();
+            
+            // Create animated effect container
+            const effectContainer = new PIXI.Container();
+            g.addChild(effectContainer);
+            
+            // Shockwave effect
+            const shimmer = new PIXI.Graphics();
+            effectContainer.addChild(shimmer);
+            
+            // Sparkle particles (even more sparkles with variety!)
+            const sparkles = [];
+            for (let i = 0; i < 50; i++) {
+              const sparkle = new PIXI.Graphics();
+              sparkle.beginFill(0xffffff, 0.8);
+              const size = 1.5 + Math.random() * 1.5; // Random sizes 1.5-3px
+              sparkle.drawCircle(0, 0, size);
+              sparkle.endFill();
+              effectContainer.addChild(sparkle);
+              
+              // Store initial random properties for organic movement
+              sparkle._moveSpeed = 0.2 + Math.random() * 0.3; // Different speeds
+              sparkle._curveX = Math.random() * Math.PI * 2; // Random curve offsets
+              sparkle._curveY = Math.random() * Math.PI * 2;
+              sparkle._floatRange = 8 + Math.random() * 12; // Different float distances
+              
+              sparkles.push(sparkle);
+            }
+            
             g.zIndex = 1000;
             g.eventMode = "none";
+            
+            // Force immediate visibility and test animation
+            g.alpha = 1.0;
+            
+            // Store animation state on the wall for debugging
+            wall._pvAnimationActive = true;
+            
+            // Simplified, more reliable animation
+            const startTime = Date.now();
+            
+            const animate = () => {
+              try {
+                // Check if still attached to scene
+                if (!g.parent || !wall._pvAnimationActive) {
+                  return;
+                }
+                
+                const elapsed = (Date.now() - startTime) / 1000; // seconds
+                
+                // 1. Main rectangle - solid opacity (no fade)
+                g.alpha = 1.0;
+                
+                // 2. No outer glow (removed floating rectangle)
+                
+                // 3. Subtle glowing outline effect
+                shimmer.clear();
+                
+                // Stronger breathing glow
+                const breathe = 1.0 + 0.12 * Math.sin(elapsed * 1.2); // More noticeable size change
+                const glowAlpha = 0.35 + 0.2 * Math.sin(elapsed * 0.8); // Stronger alpha pulse
+                
+                // Create darker variant of the base color
+                const darkerColor = color === 0xffd166 ? 0xcc9900 : 0x7a4d8a; // Darker yellow or darker purple
+                
+                // Strong outer glow
+                shimmer.lineStyle(5, darkerColor, glowAlpha);
+                const glowExpansion = 6 * breathe; // More expansion
+                shimmer.drawPolygon([
+                  x1 + nx * (half + glowExpansion), y1 + ny * (half + glowExpansion),
+                  x2 + nx * (half + glowExpansion), y2 + ny * (half + glowExpansion),
+                  x2 - nx * (half + glowExpansion), y2 - ny * (half + glowExpansion),
+                  x1 - nx * (half + glowExpansion), y1 - ny * (half + glowExpansion),
+                ]);
+                
+                // Optional: Very subtle inner highlight
+                const highlightAlpha = 0.05 + 0.03 * Math.sin(elapsed * 1.5);
+                shimmer.lineStyle(1, 0xffffff, highlightAlpha);
+                shimmer.drawPolygon([
+                  x1 + nx * (half - 2), y1 + ny * (half - 2),
+                  x2 + nx * (half - 2), y2 + ny * (half - 2),
+                  x2 - nx * (half - 2), y2 - ny * (half - 2),
+                  x1 - nx * (half - 2), y1 - ny * (half - 2),
+                ]);
+                
+                // 4. Organic sparkle animation with curvy movement
+                sparkles.forEach((sparkle, i) => {
+                  const sparkleTime = elapsed * sparkle._moveSpeed + i * 0.8;
+                  
+                  // Curvy movement along the wall using multiple sine waves
+                  const progress = (sparkleTime * 0.3) % 1; // Base movement along wall
+                  const baseX = x1 + dx * progress;
+                  const baseY = y1 + dy * progress;
+                  
+                  // Complex organic floating with different wave patterns
+                  const curveTimeX = sparkleTime + sparkle._curveX;
+                  const curveTimeY = sparkleTime + sparkle._curveY;
+                  
+                  // Multiple sine waves for organic movement
+                  const floatX = sparkle._floatRange * (
+                    0.6 * Math.sin(curveTimeX * 2.1) + 
+                    0.3 * Math.sin(curveTimeX * 3.7) + 
+                    0.1 * Math.sin(curveTimeX * 6.2)
+                  ) / 3;
+                  
+                  const floatY = sparkle._floatRange * (
+                    0.6 * Math.cos(curveTimeY * 1.8) + 
+                    0.3 * Math.cos(curveTimeY * 4.1) + 
+                    0.1 * Math.cos(curveTimeY * 5.9)
+                  ) / 3;
+                  
+                  // Keep sparkles properly contained within the rectangle
+                  const maxFloat = half * 0.7; // Maximum distance from wall center
+                  const constrainedFloatX = Math.max(-maxFloat, Math.min(maxFloat, floatX * 0.3));
+                  const constrainedFloatY = Math.max(-maxFloat, Math.min(maxFloat, floatY * 0.3));
+                  
+                  // Position sparkles within the rectangle using normal vectors
+                  sparkle.x = baseX + nx * constrainedFloatX;
+                  sparkle.y = baseY + ny * constrainedFloatY;
+                  
+                  // Organic twinkling and size variation
+                  sparkle.alpha = 0.3 + 0.5 * Math.sin(sparkleTime * 4 + i * 0.7);
+                  const sizeVariation = 0.7 + 0.4 * Math.sin(sparkleTime * 3.2 + i * 1.1);
+                  sparkle.scale.set(sizeVariation);
+                });
+                
+                requestAnimationFrame(animate);
+              } catch (error) {
+                console.error(`[PF2E-Visioner] Animation error:`, error);
+              }
+            };
+            
+            // Start animation immediately
+            requestAnimationFrame(animate);
+            
             const parent = canvas.effects?.foreground || canvas.effects || (canvas.walls || wall);
             parent.addChild(g);
             wall._pvHiddenIndicator = g;

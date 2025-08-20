@@ -24,7 +24,9 @@ export function getDesiredOverrideStatesForAction(actionType) {
 // Keys are action types; per action, keys are old visibility; per old visibility,
 // keys are outcome levels mapped to the default new state.
 export function getDefaultOutcomeMapping() {
-  const sneakMapping = game.settings.get(MODULE_ID, "sneakRawEnforcement")
+  const sneakRawEnforcement = game.settings.get(MODULE_ID, "sneakRawEnforcement");
+  
+  const sneakMapping = sneakRawEnforcement
     ? {
         observed: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
         concealed: { "critical-success": "concealed", success: "concealed", failure: "concealed", "critical-failure": "concealed" },
@@ -59,7 +61,12 @@ export function getDefaultOutcomeMapping() {
       undetected: { "critical-success": "hidden", success: "hidden", failure: "observed", "critical-failure": "observed" },
     },
     // Point Out defines its own observer/target mapping; leave empty for now
-    "point-out": {},
+    "point-out": {
+      observed: { "critical-success": "hidden", success: "hidden", failure: "hidden", "critical-failure": "hidden" },
+      concealed: { "critical-success": "hidden", success: "hidden", failure: "hidden", "critical-failure": "hidden" },
+      hidden: { "critical-success": "hidden", success: "hidden", failure: "hidden", "critical-failure": "hidden" },
+      undetected: { "critical-success": "hidden", success: "hidden", failure: "hidden", "critical-failure": "hidden" },
+    },
     consequences: {
       hidden: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
       undetected: { "critical-success": "observed", success: "observed", failure: "observed", "critical-failure": "observed" },
@@ -68,11 +75,20 @@ export function getDefaultOutcomeMapping() {
 }
 
 export function getDefaultNewStateFor(actionType, oldState, outcomeLevel) {
+
+  
   const map = getDefaultOutcomeMapping()[actionType];
-  if (!map) return null;
+  if (!map) {
+    return null;
+  }
+  
   const old = map[oldState];
-  if (!old) return null;
-  return old[outcomeLevel] || null;
+  if (!old) {
+    return null;
+  }
+  
+  const result = old[outcomeLevel] || null;
+  return result;
 }
 
 

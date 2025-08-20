@@ -18,7 +18,7 @@ export function buildSneakPanel() {
       </button>
       <button type="button"
               class="visioner-btn ${buttonClass} apply-now"
-              data-action="apply-now-hide"
+              data-action="apply-now-sneak"
               title="Apply all calculated changes without opening the dialog">
         <i class="fas fa-check-double"></i> Apply Changes
       </button>`;

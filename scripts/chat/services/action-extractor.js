@@ -34,13 +34,6 @@ export async function extractActionData(message) {
     message.flavor?.toLowerCase?.().includes?.("take cover") ||
     message.flavor?.includes?.("Mise à l'abri");
 
-  const isHideAction =
-    !isCreateADiversionAction &&
-    ((context?.type === "skill-check" &&
-      (context.options?.includes("action:hide") || context.slug === "hide")) ||
-      (message.flavor?.toLowerCase?.().includes?.("hide") &&
-        !message.flavor?.toLowerCase?.().includes?.("create a diversion")));
-
   const isAvoidNoticeAction =
     origin?.rollOptions?.includes("origin:item:avoid-notice") ||
     origin?.rollOptions?.includes("origin:item:slug:avoid-notice") ||
@@ -48,15 +41,29 @@ export async function extractActionData(message) {
     message.content?.includes("Avoid Notice") ||
     message.flavor?.toLowerCase?.().includes?.("avoid notice");
 
+  // Check for explicit sneak action first (more specific)
   const isSneakAction =
     !isCreateADiversionAction &&
     !isAvoidNoticeAction &&
     ((context?.type === "skill-check" &&
       (context.options?.includes("action:sneak") || context.slug === "sneak")) ||
       (message.flavor?.toLowerCase?.().includes?.("sneak") &&
-        !message.flavor?.toLowerCase?.().includes?.("sneak attack")));
+      !message.flavor?.toLowerCase?.().includes?.("sneak attack")) &&
+      !message.flavor?.toLowerCase?.().includes?.("create a diversion") &&
+      !message.flavor?.toLowerCase?.().includes?.("avoid notice") &&
+      !message.flavor?.toLowerCase?.().includes?.("hide"));
 
-  const firstRoll = message.rolls?.[0];
+  // Check for hide action after sneak (less specific, can overlap)
+  const isHideAction =
+    !isCreateADiversionAction &&
+    !isSneakAction && // Don't classify as hide if already identified as sneak
+    ((context?.type === "skill-check" &&
+      (context.options?.includes("action:hide") || context.slug === "hide")) ||
+      (message.flavor?.toLowerCase?.().includes?.("hide") &&
+        !message.flavor?.toLowerCase?.().includes?.("create a diversion") &&
+        !message.flavor?.toLowerCase?.().includes?.("sneak attack"))) &&
+        !message.flavor?.toLowerCase?.().includes?.("sneak");
+
   const isAttackRoll =
     context?.type === "attack-roll" ||
     context?.type === "spell-attack-roll" ||
@@ -111,11 +118,14 @@ export async function extractActionData(message) {
     );
   }
 
+  // Debug logging for action type detection
+
+
   let actionType = null;
   if (isSeekAction) actionType = "seek";
   else if (isPointOutAction) actionType = "point-out";
+  else if (isSneakAction) actionType = "sneak";      // Check sneak BEFORE hide
   else if (isHideAction) actionType = "hide";
-  else if (isSneakAction) actionType = "sneak";
   else if (isCreateADiversionAction) actionType = "create-a-diversion";
   else if (isTakeCoverAction) actionType = "take-cover";
   else if (isAttackRoll && !isDamageTakenMessage) {
@@ -172,6 +182,7 @@ export async function extractActionData(message) {
       data.context.target = { ...message.flags.pf2e.target };
     }
   } catch (_) {}
+
 
   return data;
 }

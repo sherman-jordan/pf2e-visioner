@@ -13,6 +13,11 @@ global.game = {
   },
   settings: {
     get: jest.fn((moduleId, settingId) => {
+      // Check if we have a stored value first
+      if (global.pf2eVisionerTestState?.settings?.[moduleId]?.[settingId] !== undefined) {
+        return global.pf2eVisionerTestState.settings[moduleId][settingId];
+      }
+      
       // Default settings for tests
       const defaults = {
         'pf2e-visioner': {
@@ -42,13 +47,19 @@ global.game = {
           coverFromUndetected: false,
           coverFromObserved: false,
           coverFromConcealed: false,
-          coverFromHidden: false,
-          coverFromUndetected: false
+          sneakRawEnforcement: false,
+          enforceRawRequirements: false
         }
       };
       return defaults[moduleId]?.[settingId] ?? false;
     }),
-    set: jest.fn(),
+    set: jest.fn((moduleId, settingId, value) => {
+      // Store the setting value for retrieval
+      if (!global.pf2eVisionerTestState) global.pf2eVisionerTestState = {};
+      if (!global.pf2eVisionerTestState.settings) global.pf2eVisionerTestState.settings = {};
+      if (!global.pf2eVisionerTestState.settings[moduleId]) global.pf2eVisionerTestState.settings[moduleId] = {};
+      global.pf2eVisionerTestState.settings[moduleId][settingId] = value;
+    }),
     register: jest.fn()
   },
   user: {

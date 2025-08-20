@@ -6,7 +6,6 @@
 import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
 import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
 import { notify } from "../services/infra/notifications.js";
-import { filterOutcomesByEncounter } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
 // Store reference to current create a diversion dialog
@@ -107,6 +106,9 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     context.divertingToken = { ...this.divertingToken, image: this.resolveTokenImage(this.divertingToken) };
     context.outcomes = processedOutcomes;
     context.ignoreAllies = !!this.ignoreAllies;
+    
+    // Store processed outcomes in instance for Apply All to use
+    this.processedOutcomes = processedOutcomes;
 
     Object.assign(context, this.buildCommonContext(processedOutcomes));
     context.marginText = this.getMarginText.bind(this);
@@ -277,8 +279,14 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     if (!outcome) return;
 
     try {
-      const { revertNowDiversion } = await import("../services/index.js");
-      await revertNowDiversion(app.actionData, { html: () => {}, attr: () => {} });
+      // Apply the original visibility state for just this specific token
+      const { applyVisibilityChanges } = await import("../../services/infra/shared-utils.js");
+      const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
+      const changes = [{ target: outcome.observer, newVisibility: revertVisibility }];
+      
+      await applyVisibilityChanges(app.actionData.actor, changes, { 
+        direction: "observer_to_target" 
+      });
     } catch (_) {}
 
     // Update button states
@@ -318,18 +326,8 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
       ".create-a-diversion-preview-dialog-changes-count",
     )?.textContent;
 
-    // Filter outcomes based on encounter filter
-    let filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "observer",
-    );
-
-    // Apply ally filtering if ignore allies is enabled
-    try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "observer");
-    } catch (_) {}
+    // Use the processed outcomes that have already been filtered by encounter and ignore allies settings
+    const filteredOutcomes = app.processedOutcomes || app.outcomes || [];
 
     // Only apply changes to filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -352,7 +350,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
         const state = o?.overrideState || o?.newVisibility;
         if (id && state) overrides[id] = state;
       }
-      await applyNowDiversion({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      await applyNowDiversion({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
     } catch (_) {}
 
     // Update UI for each row
@@ -390,18 +388,8 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
       ".create-a-diversion-preview-dialog-changes-count",
     )?.textContent;
 
-    // Filter outcomes based on encounter filter
-    let filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "observer",
-    );
-
-    // Apply ally filtering if ignore allies is enabled
-    try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "observer");
-    } catch (_) {}
+    // Use the processed outcomes that have already been filtered by encounter and ignore allies settings
+    const filteredOutcomes = app.processedOutcomes || app.outcomes || [];
 
     // Only revert changes to filtered outcomes that have actionable changes
     const changedOutcomes = filteredOutcomes.filter((outcome) => {
@@ -420,7 +408,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowDiversion } = await import("../services/index.js");
-      await revertNowDiversion(app.actionData, { html: () => {}, attr: () => {} });
+      await revertNowDiversion({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
     } catch (_) {}
     app.updateRowButtonsToReverted(changedOutcomes.map((o) => ({ target: { id: o.observer.id }, hasActionableChange: true })));
 

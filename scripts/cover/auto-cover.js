@@ -272,8 +272,17 @@ function getEligibleBlockingTokens(attacker, target, filters) {
     const type = blocker.actor?.type;
     if (type === "loot" || type === "hazard") continue;
     if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, "ignoreAutoCover")) { continue; }
+    // Always ignore Foundry hidden tokens
+    if (blocker.document.hidden) { continue; }
+    
+    // Check PF2e undetected tokens only if the setting is enabled
     if (filters.ignoreUndetected) {
-      try { const vis = getVisibilityBetween(attacker, blocker); if (vis === "undetected") { continue; } } catch (_) {}
+      try { 
+        // Use custom visibility perspective if provided, otherwise use attacker
+        const perspectiveToken = filters.visibilityPerspective || attacker;
+        const vis = getVisibilityBetween(perspectiveToken, blocker); 
+        if (vis === "undetected") { continue; } 
+      } catch (_) {}
     }
     if (filters.ignoreDead && (blocker.actor?.hitPoints?.value === 0)) { continue; }
     if (!filters.allowProneBlockers) {
@@ -452,7 +461,7 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
 
     // Token blockers
     const intersectionMode = getIntersectionMode();
-    const filters = getAutoCoverFilterSettings(attacker);
+    const filters = { ...getAutoCoverFilterSettings(attacker), ...options.filterOverrides };
     let blockers = getEligibleBlockingTokens(attacker, target, filters);
 
     // Strict center-to-center: only consider blockers that the exact center-to-center ray intersects,

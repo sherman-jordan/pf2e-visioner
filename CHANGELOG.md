@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.6.2] - 2025-08-19
+
+### Fixed
+
+- **Critical Bug Fixes - All Major Action System Issues Resolved**:
+  - **Sneak Action**: "Apply Changes" button now correctly applies Undetected instead of Hidden on critical success
+  - **Consequences Action**: "Apply All" now works correctly with Ignore Allies setting
+  - **Create a Diversion Action**: "Apply All" now properly applies effects and respects Ignore Allies setting
+  - **Seek Action**: "Apply Changes" now properly respects the Ignore Allies setting
+  - **Individual Revert Buttons**: Now only revert the specific creature's outcome instead of all outcomes
+  - **Ignore Allies Filter Logic**: Fixed inconsistencies across all actions when toggling Ignore Allies in dialogs
+  - **Parameter Passing**: Fixed inconsistent parameter passing between dialogs and action handlers
+  - **State Management**: Fixed dialog state tracking for bulk actions
+
+- **Auto cover visualization**: undetected or foundry hidden will show as no cover
+
+- **Comprehensive Testing Coverage Added**:
+  - Added 586 comprehensive tests across 26 test suites
+  - Real HTML5 canvas integration testing with actual drawing operations
+  - Complete bug regression prevention testing
+  - All action types thoroughly tested (Sneak, Hide, Seek, Point Out, Take Cover, Create a Diversion, Consequences)
+  - All UI interactions tested (Apply Changes, Apply All, Revert All, Individual buttons)
+  - Performance testing for large token sets and wall operations
+  - Error handling and edge case coverage
+
+### Changed
+
+- Enhanced test infrastructure with Jest testing framework
+- Added real canvas testing capabilities with `canvas` npm package
+- Improved mock system for Foundry VTT globals in testing environment
+
 ## [2.6.1] - 2025-08-19
 
 ### Fixed

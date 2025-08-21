@@ -13,6 +13,7 @@ import {
   removeObserverContributions,
   unsetMapsForTokens,
 } from "./services/api-internal.js";
+import { manuallyRestoreAllPartyTokens } from "./services/party-token-state.js";
 import { refreshEveryonesPerception } from "./services/socket.js";
 import { updateTokenVisuals } from "./services/visual-effects.js";
 import {
@@ -374,6 +375,14 @@ export class Pf2eVisionerApi {
   }
 
   /**
+   * Manually restore all party token states
+   * Useful when automatic restoration fails or for debugging
+   */
+  static async restorePartyTokens() {
+    return manuallyRestoreAllPartyTokens();
+  }
+
+  /**
    * Get roll options for Rule Elements integration
    * @param {string} observerId - The ID of the observing token
    * @param {string} targetId - The ID of the target token
@@ -482,7 +491,10 @@ export class Pf2eVisionerApi {
 
       // 2) Clear scene-level caches used by the module
       try {
-        await scene.setFlag(MODULE_ID, "deletedEntryCache", {});
+        // Only GMs can update scene flags
+        if (game.user.isGM) {
+          await scene.setFlag(MODULE_ID, "deletedEntryCache", {});
+        }
       } catch (_) {}
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
@@ -778,7 +790,10 @@ export class Pf2eVisionerApi {
 
       // 2) Clear scene-level caches used by the module
       try {
-        await scene.setFlag(MODULE_ID, "deletedEntryCache", {});
+        // Only GMs can update scene flags
+        if (game.user.isGM) {
+          await scene.setFlag(MODULE_ID, "deletedEntryCache", {});
+        }
       } catch (_) {}
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)

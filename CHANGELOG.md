@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.6.6] - 2025-08-21
+
+### Fixed
+
+- Ignore allies in visibility manager
+- Auto cover for non roll dialog
+- Per row rever will not revert all now
+
+### Added
+- MANY tests
+
 ## [2.6.5] - 2025-08-20
 
 ### Added

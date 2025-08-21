@@ -1,15 +1,16 @@
 import * as core from "./core.js";
 import {
-    bindDomIconHandlers,
-    bulkSetCoverState,
-    bulkSetVisibilityState,
-    toggleEncounterFilter,
-    toggleMode,
-    toggleTab,
+  bindDomIconHandlers,
+  bulkSetCoverState,
+  bulkSetVisibilityState,
+  toggleEncounterFilter,
+  toggleIgnoreAllies,
+  toggleMode,
+  toggleTab,
 } from "./ui.js";
 
 export * from "./core.js";
-export { bindDomIconHandlers, bulkSetCoverState, bulkSetVisibilityState, toggleEncounterFilter, toggleMode, toggleTab };
+export { bindDomIconHandlers, bulkSetCoverState, bulkSetVisibilityState, toggleEncounterFilter, toggleIgnoreAllies, toggleMode, toggleTab };
 
 export function bindTokenManagerActions(TokenManagerClass) {
   TokenManagerClass.formHandler = core.formHandler;
@@ -19,6 +20,7 @@ export function bindTokenManagerActions(TokenManagerClass) {
 
   TokenManagerClass.toggleMode = toggleMode;
   TokenManagerClass.toggleEncounterFilter = toggleEncounterFilter;
+  // TokenManagerClass.toggleIgnoreAllies = toggleIgnoreAllies; // Commented out - using static method instead
   TokenManagerClass.toggleTab = toggleTab;
   TokenManagerClass.bulkSetVisibilityState = bulkSetVisibilityState;
   TokenManagerClass.bulkSetCoverState = bulkSetCoverState;

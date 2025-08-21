@@ -7,7 +7,7 @@ import { registerAutoCoverHooks } from "./auto-cover.js";
 import { registerChatHooks } from "./chat.js";
 import { registerCombatHooks } from "./combat.js";
 import { onCanvasReady, onReady } from "./lifecycle.js";
-import { onTokenCreated, onTokenDeleted } from "./token-events.js";
+import { registerTokenHooks } from "./token-events.js";
 import { registerUIHooks } from "./ui.js";
 
 export function registerHooks() {
@@ -17,9 +17,7 @@ export function registerHooks() {
   Hooks.on("highlightObjects", onHighlightObjects);
 
   // Token lifecycle
-  // Use preCreateToken so we can set defaults (e.g., enable vision) before the doc hits the scene
-  Hooks.on("preCreateToken", onTokenCreated);
-  Hooks.on("deleteToken", onTokenDeleted);
+  registerTokenHooks();
 
   // UI hues
   registerUIHooks();
@@ -55,7 +53,12 @@ export function registerHooks() {
                 updates.push(patch);
               }
             }
-            if (updates.length) await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+            if (updates.length) {
+              // Only GMs can update token documents
+              if (game.user.isGM) {
+                await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+              }
+            }
           } catch (_) {}
           // Mirror hidden flag to connected walls
           try {
@@ -83,7 +86,12 @@ export function registerHooks() {
                 updates.push(patch);
               }
             }
-            if (updates.length) await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+            if (updates.length) {
+              // Only GMs can update token documents
+              if (game.user.isGM) {
+                await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+              }
+            }
           } catch (_) {}
           // Mirror hidden flag to connected walls (set hidden=false)
           try {

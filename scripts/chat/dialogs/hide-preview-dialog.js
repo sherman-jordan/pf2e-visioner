@@ -8,7 +8,7 @@ import { getDesiredOverrideStatesForAction } from "../services/data/action-state
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  hasActiveEncounter
+    hasActiveEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -498,7 +498,9 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowHide } = await import("../services/index.js");
-      await revertNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
+      // Pass the specific tokenId for per-row revert
+      const actionDataWithTarget = { ...app.actionData, ignoreAllies: app.ignoreAllies, targetTokenId: tokenId };
+      await revertNowHide(actionDataWithTarget, { html: () => {}, attr: () => {} });
 
       app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();

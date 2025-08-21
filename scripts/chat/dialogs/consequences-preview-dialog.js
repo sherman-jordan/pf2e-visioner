@@ -8,7 +8,7 @@ import { getDesiredOverrideStatesForAction } from "../services/data/action-state
 import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
 import { notify } from "../services/infra/notifications.js";
 import {
-  filterOutcomesByEncounter
+    filterOutcomesByEncounter
 } from "../services/infra/shared-utils.js";
 import { BaseActionDialog } from "./base-action-dialog.js";
 
@@ -243,7 +243,9 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowConsequences } = await import("../services/index.js");
-      await revertNowConsequences(app.actionData, { html: () => {}, attr: () => {} });
+      // Pass the specific tokenId for per-row revert
+      const actionDataWithTarget = { ...app.actionData, targetTokenId: tokenId };
+      await revertNowConsequences(actionDataWithTarget, { html: () => {}, attr: () => {} });
     } catch (_) {}
 
     // Update button states

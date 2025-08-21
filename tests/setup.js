@@ -304,20 +304,16 @@ jest.mock('../../scripts/services/visual-effects.js', () => ({
   updateWallVisuals: jest.fn()
 }), { virtual: true });
 
-// Mock utils.js functions including getSceneTargets
-jest.mock('../../scripts/utils.js', () => {
-  const originalModule = jest.requireActual('../../scripts/utils.js');
-  return {
-    ...originalModule,
-    getSceneTargets: jest.fn((observer, encounterOnly = false, ignoreAllies = false) => {
-      // Delegate to our global mock
-      return global.getSceneTargets(observer, encounterOnly, ignoreAllies);
-    }),
-    showNotification: jest.fn(),
-    hasActiveEncounter: jest.fn(() => false),
-    isTokenInEncounter: jest.fn((token) => token.inCombat || false)
-  };
-}, { virtual: true });
+// ✅ REMOVED DANGEROUS UTILS.JS MOCK
+// The previous mock hid real import chain bugs and provided fake behavior.
+// Tests should import real modules and only mock external APIs.
+//
+// If individual tests need to mock specific utils functions, they should:
+// 1. Import the real module: const utils = await import('../../scripts/utils.js')
+// 2. Mock only what's necessary: utils.showNotification = jest.fn()
+// 3. Restore after test: utils.showNotification = originalFunction
+//
+// This ensures tests catch real import issues and integration bugs.
 
 // Test utilities
 global.createMockToken = (data = {}) => {

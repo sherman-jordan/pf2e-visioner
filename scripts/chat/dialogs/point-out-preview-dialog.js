@@ -365,7 +365,9 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     try {
       const { revertNowPointOut } = await import("../services/index.js");
-      await revertNowPointOut(app.actionData, { html: () => {}, attr: () => {} });
+      // Pass the specific tokenId for per-row revert
+      const actionDataWithTarget = { ...app.actionData, targetTokenId: tokenId };
+      await revertNowPointOut(actionDataWithTarget, { html: () => {}, attr: () => {} });
 
       // Update row using base helper
       app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);

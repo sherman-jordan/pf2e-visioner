@@ -2,7 +2,32 @@
  * Helpers for off-guard visibility ephemeral effects
  */
 
-import { MODULE_ID } from "../constants.js";
+import { MODULE_ID, VISIBILITY_STATES } from "../constants.js";
+
+/**
+ * Get the correct PF2E condition icon for a visibility state
+ * @param {string} visibilityState - The visibility state (hidden, undetected, etc.)
+ * @returns {string} The icon path or fallback
+ */
+function getPF2eConditionIcon(visibilityState) {
+  try {
+    // Try to get the icon from the actual PF2E condition item
+    const conditionName = VISIBILITY_STATES[visibilityState]?.pf2eCondition;
+    if (conditionName) {
+      const condition = game.pf2e?.ConditionManager?.conditions?.get?.(conditionName);
+      if (condition?.img) {
+        return condition.img;
+      }
+    }
+    
+    // Fallback to direct path
+    return `systems/pf2e/icons/conditions/${visibilityState}.webp`;
+  } catch (error) {
+    console.warn(`PF2E Visioner: Failed to get condition icon for ${visibilityState}:`, error);
+    // Ultimate fallback to a generic effect icon
+    return "icons/svg/aura.svg";
+  }
+}
 
 export function createEphemeralEffectRule(signature) {
   return {
@@ -57,7 +82,7 @@ export function createAggregateEffectData(visibilityState, signature, options = 
       badge: null,
       fromSpell: false,
     },
-    img: `systems/pf2e/icons/conditions/${visibilityState}.webp`,
+    img: getPF2eConditionIcon(visibilityState),
     flags: {
       [MODULE_ID]: {
         aggregateOffGuard: true,

@@ -4,8 +4,7 @@
  */
 
 import { COVER_STATES, MODULE_ID } from "../constants.js";
-import { getCoverBonusByState } from "../helpers/cover-helpers.js";
-import { ensureAggregateCoverEffect, updateAggregateCoverMetaForState, updateReflexStealthAcrossCoverAggregates } from "./aggregates.js";
+import { updateReflexStealthAcrossCoverAggregates } from "./aggregates.js";
 import { dedupeCoverAggregates, reconcileCoverAggregatesAgainstMaps } from "./batch.js";
 import { runWithCoverEffectLock } from "./utils.js";
 
@@ -47,9 +46,12 @@ export async function createEphemeralCoverEffect(
     // Otherwise, remove the old one so we can create the new one
     try {
       if (effectReceiverToken.actor.items.get(existingEffect.id)) {
-        await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", [
-          existingEffect.id,
-        ]);
+        // Only GMs can delete effects
+        if (game.user.isGM) {
+          await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", [
+            existingEffect.id,
+          ]);
+        }
       }
     } catch (_) {
       // Ignore if it was already removed
@@ -57,7 +59,6 @@ export async function createEphemeralCoverEffect(
   }
 
   const stateConfig = COVER_STATES[coverState];
-  const coverLabel = game.i18n.localize(stateConfig.label);
 
   // Pick a representative image per cover level
   const coverEffectImageByState = {
@@ -71,7 +72,7 @@ export async function createEphemeralCoverEffect(
     "systems/pf2e/icons/equipment/shields/steel-shield.webp";
 
   const ephemeralEffect = {
-    name: `${coverLabel} against ${effectSourceToken.name}`,
+    name: `Cover against ${effectSourceToken.name}`,
     type: "effect",
     system: {
       description: {
@@ -118,7 +119,7 @@ export async function createEphemeralCoverEffect(
               sustained: false,
             },
       tokenIcon: {
-        show: false,
+        show: options.forThisRoll ? true : false,
       },
       unidentified: true,
       start: {
@@ -137,6 +138,7 @@ export async function createEphemeralCoverEffect(
         observerActorSignature: effectSourceToken.actor.signature,
         observerTokenId: effectSourceToken.id,
         coverState: coverState,
+        ...(options.forThisRoll && { forThisRoll: true, ephemeralCoverRoll: true }),
       },
       core: {},
     },
@@ -163,37 +165,22 @@ export async function createEphemeralCoverEffect(
   }
 
   try {
+    console.log("PF2E Visioner | Creating ephemeral effect:", {
+      receiver: effectReceiverToken.name,
+      source: effectSourceToken.name,
+      coverState,
+      options,
+      effectName: ephemeralEffect.name
+    });
     await effectReceiverToken.actor.createEmbeddedDocuments("Item", [
       ephemeralEffect,
     ]);
+    console.log("PF2E Visioner | Ephemeral effect created successfully on", effectReceiverToken.name);
   } catch (error) {
     console.error("Failed to create ephemeral cover effect:", error);
   }
 }
 
-function getMaxCoverStateFromRules(rules) {
-  // Determine max by highest AC value present in rules
-  let maxVal = 0;
-  for (const r of rules) {
-    if (
-      r?.key === "FlatModifier" &&
-      r.selector === "ac" &&
-      typeof r.value === "number"
-    ) {
-      if (r.value > maxVal) maxVal = r.value;
-    }
-  }
-  // Map back to state by matching bonus
-  const entries = Object.entries(COVER_STATES);
-  let maxState = "none";
-  for (const [state, cfg] of entries) {
-    if (cfg.bonusAC === maxVal) {
-      maxState = state;
-      break;
-    }
-  }
-  return maxState;
-}
 
 // upsertReflexStealthForMaxCoverOnThisAggregate now in cover/aggregates
 
@@ -205,92 +192,6 @@ function getMaxCoverStateFromRules(rules) {
 
 // moved: updateAggregateCoverMetaForState is imported from ./cover/aggregates.js
 
-async function addObserverToCoverAggregate(
-  effectReceiverToken,
-  observerToken,
-  coverState,
-  options = {}
-) {
-  const aggregate = await ensureAggregateCoverEffect(
-    effectReceiverToken,
-    coverState,
-    options
-  );
-  const rules = Array.isArray(aggregate.system.rules)
-    ? [...aggregate.system.rules]
-    : [];
-  const signature = observerToken.actor.signature;
-  const tokenId = observerToken.id;
-  const bonus = getCoverBonusByState(coverState);
-
-  // Remove any existing AC rule for this observer
-  const withoutObserverAC = rules.filter(
-    (r) =>
-      !(
-        r?.key === "FlatModifier" &&
-        r.selector === "ac" &&
-        Array.isArray(r.predicate) &&
-        r.predicate.includes(`origin:signature:${signature}`)
-      )
-  );
-  // Ensure RollOption for cover-against is present
-  const hasRollOption = withoutObserverAC.some(
-    (r) =>
-      r?.key === "RollOption" &&
-      r.domain === "all" &&
-      r.option === `cover-against:${tokenId}`
-  );
-  if (!hasRollOption) {
-    withoutObserverAC.push({
-      key: "RollOption",
-      domain: "all",
-      option: `cover-against:${tokenId}`,
-    });
-  }
-  // Add AC modifier for this observer
-  withoutObserverAC.push({
-    key: "FlatModifier",
-    selector: "ac",
-    type: "circumstance",
-    value: bonus,
-    predicate: [`origin:signature:${signature}`],
-  });
-
-  await aggregate.update({ "system.rules": withoutObserverAC });
-  // Ensure this observer is not present in other aggregates of different states
-  const otherAggregates = effectReceiverToken.actor.itemTypes.effect.filter(
-    (e) =>
-      e.flags?.[MODULE_ID]?.aggregateCover === true &&
-      e.flags?.[MODULE_ID]?.coverState !== coverState
-  );
-  for (const other of otherAggregates) {
-    const otherRules = Array.isArray(other.system.rules)
-      ? other.system.rules.filter((r) => {
-          if (
-            r?.key === "FlatModifier" &&
-            r.selector === "ac" &&
-            Array.isArray(r.predicate) &&
-            r.predicate.includes(`origin:signature:${signature}`)
-          )
-            return false;
-          if (
-            r?.key === "RollOption" &&
-            r.domain === "all" &&
-            r.option === `cover-against:${tokenId}`
-          )
-            return false;
-          return true;
-        })
-      : [];
-    await other.update({ "system.rules": otherRules });
-  }
-  // Refresh reflex/stealth distribution so only the highest-present state grants them
-  await updateReflexStealthAcrossCoverAggregates(effectReceiverToken);
-  // Make sure meta (name/img) reflects this aggregate's state
-  await updateAggregateCoverMetaForState(aggregate, coverState);
-  // Dedupe/cleanup any legacy or duplicate aggregates
-  await dedupeCoverAggregates(effectReceiverToken);
-}
 
 // moved: removeObserverFromCoverAggregate now lives in cover/aggregates.js
 
@@ -307,102 +208,6 @@ async function addObserverToCoverAggregate(
  */
 export { cleanupAllCoverEffects } from "./cleanup.js";
 
-/**
- * Clean up ephemeral cover effects for a specific observer
- * @param {Token} targetToken - The token with cover
- * @param {Token} observerToken - The observing token
- */
-async function cleanupCoverEffectsForObserverUnlocked(
-  targetToken,
-  observerToken
-) {
-  if (!targetToken?.actor || !observerToken?.actor) return;
-
-  try {
-    // Get all ephemeral cover effects for this observer
-    const ephemeralEffects = targetToken.actor.itemTypes.effect.filter(
-      (e) =>
-        e.flags?.[MODULE_ID]?.isEphemeralCover &&
-        (e.flags?.[MODULE_ID]?.observerActorSignature ===
-          observerToken.actor.signature ||
-          e.flags?.[MODULE_ID]?.observerTokenId === observerToken.id)
-    );
-
-    // Get all cover aggregates
-    const allCoverAggregates = targetToken.actor.itemTypes.effect.filter(
-      (e) => e.flags?.[MODULE_ID]?.aggregateCover === true
-    );
-
-    // Prepare operation collections
-    const effectsToDelete = [];
-    const effectsToUpdate = [];
-    const signature = observerToken.actor.signature;
-    const tokenId = observerToken.id;
-
-    // Process individual ephemeral effects
-    if (ephemeralEffects.length > 0) {
-      const effectIds = ephemeralEffects
-        .map((e) => e.id)
-        .filter((id) => !!targetToken.actor.items.get(id));
-
-      effectsToDelete.push(...effectIds);
-    }
-
-    // Process aggregates to remove this observer
-    for (const aggregate of allCoverAggregates) {
-      const rules = Array.isArray(aggregate.system.rules)
-        ? aggregate.system.rules.filter((r) => {
-            // Remove AC rules for this observer
-            if (
-              r?.key === "FlatModifier" &&
-              r.selector === "ac" &&
-              Array.isArray(r.predicate) &&
-              r.predicate.includes(`origin:signature:${signature}`)
-            ) {
-              return false;
-            }
-            // Remove roll options for this observer
-            if (
-              r?.key === "RollOption" &&
-              r.domain === "all" &&
-              r.option === `cover-against:${tokenId}`
-            ) {
-              return false;
-            }
-            return true;
-          })
-        : [];
-
-      if (rules.length === 0) {
-        // Mark for deletion if no rules left
-        effectsToDelete.push(aggregate.id);
-      } else {
-        // Otherwise update with filtered rules
-        effectsToUpdate.push({
-          _id: aggregate.id,
-          "system.rules": rules,
-        });
-      }
-    }
-
-    // Execute all operations in bulk
-    if (effectsToDelete.length > 0) {
-      await targetToken.actor.deleteEmbeddedDocuments("Item", effectsToDelete);
-    }
-
-    if (effectsToUpdate.length > 0) {
-      await targetToken.actor.updateEmbeddedDocuments("Item", effectsToUpdate);
-    }
-
-    // Handle reflex and stealth bonuses after all operations
-    await updateReflexStealthAcrossCoverAggregates(targetToken);
-  } catch (error) {
-    console.error(
-      `[${MODULE_ID}] Error cleaning up cover effects for observer:`,
-      error
-    );
-  }
-}
 
 // covered by export above; keep wrapper for API compatibility
 export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {

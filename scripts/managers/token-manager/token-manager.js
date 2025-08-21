@@ -30,6 +30,7 @@ export class VisionerTokenManager extends foundry.applications.api
       reset: VisionerTokenManager.resetAll,
       toggleMode: VisionerTokenManager.toggleMode,
       toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
+      toggleIgnoreAllies: VisionerTokenManager.toggleIgnoreAllies,
       toggleTab: VisionerTokenManager.toggleTab,
       bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
@@ -218,6 +219,14 @@ export class VisionerTokenManager extends foundry.applications.api
   }
 
   /**
+   * Toggle ignore allies filter
+   */
+  static async toggleIgnoreAllies(event, button) {
+    const { toggleIgnoreAllies } = await import("./actions/index.js");
+    return toggleIgnoreAllies.call(this, event, button);
+  }
+
+  /**
    * Toggle encounter filtering and refresh results
    */
   static async toggleEncounterFilter(event, button) {
@@ -268,16 +277,8 @@ export class VisionerTokenManager extends foundry.applications.api
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);
 
-    // Wire per-manager Ignore Allies toggle
-    try {
-      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
-      if (cb) {
-        cb.addEventListener('change', () => {
-          this.ignoreAllies = !!cb.checked;
-          this.render({ force: true });
-        });
-      }
-    } catch (_) {}
+    // Ignore Allies toggle is now handled by the ApplicationV2 action system
+    // See toggleIgnoreAllies action in actions/ui.js
     // Wire per-manager Ignore Walls toggle
     try {
       const cbw = this.element.querySelector('input[data-action="toggleIgnoreWalls"]');

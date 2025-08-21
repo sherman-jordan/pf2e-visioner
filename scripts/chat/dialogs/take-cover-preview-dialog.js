@@ -221,9 +221,11 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
 
   static async _onRevertChange(event, target) {
     const app = currentTakeCoverDialog; if (!app) return;
-    const { revertNowTakeCover } = await import("../services/index.js");
-    await revertNowTakeCover(app.actionData, { html: () => { }, attr: () => { } });
     const tokenId = target?.dataset?.tokenId;
+    const { revertNowTakeCover } = await import("../services/index.js");
+    // Pass the specific tokenId for per-row revert
+    const actionDataWithTarget = { ...app.actionData, targetTokenId: tokenId };
+    await revertNowTakeCover(actionDataWithTarget, { html: () => { }, attr: () => { } });
     app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]); app.updateChangesCount();
   }
 

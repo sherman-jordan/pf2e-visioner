@@ -546,20 +546,93 @@ export function resolveTargetTokenIdFromData(data) {
 // ----- hook handlers (used by hooks/visioner-auto-cover.js)
 export async function onPreCreateChatMessage(doc, data) {
   try {
-    if (!game.settings.get("pf2e-visioner", "autoCover")) return; if (!isAttackLikeMessageData(data)) return;
-    const speakerTokenId = normalizeTokenRef(data?.speaker?.token); const targetTokenId = resolveTargetTokenIdFromData(data);
+    if (!game.settings.get("pf2e-visioner", "autoCover")) return;
+    if (!isAttackLikeMessageData(data)) return;
+    
+    const speakerTokenId = normalizeTokenRef(data?.speaker?.token);
+    const targetTokenId = resolveTargetTokenIdFromData(data);
     if (!speakerTokenId || !targetTokenId) return;
-    const tokens = canvas?.tokens; if (!tokens?.get) return;
-    const attacker = tokens.get(speakerTokenId); const target = tokens.get(targetTokenId);
+    
+    const tokens = canvas?.tokens;
+    if (!tokens?.get) return;
+    
+    const attacker = tokens.get(speakerTokenId);
+    const target = tokens.get(targetTokenId);
     if (!attacker || !target) return;
-    const state = detectCoverStateForAttack(attacker, target); if (state === "none") return;
-    await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
-    try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state }); } catch (_) { }
-    _recordPair(attacker.id, target.id);
-  } catch (_) { }
+    
+    // Only proceed if this user owns the attacking token or is the GM
+    if (!attacker.isOwner && !game.user.isGM) return;
+    
+    console.log("PF2E Visioner | Processing cover for chat message:", {
+      attacker: attacker.name,
+      target: target.name,
+      messageType: data?.flags?.pf2e?.context?.type
+    });
+    
+    // Detect base cover state
+    let state = detectCoverStateForAttack(attacker, target);
+    
+    // Check for popup override first (stored in global by popup wrapper)
+    try {
+      if (window.pf2eVisionerPopupOverrides) {
+        const overrideKey = `${attacker.id}-${target.id}`;
+        const popupOverride = window.pf2eVisionerPopupOverrides.get(overrideKey);
+        if (popupOverride !== undefined) {
+          console.log("PF2E Visioner | Using popup override:", { detected: state, override: popupOverride });
+          state = popupOverride;
+          // Clear the override after use
+          window.pf2eVisionerPopupOverrides.delete(overrideKey);
+        }
+      }
+    } catch (e) {
+      console.warn("PF2E Visioner | Failed to check popup override:", e);
+    }
+    
+    // Check for roll dialog override (from renderCheckModifiersDialog)
+    try {
+      if (window.pf2eVisionerDialogOverrides) {
+        const overrideKey = `${attacker.actor.id}-${target.id}`;
+        const dialogOverride = window.pf2eVisionerDialogOverrides.get(overrideKey);
+        if (dialogOverride !== undefined) {
+          console.log("PF2E Visioner | Using dialog override:", { detected: state, override: dialogOverride });
+          state = dialogOverride;
+          // Clear the override after use
+          window.pf2eVisionerDialogOverrides.delete(overrideKey);
+        }
+      }
+    } catch (e) {
+      console.warn("PF2E Visioner | Failed to check dialog override:", e);
+    }
+    
+    console.log("PF2E Visioner | Final cover state for chat message:", {
+      attacker: attacker.name,
+      target: target.name,
+      finalState: state,
+      hadPopupOverride: !!window.pf2eVisionerPopupOverrides?.has(`${attacker.id}-${target.id}`),
+      hadDialogOverride: !!window.pf2eVisionerDialogOverrides?.has(`${attacker.actor.id}-${target.id}`)
+    });
+    
+    // Apply cover if any
+    if (state !== "none") {
+      await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
+      try {
+        Hooks.callAll("pf2e-visioner.coverMapUpdated", {
+          observerId: attacker.id,
+          targetId: target.id,
+          state
+        });
+      } catch (_) {}
+      _recordPair(attacker.id, target.id);
+    }
+  } catch (e) {
+    console.warn("PF2E Visioner | Error in onPreCreateChatMessage:", e);
+  }
 }
 
 export async function onRenderChatMessage(message) {
+  // Allow all users to clean up their own effects
+  // GM can clean up any effects
+  
   if (!game.settings.get("pf2e-visioner", "autoCover")) return;
   const data = message?.toObject?.() || {}; if (!isAttackLikeMessageData(data)) return;
   const attackerIdRaw = data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
@@ -567,17 +640,23 @@ export async function onRenderChatMessage(message) {
   const targetId = resolveTargetTokenIdFromData(data); if (!attackerId) return;
   const tokens = canvas?.tokens; if (!tokens?.get) return;
   const attacker = tokens.get(attackerId); if (!attacker) return;
+  
+  // Only proceed if this user owns the attacking token or is the GM
+  if (!attacker.isOwner && !game.user.isGM) return;
+  
   const targetIds = targetId ? [targetId] : _consumePairs(attackerId); if (targetIds.length === 0) return;
   const targets = targetIds.map((tid) => tokens.get(tid)).filter((t) => !!t); if (targets.length === 0) return;
   try {
     for (const target of targets) {
       await setCoverBetween(attacker, target, "none", { skipEphemeralUpdate: true });
       try { Hooks.callAll("pf2e-visioner.coverMapUpdated", { observerId: attacker.id, targetId: target.id, state: "none" }); } catch (_) { }
-      // Remove our one-shot dialog-injected effect if present
+      // Remove ephemeral cover effects for this specific attacker
       try {
-        const toDelete = (target.actor?.itemTypes?.effect ?? []).filter(e => e.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true).map(e => e.id);
-        if (toDelete.length) await target.actor.deleteEmbeddedDocuments('Item', toDelete);
-      } catch (_) { }
+        const { cleanupCoverEffectsForObserver } = await import("../cover/ephemeral.js");
+        await cleanupCoverEffectsForObserver(target, attacker);
+      } catch (e) {
+        console.warn("PF2E Visioner | Failed to cleanup ephemeral cover effects:", e);
+      }
     }
   } catch (_) { }
 }
@@ -651,6 +730,19 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           try {
             const dctx = dialog?.context || {}; const tgt = dctx?.target; const tgtActor = tgt?.actor; if (!tgtActor) return;
             const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
+            
+            console.log("PF2E Visioner | Dialog roll button clicked, chosen cover:", chosen);
+            
+            // Store the dialog override for onPreCreateChatMessage to use
+            // We'll store it in a temporary global that gets picked up by the message creation
+            if (!window.pf2eVisionerDialogOverrides) window.pf2eVisionerDialogOverrides = new Map();
+            const attacker = dctx?.actor;
+            if (attacker && tgt) {
+              const overrideKey = `${attacker.id}-${tgt.id}`;
+              window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
+              console.log("PF2E Visioner | Stored dialog override:", { key: overrideKey, chosen });
+            }
+            
             const bonus = getCoverBonusByState(chosen) || 0;
             let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
             // Always remove any previous Visioner one-shot cover effect to ensure override takes precedence
@@ -722,7 +814,8 @@ Hooks.on?.("preCreateChatMessage", (messageData) => {
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
 export async function onUpdateToken(tokenDoc, changes) {
   try {
-    if (!game.user.isGM) return; if (!game.settings.get("pf2e-visioner", "autoCover")) return;
+    // Allow all users to handle token updates for auto-cover, but coordinate to prevent duplicates
+    if (!game.settings.get("pf2e-visioner", "autoCover")) return;
     // Only care about position/size/rotation updates
     const relevant = ("x" in changes) || ("y" in changes) || ("width" in changes) || ("height" in changes) || ("rotation" in changes);
     if (!relevant) return;

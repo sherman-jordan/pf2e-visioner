@@ -21,6 +21,9 @@ export function getCoverMap(token) {
  */
 export async function setCoverMap(token, coverMap) {
   if (!token?.document) return;
+  // Only GMs can update token documents
+  if (!game.user.isGM) return;
+  
   const path = `flags.${MODULE_ID}.cover`;
   const result = await token.document.update(
     { [path]: coverMap },

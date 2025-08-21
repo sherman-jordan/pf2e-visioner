@@ -49,7 +49,12 @@ export async function batchUpdateVisibilityEffects(observerToken, targetUpdates,
       else if (hiddenRules.length > 0) effectsToCreate.push(createAggregateEffectData("hidden", "batch", { ...options, receiverId: receiver.actor.id, existingRules: hiddenRules }));
       if (undetectedAggregate) { if (undetectedRules.length === 0) effectsToDelete.push(undetectedAggregate.id); else effectsToUpdate.push({ _id: undetectedAggregate.id, "system.rules": undetectedRules }); }
       else if (undetectedRules.length > 0) effectsToCreate.push(createAggregateEffectData("undetected", "batch", { ...options, receiverId: receiver.actor.id, existingRules: undetectedRules }));
-      if (effectsToDelete.length > 0) await receiver.actor.deleteEmbeddedDocuments("Item", effectsToDelete);
+      if (effectsToDelete.length > 0) {
+        // Only GMs can delete effects
+        if (game.user.isGM) {
+          await receiver.actor.deleteEmbeddedDocuments("Item", effectsToDelete);
+        }
+      }
       if (effectsToUpdate.length > 0) await receiver.actor.updateEmbeddedDocuments("Item", effectsToUpdate);
       if (effectsToCreate.length > 0) await receiver.actor.createEmbeddedDocuments("Item", effectsToCreate);
     });

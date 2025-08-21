@@ -17,7 +17,7 @@ export async function updateSingleVisibilityEffect(observerToken, targetToken, n
   // Skip non-creature receivers
   try {
     const t = effectReceiverToken?.actor?.type;
-    if (t && ["loot", "vehicle", "party"].includes(t)) return;
+    if (t && ["loot","vehicle","party"].includes(t)) return;
   } catch (_) {}
 
   await runWithEffectLock(effectReceiverToken.actor, async () => {
@@ -61,7 +61,12 @@ export async function updateSingleVisibilityEffect(observerToken, targetToken, n
       }
     }
 
-    if (effectsToDelete.length > 0) await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", effectsToDelete);
+    if (effectsToDelete.length > 0) {
+      // Only GMs can delete effects
+      if (game.user.isGM) {
+        await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", effectsToDelete);
+      }
+    }
     if (effectsToUpdate.length > 0) await effectReceiverToken.actor.updateEmbeddedDocuments("Item", effectsToUpdate);
     if (effectsToCreate.length > 0) await effectReceiverToken.actor.createEmbeddedDocuments("Item", effectsToCreate);
   });

@@ -4,7 +4,6 @@
 
 import { COVER_STATES, MODULE_ID } from "../constants.js";
 import { getCoverImageForState, getCoverLabel } from "../helpers/cover-helpers.js";
-import { coverDebug } from "./utils.js";
 
 export async function ensureAggregateCoverEffect(effectReceiverToken, state, options = {}) {
   const effects = effectReceiverToken.actor.itemTypes.effect;

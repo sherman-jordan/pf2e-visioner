@@ -6,7 +6,7 @@ import { MODULE_ID } from "../constants.js";
 import { extractCoverAgainstFromPredicate, extractSignaturesFromPredicate, getCoverImageForState, getCoverLabel } from "../helpers/cover-helpers.js";
 import { getCoverMap } from "../stores/cover-map.js";
 import { updateReflexStealthAcrossCoverAggregates } from "./aggregates.js";
-import { coverDebug, runWithCoverEffectLock } from "./utils.js";
+import { runWithCoverEffectLock } from "./utils.js";
 
 export async function dedupeCoverAggregates(effectReceiverToken) {
   const effects = effectReceiverToken.actor.itemTypes.effect.filter((e) => e.flags?.[MODULE_ID]?.aggregateCover === true);
@@ -14,7 +14,12 @@ export async function dedupeCoverAggregates(effectReceiverToken) {
   const legacy = effects.filter((e) => !e.flags?.[MODULE_ID]?.coverState);
   if (legacy.length) {
     const ids = legacy.map((e) => e.id).filter((id) => !!effectReceiverToken.actor.items.get(id));
-    if (ids.length) { try { await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", ids); } catch (_) {} }
+    if (ids.length) { 
+      // Only GMs can delete effects
+      if (game.user.isGM) {
+        try { await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", ids); } catch (_) {} 
+      }
+    }
   }
   const byState = new Map();
   for (const eff of effects.filter((e) => e.flags?.[MODULE_ID]?.coverState)) {
@@ -40,7 +45,12 @@ export async function dedupeCoverAggregates(effectReceiverToken) {
       try { await primary.update({ "system.rules": mergedRules }); } catch (_) {}
     }
     const toDelete = group.filter((e) => e.id !== primary.id).map((e) => e.id).filter((id) => !!effectReceiverToken.actor.items.get(id));
-    if (toDelete.length) { try { await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", toDelete); } catch (_) {} }
+    if (toDelete.length) { 
+      // Only GMs can delete effects
+      if (game.user.isGM) {
+        try { await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", toDelete); } catch (_) {} 
+      }
+    }
   }
 }
 
@@ -94,12 +104,18 @@ export async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
       if (filtered.length === 0) toDelete.push(agg.id);
     }
     if (toDelete.length) {
-      try { await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", toDelete); } catch (_) {}
+      // Only GMs can delete effects
+      if (game.user.isGM) {
+        try { await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", toDelete); } catch (_) {} 
+      }
     }
   } catch (_) {}
 }
 
 export async function batchUpdateCoverEffects(observerToken, targetUpdates, options = {}) {
+  // Only GMs can perform batch operations
+  if (!game.user.isGM) return;
+  
   if (!observerToken?.actor || !targetUpdates?.length) return;
   
 
@@ -305,22 +321,6 @@ export function canonicalizeObserverRules(rules) {
 
   
   return final;
-}
-
-function summarizeRules(rules) {
-  const summary = { acBySignature: {}, roByToken: {} };
-  if (!Array.isArray(rules)) return summary;
-  for (const r of rules) {
-    if (r?.key === "FlatModifier" && r.selector === "ac") {
-      const sigs = extractSignaturesFromPredicate(r.predicate);
-      const sig = sigs[0] || "unknown";
-      summary.acBySignature[sig] = (summary.acBySignature[sig] || 0) + 1;
-    } else if (r?.key === "RollOption" && typeof r.option === "string" && r.option.startsWith("cover-against:")) {
-      const tokenId = r.option.slice("cover-against:".length);
-      summary.roByToken[tokenId] = (summary.roByToken[tokenId] || 0) + 1;
-    }
-  }
-  return summary;
 }
 
 function hasObserverPresence(rules) {

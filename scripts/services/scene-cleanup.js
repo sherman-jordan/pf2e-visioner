@@ -12,46 +12,76 @@ import { getVisibilityMap } from "../stores/visibility-map.js";
  * @param {TokenDocument} tokenDoc
  */
 export async function cleanupDeletedToken(tokenDoc) {
-  if (!tokenDoc?.id) return;
+  if (!tokenDoc?.id) {
+    console.warn("PF2E Visioner: cleanupDeletedToken called with invalid tokenDoc:", tokenDoc);
+    return;
+  }
+  
+  
+  // Check if this is part of a party consolidation - if so, delay cleanup
+  const scene = tokenDoc.parent || canvas.scene;
+  if (scene) {
+    const cache = scene.getFlag(MODULE_ID, "partyTokenStateCache") || {};
+    const isPartyConsolidation = tokenDoc.actor?.signature && cache[tokenDoc.actor.signature];
+    
+    if (isPartyConsolidation) {
+      return; // Skip cleanup for party tokens - restoration will handle it
+    }
+  }
+  
   try {
     const allTokens = canvas.tokens?.placeables || [];
-    const scene = tokenDoc.parent || canvas.scene;
     const updates = [];
 
     const restoreEntry = { visibilityByObserver: {}, coverByObserver: {} };
 
     for (const token of allTokens) {
-      if (!token?.document) continue;
-      const visMap = getVisibilityMap(token);
-      const covMap = getCoverMap(token);
-      const hadVis = visMap && Object.prototype.hasOwnProperty.call(visMap, tokenDoc.id);
-      const hadCov = covMap && Object.prototype.hasOwnProperty.call(covMap, tokenDoc.id);
-      if (!hadVis && !hadCov) continue;
+      if (!token?.document?.id) continue; // More robust check
+      
+      try {
+        const visMap = getVisibilityMap(token);
+        const covMap = getCoverMap(token);
+        const hadVis = visMap && Object.prototype.hasOwnProperty.call(visMap, tokenDoc.id);
+        const hadCov = covMap && Object.prototype.hasOwnProperty.call(covMap, tokenDoc.id);
+        if (!hadVis && !hadCov) continue;
 
-      const patch = { _id: token.document.id };
-      if (hadVis) {
-        restoreEntry.visibilityByObserver[token.document.id] = visMap[tokenDoc.id];
-        const newVis = { ...visMap };
-        delete newVis[tokenDoc.id];
-        patch[`flags.${MODULE_ID}.visibility`] = newVis;
+        const tokenId = token.document.id;
+        if (!tokenId) continue; // Extra safety check
+        
+        const patch = { _id: tokenId };
+        if (hadVis) {
+          restoreEntry.visibilityByObserver[tokenId] = visMap[tokenDoc.id];
+          const newVis = { ...visMap };
+          delete newVis[tokenDoc.id];
+          patch[`flags.${MODULE_ID}.visibility`] = newVis;
+        }
+        if (hadCov) {
+          restoreEntry.coverByObserver[tokenId] = covMap[tokenDoc.id];
+          const newCov = { ...covMap };
+          delete newCov[tokenDoc.id];
+          patch[`flags.${MODULE_ID}.cover`] = newCov;
+        }
+        updates.push(patch);
+      } catch (tokenError) {
+        console.warn(`PF2E Visioner: Error processing token ${token?.name || 'unknown'} during cleanup:`, tokenError);
+        continue; // Skip this token and continue with others
       }
-      if (hadCov) {
-        restoreEntry.coverByObserver[token.document.id] = covMap[tokenDoc.id];
-        const newCov = { ...covMap };
-        delete newCov[tokenDoc.id];
-        patch[`flags.${MODULE_ID}.cover`] = newCov;
-      }
-      updates.push(patch);
     }
 
     if (updates.length && scene?.updateEmbeddedDocuments) {
-      await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+      // Only GMs can update token documents during cleanup
+      if (game.user.isGM) {
+        await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+      }
     }
 
     try {
       const cache = scene?.getFlag?.(MODULE_ID, "deletedEntryCache") || {};
       cache[tokenDoc.id] = restoreEntry;
-      await scene?.setFlag?.(MODULE_ID, "deletedEntryCache", cache);
+      // Only GMs can update scene flags
+      if (game.user.isGM) {
+        await scene?.setFlag?.(MODULE_ID, "deletedEntryCache", cache);
+      }
     } catch (_) {}
   } catch (error) {
     console.error("PF2E Visioner: Error cleaning up data for deleted token:", error);
@@ -97,12 +127,18 @@ export async function restoreDeletedTokenMaps(tokenDoc) {
     }
 
     if (updates.length) {
-      await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+      // Only GMs can update token documents during restoration
+      if (game.user.isGM) {
+        await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+      }
     }
 
     try {
       delete cache[tokenDoc.id];
-      await scene.setFlag(MODULE_ID, "deletedEntryCache", cache);
+      // Only GMs can update scene flags
+      if (game.user.isGM) {
+        await scene.setFlag(MODULE_ID, "deletedEntryCache", cache);
+      }
     } catch (_) {}
 
     return updates.length > 0;

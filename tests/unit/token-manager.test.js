@@ -8,13 +8,8 @@ import '../setup.js';
 
 import { VisionerTokenManager } from '../../scripts/managers/token-manager/token-manager.js';
 
-// Mock the stores
-jest.mock('../../scripts/utils.js', () => ({
-  getVisibilityMap: jest.fn(() => ({})),
-  getCoverMap: jest.fn(() => ({})),
-  setVisibilityBetween: jest.fn(),
-  setCoverBetween: jest.fn()
-}));
+// ✅ REMOVED DANGEROUS UTILS.JS MOCK
+// Now using real imports to test actual integration
 
 describe('VisionerTokenManager', () => {
   let observer, manager;

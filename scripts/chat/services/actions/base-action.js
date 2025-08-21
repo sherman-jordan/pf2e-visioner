@@ -179,10 +179,27 @@ export class ActionHandlerBase {
   async revert(actionData, button) {
     try {
       const changesFromCache = await this.buildChangesFromCache(actionData);
-      const changes = changesFromCache && changesFromCache.length ? changesFromCache : await this.fallbackRevertChanges(actionData);
+      let changes = changesFromCache && changesFromCache.length ? changesFromCache : await this.fallbackRevertChanges(actionData);
+      
+      // Filter changes by targetTokenId if specified (for per-row revert)
+      if (actionData.targetTokenId && changes && changes.length > 0) {
+        changes = changes.filter(change => {
+          const tokenId = change.observer?.id || change.target?.id;
+          return tokenId === actionData.targetTokenId;
+        });
+      }
+      
       if (!changes || changes.length === 0) { notify.info("Nothing to revert"); return; }
       await this.applyChangesInternal(changes);
-      this.clearCache(actionData);
+      
+      // Only clear cache if reverting all tokens (no targetTokenId specified)
+      if (!actionData.targetTokenId) {
+        this.clearCache(actionData);
+      } else {
+        // For per-row revert, remove only the specific token from cache
+        this.removeFromCache(actionData, actionData.targetTokenId);
+      }
+      
       this.updateButtonToApply(button);
     } catch (e) {
       log.error(e);
@@ -210,6 +227,26 @@ export class ActionHandlerBase {
 
   clearCache(actionData) {
     try { this.getCacheMap()?.delete(actionData.messageId); } catch (_) {}
+  }
+
+  removeFromCache(actionData, targetTokenId) {
+    try {
+      const cache = this.getCacheMap();
+      if (!cache) return;
+      
+      const entries = cache.get(actionData.messageId) || [];
+      const filteredEntries = entries.filter(entry => {
+        // Remove entries that match the target token ID
+        const entryTokenId = entry.observerId || entry.targetId || entry.tokenId;
+        return entryTokenId !== targetTokenId;
+      });
+      
+      if (filteredEntries.length === 0) {
+        cache.delete(actionData.messageId);
+      } else {
+        cache.set(actionData.messageId, filteredEntries);
+      }
+    } catch (_) {}
   }
 
   // Helpers

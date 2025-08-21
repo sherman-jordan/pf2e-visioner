@@ -6,6 +6,9 @@ import { MODULE_ID } from "../constants.js";
 import { updateReflexStealthAcrossCoverAggregates } from "./aggregates.js";
 
 export async function cleanupAllCoverEffects() {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+  
   try {
     const allActors = Array.from(game.actors || []);
     const batchSize = 10;
@@ -40,6 +43,9 @@ export async function cleanupAllCoverEffects() {
 }
 
 export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+  
   try {
     if (!observerToken) return;
     await (async () => {
@@ -106,6 +112,9 @@ export async function cleanupCoverEffectsForObserver(targetToken, observerToken)
 }
 
 export async function cleanupDeletedTokenCoverEffects(tokenDoc) {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+  
   if (!tokenDoc?.id || !tokenDoc?.actor?.id) return;
   try {
     const deletedToken = {

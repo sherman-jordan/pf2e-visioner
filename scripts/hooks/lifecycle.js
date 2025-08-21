@@ -111,7 +111,10 @@ async function enableVisionForAllTokensAndPrototypes() {
         const pt = actor?.prototypeToken;
         const hasVision = pt?.vision === true || pt?.sight?.enabled === true;
         if (!hasVision) {
-          await actor.update({ "prototypeToken.vision": true, "prototypeToken.sight.enabled": true }, { diff: false });
+          // Only GMs can update actor prototype tokens
+          if (game.user.isGM) {
+            await actor.update({ "prototypeToken.vision": true, "prototypeToken.sight.enabled": true }, { diff: false });
+          }
         }
         } catch (_) {}
       }

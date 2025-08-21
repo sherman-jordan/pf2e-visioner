@@ -71,6 +71,10 @@ Hooks.once("ready", async () => {
         // Register auto-cover detection (GM only to avoid duplicates)
         const { cleanupAllCoverEffects } = await import("./cover/ephemeral.js");
         await cleanupAllCoverEffects();
+        
+        // Clean up old party token states (older than 24 hours)
+        const { cleanupOldPartyTokenStates } = await import("./services/party-token-state.js");
+        await cleanupOldPartyTokenStates();
       } catch (error) {
         console.error(
           "PF2E Visioner: Failed to clean up cover effects:",

@@ -42,9 +42,12 @@ export async function removeModuleEffectsFromActors(actors) {
       if (!actor) continue;
       const toDelete = collectModuleEffectIds(actor);
       if (toDelete.length) {
-        try {
-          await actor.deleteEmbeddedDocuments("Item", toDelete);
-        } catch (_) {}
+        // Only GMs can delete effects
+        if (game.user.isGM) {
+          try {
+            await actor.deleteEmbeddedDocuments("Item", toDelete);
+          } catch (_) {}
+        }
       }
     }
   } catch (_) {}
@@ -57,9 +60,12 @@ export async function removeModuleEffectsFromTokenActors(tokens) {
       if (!a) continue;
       const toDelete = collectModuleEffectIds(a);
       if (toDelete.length) {
-        try {
-          await a.deleteEmbeddedDocuments("Item", toDelete);
-        } catch (_) {}
+        // Only GMs can delete effects
+        if (game.user.isGM) {
+          try {
+            await a.deleteEmbeddedDocuments("Item", toDelete);
+          } catch (_) {}
+        }
       }
     }
   } catch (_) {}

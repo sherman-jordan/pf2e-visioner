@@ -5,11 +5,11 @@
 import { extractPerceptionDC, extractStealthDC } from "../../chat/services/infra/shared-utils.js";
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../../constants.js";
 import {
-  getCoverMap,
-  getLastRollTotalForActor,
-  getSceneTargets,
-  getVisibilityMap,
-  hasActiveEncounter,
+    getCoverMap,
+    getLastRollTotalForActor,
+    getSceneTargets,
+    getVisibilityMap,
+    hasActiveEncounter,
 } from "../../utils.js";
 
 function getTokenImage(token) {

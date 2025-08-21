@@ -52,7 +52,14 @@ export async function handleRenderChatMessage(message, html) {
     if (hasPendingSeekTemplateForGM || hasPendingPointOutForGM || hasPendingSeekTemplateForPlayerAuthor) {
       try { processedMessages.delete(message.id); } catch (_) {}
     } else {
-      return;
+      // Check if Visioner UI still exists in the DOM - if not, we need to re-inject it
+      // This handles cases where message updates remove our injected panels
+      const hasVisionerUI = html.find && html.find('.pf2e-visioner-automation-panel').length > 0;
+      if (hasVisionerUI) {
+        return; // UI still exists, no need to re-inject
+      }
+      // UI was removed by message update, allow re-injection
+      try { processedMessages.delete(message.id); } catch (_) {}
     }
   }
 

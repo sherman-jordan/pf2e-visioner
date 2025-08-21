@@ -199,18 +199,33 @@ describe('Utility Functions', () => {
   });
 
   describe('cleanupDeletedToken', () => {
+    let mockScene;
+
+    beforeEach(() => {
+      // Create a mock scene with getFlag method
+      mockScene = {
+        id: 'mock-scene',
+        getFlag: jest.fn().mockReturnValue({})
+      };
+
+      // Add parent scene to mock tokens
+      mockTarget.document.parent = mockScene;
+      mockObserver.document.parent = mockScene;
+    });
+
     test('should clean up visibility data for deleted token', async () => {
       // Set up some visibility data
       await setVisibilityBetween(mockObserver, mockTarget, 'hidden');
       
       // Clean up
-      const result = cleanupDeletedToken(mockTarget);
+      const result = cleanupDeletedToken(mockTarget.document);
       expect(result).toBeDefined();
     });
 
     test('should handle tokens with no visibility data', () => {
       const newToken = createMockToken({ id: 'new-token' });
-      const result = cleanupDeletedToken(newToken);
+      newToken.document.parent = mockScene;
+      const result = cleanupDeletedToken(newToken.document);
       expect(result).toBeDefined();
     });
 
@@ -219,7 +234,7 @@ describe('Utility Functions', () => {
       await setCoverBetween(mockObserver, mockTarget, 'standard');
       
       // Clean up
-      const result = cleanupDeletedToken(mockTarget);
+      const result = cleanupDeletedToken(mockTarget.document);
       expect(result).toBeDefined();
     });
   });

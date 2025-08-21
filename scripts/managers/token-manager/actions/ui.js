@@ -151,6 +151,12 @@ export async function toggleEncounterFilter(event, button) {
   await app.render({ force: true });
 }
 
+export async function toggleIgnoreAllies(event, button) {
+  const app = this;
+  app.ignoreAllies = !app.ignoreAllies;
+  await app.render({ force: true });
+}
+
 export async function bulkSetVisibilityState(event, button) {
   try {
     const state = button.dataset.state;

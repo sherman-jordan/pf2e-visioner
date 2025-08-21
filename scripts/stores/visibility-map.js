@@ -22,6 +22,9 @@ export function getVisibilityMap(token) {
  */
 export async function setVisibilityMap(token, visibilityMap) {
   if (!token?.document) return;
+  // Only GMs can update token documents
+  if (!game.user.isGM) return;
+  
   const path = `flags.${MODULE_ID}.visibility`;
   const result = await token.document.update({ [path]: visibilityMap }, { diff: false });
   return result;

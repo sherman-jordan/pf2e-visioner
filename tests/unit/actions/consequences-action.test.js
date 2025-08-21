@@ -208,6 +208,64 @@ describe('Attack Consequences Action Comprehensive Tests', () => {
       const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
     });
+
+    test('BUG TEST: per-row revert should only revert the specific token, not all tokens', async () => {
+      // This test will FAIL until the bug is fixed, demonstrating the issue
+      
+      // Mock the cache to simulate that apply-all has been used
+      const mockCache = new Map();
+      const messageId = 'test-message-123';
+      
+      // Simulate cache entries from apply-all (all tokens were applied)
+      mockCache.set(messageId, [
+        { observerId: 'enemy1', oldVisibility: 'hidden' },
+        { observerId: 'enemy2', oldVisibility: 'undetected' },
+        { observerId: 'enemy3', oldVisibility: 'hidden' }
+      ]);
+      
+      // Mock the ConsequencesActionHandler
+      const { ConsequencesActionHandler } = await import('../../../scripts/chat/services/actions/consequences-action.js');
+      const handler = new ConsequencesActionHandler();
+      
+      // Mock the cache map to return our test cache
+      jest.spyOn(handler, 'getCacheMap').mockReturnValue(mockCache);
+      
+      // Mock getTokenById to return mock tokens
+      jest.spyOn(handler, 'getTokenById').mockImplementation((id) => ({
+        id,
+        actor: { id, type: 'npc' },
+        document: { id }
+      }));
+      
+      // Mock applyChangesInternal to track what changes are being applied
+      const appliedChanges = [];
+      jest.spyOn(handler, 'applyChangesInternal').mockImplementation(async (changes) => {
+        appliedChanges.push(...changes);
+      });
+      
+      const actionData = { 
+        messageId,
+        actor: { id: 'attacker', alliance: 'party' },
+        // THIS IS THE KEY: per-row revert should pass the specific tokenId
+        targetTokenId: 'enemy1'  // Only this token should be reverted
+      };
+      
+      // Call revert with targetTokenId specified
+      await handler.revert(actionData, { html: () => {}, attr: () => {} });
+      
+      // EXPECTED BEHAVIOR: Only the target token should be reverted
+      expect(appliedChanges).toHaveLength(1); // Should only revert enemy1
+      expect(appliedChanges[0].observer.id).toBe('enemy1');
+      expect(appliedChanges[0].newVisibility).toBe('hidden');
+      
+      // Other tokens should NOT be reverted
+      const revertedTokenIds = appliedChanges.map(c => c.observer.id);
+      expect(revertedTokenIds).not.toContain('enemy2');
+      expect(revertedTokenIds).not.toContain('enemy3');
+      
+      // This test will FAIL because the current implementation ignores targetTokenId
+      // and reverts ALL cached tokens instead of just the target
+    });
   });
 
   describe('RAW Enforcement Integration Tests', () => {

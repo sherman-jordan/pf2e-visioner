@@ -5,6 +5,9 @@
 import { MODULE_ID } from "../constants.js";
 
 async function removeObserverFromAggregate(effectReceiverToken, observerToken, visibilityState, options = {}) {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+
   const effects = effectReceiverToken.actor.itemTypes.effect;
   const aggregate = effects.find(
     (e) =>
@@ -38,6 +41,9 @@ async function removeObserverFromAggregate(effectReceiverToken, observerToken, v
 }
 
 async function pruneEmptyAggregates(effectReceiverToken) {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+
   if (!effectReceiverToken?.actor?.itemTypes?.effect) return;
   try {
     const empties = effectReceiverToken.actor.itemTypes.effect.filter((e) => {
@@ -60,6 +66,9 @@ async function pruneEmptyAggregates(effectReceiverToken) {
 }
 
 export async function cleanupEphemeralEffectsForTarget(observerToken, hiddenToken) {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+  
   if (!observerToken?.actor || !hiddenToken?.actor) return;
   try {
     const ephemeralEffects = observerToken.actor.itemTypes.effect.filter(
@@ -103,6 +112,9 @@ export async function cleanupEphemeralEffectsForTarget(observerToken, hiddenToke
 }
 
 export async function cleanupDeletedTokenEffects(tokenDoc) {
+  // Only GMs can perform cleanup operations
+  if (!game.user.isGM) return;
+  
   if (!tokenDoc?.id || !tokenDoc?.actor?.id) return;
   try {
     const deletedToken = { id: tokenDoc.id, actor: { id: tokenDoc.actor.id, signature: tokenDoc.actor?.signature || tokenDoc.actor.id } };

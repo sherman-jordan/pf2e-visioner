@@ -354,24 +354,6 @@ function onGetTokenDirectoryEntryContext(html, options) {
   });
 }
 
-function onGetTokenHUDButtons(hud, buttons, token) {
-  try {
-    if (token?.actor?.type === "loot") {
-      if (!game.settings.get(MODULE_ID, "includeLootActors")) return;
-    }
-  } catch (_) {}
-  buttons.push({
-    name: "token-manager",
-    title: "Token Manager (Left: Target Mode, Right: Observer Mode)",
-    icon: "fas fa-eye",
-    onChange: async () => {
-      const { openTokenManagerWithMode } = await import("../api.js");
-      await openTokenManagerWithMode(token, "target");
-    },
-    button: true,
-  });
-}
-
 function injectPF2eVisionerBox(app, root) {
   // Scene Config injection
   try {

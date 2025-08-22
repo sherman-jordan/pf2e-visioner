@@ -70,9 +70,9 @@
                 →
                 <div class="override-icons" data-token-id="{{outcome.token.id}}">
                   {{#each outcome.availableStates as |state|}}
-                    <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
+                    <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}} {{state.cssClass}}" 
                             data-state="{{state.value}}" data-token-id="{{outcome.token.id}}" 
-                            title="Override to {{state.label}}" style="color: {{state.color}}">
+                            title="Override to {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}

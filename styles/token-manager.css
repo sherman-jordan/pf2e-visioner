@@ -135,23 +135,23 @@
 }
 
 .icon-tab-navigation .icon-tab-button[data-tab="visibility"].active {
-  background: linear-gradient(135deg, #2e7d32, #43a047);
-  border-color: #1b5e20;
-  color: #fff;
+  background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
+  border-color: var(--visibility-observed);
+  color: var(--color-text-light-primary);
 }
 .icon-tab-navigation .icon-tab-button[data-tab="cover"].active {
-  background: linear-gradient(135deg, #1565c0, #1e88e5);
-  border-color: #0d47a1;
-  color: #fff;
+  background: linear-gradient(135deg, var(--cover-standard), var(--cover-standard));
+  border-color: var(--cover-standard);
+  color: var(--color-text-light-primary);
 }
 .icon-tab-navigation .icon-tab-button[data-tab="visibility"] i {
-  color: #2e7d32;
+  color: var(--visibility-observed);
 }
 .icon-tab-navigation .icon-tab-button[data-tab="cover"] i {
-  color: #1565c0;
+  color: var(--cover-standard);
 }
 .icon-tab-navigation .icon-tab-button.active i {
-  color: #fff;
+  color: var(--color-text-light-primary);
 }
 
 /* 2x2 legend grid */
@@ -204,9 +204,9 @@
 }
 
 .tab-button.active {
-  background: var(--color-primary, #4b4a44);
-  border-color: var(--color-primary, #4b4a44);
-  color: var(--color-text-light-highlight, white);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-light-highlight);
 }
 
 .tab-button i {
@@ -382,30 +382,30 @@
 
 /* Colored cover effect badges matching traffic-light scheme */
 .cover-none {
-  color: #4caf50 !important;
+  color: var(--cover-none) !important;
 }
 .cover-lesser {
-  color: #ffeb3b !important;
+  color: var(--cover-lesser) !important;
 }
 .cover-standard {
-  color: #ff6600 !important;
+  color: var(--cover-standard) !important;
 }
 .cover-greater {
-  color: #f44336 !important;
+  color: var(--cover-greater) !important;
 }
 
 /* Ensure icons also follow traffic-light colors (extra specificity) */
 .cover-none i {
-  color: #4caf50 !important;
+  color: var(--cover-none) !important;
 }
 .cover-lesser i {
-  color: #ffeb3b !important;
+  color: var(--cover-lesser) !important;
 }
 .cover-standard i {
-  color: #ff6600 !important;
+  color: var(--cover-standard) !important;
 }
 .cover-greater i {
-  color: #f44336 !important;
+  color: var(--cover-greater) !important;
 }
 
 .observer-main {
@@ -556,13 +556,13 @@
 
 /* Active State Colors */
 .mode-toggle.observer-active .toggle-option:first-child {
-  background: linear-gradient(135deg, #4a90e2, #357abd) !important;
+  background: linear-gradient(135deg, var(--pf2e-visioner-info), var(--pf2e-visioner-info)) !important;
   color: white !important;
   box-shadow: var(--shadow-sm);
 }
 
 .mode-toggle.target-active .toggle-option:last-child {
-  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  background: linear-gradient(135deg, var(--pf2e-visioner-danger), var(--pf2e-visioner-danger)) !important;
   color: white !important;
   box-shadow: var(--shadow-sm);
 }
@@ -665,46 +665,46 @@
 
 /* Specific bulk state button styling */
 .bulk-state[data-state="observed"] {
-  background: rgba(76, 175, 80, 0.1);
+  background: var(--visibility-observed-bg);
   border-color: var(--visibility-observed);
   color: var(--visibility-observed);
 }
 
 .bulk-state[data-state="observed"]:hover {
-  background: rgba(76, 175, 80, 0.2);
+  background: var(--visibility-observed-bg-strong);
   border-color: var(--visibility-observed);
 }
 
 .bulk-state[data-state="concealed"] {
-  background: rgba(255, 235, 59, 0.1);
+  background: var(--visibility-concealed-bg);
   border-color: var(--visibility-concealed);
-  color: #b8860b;
+  color: var(--pf2e-visioner-warning);
 }
 
 .bulk-state[data-state="concealed"]:hover {
-  background: rgba(255, 235, 59, 0.2);
+  background: var(--visibility-concealed-bg-strong);
   border-color: var(--visibility-concealed);
 }
 
 .bulk-state[data-state="hidden"] {
-  background: rgba(255, 152, 0, 0.1);
+  background: var(--visibility-hidden-bg);
   border-color: var(--visibility-hidden);
   color: var(--visibility-hidden);
 }
 
 .bulk-state[data-state="hidden"]:hover {
-  background: rgba(255, 152, 0, 0.2);
+  background: var(--visibility-hidden-bg-strong);
   border-color: var(--visibility-hidden);
 }
 
 .bulk-state[data-state="undetected"] {
-  background: rgba(244, 67, 54, 0.1);
+  background: var(--visibility-undetected-bg);
   border-color: var(--visibility-undetected);
   color: var(--visibility-undetected);
 }
 
 .bulk-state[data-state="undetected"]:hover {
-  background: rgba(244, 67, 54, 0.2);
+  background: var(--visibility-undetected-bg-strong);
   border-color: var(--visibility-undetected);
 }
 
@@ -762,57 +762,57 @@
   box-shadow: 0 0 0 2px rgba(255, 125, 0, 0.2); /* ensure glow not clipped visually */
 }
 
-/* Specific bulk state header button styling - using direct hex colors */
+/* Specific bulk state header button styling - using CSS custom properties */
 .bulk-actions-header .bulk-state-header[data-state="observed"],
 .bulk-actions-header .bulk-state-header[data-state="observed"] i {
-  color: #4caf50 !important;
-  border-color: #4caf50 !important;
+  color: var(--visibility-observed) !important;
+  border-color: var(--visibility-observed) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="observed"]:hover,
 .bulk-actions-header .bulk-state-header[data-state="observed"]:hover i {
-  background: rgba(76, 175, 80, 0.15) !important;
-  border-color: #4caf50 !important;
-  color: #4caf50 !important;
+  background: var(--visibility-observed-bg-medium) !important;
+  border-color: var(--visibility-observed) !important;
+  color: var(--visibility-observed) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="concealed"],
 .bulk-actions-header .bulk-state-header[data-state="concealed"] i {
-  color: #ffeb3b !important;
-  border-color: #ffeb3b !important;
+  color: var(--visibility-concealed) !important;
+  border-color: var(--visibility-concealed) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="concealed"]:hover,
 .bulk-actions-header .bulk-state-header[data-state="concealed"]:hover i {
-  background: rgba(255, 235, 59, 0.15) !important;
-  border-color: #ffeb3b !important;
-  color: #ffeb3b !important;
+  background: var(--visibility-concealed-bg-medium) !important;
+  border-color: var(--visibility-concealed) !important;
+  color: var(--visibility-concealed) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="hidden"],
 .bulk-actions-header .bulk-state-header[data-state="hidden"] i {
-  color: #ff6600 !important;
-  border-color: #ff6600 !important;
+  color: var(--visibility-hidden) !important;
+  border-color: var(--visibility-hidden) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="hidden"]:hover,
 .bulk-actions-header .bulk-state-header[data-state="hidden"]:hover i {
   background: rgba(255, 102, 0, 0.15) !important;
-  border-color: #ff6600 !important;
-  color: #ff6600 !important;
+  border-color: var(--visibility-hidden) !important;
+  color: var(--visibility-hidden) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="undetected"],
 .bulk-actions-header .bulk-state-header[data-state="undetected"] i {
-  color: #f44336 !important;
-  border-color: #f44336 !important;
+  color: var(--visibility-undetected) !important;
+  border-color: var(--visibility-undetected) !important;
 }
 
 .bulk-actions-header .bulk-state-header[data-state="undetected"]:hover,
 .bulk-actions-header .bulk-state-header[data-state="undetected"]:hover i {
-  background: rgba(244, 67, 54, 0.15) !important;
-  border-color: #f44336 !important;
-  color: #f44336 !important;
+  background: var(--visibility-undetected-bg-medium) !important;
+  border-color: var(--visibility-undetected) !important;
+  color: var(--visibility-undetected) !important;
 }
 
 /* Loading state for bulk action buttons */
@@ -951,17 +951,17 @@
 
 /* Row highlight when hovering the corresponding token on canvas */
 tr.token-row.row-hover {
-  outline: 2px solid var(--pf2e-visioner-primary, #ff9800);
+  outline: 2px solid var(--pf2e-visioner-primary);
   outline-offset: -2px;
-  box-shadow: inset 0 0 0 2px rgba(255, 152, 0, 0.3);
-  background: rgba(255, 152, 0, 0.1) !important;
+  box-shadow: inset 0 0 0 2px var(--visibility-hidden-bg-strong);
+  background: var(--visibility-hidden-bg) !important;
 }
 
 /* Form Controls */
 .visibility-table select {
-  background: var(--color-bg-option, #2a2a2a) !important;
-  color: var(--color-text-primary, #ffffff) !important;
-  border: 1px solid var(--color-border-light-primary, #666666) !important;
+  background: var(--color-bg-option) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-light-primary) !important;
   border-radius: var(--radius-md) !important;
   padding: 4px 8px !important;
   font-size: 12px !important;
@@ -973,7 +973,7 @@ tr.token-row.row-hover {
 
 .visibility-table select:hover {
   border-color: var(--pf2e-visioner-primary) !important;
-  background: var(--color-bg-btn, #3a3a3a) !important;
+  background: var(--color-bg-btn) !important;
 }
 
 .visibility-table select:focus {
@@ -984,14 +984,14 @@ tr.token-row.row-hover {
 
 /* Select Options Styling */
 .visibility-table select option {
-  background: var(--color-bg-option, #2a2a2a) !important;
-  color: var(--color-text-primary, #ffffff) !important;
+  background: var(--color-bg-option) !important;
+  color: var(--color-text-primary) !important;
   padding: var(--spacing-xs) var(--spacing-sm) !important;
   border: none !important;
 }
 
 .visibility-table select option:hover {
-  background: var(--color-bg-btn, #3a3a3a) !important;
+  background: var(--color-bg-btn) !important;
 }
 
 /* Removed selected option highlighting - no need to show current state in dropdown */
@@ -1079,10 +1079,218 @@ tr.token-row.row-hover {
   gap: 4px;
   font-size: 10px;
   font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
 }
 
 .state-indicator i {
   font-size: 10px;
+}
+
+/* Visibility state indicator colors */
+.state-indicator.visibility-observed {
+  --state-indicator-bg: var(--visibility-observed-bg-strong) !important;
+  background: var(--visibility-observed-bg-strong) !important;
+  color: var(--visibility-observed) !important;
+}
+
+.state-indicator.visibility-concealed {
+  --state-indicator-bg: var(--visibility-concealed-bg-strong) !important;
+  background: var(--visibility-concealed-bg-strong) !important;
+  color: var(--visibility-concealed) !important;
+}
+
+.state-indicator.visibility-hidden {
+  --state-indicator-bg: var(--visibility-hidden-bg-strong) !important;
+  background: var(--visibility-hidden-bg-strong) !important;
+  color: var(--visibility-hidden) !important;
+}
+
+.state-indicator.visibility-undetected {
+  --state-indicator-bg: var(--visibility-undetected-bg-strong) !important;
+  background: var(--visibility-undetected-bg-strong) !important;
+  color: var(--visibility-undetected) !important;
+}
+
+/* Effects column colors - subtle professional styling */
+.cover-none, .no-effect.cover-none {
+  background: rgba(76, 175, 80, 0.25) !important; /* Subtle green */
+  color: #4caf50 !important;
+  border: 1px solid #4caf50 !important;
+}
+
+.cover-lesser, .cover-effect.cover-lesser {
+  background: rgba(255, 193, 7, 0.25) !important; /* Subtle yellow */
+  color: #ffc107 !important;
+  border: 1px solid #ffc107 !important;
+}
+
+.cover-standard, .cover-effect.cover-standard {
+  background: rgba(255, 102, 0, 0.25) !important; /* Subtle orange */
+  color: #ff6600 !important;
+  border: 1px solid #ff6600 !important;
+}
+
+.cover-greater, .cover-effect.cover-greater {
+  background: rgba(244, 67, 54, 0.25) !important; /* Subtle red */
+  color: #f44336 !important;
+  border: 1px solid #f44336 !important;
+}
+
+/* Clean professional styling */
+
+/* FINAL FIX: State indicators with subtle professional colors */
+/* State indicators - force all cover states with maximum specificity */
+.pf2e-visioner .state-indicator.cover-none,
+.state-indicator.cover-none,
+span.state-indicator.cover-none {
+  background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
+  color: #4caf50 !important; /* Green text */
+  border-color: #4caf50 !important; /* Green border */
+}
+
+.pf2e-visioner .state-indicator.cover-lesser,
+.state-indicator.cover-lesser,
+span.state-indicator.cover-lesser {
+  background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
+  color: #ffc107 !important; /* Yellow text */
+  border-color: #ffc107 !important; /* Yellow border */
+}
+
+.pf2e-visioner .state-indicator.cover-standard,
+.state-indicator.cover-standard,
+span.state-indicator.cover-standard {
+  background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
+  color: #ff6600 !important; /* Orange text */
+  border-color: #ff6600 !important; /* Orange border */
+}
+
+.pf2e-visioner .state-indicator.cover-greater,
+.state-indicator.cover-greater,
+span.state-indicator.cover-greater {
+  background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
+  color: #f44336 !important; /* Red text */
+  border-color: #f44336 !important; /* Red border */
+}
+
+
+
+/* JavaScript will ensure CSS classes are applied - use simple class selectors */
+.state-indicator.cover-none {
+  background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
+  color: #4caf50 !important; /* Green text */
+  border-color: #4caf50 !important; /* Green border */
+}
+
+.state-indicator.cover-lesser {
+  background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
+  color: #ffc107 !important; /* Yellow text */
+  border-color: #ffc107 !important; /* Yellow border */
+}
+
+.state-indicator.cover-standard {
+  background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
+  color: #ff6600 !important; /* Orange text */
+  border-color: #ff6600 !important; /* Orange border */
+}
+
+.state-indicator.cover-greater {
+  background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
+  color: #f44336 !important; /* Red text */
+  border-color: #f44336 !important; /* Red border */
+}
+
+/* Duplicate rules removed - using higher specificity rules above */
+
+/* Visibility state indicators with subtle colors */
+.state-indicator.visibility-observed {
+  background: rgba(76, 175, 80, 0.2) !important; /* Subtle green background */
+  color: #4caf50 !important; /* Green text */
+  border-color: #4caf50 !important; /* Green border */
+}
+
+.state-indicator.visibility-concealed {
+  background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
+  color: #ff9800 !important; /* Orange text */
+  border-color: #ff9800 !important; /* Orange border */
+}
+
+.state-indicator.visibility-hidden {
+  background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
+  color: #ff9800 !important; /* Orange text */
+  border-color: #ff9800 !important; /* Orange border */
+}
+
+.state-indicator.visibility-undetected {
+  background: rgba(244, 67, 54, 0.2) !important; /* Subtle red background */
+  color: #f44336 !important; /* Red text */
+  border-color: #f44336 !important; /* Red border */
+}
+
+/* Cover state indicator colors - WORKING SOLUTION FOR BOTH MODES */
+.state-indicator.cover-none,
+span.state-indicator.cover-none,
+.pf2e-visioner .state-indicator.cover-none,
+.mode-toggle.observer-active ~ * .state-indicator.cover-none,
+.mode-toggle.target-active ~ * .state-indicator.cover-none {
+  background: rgba(76, 175, 80, 0.25) !important; /* Subtle green background */
+  color: #4caf50 !important; /* Green text */
+  border: 1px solid #4caf50 !important; /* Green border */
+}
+
+/* Removed redundant class-based selectors - using content-based selectors above */
+
+/* Ensure bulk buttons respect colorblind mode */
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"],
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"] i {
+  color: var(--visibility-observed) !important;
+  border-color: var(--visibility-observed) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"]:hover,
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"]:hover i {
+  background: var(--visibility-observed-bg-medium) !important;
+  border-color: var(--visibility-observed) !important;
+  color: var(--visibility-observed) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"],
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"] i {
+  color: var(--visibility-concealed) !important;
+  border-color: var(--visibility-concealed) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"]:hover,
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"]:hover i {
+  background: var(--visibility-concealed-bg-medium) !important;
+  border-color: var(--visibility-concealed) !important;
+  color: var(--visibility-concealed) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"],
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"] i {
+  color: var(--visibility-hidden) !important;
+  border-color: var(--visibility-hidden) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"]:hover,
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"]:hover i {
+  background: var(--visibility-hidden-bg-medium) !important;
+  border-color: var(--visibility-hidden) !important;
+  color: var(--visibility-hidden) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"],
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"] i {
+  color: var(--visibility-undetected) !important;
+  border-color: var(--visibility-undetected) !important;
+}
+
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"]:hover,
+.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"]:hover i {
+  background: var(--visibility-undetected-bg-medium) !important;
+  border-color: var(--visibility-undetected) !important;
+  color: var(--visibility-undetected) !important;
 }
 
 /* No Targets Message */
@@ -1201,6 +1409,14 @@ tr.token-row.row-hover {
   transform: scale(1.1);
 }
 
+/* Ensure cover state icons have same border width when selected */
+.state-icon.selected.cover-none,
+.state-icon.selected.cover-lesser,
+.state-icon.selected.cover-standard,
+.state-icon.selected.cover-greater {
+  border-width: 2px !important;
+}
+
 .state-icon.selected::after {
   content: "";
   position: absolute;
@@ -1215,34 +1431,71 @@ tr.token-row.row-hover {
 
 /* Specific state icon colors */
 .state-icon[data-state="observed"] {
-  color: #4caf50;
+  color: var(--visibility-observed);
 }
 
 .state-icon[data-state="concealed"] {
-  color: #ffeb3b;
+  color: var(--visibility-concealed);
 }
 
 .state-icon[data-state="hidden"] {
-  color: #ff6600;
+  color: var(--visibility-hidden);
 }
 
 .state-icon[data-state="undetected"] {
-  color: #f44336;
+  color: var(--visibility-undetected);
+}
+
+/* Ensure state icons respect colorblind mode with higher specificity */
+.pf2e-visioner .state-icon[data-state="observed"] {
+  color: var(--visibility-observed) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="concealed"] {
+  color: var(--visibility-concealed) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="hidden"] {
+  color: var(--visibility-hidden) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="undetected"] {
+  color: var(--visibility-undetected) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="observed"].selected {
+  background: var(--visibility-observed-bg-strong) !important;
+  color: var(--visibility-observed) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="concealed"].selected {
+  background: var(--visibility-concealed-bg-strong) !important;
+  color: var(--visibility-concealed) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="hidden"].selected {
+  background: var(--visibility-hidden-bg-strong) !important;
+  color: var(--visibility-hidden) !important;
+}
+
+.pf2e-visioner .state-icon[data-state="undetected"].selected {
+  background: var(--visibility-undetected-bg-strong) !important;
+  color: var(--visibility-undetected) !important;
 }
 
 /* Cover icon traffic-light mapping */
 .cover-section .state-icon[data-state="none"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="none"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="none"] i {
-  color: #4caf50 !important;
-  border-color: #4caf50 !important;
+  color: var(--cover-none) !important;
+  border-color: var(--cover-none) !important;
 }
 
 .cover-section .state-icon[data-state="lesser"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="lesser"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="lesser"] i {
-  color: #ffeb3b !important;
-  border-color: #ffeb3b !important;
+  color: var(--cover-lesser) !important;
+  border-color: var(--cover-lesser) !important;
 }
 
 .cover-section .state-icon[data-state="standard"],
@@ -1251,15 +1504,15 @@ tr.token-row.row-hover {
   .bulk-actions-header
   .bulk-state-header[data-state="standard"]
   i {
-  color: #ff6600 !important;
-  border-color: #ff6600 !important;
+  color: var(--cover-standard) !important;
+  border-color: var(--cover-standard) !important;
 }
 
 .cover-section .state-icon[data-state="greater"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="greater"],
 .cover-section .bulk-actions-header .bulk-state-header[data-state="greater"] i {
-  color: #f44336 !important;
-  border-color: #f44336 !important;
+  color: var(--cover-greater) !important;
+  border-color: var(--cover-greater) !important;
 }
 
 /* Loading state for cover section bulk action buttons */
@@ -1282,7 +1535,7 @@ tr.token-row.row-hover {
 /* Token Row Hover Effects - consistent with dialogs */
 .token-visibility-manager .visibility-table tr[data-token-id]:hover {
   background: rgba(255, 255, 0, 0.1) !important;
-  border-left: 3px solid #ffff00;
+  border-left: 3px solid var(--visibility-concealed);
   cursor: pointer;
 }
 

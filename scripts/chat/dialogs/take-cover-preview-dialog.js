@@ -67,10 +67,10 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
     // Map cover constants to templating-friendly config
     const coverCfg = (s) => {
       const cfg = COVER_STATES[s] || null;
-      if (!cfg) return { label: String(s ?? ""), icon: "fas fa-shield-alt", color: "#795548" };
+      if (!cfg) return { label: String(s ?? ""), icon: "fas fa-shield-alt", color: "#795548", cssClass: "cover-none" };
       let label = cfg.label;
       try { label = game.i18n.localize(cfg.label); } catch (_) { }
-      return { label, icon: cfg.icon || "fas fa-shield-alt", color: cfg.color || "#795548" };
+      return { label, icon: cfg.icon || "fas fa-shield-alt", color: cfg.color || "#795548", cssClass: cfg.cssClass || "cover-none" };
     };
 
     const allStates = ["none", "lesser", "standard", "greater"]; // for override icons
@@ -84,6 +84,7 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
         label: coverCfg(s).label,
         icon: coverCfg(s).icon,
         color: coverCfg(s).color,
+        cssClass: coverCfg(s).cssClass,
         selected: s === effectiveNew,
         calculatedOutcome: s === (o.newVisibility || o.newCover),
       }));

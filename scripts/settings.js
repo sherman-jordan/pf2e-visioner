@@ -2,6 +2,7 @@
  * Module settings registration and management
  */
 
+import { reinjectChatAutomationStyles } from "./chat/chat-automation-styles.js";
 import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from "./constants.js";
 
 // Define grouped settings sections to declutter the native list.
@@ -424,6 +425,40 @@ export function registerSettings() {
           if (value !== "none") {
             document.body.classList.add(`pf2e-visioner-colorblind-${value}`);
           }
+          
+          // Apply to any existing .pf2e-visioner containers to ensure immediate effect
+          const containers = document.querySelectorAll('.pf2e-visioner');
+          containers.forEach(container => {
+            container.classList.remove(
+              "pf2e-visioner-colorblind-protanopia",
+              "pf2e-visioner-colorblind-deuteranopia",
+              "pf2e-visioner-colorblind-tritanopia",
+              "pf2e-visioner-colorblind-achromatopsia",
+            );
+            
+            if (value !== "none") {
+              container.classList.add(`pf2e-visioner-colorblind-${value}`);
+            }
+          });
+          
+          // Re-inject chat automation styles to apply new colorblind colors
+          try {
+            reinjectChatAutomationStyles();
+            console.log(`[PF2E Visioner] Re-injected chat automation styles for colorblind mode: ${value}`);
+          } catch (error) {
+            console.warn(`[PF2E Visioner] Failed to re-inject chat automation styles:`, error);
+          }
+          
+          // Force immediate visual update by triggering a re-render
+          setTimeout(() => {
+            const tokenManager = document.querySelector('.pf2e-visioner.token-visibility-manager');
+            if (tokenManager) {
+              // Force a style recalculation
+              tokenManager.style.display = 'none';
+              tokenManager.offsetHeight; // Trigger reflow
+              tokenManager.style.display = '';
+            }
+          }, 10);
         };
       } else if (key === "keybindingOpensTMInTargetMode") {
         // No reload needed: swap mode is read at runtime

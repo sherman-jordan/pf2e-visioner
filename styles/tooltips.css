@@ -267,7 +267,7 @@
 }
 
 .status-indicator.active {
-  background: rgba(76, 175, 80, 0.2);
+  background: var(--visibility-observed-bg-strong);
   color: var(--pf2e-visioner-success);
   border: 1px solid var(--pf2e-visioner-success);
 }
@@ -279,13 +279,13 @@
 }
 
 .status-indicator.warning {
-  background: rgba(255, 152, 0, 0.2);
+  background: var(--visibility-hidden-bg-strong);
   color: var(--pf2e-visioner-warning);
   border: 1px solid var(--pf2e-visioner-warning);
 }
 
 .status-indicator.error {
-  background: rgba(244, 67, 54, 0.2);
+  background: var(--visibility-undetected-bg-strong);
   color: var(--pf2e-visioner-danger);
   border: 1px solid var(--pf2e-visioner-danger);
 }
@@ -396,7 +396,7 @@
   border-radius: 8px !important;
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.8),
-    0 0 20px rgba(255, 152, 0, 0.3) !important;
+    0 0 20px var(--visibility-hidden-bg-strong) !important;
   font-size: var(--pf2e-visioner-tooltip-font-size) !important;
   padding: 12px 16px !important;
   max-width: 300px !important;

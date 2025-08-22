@@ -62,7 +62,7 @@
   .bulk-state {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: 12px;
-    border: 2px solid var(--color-border-light-primary, #666) !important;
+    border: 2px solid var(--color-border-light-primary) !important;
   }
 
   .table-section-header {

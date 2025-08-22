@@ -30,6 +30,24 @@ export function injectChatAutomationStyles() {
 }
 
 /**
+ * Re-inject chat automation styles (for colorblind mode changes)
+ */
+export function reinjectChatAutomationStyles() {
+  // Remove existing styles
+  const existingStyle = document.getElementById("pf2e-visioner-chat-styles");
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+
+  // Re-inject with updated styles
+  const css = getChatAutomationCSS();
+  const style = document.createElement("style");
+  style.id = "pf2e-visioner-chat-styles";
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
+/**
  * Fix scrolling in dialog containers
  * @param {jQuery} html - The rendered HTML of the dialog
  */
@@ -72,53 +90,53 @@ function getChatAutomationCSS() {
             z-index: 10;
         }
         
-        /* Seek Panel - Blue Theme */
+                /* Seek Panel - Blue Theme */
         .pf2e-visioner-automation-panel.seek-panel {
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-            border: 2px solid #2c5aa0;
+            background: linear-gradient(135deg, var(--pf2e-visioner-info-light, #e3f2fd), var(--pf2e-visioner-info-lighter, #bbdefb));
+            border: 2px solid var(--pf2e-visioner-info, var(--pf2e-visioner-info));
             box-shadow: 0 4px 8px rgba(44, 90, 160, 0.15);
         }
         
         /* Point Out Panel - Orange Theme */
         .pf2e-visioner-automation-panel.point-out-panel {
-            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
-            border: 2px solid #ff9800;
-            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.15);
+            background: linear-gradient(135deg, var(--pf2e-visioner-warning-light, #fff3e0), var(--pf2e-visioner-warning-lighter, #ffe0b2));
+            border: 2px solid var(--pf2e-visioner-warning, var(--visibility-hidden));
+            box-shadow: 0 4px 8px var(--visibility-hidden-bg-medium);
         }
         
         /* Hide Panel - Purple Theme */
         .pf2e-visioner-automation-panel.hide-panel {
-            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
-            border: 2px solid #8e24aa;
+            background: linear-gradient(135deg, var(--pf2e-visioner-purple-light, #f3e5f5), var(--pf2e-visioner-purple-lighter, #e1bee7));
+            border: 2px solid var(--pf2e-visioner-purple, var(--pf2e-visioner-purple));
             box-shadow: 0 4px 8px rgba(142, 36, 170, 0.15);
         }
         
         /* Sneak Panel - Gray Theme */
         .pf2e-visioner-automation-panel.sneak-panel {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border: 2px solid #6c757d;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray-light, #f8f9fa), var(--pf2e-visioner-gray-lighter, #e9ecef));
+            border: 2px solid var(--pf2e-visioner-gray, var(--pf2e-visioner-gray));
             box-shadow: 0 4px 8px rgba(108, 117, 125, 0.15);
         }
         
         /* Create a Diversion Panel - Teal Theme */
         .pf2e-visioner-automation-panel.create-a-diversion-panel {
-            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
-            border: 2px solid #17a2b8;
+            background: linear-gradient(135deg, var(--pf2e-visioner-teal-light, #e0f7fa), var(--pf2e-visioner-teal-lighter, #b2ebf2));
+            border: 2px solid var(--pf2e-visioner-teal, var(--pf2e-visioner-teal));
             box-shadow: 0 4px 8px rgba(23, 162, 184, 0.15);
         }
         
         /* Consequences Panel - Red Theme */
         .pf2e-visioner-automation-panel.consequences-panel {
-            background: linear-gradient(135deg, #ffebee, #ffcdd2);
-            border: 2px solid #dc3545;
-            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.15);
+            background: linear-gradient(135deg, var(--pf2e-visioner-danger-light, #ffebee), var(--pf2e-visioner-danger-lighter, #ffcdd2));
+            border: 2px solid var(--pf2e-visioner-danger, var(--visibility-undetected));
+            box-shadow: 0 4px 8px var(--visibility-undetected-bg-medium);
         }
-
+        
         /* Take Cover Panel - Brown Theme */
         .pf2e-visioner-automation-panel.take-cover-panel {
-            background: linear-gradient(135deg, #efebe9, #d7ccc8);
-            border: 2px solid #795548;
-            box-shadow: 0 4px 8px rgba(121, 85, 72, 0.15);
+            background: linear-gradient(135deg, var(--pf2e-visioner-brown-light, #efebe9), var(--pf2e-visioner-brown-lighter, #d7ccc8));
+            border: 2px solid var(--pf2e-visioner-brown, var(--pf2e-visioner-brown));
+            box-shadow: 0 4px 8px var(--visibility-undetected-bg-medium);
         }
         
         .automation-header {
@@ -127,7 +145,7 @@ function getChatAutomationCSS() {
             gap: 8px;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #495057;
+            color: var(--pf2e-visioner-gray);
         }
         
         .automation-actions {
@@ -152,43 +170,43 @@ function getChatAutomationCSS() {
         }
         
         .visioner-btn-primary {
-            background: linear-gradient(135deg, #007bff, #0056b3);
+            background: linear-gradient(135deg, var(--pf2e-visioner-info), var(--pf2e-visioner-info));
             color: white;
         }
         
         /* Action-Specific Button Styles */
         .visioner-btn-seek {
-            background: linear-gradient(135deg, #2c5aa0, #1e3a6f);
+            background: linear-gradient(135deg, var(--pf2e-visioner-info), var(--pf2e-visioner-info));
             color: white;
         }
         
         .visioner-btn-point-out {
-            background: linear-gradient(135deg, #ff9800, #f57c00);
+            background: linear-gradient(135deg, var(--visibility-hidden), var(--visibility-hidden));
             color: white;
         }
         
         .visioner-btn-hide {
-            background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+            background: linear-gradient(135deg, var(--pf2e-visioner-purple), var(--pf2e-visioner-purple));
             color: white;
         }
         
         .visioner-btn-sneak {
-            background: linear-gradient(135deg, #6c757d, #495057);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray));
             color: white;
         }
         
         .visioner-btn-create-a-diversion {
-            background: linear-gradient(135deg, #17a2b8, #0d7377);
+            background: linear-gradient(135deg, var(--pf2e-visioner-teal), var(--pf2e-visioner-teal));
             color: white;
         }
         
         .visioner-btn-consequences {
-            background: linear-gradient(135deg, #dc3545, #b21f2d);
+            background: linear-gradient(135deg, var(--visibility-undetected), var(--visibility-undetected));
             color: white;
         }
 
         .visioner-btn-take-cover {
-            background: linear-gradient(135deg, #795548, #5d4037);
+            background: linear-gradient(135deg, var(--pf2e-visioner-brown), var(--pf2e-visioner-brown));
             color: white;
         }
         
@@ -216,7 +234,7 @@ function getChatAutomationCSS() {
         
         .consequences-preview-dialog-changes-count,
         .consequences-preview-dialog-total-count {
-            color: #dc3545 !important;
+            color: var(--visibility-undetected) !important;
             font-weight: 700 !important;
         }
         
@@ -240,27 +258,27 @@ function getChatAutomationCSS() {
         }
         
         .consequences-preview-dialog-bulk-action-btn.apply-all {
-            background: linear-gradient(135deg, #28a745, #1e7e34);
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
         }
         
         .consequences-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #218838, #155724);
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
             transform: translateY(-1px);
         }
         
         .consequences-preview-dialog-bulk-action-btn.revert-all {
-            background: #dc3545;
-            border-color: #dc3545;
+            background: var(--visibility-undetected);
+            border-color: var(--visibility-undetected);
             color: white;
         }
         
         .consequences-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: #c82333;
-            border-color: #c82333;
+            background: var(--visibility-undetected);
+            border-color: var(--visibility-undetected);
         }
         
         .consequences-preview-dialog-bulk-action-btn:disabled {
-            background: #6c757d !important;
+            background: var(--pf2e-visioner-gray) !important;
             cursor: not-allowed;
             transform: none;
         }
@@ -282,19 +300,19 @@ function getChatAutomationCSS() {
         }
         
         .bulk-action-btn.apply-all {
-            background: linear-gradient(135deg, #28a745, #1e7e34);
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
             color: white;
-            border: 1px solid #1e7e34;
+            border: 1px solid var(--visibility-observed);
         }
         
         .bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #218838, #1c7430);
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+            box-shadow: 0 2px 8px var(--visibility-observed-bg-strong);
         }
         
         .bulk-action-btn.apply-all:disabled {
-            background: linear-gradient(135deg, #6c757d, #5a6268);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray));
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
@@ -302,19 +320,19 @@ function getChatAutomationCSS() {
         }
         
         .bulk-action-btn.revert-all {
-            background: linear-gradient(135deg, #6c757d, #5a6268);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray));
             color: white;
-            border: 1px solid #5a6268;
+            border: 1px solid var(--pf2e-visioner-gray);
         }
         
         .bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #5a6268, #545b62);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray));
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
         }
         
         .bulk-action-btn.revert-all:disabled {
-            background: linear-gradient(135deg, #6c757d, #5a6268);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray));
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
@@ -327,9 +345,9 @@ function getChatAutomationCSS() {
         }
         
         .seek-preview-dialog .window-header {
-            background: linear-gradient(135deg, #2c5aa0 0%, #1e3a6f 100%);
+            background: linear-gradient(135deg, var(--pf2e-visioner-info) 0%, var(--pf2e-visioner-info) 100%);
             color: white;
-            border-bottom: 2px solid #1e3a6f;
+            border-bottom: 2px solid var(--pf2e-visioner-info);
         }
         
         .seek-preview-dialog .window-header .window-title {
@@ -353,9 +371,9 @@ function getChatAutomationCSS() {
         }
         
         .hide-preview-dialog .window-header {
-            background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
+            background: linear-gradient(135deg, var(--pf2e-visioner-purple) 0%, var(--pf2e-visioner-purple) 100%);
             color: white;
-            border-bottom: 2px solid #6a1b9a;
+            border-bottom: 2px solid var(--pf2e-visioner-purple);
         }
         
         .hide-preview-dialog .window-header .window-title {
@@ -386,14 +404,14 @@ function getChatAutomationCSS() {
             padding: 12px;
             background: var(--color-bg-option, rgba(142, 36, 170, 0.15));
             border-radius: 6px;
-            border-left: 4px solid #8e24aa;
+            border-left: 4px solid var(--pf2e-visioner-purple);
         }
         
         .hider-image img {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 2px solid #8e24aa;
+            border: 2px solid var(--pf2e-visioner-purple);
             margin-right: 12px;
         }
         
@@ -405,12 +423,12 @@ function getChatAutomationCSS() {
             margin: 0 0 4px 0;
             font-size: 16px;
             font-weight: bold;
-            color: #8e24aa;
+            color: var(--pf2e-visioner-purple);
         }
         
         /* Hide Dialog Table Headers - Purple Theme Override */
         .hide-results-table th {
-            background: linear-gradient(135deg, #8e24aa, #6a1b9a) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-purple), var(--pf2e-visioner-purple)) !important;
             color: white !important;
         }
 
@@ -454,31 +472,31 @@ function getChatAutomationCSS() {
         }
         
         .hide-preview-dialog-bulk-action-btn.apply-all {
-            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed)) !important;
             color: white !important;
-            border: 1px solid #1e7e34 !important;
+            border: 1px solid var(--visibility-observed) !important;
         }
         
         .hide-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #218838, #1c7430) !important;
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed)) !important;
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+            box-shadow: 0 2px 8px var(--visibility-observed-bg-strong) !important;
         }
         
         .hide-preview-dialog-bulk-action-btn.revert-all {
-            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             color: white !important;
-            border: 1px solid #5a6268 !important;
+            border: 1px solid var(--pf2e-visioner-gray) !important;
         }
         
         .hide-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #5a6268, #545b62) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3) !important;
         }
         
         .hide-preview-dialog-bulk-action-btn.revert-all:disabled {
-            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             opacity: 0.6 !important;
             cursor: not-allowed !important;
             transform: none !important;
@@ -498,14 +516,14 @@ function getChatAutomationCSS() {
             padding: 12px;
             background: var(--color-bg-option, rgba(44, 90, 160, 0.15));
             border-radius: 6px;
-            border-left: 4px solid #2c5aa0;
+            border-left: 4px solid var(--pf2e-visioner-info);
         }
         
         .seeker-image img {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 2px solid #2c5aa0;
+            border: 2px solid var(--pf2e-visioner-info);
             margin-right: 12px;
         }
         
@@ -698,7 +716,7 @@ function getChatAutomationCSS() {
         .hide-results-table .dc-value,
         .point-out-results-table .dc-value,
         .sneak-results-table .dc-value {
-            color: #f44336 !important;
+            color: var(--visibility-undetected) !important;
             font-weight: bold !important;
             font-size: 16px;
             line-height: 1.2;
@@ -755,7 +773,7 @@ function getChatAutomationCSS() {
         .point-out-results-table .margin-display,
         .sneak-results-table .margin-display {
             font-size: 12px;
-            color: #aaa;
+            color: var(--color-text-secondary);
             text-align: center;
             margin-top: 2px;
             display: block;
@@ -768,7 +786,7 @@ function getChatAutomationCSS() {
         .hide-results-table .roll-total,
         .point-out-results-table .roll-total,
         .sneak-results-table .roll-total {
-            color: #29b6f6 !important;
+            color: var(--pf2e-visioner-info) !important;
             font-weight: bold !important;
             font-size: 16px;
             line-height: 1.2;
@@ -801,7 +819,7 @@ function getChatAutomationCSS() {
         .point-out-results-table tbody td.outcome.critical-success,
         .create-a-diversion-preview-dialog .results-table tbody td.outcome.critical-success,
         .sneak-results-table tbody td.outcome.critical-success {
-            color: #00b050; /* Green */
+            color: var(--visibility-observed); /* Green */
         }
         
         /* Success - Blue - Unified */
@@ -821,7 +839,7 @@ function getChatAutomationCSS() {
         .point-out-results-table tbody td.outcome.failure,
         .create-a-diversion-preview-dialog .results-table tbody td.outcome.failure,
         .sneak-results-table tbody td.outcome.failure {
-            color: #ffc107; /* Yellow/orange */
+            color: var(--visibility-concealed); /* Yellow/orange */
         }
         
         /* Critical Failure - Red - Unified */
@@ -831,7 +849,7 @@ function getChatAutomationCSS() {
         .point-out-results-table tbody td.outcome.critical-failure,
         .create-a-diversion-preview-dialog .results-table tbody td.outcome.critical-failure,
         .sneak-results-table tbody td.outcome.critical-failure {
-            color: #f44336; /* Red */
+            color: var(--visibility-undetected); /* Red */
         }
         
         /* Bulk Action Buttons */
@@ -898,25 +916,25 @@ function getChatAutomationCSS() {
         
         /* Specific colors for apply and revert row buttons */
         .row-action-btn.apply-change {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
             color: white;
         }
         
         .row-action-btn.apply-change:hover:not(:disabled) {
-            background: #45a049;
-            border-color: #45a049;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
         }
         
         .row-action-btn.revert-change {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .row-action-btn.revert-change:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         /* ===== UNIFIED STATE ICON SELECTION ===== */
@@ -1097,7 +1115,7 @@ function getChatAutomationCSS() {
         }
         
         .point-out-preview-dialog .window-header {
-            background: linear-gradient(135deg, #ff9800 0%, #e65100 100%);
+            background: linear-gradient(135deg, var(--visibility-hidden) 0%, var(--visibility-hidden) 100%);
             color: white;
         }
         
@@ -1111,27 +1129,27 @@ function getChatAutomationCSS() {
 
         /* ===== TAKE COVER PREVIEW DIALOG - BROWN THEME ===== */
         .take-cover-preview-dialog .window-header {
-            background: linear-gradient(135deg, #795548 0%, #5d4037 100%);
+            background: linear-gradient(135deg, var(--pf2e-visioner-brown) 0%, var(--pf2e-visioner-brown) 100%);
             color: white;
-            border-bottom: 2px solid #5d4037;
+            border-bottom: 2px solid var(--pf2e-visioner-brown);
         }
         .take-cover-preview-content { padding: 12px; background: var(--color-bg-primary, #2a2a2a); color: var(--color-text-primary, #f0f0f0); }
         .take-cover-preview-dialog .actor-info {
             display: flex; align-items: center; margin-bottom: 4px; padding: 12px;
-            background: rgba(121, 85, 72, 0.15); border-radius: 6px; border-left: 4px solid #795548;
+            background: var(--visibility-undetected-bg-medium); border-radius: 6px; border-left: 4px solid var(--pf2e-visioner-brown);
         }
-        .take-cover-preview-dialog .hider-image img { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #795548; margin-right: 12px; }
+        .take-cover-preview-dialog .hider-image img { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--pf2e-visioner-brown); margin-right: 12px; }
         .take-cover-preview-dialog .hider-name { margin: 0 0 4px 0; font-size: 16px; font-weight: bold; color: #ffcdd2; color: #ffecb3; color: #d7ccc8; color: #d7ccc8; }
         .take-cover-preview-dialog .hider-name { color: #d7ccc8; }
-        .take-cover-results-table th { background: linear-gradient(135deg, #795548, #5d4037) !important; color: white !important; }
+        .take-cover-results-table th { background: linear-gradient(135deg, var(--pf2e-visioner-brown), var(--pf2e-visioner-brown)) !important; color: white !important; }
         .take-cover-results-table .visibility-change, .take-cover-results-table .actions { text-align: center; }
         .take-cover-preview-dialog .visibility-arrow { color: #bdbdbd; }
 
         /* State icon theming based on state color using currentColor */
-        .take-cover-preview-dialog .override-icons .state-icon[data-state="none"] { color: #4caf50; }
-        .take-cover-preview-dialog .override-icons .state-icon[data-state="lesser"] { color: #ffc107; }
-        .take-cover-preview-dialog .override-icons .state-icon[data-state="standard"] { color: #ff6600; }
-        .take-cover-preview-dialog .override-icons .state-icon[data-state="greater"] { color: #f44336; }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="none"] { color: var(--cover-none); }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="lesser"] { color: var(--cover-lesser); }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="standard"] { color: var(--cover-standard); }
+        .take-cover-preview-dialog .override-icons .state-icon[data-state="greater"] { color: var(--cover-greater); }
 
         .take-cover-preview-dialog .override-icons .state-icon.selected {
             border-color: currentColor !important;
@@ -1163,16 +1181,16 @@ function getChatAutomationCSS() {
             align-items: center;
             margin-bottom: 4px;
             padding: 12px;
-            background: var(--color-bg-option, rgba(255, 152, 0, 0.15));
+            background: var(--color-bg-option, var(--visibility-hidden-bg-medium));
             border-radius: 6px;
-            border-left: 4px solid #ff9800;
+            border-left: 4px solid var(--visibility-hidden);
         }
         
         .actor-image img {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 2px solid #ff9800;
+            border: 2px solid var(--visibility-hidden);
             margin-right: 12px;
         }
         
@@ -1189,7 +1207,7 @@ function getChatAutomationCSS() {
         }
         
         .point-out-results-table th {
-            background: linear-gradient(135deg, #ff9800, #e65100) !important;
+            background: linear-gradient(135deg, var(--visibility-hidden), var(--visibility-hidden)) !important;
             color: white !important;
         }
         
@@ -1199,9 +1217,9 @@ function getChatAutomationCSS() {
             justify-content: space-between;
             align-items: center;
             padding: 16px;
-            background: rgba(255, 152, 0, 0.1);
+            background: var(--visibility-hidden-bg);
             border-radius: 6px;
-            border-top: 1px solid #ff9800;
+            border-top: 1px solid var(--visibility-hidden);
             gap: 20px;
         }
         
@@ -1237,7 +1255,7 @@ function getChatAutomationCSS() {
         /* Point Out Dialog - Orange Theme */
         .point-out-preview-dialog-changes-count,
         .point-out-preview-dialog-total-count {
-            color: #ff9800 !important;
+            color: var(--visibility-hidden) !important;
         }
         
         /* Sneak Dialog - Gray Theme */
@@ -1268,13 +1286,13 @@ function getChatAutomationCSS() {
         
         /* Seek Dialog Table Headers - Blue Theme Override */
         .seek-results-table th {
-            background: linear-gradient(135deg, #2c5aa0, #1e3a6f) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-info), var(--pf2e-visioner-info)) !important;
             color: white !important;
         }
         
         /* Sneak Dialog Table Headers - Gray Theme Override */
         .sneak-results-table th {
-            background: linear-gradient(135deg, #6c757d, #495057) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             color: white !important;
         }
         
@@ -1334,25 +1352,25 @@ function getChatAutomationCSS() {
         }
         
         .point-out-preview-dialog-bulk-action-btn.apply-all {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
             color: white;
         }
         
         .point-out-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: #45a049;
-            border-color: #45a049;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
         }
         
         .point-out-preview-dialog-bulk-action-btn.revert-all {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .point-out-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         /* Point Out Dialog Bulk Actions Header */
@@ -1384,20 +1402,20 @@ function getChatAutomationCSS() {
         
         /* Action Type Specific Styles */
         .pf2e-visioner-automation-panel[data-action-type="point-out"] {
-            border-color: #ff9800;
+            border-color: var(--visibility-hidden);
         }
         
         .pf2e-visioner-automation-panel[data-action-type="point-out"] .visioner-btn-primary {
-            background: linear-gradient(135deg, #ff9800, #e65100);
-            border-color: #ff9800;
+            background: linear-gradient(135deg, var(--visibility-hidden), var(--visibility-hidden));
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .pf2e-visioner-automation-panel[data-action-type="point-out"] .visioner-btn-primary:hover {
-            background: linear-gradient(135deg, #f57c00, #d84315);
-            border-color: #f57c00;
+            background: linear-gradient(135deg, var(--visibility-hidden), #d84315);
+            border-color: var(--visibility-hidden);
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+            box-shadow: 0 2px 8px var(--visibility-hidden-bg-strong);
         }
         
         /* State Icon Selection */
@@ -1514,14 +1532,14 @@ function getChatAutomationCSS() {
         }
         
         .row-action-btn.applied {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
             color: white;
         }
         
         .row-action-btn.reverted {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
@@ -1590,25 +1608,25 @@ function getChatAutomationCSS() {
         }
         
         .seek-preview-dialog-bulk-action-btn.apply-all {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
             color: white;
         }
         
         .seek-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: #45a049;
-            border-color: #45a049;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
         }
         
         .seek-preview-dialog-bulk-action-btn.revert-all {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .seek-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         /* Encounter Filter Section */
@@ -1652,9 +1670,9 @@ function getChatAutomationCSS() {
         }
         
         .sneak-preview-dialog .window-header {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray) 0%, var(--pf2e-visioner-gray) 100%);
             color: white;
-            border-bottom: 2px solid #495057;
+            border-bottom: 2px solid var(--pf2e-visioner-gray);
         }
         
         .sneak-preview-dialog .window-header .window-title {
@@ -1685,14 +1703,14 @@ function getChatAutomationCSS() {
             padding: 12px;
             background: rgb(53, 55, 59);
             border-radius: 6px;
-            border-left: 4px solid #6c757d;
+            border-left: 4px solid var(--pf2e-visioner-gray);
         }
         
         .sneaker-image img {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 2px solid #6c757d;
+            border: 2px solid var(--pf2e-visioner-gray);
             margin-right: 12px;
         }
         
@@ -1704,7 +1722,7 @@ function getChatAutomationCSS() {
             margin: 0 0 4px 0;
             font-size: 16px;
             font-weight: bold;
-            color: #6c757d;
+            color: var(--pf2e-visioner-gray);
         }
         
         /* Sneak Dialog Bulk Action Buttons */
@@ -1721,31 +1739,31 @@ function getChatAutomationCSS() {
         }
         
         .sneak-preview-dialog-bulk-action-btn.apply-all {
-            background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed)) !important;
             color: white !important;
-            border: 1px solid #1e7e34 !important;
+            border: 1px solid var(--visibility-observed) !important;
         }
         
         .sneak-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #218838, #1c7430) !important;
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed)) !important;
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+            box-shadow: 0 2px 8px var(--visibility-observed-bg-strong) !important;
         }
         
         .sneak-preview-dialog-bulk-action-btn.revert-all {
-            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             color: white !important;
-            border: 1px solid #5a6268 !important;
+            border: 1px solid var(--pf2e-visioner-gray) !important;
         }
         
         .sneak-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #5a6268, #545b62) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3) !important;
         }
         
         .sneak-preview-dialog-bulk-action-btn.revert-all:disabled {
-            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray)) !important;
             opacity: 0.6 !important;
             cursor: not-allowed !important;
             transform: none !important;
@@ -1758,9 +1776,9 @@ function getChatAutomationCSS() {
         }
         
         .hide-preview-dialog .window-header {
-            background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
+            background: linear-gradient(135deg, var(--pf2e-visioner-purple) 0%, var(--pf2e-visioner-purple) 100%);
             color: white;
-            border-bottom: 2px solid #6a1b9a;
+            border-bottom: 2px solid var(--pf2e-visioner-purple);
         }
         
         .hide-preview-dialog .window-header .window-title {
@@ -1791,14 +1809,14 @@ function getChatAutomationCSS() {
             padding: 12px;
             background: var(--color-bg-option, rgba(142, 36, 170, 0.15));
             border-radius: 6px;
-            border-left: 4px solid #8e24aa;
+            border-left: 4px solid var(--pf2e-visioner-purple);
         }
         
         .hider-image img {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 2px solid #8e24aa;
+            border: 2px solid var(--pf2e-visioner-purple);
             margin-right: 12px;
         }
         
@@ -1947,8 +1965,8 @@ function getChatAutomationCSS() {
         }
         
         .hide-preview-dialog-bulk-action-btn.apply-all {
-            background: #8e24aa;
-            border-color: #8e24aa;
+            background: var(--pf2e-visioner-purple);
+            border-color: var(--pf2e-visioner-purple);
             color: white;
         }
         
@@ -1958,14 +1976,14 @@ function getChatAutomationCSS() {
         }
         
         .hide-preview-dialog-bulk-action-btn.revert-all {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .hide-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         /* Sneak Preview Dialog Styles - Gray Theme */
@@ -1974,9 +1992,9 @@ function getChatAutomationCSS() {
         }
         
         .sneak-preview-dialog .window-header {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray) 0%, var(--pf2e-visioner-gray) 100%);
             color: white;
-            border-bottom: 2px solid #495057;
+            border-bottom: 2px solid var(--pf2e-visioner-gray);
         }
         
         .sneak-preview-dialog .window-header .window-title {
@@ -2004,7 +2022,7 @@ function getChatAutomationCSS() {
             align-items: center;
             gap: 16px;
             padding: 16px;
-            background: linear-gradient(135deg, #6c757d, #495057);
+            background: linear-gradient(135deg, var(--pf2e-visioner-gray), var(--pf2e-visioner-gray));
             border-radius: 8px;
             margin-bottom: 16px;
         }
@@ -2070,7 +2088,7 @@ function getChatAutomationCSS() {
         
         .sneak-preview-dialog .visibility-table td {
             padding: 8px 6px;
-            border-bottom: 1px solid #495057;
+            border-bottom: 1px solid var(--pf2e-visioner-gray);
             vertical-align: middle;
             font-size: 12px;
         }
@@ -2122,7 +2140,7 @@ function getChatAutomationCSS() {
         .sneak-preview-dialog .state-icon {
             width: 24px;
             height: 24px;
-            border: 1px solid #6c757d;
+            border: 1px solid var(--pf2e-visioner-gray);
             border-radius: 4px;
             background: rgba(108, 117, 125, 0.1);
             cursor: pointer;
@@ -2135,20 +2153,20 @@ function getChatAutomationCSS() {
         
         .sneak-preview-dialog .state-icon:hover {
             background: rgba(108, 117, 125, 0.3);
-            border-color: #495057;
+            border-color: var(--pf2e-visioner-gray);
             transform: scale(1.1);
         }
         
         .sneak-preview-dialog .state-icon.selected {
-            background: #6c757d;
-            border-color: #495057;
+            background: var(--pf2e-visioner-gray);
+            border-color: var(--pf2e-visioner-gray);
             color: white;
             box-shadow: 0 0 8px rgba(108, 117, 125, 0.5);
         }
         
         .sneak-preview-dialog .state-icon.calculated-outcome {
             background: rgba(108, 117, 125, 0.3);
-            border: 2px solid #6c757d;
+            border: 2px solid var(--pf2e-visioner-gray);
             animation: pulse-gray 2s infinite;
         }
         
@@ -2159,7 +2177,7 @@ function getChatAutomationCSS() {
             padding: 16px;
             background: rgba(108, 117, 125, 0.1);
             border-radius: 6px;
-            border-top: 1px solid #495057;
+            border-top: 1px solid var(--pf2e-visioner-gray);
         }
         
         .sneak-preview-dialog .sneak-preview-dialog-bulk-actions-info {
@@ -2183,7 +2201,7 @@ function getChatAutomationCSS() {
         .sneak-preview-dialog .row-action-btn {
             background: rgba(108, 117, 125, 0.2);
             color: var(--color-text-primary, #f0f0f0);
-            border: 1px solid #6c757d;
+            border: 1px solid var(--pf2e-visioner-gray);
             border-radius: 4px;
             padding: 6px 8px;
             margin: 0 2px;
@@ -2194,7 +2212,7 @@ function getChatAutomationCSS() {
         
         .sneak-preview-dialog .row-action-btn:hover:not(:disabled) {
             background: rgba(108, 117, 125, 0.4);
-            border-color: #495057;
+            border-color: var(--pf2e-visioner-gray);
             transform: translateY(-1px);
         }
         
@@ -2204,25 +2222,25 @@ function getChatAutomationCSS() {
         }
         
         .sneak-preview-dialog .row-action-btn.apply-change {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
             color: white;
         }
         
         .sneak-preview-dialog .row-action-btn.apply-change:hover:not(:disabled) {
-            background: #45a049;
-            border-color: #45a049;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
         }
         
         .sneak-preview-dialog .row-action-btn.revert-change {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .sneak-preview-dialog .row-action-btn.revert-change:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         .sneak-preview-dialog .no-action {
@@ -2237,15 +2255,15 @@ function getChatAutomationCSS() {
         
         /* Create a Diversion Dialog Window Title */
         .create-a-diversion-preview-dialog .window-header {
-            background: linear-gradient(135deg, #17a2b8, #0d7377);
-            border-bottom: 2px solid #0d7377;
+            background: linear-gradient(135deg, var(--pf2e-visioner-teal), var(--pf2e-visioner-teal));
+            border-bottom: 2px solid var(--pf2e-visioner-teal);
             color: white;
         }
         
         /* Consequences Dialog Window Title - Red Theme */
         .consequences-preview-dialog .window-header {
-            background: linear-gradient(135deg, #dc3545, #b21f2d);
-            border-bottom: 2px solid #b21f2d;
+            background: linear-gradient(135deg, var(--visibility-undetected), var(--visibility-undetected));
+            border-bottom: 2px solid var(--visibility-undetected);
             color: white;
         }
         
@@ -2281,7 +2299,7 @@ function getChatAutomationCSS() {
             align-items: center;
             gap: 16px;
             padding: 16px;
-            background: linear-gradient(135deg, #dc3545, #b21f2d);
+            background: linear-gradient(135deg, var(--visibility-undetected), var(--visibility-undetected));
             border-radius: 8px;
             margin-bottom: 16px;
             border-left: 4px solid #ff6b6b;
@@ -2345,7 +2363,7 @@ function getChatAutomationCSS() {
             align-items: center;
             gap: 16px;
             padding: 16px;
-            background: linear-gradient(135deg, #17a2b8, #0d7377);
+            background: linear-gradient(135deg, var(--pf2e-visioner-teal), var(--pf2e-visioner-teal));
             border-radius: 8px;
             margin-bottom: 16px;
             border-left: 4px solid rgb(37, 244, 251);
@@ -2437,7 +2455,7 @@ function getChatAutomationCSS() {
         }
         
         .create-a-diversion-preview-dialog .visibility-table thead {
-            background: linear-gradient(135deg, #17a2b8, #0d7377);
+            background: linear-gradient(135deg, var(--pf2e-visioner-teal), var(--pf2e-visioner-teal));
         }
         
         .create-a-diversion-preview-dialog .visibility-table th {
@@ -2473,12 +2491,12 @@ function getChatAutomationCSS() {
         
         .create-a-diversion-preview-dialog .roll-total {
             font-weight: bold;
-            color: #17a2b8;
+            color: var(--pf2e-visioner-teal);
         }
         
         .create-a-diversion-preview-dialog .dc-value {
             font-weight: bold;
-            color: #dc3545;
+            color: var(--visibility-undetected);
         }
         
         .create-a-diversion-preview-dialog .margin-display {
@@ -2492,22 +2510,22 @@ function getChatAutomationCSS() {
         
         /* Outcome styling */
         .create-a-diversion-preview-dialog .outcome.critical-success {
-            color: #28a745;
+            color: var(--visibility-observed);
             font-weight: bold;
         }
         
         .create-a-diversion-preview-dialog .outcome.success {
-            color: #17a2b8;
+            color: var(--pf2e-visioner-teal);
             font-weight: bold;
         }
         
         .create-a-diversion-preview-dialog .outcome.failure {
-            color: #ffc107;
+            color: var(--visibility-concealed);
             font-weight: bold;
         }
         
         .create-a-diversion-preview-dialog .outcome.critical-failure {
-            color: #dc3545;
+            color: var(--visibility-undetected);
             font-weight: bold;
         }
         
@@ -2522,12 +2540,12 @@ function getChatAutomationCSS() {
         }
         
         .create-a-diversion-preview-dialog .state-icon.selected {
-            border-color: #17a2b8;
+            border-color: var(--pf2e-visioner-teal);
             background: rgba(23, 162, 184, 0.2);
         }
         
         .create-a-diversion-preview-dialog .row-action-btn {
-            background: #17a2b8;
+            background: var(--pf2e-visioner-teal);
             border: none;
             border-radius: 4px;
             padding: 6px 8px;
@@ -2538,12 +2556,12 @@ function getChatAutomationCSS() {
         }
         
         .create-a-diversion-preview-dialog .row-action-btn:hover {
-            background: #0d7377;
+            background: var(--pf2e-visioner-teal);
             transform: translateY(-1px);
         }
         
         .create-a-diversion-preview-dialog .row-action-btn:disabled {
-            background: #6c757d;
+            background: var(--pf2e-visioner-gray);
             cursor: not-allowed;
             transform: none;
         }
@@ -2652,30 +2670,30 @@ function getChatAutomationCSS() {
         }
         
         .create-a-diversion-preview-dialog .apply-change {
-            background: #28a745;
+            background: var(--visibility-observed);
             color: white;
         }
         
         .create-a-diversion-preview-dialog .apply-change:hover:not(:disabled) {
-            background: #218838;
+            background: var(--visibility-observed);
         }
         
         .create-a-diversion-preview-dialog .apply-change:disabled {
-            background: #6c757d;
+            background: var(--pf2e-visioner-gray);
             cursor: not-allowed;
         }
         
         .create-a-diversion-preview-dialog .revert-change {
-            background: #dc3545;
+            background: var(--visibility-undetected);
             color: white;
         }
         
         .create-a-diversion-preview-dialog .revert-change:hover:not(:disabled) {
-            background: #c82333;
+            background: var(--visibility-undetected);
         }
         
         .create-a-diversion-preview-dialog .revert-change:disabled {
-            background: #6c757d;
+            background: var(--pf2e-visioner-gray);
             cursor: not-allowed;
         }
         
@@ -2686,7 +2704,7 @@ function getChatAutomationCSS() {
             padding: 16px;
             background: rgba(23, 162, 184, 0.1);
             border-radius: 8px;
-            border-top: 1px solid #0d7377;
+            border-top: 1px solid var(--pf2e-visioner-teal);
         }
         
         .create-a-diversion-preview-dialog .summary-text {
@@ -2714,27 +2732,27 @@ function getChatAutomationCSS() {
         }
         
         .create-a-diversion-preview-dialog-bulk-action-btn.apply-all {
-            background: linear-gradient(135deg, #28a745, #1e7e34);
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
         }
         
         .create-a-diversion-preview-dialog-bulk-action-btn.apply-all:hover:not(:disabled) {
-            background: linear-gradient(135deg, #218838, #155724);
+            background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
             transform: translateY(-1px);
         }
         
         .create-a-diversion-preview-dialog-bulk-action-btn.revert-all {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .create-a-diversion-preview-dialog-bulk-action-btn.revert-all:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         .create-a-diversion-preview-dialog-bulk-action-btn:disabled {
-            background: #6c757d !important;
+            background: var(--pf2e-visioner-gray) !important;
             cursor: not-allowed;
             transform: none;
         }
@@ -2764,7 +2782,7 @@ function getChatAutomationCSS() {
         .create-a-diversion-preview-dialog .row-action-btn {
             background: rgba(108, 117, 125, 0.2);
             color: var(--color-text-primary, #f0f0f0);
-            border: 1px solid #6c757d;
+            border: 1px solid var(--pf2e-visioner-gray);
             border-radius: 4px;
             padding: 6px 8px;
             margin: 0 2px;
@@ -2775,7 +2793,7 @@ function getChatAutomationCSS() {
         
         .create-a-diversion-preview-dialog .row-action-btn:hover:not(:disabled) {
             background: rgba(108, 117, 125, 0.4);
-            border-color: #495057;
+            border-color: var(--pf2e-visioner-gray);
             transform: translateY(-1px);
         }
         
@@ -2785,25 +2803,25 @@ function getChatAutomationCSS() {
         }
         
         .create-a-diversion-preview-dialog .row-action-btn.apply-change {
-            background: #4caf50;
-            border-color: #4caf50;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
             color: white;
         }
         
         .create-a-diversion-preview-dialog .row-action-btn.apply-change:hover:not(:disabled) {
-            background: #45a049;
-            border-color: #45a049;
+            background: var(--visibility-observed);
+            border-color: var(--visibility-observed);
         }
         
         .create-a-diversion-preview-dialog .row-action-btn.revert-change {
-            background: #ff9800;
-            border-color: #ff9800;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
             color: white;
         }
         
         .create-a-diversion-preview-dialog .row-action-btn.revert-change:hover:not(:disabled) {
-            background: #e68900;
-            border-color: #e68900;
+            background: var(--visibility-hidden);
+            border-color: var(--visibility-hidden);
         }
         
         .create-a-diversion-preview-dialog .no-action {

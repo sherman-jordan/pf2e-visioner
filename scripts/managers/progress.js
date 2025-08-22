@@ -33,7 +33,7 @@ export class VisionerProgress extends foundry.applications.api.ApplicationV2 {
           <span class="label" style="font-variant-numeric: tabular-nums;">${this.completed}/${this.total} (${percent}%)</span>
         </div>
         <div style="position:relative;height:10px;background:var(--color-border,#6663);border-radius:6px;overflow:hidden;">
-          <div class="bar" style="position:absolute;left:0;top:0;height:100%;width:${percent}%;background:var(--color-primary,#4caf50);"></div>
+          <div class="bar" style="position:absolute;left:0;top:0;height:100%;width:${percent}%;background:var(--color-primary,var(--visibility-observed));"></div>
         </div>
       </div>`;
   }

@@ -31,24 +31,24 @@
 }
 
 .visioner-token-manager .dc-outcome.success {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
-  border: 1px solid rgba(76, 175, 80, 0.35);
+  background: var(--visibility-observed-bg-medium);
+  color: var(--visibility-observed);
+  border: 1px solid var(--visibility-observed);
 }
 .visioner-token-manager .dc-outcome.critical-success {
-  background: rgba(76, 175, 80, 0.22);
-  color: #4caf50;
-  border: 1px solid rgba(76, 175, 80, 0.55);
+  background: var(--visibility-observed-bg-strong);
+  color: var(--visibility-observed);
+  border: 1px solid var(--visibility-observed);
 }
 .visioner-token-manager .dc-outcome.failure {
-  background: rgba(244, 67, 54, 0.12);
-  color: #f44336;
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  background: var(--visibility-undetected-bg);
+  color: var(--pf2e-visioner-danger);
+  border: 1px solid var(--visibility-undetected);
 }
 .visioner-token-manager .dc-outcome.critical-failure {
-  background: rgba(244, 67, 54, 0.22);
-  color: #f44336;
-  border: 1px solid rgba(244, 67, 54, 0.55);
+  background: var(--visibility-undetected-bg-strong);
+  color: var(--pf2e-visioner-danger);
+  border: 1px solid var(--visibility-undetected);
 }
 /*
  * Token Manager UI Improvements
@@ -185,3 +185,53 @@
 }
 
 } /* End .pf2e-visioner scope */
+
+/* Cover State Indicator Colors - Professional styling */
+.state-indicator.cover-none {
+  background: rgba(76, 175, 80, 0.3) !important; /* Subtle green background */
+  color: #4caf50 !important; /* Green text */
+  border-color: #4caf50 !important; /* Green border */
+}
+
+.state-indicator.cover-lesser {
+  background: rgba(255, 193, 7, 0.3) !important; /* Subtle yellow background */
+  color: #ffc107 !important; /* Yellow text */
+  border-color: #ffc107 !important; /* Yellow border */
+}
+
+.state-indicator.cover-standard {
+  background: rgba(255, 102, 0, 0.3) !important; /* Subtle orange background */
+  color: #ff6600 !important; /* Orange text */
+  border-color: #ff6600 !important; /* Orange border */
+}
+
+.state-indicator.cover-greater {
+  background: rgba(244, 67, 54, 0.3) !important; /* Subtle red background */
+  color: #f44336 !important; /* Red text */
+  border-color: #f44336 !important; /* Red border */
+}
+
+/* Visibility State Indicator Colors - Professional styling */
+.state-indicator.visibility-observed {
+  background: rgba(76, 175, 80, 0.25) !important; /* Subtle green background */
+  color: #4caf50 !important; /* Green text */
+  border-color: #4caf50 !important; /* Green border */
+}
+
+.state-indicator.visibility-concealed {
+  background: rgba(255, 152, 0, 0.25) !important; /* Subtle orange background */
+  color: #ff9800 !important; /* Orange text */
+  border-color: #ff9800 !important; /* Orange border */
+}
+
+.state-indicator.visibility-hidden {
+  background: rgba(255, 152, 0, 0.25) !important; /* Subtle orange background */
+  color: #ff9800 !important; /* Orange text */
+  border-color: #ff9800 !important; /* Orange border */
+}
+
+.state-indicator.visibility-undetected {
+  background: rgba(244, 67, 54, 0.25) !important; /* Subtle red background */
+  color: #f44336 !important; /* Red text */
+  border-color: #f44336 !important; /* Red border */
+}

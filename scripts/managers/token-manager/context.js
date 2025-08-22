@@ -132,6 +132,7 @@ export async function buildContext(app, options) {
         selected: currentVisibilityState === key,
         icon: VISIBILITY_STATES[key].icon,
         color: VISIBILITY_STATES[key].color,
+        cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
       return {
@@ -151,6 +152,7 @@ export async function buildContext(app, options) {
           selected: currentCoverState === key,
           icon: config.icon,
           color: config.color,
+          cssClass: config.cssClass,
           bonusAC: config.bonusAC,
           bonusReflex: config.bonusReflex,
           bonusStealth: config.bonusStealth,
@@ -206,6 +208,7 @@ export async function buildContext(app, options) {
         selected: currentVisibilityState === key,
         icon: VISIBILITY_STATES[key].icon,
         color: VISIBILITY_STATES[key].color,
+        cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
       return {
@@ -225,6 +228,7 @@ export async function buildContext(app, options) {
           selected: currentCoverState === key,
           icon: config.icon,
           color: config.color,
+          cssClass: config.cssClass,
           bonusAC: config.bonusAC,
           bonusReflex: config.bonusReflex,
           bonusStealth: config.bonusStealth,
@@ -283,6 +287,7 @@ export async function buildContext(app, options) {
           selected: currentState === key,
           icon: VISIBILITY_STATES[key].icon,
           color: VISIBILITY_STATES[key].color,
+          cssClass: VISIBILITY_STATES[key].cssClass,
         }));
         const img = getWallImage(doorType);
         // DC: per-wall override else global default
@@ -326,6 +331,7 @@ export async function buildContext(app, options) {
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,
+    cssClass: config.cssClass,
   }));
 
   context.coverStates = Object.entries(COVER_STATES).map(([key, config]) => ({
@@ -333,6 +339,7 @@ export async function buildContext(app, options) {
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,
+    cssClass: config.cssClass,
     bonusAC: config.bonusAC,
     bonusReflex: config.bonusReflex,
     bonusStealth: config.bonusStealth,

@@ -18,6 +18,11 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       setVisibility: VisionerQuickPanel._onSetVisibility,
       setCover: VisionerQuickPanel._onSetCover,
       minimize: VisionerQuickPanel._onMinimize,
+      selectParty: VisionerQuickPanel._onSelectParty,
+      selectEnemies: VisionerQuickPanel._onSelectEnemies,
+      targetParty: VisionerQuickPanel._onTargetParty,
+      targetEnemies: VisionerQuickPanel._onTargetEnemies,
+      clearAll: VisionerQuickPanel._onClearAll,
     },
   };
 
@@ -38,8 +43,8 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
   }
 
   async _prepareContext(_options) {
-    const visList = Object.entries(VISIBILITY_STATES).map(([key, cfg]) => ({ key, label: game.i18n.localize(cfg.label), icon: cfg.icon, color: cfg.color }));
-    const coverList = Object.entries(COVER_STATES).map(([key, cfg]) => ({ key, label: game.i18n.localize(cfg.label), icon: cfg.icon, color: cfg.color }));
+    const visList = Object.entries(VISIBILITY_STATES).map(([key, cfg]) => ({ key, label: game.i18n.localize(cfg.label), icon: cfg.icon, color: cfg.color, cssClass: cfg.cssClass }));
+    const coverList = Object.entries(COVER_STATES).map(([key, cfg]) => ({ key, label: game.i18n.localize(cfg.label), icon: cfg.icon, color: cfg.color, cssClass: cfg.cssClass }));
     const selected = this.selectedTokens;
     const targeted = this.targetedTokens;
     const formatNames = (tokens) => {
@@ -77,6 +82,13 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
     this._injectHeaderMinimizeButton();
     try { VisionerQuickPanel.current = this; } catch (_) {}
     this._bindAutoRefresh();
+    
+    // Fire custom hook for colorblind mode application
+    try {
+      Hooks.call("renderVisionerQuickPanel", this, this.element);
+    } catch (error) {
+      console.warn("PF2E Visioner: Failed to fire renderVisionerQuickPanel hook:", error);
+    }
   }
 
   static _onClose(_event, _button) {
@@ -168,6 +180,160 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       ui.notifications?.info?.(`Applied cover ${state} to ${pairs.length} pair(s).`);
     } catch (e) {
       console.error("[pf2e-visioner] quick cover error", e);
+    }
+  }
+
+  static async _onSelectParty(_event, _button) {
+    try {
+      const partyTokens = VisionerQuickPanel._getPartyTokens();
+      if (!partyTokens.length) {
+        ui.notifications?.warn?.("No party tokens found in the scene.");
+        return;
+      }
+      
+      // Clear current selection
+      canvas.tokens.releaseAll();
+      
+      // Wait for the next frame to ensure releaseAll completes
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      
+      // Simulate multi-select behavior like Shift+click
+      let selectedCount = 0;
+      
+      if (partyTokens.length > 0) {
+        // Select first token normally
+        const firstToken = partyTokens[0];
+        if (firstToken && firstToken.control) {
+          firstToken.control();
+          selectedCount++;
+        }
+        
+        // Select remaining tokens with "add to selection" behavior
+        for (let i = 1; i < partyTokens.length; i++) {
+          const token = partyTokens[i];
+          if (token && token.control) {
+            // Simulate Shift+click by not releasing previous selection
+            token.control({ releaseOthers: false });
+            selectedCount++;
+          }
+        }
+      }
+      
+      ui.notifications?.info?.(`Selected ${selectedCount} party token(s).`);
+    } catch (e) {
+      console.error("[pf2e-visioner] select party error", e);
+    }
+  }
+
+  static async _onSelectEnemies(_event, _button) {
+    try {
+      const enemyTokens = VisionerQuickPanel._getEnemyTokens();
+      if (!enemyTokens.length) {
+        ui.notifications?.warn?.("No enemy tokens found in the scene.");
+        return;
+      }
+      
+      // Clear current selection
+      canvas.tokens.releaseAll();
+      
+      // Wait for the next frame to ensure releaseAll completes
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      
+      // Simulate multi-select behavior like Shift+click
+      let selectedCount = 0;
+      
+      if (enemyTokens.length > 0) {
+        // Select first token normally
+        const firstToken = enemyTokens[0];
+        if (firstToken && firstToken.control) {
+          firstToken.control();
+          selectedCount++;
+        }
+        
+        // Select remaining tokens with "add to selection" behavior
+        for (let i = 1; i < enemyTokens.length; i++) {
+          const token = enemyTokens[i];
+          if (token && token.control) {
+            // Simulate Shift+click by not releasing previous selection
+            token.control({ releaseOthers: false });
+            selectedCount++;
+          }
+        }
+      }
+      
+      ui.notifications?.info?.(`Selected ${selectedCount} enemy token(s).`);
+    } catch (e) {
+      console.error("[pf2e-visioner] select enemies error", e);
+    }
+  }
+
+  static async _onTargetParty(_event, _button) {
+    try {
+      const partyTokens = VisionerQuickPanel._getPartyTokens();
+      if (!partyTokens.length) {
+        ui.notifications?.warn?.("No party tokens found in the scene.");
+        return;
+      }
+      
+      // Clear current targets first
+      for (const token of canvas.tokens.placeables) {
+        if (token.isTargeted) {
+          token.setTarget(false, { releaseOthers: false });
+        }
+      }
+      
+      // Target party tokens
+      for (const token of partyTokens) {
+        token.setTarget(true, { releaseOthers: false });
+      }
+      
+      ui.notifications?.info?.(`Targeted ${partyTokens.length} party token(s).`);
+    } catch (e) {
+      console.error("[pf2e-visioner] target party error", e);
+    }
+  }
+
+  static async _onTargetEnemies(_event, _button) {
+    try {
+      const enemyTokens = VisionerQuickPanel._getEnemyTokens();
+      if (!enemyTokens.length) {
+        ui.notifications?.warn?.("No enemy tokens found in the scene.");
+        return;
+      }
+      
+      // Clear current targets first
+      for (const token of canvas.tokens.placeables) {
+        if (token.isTargeted) {
+          token.setTarget(false, { releaseOthers: false });
+        }
+      }
+      
+      // Target enemy tokens
+      for (const token of enemyTokens) {
+        token.setTarget(true, { releaseOthers: false });
+      }
+      
+      ui.notifications?.info?.(`Targeted ${enemyTokens.length} enemy token(s).`);
+    } catch (e) {
+      console.error("[pf2e-visioner] target enemies error", e);
+    }
+  }
+
+  static async _onClearAll(_event, _button) {
+    try {
+      // Clear all selected tokens
+      canvas.tokens.releaseAll();
+      
+      // Clear all targeted tokens
+      for (const token of canvas.tokens.placeables) {
+        if (token.isTargeted) {
+          token.setTarget(false, { releaseOthers: false });
+        }
+      }
+      
+      ui.notifications?.info?.("Cleared all selections and targets.");
+    } catch (e) {
+      console.error("[pf2e-visioner] clear all error", e);
     }
   }
 
@@ -328,6 +494,27 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       if (this._floatingBtnEl && this._floatingBtnEl.parentElement) this._floatingBtnEl.parentElement.removeChild(this._floatingBtnEl);
       this._floatingBtnEl = null;
     } catch (_) {}
+  }
+
+  // Helper methods to get party and enemy tokens
+  static _getPartyTokens() {
+    try {
+      return Array.from(canvas?.tokens?.placeables ?? [])
+        .filter(token => token?.actor && token.actor.type === "character" && token.actor.hasPlayerOwner)
+        .filter(token => token.actor.alliance === "party" || token.actor.alliance === "self");
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static _getEnemyTokens() {
+    try {
+      return Array.from(canvas?.tokens?.placeables ?? [])
+        .filter(token => token?.actor && token.actor.type === "npc")
+        .filter(token => !token.actor.hasPlayerOwner);
+    } catch (_) {
+      return [];
+    }
   }
 }
 

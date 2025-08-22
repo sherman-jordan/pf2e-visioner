@@ -119,6 +119,7 @@ export class HideActionHandler extends ActionHandlerBase {
             label: game.i18n.localize(coverConfig.label),
             icon: coverConfig.icon,
             color: coverConfig.color,
+            cssClass: coverConfig.cssClass,
             bonus: coverConfig.bonusStealth,
             isOverride,
             source: coverSource, // Track whether this came from auto, manual, or override

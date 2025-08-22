@@ -35,12 +35,12 @@
           <td class="token-name"><strong title="{{o.target.name}}">{{o.target.name}}</strong></td>
           <td class="visibility-change" style="text-align:center;">
             <div class="visibility-change-inline">
-              <span class="state-icon" title="{{o.oldCoverCfg.label}}"><i class="{{o.oldCoverCfg.icon}}" style="color: {{o.oldCoverCfg.color}}"></i></span>
+              <span class="state-icon {{o.oldCoverCfg.cssClass}}" title="{{o.oldCoverCfg.label}}"><i class="{{o.oldCoverCfg.icon}}"></i></span>
               <i class="fas fa-arrow-right visibility-arrow"></i>
               <div class="override-icons">
                 {{#each o.availableStates as |s|}}
-                  <span class="state-icon {{#if s.selected}}selected{{/if}} {{#if s.calculatedOutcome}}calculated-outcome{{/if}}" data-state="{{s.value}}" data-token-id="{{../o.target.id}}" title="{{s.label}}">
-                    <i class="{{s.icon}}" style="color: {{s.color}}"></i>
+                  <span class="state-icon {{#if s.selected}}selected{{/if}} {{#if s.calculatedOutcome}}calculated-outcome{{/if}} {{s.cssClass}}" data-state="{{s.value}}" data-token-id="{{../o.target.id}}" title="{{s.label}}">
+                    <i class="{{s.icon}}"></i>
                   </span>
                 {{/each}}
               </div>

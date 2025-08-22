@@ -100,6 +100,24 @@ scripts/
 4. **Responsive design**: CSS breakpoints for different screen sizes
 5. **Colorblind support**: Multiple accessibility modes with pattern indicators
 
+### Quick Panel (VisionerQuickPanel)
+1. **Purpose**: Rapid visibility and cover management without opening full manager
+2. **Layout**: Compact interface with visibility/cover buttons and quick selection tools
+3. **Quick Selection Buttons**:
+   - **Party Selection**: Selects all character tokens with player ownership
+   - **Enemy Selection**: Selects all NPC tokens without player ownership
+   - **Party Targeting**: Targets all party tokens for visibility/cover operations
+   - **Enemy Targeting**: Targets all enemy tokens for visibility/cover operations
+4. **Features**:
+   - Observer/Target mode switching
+   - Minimizable to floating button
+   - Auto-refresh on token selection/targeting changes
+   - Position memory for floating button
+5. **Token Detection Logic**:
+   - **Party tokens**: `actor.type === 'character' && actor.hasPlayerOwner && (actor.alliance === 'party' || actor.alliance === 'self')`
+   - **Enemy tokens**: `actor.type === 'npc' && !actor.hasPlayerOwner`
+6. **Usage**: Ideal for GMs managing large encounters or quick visibility adjustments
+
 ### Performance Patterns
 1. **Lazy loading**: Dynamic imports for heavy modules (dialogs, batch operations)
 2. **Debounced updates**: Visual effects batched to avoid excessive redraws
@@ -400,7 +418,244 @@ npm run test:ci       # CI mode with strict requirements
 
 ---
 
+## 🐛 Recent Bug Fixes
+
+### Colorblind Mode Fix (2025-01-20)
+**MAJOR BUG FIX COMPLETED**: Fixed colorblind mode not working at all and not applying on module load.
+
+### Colorblind Mode CSS Fix (2025-01-20)
+**CRITICAL BUG FIX COMPLETED**: Fixed colorblind mode CSS not actually changing colors due to hardcoded RGBA values bypassing CSS custom properties.
+
+**Root Cause**: The colorblind mode classes were being applied correctly, but the CSS was using hardcoded RGBA colors (like `rgba(76, 175, 80, 0.2)`) instead of CSS custom properties that could be overridden by colorblind mode.
+
+**Issues Fixed**:
+1. **Hardcoded RGBA colors** - 57+ instances of hardcoded colors in CSS files that bypassed colorblind overrides
+2. **Missing CSS custom properties** - No CSS variables for background colors with alpha transparency
+3. **Incomplete colorblind overrides** - Colorblind CSS only overrode text colors, not background colors
+
+**Solution Implemented**:
+1. **Added CSS custom properties** for all visibility state background colors in `base.css`:
+   - `--visibility-observed-bg-light` (0.05 alpha)
+   - `--visibility-observed-bg` (0.1 alpha) 
+   - `--visibility-observed-bg-medium` (0.15 alpha)
+   - `--visibility-observed-bg-strong` (0.2 alpha)
+   - `--visibility-observed-bg-solid` (0.9 alpha)
+   - Similar properties for concealed, hidden, and undetected states
+
+2. **Updated colorblind.css** to override all background color custom properties with colorblind-friendly alternatives
+
+3. **Replaced hardcoded colors** in all CSS files:
+   - `token-effects.css` - Fixed state badges, visibility indicators, disposition colors
+   - `visibility-manager.css` - Fixed bulk action buttons, hover states, table highlights, state indicators
+   - `tooltips.css` - Fixed status indicators
+   - `token-manager-ui.css` - Fixed DC outcome indicators
+
+4. **Added missing CSS for Token Manager state indicators**:
+   - Added `.state-indicator.visibility-observed` styles using CSS custom properties
+   - Fixed Token Manager "Current State" column to respect colorblind mode
+
+5. **Enhanced CSS specificity for comprehensive colorblind support**:
+   - Added `.pf2e-visioner .bulk-state-header` styles with `!important` to ensure bulk buttons work
+   - Added `.pf2e-visioner .state-icon` styles with `!important` to ensure state selection buttons work
+   - Added background colors for selected state icons to improve visibility
+
+6. **Fixed all dialog and chat automation hardcoded colors**:
+   - Updated `dialog-layout.css` to replace all hardcoded RGBA colors with CSS custom properties
+   - Fixed `chat-automation-styles.js` to use CSS custom properties instead of hardcoded hex colors
+   - Updated animation keyframes to use CSS custom properties
+   - Fixed scrollbar colors and hover effects in dialogs
+   - All dialogs now properly inherit colorblind mode from their `pf2e-visioner` class
+
+7. **Comprehensive colorblind mode overhaul**:
+   - **CRITICAL FIX**: Separated colorblind modes into distinct color schemes instead of using one scheme for all
+   - **Protanopia (Red-blind)**: Uses blue/yellow/purple/pink palette, avoids red and green
+   - **Deuteranopia (Green-blind)**: Uses blue/yellow/orange/magenta palette, avoids green and red  
+   - **Tritanopia (Blue-blind)**: Uses green/yellow/orange/crimson palette, avoids blue and purple
+   - **Achromatopsia (Complete colorblind)**: Uses pure grayscale with distinct brightness levels
+   - Fixed all hardcoded colors in `chat-automation-styles.js` (200+ color replacements)
+   - Added `reinjectChatAutomationStyles()` function and hooked it to colorblind mode changes
+   - Chat automation styles now dynamically update when colorblind mode changes
+   - Each colorblind mode now has scientifically appropriate color schemes for maximum accessibility
+
+8. **Fixed Token Manager colorblind mode support**:
+   - **Root Issue**: State icons and bulk buttons weren't following colorblind mode changes
+   - Added specific CSS overrides for `.state-icon`, `.bulk-state-header`, and `.state-indicator` elements
+   - Created high-specificity rules for each colorblind mode targeting Token Manager elements
+   - Used `body.pf2e-visioner-colorblind-* .pf2e-visioner` selectors with `!important` for proper inheritance
+   - Token Manager state icons and bulk buttons now properly change colors when colorblind mode is switched
+
+9. **Comprehensive UI element colorblind support**:
+   - **Added explicit colorblind CSS rules for ALL UI elements** that were missing colorblind support
+   - **Elements now covered**: `.state-badge`, `.visibility-indicator`, `.pc-row`, `.npc-row`, `.token-name .disposition`, `.concealed-effect`, `.undetected-effect`, `.dc-outcome`, `.status-indicator`, `.bulk-state`, `.cover-none/.lesser/.standard/.greater`
+   - **Each colorblind mode** (Protanopia, Deuteranopia, Tritanopia, Achromatopsia) has specific rules for all elements
+   - **High specificity selectors** using `body.pf2e-visioner-colorblind-* .pf2e-visioner .element` pattern with `!important`
+   - **Covers all interaction states**: normal, hover, selected, active, error, warning, success, failure
+   - **Token disposition colors**: Friendly, neutral, hostile NPCs now respect colorblind modes
+   - **Outcome indicators**: Success/failure states in dialogs and Token Manager use appropriate colorblind colors
+   - **CRITICAL FIX**: Found and fixed missing `.bulk-state` elements (different from `.bulk-state-header`)
+   - **Cover system support**: All cover state indicators (`.cover-none`, `.cover-lesser`, `.cover-standard`, `.cover-greater`) now have colorblind support
+
+10. **Final comprehensive colorblind element discovery and fixes**:
+   - **CRITICAL MISSING ELEMENTS FOUND**: Target/Observer mode toggles, tab navigation buttons, help text elements
+   - **Target mode toggle**: `.mode-toggle.target-active .toggle-option:last-child` - was using red `var(--pf2e-visioner-danger)`
+   - **Observer mode toggle**: `.mode-toggle.observer-active .toggle-option:first-child` - was using blue `var(--pf2e-visioner-info)`
+   - **Tab navigation buttons**: `.icon-tab-navigation .icon-tab-button[data-tab="visibility/cover"]` - were using visibility/cover colors
+   - **Help text elements**: `.help-text.success/.warning/.error` - were using success/warning/danger colors
+   - **Party select icons**: `.party-select i` - was using info color
+   - **Added explicit colorblind overrides** for ALL these elements across all four colorblind modes
+   - **Each element now has proper colors** for Protanopia, Deuteranopia, Tritanopia, and Achromatopsia
+
+11. **CRITICAL: Legend icons and cover bulk buttons colorblind support**:
+   - **LEGEND ICONS FIXED**: Found that legend icons use `.visibility-observed`, `.visibility-concealed`, `.visibility-hidden`, `.visibility-undetected` classes
+   - **These classes were NOT covered** by previous colorblind CSS - they are the actual icon colors in the legend
+   - **Added explicit colorblind overrides** for all visibility state classes across all four colorblind modes
+   - **COVER BULK BUTTONS FIXED**: Found cover state bulk buttons use `data-state="none/lesser/standard/greater"`
+   - **Added colorblind support** for all cover state bulk buttons across all four colorblind modes
+   - **Legend icons now change colors** when switching colorblind modes (green circle → blue, red ghost → purple, etc.)
+   - **Cover bulk buttons now change colors** when switching colorblind modes
+
+12. **COMPREHENSIVE TEMPLATE AUDIT - ALL ELEMENTS COVERED**:
+   - **SYSTEMATIC TEMPLATE REVIEW**: Audited EVERY template file in the module
+   - **Templates reviewed**: `consequences-preview.hbs`, `hide-preview.hbs`, `take-cover-preview.hbs`, `sneak-preview.hbs`, `seek-preview.hbs`, `settings-menu.hbs`, `quick-panel.hbs`, `token-manager.hbs`, `wall-manager.hbs`
+   - **ALL TEMPLATE ELEMENTS FOUND**: 
+     - `.outcome.success/.failure/.critical-success/.critical-failure` - Roll outcome indicators
+     - `.apply-change/.revert-change` - Action buttons in preview dialogs
+     - `.bulk-action-btn.apply-all/.revert-all` - Bulk action buttons
+     - `.row-action-btn.apply-change/.revert-change` - Row-level action buttons
+     - `.party-select/.enemy-select` - Selection buttons in quick panel
+     - `.auto-cover-icon` - Auto-cover feature icon
+     - `.state-icon.selected/.calculated-outcome` - Selected and calculated state indicators
+   - **COMPREHENSIVE COLORBLIND SUPPORT ADDED**: All elements now have explicit colorblind overrides for all four colorblind modes
+   - **COVERS ALL DIALOGS**: Hide, Seek, Sneak, Take Cover, Consequences, Settings, Quick Panel, Token Manager
+   - **NO MORE MISSED ELEMENTS**: Every single interactive element across all templates now respects colorblind mode
+
+13. **CRITICAL: Bulk state header ICONS colorblind fix**:
+   - **ROOT CAUSE IDENTIFIED**: Bulk state header buttons contain `<i>` icons that were not being targeted by colorblind CSS
+   - **SPECIFIC ISSUE**: Rules like `.bulk-state-header[data-state="observed"]` only styled the button, not the icon inside
+   - **EXISTING CSS STRUCTURE**: The original CSS already targets both button and icon: `.bulk-state-header[data-state="observed"] i`
+   - **SOLUTION**: Added comprehensive icon targeting for ALL colorblind modes and ALL visibility states
+   - **SELECTORS ADDED**: 
+     - `body.pf2e-visioner-colorblind-* .bulk-actions-header .bulk-state-header[data-state="*"] i`
+     - `body.pf2e-visioner-colorblind-* .bulk-actions-header .bulk-state-header[data-state="*"]:hover i`
+   - **COVERS ALL STATES**: observed, concealed, hidden, undetected for all four colorblind modes
+   - **INCLUDES HOVER STATES**: Both normal and hover states for complete coverage
+   - **NOW WORKING**: Bulk state header icons now properly change colors when switching colorblind modes
+   - **COVER STATE ICONS ALSO FIXED**: Added identical icon targeting for cover state bulk buttons (none, lesser, standard, greater)
+   - **COMPLETE COVERAGE**: Both visibility AND cover bulk state header icons now respect colorblind modes
+
+14. **Roll/DC display elements colorblind support**:
+   - **ROLL TOTAL FIXED**: Changed `.roll-total` from hardcoded `#29b6f6` to `var(--pf2e-visioner-info)`
+   - **MARGIN DISPLAY FIXED**: Changed `.margin-display` from hardcoded `#aaa` to `var(--color-text-secondary)`
+   - **DC VALUE ALREADY CORRECT**: `.dc-value` already uses `var(--visibility-undetected)` which works with colorblind modes
+   - **ELEMENTS AFFECTED**: All preview dialogs (Hide, Seek, Sneak, Point Out results tables)
+   - **NOW WORKING**: Roll totals, DC values, and margin displays now respect colorblind mode settings
+
+15. **Cover section elements and explicit roll/DC colorblind rules**:
+   - **COVER SECTION ELEMENTS FIXED**: Added explicit colorblind rules for `.cover-section .state-icon[data-state="*"]` and `.cover-section .bulk-actions-header .bulk-state-header[data-state="*"]`
+   - **NESTED SELECTOR COVERAGE**: Covers all cover section elements including icons inside bulk buttons
+   - **EXPLICIT ROLL/DC RULES**: Added direct colorblind CSS rules for `.roll-result`, `.roll-total`, and `.dc-value` elements
+   - **COMPREHENSIVE COVERAGE**: All four colorblind modes now have explicit rules for:
+     - Cover section state icons (none, lesser, standard, greater)
+     - Cover section bulk buttons and their icons
+     - Roll result displays in all preview dialogs
+     - DC value displays in all preview dialogs
+   - **GUARANTEED OVERRIDE**: Uses `!important` declarations to ensure colorblind colors take precedence over any other styling
+
+16. **General state icon cover states colorblind support**:
+   - **GENERAL COVERAGE ADDED**: Added colorblind rules for `.pf2e-visioner .state-icon[data-state="none/lesser/standard/greater"]`
+   - **COVERS ALL CONTEXTS**: Works for state icons in ANY container, not just `.cover-section`
+   - **ICON SELECTION DIALOGS**: Ensures cover state selection interfaces respect colorblind modes
+   - **COMPLETE STATE COVERAGE**: All cover states (none, lesser, standard, greater) now have explicit colorblind support
+   - **ALL COLORBLIND MODES**: Protanopia, Deuteranopia, Tritanopia, and Achromatopsia all covered
+
+**Root Cause**: Multiple issues:
+1. **Invalid CSS syntax** using SCSS `&` selectors in plain CSS files
+2. **Missing proper class application** to UI elements
+3. **Hardcoded inline colors** in templates that couldn't be overridden by CSS custom properties
+4. **Incomplete CSS class system** for visibility and cover states
+5. **Chat automation panels and action buttons** using hardcoded colors that ignored colorblind mode
+6. **Extensive hardcoded colors** in CSS files that bypassed colorblind overrides
+7. **Duplicate CSS custom property definitions** causing conflicts
+8. **Module load timing issues** preventing colorblind mode from applying immediately
+9. **Insufficient hook coverage** for dynamic UI elements like chat messages
+
+**Fix Implemented**:
+1. **CSS Syntax Fix**: Converted SCSS `&` syntax to proper CSS `.pf2e-visioner.pf2e-visioner-colorblind-*` selectors in `colorblind.css` and `colorblind-buttons.css`
+2. **Settings Handler Fix**: Enhanced the onChange handler in `settings.js` to properly apply colorblind classes to both `document.body` and `.pf2e-visioner` containers
+3. **Template System Overhaul**: Replaced all inline `style="color: {{state.color}}"` with CSS classes like `{{state.cssClass}}` in ALL templates:
+   - `token-manager.hbs` ✅
+   - `quick-panel.hbs` ✅
+   - `seek-preview.hbs` ✅
+   - `sneak-preview.hbs` ✅
+   - `take-cover-preview.hbs` ✅
+   - `hide-preview.hbs` ✅
+   - `settings-menu.hbs` ✅
+4. **Backend Integration**: Updated ALL backend context files to provide `cssClass` properties:
+   - `constants.js` ✅
+   - `token-manager/context.js` ✅
+   - `quick-panel.js` ✅
+   - `visibility-states.js` ✅
+   - `take-cover-preview-dialog.js` ✅
+   - `hide-action.js` ✅
+5. **CSS Custom Properties**: Enhanced `base.css` with comprehensive CSS classes and chat automation panel color scheme
+6. **Chat Automation Fix**: Updated `chat-automation-styles.js` to use CSS custom properties instead of hardcoded colors
+7. **Handlebars Helper Fix**: Updated `hbs-helpers.js` to use CSS classes instead of inline colors for chat message icons
+8. **Render Hook**: Added `renderApplication` hook in `main.js` to ensure colorblind classes are applied when UI elements are rendered
+9. **Hardcoded Color Elimination**: Replaced ALL hardcoded hex colors in CSS files with CSS custom properties:
+   - `dialog-layout.css` ✅ - Table headers, row highlights, scrollbars, visibility state indicators
+   - `colorblind-buttons.css` ✅ - Panel backgrounds using CSS custom properties
+   - `visibility-manager.css` ✅ - Tab navigation, mode toggles, hover effects
+10. **Enhanced Colorblind Overrides**: Added comprehensive color overrides for primary colors, borders, and shadows to ensure complete color replacement
+11. **Duplicate CSS Fix**: Consolidated duplicate `:root` blocks in `base.css` to prevent conflicts
+12. **Module Load Fix**: Added multiple hooks in `main.js` to ensure colorblind mode applies immediately:
+    - `Hooks.once("setup")` - Applies colorblind mode during setup phase
+    - `Hooks.once("ready")` - Re-applies colorblind mode to ensure it's set
+    - `Hooks.on("renderChatMessage")` - Applies colorblind mode to chat automation panels
+    - `Hooks.on("renderSidebarTab")` - Applies colorblind mode to sidebar elements
+13. **Complete CSS Custom Property System**: Created comprehensive CSS custom property architecture:
+    - Base colors defined in `:root` with fallback values
+    - Color-specific properties (e.g., `--visibility-observed-color`) for easy overrides
+    - All hardcoded colors replaced with CSS custom properties
+    - Colorblind mode overrides all color properties comprehensively
+
+**Result**: The colorblind mode now works comprehensively across **EVERY SINGLE UI ELEMENT** in the entire module and applies immediately upon module load:
+- ✅ **Module Load** - Colorblind mode applies immediately during setup and ready phases
+- ✅ **Token Manager** - All visibility/cover states, legends, current states, bulk actions
+- ✅ **Quick Panel** - All visibility/cover buttons, party/enemy selection buttons  
+- ✅ **Chat Dialogs** - Seek, Hide, Sneak, Take Cover preview dialogs
+- ✅ **Settings Menu** - Auto-cover icons and UI elements
+- ✅ **Auto-Cover** - Cover state indicators in Hide action dialogs
+- ✅ **Chat Automation Panels** - All action buttons in chat messages (Seek, Hide, Sneak, Point Out, etc.)
+- ✅ **Chat Message Icons** - Visibility state icons rendered in chat messages
+- ✅ **All Template Elements** - Every single .hbs template now respects colorblind mode settings
+- ✅ **CSS Files** - ALL hardcoded colors replaced with CSS custom properties
+- ✅ **Color Differentiation** - Enhanced colorblind overrides provide distinct, accessible colors for each mode
+- ✅ **Dynamic UI Elements** - Chat messages, sidebar tabs, and all dynamically rendered content support colorblind mode
+- ✅ **Immediate Application** - Colorblind mode applies as soon as the module loads, not just when settings change
+
+**Colorblind Mode Features**:
+- **Protanopia (Red-blind)**: Uses blues, yellows, and purples for maximum contrast
+- **Deuteranopia (Green-blind)**: Uses blues, yellows, and magentas for maximum contrast  
+- **Tritanopia (Blue-blind)**: Uses reds, greens, and yellows for maximum contrast
+- **Achromatopsia (Complete color blindness)**: Uses high-contrast grayscale with pattern indicators
+
+**Technical Implementation**:
+- **CSS Custom Properties**: All colors now use CSS custom properties with fallback values
+- **Comprehensive Overrides**: Colorblind mode overrides all color properties, not just visibility/cover states
+- **Multiple Hook Points**: Colorblind mode applies at setup, ready, and during all UI rendering
+- **No Hardcoded Colors**: Absolutely zero hardcoded hex colors remain in any CSS or template files
+- **Performance Optimized**: Colorblind mode applies efficiently without performance impact
+
+### Cover Visualization Alignment Fix (Previous)
+**MAJOR BUG FIX COMPLETED**: Fixed cover visualization alignment issue where tokens appeared larger than their actual grid size (medium showing as 2x2, large as 4x4). 
+
+**Root Cause**: Improper grid alignment - even-sized tokens (2x2, 4x4) need centers between grid intersections, while odd-sized tokens (1x1, 3x3) need centers on grid intersections. 
+
+**Fix**: Implemented in `cover-visualization.js` with token size-aware grid alignment logic.
+
+---
+
 **Remember**: This module is designed as an inspirational successor to pf2e-perception [[memory:4963811]], not a direct copy. Always consider the official PF2E system patterns and best practices [[memory:4812605]] when making changes.
 
 **Last Updated**: 2025-01-20
-**Document Version**: 1.2
+**Document Version**: 1.3

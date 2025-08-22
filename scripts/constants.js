@@ -14,28 +14,32 @@ export const VISIBILITY_STATES = {
     pf2eCondition: null,
     visible: true,
     icon: "fas fa-eye",
-    color: "#4caf50", // Green - safe/visible
+    color: "var(--visibility-observed, #4caf50)", // Green - safe/visible
+    cssClass: "visibility-observed",
   },
   concealed: {
     label: "PF2E_VISIONER.VISIBILITY_STATES.concealed",
     pf2eCondition: "concealed",
     visible: true,
     icon: "fas fa-cloud",
-    color: "#ffc107", // Yellow - caution
+    color: "var(--visibility-concealed, #ffc107)", // Yellow - caution
+    cssClass: "visibility-concealed",
   },
   hidden: {
     label: "PF2E_VISIONER.VISIBILITY_STATES.hidden",
     pf2eCondition: "hidden",
     visible: true,
     icon: "fas fa-eye-slash",
-    color: "#ff6600", // Bright orange - warning
+    color: "var(--visibility-hidden, #ff6600)", // Bright orange - warning
+    cssClass: "visibility-hidden",
   },
   undetected: {
     label: "PF2E_VISIONER.VISIBILITY_STATES.undetected",
     pf2eCondition: "undetected",
     visible: false, // Hide completely like invisible used to
     icon: "fas fa-ghost",
-    color: "#f44336", // Red - danger
+    color: "var(--visibility-undetected, #f44336)", // Red - danger
+    cssClass: "visibility-undetected",
   },
 };
 
@@ -47,7 +51,8 @@ export const COVER_STATES = {
     label: "PF2E_VISIONER.COVER_STATES.none",
     pf2eCondition: null,
     icon: "fas fa-shield-slash",
-    color: "#4caf50", // Green - no cover
+    color: "var(--cover-none, #4caf50)", // Green - no cover
+    cssClass: "cover-none",
     bonusAC: 0,
     bonusReflex: 0,
     bonusStealth: 0,
@@ -57,7 +62,8 @@ export const COVER_STATES = {
     label: "PF2E_VISIONER.COVER_STATES.lesser",
     pf2eCondition: "lesser-cover",
     icon: "fa-regular fa-shield",
-    color: "#ffc107", // Yellow - minor cover
+    color: "var(--cover-lesser, #ffc107)", // Yellow - minor cover
+    cssClass: "cover-lesser",
     bonusAC: 1,
     bonusReflex: 0,
     bonusStealth: 0,
@@ -67,7 +73,8 @@ export const COVER_STATES = {
     label: "PF2E_VISIONER.COVER_STATES.standard",
     pf2eCondition: "cover",
     icon: "fas fa-shield-alt",
-    color: "#ff6600", // Orange - significant cover
+    color: "var(--cover-standard, #ff6600)", // Orange - significant cover
+    cssClass: "cover-standard",
     bonusAC: 2,
     bonusReflex: 2,
     bonusStealth: 2,
@@ -77,7 +84,8 @@ export const COVER_STATES = {
     label: "PF2E_VISIONER.COVER_STATES.greater",
     pf2eCondition: "greater-cover",
     icon: "fas fa-shield",
-    color: "#f44336", // Red - major cover
+    color: "var(--cover-greater, #f44336)", // Red - major cover
+    cssClass: "cover-greater",
     bonusAC: 4,
     bonusReflex: 4,
     bonusStealth: 4,

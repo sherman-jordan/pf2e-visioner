@@ -28,6 +28,11 @@
       "standard": "Standard Cover",
       "greater": "Greater Cover"
     },
+    "COVER_OVERRIDE": {
+      "POPUP_OVERRIDE": "Cover overridden via keybind popup: {original} → {final}",
+      "DIALOG_OVERRIDE": "Cover overridden in roll dialog: {original} → {final}",
+      "GENERIC_OVERRIDE": "Cover overridden: {original} → {final}"
+    },
     "VISUAL_EFFECTS": {
       "HIDDEN_OVERLAY": "This token is hidden from your view",
       "UNDETECTED_OVERLAY": "This token is undetected by you",

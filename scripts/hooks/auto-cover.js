@@ -40,24 +40,11 @@ export function registerAutoCoverHooks() {
               const target = resolveTargetFromCtx(context);
               
               if (attacker && target && (attacker.isOwner || game.user.isGM)) {
-                console.log("PF2E Visioner | Checking for keybind override:", {
-                  hasEvent: !!event, 
-                  eventType: event?.type, 
-                  eventCode: event?.code,
-                  eventKey: event?.key,
-                  ctrlKey: event?.ctrlKey,
-                  altKey: event?.altKey,
-                  shiftKey: event?.shiftKey,
-                  metaKey: event?.metaKey
-                });
-                
                 // Check for custom keybind - ONLY show popup when keybind is held
                 const isHoldingCoverOverrideKey = () => {
                   try {
                     const keybinding = game.keybindings.get(MODULE_ID, "holdCoverOverride");
-                    console.log("PF2E Visioner | Keybinding config:", keybinding);
                     if (!keybinding?.[0]) {
-                      console.log("PF2E Visioner | No keybinding configured");
                       return false;
                     }
                     
@@ -66,7 +53,6 @@ export function registerAutoCoverHooks() {
                     // Check current keyboard state using game.keyboard
                     const keyboard = game.keyboard;
                     if (!keyboard) {
-                      console.log("PF2E Visioner | No keyboard manager available");
                       return false;
                     }
                     
@@ -82,18 +68,6 @@ export function registerAutoCoverHooks() {
                     const isShiftPressed = keyboard.downKeys.has('Shift') || keyboard.downKeys.has('ShiftLeft') || keyboard.downKeys.has('ShiftRight');
                     const isMetaPressed = keyboard.downKeys.has('Meta') || keyboard.downKeys.has('MetaLeft') || keyboard.downKeys.has('MetaRight');
                     
-                    console.log("PF2E Visioner | Keyboard state check:", {
-                      requiredKey: binding.key,
-                      keyCode,
-                      requiredModifiers: binding.modifiers,
-                      currentDownKeys: Array.from(keyboard.downKeys),
-                      keyPressed: isKeyPressed,
-                      ctrlPressed: isCtrlPressed,
-                      altPressed: isAltPressed,
-                      shiftPressed: isShiftPressed,
-                      metaPressed: isMetaPressed
-                    });
-                    
                     const keyMatch = isKeyPressed;
                     const ctrlMatch = isCtrlPressed === (binding.modifiers?.includes("Control") || false);
                     const altMatch = isAltPressed === (binding.modifiers?.includes("Alt") || false);
@@ -101,14 +75,6 @@ export function registerAutoCoverHooks() {
                     const metaMatch = isMetaPressed === (binding.modifiers?.includes("Meta") || false);
                     
                     const matches = keyMatch && ctrlMatch && altMatch && shiftMatch && metaMatch;
-                    console.log("PF2E Visioner | Keybind match result:", {
-                      keyMatch,
-                      ctrlMatch,
-                      altMatch,
-                      shiftMatch,
-                      metaMatch,
-                      overallMatch: matches
-                    });
                     
                     return matches;
                         } catch (e) {
@@ -120,15 +86,8 @@ export function registerAutoCoverHooks() {
                 const isHoldingOverrideKey = isHoldingCoverOverrideKey();
                 const shouldShowPopup = isHoldingOverrideKey; // Only show popup when keybind is held
                 
-                console.log("PF2E Visioner | Popup decision:", {
-                  isHoldingOverrideKey,
-                  shouldShowPopup
-                });
-                
                 if (shouldShowPopup) {
-                  const state = detectCoverStateForAttack(attacker, target);
-                  console.log("PF2E Visioner | Showing popup for cover override");
-                  
+                  const state = detectCoverStateForAttack(attacker, target);                  
                   try {
                     const { openCoverQuickOverrideDialog } = await import("../cover/quick-override-dialog.js");
                     const chosen = await openCoverQuickOverrideDialog(state);
@@ -138,11 +97,9 @@ export function registerAutoCoverHooks() {
                       if (!window.pf2eVisionerPopupOverrides) window.pf2eVisionerPopupOverrides = new Map();
                       const overrideKey = `${attacker.id}-${target.id}`;
                       window.pf2eVisionerPopupOverrides.set(overrideKey, chosen);
-                      console.log("PF2E Visioner | Stored popup override:", { key: overrideKey, chosen });
                       
                       // Apply the cover effect to the target actor NOW (before roll calculation)
                       const bonus = getCoverBonusByState(chosen) || 0;
-                      console.log("PF2E Visioner | Applying cover effect to target actor:", { chosen, bonus });
                       
                       if (bonus > 0) {
                         // Clone the target actor with the cover effect
@@ -181,22 +138,13 @@ export function registerAutoCoverHooks() {
                         // Update the DC object to use the cloned actor's statistics
                         const dcObj = context.dc;
                         if (dcObj?.slug) {
-                          const originalStat = tgtActor.getStatistic?.(dcObj.slug)?.dc;
                           const clonedStat = clonedActor.getStatistic?.(dcObj.slug)?.dc;
-                          console.log("PF2E Visioner | AC comparison:", {
-                            originalAC: originalStat?.value,
-                            clonedAC: clonedStat?.value,
-                            dcSlug: dcObj.slug,
-                            expectedBonus: bonus
-                          });
+                          
                           if (clonedStat) {
                             dcObj.value = clonedStat.value;
                             dcObj.statistic = clonedStat;
-                            console.log("PF2E Visioner | Updated DC to cloned actor AC:", clonedStat.value);
                           }
                         }
-                      } else if (chosen === "none") {
-                        console.log("PF2E Visioner | No cover selected - no AC modification");
                       }
                     }
                   } catch (e) {
@@ -205,12 +153,10 @@ export function registerAutoCoverHooks() {
                 } else {
                   // No popup - apply automatic cover detection
                   const state = detectCoverStateForAttack(attacker, target);
-                  console.log("PF2E Visioner | Applying automatic cover detection:", { state });
                   
                   if (state !== "none") {
                     // Apply the cover effect automatically
                   const bonus = getCoverBonusByState(state) || 0;
-                    console.log("PF2E Visioner | Applying automatic cover effect:", { state, bonus });
                     
                     if (bonus > 0) {
                       // Clone the target actor with the cover effect
@@ -249,23 +195,13 @@ export function registerAutoCoverHooks() {
                       // Update the DC object to use the cloned actor's statistics
                       const dcObj = context.dc;
                       if (dcObj?.slug) {
-                        const originalStat = tgtActor.getStatistic?.(dcObj.slug)?.dc;
                         const clonedStat = clonedActor.getStatistic?.(dcObj.slug)?.dc;
-                        console.log("PF2E Visioner | Auto-cover AC comparison:", {
-                          originalAC: originalStat?.value,
-                          clonedAC: clonedStat?.value,
-                          dcSlug: dcObj.slug,
-                          expectedBonus: bonus
-                        });
                         if (clonedStat) {
                           dcObj.value = clonedStat.value;
                           dcObj.statistic = clonedStat;
-                          console.log("PF2E Visioner | Updated DC to auto-cover AC:", clonedStat.value);
                         }
                       }
                     }
-                  } else {
-                    console.log("PF2E Visioner | No cover detected - no AC modification");
                   }
                 }
               }
@@ -278,9 +214,6 @@ export function registerAutoCoverHooks() {
         },
         "WRAPPER"
       );
-      console.log("PF2E Visioner | Simple popup wrapper registered");
     }
   });
-  
-  console.log("PF2E Visioner | Auto-cover hooks registered (simplified architecture)");
 }

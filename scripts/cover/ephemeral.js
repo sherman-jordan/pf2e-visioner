@@ -165,17 +165,9 @@ export async function createEphemeralCoverEffect(
   }
 
   try {
-    console.log("PF2E Visioner | Creating ephemeral effect:", {
-      receiver: effectReceiverToken.name,
-      source: effectSourceToken.name,
-      coverState,
-      options,
-      effectName: ephemeralEffect.name
-    });
     await effectReceiverToken.actor.createEmbeddedDocuments("Item", [
       ephemeralEffect,
     ]);
-    console.log("PF2E Visioner | Ephemeral effect created successfully on", effectReceiverToken.name);
   } catch (error) {
     console.error("Failed to create ephemeral cover effect:", error);
   }

@@ -26,6 +26,9 @@ const SIZE_ORDER = { tiny: 0, sm: 1, small: 1, med: 2, medium: 2, lg: 3, large: 
 
 // Track attacker→target pairs for cleanup when the final message lacks target info
 const _activePairsByAttacker = new Map(); // attackerId -> Set<targetId>
+
+// Track override information temporarily until message is created
+export const _pendingOverrides = new Map(); // messageId -> overrideData
 export function _recordPair(attackerId, targetId) {
   if (!attackerId || !targetId) return;
   let set = _activePairsByAttacker.get(attackerId);
@@ -563,14 +566,11 @@ export async function onPreCreateChatMessage(doc, data) {
     // Only proceed if this user owns the attacking token or is the GM
     if (!attacker.isOwner && !game.user.isGM) return;
     
-    console.log("PF2E Visioner | Processing cover for chat message:", {
-      attacker: attacker.name,
-      target: target.name,
-      messageType: data?.flags?.pf2e?.context?.type
-    });
-    
     // Detect base cover state
     let state = detectCoverStateForAttack(attacker, target);
+    const originalDetectedState = state;
+    let wasOverridden = false;
+    let overrideSource = null;
     
     // Check for popup override first (stored in global by popup wrapper)
     try {
@@ -578,7 +578,10 @@ export async function onPreCreateChatMessage(doc, data) {
         const overrideKey = `${attacker.id}-${target.id}`;
         const popupOverride = window.pf2eVisionerPopupOverrides.get(overrideKey);
         if (popupOverride !== undefined) {
-          console.log("PF2E Visioner | Using popup override:", { detected: state, override: popupOverride });
+          if (popupOverride !== originalDetectedState) {
+            wasOverridden = true;
+            overrideSource = "popup";
+          }
           state = popupOverride;
           // Clear the override after use
           window.pf2eVisionerPopupOverrides.delete(overrideKey);
@@ -591,26 +594,74 @@ export async function onPreCreateChatMessage(doc, data) {
     // Check for roll dialog override (from renderCheckModifiersDialog)
     try {
       if (window.pf2eVisionerDialogOverrides) {
-        const overrideKey = `${attacker.actor.id}-${target.id}`;
-        const dialogOverride = window.pf2eVisionerDialogOverrides.get(overrideKey);
+        // Try multiple key formats to handle different contexts
+        const possibleKeys = [
+          `${attacker.actor.id}-${target.id}`,      // actor ID - token ID
+          `${attacker.id}-${target.id}`,            // token ID - token ID
+          `${attacker.actor.id}-${target.actor.id}`, // actor ID - actor ID
+          `${attacker.actor.uuid}-${target.id}`,    // actor UUID - token ID
+        ];
+        
+        let dialogOverride = undefined;
+        let usedKey = null;
+        
+        for (const key of possibleKeys) {
+          if (window.pf2eVisionerDialogOverrides.has(key)) {
+            dialogOverride = window.pf2eVisionerDialogOverrides.get(key);
+            usedKey = key;
+            break;
+          }
+        }
+        
         if (dialogOverride !== undefined) {
-          console.log("PF2E Visioner | Using dialog override:", { detected: state, override: dialogOverride });
+          if (dialogOverride !== originalDetectedState) {
+            wasOverridden = true;
+            overrideSource = "dialog";
+          }
           state = dialogOverride;
           // Clear the override after use
-          window.pf2eVisionerDialogOverrides.delete(overrideKey);
+          window.pf2eVisionerDialogOverrides.delete(usedKey);
         }
       }
     } catch (e) {
       console.warn("PF2E Visioner | Failed to check dialog override:", e);
     }
     
-    console.log("PF2E Visioner | Final cover state for chat message:", {
-      attacker: attacker.name,
-      target: target.name,
-      finalState: state,
-      hadPopupOverride: !!window.pf2eVisionerPopupOverrides?.has(`${attacker.id}-${target.id}`),
-      hadDialogOverride: !!window.pf2eVisionerDialogOverrides?.has(`${attacker.actor.id}-${target.id}`)
-    });
+    // Store override information in chat message flags for later display
+    if (wasOverridden) {
+      try {
+        if (!data.flags) data.flags = {};
+        if (!data.flags["pf2e-visioner"]) data.flags["pf2e-visioner"] = {};
+        const overrideData = {
+          originalDetected: originalDetectedState,
+          finalState: state,
+          overrideSource: overrideSource,
+          attackerName: attacker.name,
+          targetName: target.name
+        };
+        data.flags["pf2e-visioner"].coverOverride = overrideData;
+        
+        // Store in temporary map as backup in case flags don't persist
+        const tempKey = `${attacker.id}-${target.id}-${Date.now()}`;
+        _pendingOverrides.set(tempKey, {
+          ...overrideData,
+          attackerId: attacker.id,
+          targetId: target.id,
+          timestamp: Date.now()
+        });
+        
+        // Also try to update the document directly if it exists
+        if (doc && doc.updateSource) {
+          try {
+            doc.updateSource({ "flags.pf2e-visioner.coverOverride": overrideData });
+          } catch (e) {
+            console.warn("PF2E Visioner | Failed to update document source:", e);
+          }
+        }
+      } catch (e) {
+        console.warn("PF2E Visioner | Failed to store override info in message flags:", e);
+      }
+    }
     
     // Apply cover if any
     if (state !== "none") {
@@ -731,16 +782,32 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             const dctx = dialog?.context || {}; const tgt = dctx?.target; const tgtActor = tgt?.actor; if (!tgtActor) return;
             const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
             
-            console.log("PF2E Visioner | Dialog roll button clicked, chosen cover:", chosen);
+            
+            // Check if this is actually an override (different from detected state)
+            const isOverride = chosen !== state;
             
             // Store the dialog override for onPreCreateChatMessage to use
             // We'll store it in a temporary global that gets picked up by the message creation
             if (!window.pf2eVisionerDialogOverrides) window.pf2eVisionerDialogOverrides = new Map();
             const attacker = dctx?.actor;
             if (attacker && tgt) {
-              const overrideKey = `${attacker.id}-${tgt.id}`;
-              window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
-              console.log("PF2E Visioner | Stored dialog override:", { key: overrideKey, chosen });
+              // Get the proper target token ID - try multiple sources
+              const targetTokenId = tgt.id || tgt.token?.id || target?.id;
+              
+
+              if (targetTokenId) {
+                // Use multiple key formats to ensure compatibility
+                const overrideKeys = [
+                  `${attacker.id}-${targetTokenId}`,           // actor ID - token ID
+                  `${attacker.uuid}-${targetTokenId}`,         // actor UUID - token ID (fallback)
+                ];
+                
+                for (const overrideKey of overrideKeys) {
+                  window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
+                }
+              } else {
+                console.warn("PF2E Visioner | Could not resolve target token ID for dialog override");
+              }
             }
             
             const bonus = getCoverBonusByState(chosen) || 0;

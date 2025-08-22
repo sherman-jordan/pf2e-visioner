@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.6.7] - 2025-08-21
+
+### Fixed
+
+- Color blind modes
+
+### Added
+- Quick edit - added party and enemies selectors
+- Auto cover - show to gms if cover was overridden by any method
+
 ## [2.6.6] - 2025-08-21
 
 ### Fixed

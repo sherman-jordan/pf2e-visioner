@@ -150,7 +150,14 @@ scripts/
 - **Fog of war aware**: Only shows information in visible areas
 - **Performance optimized**: Client-side rendering with efficient algorithms
 
-### 5. Party Token Integration ✅ **VALIDATED IN PRODUCTION**
+### 5. Cover Override Indication ✅ **NEW FEATURE**
+- **Chat message indicators**: Visual indicators appear in chat when auto cover calculations are overridden
+- **Override sources tracked**: Distinguishes between popup overrides (keybind) and roll dialog overrides
+- **Clear messaging**: Shows original detected cover vs final applied cover (e.g., "Standard Cover → Lesser Cover")
+- **Localized**: Supports multiple languages with proper i18n formatting
+- **Non-intrusive**: Appears as a subtle warning-colored bar in chat messages
+
+### 6. Party Token Integration ✅ **VALIDATED IN PRODUCTION**
 - **State preservation**: Saves visibility/cover when tokens consolidated into party
 - **Automatic restoration**: Restores state when tokens brought back from party
 - **Effect preservation**: Module effects saved and restored with tokens
@@ -185,6 +192,7 @@ scripts/
 - **Per-user settings**: Correctly accesses PF2e client settings (`game.user.flags.pf2e.settings.*`) not system settings
 - **Movement invalidation**: Token movement clears pre-applied cover
 - **Owner-based**: Auto-cover runs for token owners and GM to avoid duplicate applications
+- **Override tracking**: Stores override information in chat message flags (`flags["pf2e-visioner"].coverOverride`) for visual indication
 
 ### 5. ApplicationV2 Patterns
 - **Instance management**: Track singleton instances to prevent duplicates

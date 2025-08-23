@@ -55,6 +55,22 @@ class HoverTooltipsImpl {
         '--pf2e-visioner-tooltip-badge-border',
         `${borderPx}px`,
       );
+      // Compute and expose badge box dimensions as CSS variables (used by CSS-only badge styling)
+      const badgeWidth = Math.round(iconPx + borderPx * 2 + 8);
+      const badgeHeight = Math.round(iconPx + borderPx * 2 + 6);
+      const borderRadius = Math.round(badgeHeight / 3);
+      document.documentElement.style.setProperty(
+        '--pf2e-visioner-tooltip-badge-width',
+        `${badgeWidth}px`,
+      );
+      document.documentElement.style.setProperty(
+        '--pf2e-visioner-tooltip-badge-height',
+        `${badgeHeight}px`,
+      );
+      document.documentElement.style.setProperty(
+        '--pf2e-visioner-tooltip-badge-radius',
+        `${borderRadius}px`,
+      );
     } catch (_) {}
   }
 }
@@ -63,24 +79,13 @@ export const HoverTooltips = new HoverTooltipsImpl();
 // Backwards-compatible alias
 export const HoverTooltipsService = HoverTooltips;
 
-// DEPRECATED globals: state lives on HoverTooltips singleton now
-let currentHoveredToken = null;
-let visibilityIndicators = new Map();
-let coverIndicators = new Map();
-// Mapping of Font Awesome icon classes to glyphs for PIXI.Text rendering
-const COVER_ICON_GLYPHS = {
-  'fas fa-shield-alt': '\uf3ed',
-  'fas fa-shield': '\uf132',
-  'fa-regular fa-shield': '\uf132',
-};
-let tokenEventHandlers = new Map(); // Store references to our specific event handlers
-let tooltipMode = 'target'; // 'target' (default) or 'observer'
-let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
+
+
+
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 // Initialize with default, will try to get from settings when available
 let tooltipFontSize = 16;
 let tooltipIconSize = 14; // Default icon size
-let badgeTicker = null; // Ticker for keeping DOM badges aligned on pan/zoom
 let _initialized = false; // Prevent double-binding
 
 // size computation moved to helpers/tooltip-utils.js
@@ -730,15 +735,15 @@ function addVisibilityIndicator(
   const verticalOffset = hudActive ? 26 : -6; // nudge up slightly when HUD is not active
   const centerY = canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
 
-  const placeBadge = (leftPx, topPx, color, iconClass) => {
+  const placeBadge = (leftPx, topPx, stateClass, iconClass, kind) => {
     const el = document.createElement('div');
     el.style.position = 'fixed';
     el.style.pointerEvents = 'none';
     el.style.zIndex = '60';
     el.style.left = `${Math.round(leftPx)}px`;
     el.style.top = `${Math.round(topPx)}px`;
-    el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${color};">
-      <i class="${iconClass}" style="font-size: var(--pf2e-visioner-tooltip-icon-size, 14px); line-height: 1;"></i>
+    el.innerHTML = `<span class="pf2e-visioner-tooltip-badge ${kind === 'cover' ? `cover-${stateClass}` : `visibility-${stateClass}`}" style="--pf2e-visioner-tooltip-badge-width: ${badgeWidth}px; --pf2e-visioner-tooltip-badge-height: ${badgeHeight}px; --pf2e-visioner-tooltip-badge-radius: ${borderRadius}px;">
+      <i class="${iconClass}"></i>
     </span>`;
     document.body.appendChild(el);
     return el;
@@ -748,12 +753,33 @@ function addVisibilityIndicator(
     // Two badges: visibility on left, cover on right
     const visLeft = centerX - spacing / 2 - badgeWidth;
     const coverLeft = centerX + spacing / 2;
-    indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
-    indicator._coverBadgeEl = placeBadge(coverLeft, centerY, coverConfig.color, coverConfig.icon);
+    indicator._visBadgeEl = placeBadge(
+      visLeft,
+      centerY,
+      visibilityState,
+      config.icon,
+      'visibility',
+    );
+    // Recompute cover state name for class
+    let coverStateName = 'none';
+    try {
+      if (relationToken) {
+        const coverMapSource = mode === 'observer' ? observerToken : targetToken;
+        const coverMap = getCoverMap(coverMapSource);
+        coverStateName = coverMap[relationToken.document.id] || 'none';
+      }
+    } catch (_) {}
+    indicator._coverBadgeEl = placeBadge(
+      coverLeft,
+      centerY,
+      coverStateName,
+      coverConfig.icon,
+      'cover',
+    );
   } else {
     // Only visibility badge, centered
     const visLeft = centerX - badgeWidth / 2;
-    indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
+    indicator._visBadgeEl = placeBadge(visLeft, centerY, visibilityState, config.icon, 'visibility');
   }
 
   HoverTooltips.visibilityIndicators.set(targetToken.id, indicator);
@@ -830,9 +856,8 @@ function updateBadgePositions() {
  * @param {Token} targetToken
  * @param {Token} observerToken
  * @param {string} coverState
- * @param {string} mode 'observer' | 'target'
  */
-function addCoverIndicator(targetToken, observerToken, coverState, mode = 'observer') {
+function addCoverIndicator(targetToken, observerToken, coverState) {
   const config = COVER_STATES[coverState];
   if (!config) return;
 
@@ -870,7 +895,35 @@ function addCoverIndicator(targetToken, observerToken, coverState, mode = 'obser
   el.style.zIndex = '60';
   el.style.left = `${Math.round(centerX - badgeWidth / 2)}px`;
   el.style.top = `${Math.round(centerY)}px`;
-  el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${config.color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${config.color};">
+  const colorblindMode = game.settings.get(MODULE_ID, 'colorblindMode');
+  const colorblindmodeMap = {
+    protanopia: {
+      none: "#0072b2",
+      lesser: "#f0e442",
+      standard: "#cc79a7",
+      greater: "#9467bd",
+    },
+    deuteranopia: {
+      none: "#0072b2", /* Blue instead of green */
+      lesser: "#f0e442", /* Yellow */
+      standard: "#ff8c00", /* Orange (safe for green-blind) */
+      greater: "#d946ef", /* Magenta instead of red */
+    },
+    tritanopia: {
+      none: "#00b050",
+      lesser: "#ffd700",
+      standard: "#ff6600",
+      greater: "#dc143c",
+    },
+    achromatopsia: {
+      none: "#ffffff", /* White - highest contrast */
+      lesser: "#cccccc", /* Light gray */
+      standard: "#888888", /* Medium gray */
+      greater: "#333333", /* Dark gray */
+    },
+  };
+  const color = colorblindMode !== 'none' ? colorblindmodeMap[colorblindMode][coverState] : config.color;
+  el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${color};">
     <i class="${config.icon}" style="font-size: var(--pf2e-visioner-tooltip-icon-size, 14px); line-height: 1;"></i>
   </span>`;
   document.body.appendChild(el);
@@ -948,7 +1001,6 @@ function hideAllVisibilityIndicators() {
   HoverTooltips.visibilityIndicators.clear();
 
   // Reset tracking variables to ensure clean state
-  isShowingKeyTooltips = false;
   keyTooltipTokens.clear();
 
   // Stop ticker when no indicators remain

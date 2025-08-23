@@ -220,32 +220,105 @@ global.console = {
   debug: jest.fn(),
 };
 
-// Mock DOM elements
-global.document = {
-  ...document,
-  body: {
-    classList: {
-      add: jest.fn(),
-      remove: jest.fn(),
-      contains: jest.fn(() => false),
+// Mock DOM elements with a safe Canvas mock to avoid OOM
+// Use the real document for non-canvas elements, and return a lightweight canvas for 'canvas'.
+(() => {
+  const realDocument = global.document ?? document;
+  const realCreateElement = realDocument.createElement.bind(realDocument);
+
+  const createMock2DContext = () => {
+    // Minimal 2D context covering all methods used by tests
+    let anyDrawn = false;
+    const ctx = {
+      // state
+      fillStyle: '#000000',
+      strokeStyle: '#000000',
+      lineWidth: 1,
+      shadowColor: 'transparent',
+      shadowBlur: 0,
+      globalAlpha: 1.0,
+      font: '10px sans-serif',
+      textAlign: 'start',
+      textBaseline: 'alphabetic',
+
+      // path ops
+      beginPath: jest.fn(() => {}),
+      moveTo: jest.fn(() => {}),
+      lineTo: jest.fn(() => { anyDrawn = true; }),
+      arc: jest.fn(() => { anyDrawn = true; }),
+      stroke: jest.fn(() => { anyDrawn = true; }),
+      fill: jest.fn(() => { anyDrawn = true; }),
+      strokeRect: jest.fn(() => { anyDrawn = true; }),
+      fillRect: jest.fn(() => { anyDrawn = true; }),
+      clearRect: jest.fn(() => {}),
+
+      // gradients
+      createLinearGradient: jest.fn(() => ({
+        addColorStop: jest.fn(() => {}),
+      })),
+
+      // text
+      fillText: jest.fn(() => { anyDrawn = true; }),
+      measureText: jest.fn((text) => ({
+        width: (text?.length ?? 0) * 7.2,
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 3,
+      })),
+
+      // imaging
+      getImageData: jest.fn(() => ({
+        // Return a tiny buffer indicating whether anything was drawn
+        data: new Uint8ClampedArray(anyDrawn ? [0, 0, 0, 255] : [0, 0, 0, 0]),
+        width: 1,
+        height: 1,
+      })),
+    };
+    return ctx;
+  };
+
+  const createMockCanvas = () => {
+    const ctx2d = createMock2DContext();
+    const el = {
+      tagName: 'CANVAS',
+      style: {},
+      classList: {
+        add: jest.fn(),
+        remove: jest.fn(),
+        contains: jest.fn(() => false),
+      },
+      width: 300,
+      height: 150,
+      getContext: jest.fn((type) => (type === '2d' ? ctx2d : null)),
+      toDataURL: jest.fn(() => 'data:image/png;base64,'),
+      // DOM-like methods used by tests
+      appendChild: jest.fn(),
+      removeChild: jest.fn(),
+      setAttribute: jest.fn(),
+      getAttribute: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      getBoundingClientRect: jest.fn(() => ({ left: 0, top: 0 })),
+    };
+    return el;
+  };
+
+  global.document = {
+    ...realDocument,
+    body: {
+      classList: {
+        add: jest.fn(),
+        remove: jest.fn(),
+        contains: jest.fn(() => false),
+      },
+      appendChild: jest.fn(),
+      removeChild: jest.fn(),
     },
-  },
-  createElement: jest.fn((tag) => ({
-    tagName: tag.toUpperCase(),
-    classList: {
-      add: jest.fn(),
-      remove: jest.fn(),
-      contains: jest.fn(() => false),
-    },
-    style: {},
-    appendChild: jest.fn(),
-    removeChild: jest.fn(),
-    setAttribute: jest.fn(),
-    getAttribute: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-  })),
-};
+    createElement: jest.fn((tag) => {
+      if (String(tag).toLowerCase() === 'canvas') return createMockCanvas();
+      return realCreateElement(tag);
+    }),
+  };
+})();
 
 // Mock window
 global.window = {

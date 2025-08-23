@@ -29,6 +29,90 @@ function normalizeTokenRef(ref) {
     return ref;
   }
 }
+
+// For 'any' mode, be more permissive: if center-to-center misses, also try
+// attacker center → target corners and target center → attacker corners.
+function intersectsBetweenTokens(attacker, target, rect, mode) {
+  const p1 = attacker.center ?? attacker.getCenter?.();
+  const p2 = target.center ?? target.getCenter?.();
+  if (p1 && p2 && centerLineIntersectsRect(p1, p2, rect, mode)) return true;
+  if (mode !== 'any') return false;
+
+  try {
+    const aRect = getTokenRect(attacker);
+    const tRect = getTokenRect(target);
+    const aSize = attacker?.actor?.system?.traits?.size?.value ?? 'med';
+    const tSize = target?.actor?.system?.traits?.size?.value ?? 'med';
+    const aCorners = getTokenCorners(attacker, aRect, aSize);
+    const tCorners = getTokenCorners(target, tRect, tSize);
+
+    // attacker center → target corners
+    if (p1) {
+      for (const tc of tCorners) {
+        if (segmentIntersectsRect(p1, tc, rect)) return true;
+      }
+    }
+    // target center → attacker corners
+    if (p2) {
+      for (const ac of aCorners) {
+        if (segmentIntersectsRect(p2, ac, rect)) return true;
+      }
+    }
+  } catch (_) {}
+
+  return false;
+}
+
+// ----- elevation/height utilities -----
+function parseFeet(value) {
+  if (value == null) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const m = value.trim().match(/(-?\d+(?:\.\d+)?)/);
+    if (m) return Number(m[1]);
+  }
+  return null;
+}
+
+const SIZE_TO_HEIGHT_FT = {
+  tiny: 2.5,
+  sm: 5,
+  small: 5,
+  med: 5,
+  medium: 5,
+  lg: 10,
+  large: 10,
+  huge: 15,
+  grg: 20,
+  gargantuan: 20,
+};
+
+function getTokenHeightFt(token) {
+  try {
+    // 1) Module flag override on token document
+    const flagH = token?.document?.getFlag?.(MODULE_ID, 'heightFt');
+    const fromFlag = parseFeet(flagH);
+    if (fromFlag != null) return fromFlag;
+    // Size-only mode: use actor size category to determine height
+    const size = token?.actor?.system?.traits?.size?.value ?? 'med';
+    return SIZE_TO_HEIGHT_FT[size] ?? 5;
+  } catch (_) {
+    return 5;
+  }
+}
+
+function getTokenVerticalSpanFt(token) {
+  try {
+    const elev = Number(token?.document?.elevation ?? token?.elevation ?? 0) || 0;
+    const h = getTokenHeightFt(token);
+    const bottom = Math.min(elev, elev + h);
+    const top = Math.max(elev, elev + h);
+    return { bottom, top };
+  } catch (_) {
+    const elev = Number(token?.document?.elevation ?? token?.elevation ?? 0) || 0;
+    return { bottom: elev, top: elev + 5 };
+  }
+}
 const SIZE_ORDER = {
   tiny: 0,
   sm: 1,
@@ -92,6 +176,36 @@ function getTokenRect(token) {
   const width = token.document.width * canvas.grid.size;
   const height = token.document.height * canvas.grid.size;
   return { x1, y1, x2: x1 + width, y2: y1 + height };
+}
+// Common corner extraction with special handling for tiny creatures
+function getTokenCorners(token, rect, sizeValue) {
+  try {
+    const size = sizeValue ?? token?.actor?.system?.traits?.size?.value ?? 'med';
+    if (size === 'tiny') {
+      const centerX = (rect.x1 + rect.x2) / 2;
+      const centerY = (rect.y1 + rect.y2) / 2;
+      const gridSize = canvas?.grid?.size || 50;
+      // Use 0.7-square effective area for cover (35% from center in each direction)
+      const halfEffective = gridSize * 0.35;
+      return [
+        { x: centerX - halfEffective, y: centerY - halfEffective }, // top-left
+        { x: centerX + halfEffective, y: centerY - halfEffective }, // top-right
+        { x: centerX + halfEffective, y: centerY + halfEffective }, // bottom-right
+        { x: centerX - halfEffective, y: centerY + halfEffective }, // bottom-left
+      ];
+    }
+    // Regular creatures use document boundaries
+    return [
+      { x: rect.x1, y: rect.y1 }, // top-left
+      { x: rect.x2, y: rect.y1 }, // top-right
+      { x: rect.x2, y: rect.y2 }, // bottom-right
+      { x: rect.x1, y: rect.y2 }, // bottom-left
+    ];
+  } catch (_) {
+    // Fallback to token center if anything goes wrong
+    const c = token.center ?? token.getCenter?.() ?? { x: 0, y: 0 };
+    return [c, c, c, c];
+  }
 }
 function getTokenBoundaryPoints(token) {
   try {
@@ -397,6 +511,7 @@ function getEligibleBlockingTokens(attacker, target, filters) {
     if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) {
       continue;
     }
+
     out.push(blocker);
   }
 
@@ -441,7 +556,7 @@ function evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMod
 
   for (const blocker of blockers) {
     const rect = getTokenRect(blocker);
-    if (!centerLineIntersectsRect(p1, p2, rect, intersectionMode)) continue;
+    if (!intersectsBetweenTokens(attacker, target, rect, intersectionMode)) continue;
     any = true;
     const blockerSize = getSizeRank(blocker);
     const sizeDiffAttacker = blockerSize - attackerSize;
@@ -466,32 +581,6 @@ function evaluateCoverByTactical(attacker, target, blockers) {
   // Debug token sizes and rectangles
   const attackerSizeValue = attacker?.actor?.system?.traits?.size?.value ?? 'med';
   const targetSizeValue = target?.actor?.system?.traits?.size?.value ?? 'med';
-  // Get corners for both tokens, handling tiny creatures properly
-  function getTokenCorners(token, rect, sizeValue) {
-    // For tiny creatures, use a slightly larger effective area for tactical cover calculations
-    // While they occupy 0.5 squares, they should still provide meaningful cover
-    if (sizeValue === 'tiny') {
-      const centerX = (rect.x1 + rect.x2) / 2;
-      const centerY = (rect.y1 + rect.y2) / 2;
-      const gridSize = canvas.grid.size;
-      const halfEffective = gridSize * 0.35; // Use 0.7 square effective area for cover (35% from center)
-
-      return [
-        { x: centerX - halfEffective, y: centerY - halfEffective }, // top-left
-        { x: centerX + halfEffective, y: centerY - halfEffective }, // top-right
-        { x: centerX + halfEffective, y: centerY + halfEffective }, // bottom-right
-        { x: centerX - halfEffective, y: centerY + halfEffective }, // bottom-left
-      ];
-    } else {
-      // Regular creatures use document boundaries
-      return [
-        { x: rect.x1, y: rect.y1 }, // top-left
-        { x: rect.x2, y: rect.y1 }, // top-right
-        { x: rect.x2, y: rect.y2 }, // bottom-right
-        { x: rect.x1, y: rect.y2 }, // bottom-left
-      ];
-    }
-  }
 
   const attackerCorners = getTokenCorners(attacker, attackerRect, attackerSizeValue);
   const targetCorners = getTokenCorners(target, targetRect, targetSizeValue);
@@ -552,7 +641,86 @@ function evaluateCoverByTactical(attacker, target, blockers) {
     }
   }
 
+  // Return the best (lowest) cover across attacker corners
   return bestCover;
+}
+
+function evaluateCoverBy3DSampling(attacker, target, allBlockers) {
+  try {
+    const attSpan = getTokenVerticalSpanFt(attacker);
+    const tgtSpan = getTokenVerticalSpanFt(target);
+
+    // Compute overlap band between attacker and target vertical spans
+    const bandLow = Math.max(
+      Math.min(attSpan.bottom, attSpan.top),
+      Math.min(tgtSpan.bottom, tgtSpan.top),
+    );
+    const bandHigh = Math.min(
+      Math.max(attSpan.bottom, attSpan.top),
+      Math.max(tgtSpan.bottom, tgtSpan.top),
+    );
+
+    let samples;
+    if (bandHigh > bandLow) {
+      // Vertical overlap – sample within the overlapping band
+      const mid = (bandLow + bandHigh) / 2;
+      samples = [
+        bandLow + 0.1 * (bandHigh - bandLow),
+        mid,
+        bandHigh - 0.1 * (bandHigh - bandLow),
+      ];
+    } else {
+      // No vertical overlap – interpolate between attacker and target mid-heights
+      const zA = (attSpan.bottom + attSpan.top) / 2;
+      const zT = (tgtSpan.bottom + tgtSpan.top) / 2;
+      samples = [0.1, 0.5, 0.9].map((t) => zA + t * (zT - zA));
+    }
+
+    const coverOrder = ['none', 'lesser', 'standard', 'greater'];
+    let worst = 'none';
+
+    const overlapsZ = (span, z) => span.bottom < z && span.top > z; // strict interior overlap
+
+    for (const z of samples) {
+      // Filter blockers whose vertical span crosses this Z slice
+      const blockersAtZ = [];
+      for (const b of allBlockers) {
+        try {
+          const bs = getTokenVerticalSpanFt(b);
+          if (overlapsZ(bs, z)) blockersAtZ.push(b);
+        } catch (_) {}
+      }
+
+      // Evaluate center-to-center per slice: count intersecting blockers
+      const p1 = attacker.center ?? attacker.getCenter();
+      const p2 = target.center ?? target.getCenter();
+      let count = 0;
+      let hasStandardBySize = false;
+      const attackerSize = getSizeRank(attacker);
+      const targetSize = getSizeRank(target);
+      for (const blk of blockersAtZ) {
+        const rect = getTokenRect(blk);
+        if (segmentIntersectsRect(p1, p2, rect)) {
+          count++;
+          // size-based upgrade check
+          try {
+            const blockerSize = getSizeRank(blk);
+            const sizeDiffAttacker = blockerSize - attackerSize;
+            const sizeDiffTarget = blockerSize - targetSize;
+            if (sizeDiffAttacker >= 2 && sizeDiffTarget >= 2) hasStandardBySize = true;
+          } catch (_) {}
+        }
+      }
+      let coverAtZ = count === 0 ? 'none' : count === 1 ? 'lesser' : count <= 3 ? 'standard' : 'greater';
+      if (hasStandardBySize && coverAtZ === 'lesser') coverAtZ = 'standard';
+      if (coverOrder.indexOf(coverAtZ) > coverOrder.indexOf(worst)) worst = coverAtZ;
+      if (worst === 'greater') break; // early exit
+    }
+
+    return worst;
+  } catch (_) {
+    return 'none';
+  }
 }
 
 function evaluateWallsCover(p1, p2) {
@@ -604,9 +772,14 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
     const intersectionModeValue = game.settings?.get?.(MODULE_ID, 'autoCoverTokenIntersectionMode');
     const useCoverage = intersectionModeValue === 'coverage';
     const useTactical = intersectionModeValue === 'tactical';
+    const useSampling3d = intersectionModeValue === 'sampling3d';
 
     let tokenCover;
-    if (useTactical) {
+    if (useSampling3d) {
+      // For 3D sampling, fetch blockers and slice by Z ourselves
+      const allBlockers = getEligibleBlockingTokens(attacker, target, filters);
+      tokenCover = evaluateCoverBy3DSampling(attacker, target, allBlockers);
+    } else if (useTactical) {
       tokenCover = evaluateCoverByTactical(attacker, target, blockers);
     } else if (useCoverage) {
       tokenCover = evaluateCoverByCoverage(p1, p2, blockers);
@@ -968,9 +1141,6 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               const tgtActor = tgt?.actor;
               if (!tgtActor) return;
               const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
-
-              // Check if this is actually an override (different from detected state)
-              const isOverride = chosen !== state;
 
               // Store the dialog override for onPreCreateChatMessage to use
               // We'll store it in a temporary global that gets picked up by the message creation

@@ -901,14 +901,49 @@ class CoverVisualization {
 
   drawCoverSquare(x, y, size, coverLevel) {
     if (!this.overlayGraphics) return;
-
+    let colors;
     // Define colors for each cover level
-    const colors = {
-      none: 0x4caf50, // Green - no cover
-      lesser: 0xffc107, // Yellow - lesser cover
-      standard: 0xff6600, // Orange - standard cover
-      greater: 0xff0000, // Red - greater cover
-    };
+    const colorblindMode = game.settings.get(MODULE_ID, 'colorblindMode');
+    if (colorblindMode == 'protanopia') {
+      colors = {
+        none: 0x0072b2, // Blue - no cover
+        lesser: 0xf0e442, // Yellow - lesser cover
+        standard: 0xcc79a7, // Pink - standard cover
+        greater: 0x9467bd, // Purple - greater cover
+      };
+    } else if (colorblindMode == 'deuteranopia') {
+      colors = {
+        none: 0x0072b2, // Blue - no cover
+        lesser: 0xf0e442, // Yellow - lesser cover
+        standard: 0xff8c00, // Orange - standard cover
+        greater: 0xd946ef, // Magenta - greater cover
+      };
+      
+    } else if (colorblindMode == 'tritanopia') {
+      colors = {
+        none: 0x00b050, // Green - no cover
+        lesser: 0xffd700, // Gold - lesser cover
+        standard: 0xff6600, // Orange - standard cover
+        greater: 0xdc143c, // Crimson - greater cover
+      };
+      
+    } else if (colorblindMode == 'achromatopsia') {
+      colors = {
+        none: 0x000000, // Black - no cover
+        lesser: 0x333333, // Dark gray - lesser cover
+        standard: 0x666666, // Medium gray - standard cover
+        greater: 0x999999, // Light gray - greater cover
+      };
+      
+    } else {
+      colors = {
+        none: 0x4caf50, // Green - no cover
+        lesser: 0xffc107, // Yellow - lesser cover
+        standard: 0xff6600, // Orange - standard cover
+        greater: 0xff0000, // Red - greater cover
+      };
+    }
+
 
     const alpha = 0.4; // Semi-transparent
     const color = colors[coverLevel] || colors.none;

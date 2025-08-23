@@ -16,8 +16,7 @@ export async function extractActionData(message) {
 
   const isSeekAction =
     (context?.type === 'perception-check' &&
-      (context.options?.includes('action:seek') || context.slug === 'seek')) ||
-    message.flavor?.toLowerCase?.().includes?.('seek');
+      (context.options?.includes('action:seek') || context.slug === 'seek'))
 
   const isCreateADiversionAction =
     (context?.type === 'skill-check' &&
@@ -26,11 +25,12 @@ export async function extractActionData(message) {
     message.flavor?.toLowerCase?.().includes?.('create a diversion');
 
   const isTakeCoverAction =
+    // Only treat as Take Cover when structured context or origin flags indicate the action.
+    // Avoid matching generic messages that merely mention "Take Cover" (e.g., condition summaries).
     (context?.type === 'action' &&
       (context.options?.includes?.('action:take-cover') || context.slug === 'take-cover')) ||
     origin?.rollOptions?.includes?.('origin:item:take-cover') ||
     origin?.rollOptions?.includes?.('origin:item:slug:take-cover') ||
-    message.content?.includes?.('Take Cover') ||
     message.flavor?.toLowerCase?.().includes?.('take cover') ||
     message.flavor?.includes?.("Mise à l'abri");
 

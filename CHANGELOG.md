@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.7.0] - 2025-08-23
+
+### Added
+
+- Auto-cover: 3d sampling mode (experimental) will take creature elevation and size into consideration for both auto cover and visualization
+
+### Fixed
+
+- Seek showing for messages with 'seek' text in them
+- Colorblind support for tooltips
+- Take cover showing for current conditions message
+
+
 ## [2.6.9] - 2025-08-23
 
 ### Fixed

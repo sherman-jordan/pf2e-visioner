@@ -208,15 +208,6 @@ export const DEFAULT_SETTINGS = {
     default: 15,
   },
 
-  // experimentalSeeThroughWalls: {
-  //   name: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.name",
-  //   hint: "PF2E_VISIONER.SETTINGS.EXPERIMENTAL_SEE_THROUGH_WALLS.hint",
-  //   scope: "client",
-  //   config: true,
-  //   type: Boolean,
-  //   default: false,
-  // },
-
   // Include additional object types in managers
   includeLootActors: {
     name: 'PF2E_VISIONER.SETTINGS.INCLUDE_LOOT_ACTORS.name',
@@ -344,6 +335,7 @@ export const DEFAULT_SETTINGS = {
       center: 'Center (ray passing through center of blocker)',
       coverage: 'Side Coverage (fixed 50%(Standard)/70%(Greater))',
       tactical: 'Tactical (corner-to-corner calculations)',
+      sampling3d: '3D Sampling (multi-height multi-ray approximation)',
     },
     default: 'length10',
   },

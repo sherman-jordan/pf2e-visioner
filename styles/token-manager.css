@@ -1119,32 +1119,32 @@
   }
 
   /* Effects column colors - subtle professional styling */
-  .cover-none,
-  .no-effect.cover-none {
-    background: rgba(76, 175, 80, 0.25) !important; /* Subtle green */
-    color: #4caf50 !important;
-    border: 1px solid #4caf50 !important;
+  .pf2e-visioner .cover-none,
+  .pf2e-visioner .no-effect.cover-none {
+    background: var(--cover-none-bg-strong) !important; /* Subtle green */
+    color: var(--cover-none) !important;
+    border: 1px solid var(--cover-none) !important;
   }
 
-  .cover-lesser,
-  .cover-effect.cover-lesser {
-    background: rgba(255, 193, 7, 0.25) !important; /* Subtle yellow */
-    color: #ffc107 !important;
-    border: 1px solid #ffc107 !important;
+  .pf2e-visioner .cover-lesser,
+  .pf2e-visioner .cover-effect.cover-lesser {
+    background: var(--cover-lesser-bg-strong) !important; /* Subtle yellow */
+    color: var(--cover-lesser) !important;
+    border: 1px solid var(--cover-lesser) !important;
   }
 
-  .cover-standard,
-  .cover-effect.cover-standard {
-    background: rgba(255, 102, 0, 0.25) !important; /* Subtle orange */
-    color: #ff6600 !important;
-    border: 1px solid #ff6600 !important;
+  .pf2e-visioner .cover-standard,
+  .pf2e-visioner .cover-effect.cover-standard {
+    background: var(--cover-standard-bg-strong) !important; /* Subtle orange */
+    color: var(--cover-standard) !important;
+    border: 1px solid var(--cover-standard) !important;
   }
 
-  .cover-greater,
-  .cover-effect.cover-greater {
-    background: rgba(244, 67, 54, 0.25) !important; /* Subtle red */
-    color: #f44336 !important;
-    border: 1px solid #f44336 !important;
+  .pf2e-visioner .cover-greater,
+  .pf2e-visioner .cover-effect.cover-greater {
+    background: var(--cover-greater-bg-strong) !important; /* Subtle red */
+    color: var(--cover-greater) !important;
+    border: 1px solid var(--cover-greater) !important;
   }
 
   /* Clean professional styling */
@@ -1152,98 +1152,97 @@
   /* FINAL FIX: State indicators with subtle professional colors */
   /* State indicators - force all cover states with maximum specificity */
   .pf2e-visioner .state-indicator.cover-none,
-  .state-indicator.cover-none,
-  span.state-indicator.cover-none {
-    background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
-    color: #4caf50 !important; /* Green text */
-    border-color: #4caf50 !important; /* Green border */
+  .pf2e-visioner .state-indicator.cover-none,
+  .pf2e-visioner span.state-indicator.cover-none {
+    background: var(--cover-none-bg-strong) !important; /* Green for No Cover */
+    color: var(--cover-none) !important; /* Green text */
+    border-color: var(--cover-none) !important; /* Green border */
   }
 
   .pf2e-visioner .state-indicator.cover-lesser,
-  .state-indicator.cover-lesser,
-  span.state-indicator.cover-lesser {
-    background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
-    color: #ffc107 !important; /* Yellow text */
-    border-color: #ffc107 !important; /* Yellow border */
+  .pf2e-visioner .state-indicator.cover-lesser,
+  .pf2e-visioner span.state-indicator.cover-lesser {
+    background: var(--cover-lesser-bg-strong) !important; /* Yellow for Lesser Cover */
+    color: var(--cover-lesser) !important; /* Yellow text */
+    border-color: var(--cover-lesser) !important; /* Yellow border */
   }
 
   .pf2e-visioner .state-indicator.cover-standard,
-  .state-indicator.cover-standard,
-  span.state-indicator.cover-standard {
-    background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
-    color: #ff6600 !important; /* Orange text */
-    border-color: #ff6600 !important; /* Orange border */
+  .pf2e-visioner .state-indicator.cover-standard,
+  .pf2e-visioner span.state-indicator.cover-standard {
+    background: var(--cover-standard-bg-strong) !important; /* Orange for Standard Cover */
+    color: var(--cover-standard) !important; /* Orange text */
+    border-color: var(--cover-standard) !important; /* Orange border */
   }
 
   .pf2e-visioner .state-indicator.cover-greater,
-  .state-indicator.cover-greater,
-  span.state-indicator.cover-greater {
-    background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
-    color: #f44336 !important; /* Red text */
-    border-color: #f44336 !important; /* Red border */
+  .pf2e-visioner .state-indicator.cover-greater,
+  .pf2e-visioner span.state-indicator.cover-greater {
+    background: var(--cover-greater-bg-strong) !important; /* Red for Greater Cover */
+    color: var(--cover-greater) !important; /* Red text */
+    border-color: var(--cover-greater) !important; /* Red border */
   }
 
   /* JavaScript will ensure CSS classes are applied - use simple class selectors */
-  .state-indicator.cover-none {
-    background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
-    color: #4caf50 !important; /* Green text */
-    border-color: #4caf50 !important; /* Green border */
+  .pf2e-visioner .state-indicator.cover-none {
+    background: var(--cover-none-bg-strong) !important; /* Green for No Cover */
+    color: var(--cover-none) !important; /* Green text */
+    border-color: var(--cover-none) !important; /* Green border */
   }
 
-  .state-indicator.cover-lesser {
-    background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
-    color: #ffc107 !important; /* Yellow text */
-    border-color: #ffc107 !important; /* Yellow border */
+  .pf2e-visioner .state-indicator.cover-lesser {
+    background: var(--cover-lesser-bg-strong) !important; /* Yellow for Lesser Cover */
+    color: var(--cover-lesser) !important; /* Yellow text */
+    border-color: var(--cover-lesser) !important; /* Yellow border */
   }
 
-  .state-indicator.cover-standard {
-    background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
-    color: #ff6600 !important; /* Orange text */
-    border-color: #ff6600 !important; /* Orange border */
+  .pf2e-visioner .state-indicator.cover-standard {
+    background: var(--cover-standard-bg-strong) !important; /* Orange for Standard Cover */
+    color: var(--cover-standard) !important; /* Orange text */
+    border-color: var(--cover-standard) !important; /* Orange border */
   }
 
-  .state-indicator.cover-greater {
-    background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
-    color: #f44336 !important; /* Red text */
-    border-color: #f44336 !important; /* Red border */
+  .pf2e-visioner .state-indicator.cover-greater {
+    background: var(--cover-greater-bg-strong) !important; /* Red for Greater Cover */
+    color: var(--cover-greater) !important; /* Red text */
+    border-color: var(--cover-greater) !important; /* Red border */
   }
 
   /* Duplicate rules removed - using higher specificity rules above */
 
   /* Visibility state indicators with subtle colors */
-  .state-indicator.visibility-observed {
-    background: rgba(76, 175, 80, 0.2) !important; /* Subtle green background */
-    color: #4caf50 !important; /* Green text */
-    border-color: #4caf50 !important; /* Green border */
+  .pf2e-visioner .state-indicator.visibility-observed {
+    background: var(--visibility-observed-bg-strong) !important; /* Subtle green background */
+    color: var(--visibility-observed) !important; /* Green text */
+    border-color: var(--visibility-observed) !important; /* Green border */
   }
 
-  .state-indicator.visibility-concealed {
-    background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
-    color: #ff9800 !important; /* Orange text */
-    border-color: #ff9800 !important; /* Orange border */
+  .pf2e-visioner .state-indicator.visibility-concealed {
+    background: var(--visibility-concealed-bg-strong) !important; /* Subtle orange background */
+    color: var(--visibility-concealed) !important; /* Orange text */
+    border-color: var(--visibility-concealed) !important; /* Orange border */
   }
 
-  .state-indicator.visibility-hidden {
-    background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
-    color: #ff9800 !important; /* Orange text */
-    border-color: #ff9800 !important; /* Orange border */
+  .pf2e-visioner .state-indicator.visibility-hidden {
+    background: var(--visibility-hidden-bg-strong) !important; /* Subtle orange background */
+    color: var(--visibility-hidden) !important; /* Orange text */
+    border-color: var(--visibility-hidden) !important; /* Orange border */
   }
 
-  .state-indicator.visibility-undetected {
-    background: rgba(244, 67, 54, 0.2) !important; /* Subtle red background */
-    color: #f44336 !important; /* Red text */
-    border-color: #f44336 !important; /* Red border */
+  .pf2e-visioner .state-indicator.visibility-undetected {
+    background: var(--visibility-undetected-bg-strong) !important; /* Subtle red background */
+    color: var(--visibility-undetected) !important; /* Red text */
+    border-color: var(--visibility-undetected) !important; /* Red border */
   }
 
   /* Cover state indicator colors - WORKING SOLUTION FOR BOTH MODES */
-  .state-indicator.cover-none,
   span.state-indicator.cover-none,
   .pf2e-visioner .state-indicator.cover-none,
   .mode-toggle.observer-active ~ * .state-indicator.cover-none,
   .mode-toggle.target-active ~ * .state-indicator.cover-none {
-    background: rgba(76, 175, 80, 0.25) !important; /* Subtle green background */
-    color: #4caf50 !important; /* Green text */
-    border: 1px solid #4caf50 !important; /* Green border */
+    background: var(--cover-none-bg-strong) !important; /* Subtle green background */
+    color: var(--cover-none) !important; /* Green text */
+    border: 1px solid var(--cover-none) !important; /* Green border */
   }
 
   /* Removed redundant class-based selectors - using content-based selectors above */

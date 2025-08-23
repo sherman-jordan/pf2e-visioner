@@ -20,6 +20,50 @@ class CoverVisualization {
     this.init();
   }
 
+  /**
+   * Get the current viewport rectangle in world coordinates
+   * @param {Canvas} canvas
+   * @param {number} padding - extra padding in pixels (world units) around the viewport
+   * @returns {{minX:number,minY:number,maxX:number,maxY:number}}
+   */
+  getViewportWorldRect(canvas, padding = 0) {
+    try {
+      const app = canvas.app;
+      const screen = app?.renderer?.screen;
+      if (!screen) return { minX: -Infinity, minY: -Infinity, maxX: Infinity, maxY: Infinity };
+
+      // Use the global transform matrix; this is the most reliable way across PIXI versions
+      const m = canvas.stage.worldTransform;
+      const tlScreen = new PIXI.Point(0 - padding, 0 - padding);
+      const brScreen = new PIXI.Point(screen.width + padding, screen.height + padding);
+
+      const tlWorld = new PIXI.Point();
+      const brWorld = new PIXI.Point();
+      m.applyInverse(tlScreen, tlWorld);
+      m.applyInverse(brScreen, brWorld);
+
+      let minX = Math.min(tlWorld.x, brWorld.x);
+      let maxX = Math.max(tlWorld.x, brWorld.x);
+      let minY = Math.min(tlWorld.y, brWorld.y);
+      let maxY = Math.max(tlWorld.y, brWorld.y);
+
+      // Ensure ordering
+      if (minX > maxX) [minX, maxX] = [maxX, minX];
+      if (minY > maxY) [minY, maxY] = [maxY, minY];
+
+      // Sanity fallback to scene rect if something went wrong
+      const invalid = [minX, maxX, minY, maxY].some((v) => !isFinite(v));
+      if (invalid) {
+        const rect = canvas.dimensions?.sceneRect;
+        if (rect) return { minX: rect.x, minY: rect.y, maxX: rect.x + rect.width, maxY: rect.y + rect.height };
+        return { minX: -Infinity, minY: -Infinity, maxX: Infinity, maxY: Infinity };
+      }
+      return { minX, minY, maxX, maxY };
+    } catch (e) {
+      return { minX: -Infinity, minY: -Infinity, maxX: Infinity, maxY: Infinity };
+    }
+  }
+
   init() {
     // Store bound method references for proper cleanup
     this.boundOnKeyDown = this.onKeyDown.bind(this);
@@ -482,7 +526,8 @@ class CoverVisualization {
   isGridPositionVisible(worldX, worldY, canvas) {
     try {
       // For GMs, everything is visible
-      if (game.user.isGM) {
+      const respectFogForGM = game.settings?.get?.(MODULE_ID, 'autoCoverVisualizationRespectFogForGM');
+      if (game.user.isGM && !respectFogForGM) {
         return true;
       }
 
@@ -709,10 +754,11 @@ class CoverVisualization {
 
     const selectedToken = selectedTokens[0]; // Use first selected token
     const selectedCenter = selectedToken.center ?? selectedToken.getCenter();
+    const respectFogForGM = game.settings?.get?.(MODULE_ID, 'autoCoverVisualizationRespectFogForGM');
 
     // For players: Only show cover overlay for tokens that are currently visible (respects fog of war)
     // GMs can see cover overlay for all tokens regardless of vision
-    if (!game.user.isGM && !hoveredToken.isVisible) {
+    if (!game.user.isGM && !hoveredToken.isVisible || (game.user.isGM && respectFogForGM && !hoveredToken.isVisible)) {
       // Player cannot see this token due to current vision/fog of war, don't show cover overlay
       return;
     }
@@ -727,6 +773,13 @@ class CoverVisualization {
 
     // Sample grid positions around the selected token's current position
     const gridSize = canvas.grid.size;
+    // Also clamp evaluation to the scene's inner rectangle (no padding)
+    const sceneRect = canvas.dimensions?.sceneRect;
+    if (!sceneRect) return;
+    const minCenterX = sceneRect.x + gridSize / 2;
+    const maxCenterX = sceneRect.x + sceneRect.width - gridSize / 2;
+    const minCenterY = sceneRect.y + gridSize / 2;
+    const maxCenterY = sceneRect.y + sceneRect.height - gridSize / 2;
 
     // Calculate dynamic range based on furthest token from selected token
     let maxDistance = 8; // Minimum range
@@ -746,10 +799,42 @@ class CoverVisualization {
     // Increase padding to ensure we cover areas behind walls
     const range = maxDistance + 8;
 
-    for (let x = -range; x <= range; x++) {
-      for (let y = -range; y <= range; y++) {
+    // Limit computations to the current viewport in world coordinates
+    // Add a small padding so we compute slightly beyond the visible edge
+    const viewportWorld = this.getViewportWorldRect(canvas, gridSize * 2);
+
+    // Compute index bounds that intersect with the viewport to avoid iterating the whole range
+    const minIndexX = Math.max(
+      -range,
+      Math.ceil((viewportWorld.minX - selectedCenter.x) / gridSize)
+    );
+    const maxIndexX = Math.min(
+      range,
+      Math.floor((viewportWorld.maxX - selectedCenter.x) / gridSize)
+    );
+    const minIndexY = Math.max(
+      -range,
+      Math.ceil((viewportWorld.minY - selectedCenter.y) / gridSize)
+    );
+    const maxIndexY = Math.min(
+      range,
+      Math.floor((viewportWorld.maxY - selectedCenter.y) / gridSize)
+    );
+
+    for (let x = minIndexX; x <= maxIndexX; x++) {
+      for (let y = minIndexY; y <= maxIndexY; y++) {
         const worldX = selectedCenter.x + x * gridSize;
         const worldY = selectedCenter.y + y * gridSize;
+
+        // Skip any point outside the scene's rectangle (grid centers only)
+        if (
+          worldX < minCenterX ||
+          worldX > maxCenterX ||
+          worldY < minCenterY ||
+          worldY > maxCenterY
+        ) {
+          continue;
+        }
 
         // Check if this position is occupied by any token (except tiny creatures can share)
         const isOccupied = this.isPositionOccupied(worldX, worldY, selectedToken, canvas);
@@ -757,6 +842,8 @@ class CoverVisualization {
           // Skip coloring occupied squares - tokens can't move there
           continue;
         }
+
+        // Viewport limiting replaces earlier GM-only wall-blocking filter
 
         // Create a temporary position for the selected token
         // Copy all properties from the real token but override position
@@ -778,7 +865,8 @@ class CoverVisualization {
 
         // Check if the grid position is currently visible to the player (respects fog of war)
         let shouldShowCover = true;
-        if (!game.user.isGM) {
+        const respectFogForGM = game.settings?.get?.(MODULE_ID, 'autoCoverVisualizationRespectFogForGM');
+        if (!game.user.isGM || (game.user.isGM && respectFogForGM)) {
           // Check if this grid position is currently visible considering fog of war
           const isPositionVisible = this.isGridPositionVisible(worldX, worldY, canvas);
 

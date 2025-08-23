@@ -364,6 +364,14 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
+  autoCoverVisualizationRespectFogForGM: {
+    name: 'Auto-Cover: GM Respects Fog of War',
+    hint: 'If enabled, GMs will see the cover heatmap limited to explored areas (same as players). If disabled, GMs see the full scene.',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  },
   autoCoverIgnoreDead: {
     name: 'Auto-Cover: Ignore Dead Tokens',
     hint: "If enabled, tokens with 0 HP won't count for auto-cover.",

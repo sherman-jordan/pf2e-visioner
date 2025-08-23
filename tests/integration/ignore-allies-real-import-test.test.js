@@ -48,7 +48,7 @@ describe('Ignore Allies REAL Import Chain Test', () => {
 
     // CRITICAL: This line must exist for ignore allies to work
     expect(utilsContent).toContain(
-      'import { shouldFilterAlly } from "./chat/services/infra/shared-utils.js"',
+      "import { shouldFilterAlly } from './chat/services/infra/shared-utils.js'",
     );
 
     // CRITICAL: There should NOT be a global fallback approach
@@ -153,7 +153,7 @@ describe('Ignore Allies REAL Import Chain Test', () => {
 
     // If this line is missing, ignore allies won't work
     const hasDirectImport = utilsContent.includes(
-      'import { shouldFilterAlly } from "./chat/services/infra/shared-utils.js"',
+      "import { shouldFilterAlly } from './chat/services/infra/shared-utils.js'",
     );
 
     if (!hasDirectImport) {

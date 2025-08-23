@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.6.8] - 2025-08-23
+
+### Improved
+
+- **Cover Visualization Performance**: Limit computation to the current viewport (with small padding) instead of scanning large scene areas. Significantly reduces work when zoomed/panned.
+
+### Fixed
+
+- **Viewport Conversion Reliability**: Use `canvas.stage.worldTransform.applyInverse` for screen→world mapping in `getViewportWorldRect()` to ensure correct results across PIXI versions. Removed earlier manual inverse math.
+- Removed the overly restrictive GM-only wall-blocking prefilter from visualization iteration; viewport limiting now applies to all users while existing fog-of-war/visibility checks remain.
+
+- Auto cover: no roll dialog will use off guard when applicable too
+
 ## [2.6.7] - 2025-08-21
 
 ### Fixed

@@ -2,11 +2,14 @@
  * Internal helpers used by the public API (Pf2eVisionerApi)
  */
 
-import { MODULE_ID } from "../constants.js";
-import { cleanupCoverEffectsForObserver } from "../cover/ephemeral.js";
-import { batchUpdateVisibilityEffects, cleanupEphemeralEffectsForTarget } from "../visibility/ephemeral.js";
-import { refreshEveryonesPerception } from "./socket.js";
-import { updateTokenVisuals } from "./visual-effects.js";
+import { MODULE_ID } from '../constants.js';
+import { cleanupCoverEffectsForObserver } from '../cover/ephemeral.js';
+import {
+  batchUpdateVisibilityEffects,
+  cleanupEphemeralEffectsForTarget,
+} from '../visibility/ephemeral.js';
+import { refreshEveryonesPerception } from './socket.js';
+import { updateTokenVisuals } from './visual-effects.js';
 
 export async function unsetMapsForTokens(scene, tokens) {
   try {
@@ -16,7 +19,7 @@ export async function unsetMapsForTokens(scene, tokens) {
       [`flags.${MODULE_ID}.-=visibility`]: null,
       [`flags.${MODULE_ID}.-=cover`]: null,
     }));
-    await scene.updateEmbeddedDocuments("Token", updates, { diff: false });
+    await scene.updateEmbeddedDocuments('Token', updates, { diff: false });
   } catch (_) {}
 }
 
@@ -42,9 +45,12 @@ export async function removeModuleEffectsFromActors(actors) {
       if (!actor) continue;
       const toDelete = collectModuleEffectIds(actor);
       if (toDelete.length) {
-        try {
-          await actor.deleteEmbeddedDocuments("Item", toDelete);
-        } catch (_) {}
+        // Only GMs can delete effects
+        if (game.user.isGM) {
+          try {
+            await actor.deleteEmbeddedDocuments('Item', toDelete);
+          } catch (_) {}
+        }
       }
     }
   } catch (_) {}
@@ -57,9 +63,12 @@ export async function removeModuleEffectsFromTokenActors(tokens) {
       if (!a) continue;
       const toDelete = collectModuleEffectIds(a);
       if (toDelete.length) {
-        try {
-          await a.deleteEmbeddedDocuments("Item", toDelete);
-        } catch (_) {}
+        // Only GMs can delete effects
+        if (game.user.isGM) {
+          try {
+            await a.deleteEmbeddedDocuments('Item', toDelete);
+          } catch (_) {}
+        }
       }
     }
   } catch (_) {}
@@ -70,7 +79,7 @@ export async function removeObserverContributions(observerToken, tokens) {
   try {
     const targetUpdates = tokens
       .filter((t) => t?.actor && t.id !== observerToken.id)
-      .map((t) => ({ target: t, state: "observed" }));
+      .map((t) => ({ target: t, state: 'observed' }));
     if (targetUpdates.length) {
       await batchUpdateVisibilityEffects(observerToken, targetUpdates, {
         removeAllEffects: true,
@@ -95,21 +104,29 @@ export async function removeAllReferencesToTarget(targetToken, tokens, cleanupDe
   try {
     for (const obs of tokens) {
       if (!obs?.actor || obs.id === targetToken.id) continue;
-      try { await cleanupEphemeralEffectsForTarget(obs, targetToken); } catch (_) {}
-      try { await cleanupCoverEffectsForObserver(targetToken, obs); } catch (_) {}
+      try {
+        await cleanupEphemeralEffectsForTarget(obs, targetToken);
+      } catch (_) {}
+      try {
+        await cleanupCoverEffectsForObserver(targetToken, obs);
+      } catch (_) {}
     }
   } catch (_) {}
 }
 
 export async function rebuildAndRefresh() {
   try {
-    const { cleanupAllCoverEffects } = await import("../cover/ephemeral.js");
+    const { cleanupAllCoverEffects } = await import('../cover/ephemeral.js');
     await cleanupAllCoverEffects();
   } catch (_) {}
   // Removed effects-coordinator bulk rebuild
-  try { await updateTokenVisuals(); } catch (_) {}
-  try { refreshEveryonesPerception(); } catch (_) {}
-  try { canvas.perception.update({ refreshVision: true }); } catch (_) {}
+  try {
+    await updateTokenVisuals();
+  } catch (_) {}
+  try {
+    refreshEveryonesPerception();
+  } catch (_) {}
+  try {
+    canvas.perception.update({ refreshVision: true });
+  } catch (_) {}
 }
-
-

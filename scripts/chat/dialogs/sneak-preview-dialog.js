@@ -1,8 +1,8 @@
-import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { getVisibilityBetween } from "../../utils.js";
-import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
-import { notify } from "../services/infra/notifications.js";
-import { BaseActionDialog } from "./base-action-dialog.js";
+import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
+import { getVisibilityBetween } from '../../utils.js';
+import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
+import { notify } from '../services/infra/notifications.js';
+import { BaseActionDialog } from './base-action-dialog.js';
 
 // Store reference to current sneak dialog
 let currentSneakDialog = null;
@@ -15,38 +15,42 @@ export class SneakPreviewDialog extends BaseActionDialog {
     super({
       id: `sneak-preview-${sneakingToken.id}`,
       title: `Sneak Results`,
-      tag: "form",
+      tag: 'form',
       window: {
-        title: "Sneak Results",
-        icon: "fas fa-user-ninja",
+        title: 'Sneak Results',
+        icon: 'fas fa-user-ninja',
         resizable: true,
         positioned: true,
         minimizable: false,
       },
       position: {
         width: 500,
-        height: "auto",
+        height: 'auto',
       },
       form: {
         handler: SneakPreviewDialog.formHandler,
         submitOnChange: false,
         closeOnSubmit: false,
       },
-      classes: ["pf2e-visioner", "sneak-preview-dialog"],
+      classes: ['pf2e-visioner', 'sneak-preview-dialog'],
       ...options,
     });
 
     this.sneakingToken = sneakingToken;
     this.outcomes = outcomes;
     // Preserve original outcomes so live toggles can re-filter from a stable list
-    try { this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : []; } catch (_) { this._originalOutcomes = outcomes || []; }
+    try {
+      this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : [];
+    } catch (_) {
+      this._originalOutcomes = outcomes || [];
+    }
     this.changes = changes;
     this.sneakData = sneakData;
     // Ensure services can resolve the correct handler
-    this.actionData = { ...(sneakData || {}), actor: sneakingToken, actionType: "sneak" };
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
-    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
-    this.bulkActionState = "initial"; // 'initial', 'applied', 'reverted'
+    this.actionData = { ...(sneakData || {}), actor: sneakingToken, actionType: 'sneak' };
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
+    this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
 
     // Set global reference
     currentSneakDialog = this;
@@ -65,7 +69,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
   static PARTS = {
     content: {
-      template: "modules/pf2e-visioner/templates/sneak-preview.hbs",
+      template: 'modules/pf2e-visioner/templates/sneak-preview.hbs',
     },
   };
 
@@ -73,13 +77,24 @@ export class SneakPreviewDialog extends BaseActionDialog {
     const context = await super._prepareContext(options);
 
     // Start from original list if available so toggles can re-include allies
-    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+    const baseList = Array.isArray(this._originalOutcomes)
+      ? this._originalOutcomes
+      : this.outcomes || [];
     // Filter outcomes with base helper and ally filtering
-    let filteredOutcomes = this.applyEncounterFilter(baseList, "token", "No encounter observers found, showing all");
+    let filteredOutcomes = this.applyEncounterFilter(
+      baseList,
+      'token',
+      'No encounter observers found, showing all',
+    );
     // Apply ally filtering for display purposes
     try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.sneakingToken, this.ignoreAllies, "token");
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filteredOutcomes = filterOutcomesByAllies(
+        filteredOutcomes,
+        this.sneakingToken,
+        this.ignoreAllies,
+        'token',
+      );
     } catch (_) {}
 
     const cfg = (s) => this.visibilityConfig(s);
@@ -93,7 +108,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         outcome.currentVisibility;
 
       // Prepare available states for override
-      const desired = getDesiredOverrideStatesForAction("sneak");
+      const desired = getDesiredOverrideStatesForAction('sneak');
       const availableStates = this.buildOverrideStates(desired, outcome);
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
@@ -118,8 +133,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     // Update original outcomes with hasActionableChange for Apply All button logic
     processedOutcomes.forEach((processedOutcome, index) => {
       if (this.outcomes[index]) {
-        this.outcomes[index].hasActionableChange =
-          processedOutcome.hasActionableChange;
+        this.outcomes[index].hasActionableChange = processedOutcome.hasActionableChange;
       }
     });
 
@@ -127,17 +141,17 @@ export class SneakPreviewDialog extends BaseActionDialog {
     context.sneaker = {
       name: this.sneakingToken.name,
       image: this.resolveTokenImage(this.sneakingToken),
-      actionType: "sneak",
-      actionLabel: "Sneak action results analysis",
+      actionType: 'sneak',
+      actionLabel: 'Sneak action results analysis',
     };
 
     context.sneakingToken = this.sneakingToken;
     context.outcomes = processedOutcomes;
     context.ignoreAllies = !!this.ignoreAllies;
-    
+
     // Preserve original outcomes separate from processed
     this.outcomes = processedOutcomes;
-    
+
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
     return context;
@@ -158,15 +172,17 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
   getAvailableStates() {
     return [
-      { value: "observed", label: "Observed", icon: "fas fa-eye" },
-      { value: "hidden", label: "Hidden", icon: "fas fa-eye-slash" },
-      { value: "undetected", label: "Undetected", icon: "fas fa-ghost" },
+      { value: 'observed', label: 'Observed', icon: 'fas fa-eye' },
+      { value: 'hidden', label: 'Hidden', icon: 'fas fa-eye-slash' },
+      { value: 'undetected', label: 'Undetected', icon: 'fas fa-ghost' },
     ];
   }
 
   // Use BaseActionDialog outcome helpers
   // Token id in Sneak outcomes is under `token`
-  getOutcomeTokenId(outcome) { return outcome?.token?.id ?? null; }
+  getOutcomeTokenId(outcome) {
+    return outcome?.token?.id ?? null;
+  }
 
   _onRender(context, options) {
     super._onRender(context, options);
@@ -175,11 +191,18 @@ export class SneakPreviewDialog extends BaseActionDialog {
     this.markInitialSelections();
     try {
       const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
-      if (cb) cb.addEventListener('change', () => {
-        this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial";
-        // Recompute outcomes and preserve overrides before re-rendering
-        this.getFilteredOutcomes?.().then((list) => { if (Array.isArray(list)) this.outcomes = list; this.render({ force: true }); }).catch(() => this.render({ force: true }));
-      });
+      if (cb)
+        cb.addEventListener('change', () => {
+          this.ignoreAllies = !!cb.checked;
+          this.bulkActionState = 'initial';
+          // Recompute outcomes and preserve overrides before re-rendering
+          this.getFilteredOutcomes?.()
+            .then((list) => {
+              if (Array.isArray(list)) this.outcomes = list;
+              this.render({ force: true });
+            })
+            .catch(() => this.render({ force: true }));
+        });
     } catch (_) {}
   }
 
@@ -198,34 +221,30 @@ export class SneakPreviewDialog extends BaseActionDialog {
     outcome.overrideState = state;
 
     // Update visual selection
-    const container = this.element.querySelector(
-      `.override-icons[data-token-id="${tokenId}"]`,
-    );
+    const container = this.element.querySelector(`.override-icons[data-token-id="${tokenId}"]`);
     if (container) {
-      container.querySelectorAll(".state-icon").forEach((icon) => {
-        icon.classList.remove("selected");
+      container.querySelectorAll('.state-icon').forEach((icon) => {
+        icon.classList.remove('selected');
         if (icon.dataset.state === state) {
-          icon.classList.add("selected");
+          icon.classList.add('selected');
         }
       });
     }
 
     // Update hidden input
-    const hiddenInput = this.element.querySelector(
-      `input[name="override.${tokenId}"]`,
-    );
+    const hiddenInput = this.element.querySelector(`input[name="override.${tokenId}"]`);
     if (hiddenInput) {
       hiddenInput.value = state;
     }
 
     // Update visual selection
-    const row = event.currentTarget.closest("tr");
-    const icons = row.querySelectorAll(".override-icons .state-icon");
-    icons.forEach((i) => i.classList.remove("selected"));
-    event.currentTarget.classList.add("selected");
+    const row = event.currentTarget.closest('tr');
+    const icons = row.querySelectorAll('.override-icons .state-icon');
+    icons.forEach((i) => i.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
 
     // Enable the Apply button only if there's actually a change
-    const applyButton = row.querySelector(".apply-change");
+    const applyButton = row.querySelector('.apply-change');
     if (applyButton) {
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
       const hasChange = effectiveNewState !== outcome.oldVisibility;
@@ -248,7 +267,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
   static async _onToggleEncounterFilter(event, target) {
     const app = currentSneakDialog;
     if (!app) {
-      console.warn("Sneak dialog not found for encounter filter toggle");
+      console.warn('Sneak dialog not found for encounter filter toggle');
       return;
     }
 
@@ -256,7 +275,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     app.encounterOnly = target.checked;
 
     // Reset bulk action state
-    app.bulkActionState = "initial";
+    app.bulkActionState = 'initial';
 
     // Re-render the dialog - _prepareContext will handle the filtering
     app.render({ force: true });
@@ -275,11 +294,11 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     try {
       // Apply only this row via services using overrides map
-      const { applyNowSneak } = await import("../services/index.js");
+      const { applyNowSneak } = await import('../services/index.js');
       const overrides = { [tokenId]: effectiveNewState };
       await applyNowSneak({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
     } catch (error) {
-      console.warn("Error applying visibility changes:", error);
+      console.warn('Error applying visibility changes:', error);
       // Continue execution even if visibility changes fail
     }
 
@@ -303,15 +322,15 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     try {
       // Apply the original visibility state for just this specific token
-      const { applyVisibilityChanges } = await import("../services/infra/shared-utils.js");
+      const { applyVisibilityChanges } = await import('../services/infra/shared-utils.js');
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
       const changes = [{ target: outcome.token, newVisibility: revertVisibility }];
-      
-      await applyVisibilityChanges(app.sneakingToken, changes, { 
-        direction: "observer_to_target" 
+
+      await applyVisibilityChanges(app.sneakingToken, changes, {
+        direction: 'observer_to_target',
       });
     } catch (error) {
-      console.warn("Error reverting visibility changes:", error);
+      console.warn('Error reverting visibility changes:', error);
       // Continue execution even if visibility changes fail
     }
 
@@ -328,7 +347,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     const app = currentSneakDialog;
     if (!app) return;
 
-    if (app.bulkActionState === "applied") {
+    if (app.bulkActionState === 'applied') {
       notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
@@ -351,7 +370,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      const { applyNowSneak } = await import("../services/index.js");
+      const { applyNowSneak } = await import('../services/index.js');
       const overrides = {};
       for (const o of changedOutcomes) {
         const id = o?.token?.id;
@@ -359,17 +378,20 @@ export class SneakPreviewDialog extends BaseActionDialog {
         if (id && state) overrides[id] = state;
       }
       // Pass the dialog's current ignoreAllies state to ensure consistency
-      await applyNowSneak({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
+      await applyNowSneak(
+        { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
+        { html: () => {}, attr: () => {} },
+      );
     } catch (error) {
-      console.warn("Error applying visibility changes for bulk apply:", error);
+      console.warn('Error applying visibility changes for bulk apply:', error);
     }
 
     // Update all affected rows in one go
     app.updateRowButtonsToApplied(
-      changedOutcomes.map((o) => ({ target: { id: o.token.id }, hasActionableChange: true }))
+      changedOutcomes.map((o) => ({ target: { id: o.token.id }, hasActionableChange: true })),
     );
 
-    app.bulkActionState = "applied";
+    app.bulkActionState = 'applied';
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
@@ -382,7 +404,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     const app = currentSneakDialog;
     if (!app) return;
 
-    if (app.bulkActionState === "reverted") {
+    if (app.bulkActionState === 'reverted') {
       notify.warn(
         `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
       );
@@ -405,18 +427,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      const { revertNowSneak } = await import("../services/index.js");
-      await revertNowSneak({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
+      const { revertNowSneak } = await import('../services/index.js');
+      await revertNowSneak(
+        { ...app.actionData, ignoreAllies: app.ignoreAllies },
+        { html: () => {}, attr: () => {} },
+      );
     } catch (error) {
-      console.warn("Error reverting visibility changes for bulk revert:", error);
+      console.warn('Error reverting visibility changes for bulk revert:', error);
     }
 
     // Update all affected rows in one go
     app.updateRowButtonsToReverted(
-      changedOutcomes.map((o) => ({ target: { id: o.token.id }, hasActionableChange: true }))
+      changedOutcomes.map((o) => ({ target: { id: o.token.id }, hasActionableChange: true })),
     );
 
-    app.bulkActionState = "reverted";
+    app.bulkActionState = 'reverted';
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
@@ -441,7 +466,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
   close(options) {
     if (this._selectionHookId) {
       try {
-        Hooks.off("controlToken", this._selectionHookId);
+        Hooks.off('controlToken', this._selectionHookId);
       } catch (_) {}
       this._selectionHookId = null;
     }
@@ -449,5 +474,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     return super.close(options);
   }
 
-  getChangesCounterClass() { return "sneak-preview-dialog-changes-count"; }
+  getChangesCounterClass() {
+    return 'sneak-preview-dialog-changes-count';
+  }
 }

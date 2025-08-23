@@ -1,4 +1,4 @@
-import { MODULE_ID } from "../constants.js";
+import { MODULE_ID } from '../constants.js';
 
 export const LOG_PREFIX = `[${MODULE_ID}] Ephemeral`;
 
@@ -14,8 +14,9 @@ export async function runWithEffectLock(actor, taskFn) {
       return null;
     }
   });
-  locks.set(actor, next.catch(() => {}));
+  locks.set(
+    actor,
+    next.catch(() => {}),
+  );
   return next;
 }
-
-

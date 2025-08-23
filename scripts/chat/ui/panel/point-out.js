@@ -1,17 +1,17 @@
 export function buildPointOutPanel(actionData, message) {
-  const label = "Open Point Out Results";
-  const tooltip = "Preview and apply Point Out visibility changes";
-  const title = "Point Out Results";
-  const icon = "fas fa-hand-point-right";
-  const actionName = "open-point-out-results";
-  const buttonClass = "visioner-btn-point-out";
-  const panelClass = "point-out-panel";
+  const label = 'Open Point Out Results';
+  const tooltip = 'Preview and apply Point Out visibility changes';
+  const title = 'Point Out Results';
+  const icon = 'fas fa-hand-point-right';
+  const actionName = 'open-point-out-results';
+  const buttonClass = 'visioner-btn-point-out';
+  const panelClass = 'point-out-panel';
 
   const msgForPanel = message || game.messages.get(actionData.messageId);
-  const hasPending = !!msgForPanel?.flags?.["pf2e-visioner"]?.pointOut && game.user.isGM;
-  const pendingHasTargets = !!msgForPanel?.flags?.["pf2e-visioner"]?.pointOut?.hasTargets;
+  const hasPending = !!msgForPanel?.flags?.['pf2e-visioner']?.pointOut && game.user.isGM;
+  const pendingHasTargets = !!msgForPanel?.flags?.['pf2e-visioner']?.pointOut?.hasTargets;
 
-  let actionButtonsHtml = "";
+  let actionButtonsHtml = '';
   if (hasPending) {
     if (pendingHasTargets) {
       actionButtonsHtml = `
@@ -41,5 +41,3 @@ export function buildPointOutPanel(actionData, message) {
 
   return { title, icon, panelClass, actionButtonsHtml };
 }
-
-

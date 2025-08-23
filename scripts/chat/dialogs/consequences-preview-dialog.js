@@ -3,14 +3,12 @@
  * Shows consequences of attack rolls from hidden/undetected tokens with GM override capability
  */
 
-import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
-import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
-import { notify } from "../services/infra/notifications.js";
-import {
-  filterOutcomesByEncounter
-} from "../services/infra/shared-utils.js";
-import { BaseActionDialog } from "./base-action-dialog.js";
+import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
+import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
+import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
+import { notify } from '../services/infra/notifications.js';
+import { filterOutcomesByEncounter } from '../services/infra/shared-utils.js';
+import { BaseActionDialog } from './base-action-dialog.js';
 
 // Store reference to current consequences dialog
 let currentConsequencesDialog = null;
@@ -26,32 +24,34 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Ensure actionData exists for apply/revert services
     this.actionData = options.actionData || {
       actor: attackingToken,
-      actionType: "consequences",
+      actionType: 'consequences',
       attackData,
     };
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     // Per-dialog ignore-allies (defaults to global setting, can be toggled in-dialog)
-    this.ignoreAllies = options?.ignoreAllies ?? game.settings.get(MODULE_ID, "ignoreAllies");
-    this.bulkActionState = "initial"; // 'initial', 'applied', 'reverted'
+    this.ignoreAllies = options?.ignoreAllies ?? game.settings.get(MODULE_ID, 'ignoreAllies');
+    this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
 
     // Set global reference
     currentConsequencesDialog = this;
   }
 
   // Token id in Consequences outcomes is under `target`
-  getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
+  getOutcomeTokenId(outcome) {
+    return outcome?.target?.id ?? null;
+  }
 
   static DEFAULT_OPTIONS = {
-    tag: "div",
-    classes: ["pf2e-visioner", "consequences-preview-dialog"],
+    tag: 'div',
+    classes: ['pf2e-visioner', 'consequences-preview-dialog'],
     window: {
       title: `Attack Consequences Results`,
-      icon: "fas fa-crosshairs",
+      icon: 'fas fa-crosshairs',
       resizable: true,
     },
     position: {
       width: 520,
-      height: "auto",
+      height: 'auto',
     },
     actions: {
       applyChange: ConsequencesPreviewDialog._onApplyChange,
@@ -65,7 +65,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
 
   static PARTS = {
     content: {
-      template: "modules/pf2e-visioner/templates/consequences-preview.hbs",
+      template: 'modules/pf2e-visioner/templates/consequences-preview.hbs',
     },
   };
 
@@ -73,28 +73,41 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     const context = await super._prepareContext(options);
 
     // Filter outcomes with base helper
-    let processedOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter targets found, showing all");
+    let processedOutcomes = this.applyEncounterFilter(
+      this.outcomes,
+      'target',
+      'No encounter targets found, showing all',
+    );
 
     // Apply ignore-allies filtering for display (walls are not part of consequences)
     try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      processedOutcomes = filterOutcomesByAllies(processedOutcomes, this.attackingToken, this.ignoreAllies, "target");
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      processedOutcomes = filterOutcomesByAllies(
+        processedOutcomes,
+        this.attackingToken,
+        this.ignoreAllies,
+        'target',
+      );
     } catch (_) {}
 
     // Prepare outcomes with additional UI data (and normalize shape)
     processedOutcomes = processedOutcomes.map((outcome) => {
-      const effectiveNewState = outcome.overrideState || "observed"; // Default to observed
+      const effectiveNewState = outcome.overrideState || 'observed'; // Default to observed
       const baseOldState = outcome.currentVisibility;
       // For consequences, actionable change means:
       // 1. Token sees attacker as hidden/undetected AND will change to different state, OR
       // 2. GM has selected an override state that differs from current state
-      const isHiddenOrUndetected = baseOldState === "hidden" || baseOldState === "undetected";
+      const isHiddenOrUndetected = baseOldState === 'hidden' || baseOldState === 'undetected';
       const hasOverrideChange = outcome.overrideState && outcome.overrideState !== baseOldState;
       const hasActionableChange = isHiddenOrUndetected || hasOverrideChange;
-      
+
       // Build override icon states for the row
-      const desired = getDesiredOverrideStatesForAction("consequences");
-      const availableStates = this.buildOverrideStates(desired, { ...outcome, newVisibility: effectiveNewState }, { selectFrom: "overrideState", calcFrom: "newVisibility" });
+      const desired = getDesiredOverrideStatesForAction('consequences');
+      const availableStates = this.buildOverrideStates(
+        desired,
+        { ...outcome, newVisibility: effectiveNewState },
+        { selectFrom: 'overrideState', calcFrom: 'newVisibility' },
+      );
       return {
         ...outcome,
         // Normalize to match BaseActionDialog helpers
@@ -164,8 +177,10 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // For consequences, actionable change means:
     // 1. Token sees attacker as hidden/undetected AND will change to different state, OR
     // 2. GM has selected an override state that differs from current state
-    const isHiddenOrUndetected = outcome.currentVisibility === "hidden" || outcome.currentVisibility === "undetected";
-    const hasOverrideChange = outcome.overrideState && outcome.overrideState !== outcome.currentVisibility;
+    const isHiddenOrUndetected =
+      outcome.currentVisibility === 'hidden' || outcome.currentVisibility === 'undetected';
+    const hasOverrideChange =
+      outcome.overrideState && outcome.overrideState !== outcome.currentVisibility;
     return isHiddenOrUndetected || hasOverrideChange;
   }
 
@@ -193,9 +208,9 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
       if (cb) {
         cb.checked = !!this.ignoreAllies;
-        cb.addEventListener("change", () => {
+        cb.addEventListener('change', () => {
           this.ignoreAllies = !!cb.checked;
-          this.bulkActionState = "initial";
+          this.bulkActionState = 'initial';
           this.render({ force: true });
         });
       }
@@ -207,7 +222,9 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
    */
   // Selection highlight handled by BasePreviewDialog
 
-  getChangesCounterClass() { return "consequences-preview-dialog-changes-count"; }
+  getChangesCounterClass() {
+    return 'consequences-preview-dialog-changes-count';
+  }
 
   /**
    * Handle individual apply change
@@ -219,11 +236,19 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
     if (!outcome) return;
 
-    const effectiveNewState = outcome.overrideState || "observed";
+    const effectiveNewState = outcome.overrideState || 'observed';
     try {
-      const { applyNowConsequences } = await import("../services/index.js");
+      const { applyNowConsequences } = await import('../services/index.js');
       const overrides = { [outcome.target.id]: effectiveNewState };
-      await applyNowConsequences({ ...app.actionData, overrides, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly }, { html: () => {}, attr: () => {} });
+      await applyNowConsequences(
+        {
+          ...app.actionData,
+          overrides,
+          ignoreAllies: app.ignoreAllies,
+          encounterOnly: app.encounterOnly,
+        },
+        { html: () => {}, attr: () => {} },
+      );
     } catch (_) {}
 
     // Update button states
@@ -242,8 +267,10 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     if (!outcome) return;
 
     try {
-      const { revertNowConsequences } = await import("../services/index.js");
-      await revertNowConsequences(app.actionData, { html: () => {}, attr: () => {} });
+      const { revertNowConsequences } = await import('../services/index.js');
+      // Pass the specific tokenId for per-row revert
+      const actionDataWithTarget = { ...app.actionData, targetTokenId: tokenId };
+      await revertNowConsequences(actionDataWithTarget, { html: () => {}, attr: () => {} });
     } catch (_) {}
 
     // Update button states
@@ -258,11 +285,11 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Get the dialog instance
     const app = currentConsequencesDialog;
     if (!app) {
-      console.error("Consequences Dialog not found");
+      console.error('Consequences Dialog not found');
       return;
     }
 
-    if (app.bulkActionState === "applied") {
+    if (app.bulkActionState === 'applied') {
       notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
@@ -270,16 +297,17 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     // Filter outcomes based on encounter filter
-    let filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "target",
-    );
+    let filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
 
     // Apply ally filtering if ignore allies is enabled
     try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.attackingToken, app.ignoreAllies, "target");
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filteredOutcomes = filterOutcomesByAllies(
+        filteredOutcomes,
+        app.attackingToken,
+        app.ignoreAllies,
+        'target',
+      );
     } catch (_) {}
 
     // Only apply changes to filtered outcomes that have actionable changes
@@ -295,18 +323,28 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     const overrides = {};
     for (const o of changedOutcomes) {
       const id = o?.target?.id;
-      const state = o?.overrideState || "observed";
+      const state = o?.overrideState || 'observed';
       if (id && state) overrides[id] = state;
     }
-    const { applyNowConsequences } = await import("../services/index.js");
-    await applyNowConsequences({ ...app.actionData, overrides, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly }, { html: () => {}, attr: () => {} });
+    const { applyNowConsequences } = await import('../services/index.js');
+    await applyNowConsequences(
+      {
+        ...app.actionData,
+        overrides,
+        ignoreAllies: app.ignoreAllies,
+        encounterOnly: app.encounterOnly,
+      },
+      { html: () => {}, attr: () => {} },
+    );
 
     // Update UI for each row
     for (const outcome of changedOutcomes) {
-      app.updateRowButtonsToApplied([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateRowButtonsToApplied([
+        { target: { id: outcome.target.id }, hasActionableChange: true },
+      ]);
     }
 
-    app.bulkActionState = "applied";
+    app.bulkActionState = 'applied';
     app.updateBulkActionButtons();
     app.updateChangesCount();
 
@@ -322,11 +360,11 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // Get the dialog instance
     const app = currentConsequencesDialog;
     if (!app) {
-      console.error("Consequences Dialog not found");
+      console.error('Consequences Dialog not found');
       return;
     }
 
-    if (app.bulkActionState === "reverted") {
+    if (app.bulkActionState === 'reverted') {
       notify.warn(
         `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
       );
@@ -334,16 +372,17 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     }
 
     // Filter outcomes based on encounter filter
-    let filteredOutcomes = filterOutcomesByEncounter(
-      app.outcomes,
-      app.encounterOnly,
-      "target",
-    );
+    let filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
 
     // Apply ally filtering if ignore allies is enabled
     try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.attackingToken, app.ignoreAllies, "target");
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filteredOutcomes = filterOutcomesByAllies(
+        filteredOutcomes,
+        app.attackingToken,
+        app.ignoreAllies,
+        'target',
+      );
     } catch (_) {}
 
     // Only revert changes to filtered outcomes that have actionable changes
@@ -352,19 +391,19 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     });
 
     if (changedOutcomes.length === 0) {
-      notify.warn(
-        `${MODULE_TITLE}: No visibility changes to revert.`,
-      );
+      notify.warn(`${MODULE_TITLE}: No visibility changes to revert.`);
       return;
     }
 
-    const { revertNowConsequences } = await import("../services/index.js");
+    const { revertNowConsequences } = await import('../services/index.js');
     await revertNowConsequences(app.actionData, { html: () => {}, attr: () => {} });
     for (const outcome of changedOutcomes) {
-      app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateRowButtonsToReverted([
+        { target: { id: outcome.target.id }, hasActionableChange: true },
+      ]);
     }
 
-    app.bulkActionState = "reverted";
+    app.bulkActionState = 'reverted';
     app.updateBulkActionButtons();
     app.updateChangesCount();
   }
@@ -391,29 +430,33 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
 
   // Override icon click handlers to use consequences-specific logic
   addIconClickHandlers() {
-    const stateIcons = this.element.querySelectorAll(".state-icon");
+    const stateIcons = this.element.querySelectorAll('.state-icon');
     stateIcons.forEach((icon) => {
-      icon.addEventListener("click", (event) => {
+      icon.addEventListener('click', (event) => {
         // Only handle clicks within override selection container
-        const overrideIcons = event.currentTarget.closest(".override-icons");
+        const overrideIcons = event.currentTarget.closest('.override-icons');
         if (!overrideIcons) return;
 
         // Robustly resolve target id from data attributes or row
         let targetId = event.currentTarget.dataset.target || event.currentTarget.dataset.tokenId;
         if (!targetId) {
-          const row = event.currentTarget.closest("tr[data-token-id]");
+          const row = event.currentTarget.closest('tr[data-token-id]');
           targetId = row?.dataset?.tokenId;
         }
         const newState = event.currentTarget.dataset.state;
-        
+
         // Update UI
-        overrideIcons.querySelectorAll(".state-icon").forEach((i) => i.classList.remove("selected"));
-        event.currentTarget.classList.add("selected");
+        overrideIcons
+          .querySelectorAll('.state-icon')
+          .forEach((i) => i.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
         const hiddenInput = overrideIcons?.querySelector('input[type="hidden"]');
         if (hiddenInput) hiddenInput.value = newState;
-        
+
         // Update outcome data
-        let outcome = this.outcomes?.find?.((o) => String(this.getOutcomeTokenId(o)) === String(targetId));
+        let outcome = this.outcomes?.find?.(
+          (o) => String(this.getOutcomeTokenId(o)) === String(targetId),
+        );
         if (outcome) {
           outcome.overrideState = newState;
           // Use consequences-specific logic for actionable changes

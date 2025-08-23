@@ -6,7 +6,7 @@ import {
   _consumePairs,
   _recordPair,
   detectCoverStateForAttack,
-  getSizeRank
+  getSizeRank,
 } from '../../scripts/cover/auto-cover.js';
 
 describe('Auto-Cover System', () => {
@@ -16,28 +16,30 @@ describe('Auto-Cover System', () => {
     // Create mock tokens for testing
     attacker = createMockToken({
       id: 'attacker-1',
-      x: 100, y: 100,
+      x: 100,
+      y: 100,
       actor: createMockActor({
         id: 'actor-attacker',
         type: 'character',
         system: {
           traits: { size: { value: 'med' } },
-          attributes: { perception: { value: 16 } }
-        }
-      })
+          attributes: { perception: { value: 16 } },
+        },
+      }),
     });
 
     target = createMockToken({
       id: 'target-1',
-      x: 300, y: 300,
+      x: 300,
+      y: 300,
       actor: createMockActor({
         id: 'actor-target',
         type: 'npc',
         system: {
           traits: { size: { value: 'med' } },
-          attributes: { perception: { value: 14 } }
-        }
-      })
+          attributes: { perception: { value: 14 } },
+        },
+      }),
     });
 
     // Create wall between tokens
@@ -45,22 +47,24 @@ describe('Auto-Cover System', () => {
       id: 'wall-1',
       c: [200, 0, 200, 400], // Vertical wall between tokens
       sight: 0, // Blocks sight
-      move: 0,  // Blocks movement
-      sound: 0  // Blocks sound
+      move: 0, // Blocks movement
+      sound: 0, // Blocks sound
     });
 
     // Create terrain feature
     terrain = createMockToken({
       id: 'terrain-1',
-      x: 250, y: 250,
-      width: 2, height: 2,
+      x: 250,
+      y: 250,
+      width: 2,
+      height: 2,
       actor: createMockActor({
         id: 'actor-terrain',
         type: 'terrain',
         system: {
-          traits: { size: { value: 'med' } }
-        }
-      })
+          traits: { size: { value: 'med' } },
+        },
+      }),
     });
 
     // Set up canvas
@@ -133,7 +137,7 @@ describe('Auto-Cover System', () => {
       const wall2 = createMockWall({
         id: 'wall-2',
         c: [150, 0, 150, 400], // Additional wall
-        sight: 0
+        sight: 0,
       });
       global.canvas.walls.placeables = [wall, wall2];
 
@@ -147,7 +151,7 @@ describe('Auto-Cover System', () => {
         id: 'thin-wall',
         c: [200, 0, 200, 400],
         sight: 0,
-        flags: { width: 1 } // 1 foot wide
+        flags: { width: 1 }, // 1 foot wide
       });
       global.canvas.walls.placeables = [thinWall];
 
@@ -161,7 +165,7 @@ describe('Auto-Cover System', () => {
         id: 'transparent-wall',
         c: [200, 0, 200, 400],
         sight: 1, // Transparent
-        move: 0
+        move: 0,
       });
       global.canvas.walls.placeables = [transparentWall];
 
@@ -172,12 +176,28 @@ describe('Auto-Cover System', () => {
 
   describe('getSizeRank', () => {
     test('should return correct size ranks', () => {
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'tiny' } } } } }))).toBe(0);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'sm' } } } } }))).toBe(1);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'med' } } } } }))).toBe(2);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'lg' } } } } }))).toBe(3);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'huge' } } } } }))).toBe(4);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'grg' } } } } }))).toBe(5);
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'tiny' } } } } }),
+        ),
+      ).toBe(0);
+      expect(
+        getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'sm' } } } } })),
+      ).toBe(1);
+      expect(
+        getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'med' } } } } })),
+      ).toBe(2);
+      expect(
+        getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'lg' } } } } })),
+      ).toBe(3);
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'huge' } } } } }),
+        ),
+      ).toBe(4);
+      expect(
+        getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'grg' } } } } })),
+      ).toBe(5);
     });
 
     test('should handle missing size values', () => {
@@ -189,14 +209,38 @@ describe('Auto-Cover System', () => {
 
     test('should handle case variations', () => {
       // The SIZE_ORDER constant uses lowercase keys, so uppercase won't match
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'SMALL' } } } } }))).toBe(2); // defaults to medium
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'Medium' } } } } }))).toBe(2); // defaults to medium
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'LARGE' } } } } }))).toBe(2); // defaults to medium
-      
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'SMALL' } } } } }),
+        ),
+      ).toBe(2); // defaults to medium
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'Medium' } } } } }),
+        ),
+      ).toBe(2); // defaults to medium
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'LARGE' } } } } }),
+        ),
+      ).toBe(2); // defaults to medium
+
       // Test the actual lowercase values that work
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'small' } } } } }))).toBe(1);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'medium' } } } } }))).toBe(2);
-      expect(getSizeRank(createMockToken({ actor: { system: { traits: { size: { value: 'large' } } } } }))).toBe(3);
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'small' } } } } }),
+        ),
+      ).toBe(1);
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'medium' } } } } }),
+        ),
+      ).toBe(2);
+      expect(
+        getSizeRank(
+          createMockToken({ actor: { system: { traits: { size: { value: 'large' } } } } }),
+        ),
+      ).toBe(3);
     });
   });
 
@@ -290,11 +334,11 @@ describe('Auto-Cover System', () => {
   describe('Performance Tests', () => {
     test('should handle many obstacles efficiently', () => {
       // Create many walls
-      const manyWalls = Array.from({ length: 100 }, (_, i) => 
+      const manyWalls = Array.from({ length: 100 }, (_, i) =>
         createMockWall({
           c: [i * 10, 0, i * 10, 400],
-          sight: 0
-        })
+          sight: 0,
+        }),
       );
       global.canvas.walls.placeables = manyWalls;
 
@@ -309,16 +353,16 @@ describe('Auto-Cover System', () => {
 
     test('should handle many tokens efficiently', () => {
       // Create many targets
-      const manyTargets = Array.from({ length: 50 }, (_, i) => 
+      const manyTargets = Array.from({ length: 50 }, (_, i) =>
         createMockToken({
           id: `target-${i}`,
-          x: 300 + (i * 10),
-          y: 300 + (i * 10)
-        })
+          x: 300 + i * 10,
+          y: 300 + i * 10,
+        }),
       );
 
       const startTime = performance.now();
-      manyTargets.forEach(targetToken => {
+      manyTargets.forEach((targetToken) => {
         detectCoverStateForAttack(attacker, targetToken);
       });
       const endTime = performance.now();

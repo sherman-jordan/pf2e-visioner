@@ -19,7 +19,7 @@ describe('Store Functions', () => {
   test('should get default visibility state', () => {
     const mockObserver = global.createMockToken({ id: 'observer' });
     const mockTarget = global.createMockToken({ id: 'target' });
-    
+
     const result = getVisibilityBetween(mockObserver, mockTarget);
     expect(result).toBe('observed'); // Default state
   });
@@ -27,7 +27,7 @@ describe('Store Functions', () => {
   test('should get default cover state', () => {
     const mockObserver = global.createMockToken({ id: 'observer' });
     const mockTarget = global.createMockToken({ id: 'target' });
-    
+
     const result = getCoverBetween(mockObserver, mockTarget);
     expect(result).toBe('none'); // Default state
   });

@@ -13,10 +13,8 @@ class ChatAutomationServiceImpl {
    */
   onRenderChatMessage(message, element) {
     // Lazy import to avoid circular dependencies during Foundry startup
-    return import("./chat-processor.js").then((m) => m.onRenderChatMessage(message, element));
+    return import('./chat-processor.js').then((m) => m.onRenderChatMessage(message, element));
   }
 }
 
 export const ChatAutomationService = new ChatAutomationServiceImpl();
-
-

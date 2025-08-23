@@ -2,38 +2,38 @@
 
 export function getOutcomeClass(outcome) {
   switch (outcome) {
-    case "criticalSuccess":
-    case "critical-success":
-      return "critical-success";
-    case "success":
-      return "success";
-    case "failure":
-      return "failure";
-    case "criticalFailure":
-    case "critical-failure":
-      return "critical-failure";
+    case 'criticalSuccess':
+    case 'critical-success':
+      return 'critical-success';
+    case 'success':
+      return 'success';
+    case 'failure':
+      return 'failure';
+    case 'criticalFailure':
+    case 'critical-failure':
+      return 'critical-failure';
     default:
-      return "";
+      return '';
   }
 }
 
 export function getOutcomeLabel(outcome) {
   switch (outcome) {
-    case "criticalSuccess":
-    case "critical-success":
-      return "Critical Success";
-    case "success":
-      return "Success";
-    case "failure":
-      return "Failure";
-    case "criticalFailure":
-    case "critical-failure":
-      return "Critical Failure";
+    case 'criticalSuccess':
+    case 'critical-success':
+      return 'Critical Success';
+    case 'success':
+      return 'Success';
+    case 'failure':
+      return 'Failure';
+    case 'criticalFailure':
+    case 'critical-failure':
+      return 'Critical Failure';
     default:
-      if (typeof outcome === "string" && outcome.length > 0) {
+      if (typeof outcome === 'string' && outcome.length > 0) {
         return outcome.charAt(0).toUpperCase() + outcome.slice(1);
       }
-      return "";
+      return '';
   }
 }
 
@@ -46,22 +46,22 @@ export function updateRowButtonsToApplied(rootElement, outcomes) {
     if (tokenId) row = rootElement.querySelector(`tr[data-token-id="${tokenId}"]`);
     if (!row && wallId) row = rootElement.querySelector(`tr[data-wall-id="${wallId}"]`);
     if (!row) continue;
-    let applyButton = row.querySelector(".row-action-btn.apply-change");
-    let revertButton = row.querySelector(".row-action-btn.revert-change");
+    let applyButton = row.querySelector('.row-action-btn.apply-change');
+    let revertButton = row.querySelector('.row-action-btn.revert-change');
     // Fallback to plain classes if unified classes are not present
-    if (!applyButton) applyButton = row.querySelector(".apply-change");
-    if (!revertButton) revertButton = row.querySelector(".revert-change");
+    if (!applyButton) applyButton = row.querySelector('.apply-change');
+    if (!revertButton) revertButton = row.querySelector('.revert-change');
     if (applyButton) {
       applyButton.disabled = true;
       applyButton.innerHTML = '<i class="fas fa-check-circle"></i>';
-      applyButton.classList.add("applied");
-      applyButton.title = "Applied";
+      applyButton.classList.add('applied');
+      applyButton.title = 'Applied';
     }
     if (revertButton) {
       revertButton.disabled = false;
       revertButton.innerHTML = '<i class="fas fa-undo"></i>';
-      revertButton.classList.remove("reverted");
-      revertButton.title = "Revert to original visibility";
+      revertButton.classList.remove('reverted');
+      revertButton.title = 'Revert to original visibility';
     }
   }
 }
@@ -75,50 +75,46 @@ export function updateRowButtonsToReverted(rootElement, outcomes) {
     if (tokenId) row = rootElement.querySelector(`tr[data-token-id="${tokenId}"]`);
     if (!row && wallId) row = rootElement.querySelector(`tr[data-wall-id="${wallId}"]`);
     if (!row) continue;
-    let applyButton = row.querySelector(".row-action-btn.apply-change");
-    let revertButton = row.querySelector(".row-action-btn.revert-change");
+    let applyButton = row.querySelector('.row-action-btn.apply-change');
+    let revertButton = row.querySelector('.row-action-btn.revert-change');
     // Fallback to plain classes if unified classes are not present
-    if (!applyButton) applyButton = row.querySelector(".apply-change");
-    if (!revertButton) revertButton = row.querySelector(".revert-change");
+    if (!applyButton) applyButton = row.querySelector('.apply-change');
+    if (!revertButton) revertButton = row.querySelector('.revert-change');
     if (revertButton) {
       revertButton.disabled = true;
       revertButton.innerHTML = '<i class="fas fa-undo-alt"></i>';
-      revertButton.classList.add("reverted");
-      revertButton.title = "Reverted";
+      revertButton.classList.add('reverted');
+      revertButton.title = 'Reverted';
     }
     if (applyButton) {
       applyButton.disabled = false;
       applyButton.innerHTML = '<i class="fas fa-check"></i>';
-      applyButton.classList.remove("applied");
-      applyButton.title = "Apply visibility change";
+      applyButton.classList.remove('applied');
+      applyButton.title = 'Apply visibility change';
     }
   }
 }
 
 export function updateBulkActionButtons(rootElement, bulkActionState) {
   if (!rootElement) return;
-  const applyAllButton = rootElement.querySelector(
-    '.bulk-action-btn[data-action="applyAll"]'
-  );
-  const revertAllButton = rootElement.querySelector(
-    '.bulk-action-btn[data-action="revertAll"]'
-  );
+  const applyAllButton = rootElement.querySelector('.bulk-action-btn[data-action="applyAll"]');
+  const revertAllButton = rootElement.querySelector('.bulk-action-btn[data-action="revertAll"]');
   if (!applyAllButton || !revertAllButton) return;
 
   switch (bulkActionState) {
-    case "initial":
+    case 'initial':
       applyAllButton.disabled = false;
       revertAllButton.disabled = true;
       applyAllButton.innerHTML = '<i class="fas fa-check-circle"></i> Apply All';
       revertAllButton.innerHTML = '<i class="fas fa-undo"></i> Revert All';
       break;
-    case "applied":
+    case 'applied':
       applyAllButton.disabled = true;
       revertAllButton.disabled = false;
       applyAllButton.innerHTML = '<i class="fas fa-check-circle"></i> Applied';
       revertAllButton.innerHTML = '<i class="fas fa-undo"></i> Revert All';
       break;
-    case "reverted":
+    case 'reverted':
       applyAllButton.disabled = false;
       revertAllButton.disabled = true;
       applyAllButton.innerHTML = '<i class="fas fa-check-circle"></i> Apply All';
@@ -130,12 +126,12 @@ export function updateBulkActionButtons(rootElement, bulkActionState) {
 export function updateChangesCount(rootElement, counterClassName) {
   if (!rootElement) return 0;
   let changesCount = 0;
-  const rows = rootElement.querySelectorAll("tbody tr[data-token-id], tbody tr[data-wall-id]");
+  const rows = rootElement.querySelectorAll('tbody tr[data-token-id], tbody tr[data-wall-id]');
   rows.forEach((row) => {
-    let applyButton = row.querySelector(".row-action-btn.apply-change");
-    let revertButton = row.querySelector(".row-action-btn.revert-change");
-    if (!applyButton) applyButton = row.querySelector(".apply-change");
-    if (!revertButton) revertButton = row.querySelector(".revert-change");
+    let applyButton = row.querySelector('.row-action-btn.apply-change');
+    let revertButton = row.querySelector('.row-action-btn.revert-change');
+    if (!applyButton) applyButton = row.querySelector('.apply-change');
+    if (!revertButton) revertButton = row.querySelector('.revert-change');
     const hasApplicableChanges = applyButton && !applyButton.disabled;
     const hasRevertibleChanges = revertButton && !revertButton.disabled;
     if (hasApplicableChanges || hasRevertibleChanges) changesCount += 1;
@@ -146,7 +142,3 @@ export function updateChangesCount(rootElement, counterClassName) {
   }
   return changesCount;
 }
-
-
-
-

@@ -92,7 +92,7 @@
           <div class="visibility-legend">
             {{#each visibilityStates as |state|}}
               <div class="legend-item" title="{{state.label}}">
-                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+                <i class="{{state.icon}} {{state.cssClass}}"></i>
                 <span>{{state.label}}</span>
               </div>
             {{/each}}
@@ -101,11 +101,8 @@
           <div class="cover-legend">
             {{#each coverStates as |state|}}
               <div class="legend-item" title="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
-                <i class="{{state.icon}}" style="color: {{state.color}}"></i>
+                <i class="{{state.icon}} {{state.cssClass}}"></i>
                 <span>{{state.label}}</span>
-                {{#if (gt state.bonusAC 0)}}
-                  <span class="bonus-badge">+{{state.bonusAC}}</span>
-                {{/if}}
               </div>
             {{/each}}
           </div>
@@ -184,9 +181,9 @@
                         <td class="visibility-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.visibilityStates as |state|}}
-                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}" style="color: {{state.color}}">
+                                      title="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -196,7 +193,7 @@
                         <td class="current-state">
                           {{#each target.visibilityStates as |state|}}
                             {{#if state.selected}}
-                              <span class="state-indicator" style="color: {{state.color}}"
+                              <span class="state-indicator {{state.cssClass}}"
                                     {{#if (eq state.value "hidden")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
                                     {{#if (eq state.value "concealed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
                                     {{#if (eq state.value "undetected")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
@@ -291,9 +288,9 @@
                         <td class="visibility-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.visibilityStates as |state|}}
-                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}" style="color: {{state.color}}">
+                                      title="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -303,7 +300,7 @@
                         <td class="current-state">
                           {{#each target.visibilityStates as |state|}}
                             {{#if state.selected}}
-                              <span class="state-indicator" style="color: {{state.color}}"
+                              <span class="state-indicator {{state.cssClass}}"
                                     {{#if (eq state.value "hidden")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
                                     {{#if (eq state.value "concealed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
                                     {{#if (eq state.value "undetected")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
@@ -396,9 +393,9 @@
                       <td class="visibility-state">
                         <div class="icon-selection" data-target="{{target.id}}">
                           {{#each target.visibilityStates as |state|}}
-                            <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                            <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                     data-state="{{state.value}}" data-target="{{target.id}}" 
-                                    title="{{state.label}}" style="color: {{state.color}}">
+                                    title="{{state.label}}">
                               <i class="{{state.icon}}"></i>
                             </button>
                           {{/each}}
@@ -408,7 +405,7 @@
                       <td class="current-state">
                         {{#each target.visibilityStates as |state|}}
                           {{#if state.selected}}
-                            <span class="state-indicator" style="color: {{state.color}}">
+                            <span class="state-indicator {{state.cssClass}}">
                               <i class="{{state.icon}}"></i>
                               {{state.label}}
                             </span>
@@ -482,9 +479,9 @@
                       <td class="visibility-state">
                         <div class="icon-selection" data-target="{{w.id}}">
                           {{#each w.visibilityStates as |state|}}
-                            <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                            <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                     data-state="{{state.value}}" data-target="{{w.id}}" 
-                                    title="{{state.label}}" style="color: {{state.color}}">
+                                    title="{{state.label}}">
                               <i class="{{state.icon}}"></i>
                             </button>
                           {{/each}}
@@ -565,9 +562,9 @@
                         <td class="cover-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.coverStates as |state|}}
-                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}" style="color: {{state.color}}">
+                                      title="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -577,7 +574,7 @@
                         <td class="current-state">
                           {{#each target.coverStates as |state|}}
                             {{#if state.selected}}
-                              <span class="state-indicator" style="color: {{state.color}}">
+                              <span class="state-indicator {{state.cssClass}}">
                                 <i class="{{state.icon}}"></i>
                                 {{state.label}}
                               </span>
@@ -658,9 +655,9 @@
                         <td class="cover-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.coverStates as |state|}}
-                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}}" 
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}" style="color: {{state.color}}">
+                                      title="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -670,7 +667,7 @@
                         <td class="current-state">
                           {{#each target.coverStates as |state|}}
                             {{#if state.selected}}
-                              <span class="state-indicator" style="color: {{state.color}}">
+                              <span class="state-indicator {{state.cssClass}}">
                                 <i class="{{state.icon}}"></i>
                                 {{state.label}}
                               </span>

@@ -8,18 +8,18 @@ import '../../setup.js';
 
 describe('Create a Diversion Action Comprehensive Tests', () => {
   let originalSettings;
-  
+
   beforeEach(() => {
     // Store original settings
     originalSettings = {
       ignoreAllies: game.settings.get('pf2e-visioner', 'ignoreAllies'),
-      enforceRawRequirements: game.settings.get('pf2e-visioner', 'enforceRawRequirements')
+      enforceRawRequirements: game.settings.get('pf2e-visioner', 'enforceRawRequirements'),
     };
   });
-  
+
   afterEach(() => {
     // Restore original settings
-    Object.keys(originalSettings).forEach(key => {
+    Object.keys(originalSettings).forEach((key) => {
       game.settings.set('pf2e-visioner', key, originalSettings[key]);
     });
   });
@@ -27,10 +27,10 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
   describe('Panel Generation and Button Actions', () => {
     test('chat panel generates correct apply-changes button', () => {
       const { buildDiversionPanel } = require('../../../scripts/chat/ui/panel/diversion.js');
-      
+
       game.user.isGM = true;
       const panel = buildDiversionPanel();
-      
+
       expect(panel.actionButtonsHtml).toContain('data-action="apply-now-diversion"');
       expect(panel.actionButtonsHtml).toContain('Apply Changes');
     });
@@ -38,39 +38,63 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
 
   describe('Status Mapping Tests', () => {
     test('create-a-diversion from observed state produces correct outcomes', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
-      expect(getDefaultNewStateFor('create-a-diversion', 'observed', 'critical-success')).toBe('hidden');
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
+      expect(getDefaultNewStateFor('create-a-diversion', 'observed', 'critical-success')).toBe(
+        'hidden',
+      );
       expect(getDefaultNewStateFor('create-a-diversion', 'observed', 'success')).toBe('hidden');
       expect(getDefaultNewStateFor('create-a-diversion', 'observed', 'failure')).toBe('observed');
-      expect(getDefaultNewStateFor('create-a-diversion', 'observed', 'critical-failure')).toBe('observed');
+      expect(getDefaultNewStateFor('create-a-diversion', 'observed', 'critical-failure')).toBe(
+        'observed',
+      );
     });
 
     test('create-a-diversion from concealed state produces correct outcomes', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
-      expect(getDefaultNewStateFor('create-a-diversion', 'concealed', 'critical-success')).toBe('hidden');
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
+      expect(getDefaultNewStateFor('create-a-diversion', 'concealed', 'critical-success')).toBe(
+        'hidden',
+      );
       expect(getDefaultNewStateFor('create-a-diversion', 'concealed', 'success')).toBe('hidden');
       expect(getDefaultNewStateFor('create-a-diversion', 'concealed', 'failure')).toBe('concealed');
-      expect(getDefaultNewStateFor('create-a-diversion', 'concealed', 'critical-failure')).toBe('concealed');
+      expect(getDefaultNewStateFor('create-a-diversion', 'concealed', 'critical-failure')).toBe(
+        'concealed',
+      );
     });
 
     test('create-a-diversion from hidden state produces correct outcomes', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
-      expect(getDefaultNewStateFor('create-a-diversion', 'hidden', 'critical-success')).toBe('hidden');
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
+      expect(getDefaultNewStateFor('create-a-diversion', 'hidden', 'critical-success')).toBe(
+        'hidden',
+      );
       expect(getDefaultNewStateFor('create-a-diversion', 'hidden', 'success')).toBe('hidden');
       expect(getDefaultNewStateFor('create-a-diversion', 'hidden', 'failure')).toBe('observed');
-      expect(getDefaultNewStateFor('create-a-diversion', 'hidden', 'critical-failure')).toBe('observed');
+      expect(getDefaultNewStateFor('create-a-diversion', 'hidden', 'critical-failure')).toBe(
+        'observed',
+      );
     });
 
     test('create-a-diversion from undetected state produces correct outcomes', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
-      expect(getDefaultNewStateFor('create-a-diversion', 'undetected', 'critical-success')).toBe('hidden');
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
+      expect(getDefaultNewStateFor('create-a-diversion', 'undetected', 'critical-success')).toBe(
+        'hidden',
+      );
       expect(getDefaultNewStateFor('create-a-diversion', 'undetected', 'success')).toBe('hidden');
       expect(getDefaultNewStateFor('create-a-diversion', 'undetected', 'failure')).toBe('observed');
-      expect(getDefaultNewStateFor('create-a-diversion', 'undetected', 'critical-failure')).toBe('observed');
+      expect(getDefaultNewStateFor('create-a-diversion', 'undetected', 'critical-failure')).toBe(
+        'observed',
+      );
     });
   });
 
@@ -82,15 +106,23 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
 
       test('applies changes to all tokens including allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newVisibility: 'hidden', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newVisibility: 'hidden', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newVisibility: 'hidden',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newVisibility: 'hidden',
+            hasActionableChange: true,
+          },
         ];
 
         // When ignoreAllies is false, all outcomes should be processed
-        const filteredOutcomes = mockOutcomes.filter(outcome => outcome.hasActionableChange);
-        
+        const filteredOutcomes = mockOutcomes.filter((outcome) => outcome.hasActionableChange);
+
         expect(filteredOutcomes).toHaveLength(2);
-        expect(filteredOutcomes.map(o => o.token.id)).toEqual(['ally1', 'enemy1']);
+        expect(filteredOutcomes.map((o) => o.token.id)).toEqual(['ally1', 'enemy1']);
       });
     });
 
@@ -101,37 +133,53 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
 
       test('applies changes only to enemies, filtering out allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newVisibility: 'hidden', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newVisibility: 'hidden', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newVisibility: 'hidden',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newVisibility: 'hidden',
+            hasActionableChange: true,
+          },
         ];
 
         // Simulate the filtering logic from create-a-diversion action
         const diversorAlliance = 'party';
         const ignoreAlliesSetting = true; // Simulate the setting being true
-        const filteredOutcomes = mockOutcomes.filter(outcome => {
+        const filteredOutcomes = mockOutcomes.filter((outcome) => {
           if (!ignoreAlliesSetting) return outcome.hasActionableChange;
           return outcome.hasActionableChange && outcome.token.actor.alliance !== diversorAlliance;
         });
-        
+
         expect(filteredOutcomes).toHaveLength(1);
         expect(filteredOutcomes[0].token.id).toBe('enemy1');
       });
 
       test('reversed filter bug fix - when ignoreAllies is clicked, applies to enemies not allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newVisibility: 'hidden', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newVisibility: 'hidden', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newVisibility: 'hidden',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newVisibility: 'hidden',
+            hasActionableChange: true,
+          },
         ];
 
         // This was the bug: filters were reversed
         const diversorAlliance = 'party';
         const ignoreAlliesSetting = true; // Simulate the setting being true
-        const correctlyFilteredOutcomes = mockOutcomes.filter(outcome => {
+        const correctlyFilteredOutcomes = mockOutcomes.filter((outcome) => {
           if (!ignoreAlliesSetting) return outcome.hasActionableChange;
           // Correct logic: exclude allies (same alliance), keep enemies (different alliance)
           return outcome.hasActionableChange && outcome.token.actor.alliance !== diversorAlliance;
         });
-        
+
         // Should only affect enemies, not allies
         expect(correctlyFilteredOutcomes).toHaveLength(1);
         expect(correctlyFilteredOutcomes[0].token.id).toBe('enemy1');
@@ -148,12 +196,12 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
           { token: { id: 'enemy1' }, newVisibility: 'hidden', hasActionableChange: true },
           // Note: allies already filtered out by dialog
         ],
-        actionData: { actor: { alliance: 'party' } }
+        actionData: { actor: { alliance: 'party' } },
       };
 
       // The fix: use outcomes that are already filtered by the dialog
-      const changedOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const changedOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(1);
       expect(changedOutcomes[0].token.id).toBe('enemy1');
     });
@@ -162,15 +210,13 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
       // This was a reported bug: Apply All didn't work until ignoreAllies was toggled
       const mockDialog = {
         ignoreAllies: true,
-        outcomes: [
-          { token: { id: 'enemy1' }, newVisibility: 'hidden', hasActionableChange: true },
-        ],
-        actionData: { actor: { alliance: 'party' } }
+        outcomes: [{ token: { id: 'enemy1' }, newVisibility: 'hidden', hasActionableChange: true }],
+        actionData: { actor: { alliance: 'party' } },
       };
 
       // Should work immediately without needing to toggle ignoreAllies
-      const changedOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const changedOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(1);
       expect(changedOutcomes[0].token.id).toBe('enemy1');
     });
@@ -179,13 +225,13 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
       const mockDialog = {
         ignoreAllies: true,
         outcomes: [{ token: { id: 'enemy1' }, hasActionableChange: true }],
-        actionData: { actor: { id: 'diversionist' } }
+        actionData: { actor: { id: 'diversionist' } },
       };
 
       // Ensure ignoreAllies is passed to the apply service
       const actionDataWithIgnoreAllies = {
         ...mockDialog.actionData,
-        ignoreAllies: mockDialog.ignoreAllies
+        ignoreAllies: mockDialog.ignoreAllies,
       };
 
       expect(actionDataWithIgnoreAllies.ignoreAllies).toBe(true);
@@ -198,12 +244,12 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
         ignoreAllies: true,
         outcomes: [
           { token: { id: 'enemy1' }, oldVisibility: 'observed', currentVisibility: 'hidden' },
-        ]
+        ],
       };
 
       // Should use dialog.outcomes which are already filtered
       const revertOutcomes = mockDialog.outcomes;
-      
+
       expect(revertOutcomes).toHaveLength(1);
       expect(revertOutcomes[0].token.id).toBe('enemy1');
     });
@@ -217,14 +263,14 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
       ];
 
       const targetTokenId = 'enemy1';
-      const targetOutcome = mockOutcomes.find(o => o.token.id === targetTokenId);
-      
+      const targetOutcome = mockOutcomes.find((o) => o.token.id === targetTokenId);
+
       // Should only process the specific outcome
       expect(targetOutcome.token.id).toBe('enemy1');
       expect(targetOutcome.newVisibility).toBe('hidden');
-      
+
       // Other outcomes should remain unaffected
-      const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
+      const otherOutcomes = mockOutcomes.filter((o) => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
       expect(otherOutcomes[0].token.id).toBe('enemy2');
     });
@@ -238,17 +284,17 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
       ];
 
       const targetTokenId = 'enemy1';
-      const targetOutcome = mockOutcomes.find(o => o.token.id === targetTokenId);
-      
+      const targetOutcome = mockOutcomes.find((o) => o.token.id === targetTokenId);
+
       // Should create specific revert change for this token only
       const revertVisibility = targetOutcome.oldVisibility || targetOutcome.currentVisibility;
       const revertChange = { target: targetOutcome.token, newVisibility: revertVisibility };
-      
+
       expect(revertChange.target.id).toBe('enemy1');
       expect(revertChange.newVisibility).toBe('observed');
-      
+
       // Should not affect other tokens
-      const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
+      const otherOutcomes = mockOutcomes.filter((o) => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
     });
   });
@@ -256,31 +302,31 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
   describe('RAW Enforcement Integration Tests', () => {
     test('chat apply-changes respects RAW enforcement', () => {
       game.settings.set('pf2e-visioner', 'enforceRawRequirements', true);
-      
+
       const mockOutcomes = [
         { token: { id: 'valid1' }, hasActionableChange: true, newVisibility: 'hidden' },
         { token: { id: 'invalid1' }, hasActionableChange: false, newVisibility: 'hidden' },
       ];
 
       // When RAW enforcement is on, only actionable changes should be applied
-      const validOutcomes = mockOutcomes.filter(o => o.hasActionableChange);
-      
+      const validOutcomes = mockOutcomes.filter((o) => o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid1');
     });
 
     test('dialog apply-all respects RAW enforcement', () => {
       game.settings.set('pf2e-visioner', 'enforceRawRequirements', true);
-      
+
       const mockDialog = {
         outcomes: [
           { token: { id: 'valid1' }, hasActionableChange: true, newVisibility: 'hidden' },
           { token: { id: 'invalid1' }, hasActionableChange: false, newVisibility: 'hidden' },
-        ]
+        ],
       };
 
-      const validOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const validOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid1');
     });
@@ -293,56 +339,66 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
       });
 
       test('create-a-diversion from observed to hidden (success) is actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'observed';
         const newState = getDefaultNewStateFor('create-a-diversion', oldState, 'success');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('hidden');
         expect(hasActionableChange).toBe(true);
       });
 
       test('create-a-diversion from observed to observed (failure) is not actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'observed';
         const newState = getDefaultNewStateFor('create-a-diversion', oldState, 'failure');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('observed');
         expect(hasActionableChange).toBe(false);
       });
 
       test('create-a-diversion from hidden to hidden (success) is not actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'hidden';
         const newState = getDefaultNewStateFor('create-a-diversion', oldState, 'success');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('hidden');
         expect(hasActionableChange).toBe(false);
       });
 
       test('create-a-diversion from undetected to observed (failure) is actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'undetected';
         const newState = getDefaultNewStateFor('create-a-diversion', oldState, 'failure');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('observed');
         expect(hasActionableChange).toBe(true);
       });
 
       test('create-a-diversion from concealed to concealed (failure) is not actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'concealed';
         const newState = getDefaultNewStateFor('create-a-diversion', oldState, 'failure');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('concealed');
         expect(hasActionableChange).toBe(false);
       });
@@ -354,38 +410,44 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
       });
 
       test('create-a-diversion from observed with RAW enforcement still produces normal outcomes', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'observed';
         const outcomes = ['critical-success', 'success', 'failure', 'critical-failure'];
-        
-        outcomes.forEach(outcome => {
+
+        outcomes.forEach((outcome) => {
           const newState = getDefaultNewStateFor('create-a-diversion', oldState, outcome);
           const hasActionableChange = newState !== oldState;
-          
+
           // General RAW enforcement doesn't change outcome mapping, only target selection
           expect(hasActionableChange).toBe(outcome === 'success' || outcome === 'critical-success');
         });
       });
 
       test('create-a-diversion from concealed with RAW enforcement still produces normal outcomes', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'concealed';
         const outcomes = ['critical-success', 'success', 'failure', 'critical-failure'];
-        
-        outcomes.forEach(outcome => {
+
+        outcomes.forEach((outcome) => {
           const newState = getDefaultNewStateFor('create-a-diversion', oldState, outcome);
           const hasActionableChange = newState !== oldState;
-          
+
           // General RAW enforcement doesn't change outcome mapping, only target selection
           expect(hasActionableChange).toBe(outcome === 'success' || outcome === 'critical-success');
         });
       });
 
       test('create-a-diversion from hidden/undetected with RAW enforcement still produces normal outcomes', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const testCases = [
           { oldState: 'hidden', outcome: 'failure', expectedNewState: 'observed' },
           { oldState: 'undetected', outcome: 'failure', expectedNewState: 'observed' },
@@ -394,7 +456,7 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
         testCases.forEach(({ oldState, outcome, expectedNewState }) => {
           const newState = getDefaultNewStateFor('create-a-diversion', oldState, outcome);
           const hasActionableChange = newState !== oldState;
-          
+
           expect(newState).toBe(expectedNewState);
           expect(hasActionableChange).toBe(true);
         });
@@ -402,23 +464,65 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
     });
 
     test('hasActionableChange correctly identifies state transitions', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       const testCases = [
-        { oldState: 'observed', outcome: 'success', expectedNewState: 'hidden', shouldBeActionable: true },
-        { oldState: 'observed', outcome: 'failure', expectedNewState: 'observed', shouldBeActionable: false },
-        { oldState: 'hidden', outcome: 'success', expectedNewState: 'hidden', shouldBeActionable: false },
-        { oldState: 'hidden', outcome: 'failure', expectedNewState: 'observed', shouldBeActionable: true },
-        { oldState: 'undetected', outcome: 'success', expectedNewState: 'hidden', shouldBeActionable: true },
-        { oldState: 'undetected', outcome: 'failure', expectedNewState: 'observed', shouldBeActionable: true },
-        { oldState: 'concealed', outcome: 'success', expectedNewState: 'hidden', shouldBeActionable: true },
-        { oldState: 'concealed', outcome: 'failure', expectedNewState: 'concealed', shouldBeActionable: false },
+        {
+          oldState: 'observed',
+          outcome: 'success',
+          expectedNewState: 'hidden',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'observed',
+          outcome: 'failure',
+          expectedNewState: 'observed',
+          shouldBeActionable: false,
+        },
+        {
+          oldState: 'hidden',
+          outcome: 'success',
+          expectedNewState: 'hidden',
+          shouldBeActionable: false,
+        },
+        {
+          oldState: 'hidden',
+          outcome: 'failure',
+          expectedNewState: 'observed',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'undetected',
+          outcome: 'success',
+          expectedNewState: 'hidden',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'undetected',
+          outcome: 'failure',
+          expectedNewState: 'observed',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'concealed',
+          outcome: 'success',
+          expectedNewState: 'hidden',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'concealed',
+          outcome: 'failure',
+          expectedNewState: 'concealed',
+          shouldBeActionable: false,
+        },
       ];
 
       testCases.forEach(({ oldState, outcome, expectedNewState, shouldBeActionable }) => {
         const newState = getDefaultNewStateFor('create-a-diversion', oldState, outcome);
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe(expectedNewState);
         expect(hasActionableChange).toBe(shouldBeActionable);
       });
@@ -428,16 +532,15 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
   describe('Edge Cases and Error Handling', () => {
     test('handles empty outcomes gracefully', () => {
       const emptyOutcomes = [];
-      const changedOutcomes = emptyOutcomes.filter(o => o?.hasActionableChange);
-      
+      const changedOutcomes = emptyOutcomes.filter((o) => o?.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(0);
     });
 
     test('handles missing outcome properties gracefully', () => {
       const incompleteOutcome = { token: { id: 'test' } };
-      const revertVisibility = incompleteOutcome.oldVisibility || 
-                               incompleteOutcome.currentVisibility || 
-                               'observed';
+      const revertVisibility =
+        incompleteOutcome.oldVisibility || incompleteOutcome.currentVisibility || 'observed';
 
       expect(revertVisibility).toBe('observed');
     });
@@ -450,8 +553,8 @@ describe('Create a Diversion Action Comprehensive Tests', () => {
         { token: null },
       ];
 
-      const validOutcomes = mixedOutcomes.filter(o => o?.token?.id && o.hasActionableChange);
-      
+      const validOutcomes = mixedOutcomes.filter((o) => o?.token?.id && o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid');
     });

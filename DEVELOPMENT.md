@@ -129,7 +129,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
 window.PerTokenVisibility;
 
 // Get controlled token's visibility map
-canvas.tokens.controlled[0]?.document.getFlag("pf2e-visioner", "visibility");
+canvas.tokens.controlled[0]?.document.getFlag('pf2e-visioner', 'visibility');
 
 // Force update visuals
 PerTokenVisibility.updateTokenVisuals();
@@ -151,7 +151,7 @@ Enable these in browser console for debugging:
 CONFIG.debug.hooks = true;
 
 // Monitor module hooks
-Hooks.on("controlToken", (...args) => console.log("controlToken", args));
+Hooks.on('controlToken', (...args) => console.log('controlToken', args));
 ```
 
 ## Known Issues & Limitations
@@ -221,10 +221,7 @@ The module provides roll options that can be used in Rule Element predicates:
   "option": "flat-check-required",
   "predicate": [
     {
-      "or": [
-        "per-token-visibility:target:hidden",
-        "per-token-visibility:target:concealed"
-      ]
+      "or": ["per-token-visibility:target:hidden", "per-token-visibility:target:concealed"]
     }
   ]
 }
@@ -250,17 +247,16 @@ The module exposes an API for advanced integrations:
 ```javascript
 // Check visibility between two tokens
 const isHidden =
-  game.modules
-    .get("pf2e-visioner")
-    ?.api?.getVisibilityBetween(observerToken, targetToken) === "hidden";
+  game.modules.get('pf2e-visioner')?.api?.getVisibilityBetween(observerToken, targetToken) ===
+  'hidden';
 
 // Set visibility programmatically
 await game.modules
-  .get("pf2e-visioner")
-  ?.api?.setVisibilityBetween(observerToken, targetToken, "concealed");
+  .get('pf2e-visioner')
+  ?.api?.setVisibilityBetween(observerToken, targetToken, 'concealed');
 
 // Update all token visuals
-await game.modules.get("pf2e-visioner")?.api?.updateTokenVisuals();
+await game.modules.get('pf2e-visioner')?.api?.updateTokenVisuals();
 ```
 
 ## Contributing

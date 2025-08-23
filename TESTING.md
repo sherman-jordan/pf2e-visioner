@@ -63,6 +63,7 @@ tests/
 ### Unit Tests
 
 #### Constants (`tests/unit/constants.test.js`)
+
 - Module identity and configuration
 - Visibility states (observed, concealed, hidden, undetected)
 - Cover states (none, lesser, standard, greater)
@@ -70,18 +71,21 @@ tests/
 - State consistency checks
 
 #### Utilities (`tests/unit/utils.test.js`)
+
 - Visibility and cover calculations
 - Token management functions
 - Error handling and edge cases
 - Performance benchmarks
 
 #### Auto-Cover (`tests/unit/auto-cover.test.js`)
+
 - Automatic cover detection
 - Size-based calculations
 - Attack pair tracking
 - Performance optimization
 
 #### Token Manager (`tests/unit/token-manager.test.js`)
+
 - UI component testing
 - Mode switching (observer/target)
 - Bulk operations
@@ -90,9 +94,11 @@ tests/
 ### Integration Tests
 
 #### Visibility Scenarios (`tests/integration/visibility-scenarios.test.js`)
+
 Based on the comprehensive test scenarios CSV:
 
 **Baseline Scenarios (A01-A05)**
+
 - Hide behind opaque wall
 - Peek & re-hide (corner)
 - Bright light reveal
@@ -100,6 +106,7 @@ Based on the comprehensive test scenarios CSV:
 - Seek/Search
 
 **Reveal on Attack (B06-B10)**
+
 - Reveal on melee attack
 - Ranged attack from concealment
 - Save-only spell
@@ -107,12 +114,14 @@ Based on the comprehensive test scenarios CSV:
 - Revealed by outline
 
 **Lighting & Vision (C11-C14)**
+
 - Dim vs bright light concealment
 - Darkvision parity
 - Magical darkness vs special sight
 - Flicker light stability
 
 **Terrain & Cover (D15-D20)**
+
 - Soft cover from ally
 - Low wall vs tall target
 - Greater cover behind pillar
@@ -121,12 +130,14 @@ Based on the comprehensive test scenarios CSV:
 - Squeezing / narrow slit
 
 **Movement & Stealth (E21-E24)**
+
 - Sneak across gap
 - Fast move vs passive hearing
 - Climb alters cover
 - Prone for cover
 
 **Special Senses (F25-F29)**
+
 - Tremorsense vs flying
 - Blindsight/echolocation vs Silence
 - Lifesense vs undead/construct
@@ -134,12 +145,14 @@ Based on the comprehensive test scenarios CSV:
 - Invisible but noisy
 
 **Effects (G30-G33)**
+
 - Blur/Displacement
 - Obscuring Mist / Fog Cloud
 - Darkness + Daylight overlap
 - GM-only illumination
 
 **Performance (M49-M50)**
+
 - Stress: 50+ tokens, fog, lights
 - Save/Reload scene state
 
@@ -204,29 +217,31 @@ The testing framework includes comprehensive mocks for Foundry VTT:
 // Create mock tokens
 const token = createMockToken({
   id: 'test-token',
-  x: 100, y: 100,
+  x: 100,
+  y: 100,
   actor: createMockActor({
     type: 'character',
-    system: { traits: { size: { value: 'med' } } }
-  })
+    system: { traits: { size: { value: 'med' } } },
+  }),
 });
 
 // Create mock walls
 const wall = createMockWall({
   c: [0, 0, 100, 100], // Coordinates
-  sight: 0,              // Blocks sight
-  move: 0                // Blocks movement
+  sight: 0, // Blocks sight
+  move: 0, // Blocks movement
 });
 
 // Create mock lights
 const light = createMockLight({
-  x: 50, y: 50,
+  x: 50,
+  y: 50,
   config: {
     dim: 20,
     bright: 10,
     angle: 360,
-    color: '#ffffff'
-  }
+    color: '#ffffff',
+  },
 });
 ```
 
@@ -276,7 +291,9 @@ describe('Feature Name', () => {
 
   beforeEach(() => {
     // Setup test data
-    testData = createMockToken({ /* ... */ });
+    testData = createMockToken({
+      /* ... */
+    });
   });
 
   test('should handle normal case', () => {
@@ -285,7 +302,9 @@ describe('Feature Name', () => {
   });
 
   test('should handle edge case', () => {
-    const edgeCase = createMockToken({ /* edge case data */ });
+    const edgeCase = createMockToken({
+      /* edge case data */
+    });
     const result = functionUnderTest(edgeCase);
     expect(result).toBeDefined();
   });
@@ -305,10 +324,16 @@ describe('Complex Scenario', () => {
   beforeEach(() => {
     // Set up complex scene
     scene = createMockScene();
-    observer = createMockToken({ /* observer data */ });
-    target = createMockToken({ /* target data */ });
-    obstacles = [/* array of walls, terrain, etc. */];
-    
+    observer = createMockToken({
+      /* observer data */
+    });
+    target = createMockToken({
+      /* target data */
+    });
+    obstacles = [
+      /* array of walls, terrain, etc. */
+    ];
+
     global.canvas.scene = scene;
     global.canvas.tokens.placeables = [observer, target];
     global.canvas.walls.placeables = obstacles;
@@ -318,7 +343,7 @@ describe('Complex Scenario', () => {
     // Test the complex interaction
     const visibility = getVisibilityBetween(observer, target);
     const cover = getCoverBetween(observer, target);
-    
+
     expect(visibility).toBe(expectedVisibility);
     expect(cover).toBe(expectedCover);
   });
@@ -355,21 +380,25 @@ npx jest --detectOpenHandles --forceExit
 Before releasing a new version:
 
 1. **Run Full Test Suite**
+
    ```bash
    npm run test:ci
    ```
 
 2. **Check Coverage**
+
    ```bash
    npm run test:coverage
    ```
 
 3. **Run Linting**
+
    ```bash
    npm run lint
    ```
 
 4. **Validate Test Suite**
+
    ```bash
    node tests/run-tests.js --validate
    ```

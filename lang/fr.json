@@ -271,14 +271,14 @@
         "name": "Abri automatique",
         "hint": "S'il est activé, le module appliquera automatiquement l'abri aux jetons en fonction du chemin bloquant le jeton."
       },
-            "EXPERIMENTAL_SEE_THROUGH_WALLS": {
+      "EXPERIMENTAL_SEE_THROUGH_WALLS": {
         "name": "Expérimental : Vision à travers les murs par jeton (Client seulement)",
         "hint": "Lorsque cette option est activée sur votre client, les jetons sélectionnés ignoreront les murs que vous avez marqués comme Observés dans la liste des Murs cachés. Fonctionnalité purement cosmétique et hautement expérimentale."
       },
       "SNEAK_RAW_ENFORCEMENT": {
         "name": "Sneak Raw Enforcement",
         "hint": "Si activé, Être furtif suivra les règles telles qu'écrites. Si désactivé, Être furtif sera plus indulgent."
-        }
+      }
     },
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Montrer seulement les jetons de la rencontre",

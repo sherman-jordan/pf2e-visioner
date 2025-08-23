@@ -1,6 +1,6 @@
 // Base class for action logic. Subclasses must implement abstract hooks.
 
-import { log, notify } from "../infra/notifications.js";
+import { log, notify } from '../infra/notifications.js';
 
 export class ActionHandlerBase {
   constructor(actionType) {
@@ -10,35 +10,59 @@ export class ActionHandlerBase {
   // Abstracts that subclasses should implement
   getApplyActionName() {
     switch (this.actionType) {
-      case "seek": return "apply-now-seek";
-      case "point-out": return "apply-now-point-out";
-      case "hide": return "apply-now-hide";
-      case "sneak": return "apply-now-sneak";
-      case "create-a-diversion": return "apply-now-diversion";
-      case "consequences": return "apply-now-consequences";
-      case "take-cover": return "apply-now-take-cover";
-      default: return "";
+      case 'seek':
+        return 'apply-now-seek';
+      case 'point-out':
+        return 'apply-now-point-out';
+      case 'hide':
+        return 'apply-now-hide';
+      case 'sneak':
+        return 'apply-now-sneak';
+      case 'create-a-diversion':
+        return 'apply-now-diversion';
+      case 'consequences':
+        return 'apply-now-consequences';
+      case 'take-cover':
+        return 'apply-now-take-cover';
+      default:
+        return '';
     }
   }
   getRevertActionName() {
     switch (this.actionType) {
-      case "seek": return "revert-now-seek";
-      case "point-out": return "revert-now-point-out";
-      case "hide": return "revert-now-hide";
-      case "sneak": return "revert-now-sneak";
-      case "create-a-diversion": return "revert-now-diversion";
-      case "consequences": return "revert-now-consequences";
-      case "take-cover": return "revert-now-take-cover";
-      default: return "";
+      case 'seek':
+        return 'revert-now-seek';
+      case 'point-out':
+        return 'revert-now-point-out';
+      case 'hide':
+        return 'revert-now-hide';
+      case 'sneak':
+        return 'revert-now-sneak';
+      case 'create-a-diversion':
+        return 'revert-now-diversion';
+      case 'consequences':
+        return 'revert-now-consequences';
+      case 'take-cover':
+        return 'revert-now-take-cover';
+      default:
+        return '';
     }
   }
-  getApplyDirection() { return "observer_to_target"; }
-  getCacheMap() { return null; }
+  getApplyDirection() {
+    return 'observer_to_target';
+  }
+  getCacheMap() {
+    return null;
+  }
 
   // Optional hooks for subclasses
   async ensurePrerequisites(_actionData) {}
-  async discoverSubjects(_actionData) { throw new Error("discoverSubjects must be implemented in subclass"); }
-  async analyzeOutcome(_actionData, _subject) { throw new Error("analyzeOutcome must be implemented in subclass"); }
+  async discoverSubjects(_actionData) {
+    throw new Error('discoverSubjects must be implemented in subclass');
+  }
+  async analyzeOutcome(_actionData, _subject) {
+    throw new Error('analyzeOutcome must be implemented in subclass');
+  }
 
   // Resolve the token id associated with an outcome (for overrides). Subclasses may override.
   getOutcomeTokenId(outcome) {
@@ -49,14 +73,14 @@ export class ActionHandlerBase {
   applyOverrides(actionData, outcomes) {
     try {
       const overrides = actionData?.overrides;
-      if (!overrides || typeof overrides !== "object") return outcomes;
+      if (!overrides || typeof overrides !== 'object') return outcomes;
       const overridesMap = new Map(Object.entries(overrides));
       for (const outcome of outcomes) {
         const id = this.getOutcomeTokenId(outcome);
         if (!id) continue;
         if (!overridesMap.has(id)) continue;
         const overrideState = overridesMap.get(id);
-        if (typeof overrideState !== "string" || !overrideState) continue;
+        if (typeof overrideState !== 'string' || !overrideState) continue;
         outcome.newVisibility = overrideState;
         const baseOld = outcome.oldVisibility ?? outcome.currentVisibility;
         if (baseOld) outcome.changed = overrideState !== baseOld;
@@ -78,7 +102,9 @@ export class ActionHandlerBase {
     };
   }
 
-  buildCacheEntryFromChange(_change) { return null; }
+  buildCacheEntryFromChange(_change) {
+    return null;
+  }
 
   // Util: group changes by observer token id
   groupChangesByObserver(changes) {
@@ -87,7 +113,13 @@ export class ActionHandlerBase {
       const obsId = ch.observer?.id;
       if (!obsId) continue;
       if (!map.has(obsId)) map.set(obsId, { observer: ch.observer, items: [] });
-      map.get(obsId).items.push({ target: ch.target, newVisibility: ch.newVisibility, oldVisibility: ch.oldVisibility });
+      map
+        .get(obsId)
+        .items.push({
+          target: ch.target,
+          newVisibility: ch.newVisibility,
+          oldVisibility: ch.oldVisibility,
+        });
     }
     return Array.from(map.values());
   }
@@ -109,16 +141,19 @@ export class ActionHandlerBase {
       // If overrides were provided, restrict application strictly to those ids
       try {
         const overrides = actionData?.overrides;
-        if (overrides && typeof overrides === "object" && Object.keys(overrides).length > 0) {
+        if (overrides && typeof overrides === 'object' && Object.keys(overrides).length > 0) {
           const allowedIds = new Set(Object.keys(overrides));
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
       } catch (_) {}
-      if (filtered.length === 0) { notify.info("No changes to apply"); return 0; }
+      if (filtered.length === 0) {
+        notify.info('No changes to apply');
+        return 0;
+      }
       // Build changes; when overrides are present, also attach overrideState explicitly
       let overridesMap = null;
       try {
-        if (actionData?.overrides && typeof actionData.overrides === "object") {
+        if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
       } catch (_) {}
@@ -146,12 +181,16 @@ export class ActionHandlerBase {
   }
 
   async applyChangesInternal(changes) {
-    const { applyVisibilityChanges } = await import("../infra/shared-utils.js");
+    const { applyVisibilityChanges } = await import('../infra/shared-utils.js');
     const direction = this.getApplyDirection();
     // Group by observer and apply batched
     const groups = this.groupChangesByObserver(changes);
     for (const group of groups) {
-      await applyVisibilityChanges(group.observer, group.items.map((i) => ({ target: i.target, newVisibility: i.newVisibility })), { direction });
+      await applyVisibilityChanges(
+        group.observer,
+        group.items.map((i) => ({ target: i.target, newVisibility: i.newVisibility })),
+        { direction },
+      );
     }
   }
 
@@ -167,22 +206,53 @@ export class ActionHandlerBase {
 
   updateButtonToRevert(button) {
     if (!button) return;
-    try { button.html('<i class="fas fa-undo"></i> Revert Changes').attr("data-action", this.getRevertActionName()); } catch (_) {}
+    try {
+      button
+        .html('<i class="fas fa-undo"></i> Revert Changes')
+        .attr('data-action', this.getRevertActionName());
+    } catch (_) {}
   }
 
   updateButtonToApply(button) {
     if (!button) return;
-    try { button.html('<i class="fas fa-check-double"></i> Apply Changes').attr("data-action", this.getApplyActionName()); } catch (_) {}
+    try {
+      button
+        .html('<i class="fas fa-check-double"></i> Apply Changes')
+        .attr('data-action', this.getApplyActionName());
+    } catch (_) {}
   }
 
   // Revert logic
   async revert(actionData, button) {
     try {
       const changesFromCache = await this.buildChangesFromCache(actionData);
-      const changes = changesFromCache && changesFromCache.length ? changesFromCache : await this.fallbackRevertChanges(actionData);
-      if (!changes || changes.length === 0) { notify.info("Nothing to revert"); return; }
+      let changes =
+        changesFromCache && changesFromCache.length
+          ? changesFromCache
+          : await this.fallbackRevertChanges(actionData);
+
+      // Filter changes by targetTokenId if specified (for per-row revert)
+      if (actionData.targetTokenId && changes && changes.length > 0) {
+        changes = changes.filter((change) => {
+          const tokenId = change.observer?.id || change.target?.id;
+          return tokenId === actionData.targetTokenId;
+        });
+      }
+
+      if (!changes || changes.length === 0) {
+        notify.info('Nothing to revert');
+        return;
+      }
       await this.applyChangesInternal(changes);
-      this.clearCache(actionData);
+
+      // Only clear cache if reverting all tokens (no targetTokenId specified)
+      if (!actionData.targetTokenId) {
+        this.clearCache(actionData);
+      } else {
+        // For per-row revert, remove only the specific token from cache
+        this.removeFromCache(actionData, actionData.targetTokenId);
+      }
+
       this.updateButtonToApply(button);
     } catch (e) {
       log.error(e);
@@ -197,7 +267,9 @@ export class ActionHandlerBase {
   }
 
   // Subclasses should override according to their cache shape
-  entriesToRevertChanges(_entries, _actionData) { return []; }
+  entriesToRevertChanges(_entries, _actionData) {
+    return [];
+  }
 
   async fallbackRevertChanges(actionData) {
     // Default: recompute outcomes and revert to oldVisibility
@@ -205,17 +277,45 @@ export class ActionHandlerBase {
     const outcomes = [];
     for (const subject of subjects) outcomes.push(await this.analyzeOutcome(actionData, subject));
     const filtered = outcomes.filter(Boolean).filter((o) => o.changed);
-    return filtered.map((o) => ({ observer: actionData.actor, target: o.target, newVisibility: o.oldVisibility || o.currentVisibility }));
+    return filtered.map((o) => ({
+      observer: actionData.actor,
+      target: o.target,
+      newVisibility: o.oldVisibility || o.currentVisibility,
+    }));
   }
 
   clearCache(actionData) {
-    try { this.getCacheMap()?.delete(actionData.messageId); } catch (_) {}
+    try {
+      this.getCacheMap()?.delete(actionData.messageId);
+    } catch (_) {}
+  }
+
+  removeFromCache(actionData, targetTokenId) {
+    try {
+      const cache = this.getCacheMap();
+      if (!cache) return;
+
+      const entries = cache.get(actionData.messageId) || [];
+      const filteredEntries = entries.filter((entry) => {
+        // Remove entries that match the target token ID
+        const entryTokenId = entry.observerId || entry.targetId || entry.tokenId;
+        return entryTokenId !== targetTokenId;
+      });
+
+      if (filteredEntries.length === 0) {
+        cache.delete(actionData.messageId);
+      } else {
+        cache.set(actionData.messageId, filteredEntries);
+      }
+    } catch (_) {}
   }
 
   // Helpers
   getTokenById(tokenId) {
-    return canvas?.tokens?.get?.(tokenId) || canvas.tokens.placeables.find((t) => t.id === tokenId) || null;
+    return (
+      canvas?.tokens?.get?.(tokenId) ||
+      canvas.tokens.placeables.find((t) => t.id === tokenId) ||
+      null
+    );
   }
 }
-
-

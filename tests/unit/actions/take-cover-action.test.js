@@ -8,18 +8,18 @@ import '../../setup.js';
 
 describe('Take Cover Action Comprehensive Tests', () => {
   let originalSettings;
-  
+
   beforeEach(() => {
     // Store original settings
     originalSettings = {
       ignoreAllies: game.settings.get('pf2e-visioner', 'ignoreAllies'),
-      enforceRawRequirements: game.settings.get('pf2e-visioner', 'enforceRawRequirements')
+      enforceRawRequirements: game.settings.get('pf2e-visioner', 'enforceRawRequirements'),
     };
   });
-  
+
   afterEach(() => {
     // Restore original settings
-    Object.keys(originalSettings).forEach(key => {
+    Object.keys(originalSettings).forEach((key) => {
       game.settings.set('pf2e-visioner', key, originalSettings[key]);
     });
   });
@@ -40,8 +40,10 @@ describe('Take Cover Action Comprehensive Tests', () => {
     });
 
     test('take-cover may not have standard visibility state mapping', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       // Take Cover is not in the standard outcome mapping, so should return null
       const result = getDefaultNewStateFor('take-cover', 'observed', 'success');
       expect(result).toBeNull();
@@ -56,15 +58,23 @@ describe('Take Cover Action Comprehensive Tests', () => {
 
       test('applies changes to all tokens including allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newCover: 'greater', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newCover: 'standard', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newCover: 'greater',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newCover: 'standard',
+            hasActionableChange: true,
+          },
         ];
 
         // When ignoreAllies is false, all outcomes should be processed
-        const filteredOutcomes = mockOutcomes.filter(outcome => outcome.hasActionableChange);
-        
+        const filteredOutcomes = mockOutcomes.filter((outcome) => outcome.hasActionableChange);
+
         expect(filteredOutcomes).toHaveLength(2);
-        expect(filteredOutcomes.map(o => o.token.id)).toEqual(['ally1', 'enemy1']);
+        expect(filteredOutcomes.map((o) => o.token.id)).toEqual(['ally1', 'enemy1']);
       });
     });
 
@@ -75,18 +85,26 @@ describe('Take Cover Action Comprehensive Tests', () => {
 
       test('applies changes only to enemies, filtering out allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newCover: 'greater', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newCover: 'standard', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newCover: 'greater',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newCover: 'standard',
+            hasActionableChange: true,
+          },
         ];
 
         // Simulate the filtering logic from take-cover action
         const takerAlliance = 'party';
         const ignoreAlliesSetting = true; // Simulate the setting being true
-        const filteredOutcomes = mockOutcomes.filter(outcome => {
+        const filteredOutcomes = mockOutcomes.filter((outcome) => {
           if (!ignoreAlliesSetting) return outcome.hasActionableChange;
           return outcome.hasActionableChange && outcome.token.actor.alliance !== takerAlliance;
         });
-        
+
         expect(filteredOutcomes).toHaveLength(1);
         expect(filteredOutcomes[0].token.id).toBe('enemy1');
       });
@@ -101,12 +119,12 @@ describe('Take Cover Action Comprehensive Tests', () => {
           { token: { id: 'enemy1' }, newCover: 'standard', hasActionableChange: true },
           // Note: allies already filtered out by dialog
         ],
-        actionData: { actor: { alliance: 'party' } }
+        actionData: { actor: { alliance: 'party' } },
       };
 
       // The fix: use outcomes that are already filtered by the dialog
-      const changedOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const changedOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(1);
       expect(changedOutcomes[0].token.id).toBe('enemy1');
     });
@@ -115,13 +133,13 @@ describe('Take Cover Action Comprehensive Tests', () => {
       const mockDialog = {
         ignoreAllies: true,
         outcomes: [{ token: { id: 'enemy1' }, hasActionableChange: true }],
-        actionData: { actor: { id: 'cover-taker' } }
+        actionData: { actor: { id: 'cover-taker' } },
       };
 
       // Ensure ignoreAllies is passed to the apply service
       const actionDataWithIgnoreAllies = {
         ...mockDialog.actionData,
-        ignoreAllies: mockDialog.ignoreAllies
+        ignoreAllies: mockDialog.ignoreAllies,
       };
 
       expect(actionDataWithIgnoreAllies.ignoreAllies).toBe(true);
@@ -132,14 +150,12 @@ describe('Take Cover Action Comprehensive Tests', () => {
     test('revert all uses pre-filtered outcomes from dialog', () => {
       const mockDialog = {
         ignoreAllies: true,
-        outcomes: [
-          { token: { id: 'enemy1' }, oldCover: 'none', currentCover: 'standard' },
-        ]
+        outcomes: [{ token: { id: 'enemy1' }, oldCover: 'none', currentCover: 'standard' }],
       };
 
       // Should use dialog.outcomes which are already filtered
       const revertOutcomes = mockDialog.outcomes;
-      
+
       expect(revertOutcomes).toHaveLength(1);
       expect(revertOutcomes[0].token.id).toBe('enemy1');
     });
@@ -153,14 +169,14 @@ describe('Take Cover Action Comprehensive Tests', () => {
       ];
 
       const targetTokenId = 'enemy1';
-      const targetOutcome = mockOutcomes.find(o => o.token.id === targetTokenId);
-      
+      const targetOutcome = mockOutcomes.find((o) => o.token.id === targetTokenId);
+
       // Should only process the specific outcome
       expect(targetOutcome.token.id).toBe('enemy1');
       expect(targetOutcome.newCover).toBe('standard');
-      
+
       // Other outcomes should remain unaffected
-      const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
+      const otherOutcomes = mockOutcomes.filter((o) => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
       expect(otherOutcomes[0].token.id).toBe('enemy2');
     });
@@ -174,17 +190,17 @@ describe('Take Cover Action Comprehensive Tests', () => {
       ];
 
       const targetTokenId = 'enemy1';
-      const targetOutcome = mockOutcomes.find(o => o.token.id === targetTokenId);
-      
+      const targetOutcome = mockOutcomes.find((o) => o.token.id === targetTokenId);
+
       // Should create specific revert change for this token only
       const revertCover = targetOutcome.oldCover || targetOutcome.currentCover;
       const revertChange = { target: targetOutcome.token, newCover: revertCover };
-      
+
       expect(revertChange.target.id).toBe('enemy1');
       expect(revertChange.newCover).toBe('none');
-      
+
       // Should not affect other tokens
-      const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
+      const otherOutcomes = mockOutcomes.filter((o) => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
     });
   });
@@ -192,31 +208,31 @@ describe('Take Cover Action Comprehensive Tests', () => {
   describe('RAW Enforcement Integration Tests', () => {
     test('chat apply-changes respects RAW enforcement', () => {
       game.settings.set('pf2e-visioner', 'enforceRawRequirements', true);
-      
+
       const mockOutcomes = [
         { token: { id: 'valid1' }, hasActionableChange: true, newCover: 'standard' },
         { token: { id: 'invalid1' }, hasActionableChange: false, newCover: 'standard' },
       ];
 
       // When RAW enforcement is on, only actionable changes should be applied
-      const validOutcomes = mockOutcomes.filter(o => o.hasActionableChange);
-      
+      const validOutcomes = mockOutcomes.filter((o) => o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid1');
     });
 
     test('dialog apply-all respects RAW enforcement', () => {
       game.settings.set('pf2e-visioner', 'enforceRawRequirements', true);
-      
+
       const mockDialog = {
         outcomes: [
           { token: { id: 'valid1' }, hasActionableChange: true, newCover: 'standard' },
           { token: { id: 'invalid1' }, hasActionableChange: false, newCover: 'standard' },
-        ]
+        ],
       };
 
-      const validOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const validOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid1');
     });
@@ -239,7 +255,7 @@ describe('Take Cover Action Comprehensive Tests', () => {
         const oldCover = 'none';
         const newCover = 'standard';
         const hasActionableChange = newCover !== oldCover;
-        
+
         expect(hasActionableChange).toBe(true);
         expect(newCover).toBe('standard');
       });
@@ -249,7 +265,7 @@ describe('Take Cover Action Comprehensive Tests', () => {
         const oldCover = 'standard';
         const newCover = 'standard';
         const hasActionableChange = newCover !== oldCover;
-        
+
         expect(hasActionableChange).toBe(false);
         expect(newCover).toBe('standard');
       });
@@ -259,7 +275,7 @@ describe('Take Cover Action Comprehensive Tests', () => {
         const oldCover = 'greater';
         const newCover = 'standard';
         const hasActionableChange = newCover !== oldCover;
-        
+
         expect(hasActionableChange).toBe(true);
         expect(newCover).toBe('standard');
       });
@@ -276,7 +292,7 @@ describe('Take Cover Action Comprehensive Tests', () => {
         const oldCover = 'none';
         const newCover = 'standard';
         const hasActionableChange = newCover !== oldCover;
-        
+
         expect(hasActionableChange).toBe(true);
         expect(newCover).toBe('standard');
       });
@@ -306,7 +322,7 @@ describe('Take Cover Action Comprehensive Tests', () => {
 
       testCases.forEach(({ oldCover, newCover, shouldBeActionable }) => {
         const hasActionableChange = newCover !== oldCover;
-        
+
         expect(hasActionableChange).toBe(shouldBeActionable);
       });
     });
@@ -315,7 +331,7 @@ describe('Take Cover Action Comprehensive Tests', () => {
   describe('Cover Mechanics Integration Tests', () => {
     test('cover levels are properly ordered', () => {
       const coverLevels = ['none', 'lesser', 'standard', 'greater'];
-      
+
       // Verify cover progression
       expect(coverLevels.indexOf('none')).toBeLessThan(coverLevels.indexOf('lesser'));
       expect(coverLevels.indexOf('lesser')).toBeLessThan(coverLevels.indexOf('standard'));
@@ -342,16 +358,14 @@ describe('Take Cover Action Comprehensive Tests', () => {
   describe('Edge Cases and Error Handling', () => {
     test('handles empty outcomes gracefully', () => {
       const emptyOutcomes = [];
-      const changedOutcomes = emptyOutcomes.filter(o => o?.hasActionableChange);
-      
+      const changedOutcomes = emptyOutcomes.filter((o) => o?.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(0);
     });
 
     test('handles missing outcome properties gracefully', () => {
       const incompleteOutcome = { token: { id: 'test' } };
-      const revertCover = incompleteOutcome.oldCover || 
-                          incompleteOutcome.currentCover || 
-                          'none';
+      const revertCover = incompleteOutcome.oldCover || incompleteOutcome.currentCover || 'none';
 
       expect(revertCover).toBe('none');
     });
@@ -364,8 +378,8 @@ describe('Take Cover Action Comprehensive Tests', () => {
         { token: null },
       ];
 
-      const validOutcomes = mixedOutcomes.filter(o => o?.token?.id && o.hasActionableChange);
-      
+      const validOutcomes = mixedOutcomes.filter((o) => o?.token?.id && o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid');
     });

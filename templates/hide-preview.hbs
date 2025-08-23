@@ -57,7 +57,7 @@
               {{#if outcome.autoCover}}
                 <div class="auto-cover-info {{#if outcome.autoCover.isOverride}}override{{/if}}">
                   <span class="auto-cover-icon" title="{{outcome.autoCover.label}} - DC reduced by {{outcome.autoCover.bonus}}">
-                    <i class="{{outcome.autoCover.icon}}" style="color: {{outcome.autoCover.color}}"></i>
+                    <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
                   </span>
                   {{#if outcome.autoCover.isOverride}}
                     <span class="override-indicator" title="Cover override from stealth roll dialog">🎯</span>

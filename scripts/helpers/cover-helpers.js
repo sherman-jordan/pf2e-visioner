@@ -2,7 +2,7 @@
  * Shared helper utilities for cover logic
  */
 
-import { COVER_STATES } from "../constants.js";
+import { COVER_STATES } from '../constants.js';
 
 export function getCoverBonusByState(state) {
   const cfg = COVER_STATES[state];
@@ -16,35 +16,35 @@ export function getCoverLabel(state) {
       return game.i18n.localize(entry.label);
     } catch (_) {}
   }
-  return state ? state.charAt(0).toUpperCase() + state.slice(1) : "No";
+  return state ? state.charAt(0).toUpperCase() + state.slice(1) : 'No';
 }
 
 export function getCoverImageForState(state) {
   switch (state) {
-    case "lesser":
-      return "systems/pf2e/icons/equipment/shields/buckler.webp";
-    case "greater":
-      return "systems/pf2e/icons/equipment/shields/tower-shield.webp";
-    case "standard":
+    case 'lesser':
+      return 'systems/pf2e/icons/equipment/shields/buckler.webp';
+    case 'greater':
+      return 'systems/pf2e/icons/equipment/shields/tower-shield.webp';
+    case 'standard':
     default:
-      return "systems/pf2e/icons/equipment/shields/steel-shield.webp";
+      return 'systems/pf2e/icons/equipment/shields/steel-shield.webp';
   }
 }
 
 export function isIgnoredActorTypeForCover(actorType) {
-  return actorType === "loot" || actorType === "vehicle" || actorType === "party";
+  return actorType === 'loot' || actorType === 'vehicle' || actorType === 'party';
 }
 
-export const ORIGIN_SIG_PREFIX = "origin:signature:";
+export const ORIGIN_SIG_PREFIX = 'origin:signature:';
 
 export function predicateHasSignature(predicate, signature) {
   try {
     const needle = `${ORIGIN_SIG_PREFIX}${signature}`;
     if (!predicate) return false;
     if (Array.isArray(predicate)) return predicate.includes(needle);
-    if (typeof predicate === "string") {
+    if (typeof predicate === 'string') {
       if (predicate.includes(needle)) return true;
-      if (predicate.trim().startsWith("[")) {
+      if (predicate.trim().startsWith('[')) {
         try {
           const arr = JSON.parse(predicate);
           if (Array.isArray(arr)) return arr.includes(needle);
@@ -52,7 +52,7 @@ export function predicateHasSignature(predicate, signature) {
       }
       return false;
     }
-    if (typeof predicate === "object") {
+    if (typeof predicate === 'object') {
       for (const key of Object.keys(predicate)) {
         const val = predicate[key];
         if (Array.isArray(val) && val.includes(needle)) return true;
@@ -76,8 +76,8 @@ export function extractSignaturesFromPredicate(predicate) {
     if (!predicate) return [];
     if (Array.isArray(predicate)) {
       pushFrom(predicate);
-    } else if (typeof predicate === "string") {
-      if (predicate.trim().startsWith("[")) {
+    } else if (typeof predicate === 'string') {
+      if (predicate.trim().startsWith('[')) {
         try {
           const arr = JSON.parse(predicate);
           if (Array.isArray(arr)) pushFrom(arr);
@@ -85,7 +85,7 @@ export function extractSignaturesFromPredicate(predicate) {
       } else if (predicate.startsWith(ORIGIN_SIG_PREFIX)) {
         results.add(predicate.slice(ORIGIN_SIG_PREFIX.length));
       }
-    } else if (typeof predicate === "object") {
+    } else if (typeof predicate === 'object') {
       for (const key of Object.keys(predicate)) {
         const val = predicate[key];
         if (Array.isArray(val)) pushFrom(val);
@@ -101,8 +101,8 @@ export function extractCoverAgainstFromPredicate(predicate) {
   const tryPushFrom = (arr) => {
     for (const p of arr) {
       const s = String(p);
-      if (s.startsWith("cover-against:")) {
-        results.add(s.slice("cover-against:".length));
+      if (s.startsWith('cover-against:')) {
+        results.add(s.slice('cover-against:'.length));
       }
     }
   };
@@ -110,16 +110,16 @@ export function extractCoverAgainstFromPredicate(predicate) {
     if (!predicate) return [];
     if (Array.isArray(predicate)) {
       tryPushFrom(predicate);
-    } else if (typeof predicate === "string") {
-      if (predicate.trim().startsWith("[")) {
+    } else if (typeof predicate === 'string') {
+      if (predicate.trim().startsWith('[')) {
         try {
           const arr = JSON.parse(predicate);
           if (Array.isArray(arr)) tryPushFrom(arr);
         } catch (_) {}
-      } else if (predicate.startsWith("cover-against:")) {
-        results.add(predicate.slice("cover-against:".length));
+      } else if (predicate.startsWith('cover-against:')) {
+        results.add(predicate.slice('cover-against:'.length));
       }
-    } else if (typeof predicate === "object") {
+    } else if (typeof predicate === 'object') {
       // Common PF2e predicate shapes: { or: [...] }, { and: [...] }, { not: [...] }
       const allArrays = [];
       if (Array.isArray(predicate.or)) allArrays.push(predicate.or);
@@ -138,5 +138,3 @@ export function predicateHasCoverAgainst(predicate, tokenId) {
     return false;
   }
 }
-
-

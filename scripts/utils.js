@@ -2,23 +2,27 @@
  * Utility functions for PF2E Visioner Token Manager
  */
 
-// Use global mock to avoid circular dependency
-const shouldFilterAlly = globalThis.shouldFilterAlly || (() => false);
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "./constants.js";
+import { shouldFilterAlly } from './chat/services/infra/shared-utils.js';
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from './constants.js';
 // Re-export core state stores to enforce single source of truth
-export { cleanupDeletedToken, restoreDeletedTokenMaps } from "./services/scene-cleanup.js";
+export { cleanupDeletedToken, restoreDeletedTokenMaps } from './services/scene-cleanup.js';
+export { getCoverBetween, getCoverMap, setCoverBetween, setCoverMap } from './stores/cover-map.js';
 export {
-  getCoverBetween, getCoverMap, setCoverBetween, setCoverMap
-} from "./stores/cover-map.js";
-export {
-  getVisibilityBetween, getVisibilityMap, setVisibilityBetween, setVisibilityMap
-} from "./stores/visibility-map.js";
+  getVisibilityBetween,
+  getVisibilityMap,
+  setVisibilityBetween,
+  setVisibilityMap,
+} from './stores/visibility-map.js';
 
 /**
  * Convert an SVG string into a data URI for use as an <img src>
  */
 function svgDataUri(svg) {
-  try { return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`; } catch (_) { return ""; }
+  try {
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  } catch (_) {
+    return '';
+  }
 }
 
 /**
@@ -106,13 +110,13 @@ export function getWallImage(doorType = 0) {
  * @returns {HTMLElement} The indicator element
  */
 export function createVisibilityIndicator(state) {
-  if (state === "observed") return null;
+  if (state === 'observed') return null;
 
   const config = VISIBILITY_STATES[state];
   if (!config) return null;
 
-  const indicator = document.createElement("div");
-  indicator.className = "visibility-indicator";
+  const indicator = document.createElement('div');
+  indicator.className = 'visibility-indicator';
   indicator.innerHTML = `<i class="${config.icon}" style="color: ${config.color}"></i>`;
   indicator.style.cssText = `
     position: absolute;
@@ -141,7 +145,7 @@ export function createVisibilityIndicator(state) {
  * @param {string} key - The localization key
  * @param {string} type - The notification type (info, warn, error)
  */
-export function showNotification(key, type = "info") {
+export function showNotification(key, type = 'info') {
   const message = game.i18n.localize(key);
   ui.notifications[type](message);
 }
@@ -162,21 +166,21 @@ export function isValidToken(token) {
   const actorType = token.actor.type;
 
   // Loot: include when explicitly enabled, regardless of HP or name patterns
-  if (actorType === "loot") {
+  if (actorType === 'loot') {
     try {
-      return !!game.settings.get(MODULE_ID, "includeLootActors");
+      return !!game.settings.get(MODULE_ID, 'includeLootActors');
     } catch (_) {
       return false;
     }
   }
 
   // Exclude vehicles unless they have crew (vehicles are usually just objects)
-  if (actorType === "vehicle") {
+  if (actorType === 'vehicle') {
     return false;
   }
 
   // Exclude party actors - they're organizational, not individual creatures
-  if (actorType === "party") {
+  if (actorType === 'party') {
     return false;
   }
 
@@ -184,7 +188,7 @@ export function isValidToken(token) {
   const actor = token.actor;
 
   // Filter out tokens that are clearly non-creatures based on name patterns
-  const name = token.document.name?.toLowerCase() || "";
+  const name = token.document.name?.toLowerCase() || '';
   const excludePatterns = [
     /\b(loot|treasure|chest|container|barrel|crate|sack)\b/,
     /\b(door|gate|portal|entrance|exit)\b/,
@@ -199,18 +203,14 @@ export function isValidToken(token) {
   if (excludePatterns.some((pattern) => pattern.test(name))) {
     try {
       // Non-loot: respect exclusions; loot was already handled above
-      if (token.actor?.type !== "loot") return false;
+      if (token.actor?.type !== 'loot') return false;
     } catch (_) {
       return false;
     }
   }
 
   // Include character and npc types (the main creature types)
-  if (
-    actorType === "character" ||
-    actorType === "npc" ||
-    actorType === "hazard"
-  ) {
+  if (actorType === 'character' || actorType === 'npc' || actorType === 'hazard') {
     return true;
   }
 
@@ -239,7 +239,7 @@ export function getSceneTargets(observer, encounterOnly = false, ignoreAllies = 
 
   // Apply ally filtering: prefer per-call override, else global setting
   allTokens = allTokens.filter((token) => {
-    return !shouldFilterAlly(observer, token, "enemies", ignoreAllies);
+    return !shouldFilterAlly(observer, token, 'enemies', ignoreAllies);
   });
 
   // Apply encounter filtering if requested
@@ -251,28 +251,31 @@ export function getSceneTargets(observer, encounterOnly = false, ignoreAllies = 
   // familiars/companions/eidolons tied to a combatant even if not listed
   return allTokens.filter((token) => {
     if (!game.combat || !game.combat.combatants.size) return true;
-    
+
     const actor = token?.actor;
     // Always include familiars regardless of encounter filter
-    if (actor?.type === "familiar") return true;
-    
+    if (actor?.type === 'familiar') return true;
+
     // Check if this specific token (by ID) is directly in the encounter
     const tokenId = token?.id ?? token?.document?.id;
     if (!tokenId) return false;
-    
+
     // Direct token match (primary check)
     const directMatch = game.combat.combatants.some((c) => c.tokenId === tokenId);
     if (directMatch) return true;
-    
+
     // Eidolon master linkage - include eidolons whose masters are in combat
-    const master = (actor?.type === "eidolon" || actor?.isOfType?.("eidolon")) ? actor?.system?.eidolon?.master : null;
+    const master =
+      actor?.type === 'eidolon' || actor?.isOfType?.('eidolon')
+        ? actor?.system?.eidolon?.master
+        : null;
     if (master) {
       const masterTokenId = master?.getActiveTokens?.(true, true)?.[0]?.id;
       if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId)) {
         return true;
       }
     }
-    
+
     // No other fallbacks - prevents including random token copies
     return false;
   });
@@ -294,9 +297,7 @@ export function hasActiveEncounter() {
 export function isTokenInEncounter(token) {
   if (!hasActiveEncounter()) return false;
 
-  return game.combat.combatants.some(
-    (combatant) => combatant.token?.id === token.document.id,
-  );
+  return game.combat.combatants.some((combatant) => combatant.token?.id === token.document.id);
 }
 
 /**
@@ -346,13 +347,13 @@ export function capitalize(str) {
  * @returns {HTMLElement} The indicator element
  */
 export function createCoverIndicator(state) {
-  if (state === "none") return null;
+  if (state === 'none') return null;
 
   const config = COVER_STATES[state];
   if (!config) return null;
 
-  const indicator = document.createElement("div");
-  indicator.className = "cover-indicator";
+  const indicator = document.createElement('div');
+  indicator.className = 'cover-indicator';
   indicator.innerHTML = `<i class="${config.icon}" style="color: ${config.color}"></i>`;
   indicator.style.cssText = `
     position: absolute;
@@ -397,7 +398,7 @@ export function getLastRollTotalForActor(actor, requiredSlug = null) {
         if (speakerActorId !== actor.id) continue;
         // Check roll
         const total = msg.rolls?.[0]?.total;
-        if (typeof total !== "number") continue;
+        if (typeof total !== 'number') continue;
         if (requiredSlug) {
           const slug = msg.flags?.pf2e?.context?.slug || null;
           if (slug !== requiredSlug) continue;

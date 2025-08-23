@@ -1,40 +1,84 @@
-<div class="pf2e-visioner-quick-panel" style="padding:6px; display:flex; flex-direction:column; gap:8px;">
+<div class="pf2e-visioner pf2e-visioner-quick-panel">
   <!-- Main controls: Visibility and Cover side-by-side -->
-  <div style="display:flex; gap:10px; align-items:flex-start; justify-content:flex-start;">
-    <fieldset style="flex:0 0 auto; min-width:0; margin:0; padding:6px 8px;">
+  <div class="quick-panel-main-controls">
+    <fieldset class="quick-panel-fieldset">
       <legend>Visibility</legend>
-      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+      <div class="quick-panel-button-group">
         {{#each visibilityStates as |s|}}
-          <button type="button" class="state-icon" data-action="setVisibility" data-state="{{s.key}}" title="{{s.label}}"
-                  style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:1px solid var(--color-border-light-primary); border-radius:6px;">
-            <i class="{{s.icon}}" style="color: {{s.color}}"></i>
+          <button type="button" class="state-icon {{s.cssClass}}" data-action="setVisibility" data-state="{{s.key}}" title="{{s.label}}">
+            <i class="{{s.icon}}"></i>
           </button>
         {{/each}}
       </div>
     </fieldset>
 
-    <fieldset style="flex:0 0 auto; min-width:0; margin:0; padding:6px 8px;">
+    <fieldset class="quick-panel-fieldset">
       <legend>Cover</legend>
-      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+      <div class="quick-panel-button-group">
         {{#each coverStates as |s|}}
-          <button type="button" class="state-icon" data-action="setCover" data-state="{{s.key}}" title="{{s.label}}"
-                  style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:1px solid var(--color-border-light-primary); border-radius:6px;">
-            <i class="{{s.icon}}" style="color: {{s.color}}"></i>
+          <button type="button" class="state-icon {{s.cssClass}}" data-action="setCover" data-state="{{s.key}}" title="{{s.label}}">
+            <i class="{{s.icon}}"></i>
           </button>
         {{/each}}
       </div>
     </fieldset>
   </div>
 
-  <!-- Footer: counts on the left, mode switch + minimize on the right -->
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-    <div style="display:flex; gap:8px; align-items:center;">
-      <div title="{{selTooltip}}"><i class="fas fa-user-check"></i> {{selCount}}</div>
-      <div title="{{tgtTooltip}}"><i class="fas fa-bullseye"></i> {{tgtCount}}</div>
+  <!-- Quick selection buttons with labels -->
+  <div class="quick-panel-selection-controls">
+    <!-- Selection section -->
+    <div class="quick-panel-section">
+      <div class="selection-count">
+        <i class="fas fa-user-check"></i> {{selCount}}
+      </div>
+      <div class="quick-panel-button-group">
+        <button type="button" class="state-icon party-select" data-action="selectParty" title="Select all party tokens">
+          <i class="fas fa-face-smile-halo"></i>
+        </button>
+        <button type="button" class="state-icon enemy-select" data-action="selectEnemies" title="Select all enemy tokens">
+          <i class="fas fa-face-angry-horns"></i>
+        </button>
+      </div>
     </div>
-    <div style="display:flex; gap:6px; align-items:center;">
-      <div>{{#if modeIsObserver}}Observer → Target{{else}}Target → Observer{{/if}}</div>
-      <button type="button" class="visioner-btn" data-action="toggleMode" title="Swap Observer/Target mode"><i class="fas fa-arrows-rotate"></i></button>
+
+    <!-- Mode toggle section -->
+    <div class="quick-panel-section">
+      <div class="mode-display">
+        Mode
+      </div>
+      <div class="quick-panel-button-group">
+        <div class="mode-label" title="{{#if modeIsObserver}}Observer Mode: How selected tokens treat the targets{{else}}Target Mode: How the targets treat selected tokens{{/if}}">{{#if modeIsObserver}}Observer{{else}}Target{{/if}}</div>
+        <button type="button" class="state-icon" data-action="toggleMode" title="Swap Observer/Target mode">
+          <i class="fas fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Targeting section -->
+    <div class="quick-panel-section">
+      <div class="selection-count">
+        <i class="fas fa-bullseye"></i> {{tgtCount}}
+      </div>
+      <div class="quick-panel-button-group">
+        <button type="button" class="state-icon party-select" data-action="targetParty" title="Target all party tokens">
+          <i class="fas fa-face-smile-halo"></i>
+        </button>
+        <button type="button" class="state-icon enemy-select" data-action="targetEnemies" title="Target all enemy tokens">
+          <i class="fas fa-face-angry-horns"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Clear section -->
+    <div class="quick-panel-section">
+      <div class="mode-display">
+        Clear
+      </div>
+      <div class="quick-panel-button-group">
+        <button type="button" class="state-icon" data-action="clearAll" title="Clear all selections and targets">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
     </div>
   </div>
 </div>

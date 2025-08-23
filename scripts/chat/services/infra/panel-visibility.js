@@ -1,4 +1,4 @@
-import { checkForValidTargets } from "../infra/target-checker.js";
+import { checkForValidTargets } from '../infra/target-checker.js';
 
 /**
  * Decide whether to inject the automation panel for a given message/action
@@ -15,8 +15,8 @@ export function shouldInjectPanel(message, actionData) {
 
       // Allow players for Seek when template mode is enabled
       if (
-        actionData.actionType === "seek" &&
-        game.settings.get("pf2e-visioner", "seekUseTemplate")
+        actionData.actionType === 'seek' &&
+        game.settings.get('pf2e-visioner', 'seekUseTemplate')
       ) {
         return true;
       }
@@ -25,8 +25,8 @@ export function shouldInjectPanel(message, actionData) {
     }
 
     // Special pending flags: Seek template and Point Out handoff
-    if (actionData.actionType === "seek" && isGM) {
-      const pending = message?.flags?.["pf2e-visioner"]?.seekTemplate;
+    if (actionData.actionType === 'seek' && isGM) {
+      const pending = message?.flags?.['pf2e-visioner']?.seekTemplate;
       if (pending && pending.hasTargets === false) return false;
     }
     return true;
@@ -35,5 +35,3 @@ export function shouldInjectPanel(message, actionData) {
     return !!game.user?.isGM;
   }
 }
-
-

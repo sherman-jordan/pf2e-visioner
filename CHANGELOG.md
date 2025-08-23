@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.6.9] - 2025-08-23
+
+### Fixed
+
+- Tests
+
+## [2.6.8] - 2025-08-23
+
+### Improved
+
+- **Cover Visualization Performance**: Limit computation to the current viewport (with small padding) instead of scanning large scene areas. Significantly reduces work when zoomed/panned.
+
+### Fixed
+
+- **Viewport Conversion Reliability**: Use `canvas.stage.worldTransform.applyInverse` for screen→world mapping in `getViewportWorldRect()` to ensure correct results across PIXI versions. Removed earlier manual inverse math.
+- Removed the overly restrictive GM-only wall-blocking prefilter from visualization iteration; viewport limiting now applies to all users while existing fog-of-war/visibility checks remain.
+
+- Auto cover: no roll dialog will use off guard when applicable too
+
+## [2.6.7] - 2025-08-21
+
+### Fixed
+
+- Color blind modes
+
+### Added
+
+- Quick edit - added party and enemies selectors
+- Auto cover - show to gms if cover was overridden by any method
+
+## [2.6.6] - 2025-08-21
+
+### Fixed
+
+- Ignore allies in visibility manager
+- Auto cover for non roll dialog
+- Per row rever will not revert all now
+
+### Added
+
+- MANY tests
+
 ## [2.6.5] - 2025-08-20
 
 ### Added
@@ -17,7 +59,7 @@
 
 - **Cover Visualization**: Implemented wall-based line-of-sight blocking for cover grid
   - Players see black squares instead of cover information for positions blocked by walls
-  - Aggressive LOS blocking algorithm ensures clean visual separation at wall boundaries  
+  - Aggressive LOS blocking algorithm ensures clean visual separation at wall boundaries
   - Added comprehensive test coverage for wall blocking functionality
 
 ### Improved
@@ -116,11 +158,10 @@
 
 - **Enhanced Auto-Cover Modes**: Refined intersection algorithms and added tactical for better tactical accuracy (NOT as pf2e rules)
   - **Tactical Mode**: Corner-to-corner line-of-sight calculations using "best attacker corner" rule
-  - **Coverage Mode**: Side coverage algorithm with fixed 50% (Standard) and 70% (Greater) thresholds  
+  - **Coverage Mode**: Side coverage algorithm with fixed 50% (Standard) and 70% (Greater) thresholds
   - **Any Mode**: Attack ray passes through blocker with any %
   - **10% Mode**: Grid-square-based intersection threshold - default mode
   - **Center Mode**: Strict center-to-center ray intersection
-
 
 ### Changed
 
@@ -155,9 +196,8 @@
 
 ### Fixed
 
-- Tooltips: fixed all hover tooltips state and keyboard tooltips states (should be much more stable) 
+- Tooltips: fixed all hover tooltips state and keyboard tooltips states (should be much more stable)
 - Familiars will not be filtered when the encounter filter is turned on
-
 
 ## [2.5.1] - 2025-08-17
 
@@ -228,6 +268,7 @@
 - Added opt in for enable all tokens vision
 
 ### Fixed:
+
 - Dialogs: fixed apply changes missing for sneak.
 
 ## [2.3.0] - 2025-08-15
@@ -291,7 +332,6 @@
 - Auto cover:
   - allow players to set keybinds
 
-
 ## [2.1.1] - 2025-08-12
 
 ### Fixed
@@ -299,7 +339,6 @@
 - Auto cover:
   - players could not see override controls
   - dialog height was weird
-
 
 ## [2.1.0] - 2025-08-12
 
@@ -355,7 +394,6 @@
 - Take cover action support
 - Grouped Settings menu (ApplicationV2), scrollable, localized labels, and reliable select persistence.
 
-
 - Seek Template and Range Improvements (stabilized from 1.x):
   - Strict filtering by player template (no generic fallback template).
 
@@ -390,6 +428,7 @@
 ## [1.9.0] - 2025-08-11
 
 ### Added
+
 - Stealth for loot tokens: Added possibility to hide loot from specific tokens and finding them with seek!
 - Stealth DC override for loot tokens in Token Config:
   - Injected a Stealth DC number field into the Vision tab for loot actors.

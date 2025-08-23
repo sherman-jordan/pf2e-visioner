@@ -5,376 +5,358 @@
  */
 
 .pf2e-visioner {
-
-/* Base Tooltip Styling */
-.tooltip {
-  position: relative;
-  cursor: help;
-}
-
-.tooltip::before,
-.tooltip::after {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity var(--transition-normal),
-    transform var(--transition-normal);
-  z-index: 1000;
-}
-
-/* Tooltip Content */
-.tooltip::after {
-  content: attr(data-tooltip);
-  background: rgba(0, 0, 0, 0.95);
-  color: white;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: nowrap;
-  max-width: 300px;
-  word-wrap: break-word;
-  white-space: normal;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  margin-bottom: 8px;
-}
-
-/* Tooltip Arrow */
-.tooltip::before {
-  content: "";
-  border: 6px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.95);
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 2px;
-}
-
-/* Show tooltip on hover */
-.tooltip:hover::before,
-.tooltip:hover::after {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Tooltip Variants */
-.tooltip.tooltip-right::after {
-  bottom: auto;
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%) translateX(8px);
-  margin-bottom: 0;
-  margin-left: 8px;
-}
-
-.tooltip.tooltip-right::before {
-  bottom: auto;
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-bottom: 0;
-  margin-left: 2px;
-  border-color: transparent;
-  border-right-color: rgba(0, 0, 0, 0.95);
-}
-
-.tooltip.tooltip-right:hover::after {
-  transform: translateY(-50%) translateX(0);
-}
-
-.tooltip.tooltip-left::after {
-  bottom: auto;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%) translateX(-8px);
-  margin-bottom: 0;
-  margin-right: 8px;
-}
-
-.tooltip.tooltip-left::before {
-  bottom: auto;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-bottom: 0;
-  margin-right: 2px;
-  border-color: transparent;
-  border-left-color: rgba(0, 0, 0, 0.95);
-}
-
-.tooltip.tooltip-left:hover::after {
-  transform: translateY(-50%) translateX(0);
-}
-
-.tooltip.tooltip-bottom::after {
-  top: 100%;
-  bottom: auto;
-  transform: translateX(-50%) translateY(8px);
-  margin-top: 8px;
-  margin-bottom: 0;
-}
-
-.tooltip.tooltip-bottom::before {
-  top: 100%;
-  bottom: auto;
-  transform: translateX(-50%);
-  margin-top: 2px;
-  margin-bottom: 0;
-  border-color: transparent;
-  border-bottom-color: rgba(0, 0, 0, 0.95);
-}
-
-.tooltip.tooltip-bottom:hover::after {
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Specific Tooltip Styles for PF2E Visioner */
-.visibility-tooltip {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.95),
-    rgba(20, 20, 20, 0.95)
-  );
-  border: 1px solid var(--color-border-light-primary);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
-
-.visibility-tooltip::after {
-  font-weight: 500;
-  text-align: left;
-}
-
-/* Effect Tooltips */
-.flat-check[data-tooltip]::after,
-.concealed-effect[data-tooltip]::after,
-.undetected-effect[data-tooltip]::after,
-.no-effect[data-tooltip]::after {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.95),
-    rgba(30, 30, 30, 0.95)
-  );
-  border: 1px solid currentColor;
-  max-width: 250px;
-  font-size: 11px;
-  line-height: 1.3;
-}
-
-/* State Badge Tooltips */
-.state-badge[data-tooltip]::after {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.95),
-    rgba(20, 20, 20, 0.95)
-  );
-  border: 1px solid currentColor;
-  max-width: 200px;
-  font-size: 11px;
-}
-
-/* Help Text Styling */
-.help-text {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  font-style: italic;
-  margin-top: var(--spacing-xs);
-  line-height: 1.3;
-}
-
-.help-text.warning {
-  color: var(--pf2e-visioner-warning);
-}
-
-.help-text.error {
-  color: var(--pf2e-visioner-danger);
-}
-
-.help-text.success {
-  color: var(--pf2e-visioner-success);
-}
-
-/* Info Icons with Tooltips */
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--pf2e-visioner-info);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-  cursor: help;
-  margin-left: var(--spacing-xs);
-}
-
-.info-icon:hover {
-  background: var(--pf2e-visioner-info-hover);
-}
-
-/* Contextual Help Panels */
-.help-panel {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  margin: var(--spacing-md) 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.help-panel h4 {
-  margin: 0 0 var(--spacing-sm) 0;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.help-panel ul {
-  margin: var(--spacing-sm) 0;
-  padding-left: var(--spacing-lg);
-}
-
-.help-panel li {
-  margin-bottom: var(--spacing-xs);
-}
-
-.help-panel .example {
-  background: rgba(0, 0, 0, 0.1);
-  border-left: 3px solid var(--pf2e-visioner-info);
-  padding: var(--spacing-sm);
-  margin: var(--spacing-sm) 0;
-  font-family: monospace;
-  font-size: 12px;
-}
-
-/* Status Indicators with Tooltips */
-.status-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: help;
-}
-
-.status-indicator.active {
-  background: rgba(76, 175, 80, 0.2);
-  color: var(--pf2e-visioner-success);
-  border: 1px solid var(--pf2e-visioner-success);
-}
-
-.status-indicator.inactive {
-  background: rgba(108, 117, 125, 0.2);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-text-secondary);
-}
-
-.status-indicator.warning {
-  background: rgba(255, 152, 0, 0.2);
-  color: var(--pf2e-visioner-warning);
-  border: 1px solid var(--pf2e-visioner-warning);
-}
-
-.status-indicator.error {
-  background: rgba(244, 67, 54, 0.2);
-  color: var(--pf2e-visioner-danger);
-  border: 1px solid var(--pf2e-visioner-danger);
-}
-
-/* Keyboard Shortcut Tooltips */
-.shortcut-tooltip::after {
-  content: attr(data-tooltip) " (" attr(data-shortcut) ")";
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.95),
-    rgba(40, 40, 40, 0.95)
-  );
-  border: 1px solid var(--color-border-light-primary);
-}
-
-.shortcut-key {
-  display: inline-block;
-  padding: 1px 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: bold;
-  margin: 0 2px;
-}
-
-/* Mobile Tooltip Adjustments */
-@media (max-width: 700px) {
-  .tooltip::after {
-    font-size: 11px;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    max-width: 200px;
+  /* Base Tooltip Styling */
+  .tooltip {
+    position: relative;
+    cursor: help;
   }
 
-  .tooltip::before {
-    border-width: 4px;
-  }
-
-  /* Disable hover tooltips on touch devices */
-  @media (hover: none) {
-    .tooltip:hover::before,
-    .tooltip:hover::after {
-      opacity: 0;
-    }
-
-    /* Show tooltips on tap/focus instead */
-    .tooltip:focus::before,
-    .tooltip:focus::after,
-    .tooltip:active::before,
-    .tooltip:active::after {
-      opacity: 1;
-    }
-  }
-}
-
-/* Accessibility Improvements */
-@media (prefers-reduced-motion: reduce) {
   .tooltip::before,
   .tooltip::after {
-    transition: none;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-normal),
+      transform var(--transition-normal);
+    z-index: 1000;
   }
-}
 
-/* High contrast mode */
-@media (prefers-contrast: high) {
+  /* Tooltip Content */
   .tooltip::after {
-    background: black;
-    border: 2px solid white;
+    content: attr(data-tooltip);
+    background: rgba(0, 0, 0, 0.95);
     color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    max-width: 300px;
+    word-wrap: break-word;
+    white-space: normal;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    margin-bottom: 8px;
   }
 
+  /* Tooltip Arrow */
   .tooltip::before {
-    border-top-color: black;
+    content: '';
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.95);
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 2px;
+  }
+
+  /* Show tooltip on hover */
+  .tooltip:hover::before,
+  .tooltip:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Tooltip Variants */
+  .tooltip.tooltip-right::after {
+    bottom: auto;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(8px);
+    margin-bottom: 0;
+    margin-left: 8px;
   }
 
   .tooltip.tooltip-right::before {
-    border-right-color: black;
+    bottom: auto;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-bottom: 0;
+    margin-left: 2px;
+    border-color: transparent;
+    border-right-color: rgba(0, 0, 0, 0.95);
+  }
+
+  .tooltip.tooltip-right:hover::after {
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .tooltip.tooltip-left::after {
+    bottom: auto;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-8px);
+    margin-bottom: 0;
+    margin-right: 8px;
   }
 
   .tooltip.tooltip-left::before {
-    border-left-color: black;
+    bottom: auto;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-bottom: 0;
+    margin-right: 2px;
+    border-color: transparent;
+    border-left-color: rgba(0, 0, 0, 0.95);
+  }
+
+  .tooltip.tooltip-left:hover::after {
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .tooltip.tooltip-bottom::after {
+    top: 100%;
+    bottom: auto;
+    transform: translateX(-50%) translateY(8px);
+    margin-top: 8px;
+    margin-bottom: 0;
   }
 
   .tooltip.tooltip-bottom::before {
-    border-bottom-color: black;
+    top: 100%;
+    bottom: auto;
+    transform: translateX(-50%);
+    margin-top: 2px;
+    margin-bottom: 0;
+    border-color: transparent;
+    border-bottom-color: rgba(0, 0, 0, 0.95);
   }
-}
 
+  .tooltip.tooltip-bottom:hover::after {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Specific Tooltip Styles for PF2E Visioner */
+  .visibility-tooltip {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95));
+    border: 1px solid var(--color-border-light-primary);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .visibility-tooltip::after {
+    font-weight: 500;
+    text-align: left;
+  }
+
+  /* Effect Tooltips */
+  .flat-check[data-tooltip]::after,
+  .concealed-effect[data-tooltip]::after,
+  .undetected-effect[data-tooltip]::after,
+  .no-effect[data-tooltip]::after {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(30, 30, 30, 0.95));
+    border: 1px solid currentColor;
+    max-width: 250px;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  /* State Badge Tooltips */
+  .state-badge[data-tooltip]::after {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95));
+    border: 1px solid currentColor;
+    max-width: 200px;
+    font-size: 11px;
+  }
+
+  /* Help Text Styling */
+  .help-text {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin-top: var(--spacing-xs);
+    line-height: 1.3;
+  }
+
+  .help-text.warning {
+    color: var(--pf2e-visioner-warning);
+  }
+
+  .help-text.error {
+    color: var(--pf2e-visioner-danger);
+  }
+
+  .help-text.success {
+    color: var(--pf2e-visioner-success);
+  }
+
+  /* Info Icons with Tooltips */
+  .info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--pf2e-visioner-info);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: help;
+    margin-left: var(--spacing-xs);
+  }
+
+  .info-icon:hover {
+    background: var(--pf2e-visioner-info-hover);
+  }
+
+  /* Contextual Help Panels */
+  .help-panel {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) 0;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .help-panel h4 {
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .help-panel ul {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+  }
+
+  .help-panel li {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .help-panel .example {
+    background: rgba(0, 0, 0, 0.1);
+    border-left: 3px solid var(--pf2e-visioner-info);
+    padding: var(--spacing-sm);
+    margin: var(--spacing-sm) 0;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* Status Indicators with Tooltips */
+  .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: help;
+  }
+
+  .status-indicator.active {
+    background: var(--visibility-observed-bg-strong);
+    color: var(--pf2e-visioner-success);
+    border: 1px solid var(--pf2e-visioner-success);
+  }
+
+  .status-indicator.inactive {
+    background: rgba(108, 117, 125, 0.2);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-text-secondary);
+  }
+
+  .status-indicator.warning {
+    background: var(--visibility-hidden-bg-strong);
+    color: var(--pf2e-visioner-warning);
+    border: 1px solid var(--pf2e-visioner-warning);
+  }
+
+  .status-indicator.error {
+    background: var(--visibility-undetected-bg-strong);
+    color: var(--pf2e-visioner-danger);
+    border: 1px solid var(--pf2e-visioner-danger);
+  }
+
+  /* Keyboard Shortcut Tooltips */
+  .shortcut-tooltip::after {
+    content: attr(data-tooltip) ' (' attr(data-shortcut) ')';
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(40, 40, 40, 0.95));
+    border: 1px solid var(--color-border-light-primary);
+  }
+
+  .shortcut-key {
+    display: inline-block;
+    padding: 1px 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 10px;
+    font-weight: bold;
+    margin: 0 2px;
+  }
+
+  /* Mobile Tooltip Adjustments */
+  @media (max-width: 700px) {
+    .tooltip::after {
+      font-size: 11px;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      max-width: 200px;
+    }
+
+    .tooltip::before {
+      border-width: 4px;
+    }
+
+    /* Disable hover tooltips on touch devices */
+    @media (hover: none) {
+      .tooltip:hover::before,
+      .tooltip:hover::after {
+        opacity: 0;
+      }
+
+      /* Show tooltips on tap/focus instead */
+      .tooltip:focus::before,
+      .tooltip:focus::after,
+      .tooltip:active::before,
+      .tooltip:active::after {
+        opacity: 1;
+      }
+    }
+  }
+
+  /* Accessibility Improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .tooltip::before,
+    .tooltip::after {
+      transition: none;
+    }
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .tooltip::after {
+      background: black;
+      border: 2px solid white;
+      color: white;
+    }
+
+    .tooltip::before {
+      border-top-color: black;
+    }
+
+    .tooltip.tooltip-right::before {
+      border-right-color: black;
+    }
+
+    .tooltip.tooltip-left::before {
+      border-left-color: black;
+    }
+
+    .tooltip.tooltip-bottom::before {
+      border-bottom-color: black;
+    }
+  }
 } /* End .pf2e-visioner scope */
 
 /* Global styles that need to work outside the scoped container */
@@ -387,16 +369,12 @@
 }
 
 .tooltip.pf2e-visioner-tooltip {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.95),
-    rgba(20, 20, 20, 0.95)
-  ) !important;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95)) !important;
   border: 2px solid var(--color-border-highlight-alt) !important;
   border-radius: 8px !important;
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.8),
-    0 0 20px rgba(255, 152, 0, 0.3) !important;
+    0 0 20px var(--visibility-hidden-bg-strong) !important;
   font-size: var(--pf2e-visioner-tooltip-font-size) !important;
   padding: 12px 16px !important;
   max-width: 300px !important;

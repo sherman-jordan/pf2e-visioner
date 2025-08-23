@@ -139,6 +139,7 @@ When enabled, Visioner evaluates cover between the acting token and its current 
 - Prone Tokens Can Block: when off, prone tokens are skipped as blockers.
 
 Notes:
+
 - Auto‑Cover is GM‑only to avoid duplicates.
 - Cover application is transient; Visioner stores the computed state for UI consistency but only adjusts mechanics during the roll.
 
@@ -182,7 +183,7 @@ Notes:
 ## 🔧 Developer API (minimal)
 
 ```js
-const api = game.modules.get("pf2e-visioner")?.api;
+const api = game.modules.get('pf2e-visioner')?.api;
 await api?.openVisibilityManager(token);
 ```
 

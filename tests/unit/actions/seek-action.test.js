@@ -8,18 +8,18 @@ import '../../setup.js';
 
 describe('Seek Action Comprehensive Tests', () => {
   let originalSettings;
-  
+
   beforeEach(() => {
     // Store original settings
     originalSettings = {
       ignoreAllies: game.settings.get('pf2e-visioner', 'ignoreAllies'),
-      enforceRawRequirements: game.settings.get('pf2e-visioner', 'enforceRawRequirements')
+      enforceRawRequirements: game.settings.get('pf2e-visioner', 'enforceRawRequirements'),
     };
   });
-  
+
   afterEach(() => {
     // Restore original settings
-    Object.keys(originalSettings).forEach(key => {
+    Object.keys(originalSettings).forEach((key) => {
       game.settings.set('pf2e-visioner', key, originalSettings[key]);
     });
   });
@@ -27,22 +27,22 @@ describe('Seek Action Comprehensive Tests', () => {
   describe('Panel Generation and Button Actions', () => {
     test('chat panel generates correct apply-changes button', () => {
       const { buildSeekPanel } = require('../../../scripts/chat/ui/panel/seek.js');
-      
+
       // Mock required dependencies for seek panel
       game.user.isGM = true;
       game.settings.set('pf2e-visioner', 'seekUseTemplate', false);
-      
+
       // Mock game.messages
       game.messages = {
-        get: jest.fn(() => ({ flags: {} }))
+        get: jest.fn(() => ({ flags: {} })),
       };
-      
+
       // Provide required parameters for buildSeekPanel
       const mockActionData = { messageId: 'test-message-id' };
       const mockMessage = null;
-      
+
       const panel = buildSeekPanel(mockActionData, mockMessage);
-      
+
       expect(panel.actionButtonsHtml).toContain('data-action="apply-now-seek"');
       expect(panel.actionButtonsHtml).toContain('Apply Changes');
     });
@@ -50,8 +50,10 @@ describe('Seek Action Comprehensive Tests', () => {
 
   describe('Status Mapping Tests', () => {
     test('seek against observed targets produces no change', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       expect(getDefaultNewStateFor('seek', 'observed', 'critical-success')).toBe('observed');
       expect(getDefaultNewStateFor('seek', 'observed', 'success')).toBe('observed');
       expect(getDefaultNewStateFor('seek', 'observed', 'failure')).toBe('observed');
@@ -59,8 +61,10 @@ describe('Seek Action Comprehensive Tests', () => {
     });
 
     test('seek against concealed targets produces no change', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       expect(getDefaultNewStateFor('seek', 'concealed', 'critical-success')).toBe('concealed');
       expect(getDefaultNewStateFor('seek', 'concealed', 'success')).toBe('concealed');
       expect(getDefaultNewStateFor('seek', 'concealed', 'failure')).toBe('concealed');
@@ -68,8 +72,10 @@ describe('Seek Action Comprehensive Tests', () => {
     });
 
     test('seek against hidden targets produces correct outcomes', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       expect(getDefaultNewStateFor('seek', 'hidden', 'critical-success')).toBe('observed');
       expect(getDefaultNewStateFor('seek', 'hidden', 'success')).toBe('observed');
       expect(getDefaultNewStateFor('seek', 'hidden', 'failure')).toBe('hidden');
@@ -77,8 +83,10 @@ describe('Seek Action Comprehensive Tests', () => {
     });
 
     test('seek against undetected targets produces correct outcomes', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       expect(getDefaultNewStateFor('seek', 'undetected', 'critical-success')).toBe('observed');
       expect(getDefaultNewStateFor('seek', 'undetected', 'success')).toBe('hidden');
       expect(getDefaultNewStateFor('seek', 'undetected', 'failure')).toBe('undetected');
@@ -94,15 +102,23 @@ describe('Seek Action Comprehensive Tests', () => {
 
       test('applies changes to all tokens including allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newVisibility: 'observed', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newVisibility: 'observed', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newVisibility: 'observed',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newVisibility: 'observed',
+            hasActionableChange: true,
+          },
         ];
 
         // When ignoreAllies is false, all outcomes should be processed
-        const filteredOutcomes = mockOutcomes.filter(outcome => outcome.hasActionableChange);
-        
+        const filteredOutcomes = mockOutcomes.filter((outcome) => outcome.hasActionableChange);
+
         expect(filteredOutcomes).toHaveLength(2);
-        expect(filteredOutcomes.map(o => o.token.id)).toEqual(['ally1', 'enemy1']);
+        expect(filteredOutcomes.map((o) => o.token.id)).toEqual(['ally1', 'enemy1']);
       });
     });
 
@@ -113,18 +129,26 @@ describe('Seek Action Comprehensive Tests', () => {
 
       test('applies changes only to enemies, filtering out allies', () => {
         const mockOutcomes = [
-          { token: { id: 'ally1', actor: { alliance: 'party' } }, newVisibility: 'observed', hasActionableChange: true },
-          { token: { id: 'enemy1', actor: { alliance: 'opposition' } }, newVisibility: 'observed', hasActionableChange: true },
+          {
+            token: { id: 'ally1', actor: { alliance: 'party' } },
+            newVisibility: 'observed',
+            hasActionableChange: true,
+          },
+          {
+            token: { id: 'enemy1', actor: { alliance: 'opposition' } },
+            newVisibility: 'observed',
+            hasActionableChange: true,
+          },
         ];
 
         // Simulate the filtering logic from seek action
         const seekerAlliance = 'party';
         const ignoreAlliesSetting = true; // Simulate the setting being true
-        const filteredOutcomes = mockOutcomes.filter(outcome => {
+        const filteredOutcomes = mockOutcomes.filter((outcome) => {
           if (!ignoreAlliesSetting) return outcome.hasActionableChange;
           return outcome.hasActionableChange && outcome.token.actor.alliance !== seekerAlliance;
         });
-        
+
         expect(filteredOutcomes).toHaveLength(1);
         expect(filteredOutcomes[0].token.id).toBe('enemy1');
       });
@@ -139,12 +163,12 @@ describe('Seek Action Comprehensive Tests', () => {
           { token: { id: 'enemy1' }, newVisibility: 'observed', hasActionableChange: true },
           // Note: allies already filtered out by dialog
         ],
-        actionData: { actor: { alliance: 'party' } }
+        actionData: { actor: { alliance: 'party' } },
       };
 
       // The fix: use outcomes that are already filtered by the dialog
-      const changedOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const changedOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(1);
       expect(changedOutcomes[0].token.id).toBe('enemy1');
     });
@@ -153,13 +177,13 @@ describe('Seek Action Comprehensive Tests', () => {
       const mockDialog = {
         ignoreAllies: true,
         outcomes: [{ token: { id: 'enemy1' }, hasActionableChange: true }],
-        actionData: { actor: { id: 'seeker' } }
+        actionData: { actor: { id: 'seeker' } },
       };
 
       // Ensure ignoreAllies is passed to the apply service
       const actionDataWithIgnoreAllies = {
         ...mockDialog.actionData,
-        ignoreAllies: mockDialog.ignoreAllies
+        ignoreAllies: mockDialog.ignoreAllies,
       };
 
       expect(actionDataWithIgnoreAllies.ignoreAllies).toBe(true);
@@ -172,12 +196,12 @@ describe('Seek Action Comprehensive Tests', () => {
         ignoreAllies: true,
         outcomes: [
           { token: { id: 'enemy1' }, oldVisibility: 'hidden', currentVisibility: 'observed' },
-        ]
+        ],
       };
 
       // Should use dialog.outcomes which are already filtered
       const revertOutcomes = mockDialog.outcomes;
-      
+
       expect(revertOutcomes).toHaveLength(1);
       expect(revertOutcomes[0].token.id).toBe('enemy1');
     });
@@ -191,14 +215,14 @@ describe('Seek Action Comprehensive Tests', () => {
       ];
 
       const targetTokenId = 'enemy1';
-      const targetOutcome = mockOutcomes.find(o => o.token.id === targetTokenId);
-      
+      const targetOutcome = mockOutcomes.find((o) => o.token.id === targetTokenId);
+
       // Should only process the specific outcome
       expect(targetOutcome.token.id).toBe('enemy1');
       expect(targetOutcome.newVisibility).toBe('observed');
-      
+
       // Other outcomes should remain unaffected
-      const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
+      const otherOutcomes = mockOutcomes.filter((o) => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
       expect(otherOutcomes[0].token.id).toBe('enemy2');
     });
@@ -212,17 +236,17 @@ describe('Seek Action Comprehensive Tests', () => {
       ];
 
       const targetTokenId = 'enemy1';
-      const targetOutcome = mockOutcomes.find(o => o.token.id === targetTokenId);
-      
+      const targetOutcome = mockOutcomes.find((o) => o.token.id === targetTokenId);
+
       // Should create specific revert change for this token only
       const revertVisibility = targetOutcome.oldVisibility || targetOutcome.currentVisibility;
       const revertChange = { target: targetOutcome.token, newVisibility: revertVisibility };
-      
+
       expect(revertChange.target.id).toBe('enemy1');
       expect(revertChange.newVisibility).toBe('hidden');
-      
+
       // Should not affect other tokens
-      const otherOutcomes = mockOutcomes.filter(o => o.token.id !== targetTokenId);
+      const otherOutcomes = mockOutcomes.filter((o) => o.token.id !== targetTokenId);
       expect(otherOutcomes).toHaveLength(1);
     });
 
@@ -235,22 +259,22 @@ describe('Seek Action Comprehensive Tests', () => {
           // actor: undefined
         },
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
-            currentVisibility: 'observed' 
-          }
-        ]
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
+            currentVisibility: 'observed',
+          },
+        ],
       };
 
       // Simulate the revert logic that was failing
       const outcome = mockDialog.outcomes[0];
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
-      
+
       // The revert should handle missing actor gracefully
       expect(revertVisibility).toBe('hidden');
       expect(outcome.target.id).toBe('enemy1');
-      
+
       // Verify the outcome structure is valid for revert operations
       expect(outcome).toHaveProperty('oldVisibility');
       expect(outcome).toHaveProperty('currentVisibility');
@@ -262,20 +286,20 @@ describe('Seek Action Comprehensive Tests', () => {
       const mockDialog = {
         // Missing actionData entirely
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
-            currentVisibility: 'observed' 
-          }
-        ]
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
+            currentVisibility: 'observed',
+          },
+        ],
       };
 
       const outcome = mockDialog.outcomes[0];
-      
+
       // Should still be able to determine revert visibility
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
       expect(revertVisibility).toBe('hidden');
-      
+
       // Should have valid target data
       expect(outcome.target).toBeDefined();
       expect(outcome.target.id).toBe('enemy1');
@@ -284,30 +308,30 @@ describe('Seek Action Comprehensive Tests', () => {
     test('per-row revert after apply-all sequence handles missing actor gracefully', () => {
       // This test covers the exact bug sequence:
       // 1. User presses "Apply All" in seek dialog
-      // 2. User then presses per-row "Revert" button  
+      // 2. User then presses per-row "Revert" button
       // 3. Error "PF2E Visioner: Error reverting change" occurs
-      
+
       const mockDialog = {
         actionData: {
           // After apply-all, actor becomes undefined - this was the root cause
-          actor: undefined
+          actor: undefined,
         },
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
-            currentVisibility: 'observed' 
-          }
-        ]
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
+            currentVisibility: 'observed',
+          },
+        ],
       };
 
       const outcome = mockDialog.outcomes[0];
-      
+
       // The revert should handle missing actor gracefully
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
       expect(revertVisibility).toBe('hidden');
       expect(outcome.target.id).toBe('enemy1');
-      
+
       // Verify the outcome structure is valid for revert operations
       expect(outcome).toHaveProperty('oldVisibility');
       expect(outcome).toHaveProperty('currentVisibility');
@@ -320,32 +344,32 @@ describe('Seek Action Comprehensive Tests', () => {
       // 2. User presses "Apply All" button
       // 3. User then presses per-row "Revert" button on specific rows
       // 4. Each revert should work independently and correctly
-      
+
       const mockDialog = {
         actionData: {
           // After apply-all, actor becomes undefined
-          actor: undefined
+          actor: undefined,
         },
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
             currentVisibility: 'observed',
-            hasActionableChange: false // After apply-all, changes are applied
+            hasActionableChange: false, // After apply-all, changes are applied
           },
-          { 
-            target: { id: 'enemy2' }, 
-            oldVisibility: 'undetected', 
+          {
+            target: { id: 'enemy2' },
+            oldVisibility: 'undetected',
             currentVisibility: 'hidden',
-            hasActionableChange: false
+            hasActionableChange: false,
           },
-          { 
-            target: { id: 'enemy3' }, 
-            oldVisibility: 'concealed', 
+          {
+            target: { id: 'enemy3' },
+            oldVisibility: 'concealed',
             currentVisibility: 'observed',
-            hasActionableChange: false
-          }
-        ]
+            hasActionableChange: false,
+          },
+        ],
       };
 
       // Test reverting first enemy
@@ -353,39 +377,39 @@ describe('Seek Action Comprehensive Tests', () => {
       const firstRevertVisibility = firstOutcome.oldVisibility || firstOutcome.currentVisibility;
       expect(firstRevertVisibility).toBe('hidden');
       expect(firstOutcome.target.id).toBe('enemy1');
-      
+
       // Test reverting second enemy
       const secondOutcome = mockDialog.outcomes[1];
       const secondRevertVisibility = secondOutcome.oldVisibility || secondOutcome.currentVisibility;
       expect(secondRevertVisibility).toBe('undetected');
       expect(secondOutcome.target.id).toBe('enemy2');
-      
+
       // Test reverting third enemy
       const thirdOutcome = mockDialog.outcomes[2];
       const thirdRevertVisibility = thirdOutcome.oldVisibility || thirdOutcome.currentVisibility;
       expect(thirdRevertVisibility).toBe('concealed');
       expect(thirdOutcome.target.id).toBe('enemy3');
-      
+
       // Verify all outcomes have the required properties for revert operations
-      mockDialog.outcomes.forEach(outcome => {
+      mockDialog.outcomes.forEach((outcome) => {
         expect(outcome).toHaveProperty('oldVisibility');
         expect(outcome).toHaveProperty('currentVisibility');
         expect(outcome).toHaveProperty('target');
         expect(outcome).toHaveProperty('hasActionableChange');
         expect(outcome.hasActionableChange).toBe(false); // After apply-all
       });
-      
+
       // Verify that each revert operation is independent
-      const revertChanges = mockDialog.outcomes.map(outcome => ({
+      const revertChanges = mockDialog.outcomes.map((outcome) => ({
         target: outcome.target,
-        newVisibility: outcome.oldVisibility || outcome.currentVisibility
+        newVisibility: outcome.oldVisibility || outcome.currentVisibility,
       }));
-      
+
       expect(revertChanges).toHaveLength(3);
       expect(revertChanges[0].newVisibility).toBe('hidden');
       expect(revertChanges[1].newVisibility).toBe('undetected');
       expect(revertChanges[2].newVisibility).toBe('concealed');
-      
+
       // Each revert should target the correct token
       expect(revertChanges[0].target.id).toBe('enemy1');
       expect(revertChanges[1].target.id).toBe('enemy2');
@@ -396,31 +420,31 @@ describe('Seek Action Comprehensive Tests', () => {
   describe('RAW Enforcement Integration Tests', () => {
     test('chat apply-changes respects RAW enforcement', () => {
       game.settings.set('pf2e-visioner', 'enforceRawRequirements', true);
-      
+
       const mockOutcomes = [
         { token: { id: 'valid1' }, hasActionableChange: true, newVisibility: 'observed' },
         { token: { id: 'invalid1' }, hasActionableChange: false, newVisibility: 'observed' },
       ];
 
       // When RAW enforcement is on, only actionable changes should be applied
-      const validOutcomes = mockOutcomes.filter(o => o.hasActionableChange);
-      
+      const validOutcomes = mockOutcomes.filter((o) => o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid1');
     });
 
     test('dialog apply-all respects RAW enforcement', () => {
       game.settings.set('pf2e-visioner', 'enforceRawRequirements', true);
-      
+
       const mockDialog = {
         outcomes: [
           { token: { id: 'valid1' }, hasActionableChange: true, newVisibility: 'observed' },
           { token: { id: 'invalid1' }, hasActionableChange: false, newVisibility: 'observed' },
-        ]
+        ],
       };
 
-      const validOutcomes = mockDialog.outcomes.filter(o => o.hasActionableChange);
-      
+      const validOutcomes = mockDialog.outcomes.filter((o) => o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid1');
     });
@@ -433,64 +457,74 @@ describe('Seek Action Comprehensive Tests', () => {
       });
 
       test('seek against hidden targets (success) is actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'hidden';
         const newState = getDefaultNewStateFor('seek', oldState, 'success');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('observed');
         expect(hasActionableChange).toBe(true);
       });
 
       test('seek against observed targets (any outcome) is not actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'observed';
         const outcomes = ['critical-success', 'success', 'failure', 'critical-failure'];
-        
-        outcomes.forEach(outcome => {
+
+        outcomes.forEach((outcome) => {
           const newState = getDefaultNewStateFor('seek', oldState, outcome);
           const hasActionableChange = newState !== oldState;
-          
+
           expect(newState).toBe('observed');
           expect(hasActionableChange).toBe(false);
         });
       });
 
       test('seek against concealed targets (any outcome) is not actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'concealed';
         const outcomes = ['critical-success', 'success', 'failure', 'critical-failure'];
-        
-        outcomes.forEach(outcome => {
+
+        outcomes.forEach((outcome) => {
           const newState = getDefaultNewStateFor('seek', oldState, outcome);
           const hasActionableChange = newState !== oldState;
-          
+
           expect(newState).toBe('concealed');
           expect(hasActionableChange).toBe(false);
         });
       });
 
       test('seek against undetected targets (success) is actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'undetected';
         const newState = getDefaultNewStateFor('seek', oldState, 'success');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('hidden');
         expect(hasActionableChange).toBe(true);
       });
 
       test('seek against undetected targets (critical success) is actionable', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const oldState = 'undetected';
         const newState = getDefaultNewStateFor('seek', oldState, 'critical-success');
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe('observed');
         expect(hasActionableChange).toBe(true);
       });
@@ -502,16 +536,18 @@ describe('Seek Action Comprehensive Tests', () => {
       });
 
       test('seek against observed/concealed with RAW enforcement still produces normal outcomes', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const states = ['observed', 'concealed'];
         const outcomes = ['critical-success', 'success', 'failure', 'critical-failure'];
-        
-        states.forEach(oldState => {
-          outcomes.forEach(outcome => {
+
+        states.forEach((oldState) => {
+          outcomes.forEach((outcome) => {
             const newState = getDefaultNewStateFor('seek', oldState, outcome);
             const hasActionableChange = newState !== oldState;
-            
+
             // General RAW enforcement doesn't change outcome mapping, only target selection
             expect(hasActionableChange).toBe(false); // These states never change for seek
           });
@@ -519,8 +555,10 @@ describe('Seek Action Comprehensive Tests', () => {
       });
 
       test('seek against hidden/undetected with RAW enforcement still produces normal outcomes', () => {
-        const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-        
+        const {
+          getDefaultNewStateFor,
+        } = require('../../../scripts/chat/services/data/action-state-config.js');
+
         const testCases = [
           { oldState: 'hidden', outcome: 'success', expectedNewState: 'observed' },
           { oldState: 'undetected', outcome: 'success', expectedNewState: 'hidden' },
@@ -529,7 +567,7 @@ describe('Seek Action Comprehensive Tests', () => {
         testCases.forEach(({ oldState, outcome, expectedNewState }) => {
           const newState = getDefaultNewStateFor('seek', oldState, outcome);
           const hasActionableChange = newState !== oldState;
-          
+
           expect(newState).toBe(expectedNewState);
           expect(hasActionableChange).toBe(true);
         });
@@ -537,22 +575,59 @@ describe('Seek Action Comprehensive Tests', () => {
     });
 
     test('hasActionableChange correctly identifies state transitions', () => {
-      const { getDefaultNewStateFor } = require('../../../scripts/chat/services/data/action-state-config.js');
-      
+      const {
+        getDefaultNewStateFor,
+      } = require('../../../scripts/chat/services/data/action-state-config.js');
+
       const testCases = [
-        { oldState: 'observed', outcome: 'success', expectedNewState: 'observed', shouldBeActionable: false },
-        { oldState: 'concealed', outcome: 'success', expectedNewState: 'concealed', shouldBeActionable: false },
-        { oldState: 'hidden', outcome: 'success', expectedNewState: 'observed', shouldBeActionable: true },
-        { oldState: 'hidden', outcome: 'failure', expectedNewState: 'hidden', shouldBeActionable: false },
-        { oldState: 'undetected', outcome: 'success', expectedNewState: 'hidden', shouldBeActionable: true },
-        { oldState: 'undetected', outcome: 'critical-success', expectedNewState: 'observed', shouldBeActionable: true },
-        { oldState: 'undetected', outcome: 'failure', expectedNewState: 'undetected', shouldBeActionable: false },
+        {
+          oldState: 'observed',
+          outcome: 'success',
+          expectedNewState: 'observed',
+          shouldBeActionable: false,
+        },
+        {
+          oldState: 'concealed',
+          outcome: 'success',
+          expectedNewState: 'concealed',
+          shouldBeActionable: false,
+        },
+        {
+          oldState: 'hidden',
+          outcome: 'success',
+          expectedNewState: 'observed',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'hidden',
+          outcome: 'failure',
+          expectedNewState: 'hidden',
+          shouldBeActionable: false,
+        },
+        {
+          oldState: 'undetected',
+          outcome: 'success',
+          expectedNewState: 'hidden',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'undetected',
+          outcome: 'critical-success',
+          expectedNewState: 'observed',
+          shouldBeActionable: true,
+        },
+        {
+          oldState: 'undetected',
+          outcome: 'failure',
+          expectedNewState: 'undetected',
+          shouldBeActionable: false,
+        },
       ];
 
       testCases.forEach(({ oldState, outcome, expectedNewState, shouldBeActionable }) => {
         const newState = getDefaultNewStateFor('seek', oldState, outcome);
         const hasActionableChange = newState !== oldState;
-        
+
         expect(newState).toBe(expectedNewState);
         expect(hasActionableChange).toBe(shouldBeActionable);
       });
@@ -566,9 +641,9 @@ describe('Seek Action Comprehensive Tests', () => {
         { token: { id: 'token1' }, newVisibility: 'observed', hasActionableChange: true },
       ];
 
-      const wallOutcomes = mockOutcomes.filter(o => o.wall);
-      const tokenOutcomes = mockOutcomes.filter(o => o.token);
-      
+      const wallOutcomes = mockOutcomes.filter((o) => o.wall);
+      const tokenOutcomes = mockOutcomes.filter((o) => o.token);
+
       expect(wallOutcomes).toHaveLength(1);
       expect(tokenOutcomes).toHaveLength(1);
       expect(wallOutcomes[0].wall.id).toBe('wall1');
@@ -579,16 +654,15 @@ describe('Seek Action Comprehensive Tests', () => {
   describe('Edge Cases and Error Handling', () => {
     test('handles empty outcomes gracefully', () => {
       const emptyOutcomes = [];
-      const changedOutcomes = emptyOutcomes.filter(o => o?.hasActionableChange);
-      
+      const changedOutcomes = emptyOutcomes.filter((o) => o?.hasActionableChange);
+
       expect(changedOutcomes).toHaveLength(0);
     });
 
     test('handles missing outcome properties gracefully', () => {
       const incompleteOutcome = { token: { id: 'test' } };
-      const revertVisibility = incompleteOutcome.oldVisibility || 
-                               incompleteOutcome.currentVisibility || 
-                               'observed';
+      const revertVisibility =
+        incompleteOutcome.oldVisibility || incompleteOutcome.currentVisibility || 'observed';
 
       expect(revertVisibility).toBe('observed');
     });
@@ -601,8 +675,8 @@ describe('Seek Action Comprehensive Tests', () => {
         { token: null },
       ];
 
-      const validOutcomes = mixedOutcomes.filter(o => o?.token?.id && o.hasActionableChange);
-      
+      const validOutcomes = mixedOutcomes.filter((o) => o?.token?.id && o.hasActionableChange);
+
       expect(validOutcomes).toHaveLength(1);
       expect(validOutcomes[0].token.id).toBe('valid');
     });
@@ -615,25 +689,25 @@ describe('Seek Action Comprehensive Tests', () => {
           // Missing actor property - this was the root cause of the error
         },
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
-            currentVisibility: 'observed' 
-          }
-        ]
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
+            currentVisibility: 'observed',
+          },
+        ],
       };
 
       // Simulate the revert operation that was failing
       const outcome = mockDialog.outcomes[0];
-      
+
       // The revert should be able to determine visibility even without actor
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
       expect(revertVisibility).toBe('hidden');
-      
+
       // Should have valid target data for revert
       expect(outcome.target).toBeDefined();
       expect(outcome.target.id).toBe('enemy1');
-      
+
       // Verify the outcome has the required properties for revert
       expect(outcome).toHaveProperty('oldVisibility');
       expect(outcome).toHaveProperty('currentVisibility');
@@ -645,20 +719,20 @@ describe('Seek Action Comprehensive Tests', () => {
       const mockDialog = {
         // Missing actionData entirely
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
-            currentVisibility: 'observed' 
-          }
-        ]
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
+            currentVisibility: 'observed',
+          },
+        ],
       };
 
       const outcome = mockDialog.outcomes[0];
-      
+
       // Should still be able to determine revert visibility
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
       expect(revertVisibility).toBe('hidden');
-      
+
       // Should have valid target data
       expect(outcome.target).toBeDefined();
       expect(outcome.target.id).toBe('enemy1');
@@ -669,37 +743,37 @@ describe('Seek Action Comprehensive Tests', () => {
       // 1. User presses "Apply All" in seek dialog
       // 2. User then presses per-row "Revert" button
       // 3. Error "PF2E Visioner: Error reverting change" occurs
-      
+
       const mockDialog = {
         actionData: {
           // After apply-all, actor becomes undefined - this was the root cause
-          actor: undefined
+          actor: undefined,
         },
         outcomes: [
-          { 
-            target: { id: 'enemy1' }, 
-            oldVisibility: 'hidden', 
-            currentVisibility: 'observed' 
-          }
-        ]
+          {
+            target: { id: 'enemy1' },
+            oldVisibility: 'hidden',
+            currentVisibility: 'observed',
+          },
+        ],
       };
 
       // Simulate the exact scenario that was failing
       const outcome = mockDialog.outcomes[0];
-      
+
       // The revert should handle missing actor gracefully
       const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
       expect(revertVisibility).toBe('hidden');
-      
+
       // Should have valid target data for revert
       expect(outcome.target).toBeDefined();
       expect(outcome.target.id).toBe('enemy1');
-      
+
       // Verify the outcome has the required properties for revert
       expect(outcome).toHaveProperty('oldVisibility');
       expect(outcome).toHaveProperty('currentVisibility');
       expect(outcome).toHaveProperty('target');
-      
+
       // This test ensures that even when actionData.actor is undefined
       // (which happens after apply-all), the revert operation can still
       // determine what visibility to revert to

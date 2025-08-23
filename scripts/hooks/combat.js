@@ -3,12 +3,12 @@
  */
 
 export function registerCombatHooks() {
-  Hooks.on("updateCombat", onUpdateCombat);
-  Hooks.on("deleteCombat", onDeleteCombat);
+  Hooks.on('updateCombat', onUpdateCombat);
+  Hooks.on('deleteCombat', onDeleteCombat);
 }
 
 function onUpdateCombat(combat, updateData, options, userId) {
-  if (Object.prototype.hasOwnProperty.call(updateData, "started") && updateData.started === false) {
+  if (Object.prototype.hasOwnProperty.call(updateData, 'started') && updateData.started === false) {
     resetEncounterFiltersInDialogs();
   }
 }
@@ -28,9 +28,7 @@ function resetEncounterFiltersInDialogs() {
       dialog.render({ force: true });
     });
   };
-  resetDialog("HidePreviewDialog");
-  resetDialog("SeekPreviewDialog");
-  resetDialog("PointOutPreviewDialog");
+  resetDialog('HidePreviewDialog');
+  resetDialog('SeekPreviewDialog');
+  resetDialog('PointOutPreviewDialog');
 }
-
-

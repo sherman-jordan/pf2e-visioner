@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+coverage/
+dist/
+build/
+
+# Foundry data & packs
+packs/
+# Ignore pack dbs but allow pack source if any
+*.db
+*.ldb
+*.log
+
+# Maps, assets, and generated images
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+**/*.gif
+**/*.svg
+
+# Misc
+package-lock.json

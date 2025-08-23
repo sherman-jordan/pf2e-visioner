@@ -3,15 +3,15 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { getVisibilityBetween } from "../../utils.js";
-import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
-import { notify } from "../services/infra/notifications.js";
+import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
+import { getVisibilityBetween } from '../../utils.js';
+import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
+import { notify } from '../services/infra/notifications.js';
 import {
   filterOutcomesBySeekDistance,
-  filterOutcomesByTemplate
-} from "../services/infra/shared-utils.js";
-import { BaseActionDialog } from "./base-action-dialog.js";
+  filterOutcomesByTemplate,
+} from '../services/infra/shared-utils.js';
+import { BaseActionDialog } from './base-action-dialog.js';
 
 // Store reference to current seek dialog
 let _currentSeekDialogInstance = null;
@@ -23,16 +23,16 @@ export class SeekPreviewDialog extends BaseActionDialog {
   }
 
   static DEFAULT_OPTIONS = {
-    tag: "div",
-    classes: ["pf2e-visioner", "seek-preview-dialog"], // Keep same class for CSS compatibility
+    tag: 'div',
+    classes: ['pf2e-visioner', 'seek-preview-dialog'], // Keep same class for CSS compatibility
     window: {
-      title: "Seek Results",
-      icon: "fas fa-search",
+      title: 'Seek Results',
+      icon: 'fas fa-search',
       resizable: true,
     },
     position: {
       width: 600,
-      height: "auto",
+      height: 'auto',
     },
     actions: {
       close: SeekPreviewDialog._onClose,
@@ -47,7 +47,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
   static PARTS = {
     content: {
-      template: "modules/pf2e-visioner/templates/seek-preview.hbs",
+      template: 'modules/pf2e-visioner/templates/seek-preview.hbs',
     },
   };
 
@@ -55,8 +55,8 @@ export class SeekPreviewDialog extends BaseActionDialog {
     // Set window title and icon for seek dialog
     options.window = {
       ...options.window,
-      title: "Action Results",
-      icon: "fas fa-search",
+      title: 'Action Results',
+      icon: 'fas fa-search',
     };
 
     super(options);
@@ -65,15 +65,15 @@ export class SeekPreviewDialog extends BaseActionDialog {
     // Preserve original outcomes so toggles (like Ignore Allies) can re-filter properly
     this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : [];
     this.changes = changes;
-    this.actionData = { ...actionData, actionType: "seek" }; // Store action data, ensuring actionType is always 'seek'
+    this.actionData = { ...actionData, actionType: 'seek' }; // Store action data, ensuring actionType is always 'seek'
 
     // Track bulk action states to prevent abuse
-    this.bulkActionState = "initial"; // 'initial', 'applied', 'reverted'
+    this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
 
     // Track encounter filtering state
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     // Per-dialog ignore allies defaults from global setting
-    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
+    this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
     // Per-dialog ignore walls (default off)
     this.ignoreWalls = false;
 
@@ -84,7 +84,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
   /**
    * Add hover functionality after rendering
    */
-    // Hover/selection behavior is provided by BasePreviewDialog
+  // Hover/selection behavior is provided by BasePreviewDialog
 
   /**
    * Prepare context data for the template
@@ -93,114 +93,143 @@ export class SeekPreviewDialog extends BaseActionDialog {
     const context = await super._prepareContext(options);
 
     // Start from original list so re-renders can re-include allies when the checkbox is unchecked
-    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
+    const baseList = Array.isArray(this._originalOutcomes)
+      ? this._originalOutcomes
+      : this.outcomes || [];
     // Filter outcomes with encounter helper, ally filtering, optional walls toggle, template (if provided), then distance limits if enabled
-    let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter targets found, showing all");
+    let filteredOutcomes = this.applyEncounterFilter(
+      baseList,
+      'target',
+      'No encounter targets found, showing all',
+    );
     // Apply ally filtering for display purposes
     try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filteredOutcomes = filterOutcomesByAllies(
+        filteredOutcomes,
+        this.actorToken,
+        this.ignoreAllies,
+        'target',
+      );
     } catch (_) {}
     // Optional walls exclusion for UI convenience
     if (this.ignoreWalls === true) {
-      filteredOutcomes = Array.isArray(filteredOutcomes) ? filteredOutcomes.filter((o) => !o?._isWall && !o?.wallId) : filteredOutcomes;
+      filteredOutcomes = Array.isArray(filteredOutcomes)
+        ? filteredOutcomes.filter((o) => !o?._isWall && !o?.wallId)
+        : filteredOutcomes;
     }
     if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
       filteredOutcomes = filterOutcomesByTemplate(
         filteredOutcomes,
         this.actionData.seekTemplateCenter,
         this.actionData.seekTemplateRadiusFeet,
-        "target",
+        'target',
       );
     }
-    filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, "target");
+    filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, 'target');
 
     // Prepare visibility states using centralized config
     const cfg = (s) => this.visibilityConfig(s);
 
     // Prepare outcomes for template
-    const processedOutcomes = await Promise.all(filteredOutcomes.map(async (outcome) => {
-      // Get current visibility state; walls use their stored state instead of token-vs-token
-      let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
-      if (!outcome._isWall) {
-        try {
-          const live = getVisibilityBetween(this.actorToken, outcome.target);
-          currentVisibility = live || currentVisibility;
-          // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
-          if ((!live || live === "observed") && game.user?.isGM) {
-            const actor = outcome.target?.actor;
-            const hasHidden = !!actor?.conditions?.get?.("hidden") || !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "hidden");
-            const hasUndetected = !!actor?.itemTypes?.condition?.some?.(c => c?.slug === "undetected");
-            if (hasUndetected || hasHidden) {
-              const { setVisibilityBetween } = await import("../../utils.js");
-              const inferred = hasUndetected ? "undetected" : "hidden";
-              
-              // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
-              const allPCTokens = canvas.tokens?.placeables?.filter(t => t.actor?.type === "character" && t.actor?.hasPlayerOwner) || [];
-              
-              for (const pcToken of allPCTokens) {
-                // Skip if this PC already has a Visioner visibility mapping to the target
-                const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
-                if (!existingVisibility || existingVisibility === "observed") {
-                  try {
-                    await setVisibilityBetween(pcToken, outcome.target, inferred, { direction: "observer_to_target" });
-                  } catch (_) {}
+    const processedOutcomes = await Promise.all(
+      filteredOutcomes.map(async (outcome) => {
+        // Get current visibility state; walls use their stored state instead of token-vs-token
+        let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+        if (!outcome._isWall) {
+          try {
+            const live = getVisibilityBetween(this.actorToken, outcome.target);
+            currentVisibility = live || currentVisibility;
+            // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
+            if ((!live || live === 'observed') && game.user?.isGM) {
+              const actor = outcome.target?.actor;
+              const hasHidden =
+                !!actor?.conditions?.get?.('hidden') ||
+                !!actor?.itemTypes?.condition?.some?.((c) => c?.slug === 'hidden');
+              const hasUndetected = !!actor?.itemTypes?.condition?.some?.(
+                (c) => c?.slug === 'undetected',
+              );
+              if (hasUndetected || hasHidden) {
+                const { setVisibilityBetween } = await import('../../utils.js');
+                const inferred = hasUndetected ? 'undetected' : 'hidden';
+
+                // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
+                const allPCTokens =
+                  canvas.tokens?.placeables?.filter(
+                    (t) => t.actor?.type === 'character' && t.actor?.hasPlayerOwner,
+                  ) || [];
+
+                for (const pcToken of allPCTokens) {
+                  // Skip if this PC already has a Visioner visibility mapping to the target
+                  const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
+                  if (!existingVisibility || existingVisibility === 'observed') {
+                    try {
+                      await setVisibilityBetween(pcToken, outcome.target, inferred, {
+                        direction: 'observer_to_target',
+                      });
+                    } catch (_) {}
+                  }
                 }
+
+                // Also set the current seeker's visibility
+                try {
+                  await setVisibilityBetween(this.actorToken, outcome.target, inferred, {
+                    direction: 'observer_to_target',
+                  });
+                } catch (_) {}
+
+                // Remove PF2e system condition to avoid double-state after Visioner owns it
+                try {
+                  const slug = hasUndetected ? 'undetected' : 'hidden';
+                  // Prefer the PF2e pf2e.condition automation API if present
+                  const toRemove = actor?.itemTypes?.condition?.find?.((c) => c?.slug === slug);
+                  if (toRemove?.delete) await toRemove.delete();
+                  else if (actor?.toggleCondition)
+                    await actor.toggleCondition(slug, { active: false });
+                  else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
+                } catch (_) {}
+                currentVisibility = inferred;
+                // Ensure in-memory outcomes reflect the actual new mapping right away
+                outcome.oldVisibility = currentVisibility;
+                outcome.newVisibility = currentVisibility;
               }
-              
-              // Also set the current seeker's visibility
-              try { await setVisibilityBetween(this.actorToken, outcome.target, inferred, { direction: "observer_to_target" }); } catch (_) {}
-              
-              // Remove PF2e system condition to avoid double-state after Visioner owns it
-              try {
-                const slug = hasUndetected ? "undetected" : "hidden";
-                // Prefer the PF2e pf2e.condition automation API if present
-                const toRemove = actor?.itemTypes?.condition?.find?.(c => c?.slug === slug);
-                if (toRemove?.delete) await toRemove.delete();
-                else if (actor?.toggleCondition) await actor.toggleCondition(slug, { active: false });
-                else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
-              } catch (_) {}
-              currentVisibility = inferred;
-              // Ensure in-memory outcomes reflect the actual new mapping right away
-              outcome.oldVisibility = currentVisibility;
-              outcome.newVisibility = currentVisibility;
             }
-          }
-        } catch (_) {}
-      }
+          } catch (_) {}
+        }
 
-      // Prepare available states for override using per-action config
-      const desired = getDesiredOverrideStatesForAction("seek");
-      const availableStates = this.buildOverrideStates(desired, outcome);
+        // Prepare available states for override using per-action config
+        const desired = getDesiredOverrideStatesForAction('seek');
+        const availableStates = this.buildOverrideStates(desired, outcome);
 
-      const effectiveNewState = outcome.overrideState || outcome.newVisibility || currentVisibility;
-      const baseOldState = (currentVisibility != null ? currentVisibility : outcome.oldVisibility);
-      // Actionable if original differs from new or override
-      const hasActionableChange =
-        baseOldState != null &&
-        effectiveNewState != null &&
-        effectiveNewState !== baseOldState;
+        const effectiveNewState =
+          outcome.overrideState || outcome.newVisibility || currentVisibility;
+        const baseOldState = currentVisibility != null ? currentVisibility : outcome.oldVisibility;
+        // Actionable if original differs from new or override
+        const hasActionableChange =
+          baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
 
-      return {
-        ...outcome,
-        outcomeClass: outcome.noProficiency ? "neutral" : this.getOutcomeClass(outcome.outcome),
-        outcomeLabel: outcome.noProficiency ? "No proficiency" : this.getOutcomeLabel(outcome.outcome),
-        oldVisibilityState: cfg(baseOldState),
-        newVisibilityState: cfg(effectiveNewState),
-        marginText: this.formatMargin(outcome.margin),
-        tokenImage: this.resolveTokenImage(outcome.target),
-        availableStates: availableStates,
-        overrideState: outcome.overrideState || outcome.newVisibility,
-        hasActionableChange,
-        noProficiency: !!outcome.noProficiency,
-      };
-    }));
+        return {
+          ...outcome,
+          outcomeClass: outcome.noProficiency ? 'neutral' : this.getOutcomeClass(outcome.outcome),
+          outcomeLabel: outcome.noProficiency
+            ? 'No proficiency'
+            : this.getOutcomeLabel(outcome.outcome),
+          oldVisibilityState: cfg(baseOldState),
+          newVisibilityState: cfg(effectiveNewState),
+          marginText: this.formatMargin(outcome.margin),
+          tokenImage: this.resolveTokenImage(outcome.target),
+          availableStates: availableStates,
+          overrideState: outcome.overrideState || outcome.newVisibility,
+          hasActionableChange,
+          noProficiency: !!outcome.noProficiency,
+        };
+      }),
+    );
 
     // Update original outcomes with hasActionableChange for Apply All button logic
     processedOutcomes.forEach((processedOutcome, index) => {
       if (this.outcomes[index]) {
-        this.outcomes[index].hasActionableChange =
-          processedOutcome.hasActionableChange;
+        this.outcomes[index].hasActionableChange = processedOutcome.hasActionableChange;
       }
     });
 
@@ -208,16 +237,16 @@ export class SeekPreviewDialog extends BaseActionDialog {
     context.seeker = {
       name: this.actorToken.name,
       image: this.resolveTokenImage(this.actorToken),
-      actionType: "seek",
-      actionLabel: "Seek action results analysis",
+      actionType: 'seek',
+      actionLabel: 'Seek action results analysis',
     };
     context.outcomes = processedOutcomes;
     context.ignoreWalls = !!this.ignoreWalls;
     context.ignoreAllies = !!this.ignoreAllies;
-    
+
     // Keep original outcomes intact; provide common context from processed list
     this.outcomes = processedOutcomes;
-    
+
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
     return context;
@@ -247,12 +276,14 @@ export class SeekPreviewDialog extends BaseActionDialog {
       if (cb) {
         cb.addEventListener('change', () => {
           this.ignoreAllies = !!cb.checked;
-          this.bulkActionState = "initial";
+          this.bulkActionState = 'initial';
           // Recompute outcomes and update UI without losing overrides
-          this.getFilteredOutcomes().then((list) => {
-            this.outcomes = list;
-            this.render({ force: true });
-          }).catch(() => this.render({ force: true }));
+          this.getFilteredOutcomes()
+            .then((list) => {
+              this.outcomes = list;
+              this.render({ force: true });
+            })
+            .catch(() => this.render({ force: true }));
         });
       }
     } catch (_) {}
@@ -262,12 +293,14 @@ export class SeekPreviewDialog extends BaseActionDialog {
       if (cbw) {
         cbw.addEventListener('change', () => {
           this.ignoreWalls = !!cbw.checked;
-          this.bulkActionState = "initial";
+          this.bulkActionState = 'initial';
           // Recompute outcomes and update UI without losing overrides
-          this.getFilteredOutcomes().then((list) => {
-            this.outcomes = list;
-            this.render({ force: true });
-          }).catch(() => this.render({ force: true }));
+          this.getFilteredOutcomes()
+            .then((list) => {
+              this.outcomes = list;
+              this.render({ force: true });
+            })
+            .catch(() => this.render({ force: true }));
         });
       }
     } catch (_) {}
@@ -279,38 +312,46 @@ export class SeekPreviewDialog extends BaseActionDialog {
    */
   async getFilteredOutcomes() {
     try {
-      const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
-      
-      let filtered = this.applyEncounterFilter(baseList, "target", "No encounter targets found, showing all");
-      
+      const baseList = Array.isArray(this._originalOutcomes)
+        ? this._originalOutcomes
+        : this.outcomes || [];
+
+      let filtered = this.applyEncounterFilter(
+        baseList,
+        'target',
+        'No encounter targets found, showing all',
+      );
+
       // Ally filter via live checkbox
       try {
-        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, "target");
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
       } catch (_) {}
-      
+
       // Optional walls exclusion for UI convenience
       if (this.ignoreWalls === true) {
-        filtered = Array.isArray(filtered) ? filtered.filter((o) => !o?._isWall && !o?.wallId) : filtered;
+        filtered = Array.isArray(filtered)
+          ? filtered.filter((o) => !o?._isWall && !o?.wallId)
+          : filtered;
       }
-      
+
       // Template filter if provided
       if (this.actionData.seekTemplateCenter && this.actionData.seekTemplateRadiusFeet) {
         try {
-          const { filterOutcomesByTemplate } = await import("../services/infra/shared-utils.js");
+          const { filterOutcomesByTemplate } = await import('../services/infra/shared-utils.js');
           filtered = filterOutcomesByTemplate(
             filtered,
             this.actionData.seekTemplateCenter,
             this.actionData.seekTemplateRadiusFeet,
-            "target",
+            'target',
           );
         } catch (_) {}
       }
-      
+
       // Seek distance limits
       try {
-        const { filterOutcomesBySeekDistance } = await import("../services/infra/shared-utils.js");
-        filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, "target");
+        const { filterOutcomesBySeekDistance } = await import('../services/infra/shared-utils.js');
+        filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, 'target');
       } catch (_) {}
       // Compute actionability and carry over any existing overrides from the currently displayed outcomes
       if (!Array.isArray(filtered)) return [];
@@ -329,12 +370,14 @@ export class SeekPreviewDialog extends BaseActionDialog {
           let currentVisibility = o.oldVisibility || o.currentVisibility || null;
           if (!o?._isWall) {
             try {
-              currentVisibility = getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
+              currentVisibility =
+                getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
             } catch (_) {}
           }
           const effectiveNewState = overrideState || o.newVisibility || currentVisibility;
           const baseOldState = o.oldVisibility || currentVisibility;
-          const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
+          const hasActionableChange =
+            baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
           return { ...o, overrideState, hasActionableChange };
         } catch (_) {
           return { ...o };
@@ -375,17 +418,15 @@ export class SeekPreviewDialog extends BaseActionDialog {
     let filteredOutcomes = await app.getFilteredOutcomes();
 
     // Only apply changes to filtered outcomes
-    const actionableOutcomes = filteredOutcomes.filter(
-      (outcome) => outcome.hasActionableChange,
-    );
+    const actionableOutcomes = filteredOutcomes.filter((outcome) => outcome.hasActionableChange);
 
     if (actionableOutcomes.length === 0) {
-      notify.info("No changes to apply")
+      notify.info('No changes to apply');
       return;
     }
 
     // Check if Apply All is allowed based on current state
-    if (app.bulkActionState === "applied") {
+    if (app.bulkActionState === 'applied') {
       notify.warn(
         `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
@@ -406,7 +447,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      const { applyNowSeek } = await import("../services/index.js");
+      const { applyNowSeek } = await import('../services/index.js');
       const payload = { ...app.actionData, ignoreAllies: app.ignoreAllies };
       if (!app.ignoreWalls && Object.keys(wallOverrides).length > 0) {
         payload.overrides = { ...overrides, __wall__: wallOverrides };
@@ -423,7 +464,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
       app.updateRowButtonsToApplied(actionableOutcomes);
 
       // Update bulk action state and buttons
-      app.bulkActionState = "applied";
+      app.bulkActionState = 'applied';
       app.updateBulkActionButtons();
       app.updateChangesCount();
 
@@ -448,11 +489,14 @@ export class SeekPreviewDialog extends BaseActionDialog {
         (outcome) => outcome.changed && outcome.hasActionableChange,
       );
 
-      const { revertNowSeek } = await import("../services/index.js");
-      await revertNowSeek({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
+      const { revertNowSeek } = await import('../services/index.js');
+      await revertNowSeek(
+        { ...app.actionData, ignoreAllies: app.ignoreAllies },
+        { html: () => {}, attr: () => {} },
+      );
 
       app.updateRowButtonsToReverted(changedOutcomes);
-      app.bulkActionState = "reverted";
+      app.bulkActionState = 'reverted';
       app.updateBulkActionButtons();
       app.updateChangesCount();
     } catch (error) {
@@ -475,22 +519,26 @@ export class SeekPreviewDialog extends BaseActionDialog {
     else outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome || !outcome.hasActionableChange) {
-      notify.warn(
-        `${MODULE_TITLE}: No change to apply for this ${wallId ? "wall" : "token"}`,
-      );
+      notify.warn(`${MODULE_TITLE}: No change to apply for this ${wallId ? 'wall' : 'token'}`);
       return;
     }
 
     try {
-      const { applyNowSeek } = await import("../services/index.js");
+      const { applyNowSeek } = await import('../services/index.js');
       // Use a clean actionData copy without template limits (the row was already filtered by the dialog)
-      const actionData = { ...app.actionData, ignoreAllies: app.ignoreAllies, encounterOnly: app.encounterOnly };
+      const actionData = {
+        ...app.actionData,
+        ignoreAllies: app.ignoreAllies,
+        encounterOnly: app.encounterOnly,
+      };
       delete actionData.seekTemplateCenter;
       delete actionData.seekTemplateRadiusFeet;
 
       // For walls, pass a dedicated overrides shape the handler recognizes via outcomeToChange
       if (outcome._isWall && outcome.wallId) {
-        const overrides = { __wall__: { [outcome.wallId]: outcome.overrideState || outcome.newVisibility } };
+        const overrides = {
+          __wall__: { [outcome.wallId]: outcome.overrideState || outcome.newVisibility },
+        };
         await applyNowSeek({ ...actionData, overrides }, { html: () => {}, attr: () => {} });
         // Disable the row's Apply button for this wall
         app.updateRowButtonsToApplied([{ wallId: outcome.wallId }]);
@@ -521,7 +569,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
     else outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      notify.warn(`${MODULE_TITLE}: ${wallId ? "Wall" : "Token"} not found`);
+      notify.warn(`${MODULE_TITLE}: ${wallId ? 'Wall' : 'Token'} not found`);
       return;
     }
 
@@ -529,45 +577,45 @@ export class SeekPreviewDialog extends BaseActionDialog {
       // Apply the original visibility state for just this specific token/wall
       if (outcome._isWall) {
         // For walls, revert wall visibility
-        const { updateWallVisuals } = await import("../../services/visual-effects.js");
-        await updateWallVisuals(outcome.wall, outcome.oldVisibility || "observed");
+        const { updateWallVisuals } = await import('../../services/visual-effects.js');
+        await updateWallVisuals(outcome.wall, outcome.oldVisibility || 'observed');
       } else {
         // For tokens, apply the original visibility state
         const revertVisibility = outcome.oldVisibility || outcome.currentVisibility;
-        
+
         // Check if we have a valid actor for the revert operation
         if (app.actionData?.actor) {
           // Use the original applyVisibilityChanges if actor is available
-          const { applyVisibilityChanges } = await import("../services/infra/shared-utils.js");
+          const { applyVisibilityChanges } = await import('../services/infra/shared-utils.js');
           const changes = [{ target: outcome.target, newVisibility: revertVisibility }];
-          
-          await applyVisibilityChanges(app.actionData.actor, changes, { 
-            direction: "observer_to_target" 
+
+          await applyVisibilityChanges(app.actionData.actor, changes, {
+            direction: 'observer_to_target',
           });
         } else {
           // Fallback: directly update token visibility when actor is not available
           // This handles the case where actionData.actor becomes undefined after apply-all
-          const { updateTokenVisuals } = await import("../../services/visual-effects.js");
-          const { setVisibilityBetween } = await import("../../utils.js");
-          
+          const { updateTokenVisuals } = await import('../../services/visual-effects.js');
+          const { setVisibilityBetween } = await import('../../utils.js');
+
           // Use the current user's controlled token as fallback observer, or canvas.tokens.controlled[0]
-          const fallbackObserver = canvas.tokens.controlled[0] || game.user.character?.getActiveTokens()[0];
-          
+          const fallbackObserver =
+            canvas.tokens.controlled[0] || game.user.character?.getActiveTokens()[0];
+
           if (fallbackObserver) {
-            await setVisibilityBetween(
-              fallbackObserver,
-              outcome.target,
-              revertVisibility,
-              { direction: "observer_to_target" }
-            );
+            await setVisibilityBetween(fallbackObserver, outcome.target, revertVisibility, {
+              direction: 'observer_to_target',
+            });
           }
-          
+
           // Update the target token's visuals directly
           await updateTokenVisuals(outcome.target);
         }
       }
-      
-      app.updateRowButtonsToReverted([{ target: { id: outcome._isWall ? null : outcome.target.id }, wallId }]);
+
+      app.updateRowButtonsToReverted([
+        { target: { id: outcome._isWall ? null : outcome.target.id }, wallId },
+      ]);
       app.updateChangesCount();
     } catch (error) {
       notify.error(`${MODULE_TITLE}: Error reverting change.`);
@@ -588,23 +636,18 @@ export class SeekPreviewDialog extends BaseActionDialog {
       if (this.templateId && canvas.scene && !this.templateCenter) {
         const doc =
           canvas.scene.templates?.get?.(this.templateId) ||
-          canvas.scene.getEmbeddedDocument?.(
-            "MeasuredTemplate",
-            this.templateId,
-          );
+          canvas.scene.getEmbeddedDocument?.('MeasuredTemplate', this.templateId);
         if (doc) {
-          canvas.scene.deleteEmbeddedDocuments("MeasuredTemplate", [
-            this.templateId,
-          ]);
+          canvas.scene.deleteEmbeddedDocuments('MeasuredTemplate', [this.templateId]);
         }
       }
     } catch (e) {
-      console.warn("Failed to remove Seek preview template:", e);
+      console.warn('Failed to remove Seek preview template:', e);
     }
     // Remove selection hook
     if (this._selectionHookId) {
       try {
-        Hooks.off("controlToken", this._selectionHookId);
+        Hooks.off('controlToken', this._selectionHookId);
       } catch (_) {}
       this._selectionHookId = null;
     }
@@ -622,11 +665,13 @@ export class SeekPreviewDialog extends BaseActionDialog {
   // Use BaseActionDialog.applyVisibilityChanges
 
   getChangesCounterClass() {
-    return "seek-preview-dialog-changes-count";
+    return 'seek-preview-dialog-changes-count';
   }
 
   // Token id in Seek outcomes is under `target`
-  getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
+  getOutcomeTokenId(outcome) {
+    return outcome?.target?.id ?? null;
+  }
 
   /**
    * Update individual row buttons to show applied state
@@ -652,7 +697,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Toggle filter and re-render; context preparation applies encounter filter
     app.encounterOnly = !app.encounterOnly;
-    app.bulkActionState = "initial";
+    app.bulkActionState = 'initial';
     app.render({ force: true });
   }
 

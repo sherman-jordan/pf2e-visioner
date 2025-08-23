@@ -1,14 +1,14 @@
 export function buildConsequencesPanel() {
-  const label = "Open Attack Consequences";
+  const label = 'Open Attack Consequences';
   const tooltip =
-    "Preview and apply visibility changes after attack from hidden/undetected attacker";
-  const title = "Attack Consequences";
-  const icon = "fas fa-crosshairs";
-  const actionName = "open-consequences-results";
-  const buttonClass = "visioner-btn-consequences";
-  const panelClass = "consequences-panel";
+    'Preview and apply visibility changes after attack from hidden/undetected attacker';
+  const title = 'Attack Consequences';
+  const icon = 'fas fa-crosshairs';
+  const actionName = 'open-consequences-results';
+  const buttonClass = 'visioner-btn-consequences';
+  const panelClass = 'consequences-panel';
 
-  let actionButtonsHtml = "";
+  let actionButtonsHtml = '';
   if (game.user.isGM) {
     actionButtonsHtml = `
       <button type="button" 
@@ -27,6 +27,3 @@ export function buildConsequencesPanel() {
 
   return { title, icon, panelClass, actionButtonsHtml };
 }
-
-
-

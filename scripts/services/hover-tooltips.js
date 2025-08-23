@@ -2,10 +2,10 @@
  * Hover tooltips for token visibility states
  */
 
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../constants.js";
-import { detectCoverStateForAttack } from "../cover/auto-cover.js";
-import { canShowTooltips, computeSizesFromSetting } from "../helpers/tooltip-utils.js";
-import { getCoverMap, getVisibilityMap } from "../utils.js";
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../constants.js';
+import { detectCoverStateForAttack } from '../cover/auto-cover.js';
+import { canShowTooltips, computeSizesFromSetting } from '../helpers/tooltip-utils.js';
+import { getCoverMap, getVisibilityMap } from '../utils.js';
 
 /**
  * Lightweight service wrapper for lifecycle control.
@@ -18,7 +18,7 @@ class HoverTooltipsImpl {
     this.visibilityIndicators = new Map();
     this.coverIndicators = new Map();
     this.tokenEventHandlers = new Map();
-    this.tooltipMode = "target";
+    this.tooltipMode = 'target';
     this.isShowingKeyTooltips = false;
     this.keyTooltipTokens = new Set();
     this.tooltipFontSize = 16;
@@ -34,16 +34,27 @@ class HoverTooltipsImpl {
     cleanupHoverTooltips();
     this._initialized = false;
   }
-  setMode(mode) { setTooltipMode(mode); }
+  setMode(mode) {
+    setTooltipMode(mode);
+  }
   refreshSizes() {
     try {
-      const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+      const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
       const { fontPx, iconPx, borderPx } = computeSizesFromSetting(raw ?? this.tooltipFontSize);
       this.tooltipFontSize = fontPx;
       this.tooltipIconSize = iconPx;
-      document.documentElement.style.setProperty("--pf2e-visioner-tooltip-font-size", `${fontPx}px`);
-      document.documentElement.style.setProperty("--pf2e-visioner-tooltip-icon-size", `${iconPx}px`);
-      document.documentElement.style.setProperty("--pf2e-visioner-tooltip-badge-border", `${borderPx}px`);
+      document.documentElement.style.setProperty(
+        '--pf2e-visioner-tooltip-font-size',
+        `${fontPx}px`,
+      );
+      document.documentElement.style.setProperty(
+        '--pf2e-visioner-tooltip-icon-size',
+        `${iconPx}px`,
+      );
+      document.documentElement.style.setProperty(
+        '--pf2e-visioner-tooltip-badge-border',
+        `${borderPx}px`,
+      );
     } catch (_) {}
   }
 }
@@ -58,12 +69,12 @@ let visibilityIndicators = new Map();
 let coverIndicators = new Map();
 // Mapping of Font Awesome icon classes to glyphs for PIXI.Text rendering
 const COVER_ICON_GLYPHS = {
-  "fas fa-shield-alt": "\uf3ed",
-  "fas fa-shield": "\uf132",
-  "fa-regular fa-shield": "\uf132",
+  'fas fa-shield-alt': '\uf3ed',
+  'fas fa-shield': '\uf132',
+  'fa-regular fa-shield': '\uf132',
 };
 let tokenEventHandlers = new Map(); // Store references to our specific event handlers
-let tooltipMode = "target"; // 'target' (default) or 'observer'
+let tooltipMode = 'target'; // 'target' (default) or 'observer'
 let isShowingKeyTooltips = false; // Track if Alt key tooltips are active
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 // Initialize with default, will try to get from settings when available
@@ -87,8 +98,8 @@ let _initialized = false; // Prevent double-binding
  * @param {string} mode - 'target' (default - how others see hovered token) or 'observer' (O key - how hovered token sees others)
  */
 export function setTooltipMode(mode) {
-  if (mode !== "observer" && mode !== "target") {
-    console.warn("PF2E Visioner: Invalid tooltip mode:", mode);
+  if (mode !== 'observer' && mode !== 'target') {
+    console.warn('PF2E Visioner: Invalid tooltip mode:', mode);
     return;
   }
 
@@ -96,7 +107,7 @@ export function setTooltipMode(mode) {
   HoverTooltips.tooltipMode = mode;
 
   // When switching from observer to target mode (key up), clean up all indicators first
-  if (previousMode === "observer" && mode === "target") {
+  if (previousMode === 'observer' && mode === 'target') {
     // Full cleanup to prevent lingering Alt badges
     hideAllVisibilityIndicators();
     hideAllCoverIndicators();
@@ -113,17 +124,18 @@ export function setTooltipMode(mode) {
   }
 
   // If we have a currently hovered token, refresh the indicators
-  if (HoverTooltips.currentHoveredToken) showVisibilityIndicators(HoverTooltips.currentHoveredToken);
+  if (HoverTooltips.currentHoveredToken)
+    showVisibilityIndicators(HoverTooltips.currentHoveredToken);
 
   // For observer mode, also check if we need to show indicators for controlled tokens
   if (
-    mode === "observer" &&
+    mode === 'observer' &&
     !HoverTooltips.currentHoveredToken &&
     canvas.tokens.controlled.length > 0
   ) {
     // If we're in observer mode with no hovered token but have controlled tokens,
     // show indicators for the first controlled token
-    showVisibilityIndicatorsForToken(canvas.tokens.controlled[0], "observer");
+    showVisibilityIndicatorsForToken(canvas.tokens.controlled[0], 'observer');
   }
 }
 
@@ -141,32 +153,23 @@ export function initializeHoverTooltips() {
 
   // Set the CSS variable for tooltip font size
   try {
-    const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
     const { fontPx, iconPx, borderPx } = computeSizesFromSetting(
-      raw ?? HoverTooltips.tooltipFontSize
+      raw ?? HoverTooltips.tooltipFontSize,
     );
     HoverTooltips.tooltipFontSize = fontPx;
     HoverTooltips.tooltipIconSize = iconPx;
-    document.documentElement.style.setProperty("--pf2e-visioner-tooltip-font-size", `${fontPx}px`);
-    document.documentElement.style.setProperty("--pf2e-visioner-tooltip-icon-size", `${iconPx}px`);
-    document.documentElement.style.setProperty("--pf2e-visioner-tooltip-badge-border", `${borderPx}px`);
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', `${fontPx}px`);
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-icon-size', `${iconPx}px`);
+    document.documentElement.style.setProperty(
+      '--pf2e-visioner-tooltip-badge-border',
+      `${borderPx}px`,
+    );
   } catch (e) {
-    console.warn(
-      "PF2E Visioner: Error setting tooltip font size CSS variable",
-      e
-    );
-    document.documentElement.style.setProperty(
-      "--pf2e-visioner-tooltip-font-size",
-      "16px"
-    );
-    document.documentElement.style.setProperty(
-      "--pf2e-visioner-tooltip-icon-size",
-      "14px"
-    );
-    document.documentElement.style.setProperty(
-      "--pf2e-visioner-tooltip-badge-border",
-      "2px"
-    );
+    console.warn('PF2E Visioner: Error setting tooltip font size CSS variable', e);
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-font-size', '16px');
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-icon-size', '14px');
+    document.documentElement.style.setProperty('--pf2e-visioner-tooltip-badge-border', '2px');
   }
 
   // Add event listeners to canvas for token hover
@@ -177,13 +180,13 @@ export function initializeHoverTooltips() {
     // Store handlers for later cleanup
     HoverTooltips.tokenEventHandlers.set(token.id, { overHandler, outHandler });
 
-    token.on("pointerover", overHandler);
-    token.on("pointerout", outHandler);
+    token.on('pointerover', overHandler);
+    token.on('pointerout', outHandler);
   });
 
   // Note: Alt key handled via highlightObjects hook registered in main hooks
   // O key event listeners added globally in registerHooks
-  
+
   // Mark as initialized
   _initialized = true;
 }
@@ -226,8 +229,8 @@ function onTokenHoverEnd(token) {
  */
 export function onHighlightObjects(highlight) {
   // Alt-key tooltips should work regardless of hover tooltip settings
-  const canShow = canShowTooltips("target", null, true); // isKeyboardTooltip=true
-  
+  const canShow = canShowTooltips('target', null, true); // isKeyboardTooltip=true
+
   if (!canShow) {
     console.warn(`[${MODULE_ID}] Alt-key tooltips blocked by permissions`);
     return;
@@ -250,7 +253,9 @@ export function onHighlightObjects(highlight) {
     if (HoverTooltips.currentHoveredToken) {
       setTimeout(() => {
         showVisibilityIndicators(HoverTooltips.currentHoveredToken);
-        try { showCoverIndicators(HoverTooltips.currentHoveredToken); } catch (_) {}
+        try {
+          showCoverIndicators(HoverTooltips.currentHoveredToken);
+        } catch (_) {}
       }, 50);
     }
   }
@@ -264,11 +269,14 @@ function showVisibilityIndicators(hoveredToken) {
   // Check if tooltips are allowed for the current mode and token
   // Suppress hover overlays entirely while Alt overlay is active, UNLESS this is a keyboard context
   if (HoverTooltips.isShowingKeyTooltips && !HoverTooltips._keyboardContext) return;
-  
+
   // Check if this is a keyboard-triggered call
   const isKeyboardTooltip = !!HoverTooltips._keyboardContext;
-  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken, isKeyboardTooltip);
-  
+  const tooltipsAllowed = canShowTooltips(
+    HoverTooltips.tooltipMode,
+    hoveredToken,
+    isKeyboardTooltip,
+  );
 
   if (!tooltipsAllowed) {
     return;
@@ -281,16 +289,13 @@ function showVisibilityIndicators(hoveredToken) {
   }
 
   // Get all other tokens in the scene
-  const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== hoveredToken && t.isVisible
-  );
-  
+  const otherTokens = canvas.tokens.placeables.filter((t) => t !== hoveredToken && t.isVisible);
 
   if (otherTokens.length === 0) {
     return;
   }
 
-  if (HoverTooltips.tooltipMode === "observer") {
+  if (HoverTooltips.tooltipMode === 'observer') {
     // Observer mode (O key): Show how the hovered token sees others
     // For players, only allow if they control the hovered token
     if (!game.user.isGM && !hoveredToken.isOwner) {
@@ -299,18 +304,11 @@ function showVisibilityIndicators(hoveredToken) {
 
     otherTokens.forEach((targetToken) => {
       const visibilityMap = getVisibilityMap(hoveredToken);
-      const visibilityState =
-        visibilityMap[targetToken.document.id] || "observed";
+      const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
 
-      if (visibilityState !== "observed") {
+      if (visibilityState !== 'observed') {
         // Pass relation token (targetToken) to compute cover vs hoveredToken
-        addVisibilityIndicator(
-          targetToken,
-          hoveredToken,
-          visibilityState,
-          "observer",
-          targetToken
-        );
+        addVisibilityIndicator(targetToken, hoveredToken, visibilityState, 'observer', targetToken);
       }
     });
   } else {
@@ -321,24 +319,17 @@ function showVisibilityIndicators(hoveredToken) {
       if (hoveredToken.isOwner) {
         // Get all other tokens in the scene (not just controlled ones)
         const nonPlayerTokens = canvas.tokens.placeables.filter(
-          (t) => t !== hoveredToken && t.isVisible
+          (t) => t !== hoveredToken && t.isVisible,
         );
 
         // Show how each other token sees the player's token
         nonPlayerTokens.forEach((otherToken) => {
           const visibilityMap = getVisibilityMap(otherToken);
-          const visibilityState =
-            visibilityMap[hoveredToken.document.id] || "observed";
+          const visibilityState = visibilityMap[hoveredToken.document.id] || 'observed';
 
-          if (visibilityState !== "observed") {
+          if (visibilityState !== 'observed') {
             // Show indicator on the OTHER token to show how it sees the player's token
-            addVisibilityIndicator(
-              otherToken,
-              otherToken,
-              visibilityState,
-              "target",
-              hoveredToken
-            );
+            addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target', hoveredToken);
           }
         });
       }
@@ -347,17 +338,16 @@ function showVisibilityIndicators(hoveredToken) {
 
       otherTokens.forEach((observerToken) => {
         const visibilityMap = getVisibilityMap(observerToken);
-        const visibilityState =
-          visibilityMap[hoveredToken?.document?.id] || "observed";
+        const visibilityState = visibilityMap[hoveredToken?.document?.id] || 'observed';
 
-        if (visibilityState !== "observed") {
+        if (visibilityState !== 'observed') {
           // Show indicator on the observer token
           addVisibilityIndicator(
             observerToken,
             observerToken,
             visibilityState,
-            "target",
-            hoveredToken
+            'target',
+            hoveredToken,
           );
         }
       });
@@ -366,7 +356,9 @@ function showVisibilityIndicators(hoveredToken) {
 
   // Additionally render cover-only indicators when there is cover but no visibility change
   // Already suppressed above if Alt overlay is active
-  try { showCoverIndicators(hoveredToken); } catch (_) {}
+  try {
+    showCoverIndicators(hoveredToken);
+  } catch (_) {}
 }
 
 /**
@@ -376,20 +368,22 @@ function showVisibilityIndicators(hoveredToken) {
 function showCoverIndicators(hoveredToken) {
   // Suppress hover overlays entirely while Alt overlay is active, UNLESS this is a keyboard context
   if (HoverTooltips.isShowingKeyTooltips && !HoverTooltips._keyboardContext) return;
-  
+
   // Check if this is a keyboard-triggered call
   const isKeyboardTooltip = !!HoverTooltips._keyboardContext;
-  const tooltipsAllowed = canShowTooltips(HoverTooltips.tooltipMode, hoveredToken, isKeyboardTooltip);
+  const tooltipsAllowed = canShowTooltips(
+    HoverTooltips.tooltipMode,
+    hoveredToken,
+    isKeyboardTooltip,
+  );
   if (!tooltipsAllowed) return;
 
   hideAllCoverIndicators();
 
-  const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== hoveredToken && t.isVisible
-  );
+  const otherTokens = canvas.tokens.placeables.filter((t) => t !== hoveredToken && t.isVisible);
   if (otherTokens.length === 0) return;
 
-  if (HoverTooltips.tooltipMode === "observer") {
+  if (HoverTooltips.tooltipMode === 'observer') {
     // How hoveredToken sees others (cover from hoveredToken's perspective)
     if (!game.user.isGM && !hoveredToken.isOwner) return;
     otherTokens.forEach((targetToken) => {
@@ -397,9 +391,9 @@ function showCoverIndicators(hoveredToken) {
       const visInd = HoverTooltips.visibilityIndicators.get(targetToken.id);
       if (visInd && visInd._coverBadgeEl) return;
       const coverMap = getCoverMap(hoveredToken);
-      const coverState = coverMap[targetToken.document.id] || "none";
-      if (coverState !== "none") {
-        addCoverIndicator(targetToken, hoveredToken, coverState, "observer");
+      const coverState = coverMap[targetToken.document.id] || 'none';
+      if (coverState !== 'none') {
+        addCoverIndicator(targetToken, hoveredToken, coverState, 'observer');
       }
     });
   } else {
@@ -407,15 +401,15 @@ function showCoverIndicators(hoveredToken) {
     if (!game.user.isGM) {
       if (hoveredToken.isOwner) {
         const nonPlayerTokens = canvas.tokens.placeables.filter(
-          (t) => t !== hoveredToken && t.isVisible
+          (t) => t !== hoveredToken && t.isVisible,
         );
         nonPlayerTokens.forEach((otherToken) => {
           const visInd = HoverTooltips.visibilityIndicators.get(otherToken.id);
           if (visInd && visInd._coverBadgeEl) return;
           const coverMap = getCoverMap(otherToken);
-          const coverState = coverMap[hoveredToken.document.id] || "none";
-          if (coverState !== "none") {
-            addCoverIndicator(otherToken, otherToken, coverState, "target");
+          const coverState = coverMap[hoveredToken.document.id] || 'none';
+          if (coverState !== 'none') {
+            addCoverIndicator(otherToken, otherToken, coverState, 'target');
           }
         });
       }
@@ -424,9 +418,9 @@ function showCoverIndicators(hoveredToken) {
         const visInd = HoverTooltips.visibilityIndicators.get(observerToken.id);
         if (visInd && visInd._coverBadgeEl) return;
         const coverMap = getCoverMap(observerToken);
-        const coverState = coverMap[hoveredToken.document.id] || "none";
-        if (coverState !== "none") {
-          addCoverIndicator(observerToken, observerToken, coverState, "target");
+        const coverState = coverMap[hoveredToken.document.id] || 'none';
+        if (coverState !== 'none') {
+          addCoverIndicator(observerToken, observerToken, coverState, 'target');
         }
       });
     }
@@ -442,7 +436,6 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   // Use forced mode if provided, otherwise use current tooltipMode
   const effectiveMode = forceMode || HoverTooltips.tooltipMode;
 
-
   // Check if tooltips are allowed for the current mode
   // For keyboard scenarios (when forceMode is provided), this is a keyboard tooltip
   const isKeyboardTooltip = !!forceMode;
@@ -456,25 +449,22 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   }
 
   // Get all other tokens in the scene
-  const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== observerToken && t.isVisible
-  );
+  const otherTokens = canvas.tokens.placeables.filter((t) => t !== observerToken && t.isVisible);
   if (otherTokens.length === 0) return;
 
-  if (effectiveMode === "observer") {
+  if (effectiveMode === 'observer') {
     // Default mode: Show how the observer token sees others
     otherTokens.forEach((targetToken) => {
       const visibilityMap = getVisibilityMap(observerToken);
-      const visibilityState =
-        visibilityMap[targetToken.document.id] || "observed";
+      const visibilityState = visibilityMap[targetToken.document.id] || 'observed';
 
-      if (visibilityState !== "observed") {
+      if (visibilityState !== 'observed') {
         addVisibilityIndicator(
           targetToken,
           observerToken,
           visibilityState,
-          "observer",
-          targetToken
+          'observer',
+          targetToken,
         );
       }
     });
@@ -484,41 +474,27 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
     if (!game.user.isGM) {
       // Get all other tokens in the scene
       const otherTokensForPlayer = canvas.tokens.placeables.filter(
-        (t) => t !== observerToken && t.isVisible
+        (t) => t !== observerToken && t.isVisible,
       );
 
       otherTokensForPlayer.forEach((otherToken) => {
         const visibilityMap = getVisibilityMap(otherToken);
-        const visibilityState =
-          visibilityMap[observerToken.document.id] || "observed";
+        const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
 
-        if (visibilityState !== "observed") {
+        if (visibilityState !== 'observed') {
           // Show indicator on the OTHER token
-          addVisibilityIndicator(
-            otherToken,
-            otherToken,
-            visibilityState,
-            "target",
-            observerToken
-          );
+          addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target', observerToken);
         }
       });
     } else {
       // GM sees all perspectives
       otherTokens.forEach((otherToken) => {
         const visibilityMap = getVisibilityMap(otherToken);
-        const visibilityState =
-          visibilityMap[observerToken.document.id] || "observed";
+        const visibilityState = visibilityMap[observerToken.document.id] || 'observed';
 
-        if (visibilityState !== "observed") {
+        if (visibilityState !== 'observed') {
           // Show indicator on the OTHER token
-          addVisibilityIndicator(
-            otherToken,
-            otherToken,
-            visibilityState,
-            "target",
-            observerToken
-          );
+          addVisibilityIndicator(otherToken, otherToken, visibilityState, 'target', observerToken);
         }
       });
     }
@@ -534,7 +510,6 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
 function showCoverIndicatorsForToken(observerToken, forceMode = null) {
   const effectiveMode = forceMode || HoverTooltips.tooltipMode;
 
-  
   // For keyboard scenarios (when forceMode is provided), this is a keyboard tooltip
   const isKeyboardTooltip = !!forceMode;
   if (!canShowTooltips(effectiveMode, null, isKeyboardTooltip)) {
@@ -542,39 +517,37 @@ function showCoverIndicatorsForToken(observerToken, forceMode = null) {
   }
   if (!game.user.isGM && !observerToken.isOwner) return;
 
-  const otherTokens = canvas.tokens.placeables.filter(
-    (t) => t !== observerToken && t.isVisible
-  );
+  const otherTokens = canvas.tokens.placeables.filter((t) => t !== observerToken && t.isVisible);
   if (otherTokens.length === 0) return;
 
-  if (effectiveMode === "observer") {
+  if (effectiveMode === 'observer') {
     otherTokens.forEach((targetToken) => {
       const coverMap = getCoverMap(observerToken);
-      const coverState = coverMap[targetToken.document.id] || "none";
-      
-      if (coverState !== "none") {
-        addCoverIndicator(targetToken, observerToken, coverState, "observer");
+      const coverState = coverMap[targetToken.document.id] || 'none';
+
+      if (coverState !== 'none') {
+        addCoverIndicator(targetToken, observerToken, coverState, 'observer');
       }
     });
   } else {
     if (!game.user.isGM) {
       const otherTokensForPlayer = canvas.tokens.placeables.filter(
-        (t) => t !== observerToken && t.isVisible
+        (t) => t !== observerToken && t.isVisible,
       );
       otherTokensForPlayer.forEach((otherToken) => {
         const coverMap = getCoverMap(otherToken);
-        const coverState = coverMap[observerToken.document.id] || "none";
-        if (coverState !== "none") {
-          addCoverIndicator(otherToken, otherToken, coverState, "target");
+        const coverState = coverMap[observerToken.document.id] || 'none';
+        if (coverState !== 'none') {
+          addCoverIndicator(otherToken, otherToken, coverState, 'target');
         }
       });
     } else {
       otherTokens.forEach((otherToken) => {
         const coverMap = getCoverMap(otherToken);
-        const coverState = coverMap[observerToken.document.id] || "none";
-        
-        if (coverState !== "none") {
-          addCoverIndicator(otherToken, otherToken, coverState, "target");
+        const coverState = coverMap[observerToken.document.id] || 'none';
+
+        if (coverState !== 'none') {
+          addCoverIndicator(otherToken, otherToken, coverState, 'target');
         }
       });
     }
@@ -590,14 +563,18 @@ export function showAutoCoverComputedOverlay(sourceToken) {
   try {
     if (!sourceToken) return;
     hideAllCoverIndicators();
-    const others = (canvas.tokens?.placeables || []).filter((t) => t && t !== sourceToken && t.isVisible);
+    const others = (canvas.tokens?.placeables || []).filter(
+      (t) => t && t !== sourceToken && t.isVisible,
+    );
     for (const target of others) {
-      let state = "none";
+      let state = 'none';
       try {
-        state = detectCoverStateForAttack(sourceToken, target) || "none";
-      } catch (_) { state = "none"; }
-      if (state && state !== "none") {
-        addCoverIndicator(target, sourceToken, state, "target");
+        state = detectCoverStateForAttack(sourceToken, target) || 'none';
+      } catch (_) {
+        state = 'none';
+      }
+      if (state && state !== 'none') {
+        addCoverIndicator(target, sourceToken, state, 'target');
       }
     }
   } catch (_) {}
@@ -632,13 +609,13 @@ export function showControlledTokenVisibility() {
 
     // Temporarily set tooltip mode and add keyboard context flag
     const originalMode = HoverTooltips.tooltipMode;
-    
-    HoverTooltips.tooltipMode = "target";
+
+    HoverTooltips.tooltipMode = 'target';
     HoverTooltips._keyboardContext = true; // Flag to indicate this is keyboard-triggered
-    
+
     // Use normal hover functions (which auto-combine visibility and cover)
     showVisibilityIndicators(controlledToken);
-    
+
     // Restore original state
     HoverTooltips.tooltipMode = originalMode;
     delete HoverTooltips._keyboardContext;
@@ -660,8 +637,8 @@ export function showControlledTokenVisibilityObserver() {
     controlledTokens.length > 0
       ? controlledTokens
       : HoverTooltips.currentHoveredToken
-      ? [HoverTooltips.currentHoveredToken]
-      : [];
+        ? [HoverTooltips.currentHoveredToken]
+        : [];
 
   HoverTooltips.isShowingKeyTooltips = true;
   HoverTooltips.keyTooltipTokens.clear();
@@ -679,13 +656,13 @@ export function showControlledTokenVisibilityObserver() {
 
     // Temporarily set tooltip mode and add keyboard context flag
     const originalMode = HoverTooltips.tooltipMode;
-    
-    HoverTooltips.tooltipMode = "observer";
+
+    HoverTooltips.tooltipMode = 'observer';
     HoverTooltips._keyboardContext = true; // Flag to indicate this is keyboard-triggered
-    
+
     // Use normal hover functions (which auto-combine visibility and cover)
     showVisibilityIndicators(controlledToken);
-    
+
     // Restore original state
     HoverTooltips.tooltipMode = originalMode;
     delete HoverTooltips._keyboardContext;
@@ -703,8 +680,8 @@ function addVisibilityIndicator(
   targetToken,
   observerToken,
   visibilityState,
-  mode = "observer",
-  relationToken = null
+  mode = 'observer',
+  relationToken = null,
 ) {
   const config = VISIBILITY_STATES[visibilityState];
   if (!config) return;
@@ -720,7 +697,7 @@ function addVisibilityIndicator(
   // Compute dynamic badge dimensions based on configured sizes
   let sizeConfig;
   try {
-    const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
     sizeConfig = computeSizesFromSetting(raw ?? HoverTooltips.tooltipFontSize);
   } catch (_) {
     sizeConfig = {
@@ -729,12 +706,8 @@ function addVisibilityIndicator(
       borderPx: 3,
     };
   }
-  const badgeWidth = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8
-  );
-  const badgeHeight = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6
-  );
+  const badgeWidth = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8);
+  const badgeHeight = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6);
   const spacing = Math.max(6, Math.round(sizeConfig.iconPx / 2));
   const borderRadius = Math.round(badgeHeight / 3);
 
@@ -742,29 +715,26 @@ function addVisibilityIndicator(
   let coverConfig = null;
   try {
     if (relationToken) {
-      const coverMapSource = mode === "observer" ? observerToken : targetToken;
+      const coverMapSource = mode === 'observer' ? observerToken : targetToken;
       const coverMap = getCoverMap(coverMapSource);
-      const coverState = coverMap[relationToken.document.id] || "none";
-      if (coverState !== "none") coverConfig = COVER_STATES[coverState];
+      const coverState = coverMap[relationToken.document.id] || 'none';
+      if (coverState !== 'none') coverConfig = COVER_STATES[coverState];
     }
   } catch (_) {}
 
   // Compute aligned positions using world->screen transform
-  const globalPoint = canvas.tokens.toGlobal(
-    new PIXI.Point(indicator.x, indicator.y)
-  );
+  const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
   const centerX = canvasRect.left + globalPoint.x;
   // If pf2e-hud is active, nudge badges downward to sit beneath its tooltip bubble
-  const hudActive = !!game.modules?.get?.("pf2e-hud")?.active;
+  const hudActive = !!game.modules?.get?.('pf2e-hud')?.active;
   const verticalOffset = hudActive ? 26 : -6; // nudge up slightly when HUD is not active
-  const centerY =
-    canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
+  const centerY = canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
 
   const placeBadge = (leftPx, topPx, color, iconClass) => {
-    const el = document.createElement("div");
-    el.style.position = "fixed";
-    el.style.pointerEvents = "none";
-    el.style.zIndex = "60";
+    const el = document.createElement('div');
+    el.style.position = 'fixed';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = '60';
     el.style.left = `${Math.round(leftPx)}px`;
     el.style.top = `${Math.round(topPx)}px`;
     el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${color};">
@@ -778,27 +748,12 @@ function addVisibilityIndicator(
     // Two badges: visibility on left, cover on right
     const visLeft = centerX - spacing / 2 - badgeWidth;
     const coverLeft = centerX + spacing / 2;
-    indicator._visBadgeEl = placeBadge(
-      visLeft,
-      centerY,
-      config.color,
-      config.icon
-    );
-    indicator._coverBadgeEl = placeBadge(
-      coverLeft,
-      centerY,
-      coverConfig.color,
-      coverConfig.icon
-    );
+    indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
+    indicator._coverBadgeEl = placeBadge(coverLeft, centerY, coverConfig.color, coverConfig.icon);
   } else {
     // Only visibility badge, centered
     const visLeft = centerX - badgeWidth / 2;
-    indicator._visBadgeEl = placeBadge(
-      visLeft,
-      centerY,
-      config.color,
-      config.icon
-    );
+    indicator._visBadgeEl = placeBadge(visLeft, centerY, config.color, config.icon);
   }
 
   HoverTooltips.visibilityIndicators.set(targetToken.id, indicator);
@@ -823,7 +778,7 @@ function updateBadgePositions() {
   const canvasRect = canvas.app.view.getBoundingClientRect();
   let sizeConfig;
   try {
-    const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
     sizeConfig = computeSizesFromSetting(raw ?? HoverTooltips.tooltipFontSize);
   } catch (_) {
     sizeConfig = {
@@ -832,25 +787,17 @@ function updateBadgePositions() {
       borderPx: 3,
     };
   }
-  const badgeWidth = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8
-  );
-  const badgeHeight = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6
-  );
+  const badgeWidth = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8);
+  const badgeHeight = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6);
   const spacing = Math.max(6, Math.round(sizeConfig.iconPx / 2));
-  const hudActive = !!game.modules?.get?.("pf2e-hud")?.active;
+  const hudActive = !!game.modules?.get?.('pf2e-hud')?.active;
   const verticalOffset = hudActive ? 26 : -6;
 
   HoverTooltips.visibilityIndicators.forEach((indicator) => {
-    if (!indicator || (!indicator._visBadgeEl && !indicator._coverBadgeEl))
-      return;
-    const globalPoint = canvas.tokens.toGlobal(
-      new PIXI.Point(indicator.x, indicator.y)
-    );
+    if (!indicator || (!indicator._visBadgeEl && !indicator._coverBadgeEl)) return;
+    const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
     const centerX = canvasRect.left + globalPoint.x;
-    const centerY =
-      canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
+    const centerY = canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
 
     if (indicator._visBadgeEl && indicator._coverBadgeEl) {
       const visLeft = centerX - spacing / 2 - badgeWidth;
@@ -869,12 +816,9 @@ function updateBadgePositions() {
   // Also update standalone cover badges
   HoverTooltips.coverIndicators.forEach((indicator) => {
     if (!indicator || !indicator._coverBadgeEl) return;
-    const globalPoint = canvas.tokens.toGlobal(
-      new PIXI.Point(indicator.x, indicator.y)
-    );
+    const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
     const centerX = canvasRect.left + globalPoint.x;
-    const centerY =
-      canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
+    const centerY = canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
     const left = centerX - badgeWidth / 2;
     indicator._coverBadgeEl.style.left = `${Math.round(left)}px`;
     indicator._coverBadgeEl.style.top = `${Math.round(centerY)}px`;
@@ -888,12 +832,7 @@ function updateBadgePositions() {
  * @param {string} coverState
  * @param {string} mode 'observer' | 'target'
  */
-function addCoverIndicator(
-  targetToken,
-  observerToken,
-  coverState,
-  mode = "observer"
-) {
+function addCoverIndicator(targetToken, observerToken, coverState, mode = 'observer') {
   const config = COVER_STATES[coverState];
   if (!config) return;
 
@@ -907,7 +846,7 @@ function addCoverIndicator(
   const canvasRect = canvas.app.view.getBoundingClientRect();
   let sizeConfig;
   try {
-    const raw = game.settings?.get?.(MODULE_ID, "tooltipFontSize");
+    const raw = game.settings?.get?.(MODULE_ID, 'tooltipFontSize');
     sizeConfig = computeSizesFromSetting(raw ?? HoverTooltips.tooltipFontSize);
   } catch (_) {
     sizeConfig = {
@@ -916,26 +855,19 @@ function addCoverIndicator(
       borderPx: 3,
     };
   }
-  const badgeWidth = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8
-  );
-  const badgeHeight = Math.round(
-    sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6
-  );
+  const badgeWidth = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 8);
+  const badgeHeight = Math.round(sizeConfig.iconPx + sizeConfig.borderPx * 2 + 6);
   const borderRadius = Math.round(badgeHeight / 3);
-  const globalPoint = canvas.tokens.toGlobal(
-    new PIXI.Point(indicator.x, indicator.y)
-  );
-  const hudActive = !!game.modules?.get?.("pf2e-hud")?.active;
+  const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
+  const hudActive = !!game.modules?.get?.('pf2e-hud')?.active;
   const verticalOffset = hudActive ? 26 : -6;
   const centerX = canvasRect.left + globalPoint.x;
-  const centerY =
-    canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
+  const centerY = canvasRect.top + globalPoint.y - badgeHeight / 2 + verticalOffset;
 
-  const el = document.createElement("div");
-  el.style.position = "fixed";
-  el.style.pointerEvents = "none";
-  el.style.zIndex = "60";
+  const el = document.createElement('div');
+  el.style.position = 'fixed';
+  el.style.pointerEvents = 'none';
+  el.style.zIndex = '60';
   el.style.left = `${Math.round(centerX - badgeWidth / 2)}px`;
   el.style.top = `${Math.round(centerY)}px`;
   el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${config.color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${config.color};">
@@ -946,7 +878,7 @@ function addCoverIndicator(
 
   // Do not attach a Foundry tooltip on hover; the badge itself is the tooltip.
 
-  HoverTooltips.coverIndicators.set(targetToken.id + "|cover", indicator);
+  HoverTooltips.coverIndicators.set(targetToken.id + '|cover', indicator);
   ensureBadgeTicker();
 }
 
@@ -958,7 +890,7 @@ function hideAllVisibilityIndicators() {
   try {
     game.tooltip.deactivate();
   } catch (e) {
-    console.warn("PF2E Visioner: Error deactivating tooltips", e);
+    console.warn('PF2E Visioner: Error deactivating tooltips', e);
   }
 
   // Clean up all indicators
@@ -977,9 +909,7 @@ function hideAllVisibilityIndicators() {
       // Clean up tooltip anchor if it exists
       if (indicator._tooltipAnchor) {
         if (indicator._tooltipAnchor.parentNode) {
-          indicator._tooltipAnchor.parentNode.removeChild(
-            indicator._tooltipAnchor
-          );
+          indicator._tooltipAnchor.parentNode.removeChild(indicator._tooltipAnchor);
         }
         delete indicator._tooltipAnchor;
       }
@@ -987,9 +917,7 @@ function hideAllVisibilityIndicators() {
       if (indicator._coverBadgeEl) {
         try {
           if (indicator._coverBadgeEl.parentNode)
-            indicator._coverBadgeEl.parentNode.removeChild(
-              indicator._coverBadgeEl
-            );
+            indicator._coverBadgeEl.parentNode.removeChild(indicator._coverBadgeEl);
         } catch (_) {}
         delete indicator._coverBadgeEl;
       }
@@ -1002,7 +930,7 @@ function hideAllVisibilityIndicators() {
       // Destroy the indicator
       indicator.destroy({ children: true, texture: true, baseTexture: true });
     } catch (e) {
-      console.warn("PF2E Visioner: Error cleaning up indicator", e);
+      console.warn('PF2E Visioner: Error cleaning up indicator', e);
     }
   });
 
@@ -1047,9 +975,7 @@ function hideAllCoverIndicators() {
       delete indicator._coverBadgeEl;
       if (indicator._tooltipAnchor) {
         if (indicator._tooltipAnchor.parentNode) {
-          indicator._tooltipAnchor.parentNode.removeChild(
-            indicator._tooltipAnchor
-          );
+          indicator._tooltipAnchor.parentNode.removeChild(indicator._tooltipAnchor);
         }
         delete indicator._tooltipAnchor;
       }
@@ -1082,14 +1008,14 @@ export function cleanupHoverTooltips() {
   HoverTooltips.keyTooltipTokens.clear();
 
   // Reset tooltip mode to default
-  setTooltipMode("target");
+  setTooltipMode('target');
 
   // Remove only our specific event listeners from tokens
   HoverTooltips.tokenEventHandlers.forEach((handlers, tokenId) => {
     const token = canvas.tokens.get(tokenId);
     if (token) {
-      token.off("pointerover", handlers.overHandler);
-      token.off("pointerout", handlers.outHandler);
+      token.off('pointerover', handlers.overHandler);
+      token.off('pointerout', handlers.outHandler);
     }
   });
 

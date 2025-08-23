@@ -3,16 +3,16 @@
  */
 
 export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
-  tag: "form",
-  classes: ["pf2e-visioner", "token-visibility-manager"],
+  tag: 'form',
+  classes: ['pf2e-visioner', 'token-visibility-manager'],
   form: {
     handler: null, // to be assigned by the class
     submitOnChange: false,
     closeOnSubmit: false,
   },
   window: {
-    title: "PF2E_VISIONER.TOKEN_MANAGER.TITLE",
-    icon: "fas fa-user-pen",
+    title: 'PF2E_VISIONER.TOKEN_MANAGER.TITLE',
+    icon: 'fas fa-user-pen',
     resizable: true,
   },
   position: {
@@ -54,8 +54,6 @@ export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
 
 export const TOKEN_MANAGER_PARTS = {
   form: {
-    template: "modules/pf2e-visioner/templates/token-manager.hbs",
+    template: 'modules/pf2e-visioner/templates/token-manager.hbs',
   },
 };
-
-

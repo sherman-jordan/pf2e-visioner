@@ -10,7 +10,7 @@
  * @param {Token} observerToken - The observing token (who has the effect)
  * @param {Token} hiddenToken - The hidden token (who is targeted by the effect)
  */
-export { cleanupDeletedTokenEffects, cleanupEphemeralEffectsForTarget } from "./cleanup.js";
+export { cleanupDeletedTokenEffects, cleanupEphemeralEffectsForTarget } from './cleanup.js';
 
 /**
  * Clean up all effects related to a deleted token
@@ -28,8 +28,13 @@ export { cleanupDeletedTokenEffects, cleanupEphemeralEffectsForTarget } from "./
  * @param {number} options.durationRounds - Duration in rounds (default: unlimited)
  * @param {string} options.effectTarget - Which token gets the effect ('observer' or 'subject')
  */
-export async function updateEphemeralEffectsForVisibility(observerToken, targetToken, newVisibilityState, options = {}) {
-  const { updateSingleVisibilityEffect } = await import("./update.js");
+export async function updateEphemeralEffectsForVisibility(
+  observerToken,
+  targetToken,
+  newVisibilityState,
+  options = {},
+) {
+  const { updateSingleVisibilityEffect } = await import('./update.js');
   return updateSingleVisibilityEffect(observerToken, targetToken, newVisibilityState, options);
 }
 
@@ -40,7 +45,7 @@ export async function updateEphemeralEffectsForVisibility(observerToken, targetT
  * @param {Object} options - Optional configuration
  */
 export async function batchUpdateVisibilityEffects(observerToken, targetUpdates, options = {}) {
-  const { batchUpdateVisibilityEffects } = await import("./batch.js");
+  const { batchUpdateVisibilityEffects } = await import('./batch.js');
   return batchUpdateVisibilityEffects(observerToken, targetUpdates, options);
 }
 

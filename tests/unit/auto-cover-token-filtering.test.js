@@ -1,6 +1,6 @@
 /**
  * Comprehensive tests for Auto-Cover Token Filtering Logic
- * 
+ *
  * Tests the token filtering algorithms that determine which tokens can block cover:
  * - Dead token filtering (HP-based)
  * - Ally filtering (alliance-based)
@@ -10,7 +10,7 @@
  * - Actor type filtering (loot/hazard exclusion)
  * - Hidden token filtering (Foundry hidden property)
  * - Controlled token filtering (selected tokens)
- * 
+ *
  * These filters are critical for realistic auto-cover behavior.
  */
 
@@ -22,13 +22,13 @@ describe('Auto-Cover Token Filtering Logic', () => {
   beforeEach(() => {
     // Setup mock canvas and game for filtering tests
     mockCanvas = {
-      tokens: { 
+      tokens: {
         placeables: [],
         controlled: [],
-        get: jest.fn()
-      }
+        get: jest.fn(),
+      },
     };
-    
+
     mockGame = {
       settings: {
         get: jest.fn().mockImplementation((module, setting) => {
@@ -39,8 +39,8 @@ describe('Auto-Cover Token Filtering Logic', () => {
           if (setting === 'autoCoverAllowProneBlockers') return false;
           if (setting === 'autoCoverRespectIgnoreFlag') return true;
           return false;
-        })
-      }
+        }),
+      },
     };
 
     // Extend existing global canvas instead of replacing it
@@ -60,7 +60,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
           }
           return false;
         }),
-        ...options.document
+        ...options.document,
       },
       actor: {
         id: `actor-${id}`,
@@ -69,16 +69,16 @@ describe('Auto-Cover Token Filtering Logic', () => {
         hitPoints: { value: options.hp !== undefined ? options.hp : 10 },
         system: {
           attributes: {
-            hp: { value: options.hp !== undefined ? options.hp : 10, max: 10 }
-          }
+            hp: { value: options.hp !== undefined ? options.hp : 10, max: 10 },
+          },
         },
         itemTypes: {
-          condition: options.conditions || []
+          condition: options.conditions || [],
         },
         conditions: options.legacyConditions || [],
-        ...options.actor
+        ...options.actor,
       },
-      ...options
+      ...options,
     };
   }
 
@@ -86,8 +86,8 @@ describe('Auto-Cover Token Filtering Logic', () => {
     test('filters dead tokens when ignoreDead is true', () => {
       const filterDeadTokens = (tokens, ignoreDead) => {
         if (!ignoreDead) return tokens;
-        
-        return tokens.filter(token => {
+
+        return tokens.filter((token) => {
           const hp = token.actor?.hitPoints?.value;
           return hp === undefined || hp > 0;
         });
@@ -119,19 +119,21 @@ describe('Auto-Cover Token Filtering Logic', () => {
         // Check both hitPoints.value and system.attributes.hp.value
         const hp1 = token.actor?.hitPoints?.value;
         const hp2 = token.actor?.system?.attributes?.hp?.value;
-        
+
         return (hp1 !== undefined && hp1 <= 0) || (hp2 !== undefined && hp2 <= 0);
       };
 
       const token1 = createTestToken('token1', { hp: 0 }); // Uses hitPoints.value
-      const token2 = { // Uses system.attributes.hp.value
-        actor: { system: { attributes: { hp: { value: 0, max: 10 } } } }
+      const token2 = {
+        // Uses system.attributes.hp.value
+        actor: { system: { attributes: { hp: { value: 0, max: 10 } } } },
       };
-      const token3 = { // Both properties
-        actor: { 
+      const token3 = {
+        // Both properties
+        actor: {
           hitPoints: { value: 5 },
-          system: { attributes: { hp: { value: 0, max: 10 } } }
-        }
+          system: { attributes: { hp: { value: 0, max: 10 } } },
+        },
       };
 
       expect(checkTokenDead(token1)).toBe(true);
@@ -162,9 +164,9 @@ describe('Auto-Cover Token Filtering Logic', () => {
     test('filters ally tokens when ignoreAllies is true', () => {
       const filterAllyTokens = (tokens, attacker, ignoreAllies) => {
         if (!ignoreAllies) return tokens;
-        
+
         const attackerAlliance = attacker.actor?.alliance;
-        return tokens.filter(token => {
+        return tokens.filter((token) => {
           return token.actor?.alliance !== attackerAlliance || attackerAlliance !== 'party';
         });
       };
@@ -193,7 +195,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
       const isAllyToAttacker = (attacker, blocker) => {
         const attackerAlliance = attacker.actor?.alliance;
         const blockerAlliance = blocker.actor?.alliance;
-        
+
         // Only party members are considered allies for filtering
         return attackerAlliance === 'party' && blockerAlliance === 'party';
       };
@@ -205,13 +207,13 @@ describe('Auto-Cover Token Filtering Logic', () => {
 
       // Party vs Party = ally
       expect(isAllyToAttacker(partyAttacker, partyBlocker)).toBe(true);
-      
+
       // Party vs Opposition = not ally
       expect(isAllyToAttacker(partyAttacker, oppositionBlocker)).toBe(false);
-      
+
       // Opposition vs Opposition = not ally (only party members are allies)
       expect(isAllyToAttacker(oppositionAttacker, oppositionBlocker)).toBe(false);
-      
+
       // Opposition vs Party = not ally
       expect(isAllyToAttacker(oppositionAttacker, partyBlocker)).toBe(false);
     });
@@ -220,7 +222,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
       const safeAllianceCheck = (attacker, blocker) => {
         const attackerAlliance = attacker?.actor?.alliance;
         const blockerAlliance = blocker?.actor?.alliance;
-        
+
         if (!attackerAlliance || !blockerAlliance) return false;
         return attackerAlliance === 'party' && blockerAlliance === 'party';
       };
@@ -250,8 +252,8 @@ describe('Auto-Cover Token Filtering Logic', () => {
 
       const filterUndetectedTokens = (tokens, observer, ignoreUndetected) => {
         if (!ignoreUndetected) return tokens;
-        
-        return tokens.filter(token => {
+
+        return tokens.filter((token) => {
           const visibility = mockGetVisibilityBetween(observer, token);
           return visibility !== 'undetected';
         });
@@ -298,12 +300,12 @@ describe('Auto-Cover Token Filtering Logic', () => {
     test('handles visibility perspective override', () => {
       const getVisibilityWithPerspective = (observer, target, perspectiveOverride) => {
         const actualObserver = perspectiveOverride || observer;
-        
+
         // Mock: perspective token determines visibility
         if (actualObserver.hasSpecialSight && target.isHidden) {
           return 'observed'; // Special sight can see hidden
         }
-        
+
         if (target.isUndetected) return 'undetected';
         return 'observed';
       };
@@ -315,13 +317,17 @@ describe('Auto-Cover Token Filtering Logic', () => {
 
       // Normal observer can't see hidden
       expect(getVisibilityWithPerspective(normalObserver, hiddenTarget)).toBe('observed');
-      
+
       // Special observer can see hidden
-      expect(getVisibilityWithPerspective(normalObserver, hiddenTarget, specialObserver)).toBe('observed');
-      
+      expect(getVisibilityWithPerspective(normalObserver, hiddenTarget, specialObserver)).toBe(
+        'observed',
+      );
+
       // No one can see undetected without special rules
       expect(getVisibilityWithPerspective(normalObserver, undetectedTarget)).toBe('undetected');
-      expect(getVisibilityWithPerspective(normalObserver, undetectedTarget, specialObserver)).toBe('undetected');
+      expect(getVisibilityWithPerspective(normalObserver, undetectedTarget, specialObserver)).toBe(
+        'undetected',
+      );
     });
   });
 
@@ -329,25 +335,27 @@ describe('Auto-Cover Token Filtering Logic', () => {
     test('filters prone tokens when allowProneBlockers is false', () => {
       const filterProneTokens = (tokens, allowProneBlockers) => {
         if (allowProneBlockers) return tokens;
-        
-        return tokens.filter(token => {
+
+        return tokens.filter((token) => {
           // Check both itemTypes.condition and legacy conditions
           const itemConditions = token.actor?.itemTypes?.condition || [];
-          const legacyConditions = token.actor?.conditions?.conditions || token.actor?.conditions || [];
-          
-          const isProne = itemConditions.some(c => c?.slug === 'prone') || 
-                         legacyConditions.some(c => c?.slug === 'prone');
-          
+          const legacyConditions =
+            token.actor?.conditions?.conditions || token.actor?.conditions || [];
+
+          const isProne =
+            itemConditions.some((c) => c?.slug === 'prone') ||
+            legacyConditions.some((c) => c?.slug === 'prone');
+
           return !isProne;
         });
       };
 
       const standingToken = createTestToken('standing');
-      const proneTokenItem = createTestToken('prone-item', { 
-        conditions: [{ slug: 'prone', name: 'Prone' }] 
+      const proneTokenItem = createTestToken('prone-item', {
+        conditions: [{ slug: 'prone', name: 'Prone' }],
       });
-      const proneTokenLegacy = createTestToken('prone-legacy', { 
-        legacyConditions: [{ slug: 'prone', name: 'Prone' }] 
+      const proneTokenLegacy = createTestToken('prone-legacy', {
+        legacyConditions: [{ slug: 'prone', name: 'Prone' }],
       });
 
       const tokens = [standingToken, proneTokenItem, proneTokenLegacy];
@@ -370,16 +378,20 @@ describe('Auto-Cover Token Filtering Logic', () => {
         try {
           // Method 1: itemTypes.condition
           const itemConditions = token.actor?.itemTypes?.condition || [];
-          if (itemConditions.some(c => c?.slug === 'prone')) return true;
-          
+          if (itemConditions.some((c) => c?.slug === 'prone')) return true;
+
           // Method 2: legacy conditions.conditions
           const legacyConditions1 = token.actor?.conditions?.conditions || [];
-          if (legacyConditions1.some(c => c?.slug === 'prone')) return true;
-          
+          if (legacyConditions1.some((c) => c?.slug === 'prone')) return true;
+
           // Method 3: direct conditions array
           const legacyConditions2 = token.actor?.conditions || [];
-          if (Array.isArray(legacyConditions2) && legacyConditions2.some(c => c?.slug === 'prone')) return true;
-          
+          if (
+            Array.isArray(legacyConditions2) &&
+            legacyConditions2.some((c) => c?.slug === 'prone')
+          )
+            return true;
+
           return false;
         } catch (_) {
           return false; // Safe fallback
@@ -405,7 +417,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
         try {
           const conditions = token.actor?.itemTypes?.condition;
           if (!Array.isArray(conditions)) return false;
-          return conditions.some(c => c?.slug === 'prone');
+          return conditions.some((c) => c?.slug === 'prone');
         } catch (error) {
           return false; // Always return false on error
         }
@@ -426,8 +438,8 @@ describe('Auto-Cover Token Filtering Logic', () => {
     test('filters tokens with ignore flag when respectIgnoreFlag is true', () => {
       const filterIgnoreFlagTokens = (tokens, respectIgnoreFlag) => {
         if (!respectIgnoreFlag) return tokens;
-        
-        return tokens.filter(token => {
+
+        return tokens.filter((token) => {
           const hasIgnoreFlag = token.document?.getFlag?.('pf2e-visioner', 'ignoreAutoCover');
           return !hasIgnoreFlag;
         });
@@ -461,16 +473,16 @@ describe('Auto-Cover Token Filtering Logic', () => {
 
       const tokenWithFlag = {
         document: {
-          getFlag: (module, flag) => module === 'pf2e-visioner' && flag === 'ignoreAutoCover'
-        }
+          getFlag: (module, flag) => module === 'pf2e-visioner' && flag === 'ignoreAutoCover',
+        },
       };
-      
+
       const tokenWithoutFlag = {
         document: {
-          getFlag: () => false
-        }
+          getFlag: () => false,
+        },
       };
-      
+
       const tokenNoDocument = {};
 
       expect(getIgnoreFlag(tokenWithFlag)).toBe(true);
@@ -482,7 +494,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
   describe('Actor Type Filtering Logic', () => {
     test('filters loot and hazard actor types', () => {
       const filterActorTypes = (tokens) => {
-        return tokens.filter(token => {
+        return tokens.filter((token) => {
           const type = token.actor?.type;
           return type !== 'loot' && type !== 'hazard';
         });
@@ -522,7 +534,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
   describe('Hidden Token Filtering Logic', () => {
     test('always filters Foundry hidden tokens', () => {
       const filterHiddenTokens = (tokens) => {
-        return tokens.filter(token => {
+        return tokens.filter((token) => {
           return !token.document?.hidden;
         });
       };
@@ -553,14 +565,14 @@ describe('Auto-Cover Token Filtering Logic', () => {
   describe('Controlled Token Filtering Logic', () => {
     test('filters controlled and selected tokens', () => {
       const filterControlledTokens = (tokens, attacker, target, controlledTokens) => {
-        return tokens.filter(token => {
+        return tokens.filter((token) => {
           // Exclude attacker and target
           if (token === attacker || token === target) return false;
           if (token.id === attacker.id || token.id === target.id) return false;
-          
+
           // Exclude controlled tokens
           if (controlledTokens.includes(token)) return false;
-          
+
           return true;
         });
       };
@@ -591,7 +603,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
         let filtered = [...tokens];
 
         // 1. Basic exclusions (attacker, target, no actor)
-        filtered = filtered.filter(token => {
+        filtered = filtered.filter((token) => {
           if (!token?.actor) return false;
           if (token === attacker || token === target) return false;
           if (token.id === attacker.id || token.id === target.id) return false;
@@ -599,24 +611,24 @@ describe('Auto-Cover Token Filtering Logic', () => {
         });
 
         // 2. Actor type filtering
-        filtered = filtered.filter(token => {
+        filtered = filtered.filter((token) => {
           const type = token.actor?.type;
           return type !== 'loot' && type !== 'hazard';
         });
 
         // 3. Hidden token filtering (always applied)
-        filtered = filtered.filter(token => !token.document?.hidden);
+        filtered = filtered.filter((token) => !token.document?.hidden);
 
         // 4. Ignore flag filtering
         if (filters.respectIgnoreFlag) {
-          filtered = filtered.filter(token => {
+          filtered = filtered.filter((token) => {
             return !token.document?.getFlag?.('pf2e-visioner', 'ignoreAutoCover');
           });
         }
 
         // 5. Dead token filtering
         if (filters.ignoreDead) {
-          filtered = filtered.filter(token => {
+          filtered = filtered.filter((token) => {
             const hp = token.actor?.hitPoints?.value;
             return hp === undefined || hp > 0;
           });
@@ -624,18 +636,24 @@ describe('Auto-Cover Token Filtering Logic', () => {
 
         // 6. Ally filtering
         if (filters.ignoreAllies) {
-          filtered = filtered.filter(token => {
-            return !(token.actor?.alliance === filters.attackerAlliance && filters.attackerAlliance === 'party');
+          filtered = filtered.filter((token) => {
+            return !(
+              token.actor?.alliance === filters.attackerAlliance &&
+              filters.attackerAlliance === 'party'
+            );
           });
         }
 
         // 7. Prone filtering
         if (!filters.allowProneBlockers) {
-          filtered = filtered.filter(token => {
+          filtered = filtered.filter((token) => {
             try {
               const itemConditions = token.actor?.itemTypes?.condition || [];
-              const legacyConditions = token.actor?.conditions?.conditions || token.actor?.conditions || [];
-              const isProne = itemConditions.some(c => c?.slug === 'prone') || legacyConditions.some(c => c?.slug === 'prone');
+              const legacyConditions =
+                token.actor?.conditions?.conditions || token.actor?.conditions || [];
+              const isProne =
+                itemConditions.some((c) => c?.slug === 'prone') ||
+                legacyConditions.some((c) => c?.slug === 'prone');
               return !isProne;
             } catch (_) {
               return true; // Keep token if error checking prone
@@ -658,8 +676,15 @@ describe('Auto-Cover Token Filtering Logic', () => {
       const ignoredBlocker = createTestToken('ignored', { ignoreFlag: true });
 
       const allTokens = [
-        attacker, target, validBlocker, deadBlocker, allyBlocker, 
-        proneBlocker, hiddenBlocker, lootBlocker, ignoredBlocker
+        attacker,
+        target,
+        validBlocker,
+        deadBlocker,
+        allyBlocker,
+        proneBlocker,
+        hiddenBlocker,
+        lootBlocker,
+        ignoredBlocker,
       ];
 
       const filters = {
@@ -667,7 +692,7 @@ describe('Auto-Cover Token Filtering Logic', () => {
         ignoreDead: true,
         ignoreAllies: true,
         allowProneBlockers: false,
-        attackerAlliance: 'party'
+        attackerAlliance: 'party',
       };
 
       const result = applyAllFilters(allTokens, attacker, target, filters);
@@ -681,17 +706,20 @@ describe('Auto-Cover Token Filtering Logic', () => {
       // Test that filters work correctly when combined
       const testFilterCombination = (tokenProps, filterSettings) => {
         const token = createTestToken('test', tokenProps);
-        
+
         // Simulate each filter check
         const results = {
           passesActorType: tokenProps.actorType !== 'loot' && tokenProps.actorType !== 'hazard',
           passesHidden: !tokenProps.hidden,
           passesIgnoreFlag: !filterSettings.respectIgnoreFlag || !tokenProps.ignoreFlag,
-          passesDead: !filterSettings.ignoreDead || (tokenProps.hp === undefined || tokenProps.hp > 0),
+          passesDead:
+            !filterSettings.ignoreDead || tokenProps.hp === undefined || tokenProps.hp > 0,
           passesAlly: !filterSettings.ignoreAllies || !(tokenProps.alliance === 'party'),
-          passesProne: filterSettings.allowProneBlockers || !tokenProps.conditions?.some(c => c.slug === 'prone')
+          passesProne:
+            filterSettings.allowProneBlockers ||
+            !tokenProps.conditions?.some((c) => c.slug === 'prone'),
         };
-        
+
         const overallPass = Object.values(results).every(Boolean);
         return { results, overallPass };
       };
@@ -699,19 +727,34 @@ describe('Auto-Cover Token Filtering Logic', () => {
       // Test various combinations
       const test1 = testFilterCombination(
         { actorType: 'npc', hidden: false, hp: 10, alliance: 'opposition' },
-        { respectIgnoreFlag: true, ignoreDead: true, ignoreAllies: true, allowProneBlockers: false }
+        {
+          respectIgnoreFlag: true,
+          ignoreDead: true,
+          ignoreAllies: true,
+          allowProneBlockers: false,
+        },
       );
       expect(test1.overallPass).toBe(true);
 
       const test2 = testFilterCombination(
         { actorType: 'loot', hidden: false, hp: 10, alliance: 'opposition' },
-        { respectIgnoreFlag: true, ignoreDead: true, ignoreAllies: true, allowProneBlockers: false }
+        {
+          respectIgnoreFlag: true,
+          ignoreDead: true,
+          ignoreAllies: true,
+          allowProneBlockers: false,
+        },
       );
       expect(test2.overallPass).toBe(false); // Fails actor type
 
       const test3 = testFilterCombination(
         { actorType: 'npc', hidden: false, hp: 0, alliance: 'opposition' },
-        { respectIgnoreFlag: true, ignoreDead: true, ignoreAllies: true, allowProneBlockers: false }
+        {
+          respectIgnoreFlag: true,
+          ignoreDead: true,
+          ignoreAllies: true,
+          allowProneBlockers: false,
+        },
       );
       expect(test3.overallPass).toBe(false); // Fails dead check
     });

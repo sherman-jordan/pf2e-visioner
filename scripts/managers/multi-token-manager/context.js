@@ -2,29 +2,22 @@
  * Context builder for VisionerMultiTokenManager template
  */
 
-import { extractPerceptionDC, extractStealthDC } from "../../chat/services/infra/shared-utils.js";
-import { COVER_STATES, VISIBILITY_STATES } from "../../constants.js";
-import {
-  getCoverMap,
-  getSceneTargets,
-  getVisibilityMap,
-  hasActiveEncounter,
-} from "../../utils.js";
+import { extractPerceptionDC, extractStealthDC } from '../../chat/services/infra/shared-utils.js';
+import { COVER_STATES, VISIBILITY_STATES } from '../../constants.js';
+import { getCoverMap, getSceneTargets, getVisibilityMap, hasActiveEncounter } from '../../utils.js';
 
 function getTokenImage(token) {
   if (token.actor?.img) return token.actor.img;
-  return "icons/svg/book.svg";
+  return 'icons/svg/book.svg';
 }
 
 export async function buildMultiTokenContext(app, options) {
   // IMPORTANT: Call the base ApplicationV2 implementation
   const BaseApp = foundry?.applications?.api?.ApplicationV2;
-  const context = BaseApp
-    ? await BaseApp.prototype._prepareContext.call(app, options)
-    : {};
+  const context = BaseApp ? await BaseApp.prototype._prepareContext.call(app, options) : {};
 
   if (!app.currentToken) {
-    context.error = game.i18n.localize("PF2E_VISIONER.MULTI_TOKEN_MANAGER.NO_TOKENS_SELECTED");
+    context.error = game.i18n.localize('PF2E_VISIONER.MULTI_TOKEN_MANAGER.NO_TOKENS_SELECTED');
     return context;
   }
 
@@ -40,20 +33,20 @@ export async function buildMultiTokenContext(app, options) {
   context.totalPages = app.totalPages;
   context.hasNextPage = app.hasNextPage;
   context.hasPreviousPage = app.hasPreviousPage;
-  
+
   // Generate page numbers array for pagination buttons
   context.pageNumbers = [];
   for (let i = 1; i <= app.totalPages; i++) {
     context.pageNumbers.push({
       number: i,
-      isActive: i === app.currentPage
+      isActive: i === app.currentPage,
     });
   }
 
   // Tab and filter state
   context.activeTab = app.activeTab;
-  context.isVisibilityTab = app.activeTab === "visibility";
-  context.isCoverTab = app.activeTab === "cover";
+  context.isVisibilityTab = app.activeTab === 'visibility';
+  context.isCoverTab = app.activeTab === 'cover';
   context.showEncounterFilter = hasActiveEncounter();
   context.encounterOnly = app.encounterOnly;
   context.observerTargetMode = app.observerTargetMode || false;
@@ -61,10 +54,7 @@ export async function buildMultiTokenContext(app, options) {
 
   // Get targets for the current token (excluding only self)
   const allSceneTargets = getSceneTargets(currentToken, app.encounterOnly, false);
-  const targets = allSceneTargets.filter(token => 
-    token.id !== currentToken.id
-  );
-
+  const targets = allSceneTargets.filter((token) => token.id !== currentToken.id);
 
   // Get current visibility and cover data for this token
   let currentVisibilityData, currentCoverData;
@@ -72,7 +62,7 @@ export async function buildMultiTokenContext(app, options) {
     currentVisibilityData = getVisibilityMap(currentToken) || {};
     currentCoverData = getCoverMap(currentToken) || {};
   } catch (e) {
-    console.warn("Failed to get visibility/cover maps:", e);
+    console.warn('Failed to get visibility/cover maps:', e);
     currentVisibilityData = {};
     currentCoverData = {};
   }
@@ -82,33 +72,34 @@ export async function buildMultiTokenContext(app, options) {
 
   // Build target data with current states and any pending changes
   const allTargets = targets.map((token) => {
-    const baseVisibilityState = currentVisibilityData[token.document.id] || "observed";
-    const baseCoverState = currentCoverData[token.document.id] || "none";
-    
+    const baseVisibilityState = currentVisibilityData[token.document.id] || 'observed';
+    const baseCoverState = currentCoverData[token.document.id] || 'none';
+
     // Apply any saved changes
-    const currentVisibilityState = savedChanges?.visibility[token.document.id] || baseVisibilityState;
+    const currentVisibilityState =
+      savedChanges?.visibility[token.document.id] || baseVisibilityState;
     const currentCoverState = savedChanges?.cover[token.document.id] || baseCoverState;
 
     const disposition = token.document.disposition || 0;
-    
+
     let perceptionDC, stealthDC;
     try {
       perceptionDC = extractPerceptionDC(currentToken);
     } catch (e) {
-      console.warn("Failed to extract perception DC:", e);
+      console.warn('Failed to extract perception DC:', e);
       perceptionDC = 10; // Default
     }
-    
+
     try {
       stealthDC = extractStealthDC(token);
     } catch (e) {
-      console.warn("Failed to extract stealth DC:", e);
+      console.warn('Failed to extract stealth DC:', e);
       stealthDC = 10; // Default
     }
 
-    const isLoot = token.actor?.type === "loot";
-    const allowedVisKeys = isLoot ? ["observed", "hidden"] : Object.keys(VISIBILITY_STATES);
-    
+    const isLoot = token.actor?.type === 'loot';
+    const allowedVisKeys = isLoot ? ['observed', 'hidden'] : Object.keys(VISIBILITY_STATES);
+
     const visibilityStates = allowedVisKeys.map((key) => {
       const state = VISIBILITY_STATES[key];
       if (!state) {
@@ -117,8 +108,8 @@ export async function buildMultiTokenContext(app, options) {
           value: key,
           label: key,
           selected: currentVisibilityState === key,
-          icon: "fas fa-question",
-          color: "#999"
+          icon: 'fas fa-question',
+          color: '#999',
         };
       }
       return {
@@ -147,18 +138,20 @@ export async function buildMultiTokenContext(app, options) {
       name: token.document.name,
       img: getTokenImage(token),
       isLoot: !!isLoot,
-      currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : "observed",
+      currentVisibilityState: allowedVisKeys.includes(currentVisibilityState)
+        ? currentVisibilityState
+        : 'observed',
       currentCoverState,
-      isPC: token.actor?.hasPlayerOwner || token.actor?.type === "character",
+      isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
       disposition: disposition,
-      dispositionClass: disposition === -1 ? "hostile" : disposition === 1 ? "friendly" : "neutral",
+      dispositionClass: disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
       visibilityStates,
       coverStates,
       coverStateFlags: {
-        none: currentCoverState === "none",
-        lesser: currentCoverState === "lesser", 
-        standard: currentCoverState === "standard",
-        greater: currentCoverState === "greater"
+        none: currentCoverState === 'none',
+        lesser: currentCoverState === 'lesser',
+        standard: currentCoverState === 'standard',
+        greater: currentCoverState === 'greater',
       },
       perceptionDC,
       stealthDC,
@@ -170,7 +163,7 @@ export async function buildMultiTokenContext(app, options) {
   const coverPrecedence = { none: 0, lesser: 1, standard: 2, greater: 3 };
 
   const sortByStatusAndName = (a, b) => {
-    if (app.activeTab === "visibility") {
+    if (app.activeTab === 'visibility') {
       const statusA = visibilityPrecedence[a.currentVisibilityState] ?? 999;
       const statusB = visibilityPrecedence[b.currentVisibilityState] ?? 999;
       if (statusA !== statusB) return statusA - statusB;

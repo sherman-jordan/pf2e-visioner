@@ -1,13 +1,13 @@
 export function buildDiversionPanel() {
-  const label = "Open Diversion Results";
-  const tooltip = "Preview and apply Create a Diversion visibility changes";
-  const title = "Create a Diversion Results";
-  const icon = "fas fa-theater-masks";
-  const actionName = "open-diversion-results";
-  const buttonClass = "visioner-btn-create-a-diversion";
-  const panelClass = "create-a-diversion-panel";
+  const label = 'Open Diversion Results';
+  const tooltip = 'Preview and apply Create a Diversion visibility changes';
+  const title = 'Create a Diversion Results';
+  const icon = 'fas fa-theater-masks';
+  const actionName = 'open-diversion-results';
+  const buttonClass = 'visioner-btn-create-a-diversion';
+  const panelClass = 'create-a-diversion-panel';
 
-  let actionButtonsHtml = "";
+  let actionButtonsHtml = '';
   if (game.user.isGM) {
     actionButtonsHtml = `
       <button type="button" 
@@ -26,5 +26,3 @@ export function buildDiversionPanel() {
 
   return { title, icon, panelClass, actionButtonsHtml };
 }
-
-

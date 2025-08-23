@@ -1,4 +1,4 @@
-import * as core from "./core.js";
+import * as core from './core.js';
 import {
   bindDomIconHandlers,
   bulkSetCoverState,
@@ -7,10 +7,18 @@ import {
   toggleIgnoreAllies,
   toggleMode,
   toggleTab,
-} from "./ui.js";
+} from './ui.js';
 
-export * from "./core.js";
-export { bindDomIconHandlers, bulkSetCoverState, bulkSetVisibilityState, toggleEncounterFilter, toggleIgnoreAllies, toggleMode, toggleTab };
+export * from './core.js';
+export {
+  bindDomIconHandlers,
+  bulkSetCoverState,
+  bulkSetVisibilityState,
+  toggleEncounterFilter,
+  toggleIgnoreAllies,
+  toggleMode,
+  toggleTab,
+};
 
 export function bindTokenManagerActions(TokenManagerClass) {
   TokenManagerClass.formHandler = core.formHandler;
@@ -26,5 +34,3 @@ export function bindTokenManagerActions(TokenManagerClass) {
   TokenManagerClass.bulkSetCoverState = bulkSetCoverState;
   bindDomIconHandlers(TokenManagerClass);
 }
-
-

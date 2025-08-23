@@ -6,12 +6,14 @@
 
 /* Seek Results Available Panel and Button */
 .pf2e-visioner.pf2e-visioner-colorblind-protanopia .pf2e-visioner-automation-panel.seek-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
-  .pf2e-visioner-automation-panel.seek-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .pf2e-visioner-automation-panel.seek-panel,
 .pf2e-visioner.pf2e-visioner-colorblind-tritanopia .pf2e-visioner-automation-panel.seek-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
-  .pf2e-visioner-automation-panel.seek-panel {
-  background: linear-gradient(135deg, var(--pf2e-visioner-info-light), var(--pf2e-visioner-info-lighter)) !important;
+.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia .pf2e-visioner-automation-panel.seek-panel {
+  background: linear-gradient(
+    135deg,
+    var(--pf2e-visioner-info-light),
+    var(--pf2e-visioner-info-lighter)
+  ) !important;
   border: 2px solid var(--dialog-theme-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
@@ -29,15 +31,17 @@
 }
 
 /* Point Out Panel and Button */
-.pf2e-visioner.pf2e-visioner-colorblind-protanopia
-  .pf2e-visioner-automation-panel.point-out-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-protanopia .pf2e-visioner-automation-panel.point-out-panel,
 .pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
   .pf2e-visioner-automation-panel.point-out-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-tritanopia
-  .pf2e-visioner-automation-panel.point-out-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-tritanopia .pf2e-visioner-automation-panel.point-out-panel,
 .pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
   .pf2e-visioner-automation-panel.point-out-panel {
-  background: linear-gradient(135deg, var(--pf2e-visioner-warning-light), var(--pf2e-visioner-warning-lighter)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--pf2e-visioner-warning-light),
+    var(--pf2e-visioner-warning-lighter)
+  ) !important;
   border: 2px solid var(--dialog-theme-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
@@ -56,12 +60,14 @@
 
 /* Hide Panel and Button */
 .pf2e-visioner.pf2e-visioner-colorblind-protanopia .pf2e-visioner-automation-panel.hide-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
-  .pf2e-visioner-automation-panel.hide-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .pf2e-visioner-automation-panel.hide-panel,
 .pf2e-visioner.pf2e-visioner-colorblind-tritanopia .pf2e-visioner-automation-panel.hide-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
-  .pf2e-visioner-automation-panel.hide-panel {
-  background: linear-gradient(135deg, var(--pf2e-visioner-purple-light), var(--pf2e-visioner-purple-lighter)) !important;
+.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia .pf2e-visioner-automation-panel.hide-panel {
+  background: linear-gradient(
+    135deg,
+    var(--pf2e-visioner-purple-light),
+    var(--pf2e-visioner-purple-lighter)
+  ) !important;
   border: 2px solid var(--dialog-theme-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
@@ -79,15 +85,15 @@
 }
 
 /* Sneak Panel and Button */
-.pf2e-visioner.pf2e-visioner-colorblind-protanopia
-  .pf2e-visioner-automation-panel.sneak-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
-  .pf2e-visioner-automation-panel.sneak-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-tritanopia
-  .pf2e-visioner-automation-panel.sneak-panel,
-.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
-  .pf2e-visioner-automation-panel.sneak-panel {
-  background: linear-gradient(135deg, var(--pf2e-visioner-gray-light), var(--pf2e-visioner-gray-lighter)) !important;
+.pf2e-visioner.pf2e-visioner-colorblind-protanopia .pf2e-visioner-automation-panel.sneak-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .pf2e-visioner-automation-panel.sneak-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-tritanopia .pf2e-visioner-automation-panel.sneak-panel,
+.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia .pf2e-visioner-automation-panel.sneak-panel {
+  background: linear-gradient(
+    135deg,
+    var(--pf2e-visioner-gray-light),
+    var(--pf2e-visioner-gray-lighter)
+  ) !important;
   border: 2px solid var(--dialog-theme-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
@@ -113,17 +119,18 @@
   .pf2e-visioner-automation-panel.create-a-diversion-panel,
 .pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
   .pf2e-visioner-automation-panel.create-a-diversion-panel {
-  background: linear-gradient(135deg, var(--pf2e-visioner-teal-light), var(--pf2e-visioner-teal-lighter)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--pf2e-visioner-teal-light),
+    var(--pf2e-visioner-teal-lighter)
+  ) !important;
   border: 2px solid var(--dialog-theme-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
-.pf2e-visioner.pf2e-visioner-colorblind-protanopia
-  .visioner-btn.visioner-btn-create-a-diversion,
-.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
-  .visioner-btn.visioner-btn-create-a-diversion,
-.pf2e-visioner.pf2e-visioner-colorblind-tritanopia
-  .visioner-btn.visioner-btn-create-a-diversion,
+.pf2e-visioner.pf2e-visioner-colorblind-protanopia .visioner-btn.visioner-btn-create-a-diversion,
+.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .visioner-btn.visioner-btn-create-a-diversion,
+.pf2e-visioner.pf2e-visioner-colorblind-tritanopia .visioner-btn.visioner-btn-create-a-diversion,
 .pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
   .visioner-btn.visioner-btn-create-a-diversion {
   background: linear-gradient(
@@ -143,7 +150,11 @@
   .pf2e-visioner-automation-panel.consequences-panel,
 .pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
   .pf2e-visioner-automation-panel.consequences-panel {
-  background: linear-gradient(135deg, var(--pf2e-visioner-danger-light), var(--pf2e-visioner-danger-lighter)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--pf2e-visioner-danger-light),
+    var(--pf2e-visioner-danger-lighter)
+  ) !important;
   border: 2px solid var(--dialog-theme-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
@@ -151,8 +162,7 @@
 .pf2e-visioner.pf2e-visioner-colorblind-protanopia .visioner-btn.visioner-btn-consequences,
 .pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .visioner-btn.visioner-btn-consequences,
 .pf2e-visioner.pf2e-visioner-colorblind-tritanopia .visioner-btn.visioner-btn-consequences,
-.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
-  .visioner-btn.visioner-btn-consequences {
+.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia .visioner-btn.visioner-btn-consequences {
   background: linear-gradient(
     135deg,
     var(--dialog-theme-color),
@@ -333,18 +343,13 @@
 }
 
 /* Create a Diversion Dialog - Teal Theme */
-.pf2e-visioner.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog-changes-count,
-.pf2e-visioner.pf2e-visioner-colorblind-protanopia
-  .create-a-diversion-preview-dialog-total-count,
+.pf2e-visioner.pf2e-visioner-colorblind-protanopia .create-a-diversion-preview-dialog-changes-count,
+.pf2e-visioner.pf2e-visioner-colorblind-protanopia .create-a-diversion-preview-dialog-total-count,
 .pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
   .create-a-diversion-preview-dialog-changes-count,
-.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
-  .create-a-diversion-preview-dialog-total-count,
-.pf2e-visioner.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog-changes-count,
-.pf2e-visioner.pf2e-visioner-colorblind-tritanopia
-  .create-a-diversion-preview-dialog-total-count,
+.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .create-a-diversion-preview-dialog-total-count,
+.pf2e-visioner.pf2e-visioner-colorblind-tritanopia .create-a-diversion-preview-dialog-changes-count,
+.pf2e-visioner.pf2e-visioner-colorblind-tritanopia .create-a-diversion-preview-dialog-total-count,
 .pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
   .create-a-diversion-preview-dialog-changes-count,
 .pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
@@ -356,15 +361,12 @@
 /* Consequences Dialog - Red Theme */
 .pf2e-visioner.pf2e-visioner-colorblind-protanopia .consequences-preview-dialog-changes-count,
 .pf2e-visioner.pf2e-visioner-colorblind-protanopia .consequences-preview-dialog-total-count,
-.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia
-  .consequences-preview-dialog-changes-count,
+.pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .consequences-preview-dialog-changes-count,
 .pf2e-visioner.pf2e-visioner-colorblind-deuteranopia .consequences-preview-dialog-total-count,
 .pf2e-visioner.pf2e-visioner-colorblind-tritanopia .consequences-preview-dialog-changes-count,
 .pf2e-visioner.pf2e-visioner-colorblind-tritanopia .consequences-preview-dialog-total-count,
-.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
-  .consequences-preview-dialog-changes-count,
-.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia
-  .consequences-preview-dialog-total-count {
+.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia .consequences-preview-dialog-changes-count,
+.pf2e-visioner.pf2e-visioner-colorblind-achromatopsia .consequences-preview-dialog-total-count {
   color: var(--dialog-theme-color) !important;
   font-weight: bold !important;
 }

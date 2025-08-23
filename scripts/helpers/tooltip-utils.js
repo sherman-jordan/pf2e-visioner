@@ -2,24 +2,24 @@
  * Tooltip helpers split from hover-tooltips.js to reduce file size and improve cohesion.
  */
 
-import { MODULE_ID } from "../constants.js";
+import { MODULE_ID } from '../constants.js';
 
 /**
  * Compute font/icon/border sizes based on a setting value (preset string or number).
  */
 export function computeSizesFromSetting(rawValue) {
   try {
-    if (typeof rawValue === "string") {
+    if (typeof rawValue === 'string') {
       switch (rawValue) {
-        case "tiny":
+        case 'tiny':
           return { fontPx: 12, iconPx: 10, borderPx: 2 };
-        case "small":
+        case 'small':
           return { fontPx: 14, iconPx: 12, borderPx: 2 };
-        case "large":
+        case 'large':
           return { fontPx: 18, iconPx: 20, borderPx: 4 };
-        case "xlarge":
+        case 'xlarge':
           return { fontPx: 20, iconPx: 24, borderPx: 5 };
-        case "medium":
+        case 'medium':
         default:
           return { fontPx: 16, iconPx: 16, borderPx: 3 };
       }
@@ -41,53 +41,52 @@ export function computeSizesFromSetting(rawValue) {
  * @param {Token} [hoveredToken=null] - The token being hovered (optional)
  * @param {boolean} [isKeyboardTooltip=false] - Whether this is for keyboard tooltips (Alt/O key) which ignore hover settings
  */
-export function canShowTooltips(mode = "target", hoveredToken = null, isKeyboardTooltip = false) {
+export function canShowTooltips(mode = 'target', hoveredToken = null, isKeyboardTooltip = false) {
   // Keyboard tooltips (Alt/O key) work regardless of hover tooltip settings
   if (isKeyboardTooltip) {
     if (game.user.isGM) {
       return true; // GMs can always use keyboard tooltips
     }
     // For players, still need basic tooltip permissions enabled
-    const result = game.settings.get(MODULE_ID, "enableHoverTooltips") && 
-                   game.settings.get(MODULE_ID, "allowPlayerTooltips");
+    const result =
+      game.settings.get(MODULE_ID, 'enableHoverTooltips') &&
+      game.settings.get(MODULE_ID, 'allowPlayerTooltips');
     return result;
   }
-  
+
   // For regular hover tooltips, check all the settings
   if (game.user.isGM) {
     // GMs need hover tooltips enabled for hover behavior
-    return game.settings.get(MODULE_ID, "enableHoverTooltips");
+    return game.settings.get(MODULE_ID, 'enableHoverTooltips');
   }
 
   // For players, first check if hover tooltips are enabled at all
-  if (!game.settings.get(MODULE_ID, "enableHoverTooltips")) {
+  if (!game.settings.get(MODULE_ID, 'enableHoverTooltips')) {
     return false;
   }
 
   // For players, check if player tooltips are allowed
-  if (!game.settings.get(MODULE_ID, "allowPlayerTooltips")) {
+  if (!game.settings.get(MODULE_ID, 'allowPlayerTooltips')) {
     return false;
   }
 
   // Special case: Observer mode (O key) is ALWAYS allowed for players
-  if (mode === "observer") {
+  if (mode === 'observer') {
     return true;
   }
 
   // For target mode (normal hover), players should only see tooltips for tokens they own
-  if (mode === "target" && hoveredToken) {
-    if (game.settings.get(MODULE_ID, "blockPlayerTargetTooltips")) {
+  if (mode === 'target' && hoveredToken) {
+    if (game.settings.get(MODULE_ID, 'blockPlayerTargetTooltips')) {
       return false;
     }
     return hoveredToken.isOwner;
   }
 
   // If we got here and it's target mode but no token provided, allow (for Alt key)
-  if (mode === "target" && !hoveredToken) {
-    return !game.settings.get(MODULE_ID, "blockPlayerTargetTooltips");
+  if (mode === 'target' && !hoveredToken) {
+    return !game.settings.get(MODULE_ID, 'blockPlayerTargetTooltips');
   }
 
   return true;
 }
-
-

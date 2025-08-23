@@ -2,8 +2,8 @@
  * Detection System Wrapper - Makes PF2E system show real conditions
  */
 
-import { MODULE_ID } from "../constants.js";
-import { getVisibilityMap } from "../utils.js";
+import { MODULE_ID } from '../constants.js';
+import { getVisibilityMap } from '../utils.js';
 
 /**
  * Class wrapper for PF2E detection integration to support init/teardown.
@@ -16,41 +16,41 @@ export class DetectionWrapper {
 
   register() {
     if (this._registered) return;
-    if (!game.modules.get("lib-wrapper")?.active) {
+    if (!game.modules.get('lib-wrapper')?.active) {
       console.warn(
-        "Per-Token Visibility: libWrapper not found - visual conditions may not work properly",
+        'Per-Token Visibility: libWrapper not found - visual conditions may not work properly',
       );
       return;
     }
     libWrapper.register(
-      "pf2e-visioner",
-      "foundry.canvas.perception.DetectionMode.prototype.testVisibility",
+      'pf2e-visioner',
+      'foundry.canvas.perception.DetectionMode.prototype.testVisibility',
       detectionModeTestVisibility,
-      "OVERRIDE",
+      'OVERRIDE',
     );
     libWrapper.register(
-      "pf2e-visioner",
-      "CONFIG.Canvas.detectionModes.basicSight._canDetect",
+      'pf2e-visioner',
+      'CONFIG.Canvas.detectionModes.basicSight._canDetect',
       canDetectWrapper(VISIBILITY_VALUES.hidden),
-      "WRAPPER",
+      'WRAPPER',
     );
     libWrapper.register(
-      "pf2e-visioner",
-      "CONFIG.Canvas.detectionModes.lightPerception._canDetect",
+      'pf2e-visioner',
+      'CONFIG.Canvas.detectionModes.lightPerception._canDetect',
       canDetectWrapper(VISIBILITY_VALUES.hidden),
-      "WRAPPER",
+      'WRAPPER',
     );
     libWrapper.register(
-      "pf2e-visioner",
-      "CONFIG.Canvas.detectionModes.hearing._canDetect",
+      'pf2e-visioner',
+      'CONFIG.Canvas.detectionModes.hearing._canDetect',
       canDetectWrapper(VISIBILITY_VALUES.undetected),
-      "WRAPPER",
+      'WRAPPER',
     );
     libWrapper.register(
-      "pf2e-visioner",
-      "CONFIG.Canvas.detectionModes.feelTremor._canDetect",
+      'pf2e-visioner',
+      'CONFIG.Canvas.detectionModes.feelTremor._canDetect',
       canDetectWrapper(VISIBILITY_VALUES.undetected),
-      "WRAPPER",
+      'WRAPPER',
     );
     this._registered = true;
   }
@@ -84,9 +84,7 @@ const VISIBILITY_VALUES = {
 function detectionModeTestVisibility(visionSource, mode, config = {}) {
   if (!mode.enabled) return false;
   if (!this._canDetect(visionSource, config.object, config)) return false;
-  return config.tests.some((test) =>
-    this._testPoint(visionSource, mode, config.object, test),
-  );
+  return config.tests.some((test) => this._testPoint(visionSource, mode, config.object, test));
 }
 
 /**
@@ -103,9 +101,15 @@ function canDetectWrapper(threshold) {
       const observerToken = visionSource?.object;
       const targetToken = target;
       const targetActorType = targetToken?.actor?.type;
-      if (observerToken?.actor && targetToken?.actor && (targetActorType === "hazard" || targetActorType === "loot")) {
-        const minRankFlag = Number(targetToken.document?.getFlag?.(MODULE_ID, "minPerceptionRank") ?? 0);
-        const stat = observerToken.actor?.getStatistic?.("perception");
+      if (
+        observerToken?.actor &&
+        targetToken?.actor &&
+        (targetActorType === 'hazard' || targetActorType === 'loot')
+      ) {
+        const minRankFlag = Number(
+          targetToken.document?.getFlag?.(MODULE_ID, 'minPerceptionRank') ?? 0,
+        );
+        const stat = observerToken.actor?.getStatistic?.('perception');
         const observerRank = Number(stat?.proficiency?.rank ?? stat?.rank ?? 0);
         if (Number.isFinite(minRankFlag) && observerRank < minRankFlag) {
           return false;
@@ -115,12 +119,7 @@ function canDetectWrapper(threshold) {
 
     // Check our module's visibility settings
     const origin = visionSource.object;
-    const reachedThreshold = reachesVisibilityThreshold(
-      origin,
-      target,
-      threshold,
-      config,
-    );
+    const reachedThreshold = reachesVisibilityThreshold(origin, target, threshold, config);
 
     return !reachedThreshold;
   };
@@ -145,11 +144,11 @@ function reachesVisibilityThreshold(origin, target, threshold, config = {}) {
  * This is the key function that makes the detection wrapper work
  */
 function getVisibilityBetweenTokens(observer, target) {
-  if (!observer || !target) return "observed";
+  if (!observer || !target) return 'observed';
 
   // Get the observer's visibility map
   const visibilityMap = getVisibilityMap(observer);
 
   // Return the visibility state for this target
-  return visibilityMap[target.document.id] || "observed";
+  return visibilityMap[target.document.id] || 'observed';
 }

@@ -2,23 +2,27 @@
  * Context builder for VisionerTokenManager template
  */
 
-import { extractPerceptionDC, extractStealthDC } from "../../chat/services/infra/shared-utils.js";
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from "../../constants.js";
+import { extractPerceptionDC, extractStealthDC } from '../../chat/services/infra/shared-utils.js';
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../../constants.js';
 import {
-    getCoverMap,
-    getLastRollTotalForActor,
-    getSceneTargets,
-    getVisibilityMap,
-    hasActiveEncounter,
-} from "../../utils.js";
+  getCoverMap,
+  getLastRollTotalForActor,
+  getSceneTargets,
+  getVisibilityMap,
+  hasActiveEncounter,
+} from '../../utils.js';
 
 function getTokenImage(token) {
   if (token.actor?.img) return token.actor.img;
-  return "icons/svg/book.svg";
+  return 'icons/svg/book.svg';
 }
 
 function svgDataUri(svg) {
-  try { return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`; } catch (_) { return ""; }
+  try {
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  } catch (_) {
+    return '';
+  }
 }
 
 function getWallImage(doorType = 0) {
@@ -49,12 +53,10 @@ export async function buildContext(app, options) {
   // IMPORTANT: Call the base ApplicationV2 implementation, not our own override,
   // otherwise we recurse forever and nothing renders.
   const BaseApp = foundry?.applications?.api?.ApplicationV2;
-  const context = BaseApp
-    ? await BaseApp.prototype._prepareContext.call(app, options)
-    : {};
+  const context = BaseApp ? await BaseApp.prototype._prepareContext.call(app, options) : {};
 
   if (!app.observer) {
-    context.error = game.i18n.localize("PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED");
+    context.error = game.i18n.localize('PF2E_VISIONER.NOTIFICATIONS.NO_OBSERVER_SELECTED');
     return context;
   }
 
@@ -63,17 +65,17 @@ export async function buildContext(app, options) {
     app.coverData = getCoverMap(app.observer) || {};
   } catch (_) {}
 
-  const isLootObserver = app.observer?.actor?.type === "loot";
+  const isLootObserver = app.observer?.actor?.type === 'loot';
   if (isLootObserver) {
-    app.mode = "target";
-    if (app.activeTab === "cover") app.activeTab = "visibility";
+    app.mode = 'target';
+    if (app.activeTab === 'cover') app.activeTab = 'visibility';
   }
   context.mode = app.mode;
   context.activeTab = app.activeTab;
-  context.isObserverMode = app.mode === "observer";
-  context.isTargetMode = app.mode === "target";
-  context.isVisibilityTab = app.activeTab === "visibility";
-  context.isCoverTab = app.activeTab === "cover";
+  context.isObserverMode = app.mode === 'observer';
+  context.isTargetMode = app.mode === 'target';
+  context.isVisibilityTab = app.activeTab === 'visibility';
+  context.isCoverTab = app.activeTab === 'cover';
   context.lootObserver = !!isLootObserver;
   context.hideCoverTab = !!isLootObserver;
 
@@ -91,41 +93,42 @@ export async function buildContext(app, options) {
   };
 
   let allTargets;
-  if (app.mode === "observer") {
+  if (app.mode === 'observer') {
     allTargets = sceneTokens.map((token) => {
-      const currentVisibilityState = app.visibilityData[token.document.id] || "observed";
-      const currentCoverState = app.coverData[token.document.id] || "none";
+      const currentVisibilityState = app.visibilityData[token.document.id] || 'observed';
+      const currentCoverState = app.coverData[token.document.id] || 'none';
 
       const disposition = token.document.disposition || 0;
 
       const perceptionDC = extractPerceptionDC(app.observer);
       const stealthDC = extractStealthDC(token);
-      const showOutcomeSetting = game.settings.get(MODULE_ID, "integrateRollOutcome");
+      const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       let showOutcome = false;
-      let outcomeLabel = "";
-      let outcomeClass = "";
+      let outcomeLabel = '';
+      let outcomeClass = '';
       if (showOutcomeSetting) {
         const lastRoll = getLastRollTotalForActor(app.observer?.actor, null);
-        if (typeof lastRoll === "number" && typeof stealthDC === "number") {
+        if (typeof lastRoll === 'number' && typeof stealthDC === 'number') {
           const diff = lastRoll - stealthDC;
           if (diff >= 10) {
-            outcomeLabel = "Critical Success";
-            outcomeClass = "critical-success";
+            outcomeLabel = 'Critical Success';
+            outcomeClass = 'critical-success';
           } else if (diff >= 0) {
-            outcomeLabel = "Success";
-            outcomeClass = "success";
+            outcomeLabel = 'Success';
+            outcomeClass = 'success';
           } else if (diff <= -10) {
-            outcomeLabel = "Critical Failure";
-            outcomeClass = "critical-failure";
+            outcomeLabel = 'Critical Failure';
+            outcomeClass = 'critical-failure';
           } else {
-            outcomeLabel = "Failure";
-            outcomeClass = "failure";
+            outcomeLabel = 'Failure';
+            outcomeClass = 'failure';
           }
           showOutcome = true;
         }
       }
-      const isRowLoot = token.actor?.type === "loot";
-      const allowedVisKeys = isLootObserver || isRowLoot ? ["observed", "hidden"] : Object.keys(VISIBILITY_STATES);
+      const isRowLoot = token.actor?.type === 'loot';
+      const allowedVisKeys =
+        isLootObserver || isRowLoot ? ['observed', 'hidden'] : Object.keys(VISIBILITY_STATES);
       const visibilityStates = allowedVisKeys.map((key) => ({
         value: key,
         label: game.i18n.localize(VISIBILITY_STATES[key].label),
@@ -140,11 +143,14 @@ export async function buildContext(app, options) {
         name: token.document.name,
         img: getTokenImage(token),
         isLoot: !!isRowLoot,
-        currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : "observed",
+        currentVisibilityState: allowedVisKeys.includes(currentVisibilityState)
+          ? currentVisibilityState
+          : 'observed',
         currentCoverState,
-        isPC: token.actor?.hasPlayerOwner || token.actor?.type === "character",
+        isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
         disposition: disposition,
-        dispositionClass: disposition === -1 ? "hostile" : disposition === 1 ? "friendly" : "neutral",
+        dispositionClass:
+          disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
         visibilityStates,
         coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
           value: key,
@@ -169,39 +175,39 @@ export async function buildContext(app, options) {
     allTargets = sceneTokens.map((observerToken) => {
       const observerVisibilityData = getVisibilityMap(observerToken);
       const observerCoverData = getCoverMap(observerToken);
-      const currentVisibilityState = observerVisibilityData[app.observer.document.id] || "observed";
-      const currentCoverState = observerCoverData[app.observer.document.id] || "none";
+      const currentVisibilityState = observerVisibilityData[app.observer.document.id] || 'observed';
+      const currentCoverState = observerCoverData[app.observer.document.id] || 'none';
 
       const disposition = observerToken.document.disposition || 0;
 
       const perceptionDC = extractPerceptionDC(observerToken);
       const stealthDC = extractStealthDC(app.observer);
-      const showOutcomeSetting = game.settings.get(MODULE_ID, "integrateRollOutcome");
+      const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       let showOutcome = false;
-      let outcomeLabel = "";
-      let outcomeClass = "";
+      let outcomeLabel = '';
+      let outcomeClass = '';
       if (showOutcomeSetting) {
         const lastRoll = getLastRollTotalForActor(app.observer?.actor, null);
-        if (typeof lastRoll === "number" && typeof perceptionDC === "number") {
+        if (typeof lastRoll === 'number' && typeof perceptionDC === 'number') {
           const diff = lastRoll - perceptionDC;
           if (diff >= 10) {
-            outcomeLabel = "Critical Success";
-            outcomeClass = "critical-success";
+            outcomeLabel = 'Critical Success';
+            outcomeClass = 'critical-success';
           } else if (diff >= 0) {
-            outcomeLabel = "Success";
-            outcomeClass = "success";
+            outcomeLabel = 'Success';
+            outcomeClass = 'success';
           } else if (diff <= -10) {
-            outcomeLabel = "Critical Failure";
-            outcomeClass = "critical-failure";
+            outcomeLabel = 'Critical Failure';
+            outcomeClass = 'critical-failure';
           } else {
-            outcomeLabel = "Failure";
-            outcomeClass = "failure";
+            outcomeLabel = 'Failure';
+            outcomeClass = 'failure';
           }
           showOutcome = true;
         }
       }
-      const isRowLoot = observerToken.actor?.type === "loot" || isLootObserver;
-      const allowedVisKeys = isRowLoot ? ["observed", "hidden"] : Object.keys(VISIBILITY_STATES);
+      const isRowLoot = observerToken.actor?.type === 'loot' || isLootObserver;
+      const allowedVisKeys = isRowLoot ? ['observed', 'hidden'] : Object.keys(VISIBILITY_STATES);
       const visibilityStates = allowedVisKeys.map((key) => ({
         value: key,
         label: game.i18n.localize(VISIBILITY_STATES[key].label),
@@ -215,12 +221,15 @@ export async function buildContext(app, options) {
         id: observerToken.document.id,
         name: observerToken.document.name,
         img: getTokenImage(observerToken),
-        isLoot: !!(observerToken.actor?.type === "loot"),
-        currentVisibilityState: allowedVisKeys.includes(currentVisibilityState) ? currentVisibilityState : "observed",
+        isLoot: !!(observerToken.actor?.type === 'loot'),
+        currentVisibilityState: allowedVisKeys.includes(currentVisibilityState)
+          ? currentVisibilityState
+          : 'observed',
         currentCoverState,
-        isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === "character",
+        isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === 'character',
         disposition: disposition,
-        dispositionClass: disposition === -1 ? "hostile" : disposition === 1 ? "friendly" : "neutral",
+        dispositionClass:
+          disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
         visibilityStates,
         coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
           value: key,
@@ -247,7 +256,7 @@ export async function buildContext(app, options) {
   const coverPrecedence = { none: 0, lesser: 1, standard: 2, greater: 3 };
 
   const sortByStatusAndName = (a, b) => {
-    if (app.activeTab === "visibility") {
+    if (app.activeTab === 'visibility') {
       const statusA = visibilityPrecedence[a.currentVisibilityState] ?? 999;
       const statusB = visibilityPrecedence[b.currentVisibilityState] ?? 999;
       if (statusA !== statusB) return statusA - statusB;
@@ -261,27 +270,30 @@ export async function buildContext(app, options) {
 
   context.pcTargets = allTargets.filter((t) => t.isPC && !t.isLoot).sort(sortByStatusAndName);
   context.npcTargets = allTargets.filter((t) => !t.isPC && !t.isLoot).sort(sortByStatusAndName);
-  context.lootTargets = app.mode === "observer" ? allTargets.filter((t) => t.isLoot).sort(sortByStatusAndName) : [];
+  context.lootTargets =
+    app.mode === 'observer' ? allTargets.filter((t) => t.isLoot).sort(sortByStatusAndName) : [];
   context.targets = allTargets;
 
   // Hidden Walls (Observer Mode): list identifiers of walls marked as hidden with observed/hidden states
   context.wallTargets = [];
   context.includeWalls = false;
   try {
-    if (context.isObserverMode && game.settings.get(MODULE_ID, "hiddenWallsEnabled")) {
+    if (context.isObserverMode && game.settings.get(MODULE_ID, 'hiddenWallsEnabled')) {
       const walls = canvas?.walls?.placeables || [];
       // Respect UI filter: Ignore walls (visibility tab only)
       const ignoreWalls = !!app.ignoreWalls && context.isVisibilityTab === true;
-      const hiddenWalls = ignoreWalls ? [] : walls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, "hiddenWall"));
+      const hiddenWalls = ignoreWalls
+        ? []
+        : walls.filter((w) => !!w?.document?.getFlag?.(MODULE_ID, 'hiddenWall'));
       let autoIndex = 0;
-      const wallMap = app.observer?.document?.getFlag?.(MODULE_ID, "walls") || {};
+      const wallMap = app.observer?.document?.getFlag?.(MODULE_ID, 'walls') || {};
       context.wallTargets = hiddenWalls.map((w) => {
         const d = w.document;
-        const idf = d?.getFlag?.(MODULE_ID, "wallIdentifier");
+        const idf = d?.getFlag?.(MODULE_ID, 'wallIdentifier');
         const doorType = Number(d?.door) || 0;
-        const fallback = `${game.i18n?.localize?.("PF2E_VISIONER.WALL.VISIBLE_TO_YOU") || isDoor ? "Hidden Door" : "Hidden Wall"} ${++autoIndex}`;
-        const currentState = wallMap?.[d.id] || "hidden";
-        const states = ["hidden", "observed"].map((key) => ({
+        const fallback = `${game.i18n?.localize?.('PF2E_VISIONER.WALL.VISIBLE_TO_YOU') || isDoor ? 'Hidden Door' : 'Hidden Wall'} ${++autoIndex}`;
+        const currentState = wallMap?.[d.id] || 'hidden';
+        const states = ['hidden', 'observed'].map((key) => ({
           value: key,
           label: game.i18n.localize(VISIBILITY_STATES[key].label),
           selected: currentState === key,
@@ -291,20 +303,31 @@ export async function buildContext(app, options) {
         }));
         const img = getWallImage(doorType);
         // DC: per-wall override else global default
-        const overrideDC = Number(d?.getFlag?.(MODULE_ID, "stealthDC"));
-        const defaultWallDC = Number(game.settings.get(MODULE_ID, "wallStealthDC")) || 15;
+        const overrideDC = Number(d?.getFlag?.(MODULE_ID, 'stealthDC'));
+        const defaultWallDC = Number(game.settings.get(MODULE_ID, 'wallStealthDC')) || 15;
         const dc = Number.isFinite(overrideDC) && overrideDC > 0 ? overrideDC : defaultWallDC;
         // Outcome (optional): compare last Perception roll of observer vs dc
-        let showOutcome = false; let outcomeLabel = ""; let outcomeClass = "";
+        let showOutcome = false;
+        let outcomeLabel = '';
+        let outcomeClass = '';
         try {
-          if (game.settings.get(MODULE_ID, "integrateRollOutcome")) {
-            const lastRoll = getLastRollTotalForActor(app.observer?.actor, "perception");
-            if (typeof lastRoll === "number") {
+          if (game.settings.get(MODULE_ID, 'integrateRollOutcome')) {
+            const lastRoll = getLastRollTotalForActor(app.observer?.actor, 'perception');
+            if (typeof lastRoll === 'number') {
               const diff = lastRoll - dc;
-              if (diff >= 10) { outcomeLabel = "Critical Success"; outcomeClass = "critical-success"; }
-              else if (diff >= 0) { outcomeLabel = "Success"; outcomeClass = "success"; }
-              else if (diff <= -10) { outcomeLabel = "Critical Failure"; outcomeClass = "critical-failure"; }
-              else { outcomeLabel = "Failure"; outcomeClass = "failure"; }
+              if (diff >= 10) {
+                outcomeLabel = 'Critical Success';
+                outcomeClass = 'critical-success';
+              } else if (diff >= 0) {
+                outcomeLabel = 'Success';
+                outcomeClass = 'success';
+              } else if (diff <= -10) {
+                outcomeLabel = 'Critical Failure';
+                outcomeClass = 'critical-failure';
+              } else {
+                outcomeLabel = 'Failure';
+                outcomeClass = 'failure';
+              }
               showOutcome = true;
             }
           }
@@ -349,19 +372,19 @@ export async function buildContext(app, options) {
   context.hasTargets = allTargets.length > 0;
   context.hasPCs = context.pcTargets.length > 0;
   context.hasNPCs = context.npcTargets.length > 0;
-  context.hasLoots = app.mode === "observer" && context.lootTargets.length > 0;
+  context.hasLoots = app.mode === 'observer' && context.lootTargets.length > 0;
   context.includeWalls = context.includeWalls || false;
   try {
-    context.showOutcomeColumn = game.settings.get(MODULE_ID, "integrateRollOutcome");
+    context.showOutcomeColumn = game.settings.get(MODULE_ID, 'integrateRollOutcome');
   } catch (_) {
     context.showOutcomeColumn = false;
   }
 
-  const targetedTokens = Array.from(game.user.targets).filter((token) => token.document.id !== app.observer?.document.id);
+  const targetedTokens = Array.from(game.user.targets).filter(
+    (token) => token.document.id !== app.observer?.document.id,
+  );
   context.showingTargetedTokens = targetedTokens.length > 0;
   context.targetedTokensCount = targetedTokens.length;
 
   return context;
 }
-
-

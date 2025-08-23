@@ -22,5 +22,3 @@ export const appliedPointOutChangesByMessage = new Map();
 
 // Take Cover: messageId -> Array<{ observerId: string, oldCover: string }>
 export const appliedTakeCoverChangesByMessage = new Map();
-
-

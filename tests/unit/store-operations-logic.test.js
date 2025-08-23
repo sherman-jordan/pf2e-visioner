@@ -1,9 +1,9 @@
 /**
  * CORE BUSINESS LOGIC TESTS: Store Operations
- * 
+ *
  * Tests the core data persistence logic for cover and visibility states.
  * This is CRITICAL for data integrity - wrong persistence = lost game state.
- * 
+ *
  * PRINCIPLE: Test real data operations, persistence, and retrieval logic
  */
 
@@ -24,8 +24,8 @@ describe('Store Operations Core Logic', () => {
           return {};
         }),
         setFlag: jest.fn().mockResolvedValue({}),
-        update: jest.fn().mockResolvedValue({})
-      }
+        update: jest.fn().mockResolvedValue({}),
+      },
     };
   }
 
@@ -51,20 +51,20 @@ describe('Store Operations Core Logic', () => {
           delete mockScene.flags[module][key];
         }
         return mockScene;
-      })
+      }),
     };
 
     global.game = {
       user: {
-        isGM: true // Required for store operations
+        isGM: true, // Required for store operations
       },
       scenes: {
-        current: mockScene
-      }
+        current: mockScene,
+      },
     };
 
     global.canvas = {
-      scene: mockScene
+      scene: mockScene,
     };
 
     global.MODULE_ID = 'pf2e-visioner';
@@ -79,7 +79,7 @@ describe('Store Operations Core Logic', () => {
   describe('setCoverBetween - Cover State Persistence', () => {
     test('persists cover state between tokens correctly', async () => {
       const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -89,22 +89,22 @@ describe('Store Operations Core Logic', () => {
       expect(observer.document.update).toHaveBeenCalledWith(
         expect.objectContaining({
           [`flags.${global.MODULE_ID}.cover`]: expect.objectContaining({
-            'target-token-doc': 'standard'
-          })
+            'target-token-doc': 'standard',
+          }),
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     test('handles cover state removal (none state)', async () => {
       const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
       // First set a cover state
       await setCoverBetween(observer, target, 'standard');
-      
+
       // Then remove it
       await setCoverBetween(observer, target, 'none');
 
@@ -114,7 +114,7 @@ describe('Store Operations Core Logic', () => {
 
     test('handles null/undefined tokens gracefully', async () => {
       const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       const validToken = createMockToken('valid-token');
 
       // Should not throw with null/undefined tokens
@@ -129,8 +129,10 @@ describe('Store Operations Core Logic', () => {
 
   describe('getCoverBetween - Cover State Retrieval', () => {
     test('retrieves existing cover state correctly', async () => {
-      const { getCoverBetween, setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+      const { getCoverBetween, setCoverBetween } = await import(
+        '../../scripts/stores/cover-map.js'
+      );
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -138,7 +140,7 @@ describe('Store Operations Core Logic', () => {
       observer.document.getFlag.mockImplementation((module, key) => {
         if (module === global.MODULE_ID && key === 'cover') {
           return {
-            'target-token-doc': 'standard'
+            'target-token-doc': 'standard',
           };
         }
         return {};
@@ -150,7 +152,7 @@ describe('Store Operations Core Logic', () => {
 
     test('returns none for non-existent cover relationships', async () => {
       const { getCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -160,7 +162,7 @@ describe('Store Operations Core Logic', () => {
 
     test('handles corrupted cover map data gracefully', async () => {
       const { getCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -169,9 +171,9 @@ describe('Store Operations Core Logic', () => {
         coverMap: {
           'observer-token': 'not-an-object', // Should be object
           'corrupted-observer': {
-            'target-token': null // Invalid cover state
-          }
-        }
+            'target-token': null, // Invalid cover state
+          },
+        },
       };
 
       observer.document.getFlag.mockImplementation((module, key) => {
@@ -187,10 +189,10 @@ describe('Store Operations Core Logic', () => {
   describe('Store Operations Edge Cases', () => {
     test('handles scene flag operation failures gracefully', async () => {
       const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       // Make setFlag fail
       global.canvas.scene.setFlag = jest.fn().mockRejectedValue(new Error('Flag operation failed'));
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -200,7 +202,7 @@ describe('Store Operations Core Logic', () => {
 
     test('validates cover state values', async () => {
       const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -219,7 +221,7 @@ describe('Store Operations Core Logic', () => {
   describe('Visibility Store Operations', () => {
     test('basic visibility state persistence works', async () => {
       const { setVisibilityBetween } = await import('../../scripts/stores/visibility-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -228,15 +230,15 @@ describe('Store Operations Core Logic', () => {
       // Should attempt to update token document with visibility data
       expect(observer.document.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          [`flags.${global.MODULE_ID}.visibility`]: expect.any(Object)
+          [`flags.${global.MODULE_ID}.visibility`]: expect.any(Object),
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     test('visibility state retrieval handles missing data', async () => {
       const { getVisibilityBetween } = await import('../../scripts/stores/visibility-map.js');
-      
+
       const observer = createMockToken('observer-token');
       const target = createMockToken('target-token');
 
@@ -246,8 +248,10 @@ describe('Store Operations Core Logic', () => {
     });
 
     test('handles null tokens in visibility operations', async () => {
-      const { setVisibilityBetween, getVisibilityBetween } = await import('../../scripts/stores/visibility-map.js');
-      
+      const { setVisibilityBetween, getVisibilityBetween } = await import(
+        '../../scripts/stores/visibility-map.js'
+      );
+
       const validToken = createMockToken('valid-token');
 
       // Should handle null tokens gracefully

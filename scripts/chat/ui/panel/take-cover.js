@@ -1,13 +1,13 @@
 export function buildTakeCoverPanel() {
-  const label = "Open Take Cover Results";
-  const tooltip = "Preview and apply Take Cover changes";
-  const title = "Take Cover";
-  const icon = "fas fa-shield-alt";
-  const actionName = "open-take-cover-results";
-  const buttonClass = "visioner-btn-take-cover";
-  const panelClass = "take-cover-panel";
+  const label = 'Open Take Cover Results';
+  const tooltip = 'Preview and apply Take Cover changes';
+  const title = 'Take Cover';
+  const icon = 'fas fa-shield-alt';
+  const actionName = 'open-take-cover-results';
+  const buttonClass = 'visioner-btn-take-cover';
+  const panelClass = 'take-cover-panel';
 
-  let actionButtonsHtml = "";
+  let actionButtonsHtml = '';
   if (game.user.isGM) {
     actionButtonsHtml = `
       <button type="button" 
@@ -26,5 +26,3 @@ export function buildTakeCoverPanel() {
 
   return { title, icon, panelClass, actionButtonsHtml };
 }
-
-

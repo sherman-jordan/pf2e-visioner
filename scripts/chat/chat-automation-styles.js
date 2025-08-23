@@ -11,19 +11,19 @@ export function injectChatAutomationStyles() {
   const css = getChatAutomationCSS();
 
   // Check if styles are already injected
-  if (document.getElementById("pf2e-visioner-chat-styles")) {
+  if (document.getElementById('pf2e-visioner-chat-styles')) {
     return;
   }
 
   // Create and inject style element
-  const style = document.createElement("style");
-  style.id = "pf2e-visioner-chat-styles";
+  const style = document.createElement('style');
+  style.id = 'pf2e-visioner-chat-styles';
   style.textContent = css;
   document.head.appendChild(style);
 
   // Add event listener to fix scrolling in dialogs
-  Hooks.on("renderApplication", (app, html, data) => {
-    if (app.constructor.name.includes("PreviewDialog")) {
+  Hooks.on('renderApplication', (app, html, data) => {
+    if (app.constructor.name.includes('PreviewDialog')) {
       fixDialogScrolling(html);
     }
   });
@@ -34,15 +34,15 @@ export function injectChatAutomationStyles() {
  */
 export function reinjectChatAutomationStyles() {
   // Remove existing styles
-  const existingStyle = document.getElementById("pf2e-visioner-chat-styles");
+  const existingStyle = document.getElementById('pf2e-visioner-chat-styles');
   if (existingStyle) {
     existingStyle.remove();
   }
 
   // Re-inject with updated styles
   const css = getChatAutomationCSS();
-  const style = document.createElement("style");
-  style.id = "pf2e-visioner-chat-styles";
+  const style = document.createElement('style');
+  style.id = 'pf2e-visioner-chat-styles';
   style.textContent = css;
   document.head.appendChild(style);
 }
@@ -53,23 +53,23 @@ export function reinjectChatAutomationStyles() {
  */
 function fixDialogScrolling(html) {
   // Ensure the results table container can scroll
-  const container = html.find(".results-table-container");
+  const container = html.find('.results-table-container');
   if (container.length) {
     // Force the container to take up available space
     container.css({
-      flex: "1 1 auto",
-      "overflow-y": "auto",
-      "min-height": "150px",
-      "max-height": "calc(100% - 180px)",
+      flex: '1 1 auto',
+      'overflow-y': 'auto',
+      'min-height': '150px',
+      'max-height': 'calc(100% - 180px)',
     });
 
     // Ensure the table headers are sticky
-    const headers = container.find("thead th");
+    const headers = container.find('thead th');
     if (headers.length) {
       headers.css({
-        position: "sticky",
-        top: "0",
-        "z-index": "2",
+        position: 'sticky',
+        top: '0',
+        'z-index': '2',
       });
     }
   }

@@ -3,8 +3,8 @@
  * Based on the approach from pf2e-flatcheck-helper
  */
 
-import { openVisibilityManagerWithMode } from "../api.js";
-import { MODULE_ID } from "../constants.js";
+import { openVisibilityManagerWithMode } from '../api.js';
+import { MODULE_ID } from '../constants.js';
 
 /**
  * Handle rendering of token HUD to add visibility button
@@ -13,17 +13,14 @@ import { MODULE_ID } from "../constants.js";
  */
 export function onRenderTokenHUD(app, html) {
   // Only add button if HUD button setting is enabled
-  if (!game.settings.get(MODULE_ID, "useHudButton")) {
+  if (!game.settings.get(MODULE_ID, 'useHudButton')) {
     return;
   }
 
   // Respect loot-actors setting: do not add for loot when disabled
   try {
     const token = app?.object;
-    if (
-      token?.actor?.type === "loot" &&
-      !game.settings.get(MODULE_ID, "includeLootActors")
-    ) {
+    if (token?.actor?.type === 'loot' && !game.settings.get(MODULE_ID, 'includeLootActors')) {
       return;
     }
   } catch (_) {}
@@ -50,12 +47,12 @@ function renderVisibilityButton(app, html) {
   if (!root) return;
 
   // Find the left column to add the button
-  let column = root.querySelector("div.col.left");
+  let column = root.querySelector('div.col.left');
   if (!column && html?.find) {
-    column = html.find("div.col.left")[0];
+    column = html.find('div.col.left')[0];
   }
   if (!column) {
-    console.warn("PF2E Visioner: Could not find left column in token HUD");
+    console.warn('PF2E Visioner: Could not find left column in token HUD');
     return;
   }
 
@@ -64,40 +61,33 @@ function renderVisibilityButton(app, html) {
   if (existing) existing.remove();
 
   // Create the button element
-  const buttonElement = document.createElement("div");
-  buttonElement.className = "control-icon";
-  buttonElement.style.display = "flex";
-  buttonElement.setAttribute("data-action", "pf2e-visioner-visibility");
-  buttonElement.title =
-    "Visibility Manager (Left: Target Mode | Right: Observer Mode)";
+  const buttonElement = document.createElement('div');
+  buttonElement.className = 'control-icon';
+  buttonElement.style.display = 'flex';
+  buttonElement.setAttribute('data-action', 'pf2e-visioner-visibility');
+  buttonElement.title = 'Visibility Manager (Left: Target Mode | Right: Observer Mode)';
   buttonElement.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
 
   // Add click handlers for both left and right click
-  buttonElement.addEventListener("click", async (event) => {
+  buttonElement.addEventListener('click', async (event) => {
     event.preventDefault();
     event.stopPropagation();
 
     try {
-      await openVisibilityManagerWithMode(token, "target");
+      await openVisibilityManagerWithMode(token, 'target');
     } catch (error) {
-      console.error(
-        "PF2E Visioner: Error opening visibility manager in target mode:",
-        error,
-      );
+      console.error('PF2E Visioner: Error opening visibility manager in target mode:', error);
     }
   });
 
-  buttonElement.addEventListener("contextmenu", async (event) => {
+  buttonElement.addEventListener('contextmenu', async (event) => {
     event.preventDefault();
     event.stopPropagation();
 
     try {
-      await openVisibilityManagerWithMode(token, "observer");
+      await openVisibilityManagerWithMode(token, 'observer');
     } catch (error) {
-      console.error(
-        "PF2E Visioner: Error opening visibility manager in observer mode:",
-        error,
-      );
+      console.error('PF2E Visioner: Error opening visibility manager in observer mode:', error);
     }
   });
 

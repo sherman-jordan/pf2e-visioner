@@ -5,1538 +5,1541 @@
  */
 
 .pf2e-visioner {
-
-/* Responsive Window Sizing */
-.token-visibility-manager {
-  width: auto;
-  min-width: 480px;
-  max-width: 760px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.token-visibility-manager .window-content {
-  width: auto;
-  min-width: 480px;
-  max-width: 760px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* Tables content area that can scroll */
-.tables-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 2px;
-  margin-bottom: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border-light-primary) transparent;
-}
-
-/* Webkit scrollbar styling for tables content */
-.tables-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.tables-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.tables-content::-webkit-scrollbar-thumb {
-  background: var(--color-border-light-primary);
-  border-radius: 4px;
-}
-
-.tables-content::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-highlight);
-}
-
-/* Observer Information Section - always visible at top */
-.observer-info {
-  flex-shrink: 0;
-  background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
-  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius-lg);
-  padding: 6px 6px 8px 6px; /* extra top/side padding prevents button glow clipping */
-  margin-bottom: -24px;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  justify-content: space-between; /* space for tools on the right */
-  overflow: visible; /* allow glow and borders to render */
-}
-
-.observer-image {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
-  max-width: 24px;
-  max-height: 24px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-light-primary);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.observer-image img {
-  width: 75%;
-  height: 75%;
-  object-fit: contain;
-  object-position: center;
-}
-
-.observer-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Right tools: tab buttons + legend stacked */
-.observer-tools {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* position tools at top-right */
-  gap: 4px;
-}
-
-.icon-tab-navigation {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px; /* push legend below the toggle to avoid overlap */
-  overflow: visible; /* allow glow to render */
-}
-
-/* Color the tab buttons: eye = green, shield = blue */
-.icon-tab-navigation .icon-tab-button {
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 6px;
-  padding: 4px 6px;
-  background: var(--color-bg-secondary);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
-}
-.icon-tab-navigation .icon-tab-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-.icon-tab-navigation .icon-tab-button:active {
-  transform: scale(0.98);
-}
-
-.icon-tab-navigation .icon-tab-button[data-tab="visibility"].active {
-  background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
-  border-color: var(--visibility-observed);
-  color: var(--color-text-light-primary);
-}
-.icon-tab-navigation .icon-tab-button[data-tab="cover"].active {
-  background: linear-gradient(135deg, var(--cover-standard), var(--cover-standard));
-  border-color: var(--cover-standard);
-  color: var(--color-text-light-primary);
-}
-.icon-tab-navigation .icon-tab-button[data-tab="visibility"] i {
-  color: var(--visibility-observed);
-}
-.icon-tab-navigation .icon-tab-button[data-tab="cover"] i {
-  color: var(--cover-standard);
-}
-.icon-tab-navigation .icon-tab-button.active i {
-  color: var(--color-text-light-primary);
-}
-
-/* 2x2 legend grid */
-.observer-tools .visibility-legend,
-.observer-tools .cover-legend {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  gap: 2px 6px;
-  padding: 4px;
-  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.08));
-  border: 1px solid var(--color-border-light-tertiary);
-  border-radius: var(--radius-md);
-  margin-top: 6px; /* ensure it renders beneath the tab toggle */
-}
-
-/* Ensure the legend container itself takes normal flow beneath the toggle */
-.observer-tools .legend-panel {
-  width: auto;
-  display: block;
-  padding-top: 50px;
-}
-
-/* Tab Navigation */
-.tab-navigation {
-  display: flex;
-  gap: 2px;
-  margin-top: 4px;
-}
-
-.tab-button {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px 8px;
-  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.1));
-  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius-md);
-  color: var(--color-text-dark-primary);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tab-button:hover {
-  background: var(--color-bg-highlight, rgba(0, 0, 0, 0.15));
-  border-color: var(--color-border-highlight, rgba(0, 0, 0, 0.2));
-}
-
-.tab-button.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-text-light-highlight);
-}
-
-.tab-button i {
-  font-size: 11px;
-}
-
-.tab-button span {
-  font-size: 11px;
-  font-weight: 500;
-}
-
-/* Tab Content */
-.visioner-tab-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0; /* allow inner scroll containers to size */
-  overflow: hidden;
-}
-
-.tab-panel {
-  display: none;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.tab-panel.active {
-  display: flex;
-  animation: visionerFadeSlide 250ms ease;
-}
-
-@keyframes visionerFadeSlide {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+  /* Responsive Window Sizing */
+  .token-visibility-manager {
+    width: auto;
+    min-width: 480px;
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
-  to {
+
+  .token-visibility-manager .window-content {
+    width: auto;
+    min-width: 480px;
+    max-width: 760px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Tables content area that can scroll */
+  .tables-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
+    margin-bottom: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-light-primary) transparent;
+  }
+
+  /* Webkit scrollbar styling for tables content */
+  .tables-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .tables-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tables-content::-webkit-scrollbar-thumb {
+    background: var(--color-border-light-primary);
+    border-radius: 4px;
+  }
+
+  .tables-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-highlight);
+  }
+
+  /* Observer Information Section - always visible at top */
+  .observer-info {
+    flex-shrink: 0;
+    background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-lg);
+    padding: 6px 6px 8px 6px; /* extra top/side padding prevents button glow clipping */
+    margin-bottom: -24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    justify-content: space-between; /* space for tools on the right */
+    overflow: visible; /* allow glow and borders to render */
+  }
+
+  .observer-image {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 24px;
+    max-height: 24px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-light-primary);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .observer-image img {
+    width: 75%;
+    height: 75%;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .observer-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Right tools: tab buttons + legend stacked */
+  .observer-tools {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* position tools at top-right */
+    gap: 4px;
+  }
+
+  .icon-tab-navigation {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px; /* push legend below the toggle to avoid overlap */
+    overflow: visible; /* allow glow to render */
+  }
+
+  /* Color the tab buttons: eye = green, shield = blue */
+  .icon-tab-navigation .icon-tab-button {
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 6px;
+    padding: 4px 6px;
+    background: var(--color-bg-secondary);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .icon-tab-navigation .icon-tab-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+  .icon-tab-navigation .icon-tab-button:active {
+    transform: scale(0.98);
+  }
+
+  .icon-tab-navigation .icon-tab-button[data-tab='visibility'].active {
+    background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
+    border-color: var(--visibility-observed);
+    color: var(--color-text-light-primary);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='cover'].active {
+    background: linear-gradient(135deg, var(--cover-standard), var(--cover-standard));
+    border-color: var(--cover-standard);
+    color: var(--color-text-light-primary);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='visibility'] i {
+    color: var(--visibility-observed);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='cover'] i {
+    color: var(--cover-standard);
+  }
+  .icon-tab-navigation .icon-tab-button.active i {
+    color: var(--color-text-light-primary);
+  }
+
+  /* 2x2 legend grid */
+  .observer-tools .visibility-legend,
+  .observer-tools .cover-legend {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 2px 6px;
+    padding: 4px;
+    background: var(--color-bg-secondary, rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--color-border-light-tertiary);
+    border-radius: var(--radius-md);
+    margin-top: 6px; /* ensure it renders beneath the tab toggle */
+  }
+
+  /* Ensure the legend container itself takes normal flow beneath the toggle */
+  .observer-tools .legend-panel {
+    width: auto;
+    display: block;
+    padding-top: 50px;
+  }
+
+  /* Tab Navigation */
+  .tab-navigation {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  .tab-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--color-bg-secondary, rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-md);
+    color: var(--color-text-dark-primary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-button:hover {
+    background: var(--color-bg-highlight, rgba(0, 0, 0, 0.15));
+    border-color: var(--color-border-highlight, rgba(0, 0, 0, 0.2));
+  }
+
+  .tab-button.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-text-light-highlight);
+  }
+
+  .tab-button i {
+    font-size: 11px;
+  }
+
+  .tab-button span {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Tab Content */
+  .visioner-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* allow inner scroll containers to size */
+    overflow: hidden;
+  }
+
+  .tab-panel {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .tab-panel.active {
+    display: flex;
+    animation: visionerFadeSlide 250ms ease;
+  }
+
+  @keyframes visionerFadeSlide {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Cover Legend */
+  .cover-legend {
+    flex-shrink: 0;
+    background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-lg);
+    padding: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end; /* Move to the right like visibility legend */
+  }
+
+  .cover-legend .legend-title {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--color-text-dark-primary);
+    margin-right: 8px;
+  }
+
+  .cover-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--color-text-dark-secondary);
+  }
+
+  .cover-legend .legend-item i {
+    font-size: 10px;
+  }
+
+  .cover-legend .legend-item .bonus-info {
+    font-size: 10px;
+    color: var(--color-text-dark-tertiary);
+    font-style: italic;
+  }
+
+  /* Cover Table */
+  .cover-table-container {
+    /* Let the outer tables-content handle scrolling; avoid nested scrollbars */
+    flex: initial;
+    overflow: visible;
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary, rgba(0, 0, 0, 0.05));
+  }
+
+  .cover-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .cover-table th,
+  .cover-table td {
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+  }
+
+  .cover-table th {
+    background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.1));
+    font-weight: 600;
+    color: var(--color-text-dark-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: inherit; /* match visibility header size */
+  }
+
+  /* Normalize table typography and alignment across both tabs */
+  .visibility-table,
+  .cover-table {
+    font-size: 11px;
+  }
+  .visibility-table th,
+  .cover-table th {
+    font-size: 13px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .visibility-table td,
+  .cover-table td {
+    text-align: center;
+  }
+  .visibility-table .token-name,
+  .cover-table .token-name {
+    text-align: center;
+  }
+
+  /* Column widths for cover tables to improve alignment */
+  .cover-table .cover-state {
+    width: 28%;
+    min-width: 130px;
+  }
+  .cover-table .current-state {
+    width: 26%;
+    min-width: 100px;
+  }
+  .cover-table .mechanical-effects {
+    width: 28%;
+    min-width: 140px;
+  }
+
+  /* Cover Effects */
+  .cover-effect,
+  .no-effect.cover-none,
+  .cover-lesser,
+  .cover-standard,
+  .cover-greater {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--color-text-dark-secondary);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 1px 4px;
+    display: inline-flex;
+  }
+
+  .cover-effect i {
+    color: inherit; /* inherit traffic-light color from parent */
+  }
+
+  /* Colored cover effect badges matching traffic-light scheme */
+  .cover-none {
+    color: var(--cover-none) !important;
+  }
+  .cover-lesser {
+    color: var(--cover-lesser) !important;
+  }
+  .cover-standard {
+    color: var(--cover-standard) !important;
+  }
+  .cover-greater {
+    color: var(--cover-greater) !important;
+  }
+
+  /* Ensure icons also follow traffic-light colors (extra specificity) */
+  .cover-none i {
+    color: var(--cover-none) !important;
+  }
+  .cover-lesser i {
+    color: var(--cover-lesser) !important;
+  }
+  .cover-standard i {
+    color: var(--cover-standard) !important;
+  }
+  .cover-greater i {
+    color: var(--cover-greater) !important;
+  }
+
+  .observer-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .observer-name {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .observer-main .hint {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    margin: 0;
+    line-height: 1.2;
+    font-style: italic;
+  }
+
+  /* Mode Toggle Button - Toggle Switch Style */
+  .mode-toggle {
+    background: var(--color-bg-option);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 12px;
+    padding: 1px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    white-space: nowrap;
+    position: relative;
+    width: 140px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+
+  .mode-toggle:hover {
+    border-color: var(--color-border-highlight);
+    box-shadow: var(--shadow-md);
+  }
+
+  .mode-toggle:active {
+    transform: scale(0.98);
+  }
+
+  /* Toggle Options */
+  .toggle-option {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 5px;
+    border-radius: 8px;
+    transition: all var(--transition-normal);
+    flex: 0.5;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    height: 18px;
+  }
+
+  .toggle-option.active {
+    background: var(--color-bg-btn);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .toggle-option:not(.active) {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+  }
+
+  .toggle-option i {
+    font-size: 11px;
+  }
+
+  .toggle-option span {
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  /* Toggle Divider */
+  .toggle-divider {
+    color: var(--color-border-light-primary);
+    font-weight: bold;
+    opacity: 0.4;
+    margin: 0 4px;
+    z-index: 1;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Visibility Legend */
+  .visibility-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 2px;
+    padding-right: 0;
+    font-size: 20px;
+    flex-shrink: 0;
+    min-width: 75px;
+  }
+
+  .legend-title {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    margin-bottom: 1px;
+    text-align: center;
+    grid-column: 1 / -1;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border-light-tertiary);
+    font-size: 11px;
+  }
+
+  .legend-item i {
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+
+  .legend-item span {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+  }
+
+  /* Active State Colors */
+  .mode-toggle.observer-active .toggle-option:first-child {
+    background: linear-gradient(
+      135deg,
+      var(--pf2e-visioner-info),
+      var(--pf2e-visioner-info)
+    ) !important;
+    color: white !important;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mode-toggle.target-active .toggle-option:last-child {
+    background: linear-gradient(
+      135deg,
+      var(--pf2e-visioner-danger),
+      var(--pf2e-visioner-danger)
+    ) !important;
+    color: white !important;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Encounter Filter Section */
+  .token-visibility-manager .encounter-filter-section {
+    margin-top: 8px;
+    padding: 6px 0;
+    width: fit-content;
+    max-width: 200px;
+    flex-shrink: 1;
+  }
+
+  .token-visibility-manager .encounter-filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    user-select: none;
+  }
+
+  .token-visibility-manager .encounter-filter-checkbox input[type='checkbox'] {
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent;
+    width: auto;
+    height: auto;
+  }
+
+  .token-visibility-manager .encounter-filter-label {
+    cursor: pointer;
+    font-weight: 400;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .token-visibility-manager .encounter-filter-checkbox:hover .encounter-filter-label {
+    color: var(--color-text-primary);
+  }
+
+  /* Bulk Actions Section */
+  .bulk-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+    flex-shrink: 0;
+  }
+
+  .bulk-actions label {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .bulk-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    width: 100%;
+    min-width: 200px;
+  }
+
+  .bulk-state {
+    padding: var(--pf2e-visioner-spacing-xs) var(--pf2e-visioner-spacing-sm);
+    border: 1px solid var(--pf2e-visioner-border-color);
+    border-radius: var(--pf2e-visioner-border-radius);
+    background: var(--pf2e-visioner-surface-color);
+    color: var(--pf2e-visioner-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all var(--pf2e-visioner-transition-fast);
+    min-width: auto;
+    white-space: nowrap;
+  }
+
+  .bulk-state:hover {
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .bulk-state i {
+    font-size: 12px;
+  }
+
+  /* Specific bulk state button styling */
+  .bulk-state[data-state='observed'] {
+    background: var(--visibility-observed-bg);
+    border-color: var(--visibility-observed);
+    color: var(--visibility-observed);
+  }
+
+  .bulk-state[data-state='observed']:hover {
+    background: var(--visibility-observed-bg-strong);
+    border-color: var(--visibility-observed);
+  }
+
+  .bulk-state[data-state='concealed'] {
+    background: var(--visibility-concealed-bg);
+    border-color: var(--visibility-concealed);
+    color: var(--pf2e-visioner-warning);
+  }
+
+  .bulk-state[data-state='concealed']:hover {
+    background: var(--visibility-concealed-bg-strong);
+    border-color: var(--visibility-concealed);
+  }
+
+  .bulk-state[data-state='hidden'] {
+    background: var(--visibility-hidden-bg);
+    border-color: var(--visibility-hidden);
+    color: var(--visibility-hidden);
+  }
+
+  .bulk-state[data-state='hidden']:hover {
+    background: var(--visibility-hidden-bg-strong);
+    border-color: var(--visibility-hidden);
+  }
+
+  .bulk-state[data-state='undetected'] {
+    background: var(--visibility-undetected-bg);
+    border-color: var(--visibility-undetected);
+    color: var(--visibility-undetected);
+  }
+
+  .bulk-state[data-state='undetected']:hover {
+    background: var(--visibility-undetected-bg-strong);
+    border-color: var(--visibility-undetected);
+  }
+
+  /* Table Sections */
+  .table-section {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .table-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 3px 0;
+    padding: 5px 8px 4px 8px; /* extra top padding so button borders aren't clipped */
+    background: var(--color-bg-option);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 13px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .bulk-actions-header {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding-top: 1px; /* breathing room for top border glow */
+  }
+
+  .bulk-state-header {
+    background: transparent;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bulk-state-header:hover {
+    background: var(--color-bg-btn);
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 2px rgba(255, 125, 0, 0.2); /* ensure glow not clipped visually */
+  }
+
+  /* Specific bulk state header button styling - using CSS custom properties */
+  .bulk-actions-header .bulk-state-header[data-state='observed'],
+  .bulk-actions-header .bulk-state-header[data-state='observed'] i {
+    color: var(--visibility-observed) !important;
+    border-color: var(--visibility-observed) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='observed']:hover,
+  .bulk-actions-header .bulk-state-header[data-state='observed']:hover i {
+    background: var(--visibility-observed-bg-medium) !important;
+    border-color: var(--visibility-observed) !important;
+    color: var(--visibility-observed) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='concealed'],
+  .bulk-actions-header .bulk-state-header[data-state='concealed'] i {
+    color: var(--visibility-concealed) !important;
+    border-color: var(--visibility-concealed) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='concealed']:hover,
+  .bulk-actions-header .bulk-state-header[data-state='concealed']:hover i {
+    background: var(--visibility-concealed-bg-medium) !important;
+    border-color: var(--visibility-concealed) !important;
+    color: var(--visibility-concealed) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='hidden'],
+  .bulk-actions-header .bulk-state-header[data-state='hidden'] i {
+    color: var(--visibility-hidden) !important;
+    border-color: var(--visibility-hidden) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='hidden']:hover,
+  .bulk-actions-header .bulk-state-header[data-state='hidden']:hover i {
+    background: rgba(255, 102, 0, 0.15) !important;
+    border-color: var(--visibility-hidden) !important;
+    color: var(--visibility-hidden) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='undetected'],
+  .bulk-actions-header .bulk-state-header[data-state='undetected'] i {
+    color: var(--visibility-undetected) !important;
+    border-color: var(--visibility-undetected) !important;
+  }
+
+  .bulk-actions-header .bulk-state-header[data-state='undetected']:hover,
+  .bulk-actions-header .bulk-state-header[data-state='undetected']:hover i {
+    background: var(--visibility-undetected-bg-medium) !important;
+    border-color: var(--visibility-undetected) !important;
+    color: var(--visibility-undetected) !important;
+  }
+
+  /* Loading state for bulk action buttons */
+  .bulk-actions-header .bulk-state-header.loading {
+    cursor: wait !important;
+    pointer-events: none !important;
+    opacity: 0.8 !important;
+  }
+
+  .bulk-actions-header .bulk-state-header.loading i {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .table-section-header i {
+    color: var(--color-border-highlight-alt);
+    font-size: 16px;
+  }
+
+  .table-section-header .count {
+    background: var(--color-border-highlight-alt);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: auto;
+  }
+
+  /* Visibility Table Container */
+  .visibility-table-container {
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-top: none;
+    background: var(--color-bg);
+    /* Let the outer tables-content handle scrolling; avoid nested scrollbars */
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Visibility Table */
+  .visibility-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    table-layout: auto;
+  }
+
+  /* Visibility Table */
+  .visibility-table .visibility-state {
+    text-align: center;
+  }
+
+  .visibility-table .current-state {
+    text-align: center;
+  }
+
+  .visibility-table .mechanical-effects {
+    text-align: center;
+  }
+
+  /* Specific column width controls */
+  .visibility-table .token-image {
+    width: 10%;
+    min-width: 36px;
+    max-width: 60px;
+    text-align: center;
+    padding: 4px;
+  }
+
+  .visibility-table .token-name,
+  .cover-table .token-name {
+    width: 15%;
+    min-width: 72px;
+    max-width: 110px;
+  }
+
+  .token-name strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+  }
+
+  .visibility-table .visibility-state {
+    width: 26%;
+    min-width: 160px;
+  }
+
+  .visibility-table .current-state {
+    width: 18%;
+    min-width: 120px;
+  }
+
+  /* New DC and Outcome columns */
+  .visibility-table .dc-column {
+    width: 12%;
+    min-width: 90px;
+  }
+  .visibility-table .outcome-column {
+    width: 19%;
+    min-width: 140px;
+  }
+
+  /* Ensure Effects column header has consistent font size */
+  .visibility-table th.mechanical-effects,
+  .cover-table th.mechanical-effects {
+    font-size: 14px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .visibility-table th,
+  .visibility-table td {
+    padding: 3px 6px;
+    text-align: center;
+    border-bottom: 1px solid var(--color-border-light-tertiary);
+    vertical-align: middle;
+  }
+
+  /* Alternating row backgrounds for both PC and NPC tables */
+  .token-visibility-manager .visibility-table tbody tr:nth-child(even) {
+    background: var(--color-bg-alt, rgba(255, 255, 255, 0.05)) !important;
+  }
+
+  .token-visibility-manager .visibility-table tbody tr:nth-child(odd) {
+    background: transparent !important;
+  }
+
+  /* Row highlight when hovering the corresponding token on canvas */
+  tr.token-row.row-hover {
+    outline: 2px solid var(--pf2e-visioner-primary);
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 2px var(--visibility-hidden-bg-strong);
+    background: var(--visibility-hidden-bg) !important;
+  }
+
+  /* Form Controls */
+  .visibility-table select {
+    background: var(--color-bg-option) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-light-primary) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    font-family: inherit !important;
+    width: 100% !important;
+    max-width: 130px !important;
+    cursor: pointer !important;
+  }
+
+  .visibility-table select:hover {
+    border-color: var(--pf2e-visioner-primary) !important;
+    background: var(--color-bg-btn) !important;
+  }
+
+  .visibility-table select:focus {
+    outline: none !important;
+    border-color: var(--pf2e-visioner-primary) !important;
+    box-shadow: 0 0 0 2px rgba(255, 100, 0, 0.3) !important;
+  }
+
+  /* Select Options Styling */
+  .visibility-table select option {
+    background: var(--color-bg-option) !important;
+    color: var(--color-text-primary) !important;
+    padding: var(--spacing-xs) var(--spacing-sm) !important;
+    border: none !important;
+  }
+
+  .visibility-table select option:hover {
+    background: var(--color-bg-btn) !important;
+  }
+
+  /* Removed selected option highlighting - no need to show current state in dropdown */
+
+  /* Enhanced visibility for different states */
+  .visibility-table select option[value='observed'] {
+    color: var(--visibility-observed) !important;
+  }
+
+  .visibility-table select option[value='concealed'] {
+    color: var(--visibility-concealed) !important;
+  }
+
+  .visibility-table select option[value='hidden'] {
+    color: var(--visibility-hidden) !important;
+  }
+
+  .visibility-table select option[value='undetected'] {
+    color: var(--visibility-undetected) !important;
+  }
+
+  /* Table Sections */
+  .table-section {
+    margin-bottom: 20px;
+  }
+
+  .table-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px 0;
+    padding: 0px 8px;
+    background: var(--color-bg-option);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 6px 6px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .table-section-header i {
+    color: var(--color-border-highlight-alt);
+    font-size: 16px;
+  }
+
+  .table-section-header .count {
+    background: var(--color-bg-btn);
+    color: var(--color-text-btn);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: auto;
+  }
+
+  /* Visibility Table Container - no individual scrolling */
+  .visibility-table-container {
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .table-section:last-of-type .visibility-table-container {
+    margin-bottom: 0;
+  }
+
+  .visibility-select:focus {
+    outline: none;
+    border-color: var(--color-border-highlight);
+    box-shadow: 0 0 0 2px var(--color-shadow-highlight);
+  }
+
+  .current-state {
+    width: 120px;
+  }
+
+  .mechanical-effects {
+    min-width: 150px;
+    width: auto;
+  }
+
+  .state-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .state-indicator i {
+    font-size: 10px;
+  }
+
+  /* Visibility state indicator colors */
+  .state-indicator.visibility-observed {
+    --state-indicator-bg: var(--visibility-observed-bg-strong) !important;
+    background: var(--visibility-observed-bg-strong) !important;
+    color: var(--visibility-observed) !important;
+  }
+
+  .state-indicator.visibility-concealed {
+    --state-indicator-bg: var(--visibility-concealed-bg-strong) !important;
+    background: var(--visibility-concealed-bg-strong) !important;
+    color: var(--visibility-concealed) !important;
+  }
+
+  .state-indicator.visibility-hidden {
+    --state-indicator-bg: var(--visibility-hidden-bg-strong) !important;
+    background: var(--visibility-hidden-bg-strong) !important;
+    color: var(--visibility-hidden) !important;
+  }
+
+  .state-indicator.visibility-undetected {
+    --state-indicator-bg: var(--visibility-undetected-bg-strong) !important;
+    background: var(--visibility-undetected-bg-strong) !important;
+    color: var(--visibility-undetected) !important;
+  }
+
+  /* Effects column colors - subtle professional styling */
+  .cover-none,
+  .no-effect.cover-none {
+    background: rgba(76, 175, 80, 0.25) !important; /* Subtle green */
+    color: #4caf50 !important;
+    border: 1px solid #4caf50 !important;
+  }
+
+  .cover-lesser,
+  .cover-effect.cover-lesser {
+    background: rgba(255, 193, 7, 0.25) !important; /* Subtle yellow */
+    color: #ffc107 !important;
+    border: 1px solid #ffc107 !important;
+  }
+
+  .cover-standard,
+  .cover-effect.cover-standard {
+    background: rgba(255, 102, 0, 0.25) !important; /* Subtle orange */
+    color: #ff6600 !important;
+    border: 1px solid #ff6600 !important;
+  }
+
+  .cover-greater,
+  .cover-effect.cover-greater {
+    background: rgba(244, 67, 54, 0.25) !important; /* Subtle red */
+    color: #f44336 !important;
+    border: 1px solid #f44336 !important;
+  }
+
+  /* Clean professional styling */
+
+  /* FINAL FIX: State indicators with subtle professional colors */
+  /* State indicators - force all cover states with maximum specificity */
+  .pf2e-visioner .state-indicator.cover-none,
+  .state-indicator.cover-none,
+  span.state-indicator.cover-none {
+    background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
+    color: #4caf50 !important; /* Green text */
+    border-color: #4caf50 !important; /* Green border */
+  }
+
+  .pf2e-visioner .state-indicator.cover-lesser,
+  .state-indicator.cover-lesser,
+  span.state-indicator.cover-lesser {
+    background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
+    color: #ffc107 !important; /* Yellow text */
+    border-color: #ffc107 !important; /* Yellow border */
+  }
+
+  .pf2e-visioner .state-indicator.cover-standard,
+  .state-indicator.cover-standard,
+  span.state-indicator.cover-standard {
+    background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
+    color: #ff6600 !important; /* Orange text */
+    border-color: #ff6600 !important; /* Orange border */
+  }
+
+  .pf2e-visioner .state-indicator.cover-greater,
+  .state-indicator.cover-greater,
+  span.state-indicator.cover-greater {
+    background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
+    color: #f44336 !important; /* Red text */
+    border-color: #f44336 !important; /* Red border */
+  }
+
+  /* JavaScript will ensure CSS classes are applied - use simple class selectors */
+  .state-indicator.cover-none {
+    background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
+    color: #4caf50 !important; /* Green text */
+    border-color: #4caf50 !important; /* Green border */
+  }
+
+  .state-indicator.cover-lesser {
+    background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
+    color: #ffc107 !important; /* Yellow text */
+    border-color: #ffc107 !important; /* Yellow border */
+  }
+
+  .state-indicator.cover-standard {
+    background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
+    color: #ff6600 !important; /* Orange text */
+    border-color: #ff6600 !important; /* Orange border */
+  }
+
+  .state-indicator.cover-greater {
+    background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
+    color: #f44336 !important; /* Red text */
+    border-color: #f44336 !important; /* Red border */
+  }
+
+  /* Duplicate rules removed - using higher specificity rules above */
+
+  /* Visibility state indicators with subtle colors */
+  .state-indicator.visibility-observed {
+    background: rgba(76, 175, 80, 0.2) !important; /* Subtle green background */
+    color: #4caf50 !important; /* Green text */
+    border-color: #4caf50 !important; /* Green border */
+  }
+
+  .state-indicator.visibility-concealed {
+    background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
+    color: #ff9800 !important; /* Orange text */
+    border-color: #ff9800 !important; /* Orange border */
+  }
+
+  .state-indicator.visibility-hidden {
+    background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
+    color: #ff9800 !important; /* Orange text */
+    border-color: #ff9800 !important; /* Orange border */
+  }
+
+  .state-indicator.visibility-undetected {
+    background: rgba(244, 67, 54, 0.2) !important; /* Subtle red background */
+    color: #f44336 !important; /* Red text */
+    border-color: #f44336 !important; /* Red border */
+  }
+
+  /* Cover state indicator colors - WORKING SOLUTION FOR BOTH MODES */
+  .state-indicator.cover-none,
+  span.state-indicator.cover-none,
+  .pf2e-visioner .state-indicator.cover-none,
+  .mode-toggle.observer-active ~ * .state-indicator.cover-none,
+  .mode-toggle.target-active ~ * .state-indicator.cover-none {
+    background: rgba(76, 175, 80, 0.25) !important; /* Subtle green background */
+    color: #4caf50 !important; /* Green text */
+    border: 1px solid #4caf50 !important; /* Green border */
+  }
+
+  /* Removed redundant class-based selectors - using content-based selectors above */
+
+  /* Ensure bulk buttons respect colorblind mode */
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='observed'],
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='observed'] i {
+    color: var(--visibility-observed) !important;
+    border-color: var(--visibility-observed) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='observed']:hover,
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='observed']:hover i {
+    background: var(--visibility-observed-bg-medium) !important;
+    border-color: var(--visibility-observed) !important;
+    color: var(--visibility-observed) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='concealed'],
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='concealed'] i {
+    color: var(--visibility-concealed) !important;
+    border-color: var(--visibility-concealed) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='concealed']:hover,
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='concealed']:hover i {
+    background: var(--visibility-concealed-bg-medium) !important;
+    border-color: var(--visibility-concealed) !important;
+    color: var(--visibility-concealed) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='hidden'],
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='hidden'] i {
+    color: var(--visibility-hidden) !important;
+    border-color: var(--visibility-hidden) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='hidden']:hover,
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='hidden']:hover i {
+    background: var(--visibility-hidden-bg-medium) !important;
+    border-color: var(--visibility-hidden) !important;
+    color: var(--visibility-hidden) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='undetected'],
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='undetected'] i {
+    color: var(--visibility-undetected) !important;
+    border-color: var(--visibility-undetected) !important;
+  }
+
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='undetected']:hover,
+  .pf2e-visioner .bulk-actions-header .bulk-state-header[data-state='undetected']:hover i {
+    background: var(--visibility-undetected-bg-medium) !important;
+    border-color: var(--visibility-undetected) !important;
+    color: var(--visibility-undetected) !important;
+  }
+
+  /* No Targets Message */
+  .no-targets {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-text-dark-secondary);
+    font-style: italic;
+  }
+
+  /* Footer Actions */
+  .sheet-footer {
+    display: flex;
+    padding: 8px 0 8px 0;
+    border-top: 1px solid var(--color-border-light-primary);
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 0;
+    flex-shrink: 0;
+    background: var(--color-bg);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .vm-action-button {
+    padding: 6px 12px;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    background: var(--color-bg-option);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .vm-action-button:hover {
+    background: var(--color-bg-option-active);
+    border-color: var(--color-border-highlight);
+    border-width: 2px;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .vm-action-button.apply {
+    background: var(--color-bg-btn-primary);
+    border-color: var(--color-border-highlight-alt);
+    color: var(--color-text-light-primary);
+  }
+
+  .vm-action-button.apply:hover {
+    background: var(--color-bg-btn-primary-active);
+    border-color: var(--color-border-highlight);
+    border-width: 2px;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .vm-action-button.reset {
+    background: var(--color-bg-btn-secondary);
+    border-color: var(--color-border-light-primary);
+  }
+
+  .vm-action-button.cancel {
+    background: transparent;
+    border-color: var(--color-border-light-primary);
+  }
+
+  /* Icon-based Selection Styling */
+  .icon-selection {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+
+  .state-icon {
+    background: transparent;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    position: relative;
+  }
+
+  .state-icon:hover {
     opacity: 1;
-    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: currentColor;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
-}
 
-/* Cover Legend */
-.cover-legend {
-  flex-shrink: 0;
-  background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
-  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius-lg);
-  padding: 8px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  justify-content: flex-end; /* Move to the right like visibility legend */
-}
-
-.cover-legend .legend-title {
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--color-text-dark-primary);
-  margin-right: 8px;
-}
-
-.cover-legend .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--color-text-dark-secondary);
-}
-
-.cover-legend .legend-item i {
-  font-size: 10px;
-}
-
-.cover-legend .legend-item .bonus-info {
-  font-size: 10px;
-  color: var(--color-text-dark-tertiary);
-  font-style: italic;
-}
-
-/* Cover Table */
-.cover-table-container {
-  /* Let the outer tables-content handle scrolling; avoid nested scrollbars */
-  flex: initial;
-  overflow: visible;
-  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius-md);
-  background: var(--color-bg-secondary, rgba(0, 0, 0, 0.05));
-}
-
-.cover-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-
-.cover-table th,
-.cover-table td {
-  padding: 6px 8px;
-  text-align: center;
-  vertical-align: middle;
-  border-bottom: 1px solid
-    var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
-}
-
-.cover-table th {
-  background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.1));
-  font-weight: 600;
-  color: var(--color-text-dark-primary);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  font-size: inherit; /* match visibility header size */
-}
-
-/* Normalize table typography and alignment across both tabs */
-.visibility-table,
-.cover-table {
-  font-size: 11px;
-}
-.visibility-table th,
-.cover-table th {
-  font-size: 13px;
-  text-align: center;
-  vertical-align: middle;
-}
-.visibility-table td,
-.cover-table td {
-  text-align: center;
-}
-.visibility-table .token-name,
-.cover-table .token-name {
-  text-align: center;
-}
-
-/* Column widths for cover tables to improve alignment */
-.cover-table .cover-state {
-  width: 28%;
-  min-width: 130px;
-}
-.cover-table .current-state {
-  width: 26%;
-  min-width: 100px;
-}
-.cover-table .mechanical-effects {
-  width: 28%;
-  min-width: 140px;
-}
-
-/* Cover Effects */
-.cover-effect,
-.no-effect.cover-none,
-.cover-lesser,
-.cover-standard,
-.cover-greater {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: var(--color-text-dark-secondary);
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  padding: 1px 4px;
-  display: inline-flex;
-}
-
-.cover-effect i {
-  color: inherit; /* inherit traffic-light color from parent */
-}
-
-/* Colored cover effect badges matching traffic-light scheme */
-.cover-none {
-  color: var(--cover-none) !important;
-}
-.cover-lesser {
-  color: var(--cover-lesser) !important;
-}
-.cover-standard {
-  color: var(--cover-standard) !important;
-}
-.cover-greater {
-  color: var(--cover-greater) !important;
-}
-
-/* Ensure icons also follow traffic-light colors (extra specificity) */
-.cover-none i {
-  color: var(--cover-none) !important;
-}
-.cover-lesser i {
-  color: var(--cover-lesser) !important;
-}
-.cover-standard i {
-  color: var(--cover-standard) !important;
-}
-.cover-greater i {
-  color: var(--cover-greater) !important;
-}
-
-.observer-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.observer-name {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.observer-main .hint {
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  margin: 0;
-  line-height: 1.2;
-  font-style: italic;
-}
-
-/* Mode Toggle Button - Toggle Switch Style */
-.mode-toggle {
-  background: var(--color-bg-option);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 12px;
-  padding: 1px;
-  font-size: 11px;
-  font-weight: bold;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  display: flex;
-  align-items: center;
-  gap: 0;
-  white-space: nowrap;
-  position: relative;
-  width: 140px;
-  height: 24px;
-  flex-shrink: 0;
-  margin-bottom: 0;
-}
-
-.mode-toggle:hover {
-  border-color: var(--color-border-highlight);
-  box-shadow: var(--shadow-md);
-}
-
-.mode-toggle:active {
-  transform: scale(0.98);
-}
-
-/* Toggle Options */
-.toggle-option {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px 5px;
-  border-radius: 8px;
-  transition: all var(--transition-normal);
-  flex: 0.5;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-  height: 18px;
-}
-
-.toggle-option.active {
-  background: var(--color-bg-btn);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.toggle-option:not(.active) {
-  color: var(--color-text-secondary);
-  opacity: 0.7;
-}
-
-.toggle-option i {
-  font-size: 11px;
-}
-
-.toggle-option span {
-  font-size: 11px;
-  font-weight: bold;
-}
-
-/* Toggle Divider */
-.toggle-divider {
-  color: var(--color-border-light-primary);
-  font-weight: bold;
-  opacity: 0.4;
-  margin: 0 4px;
-  z-index: 1;
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-}
-
-/* Visibility Legend */
-.visibility-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto auto;
-  gap: 2px;
-  padding-right: 0;
-  font-size: 20px;
-  flex-shrink: 0;
-  min-width: 75px;
-}
-
-.legend-title {
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  font-size: 15px;
-  margin-bottom: 1px;
-  text-align: center;
-  grid-column: 1 / -1;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 3px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border-light-tertiary);
-  font-size: 11px;
-}
-
-.legend-item i {
-  font-size: 9px;
-  flex-shrink: 0;
-}
-
-.legend-item span {
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-}
-
-/* Active State Colors */
-.mode-toggle.observer-active .toggle-option:first-child {
-  background: linear-gradient(135deg, var(--pf2e-visioner-info), var(--pf2e-visioner-info)) !important;
-  color: white !important;
-  box-shadow: var(--shadow-sm);
-}
-
-.mode-toggle.target-active .toggle-option:last-child {
-  background: linear-gradient(135deg, var(--pf2e-visioner-danger), var(--pf2e-visioner-danger)) !important;
-  color: white !important;
-  box-shadow: var(--shadow-sm);
-}
-
-/* Encounter Filter Section */
-.token-visibility-manager .encounter-filter-section {
-  margin-top: 8px;
-  padding: 6px 0;
-  width: fit-content;
-  max-width: 200px;
-  flex-shrink: 1;
-}
-
-.token-visibility-manager .encounter-filter-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  user-select: none;
-}
-
-.token-visibility-manager .encounter-filter-checkbox input[type="checkbox"] {
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent;
-  width: auto;
-  height: auto;
-}
-
-.token-visibility-manager .encounter-filter-label {
-  cursor: pointer;
-  font-weight: 400;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.token-visibility-manager
-  .encounter-filter-checkbox:hover
-  .encounter-filter-label {
-  color: var(--color-text-primary);
-}
-
-/* Bulk Actions Section */
-.bulk-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  align-items: flex-start;
-  flex-shrink: 0;
-}
-
-.bulk-actions label {
-  font-weight: 600;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  font-size: 14px;
-  margin: 0;
-}
-
-.bulk-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-sm);
-  width: 100%;
-  min-width: 200px;
-}
-
-.bulk-state {
-  padding: var(--pf2e-visioner-spacing-xs) var(--pf2e-visioner-spacing-sm);
-  border: 1px solid var(--pf2e-visioner-border-color);
-  border-radius: var(--pf2e-visioner-border-radius);
-  background: var(--pf2e-visioner-surface-color);
-  color: var(--pf2e-visioner-text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all var(--pf2e-visioner-transition-fast);
-  min-width: auto;
-  white-space: nowrap;
-}
-
-.bulk-state:hover {
-  border-color: var(--color-border-highlight);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.bulk-state i {
-  font-size: 12px;
-}
-
-/* Specific bulk state button styling */
-.bulk-state[data-state="observed"] {
-  background: var(--visibility-observed-bg);
-  border-color: var(--visibility-observed);
-  color: var(--visibility-observed);
-}
-
-.bulk-state[data-state="observed"]:hover {
-  background: var(--visibility-observed-bg-strong);
-  border-color: var(--visibility-observed);
-}
-
-.bulk-state[data-state="concealed"] {
-  background: var(--visibility-concealed-bg);
-  border-color: var(--visibility-concealed);
-  color: var(--pf2e-visioner-warning);
-}
-
-.bulk-state[data-state="concealed"]:hover {
-  background: var(--visibility-concealed-bg-strong);
-  border-color: var(--visibility-concealed);
-}
-
-.bulk-state[data-state="hidden"] {
-  background: var(--visibility-hidden-bg);
-  border-color: var(--visibility-hidden);
-  color: var(--visibility-hidden);
-}
-
-.bulk-state[data-state="hidden"]:hover {
-  background: var(--visibility-hidden-bg-strong);
-  border-color: var(--visibility-hidden);
-}
-
-.bulk-state[data-state="undetected"] {
-  background: var(--visibility-undetected-bg);
-  border-color: var(--visibility-undetected);
-  color: var(--visibility-undetected);
-}
-
-.bulk-state[data-state="undetected"]:hover {
-  background: var(--visibility-undetected-bg-strong);
-  border-color: var(--visibility-undetected);
-}
-
-/* Table Sections */
-.table-section {
-  margin-bottom: var(--spacing-md);
-}
-
-.table-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 3px 0;
-  padding: 5px 8px 4px 8px; /* extra top padding so button borders aren't clipped */
-  background: var(--color-bg-option);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  font-size: 13px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.bulk-actions-header {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding-top: 1px; /* breathing room for top border glow */
-}
-
-.bulk-state-header {
-  background: transparent;
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  padding: 2px 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 11px;
-  min-width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bulk-state-header:hover {
-  background: var(--color-bg-btn);
-  border-color: var(--color-border-highlight);
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 2px rgba(255, 125, 0, 0.2); /* ensure glow not clipped visually */
-}
-
-/* Specific bulk state header button styling - using CSS custom properties */
-.bulk-actions-header .bulk-state-header[data-state="observed"],
-.bulk-actions-header .bulk-state-header[data-state="observed"] i {
-  color: var(--visibility-observed) !important;
-  border-color: var(--visibility-observed) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="observed"]:hover,
-.bulk-actions-header .bulk-state-header[data-state="observed"]:hover i {
-  background: var(--visibility-observed-bg-medium) !important;
-  border-color: var(--visibility-observed) !important;
-  color: var(--visibility-observed) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="concealed"],
-.bulk-actions-header .bulk-state-header[data-state="concealed"] i {
-  color: var(--visibility-concealed) !important;
-  border-color: var(--visibility-concealed) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="concealed"]:hover,
-.bulk-actions-header .bulk-state-header[data-state="concealed"]:hover i {
-  background: var(--visibility-concealed-bg-medium) !important;
-  border-color: var(--visibility-concealed) !important;
-  color: var(--visibility-concealed) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="hidden"],
-.bulk-actions-header .bulk-state-header[data-state="hidden"] i {
-  color: var(--visibility-hidden) !important;
-  border-color: var(--visibility-hidden) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="hidden"]:hover,
-.bulk-actions-header .bulk-state-header[data-state="hidden"]:hover i {
-  background: rgba(255, 102, 0, 0.15) !important;
-  border-color: var(--visibility-hidden) !important;
-  color: var(--visibility-hidden) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="undetected"],
-.bulk-actions-header .bulk-state-header[data-state="undetected"] i {
-  color: var(--visibility-undetected) !important;
-  border-color: var(--visibility-undetected) !important;
-}
-
-.bulk-actions-header .bulk-state-header[data-state="undetected"]:hover,
-.bulk-actions-header .bulk-state-header[data-state="undetected"]:hover i {
-  background: var(--visibility-undetected-bg-medium) !important;
-  border-color: var(--visibility-undetected) !important;
-  color: var(--visibility-undetected) !important;
-}
-
-/* Loading state for bulk action buttons */
-.bulk-actions-header .bulk-state-header.loading {
-  cursor: wait !important;
-  pointer-events: none !important;
-  opacity: 0.8 !important;
-}
-
-.bulk-actions-header .bulk-state-header.loading i {
-  animation: spin 1s linear infinite;
-}
-
-
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.table-section-header i {
-  color: var(--color-border-highlight-alt);
-  font-size: 16px;
-}
-
-.table-section-header .count {
-  background: var(--color-border-highlight-alt);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: bold;
-  margin-left: auto;
-}
-
-/* Visibility Table Container */
-.visibility-table-container {
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  border-top: none;
-  background: var(--color-bg);
-  /* Let the outer tables-content handle scrolling; avoid nested scrollbars */
-  max-height: none;
-  overflow: visible;
-}
-
-/* Visibility Table */
-.visibility-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0;
-  table-layout: auto;
-}
-
-/* Visibility Table */
-.visibility-table .visibility-state {
-  text-align: center;
-}
-
-.visibility-table .current-state {
-  text-align: center;
-}
-
-.visibility-table .mechanical-effects {
-  text-align: center;
-}
-
-/* Specific column width controls */
-.visibility-table .token-image {
-  width: 10%;
-  min-width: 36px;
-  max-width: 60px;
-  text-align: center;
-  padding: 4px;
-}
-
-.visibility-table .token-name,
-.cover-table .token-name {
-  width: 15%;
-  min-width: 72px;
-  max-width: 110px;
-}
-
-.token-name strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: help;
-}
-
-.visibility-table .visibility-state {
-  width: 26%;
-  min-width: 160px;
-}
-
-.visibility-table .current-state {
-  width: 18%;
-  min-width: 120px;
-}
-
-/* New DC and Outcome columns */
-.visibility-table .dc-column {
-  width: 12%;
-  min-width: 90px;
-}
-.visibility-table .outcome-column {
-  width: 19%;
-  min-width: 140px;
-}
-
-/* Ensure Effects column header has consistent font size */
-.visibility-table th.mechanical-effects,
-.cover-table th.mechanical-effects {
-  font-size: 14px;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.visibility-table th,
-.visibility-table td {
-  padding: 3px 6px;
-  text-align: center;
-  border-bottom: 1px solid var(--color-border-light-tertiary);
-  vertical-align: middle;
-}
-
-/* Alternating row backgrounds for both PC and NPC tables */
-.token-visibility-manager .visibility-table tbody tr:nth-child(even) {
-  background: var(--color-bg-alt, rgba(255, 255, 255, 0.05)) !important;
-}
-
-.token-visibility-manager .visibility-table tbody tr:nth-child(odd) {
-  background: transparent !important;
-}
-
-/* Row highlight when hovering the corresponding token on canvas */
-tr.token-row.row-hover {
-  outline: 2px solid var(--pf2e-visioner-primary);
-  outline-offset: -2px;
-  box-shadow: inset 0 0 0 2px var(--visibility-hidden-bg-strong);
-  background: var(--visibility-hidden-bg) !important;
-}
-
-/* Form Controls */
-.visibility-table select {
-  background: var(--color-bg-option) !important;
-  color: var(--color-text-primary) !important;
-  border: 1px solid var(--color-border-light-primary) !important;
-  border-radius: var(--radius-md) !important;
-  padding: 4px 8px !important;
-  font-size: 12px !important;
-  font-family: inherit !important;
-  width: 100% !important;
-  max-width: 130px !important;
-  cursor: pointer !important;
-}
-
-.visibility-table select:hover {
-  border-color: var(--pf2e-visioner-primary) !important;
-  background: var(--color-bg-btn) !important;
-}
-
-.visibility-table select:focus {
-  outline: none !important;
-  border-color: var(--pf2e-visioner-primary) !important;
-  box-shadow: 0 0 0 2px rgba(255, 100, 0, 0.3) !important;
-}
-
-/* Select Options Styling */
-.visibility-table select option {
-  background: var(--color-bg-option) !important;
-  color: var(--color-text-primary) !important;
-  padding: var(--spacing-xs) var(--spacing-sm) !important;
-  border: none !important;
-}
-
-.visibility-table select option:hover {
-  background: var(--color-bg-btn) !important;
-}
-
-/* Removed selected option highlighting - no need to show current state in dropdown */
-
-/* Enhanced visibility for different states */
-.visibility-table select option[value="observed"] {
-  color: var(--visibility-observed) !important;
-}
-
-.visibility-table select option[value="concealed"] {
-  color: var(--visibility-concealed) !important;
-}
-
-.visibility-table select option[value="hidden"] {
-  color: var(--visibility-hidden) !important;
-}
-
-.visibility-table select option[value="undetected"] {
-  color: var(--visibility-undetected) !important;
-}
-
-/* Table Sections */
-.table-section {
-  margin-bottom: 20px;
-}
-
-.table-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 4px 0;
-  padding: 0px 8px;
-  background: var(--color-bg-option);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 6px 6px 0 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.table-section-header i {
-  color: var(--color-border-highlight-alt);
-  font-size: 16px;
-}
-
-.table-section-header .count {
-  background: var(--color-bg-btn);
-  color: var(--color-text-btn);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 500;
-  margin-left: auto;
-}
-
-/* Visibility Table Container - no individual scrolling */
-.visibility-table-container {
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.table-section:last-of-type .visibility-table-container {
-  margin-bottom: 0;
-}
-
-.visibility-select:focus {
-  outline: none;
-  border-color: var(--color-border-highlight);
-  box-shadow: 0 0 0 2px var(--color-shadow-highlight);
-}
-
-.current-state {
-  width: 120px;
-}
-
-.mechanical-effects {
-  min-width: 150px;
-  width: auto;
-}
-
-.state-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-}
-
-.state-indicator i {
-  font-size: 10px;
-}
-
-/* Visibility state indicator colors */
-.state-indicator.visibility-observed {
-  --state-indicator-bg: var(--visibility-observed-bg-strong) !important;
-  background: var(--visibility-observed-bg-strong) !important;
-  color: var(--visibility-observed) !important;
-}
-
-.state-indicator.visibility-concealed {
-  --state-indicator-bg: var(--visibility-concealed-bg-strong) !important;
-  background: var(--visibility-concealed-bg-strong) !important;
-  color: var(--visibility-concealed) !important;
-}
-
-.state-indicator.visibility-hidden {
-  --state-indicator-bg: var(--visibility-hidden-bg-strong) !important;
-  background: var(--visibility-hidden-bg-strong) !important;
-  color: var(--visibility-hidden) !important;
-}
-
-.state-indicator.visibility-undetected {
-  --state-indicator-bg: var(--visibility-undetected-bg-strong) !important;
-  background: var(--visibility-undetected-bg-strong) !important;
-  color: var(--visibility-undetected) !important;
-}
-
-/* Effects column colors - subtle professional styling */
-.cover-none, .no-effect.cover-none {
-  background: rgba(76, 175, 80, 0.25) !important; /* Subtle green */
-  color: #4caf50 !important;
-  border: 1px solid #4caf50 !important;
-}
-
-.cover-lesser, .cover-effect.cover-lesser {
-  background: rgba(255, 193, 7, 0.25) !important; /* Subtle yellow */
-  color: #ffc107 !important;
-  border: 1px solid #ffc107 !important;
-}
-
-.cover-standard, .cover-effect.cover-standard {
-  background: rgba(255, 102, 0, 0.25) !important; /* Subtle orange */
-  color: #ff6600 !important;
-  border: 1px solid #ff6600 !important;
-}
-
-.cover-greater, .cover-effect.cover-greater {
-  background: rgba(244, 67, 54, 0.25) !important; /* Subtle red */
-  color: #f44336 !important;
-  border: 1px solid #f44336 !important;
-}
-
-/* Clean professional styling */
-
-/* FINAL FIX: State indicators with subtle professional colors */
-/* State indicators - force all cover states with maximum specificity */
-.pf2e-visioner .state-indicator.cover-none,
-.state-indicator.cover-none,
-span.state-indicator.cover-none {
-  background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
-  color: #4caf50 !important; /* Green text */
-  border-color: #4caf50 !important; /* Green border */
-}
-
-.pf2e-visioner .state-indicator.cover-lesser,
-.state-indicator.cover-lesser,
-span.state-indicator.cover-lesser {
-  background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
-  color: #ffc107 !important; /* Yellow text */
-  border-color: #ffc107 !important; /* Yellow border */
-}
-
-.pf2e-visioner .state-indicator.cover-standard,
-.state-indicator.cover-standard,
-span.state-indicator.cover-standard {
-  background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
-  color: #ff6600 !important; /* Orange text */
-  border-color: #ff6600 !important; /* Orange border */
-}
-
-.pf2e-visioner .state-indicator.cover-greater,
-.state-indicator.cover-greater,
-span.state-indicator.cover-greater {
-  background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
-  color: #f44336 !important; /* Red text */
-  border-color: #f44336 !important; /* Red border */
-}
-
-
-
-/* JavaScript will ensure CSS classes are applied - use simple class selectors */
-.state-indicator.cover-none {
-  background: rgba(76, 175, 80, 0.25) !important; /* Green for No Cover */
-  color: #4caf50 !important; /* Green text */
-  border-color: #4caf50 !important; /* Green border */
-}
-
-.state-indicator.cover-lesser {
-  background: rgba(255, 193, 7, 0.25) !important; /* Yellow for Lesser Cover */
-  color: #ffc107 !important; /* Yellow text */
-  border-color: #ffc107 !important; /* Yellow border */
-}
-
-.state-indicator.cover-standard {
-  background: rgba(255, 102, 0, 0.25) !important; /* Orange for Standard Cover */
-  color: #ff6600 !important; /* Orange text */
-  border-color: #ff6600 !important; /* Orange border */
-}
-
-.state-indicator.cover-greater {
-  background: rgba(244, 67, 54, 0.25) !important; /* Red for Greater Cover */
-  color: #f44336 !important; /* Red text */
-  border-color: #f44336 !important; /* Red border */
-}
-
-/* Duplicate rules removed - using higher specificity rules above */
-
-/* Visibility state indicators with subtle colors */
-.state-indicator.visibility-observed {
-  background: rgba(76, 175, 80, 0.2) !important; /* Subtle green background */
-  color: #4caf50 !important; /* Green text */
-  border-color: #4caf50 !important; /* Green border */
-}
-
-.state-indicator.visibility-concealed {
-  background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
-  color: #ff9800 !important; /* Orange text */
-  border-color: #ff9800 !important; /* Orange border */
-}
-
-.state-indicator.visibility-hidden {
-  background: rgba(255, 152, 0, 0.2) !important; /* Subtle orange background */
-  color: #ff9800 !important; /* Orange text */
-  border-color: #ff9800 !important; /* Orange border */
-}
-
-.state-indicator.visibility-undetected {
-  background: rgba(244, 67, 54, 0.2) !important; /* Subtle red background */
-  color: #f44336 !important; /* Red text */
-  border-color: #f44336 !important; /* Red border */
-}
-
-/* Cover state indicator colors - WORKING SOLUTION FOR BOTH MODES */
-.state-indicator.cover-none,
-span.state-indicator.cover-none,
-.pf2e-visioner .state-indicator.cover-none,
-.mode-toggle.observer-active ~ * .state-indicator.cover-none,
-.mode-toggle.target-active ~ * .state-indicator.cover-none {
-  background: rgba(76, 175, 80, 0.25) !important; /* Subtle green background */
-  color: #4caf50 !important; /* Green text */
-  border: 1px solid #4caf50 !important; /* Green border */
-}
-
-/* Removed redundant class-based selectors - using content-based selectors above */
-
-/* Ensure bulk buttons respect colorblind mode */
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"],
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"] i {
-  color: var(--visibility-observed) !important;
-  border-color: var(--visibility-observed) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"]:hover,
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="observed"]:hover i {
-  background: var(--visibility-observed-bg-medium) !important;
-  border-color: var(--visibility-observed) !important;
-  color: var(--visibility-observed) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"],
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"] i {
-  color: var(--visibility-concealed) !important;
-  border-color: var(--visibility-concealed) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"]:hover,
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="concealed"]:hover i {
-  background: var(--visibility-concealed-bg-medium) !important;
-  border-color: var(--visibility-concealed) !important;
-  color: var(--visibility-concealed) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"],
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"] i {
-  color: var(--visibility-hidden) !important;
-  border-color: var(--visibility-hidden) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"]:hover,
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="hidden"]:hover i {
-  background: var(--visibility-hidden-bg-medium) !important;
-  border-color: var(--visibility-hidden) !important;
-  color: var(--visibility-hidden) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"],
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"] i {
-  color: var(--visibility-undetected) !important;
-  border-color: var(--visibility-undetected) !important;
-}
-
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"]:hover,
-.pf2e-visioner .bulk-actions-header .bulk-state-header[data-state="undetected"]:hover i {
-  background: var(--visibility-undetected-bg-medium) !important;
-  border-color: var(--visibility-undetected) !important;
-  color: var(--visibility-undetected) !important;
-}
-
-/* No Targets Message */
-.no-targets {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--color-text-dark-secondary);
-  font-style: italic;
-}
-
-/* Footer Actions */
-.sheet-footer {
-  display: flex;
-  padding: 8px 0 8px 0;
-  border-top: 1px solid var(--color-border-light-primary);
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 0;
-  flex-shrink: 0;
-  background: var(--color-bg);
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.vm-action-button {
-  padding: 6px 12px;
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  background: var(--color-bg-option);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.vm-action-button:hover {
-  background: var(--color-bg-option-active);
-  border-color: var(--color-border-highlight);
-  border-width: 2px;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.vm-action-button.apply {
-  background: var(--color-bg-btn-primary);
-  border-color: var(--color-border-highlight-alt);
-  color: var(--color-text-light-primary);
-}
-
-.vm-action-button.apply:hover {
-  background: var(--color-bg-btn-primary-active);
-  border-color: var(--color-border-highlight);
-  border-width: 2px;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.vm-action-button.reset {
-  background: var(--color-bg-btn-secondary);
-  border-color: var(--color-border-light-primary);
-}
-
-.vm-action-button.cancel {
-  background: transparent;
-  border-color: var(--color-border-light-primary);
-}
-
-/* Icon-based Selection Styling */
-.icon-selection {
-  display: flex;
-  gap: 2px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: nowrap;
-}
-
-.state-icon {
-  background: transparent;
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  padding: 3px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 11px;
-  min-width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.6;
-  position: relative;
-}
-
-.state-icon:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border-color: currentColor;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.state-icon.selected {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.2);
-  border-color: currentColor;
-  border-width: 2px;
-  box-shadow:
-    0 0 8px rgba(255, 255, 255, 0.3),
-    inset 0 0 4px rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-/* Ensure cover state icons have same border width when selected */
-.state-icon.selected.cover-none,
-.state-icon.selected.cover-lesser,
-.state-icon.selected.cover-standard,
-.state-icon.selected.cover-greater {
-  border-width: 2px !important;
-}
-
-.state-icon.selected::after {
-  content: "";
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 6px;
-  height: 6px;
-  background: currentColor;
-  border-radius: 50%;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
-}
-
-/* Specific state icon colors */
-.state-icon[data-state="observed"] {
-  color: var(--visibility-observed);
-}
-
-.state-icon[data-state="concealed"] {
-  color: var(--visibility-concealed);
-}
-
-.state-icon[data-state="hidden"] {
-  color: var(--visibility-hidden);
-}
-
-.state-icon[data-state="undetected"] {
-  color: var(--visibility-undetected);
-}
-
-/* Ensure state icons respect colorblind mode with higher specificity */
-.pf2e-visioner .state-icon[data-state="observed"] {
-  color: var(--visibility-observed) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="concealed"] {
-  color: var(--visibility-concealed) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="hidden"] {
-  color: var(--visibility-hidden) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="undetected"] {
-  color: var(--visibility-undetected) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="observed"].selected {
-  background: var(--visibility-observed-bg-strong) !important;
-  color: var(--visibility-observed) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="concealed"].selected {
-  background: var(--visibility-concealed-bg-strong) !important;
-  color: var(--visibility-concealed) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="hidden"].selected {
-  background: var(--visibility-hidden-bg-strong) !important;
-  color: var(--visibility-hidden) !important;
-}
-
-.pf2e-visioner .state-icon[data-state="undetected"].selected {
-  background: var(--visibility-undetected-bg-strong) !important;
-  color: var(--visibility-undetected) !important;
-}
-
-/* Cover icon traffic-light mapping */
-.cover-section .state-icon[data-state="none"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="none"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="none"] i {
-  color: var(--cover-none) !important;
-  border-color: var(--cover-none) !important;
-}
-
-.cover-section .state-icon[data-state="lesser"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="lesser"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="lesser"] i {
-  color: var(--cover-lesser) !important;
-  border-color: var(--cover-lesser) !important;
-}
-
-.cover-section .state-icon[data-state="standard"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="standard"],
-.cover-section
-  .bulk-actions-header
-  .bulk-state-header[data-state="standard"]
-  i {
-  color: var(--cover-standard) !important;
-  border-color: var(--cover-standard) !important;
-}
-
-.cover-section .state-icon[data-state="greater"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="greater"],
-.cover-section .bulk-actions-header .bulk-state-header[data-state="greater"] i {
-  color: var(--cover-greater) !important;
-  border-color: var(--cover-greater) !important;
-}
-
-/* Loading state for cover section bulk action buttons */
-.cover-section .bulk-actions-header .bulk-state-header.loading {
-  cursor: wait !important;
-  pointer-events: none !important;
-  opacity: 0.8 !important;
-}
-
-.cover-section .bulk-actions-header .bulk-state-header.loading i {
-  animation: spin 1s linear infinite;
-}
-
-
-/* Hide the hidden input */
-.icon-selection input[type="hidden"] {
-  display: none;
-}
-
-/* Token Row Hover Effects - consistent with dialogs */
-.token-visibility-manager .visibility-table tr[data-token-id]:hover {
-  background: rgba(255, 255, 0, 0.1) !important;
-  border-left: 3px solid var(--visibility-concealed);
-  cursor: pointer;
-}
-
+  .state-icon.selected {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: currentColor;
+    border-width: 2px;
+    box-shadow:
+      0 0 8px rgba(255, 255, 255, 0.3),
+      inset 0 0 4px rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+  }
+
+  /* Ensure cover state icons have same border width when selected */
+  .state-icon.selected.cover-none,
+  .state-icon.selected.cover-lesser,
+  .state-icon.selected.cover-standard,
+  .state-icon.selected.cover-greater {
+    border-width: 2px !important;
+  }
+
+  .state-icon.selected::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Specific state icon colors */
+  .state-icon[data-state='observed'] {
+    color: var(--visibility-observed);
+  }
+
+  .state-icon[data-state='concealed'] {
+    color: var(--visibility-concealed);
+  }
+
+  .state-icon[data-state='hidden'] {
+    color: var(--visibility-hidden);
+  }
+
+  .state-icon[data-state='undetected'] {
+    color: var(--visibility-undetected);
+  }
+
+  /* Ensure state icons respect colorblind mode with higher specificity */
+  .pf2e-visioner .state-icon[data-state='observed'] {
+    color: var(--visibility-observed) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='concealed'] {
+    color: var(--visibility-concealed) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='hidden'] {
+    color: var(--visibility-hidden) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='undetected'] {
+    color: var(--visibility-undetected) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='observed'].selected {
+    background: var(--visibility-observed-bg-strong) !important;
+    color: var(--visibility-observed) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='concealed'].selected {
+    background: var(--visibility-concealed-bg-strong) !important;
+    color: var(--visibility-concealed) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='hidden'].selected {
+    background: var(--visibility-hidden-bg-strong) !important;
+    color: var(--visibility-hidden) !important;
+  }
+
+  .pf2e-visioner .state-icon[data-state='undetected'].selected {
+    background: var(--visibility-undetected-bg-strong) !important;
+    color: var(--visibility-undetected) !important;
+  }
+
+  /* Cover icon traffic-light mapping */
+  .cover-section .state-icon[data-state='none'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='none'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='none'] i {
+    color: var(--cover-none) !important;
+    border-color: var(--cover-none) !important;
+  }
+
+  .cover-section .state-icon[data-state='lesser'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='lesser'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='lesser'] i {
+    color: var(--cover-lesser) !important;
+    border-color: var(--cover-lesser) !important;
+  }
+
+  .cover-section .state-icon[data-state='standard'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='standard'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='standard'] i {
+    color: var(--cover-standard) !important;
+    border-color: var(--cover-standard) !important;
+  }
+
+  .cover-section .state-icon[data-state='greater'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='greater'],
+  .cover-section .bulk-actions-header .bulk-state-header[data-state='greater'] i {
+    color: var(--cover-greater) !important;
+    border-color: var(--cover-greater) !important;
+  }
+
+  /* Loading state for cover section bulk action buttons */
+  .cover-section .bulk-actions-header .bulk-state-header.loading {
+    cursor: wait !important;
+    pointer-events: none !important;
+    opacity: 0.8 !important;
+  }
+
+  .cover-section .bulk-actions-header .bulk-state-header.loading i {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Hide the hidden input */
+  .icon-selection input[type='hidden'] {
+    display: none;
+  }
+
+  /* Token Row Hover Effects - consistent with dialogs */
+  .token-visibility-manager .visibility-table tr[data-token-id]:hover {
+    background: rgba(255, 255, 0, 0.1) !important;
+    border-left: 3px solid var(--visibility-concealed);
+    cursor: pointer;
+  }
 } /* End .pf2e-visioner scope */

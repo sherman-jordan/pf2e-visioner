@@ -2,7 +2,7 @@
  * Cover map store and helpers
  */
 
-import { MODULE_ID } from "../constants.js";
+import { MODULE_ID } from '../constants.js';
 
 /**
  * Get the cover map for a token
@@ -10,7 +10,7 @@ import { MODULE_ID } from "../constants.js";
  * @returns {Record<string,string>}
  */
 export function getCoverMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, "cover") ?? {};
+  const map = token?.document.getFlag(MODULE_ID, 'cover') ?? {};
   return map;
 }
 
@@ -23,11 +23,11 @@ export async function setCoverMap(token, coverMap) {
   if (!token?.document) return;
   // Only GMs can update token documents
   if (!game.user.isGM) return;
-  
+
   const path = `flags.${MODULE_ID}.cover`;
   const result = await token.document.update(
     { [path]: coverMap },
-    { diff: false, render: false, animate: false }
+    { diff: false, render: false, animate: false },
   );
   return result;
 }
@@ -39,7 +39,7 @@ export async function setCoverMap(token, coverMap) {
  */
 export function getCoverBetween(observer, target) {
   const coverMap = getCoverMap(observer);
-  return coverMap[target?.document?.id] || "none";
+  return coverMap[target?.document?.id] || 'none';
 }
 
 /**
@@ -56,10 +56,10 @@ export async function setCoverBetween(observer, target, state, options = {}) {
   if (coverMap[targetId] === state) {
     if (!options.skipEphemeralUpdate) {
       try {
-        const { batchUpdateCoverEffects } = await import("../cover/ephemeral.js");
+        const { batchUpdateCoverEffects } = await import('../cover/ephemeral.js');
         await batchUpdateCoverEffects(observer, [{ target, state }]);
       } catch (error) {
-        console.error("Error updating cover effects:", error);
+        console.error('Error updating cover effects:', error);
       }
     }
     return;
@@ -69,11 +69,9 @@ export async function setCoverBetween(observer, target, state, options = {}) {
 
   if (options.skipEphemeralUpdate) return;
   try {
-    const { batchUpdateCoverEffects } = await import("../cover/ephemeral.js");
+    const { batchUpdateCoverEffects } = await import('../cover/ephemeral.js');
     await batchUpdateCoverEffects(observer, [{ target, state }]);
   } catch (error) {
-    console.error("Error updating cover effects:", error);
+    console.error('Error updating cover effects:', error);
   }
 }
-
-

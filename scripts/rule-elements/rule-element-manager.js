@@ -12,8 +12,8 @@ let PF2eVisionerVisibilityRuleElement = null;
  */
 export function initRuleElementManager() {
   // Register hooks for different stages of initialization
-  Hooks.once("setup", setupRuleElements);
-  Hooks.once("ready", registerRuleElements);
+  Hooks.once('setup', setupRuleElements);
+  Hooks.once('ready', registerRuleElements);
 }
 
 /**
@@ -25,35 +25,33 @@ function setupRuleElements() {
   if (game.pf2e?.RuleElementPF2e) {
     try {
       // Define the PF2eVisionerVisibility rule element class
-      PF2eVisionerVisibilityRuleElement = class extends (
-        game.pf2e.RuleElementPF2e
-      ) {
+      PF2eVisionerVisibilityRuleElement = class extends game.pf2e.RuleElementPF2e {
         /**
          * Set the name for the rule element's documentation
          */
         static get name() {
-          return "PF2eVisionerVisibility";
+          return 'PF2eVisionerVisibility';
         }
 
         /**
          * Set the documentation URL for this rule element
          */
         static get documentation() {
-          return "https://github.com/roileaf/pf2e-visioner/blob/main/RULE_ELEMENTS.md#pf2evisioner-visibility-rule-element";
+          return 'https://github.com/roileaf/pf2e-visioner/blob/main/RULE_ELEMENTS.md#pf2evisioner-visibility-rule-element';
         }
 
         /**
          * Set the description for this rule element
          */
         static get description() {
-          return "Change visibility statuses and apply ephemeral effects programmatically";
+          return 'Change visibility statuses and apply ephemeral effects programmatically';
         }
 
         /**
          * Set the default key for this rule element
          */
         static get defaultKey() {
-          return "PF2eVisionerVisibility";
+          return 'PF2eVisionerVisibility';
         }
 
         /**
@@ -66,18 +64,18 @@ function setupRuleElements() {
           return new game.pf2e.system.schema.fields.LaxSchemaField({
             mode: new fields.StringField({
               required: true,
-              choices: ["set", "increment", "decrement"],
-              initial: "set",
+              choices: ['set', 'increment', 'decrement'],
+              initial: 'set',
             }),
             status: new fields.StringField({
               required: true,
-              choices: ["observed", "hidden", "undetected", "concealed"],
-              initial: "observed",
+              choices: ['observed', 'hidden', 'undetected', 'concealed'],
+              initial: 'observed',
             }),
             target: new fields.StringField({
               required: true,
-              choices: ["self", "target", "allies", "enemies", "all"],
-              initial: "target",
+              choices: ['self', 'target', 'allies', 'enemies', 'all'],
+              initial: 'target',
             }),
             applyEphemeralEffects: new fields.BooleanField({
               required: false,
@@ -119,8 +117,7 @@ function setupRuleElements() {
           const isNPCvsNPC = !actor1.hasPlayerOwner && !actor2.hasPlayerOwner;
 
           // Check if they have the same disposition
-          const sameDisposition =
-            actor1.token?.disposition === actor2.token?.disposition;
+          const sameDisposition = actor1.token?.disposition === actor2.token?.disposition;
 
           return isPCvsPC || (isNPCvsNPC && sameDisposition);
         }
@@ -164,13 +161,13 @@ function setupRuleElements() {
       };
     } catch (error) {
       console.error(
-        "PF2E Visioner | Error defining PF2eVisionerVisibility rule element class:",
+        'PF2E Visioner | Error defining PF2eVisionerVisibility rule element class:',
         error,
       );
     }
   } else {
     console.warn(
-      "PF2E Visioner | PF2e system not ready during setup, will try again during ready hook",
+      'PF2E Visioner | PF2e system not ready during setup, will try again during ready hook',
     );
   }
 }
@@ -181,9 +178,7 @@ function setupRuleElements() {
  */
 function registerRuleElements() {
   if (!game.pf2e?.RuleElements) {
-    console.error(
-      "PF2E Visioner | Failed to register rule elements: PF2e system not ready",
-    );
+    console.error('PF2E Visioner | Failed to register rule elements: PF2e system not ready');
     return;
   }
 
@@ -194,40 +189,34 @@ function registerRuleElements() {
     }
 
     if (!PF2eVisionerVisibilityRuleElement) {
-      console.error(
-        "PF2E Visioner | Failed to create PF2eVisionerVisibilityRuleElement class",
-      );
+      console.error('PF2E Visioner | Failed to create PF2eVisionerVisibilityRuleElement class');
       return;
     }
 
     // Register with the custom rule elements registry
-    game.pf2e.RuleElements.custom.PF2eVisionerVisibility =
-      PF2eVisionerVisibilityRuleElement;
+    game.pf2e.RuleElements.custom.PF2eVisionerVisibility = PF2eVisionerVisibilityRuleElement;
 
     // Make sure the rule element appears in the UI dropdown
     if (CONFIG.PF2E?.ruleElementTypes) {
-      CONFIG.PF2E.ruleElementTypes.PF2eVisionerVisibility =
-        "PF2e Visioner Visibility";
+      CONFIG.PF2E.ruleElementTypes.PF2eVisionerVisibility = 'PF2e Visioner Visibility';
     } else if (CONFIG.PF2E) {
       CONFIG.PF2E.ruleElementTypes = {
-        PF2eVisionerVisibility: "PF2e Visioner Visibility",
+        PF2eVisionerVisibility: 'PF2e Visioner Visibility',
       };
     } else {
-      console.error("PF2E Visioner | CONFIG.PF2E is not available");
+      console.error('PF2E Visioner | CONFIG.PF2E is not available');
     }
 
     // Add the rule element to the PF2e lang object for proper display
     if (game.i18n) {
-      const key = "PF2E.RuleElement.PF2eVisionerVisibility";
+      const key = 'PF2E.RuleElement.PF2eVisionerVisibility';
       if (!game.i18n.has(key)) {
         game.i18n.translations.PF2E = game.i18n.translations.PF2E || {};
-        game.i18n.translations.PF2E.RuleElement =
-          game.i18n.translations.PF2E.RuleElement || {};
-        game.i18n.translations.PF2E.RuleElement.PF2eVisionerVisibility =
-          "PF2e Visioner Visibility";
+        game.i18n.translations.PF2E.RuleElement = game.i18n.translations.PF2E.RuleElement || {};
+        game.i18n.translations.PF2E.RuleElement.PF2eVisionerVisibility = 'PF2e Visioner Visibility';
       }
     }
   } catch (error) {
-    console.error("PF2E Visioner | Error registering rule elements:", error);
+    console.error('PF2E Visioner | Error registering rule elements:', error);
   }
 }

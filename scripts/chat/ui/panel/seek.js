@@ -1,17 +1,15 @@
 export function buildSeekPanel(actionData, message) {
-  const label = game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS");
-  const tooltip = game.i18n.localize(
-    "PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP",
-  );
-  const title = "Seek Results";
-  const icon = "fas fa-search";
-  const actionName = "open-seek-results";
-  const buttonClass = "visioner-btn-seek";
-  const panelClass = "seek-panel";
+  const label = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS');
+  const tooltip = game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.OPEN_RESULTS_TOOLTIP');
+  const title = 'Seek Results';
+  const icon = 'fas fa-search';
+  const actionName = 'open-seek-results';
+  const buttonClass = 'visioner-btn-seek';
+  const panelClass = 'seek-panel';
 
-  const isSeekWithTemplateOption = game.settings.get("pf2e-visioner", "seekUseTemplate");
+  const isSeekWithTemplateOption = game.settings.get('pf2e-visioner', 'seekUseTemplate');
   const msgForPanel = message || game.messages.get(actionData.messageId);
-  const pendingSeek = msgForPanel?.flags?.["pf2e-visioner"]?.seekTemplate;
+  const pendingSeek = msgForPanel?.flags?.['pf2e-visioner']?.seekTemplate;
   const hasPendingTemplateFromPlayer = !!pendingSeek && game.user.isGM;
   const pendingHasTargets = !!pendingSeek?.hasTargets;
   const isFromPlayer = game.user.isGM && !!msgForPanel?.author && msgForPanel.author.isGM === false;
@@ -19,7 +17,7 @@ export function buildSeekPanel(actionData, message) {
   const hasExistingTemplate =
     isSeekWithTemplateOption &&
     !!canvas?.scene?.templates?.find?.((t) => {
-      const f = t?.flags?.["pf2e-visioner"];
+      const f = t?.flags?.['pf2e-visioner'];
       return (
         f?.seekPreviewManual &&
         f?.messageId === actionData.messageId &&
@@ -28,7 +26,7 @@ export function buildSeekPanel(actionData, message) {
       );
     });
 
-  let actionButtonsHtml = "";
+  let actionButtonsHtml = '';
   if (hasPendingTemplateFromPlayer) {
     if (pendingHasTargets) {
       actionButtonsHtml = `
@@ -45,20 +43,18 @@ export function buildSeekPanel(actionData, message) {
           <i class="fas fa-check-double"></i> Apply Changes
         </button>`;
     } else {
-      actionButtonsHtml = "";
+      actionButtonsHtml = '';
     }
   } else if (isSeekWithTemplateOption) {
     actionButtonsHtml = `
       <button type="button"
               class="visioner-btn ${buttonClass} setup-template"
-              data-action="${hasExistingTemplate ? "remove-seek-template" : "setup-seek-template"}"
-              title="${game.i18n.localize(
-                "PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP",
-              )}">
+              data-action="${hasExistingTemplate ? 'remove-seek-template' : 'setup-seek-template'}"
+              title="${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}">
         <i class="fas fa-bullseye"></i> ${
           hasExistingTemplate
-            ? game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE")
-            : game.i18n.localize("PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE")
+            ? game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE')
+            : game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE')
         }
       </button>`;
     if (hasExistingTemplate && game.user.isGM) {
@@ -71,7 +67,8 @@ export function buildSeekPanel(actionData, message) {
         </button>`;
     }
     if (game.user.isGM && ((hasPendingTemplateFromPlayer && pendingHasTargets) || isFromPlayer)) {
-      actionButtonsHtml = `
+      actionButtonsHtml =
+        `
         <button type="button" 
                 class="visioner-btn ${buttonClass}" 
                 data-action="open-seek-results"
@@ -97,5 +94,3 @@ export function buildSeekPanel(actionData, message) {
 
   return { title, icon, panelClass, actionButtonsHtml };
 }
-
-

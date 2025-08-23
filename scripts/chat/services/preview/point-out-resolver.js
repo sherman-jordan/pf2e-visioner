@@ -5,7 +5,7 @@
 export async function enrichPointOutActionDataForGM(actionData) {
   try {
     const msg = game.messages.get(actionData.messageId);
-    const modulePointOut = msg?.flags?.["pf2e-visioner"]?.pointOut;
+    const modulePointOut = msg?.flags?.['pf2e-visioner']?.pointOut;
     if (modulePointOut?.targetTokenId) {
       actionData.context = actionData.context || {};
       actionData.context.target = { token: modulePointOut.targetTokenId };
@@ -23,7 +23,13 @@ export function getBestPointOutTargetForGM(actionData) {
     if (!pointerToken) return null;
     // Heuristic: choose nearest enemy token
     const tokens = canvas?.tokens?.placeables || [];
-    const enemies = tokens.filter((t) => t && t !== pointerToken && t.actor && t.document.disposition !== pointerToken.document.disposition);
+    const enemies = tokens.filter(
+      (t) =>
+        t &&
+        t !== pointerToken &&
+        t.actor &&
+        t.document.disposition !== pointerToken.document.disposition,
+    );
     if (enemies.length === 0) return null;
     let best = enemies[0];
     let bestDist = Number.POSITIVE_INFINITY;
@@ -31,12 +37,13 @@ export function getBestPointOutTargetForGM(actionData) {
       const dx = e.center.x - pointerToken.center.x;
       const dy = e.center.y - pointerToken.center.y;
       const dist = Math.hypot(dx, dy);
-      if (dist < bestDist) { bestDist = dist; best = e; }
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = e;
+      }
     }
     return best;
   } catch (_) {
     return null;
   }
 }
-
-

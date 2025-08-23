@@ -3,11 +3,11 @@
  * Common functions used by both Seek and Point Out logic
  */
 
-import { MODULE_ID, MODULE_TITLE } from "../../../constants.js";
-import { refreshEveryonesPerception } from "../../../services/socket.js";
-import { updateTokenVisuals } from "../../../services/visual-effects.js";
-import { setVisibilityBetween } from "../../../utils.js";
-import { notify } from "./notifications.js";
+import { MODULE_ID, MODULE_TITLE } from '../../../constants.js';
+import { refreshEveryonesPerception } from '../../../services/socket.js';
+import { updateTokenVisuals } from '../../../services/visual-effects.js';
+import { setVisibilityBetween } from '../../../utils.js';
+import { notify } from './notifications.js';
 /**
  * Validate if a token is a valid Seek target
  * @param {Token} token - Potential target token
@@ -16,8 +16,7 @@ import { notify } from "./notifications.js";
  */
 export function isValidSeekTarget(token, seeker) {
   if (!token || !seeker || token === seeker) return false;
-  if (token.actor?.type !== "npc" && token.actor?.type !== "character")
-    return false;
+  if (token.actor?.type !== 'npc' && token.actor?.type !== 'character') return false;
   if (token.actor?.alliance === seeker.actor?.alliance) return false;
   return true;
 }
@@ -30,14 +29,14 @@ export function isValidSeekTarget(token, seeker) {
 export function extractStealthDC(token) {
   if (!token?.actor) return 0;
   // Loot actors use token override or world default; others use actor stealth DC
-  if (token.actor?.type === "loot") {
+  if (token.actor?.type === 'loot') {
     const override =
-      Number(token.document?.getFlag?.(MODULE_ID, "stealthDC")) ||
+      Number(token.document?.getFlag?.(MODULE_ID, 'stealthDC')) ||
       Number(token.document?.flags?.[MODULE_ID]?.stealthDC);
     if (Number.isFinite(override) && override > 0) return override;
-    const fallback = Number(game.settings.get(MODULE_ID, "lootStealthDC"));
+    const fallback = Number(game.settings.get(MODULE_ID, 'lootStealthDC'));
     return Number.isFinite(fallback) ? fallback : 15;
-  } else if (token.actor?.type === "hazard") {
+  } else if (token.actor?.type === 'hazard') {
     return token.actor.system.attributes.stealth.dc;
   } else {
     // For both PCs and NPCs: actor.system.skills.stealth.dc
@@ -66,7 +65,7 @@ export function calculateTokenDistance(token1, token2) {
   }
 
   // Try to use PF2e system's distance calculation if available
-  if (game.system.id === "pf2e" && game.pf2e?.utils?.distance) {
+  if (game.system.id === 'pf2e' && game.pf2e?.utils?.distance) {
     try {
       // Use PF2e's distance calculation
       return game.pf2e.utils.distance.getDistance(token1, token2);
@@ -130,8 +129,8 @@ export function isTokenInEncounter(token) {
     // Check actor and actor's master (for familiar/eidolon) or companions linked to a combatant
     const actor = token?.actor;
     const actorId = actor?.id;
-    const isFamiliar = actor?.type === "familiar";
-    const isEidolon = actor?.type === "eidolon" || actor?.isOfType?.("eidolon");
+    const isFamiliar = actor?.type === 'familiar';
+    const isEidolon = actor?.type === 'eidolon' || actor?.isOfType?.('eidolon');
 
     // Always include familiars regardless of encounter filter
     if (isFamiliar) return true;
@@ -139,7 +138,8 @@ export function isTokenInEncounter(token) {
     // Try PF2e master linkage on eidolon
     const master = isEidolon ? actor?.system?.eidolon?.master : null;
     const masterTokenId = master?.getActiveTokens?.(true, true)?.[0]?.id;
-    if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId)) return true;
+    if (masterTokenId && game.combat.combatants.some((c) => c.tokenId === masterTokenId))
+      return true;
 
     // Try linked actor id
     if (actorId && game.combat.combatants.some((c) => c.actorId === actorId)) return true;
@@ -150,11 +150,9 @@ export function isTokenInEncounter(token) {
         const cActor = c.actor;
         if (!cActor) return false;
         // Companions/minions may have their actor's master/party as owner
-        const ownerIds = new Set([
-          cActor.id,
-          cActor.master?.id,
-          cActor?.system?.eidolon?.master?.id,
-        ].filter(Boolean));
+        const ownerIds = new Set(
+          [cActor.id, cActor.master?.id, cActor?.system?.eidolon?.master?.id].filter(Boolean),
+        );
         return ownerIds.has(actorId);
       } catch (_) {
         return false;
@@ -177,13 +175,13 @@ export function determineOutcome(total, die, dc) {
   const margin = total - dc;
   // Determine base outcome by margin
   let outcome;
-  if (margin >= 10) outcome = "critical-success";
-  else if (margin >= 0) outcome = "success";
-  else if (margin >= -10) outcome = "failure";
-  else outcome = "critical-failure";
+  if (margin >= 10) outcome = 'critical-success';
+  else if (margin >= 0) outcome = 'success';
+  else if (margin >= -10) outcome = 'failure';
+  else outcome = 'critical-failure';
 
   // Natural 20/1 step adjustment across the board with extremes clamped
-  const ladder = ["critical-failure", "failure", "success", "critical-success"];
+  const ladder = ['critical-failure', 'failure', 'success', 'critical-success'];
   const idx = ladder.indexOf(outcome);
   const natural = Number(die);
   if (natural === 20) {
@@ -214,7 +212,7 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
   if (!changes || changes.length === 0 || !observer) return;
 
   // Default options
-  const direction = options.direction || "observer_to_target";
+  const direction = options.direction || 'observer_to_target';
 
   try {
     // Group changes by target to reduce map updates
@@ -255,23 +253,15 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
           if (!changeData) return;
 
           try {
-            await setVisibilityBetween(
-              observer,
-              changeData.target,
-              changeData.state,
-              {
-                direction: direction,
-                durationRounds: options.durationRounds,
-                initiative: options.initiative,
-                skipEphemeralUpdate: options.skipEphemeralUpdate,
-                skipCleanup: options.skipCleanup,
-              },
-            );
+            await setVisibilityBetween(observer, changeData.target, changeData.state, {
+              direction: direction,
+              durationRounds: options.durationRounds,
+              initiative: options.initiative,
+              skipEphemeralUpdate: options.skipEphemeralUpdate,
+              skipCleanup: options.skipCleanup,
+            });
           } catch (error) {
-            console.error(
-              `${MODULE_TITLE}: Error applying visibility change:`,
-              error,
-            );
+            console.error(`${MODULE_TITLE}: Error applying visibility change:`, error);
           }
         }),
       );
@@ -293,9 +283,7 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
       const targetsArray = Array.from(uniqueTargets);
       for (let i = 0; i < targetsArray.length; i += batchSize) {
         const batchTargets = targetsArray.slice(i, i + batchSize);
-        await Promise.all(
-          batchTargets.map((target) => updateTokenVisuals(target)),
-        );
+        await Promise.all(batchTargets.map((target) => updateTokenVisuals(target)));
       }
     } catch (error) {
       console.warn(`${MODULE_TITLE}: Error updating token visuals:`, error);
@@ -305,9 +293,7 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
     refreshEveryonesPerception();
   } catch (error) {
     console.error(`${MODULE_TITLE}: Error applying visibility changes:`, error);
-    notify.error(
-      `${MODULE_TITLE}: Failed to apply visibility changes - ${error.message}`,
-    );
+    notify.error(`${MODULE_TITLE}: Failed to apply visibility changes - ${error.message}`);
   }
 }
 
@@ -321,16 +307,16 @@ export function markPanelComplete(panel, changes) {
 
   try {
     // Update panel appearance
-    panel.addClass("completed");
+    panel.addClass('completed');
 
     // Update button text and disable
-    const button = panel.find(".preview-results");
+    const button = panel.find('.preview-results');
     if (button.length) {
       button
-        .prop("disabled", true)
+        .prop('disabled', true)
         .html('<i class="fas fa-check"></i> Changes Applied')
-        .removeClass("visioner-btn-primary")
-        .addClass("visioner-btn-success");
+        .removeClass('visioner-btn-primary')
+        .addClass('visioner-btn-success');
     }
 
     // Add completion message
@@ -338,12 +324,12 @@ export function markPanelComplete(panel, changes) {
             <div class="automation-completion">
                 <i class="fas fa-check-circle"></i>
                 <span>Applied ${changes.length} visibility change${
-                  changes.length !== 1 ? "s" : ""
+                  changes.length !== 1 ? 's' : ''
                 }</span>
             </div>
         `;
 
-    panel.find(".automation-actions").after(completionMsg);
+    panel.find('.automation-actions').after(completionMsg);
   } catch (error) {
     console.error(`${MODULE_TITLE}: Error marking panel complete:`, error);
   }
@@ -359,16 +345,21 @@ export function markPanelComplete(panel, changes) {
 export function shouldFilterAlly(
   actingToken,
   targetToken,
-  filterType = "enemies",
+  filterType = 'enemies',
   preferIgnoreAllies = null,
 ) {
   // Non-token subjects (e.g., walls) should never be filtered by ally logic
-  try { if (!targetToken?.actor) return false; } catch (_) { return false; }
+  try {
+    if (!targetToken?.actor) return false;
+  } catch (_) {
+    return false;
+  }
   // When provided, prefer per-dialog/user choice; otherwise fall back to global setting
   // preferIgnoreAllies is authoritative when boolean; otherwise use the setting
-  const ignoreAllies = (typeof preferIgnoreAllies === "boolean")
-    ? preferIgnoreAllies
-    : game.settings.get(MODULE_ID, "ignoreAllies") === true;
+  const ignoreAllies =
+    typeof preferIgnoreAllies === 'boolean'
+      ? preferIgnoreAllies
+      : game.settings.get(MODULE_ID, 'ignoreAllies') === true;
   if (!ignoreAllies) return false;
 
   // Prefer PF2e alliance when available; fall back to token disposition; finally fall back to ownership/type.
@@ -384,8 +375,8 @@ export function shouldFilterAlly(
       else {
         const aType = actingToken?.actor?.type;
         const bType = targetToken?.actor?.type;
-        const aGroup = (aType === "character" || aType === "familiar") ? "pc" : "npc";
-        const bGroup = (bType === "character" || bType === "familiar") ? "pc" : "npc";
+        const aGroup = aType === 'character' || aType === 'familiar' ? 'pc' : 'npc';
+        const bGroup = bType === 'character' || bType === 'familiar' ? 'pc' : 'npc';
         sameSide = aGroup === bGroup;
       }
     }
@@ -393,13 +384,13 @@ export function shouldFilterAlly(
     // Conservative fallback by actor type only (no ownership)
     const aType = actingToken?.actor?.type;
     const bType = targetToken?.actor?.type;
-    const aGroup = (aType === "character" || aType === "familiar") ? "pc" : "npc";
-    const bGroup = (bType === "character" || bType === "familiar") ? "pc" : "npc";
+    const aGroup = aType === 'character' || aType === 'familiar' ? 'pc' : 'npc';
+    const bGroup = bType === 'character' || bType === 'familiar' ? 'pc' : 'npc';
     sameSide = aGroup === bGroup;
   }
 
-  if (filterType === "enemies") return sameSide; // filter out allies
-  if (filterType === "allies") return !sameSide; // filter out enemies when looking for allies
+  if (filterType === 'enemies') return sameSide; // filter out allies
+  if (filterType === 'allies') return !sameSide; // filter out enemies when looking for allies
 
   return false;
 }
@@ -412,7 +403,12 @@ export function shouldFilterAlly(
  * @param {string} tokenProperty - Property name holding the target token on each outcome
  * @returns {Array}
  */
-export function filterOutcomesByAllies(outcomes, actorToken, preferIgnoreAllies, tokenProperty = "target") {
+export function filterOutcomesByAllies(
+  outcomes,
+  actorToken,
+  preferIgnoreAllies,
+  tokenProperty = 'target',
+) {
   try {
     if (!Array.isArray(outcomes)) return outcomes;
     const doIgnore = preferIgnoreAllies === true;
@@ -422,14 +418,12 @@ export function filterOutcomesByAllies(outcomes, actorToken, preferIgnoreAllies,
       if (o?._isWall || o?.wallId) return true;
       const token = o?.[tokenProperty];
       if (!token) return false;
-      return !shouldFilterAlly(actorToken, token, "enemies", true);
+      return !shouldFilterAlly(actorToken, token, 'enemies', true);
     });
   } catch (_) {
     return outcomes;
   }
 }
-
-
 
 /**
  * Extract Perception DC from token using the definite path
@@ -439,7 +433,7 @@ export function filterOutcomesByAllies(outcomes, actorToken, preferIgnoreAllies,
 export function extractPerceptionDC(token) {
   if (!token.actor) return 0;
   // Per-token override
-  const override = Number(token.document?.getFlag?.(MODULE_ID, "perceptionDC"));
+  const override = Number(token.document?.getFlag?.(MODULE_ID, 'perceptionDC'));
   if (Number.isFinite(override) && override > 0) return override;
   // For both PCs and NPCs: actor.system.perception.dc
   return token.actor.system?.perception?.dc || 0;
@@ -454,9 +448,9 @@ export function extractPerceptionDC(token) {
 export function hasConcealedCondition(token) {
   try {
     const itemTypeConditions = token?.actor?.itemTypes?.condition || [];
-    if (itemTypeConditions.some((c) => c?.slug === "concealed")) return true;
+    if (itemTypeConditions.some((c) => c?.slug === 'concealed')) return true;
     const legacyConditions = token?.actor?.conditions?.conditions || [];
-    return legacyConditions.some((c) => c?.slug === "concealed");
+    return legacyConditions.some((c) => c?.slug === 'concealed');
   } catch (_) {
     return false;
   }
@@ -469,11 +463,7 @@ export function hasConcealedCondition(token) {
  * @param {string} tokenProperty - The property name to check for token (e.g., 'target', 'token')
  * @returns {Array} Filtered outcomes
  */
-export function filterOutcomesByEncounter(
-  outcomes,
-  encounterOnly,
-  tokenProperty = "target",
-) {
+export function filterOutcomesByEncounter(outcomes, encounterOnly, tokenProperty = 'target') {
   try {
     // If encounter filtering is not enabled or there's no active encounter, return all outcomes
     if (!encounterOnly || !hasActiveEncounter()) {
@@ -484,16 +474,16 @@ export function filterOutcomesByEncounter(
     return outcomes.filter((outcome) => {
       // Always include wall outcomes
       if (outcome?._isWall || outcome?.wallId) return true;
-      
+
       const token = outcome[tokenProperty];
       if (!token) return false;
-      
+
       // Check if this specific token (by ID) is in the encounter
       // This fixes the issue where token copies were included just because
       // they shared the same actor as an encounter participant
       const tokenId = token?.id ?? token?.document?.id;
       if (!tokenId) return false;
-      
+
       // Only check by token ID to ensure we get the exact token, not copies
       return game.combat.combatants.some((c) => c.tokenId === tokenId);
     });
@@ -501,7 +491,6 @@ export function filterOutcomesByEncounter(
     return outcomes;
   }
 }
-
 
 /**
  * Filter outcomes by Seek distance settings. Applies combat or out-of-combat
@@ -511,24 +500,20 @@ export function filterOutcomesByEncounter(
  * @param {string} tokenProperty - Property name holding the target token in each outcome
  * @returns {Array} Filtered outcomes
  */
-export function filterOutcomesBySeekDistance(
-  outcomes,
-  seeker,
-  tokenProperty = "target",
-) {
+export function filterOutcomesBySeekDistance(outcomes, seeker, tokenProperty = 'target') {
   try {
     if (!Array.isArray(outcomes) || !seeker) return outcomes;
 
     const inCombat = hasActiveEncounter();
-    const applyInCombat = !!game.settings.get(MODULE_ID, "limitSeekRangeInCombat");
-    const applyOutOfCombat = !!game.settings.get(MODULE_ID, "limitSeekRangeOutOfCombat");
+    const applyInCombat = !!game.settings.get(MODULE_ID, 'limitSeekRangeInCombat');
+    const applyOutOfCombat = !!game.settings.get(MODULE_ID, 'limitSeekRangeOutOfCombat');
     const shouldApply = (inCombat && applyInCombat) || (!inCombat && applyOutOfCombat);
     if (!shouldApply) return outcomes;
 
     const maxDistance = Number(
       inCombat
-        ? game.settings.get(MODULE_ID, "customSeekDistance")
-        : game.settings.get(MODULE_ID, "customSeekDistanceOutOfCombat"),
+        ? game.settings.get(MODULE_ID, 'customSeekDistance')
+        : game.settings.get(MODULE_ID, 'customSeekDistanceOutOfCombat'),
     );
     if (!Number.isFinite(maxDistance) || maxDistance <= 0) return outcomes;
 
@@ -578,10 +563,11 @@ export function isTokenWithinTemplate(center, radiusFeet, token) {
  * @param {string} tokenProperty
  * @returns {Array}
  */
-export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProperty = "target") {
+export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProperty = 'target') {
   try {
-    if (!Array.isArray(outcomes) || !center || !Number.isFinite(radiusFeet) || radiusFeet <= 0) return outcomes;
-    
+    if (!Array.isArray(outcomes) || !center || !Number.isFinite(radiusFeet) || radiusFeet <= 0)
+      return outcomes;
+
     return outcomes.filter((outcome) => {
       // Special handling for walls - use wall center instead of target token
       if (outcome?._isWall && outcome?.wall) {
@@ -595,11 +581,11 @@ export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProp
         // If wall center is not accessible, exclude the wall
         return false;
       }
-      
+
       // Standard token handling - only for non-wall outcomes
       const token = outcome?.[tokenProperty];
       if (!token) return false;
-      
+
       // Calculate distance manually for tokens
       const dx = token.center.x - center.x;
       const dy = token.center.y - center.y;
@@ -607,10 +593,7 @@ export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProp
       return distanceFeet <= radiusFeet;
     });
   } catch (error) {
-    console.error("Error in filterOutcomesByTemplate:", error);
+    console.error('Error in filterOutcomesByTemplate:', error);
     return outcomes;
   }
 }
-
-
-

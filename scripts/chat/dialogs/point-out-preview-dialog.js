@@ -3,13 +3,11 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
-import { notify } from "../services/infra/notifications.js";
-import {
-    filterOutcomesByEncounter
-} from "../services/infra/shared-utils.js";
-import { BaseActionDialog } from "./base-action-dialog.js";
+import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
+import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
+import { notify } from '../services/infra/notifications.js';
+import { filterOutcomesByEncounter } from '../services/infra/shared-utils.js';
+import { BaseActionDialog } from './base-action-dialog.js';
 // Logic now handled via services action handler; no direct logic imports
 
 // Store reference to current dialog (shared with SeekPreviewDialog)
@@ -17,16 +15,16 @@ let currentPointOutDialog = null;
 
 export class PointOutPreviewDialog extends BaseActionDialog {
   static DEFAULT_OPTIONS = {
-    tag: "div",
-    classes: ["pf2e-visioner", "point-out-preview-dialog"],
+    tag: 'div',
+    classes: ['pf2e-visioner', 'point-out-preview-dialog'],
     window: {
-      title: "Point Out Results",
-      icon: "fas fa-hand-point-right",
+      title: 'Point Out Results',
+      icon: 'fas fa-hand-point-right',
       resizable: true,
     },
     position: {
       width: 600,
-      height: "auto",
+      height: 'auto',
     },
     actions: {
       close: PointOutPreviewDialog._onClose,
@@ -40,7 +38,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
   static PARTS = {
     content: {
-      template: "modules/pf2e-visioner/templates/point-out-preview.hbs",
+      template: 'modules/pf2e-visioner/templates/point-out-preview.hbs',
     },
   };
 
@@ -50,8 +48,8 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     this.outcomes = outcomes;
     this.changes = changes;
     this.actionData = actionData;
-    this.bulkActionState = "initial";
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.bulkActionState = 'initial';
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
 
     // Set global reference
     currentPointOutDialog = this;
@@ -66,12 +64,16 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const context = await super._prepareContext(options);
 
     // Filter outcomes with base helper
-    let filteredOutcomes = this.applyEncounterFilter(this.outcomes, "target", "No encounter allies found, showing all");
+    let filteredOutcomes = this.applyEncounterFilter(
+      this.outcomes,
+      'target',
+      'No encounter allies found, showing all',
+    );
 
     const cfg = (s) => this.visibilityConfig(s);
 
     const processedOutcomes = filteredOutcomes.map((outcome) => {
-      const desired = getDesiredOverrideStatesForAction("point-out");
+      const desired = getDesiredOverrideStatesForAction('point-out');
       const availableStates = { hidden: this.buildOverrideStates(desired, outcome)[0] };
 
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
@@ -93,8 +95,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     // Update original outcomes with hasActionableChange for Apply All button logic
     processedOutcomes.forEach((processedOutcome, index) => {
       if (this.outcomes[index]) {
-        this.outcomes[index].hasActionableChange =
-          processedOutcome.hasActionableChange;
+        this.outcomes[index].hasActionableChange = processedOutcome.hasActionableChange;
       }
     });
 
@@ -144,13 +145,18 @@ export class PointOutPreviewDialog extends BaseActionDialog {
         let token = this.outcomes?.[0]?.targetToken || null;
         if (!token) {
           const msg = game.messages.get(this?.actionData?.messageId);
-          const pointOutFlags = msg?.flags?.["pf2e-visioner"]?.pointOut;
-          const targetTokenId = pointOutFlags?.targetTokenId || this?.actionData?.context?.target?.token || msg?.flags?.pf2e?.target?.token;
+          const pointOutFlags = msg?.flags?.['pf2e-visioner']?.pointOut;
+          const targetTokenId =
+            pointOutFlags?.targetTokenId ||
+            this?.actionData?.context?.target?.token ||
+            msg?.flags?.pf2e?.target?.token;
           if (targetTokenId) token = canvas.tokens.get(targetTokenId) || null;
         }
         if (token) {
-          import("../services/gm-ping.js").then(({ pingTokenCenter }) => {
-            try { pingTokenCenter(token, "Point Out Target"); } catch (_) {}
+          import('../services/gm-ping.js').then(({ pingTokenCenter }) => {
+            try {
+              pingTokenCenter(token, 'Point Out Target');
+            } catch (_) {}
           });
         }
       }
@@ -158,7 +164,9 @@ export class PointOutPreviewDialog extends BaseActionDialog {
   }
 
   // Token id in Point Out outcomes is under `target`
-  getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
+  getOutcomeTokenId(outcome) {
+    return outcome?.target?.id ?? null;
+  }
 
   // Point Out specific action methods
   static async _onClose(event, button) {
@@ -170,8 +178,8 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
   static async _onApplyAll(event, button) {
     const app = currentPointOutDialog;
-    if (!app || app.bulkActionState === "applied") {
-      if (app.bulkActionState === "applied") {
+    if (!app || app.bulkActionState === 'applied') {
+      if (app.bulkActionState === 'applied') {
         notify.warn(
           `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
         );
@@ -181,16 +189,17 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     try {
       // Filter outcomes based on encounter filter using shared helper
-      let filteredOutcomes = filterOutcomesByEncounter(
-        app.changes,
-        app.encounterOnly,
-        "target",
-      );
+      let filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
 
       // Apply ally filtering if ignore allies is enabled
       try {
-        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-        filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filteredOutcomes = filterOutcomesByAllies(
+          filteredOutcomes,
+          app.actorToken,
+          app.ignoreAllies,
+          'target',
+        );
       } catch (_) {}
 
       // Only apply changes to filtered outcomes
@@ -202,9 +211,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       const processedOutcomes = changedOutcomes.map((outcome) => {
         // If outcome doesn't have targetToken, try to get it from the original outcome
         if (!outcome.targetToken) {
-          const originalOutcome = app.outcomes.find(
-            (o) => o.target.id === outcome.target.id,
-          );
+          const originalOutcome = app.outcomes.find((o) => o.target.id === outcome.target.id);
           if (originalOutcome && originalOutcome.targetToken) {
             return { ...outcome, targetToken: originalOutcome.targetToken };
           }
@@ -219,32 +226,29 @@ export class PointOutPreviewDialog extends BaseActionDialog {
         const state = o?.overrideState || o?.newVisibility;
         if (id && state) overrides[id] = state;
       }
-      const { applyNowPointOut } = await import("../services/index.js");
+      const { applyNowPointOut } = await import('../services/index.js');
       await applyNowPointOut({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
 
-      app.bulkActionState = "applied";
+      app.bulkActionState = 'applied';
       app.updateBulkActionButtons();
-      app.updateRowButtonsToApplied(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
+      app.updateRowButtonsToApplied(
+        app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
+      );
       app.updateChangesCount();
 
       notify.info(
         `${MODULE_TITLE}: Applied Point Out changes for ${processedOutcomes.length} allies. Dialog remains open for further adjustments.`,
       );
     } catch (error) {
-      console.error(
-        `${MODULE_TITLE}: Error applying Point Out changes:`,
-        error,
-      );
-      notify.error(
-        `${MODULE_TITLE}: Failed to apply Point Out changes`,
-      );
+      console.error(`${MODULE_TITLE}: Error applying Point Out changes:`, error);
+      notify.error(`${MODULE_TITLE}: Failed to apply Point Out changes`);
     }
   }
 
   static async _onRevertAll(event, button) {
     const app = currentPointOutDialog;
-    if (!app || app.bulkActionState === "reverted") {
-      if (app.bulkActionState === "reverted") {
+    if (!app || app.bulkActionState === 'reverted') {
+      if (app.bulkActionState === 'reverted') {
         notify.warn(
           `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
         );
@@ -254,24 +258,23 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     try {
       // Filter outcomes based on encounter filter using shared helper
-      let filteredOutcomes = filterOutcomesByEncounter(
-        app.changes,
-        app.encounterOnly,
-        "target",
-      );
+      let filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
 
       // Apply ally filtering if ignore allies is enabled
       try {
-        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-        filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, app.actorToken, app.ignoreAllies, "target");
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filteredOutcomes = filterOutcomesByAllies(
+          filteredOutcomes,
+          app.actorToken,
+          app.ignoreAllies,
+          'target',
+        );
       } catch (_) {}
 
       // Only revert changes to filtered outcomes
       const changedOutcomes = filteredOutcomes.map((change) => {
         // Make sure to include targetToken in the change
-        const originalOutcome = app.outcomes.find(
-          (o) => o.target.id === change.target.id,
-        );
+        const originalOutcome = app.outcomes.find((o) => o.target.id === change.target.id);
         return {
           ...change,
           targetToken: originalOutcome?.targetToken || change.targetToken,
@@ -279,21 +282,18 @@ export class PointOutPreviewDialog extends BaseActionDialog {
         };
       });
 
-      const { revertNowPointOut } = await import("../services/index.js");
+      const { revertNowPointOut } = await import('../services/index.js');
       await revertNowPointOut(app.actionData, { html: () => {}, attr: () => {} });
 
-      app.bulkActionState = "reverted";
+      app.bulkActionState = 'reverted';
       app.updateBulkActionButtons();
-      app.updateRowButtonsToReverted(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
+      app.updateRowButtonsToReverted(
+        app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
+      );
       app.updateChangesCount();
     } catch (error) {
-      console.error(
-        `${MODULE_TITLE}: Error reverting Point Out changes:`,
-        error,
-      );
-      notify.error(
-        `${MODULE_TITLE}: Failed to revert Point Out changes`,
-      );
+      console.error(`${MODULE_TITLE}: Error reverting Point Out changes:`, error);
+      notify.error(`${MODULE_TITLE}: Failed to revert Point Out changes`);
     }
   }
 
@@ -305,8 +305,8 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     // Toggle filter and re-render; action handler context prep will apply filter
     app.encounterOnly = !app.encounterOnly;
-    app.bulkActionState = "initial";
-    app.bulkActionState = "initial";
+    app.bulkActionState = 'initial';
+    app.bulkActionState = 'initial';
     app.render({ force: true });
   }
 
@@ -321,19 +321,19 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome || !outcome.hasActionableChange) {
-      notify.warn(
-        `${MODULE_TITLE}: No change to apply for this token`,
-      );
+      notify.warn(`${MODULE_TITLE}: No change to apply for this token`);
       return;
     }
 
     try {
       const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
-      const { applyNowPointOut } = await import("../services/index.js");
+      const { applyNowPointOut } = await import('../services/index.js');
       await applyNowPointOut({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
 
       // Update row using base helper
-      app.updateRowButtonsToApplied([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateRowButtonsToApplied([
+        { target: { id: outcome.target.id }, hasActionableChange: true },
+      ]);
       app.updateChangesCount();
     } catch (error) {
       console.error(`${MODULE_TITLE}: Error applying change.`, error);
@@ -364,13 +364,15 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     };
 
     try {
-      const { revertNowPointOut } = await import("../services/index.js");
+      const { revertNowPointOut } = await import('../services/index.js');
       // Pass the specific tokenId for per-row revert
       const actionDataWithTarget = { ...app.actionData, targetTokenId: tokenId };
       await revertNowPointOut(actionDataWithTarget, { html: () => {}, attr: () => {} });
 
       // Update row using base helper
-      app.updateRowButtonsToReverted([{ target: { id: outcome.target.id }, hasActionableChange: true }]);
+      app.updateRowButtonsToReverted([
+        { target: { id: outcome.target.id }, hasActionableChange: true },
+      ]);
       app.updateChangesCount();
     } catch (error) {
       console.error(`${MODULE_TITLE}: Error reverting change.`, error);
@@ -382,7 +384,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
   close(options) {
     if (this._selectionHookId) {
       try {
-        Hooks.off("controlToken", this._selectionHookId);
+        Hooks.off('controlToken', this._selectionHookId);
       } catch (_) {}
       this._selectionHookId = null;
     }
@@ -390,7 +392,9 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     return super.close(options);
   }
 
-  getChangesCounterClass() { return "point-out-preview-dialog-changes-count"; }
+  getChangesCounterClass() {
+    return 'point-out-preview-dialog-changes-count';
+  }
 
   // Use services path for apply/revert; no custom applyVisibilityChanges override needed
 

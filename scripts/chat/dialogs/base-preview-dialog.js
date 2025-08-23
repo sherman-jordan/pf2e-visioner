@@ -41,14 +41,18 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
   _attachSelectionHandlers() {
     if (this._selectionHookId && this._targetHookId) return;
     if (!this._selectionHookId)
-      this._selectionHookId = Hooks.on("controlToken", () => this._applySelectionHighlight());
+      this._selectionHookId = Hooks.on('controlToken', () => this._applySelectionHighlight());
     if (!this._targetHookId)
-      this._targetHookId = Hooks.on("targetToken", () => this._applySelectionHighlight());
+      this._targetHookId = Hooks.on('targetToken', () => this._applySelectionHighlight());
   }
 
   _detachSelectionHandlers() {
-    try { if (this._selectionHookId) Hooks.off("controlToken", this._selectionHookId); } catch (_) {}
-    try { if (this._targetHookId) Hooks.off("targetToken", this._targetHookId); } catch (_) {}
+    try {
+      if (this._selectionHookId) Hooks.off('controlToken', this._selectionHookId);
+    } catch (_) {}
+    try {
+      if (this._targetHookId) Hooks.off('targetToken', this._targetHookId);
+    } catch (_) {}
     this._selectionHookId = null;
     this._targetHookId = null;
   }
@@ -57,8 +61,8 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
     try {
       // Clear previous highlights
       this.element
-        .querySelectorAll("tr.token-row.row-hover")
-        ?.forEach((el) => el.classList.remove("row-hover"));
+        .querySelectorAll('tr.token-row.row-hover')
+        ?.forEach((el) => el.classList.remove('row-hover'));
 
       const selectedTokens = Array.from(canvas?.tokens?.controlled ?? []);
       const targetedTokens = Array.from(game?.user?.targets ?? []);
@@ -69,18 +73,15 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
       for (const token of focusTokens) {
         const row = this.element.querySelector(`tr[data-token-id="${token.id}"]`);
         if (row) {
-          row.classList.add("row-hover");
+          row.classList.add('row-hover');
           if (!firstRow) firstRow = row;
         }
       }
 
       // Do not auto-scroll to wall rows; only scroll to token rows
-      if (firstRow && typeof firstRow.scrollIntoView === "function") {
-        firstRow.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      if (firstRow && typeof firstRow.scrollIntoView === 'function') {
+        firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     } catch (_) {}
   }
 }
-
-
-

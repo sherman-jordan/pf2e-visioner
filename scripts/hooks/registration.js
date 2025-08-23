@@ -2,19 +2,19 @@
  * Central registration that composes small hook modules.
  */
 
-import { onHighlightObjects } from "../services/hover-tooltips.js";
-import { registerAutoCoverHooks } from "./auto-cover.js";
-import { registerChatHooks } from "./chat.js";
-import { registerCombatHooks } from "./combat.js";
-import { onCanvasReady, onReady } from "./lifecycle.js";
-import { registerTokenHooks } from "./token-events.js";
-import { registerUIHooks } from "./ui.js";
+import { onHighlightObjects } from '../services/hover-tooltips.js';
+import { registerAutoCoverHooks } from './auto-cover.js';
+import { registerChatHooks } from './chat.js';
+import { registerCombatHooks } from './combat.js';
+import { onCanvasReady, onReady } from './lifecycle.js';
+import { registerTokenHooks } from './token-events.js';
+import { registerUIHooks } from './ui.js';
 
 export function registerHooks() {
-  Hooks.on("ready", onReady);
-  Hooks.on("canvasReady", onCanvasReady);
+  Hooks.on('ready', onReady);
+  Hooks.on('canvasReady', onCanvasReady);
   registerChatHooks();
-  Hooks.on("highlightObjects", onHighlightObjects);
+  Hooks.on('highlightObjects', onHighlightObjects);
 
   // Token lifecycle
   registerTokenHooks();
@@ -25,10 +25,14 @@ export function registerHooks() {
   registerAutoCoverHooks();
 
   // Wall lifecycle: refresh indicators and see-through state when walls change
-  Hooks.on("createWall", async () => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('createWall', async () => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
-  Hooks.on("updateWall", async (doc, changes) => {
+  Hooks.on('updateWall', async (doc, changes) => {
     try {
       // If Hidden Wall flag toggled on, default all observers to Hidden for that wall
       const hiddenChanged = changes?.flags?.[MODULE_ID]?.hiddenWall;
@@ -37,15 +41,20 @@ export function registerHooks() {
           try {
             const tokens = canvas.tokens?.placeables || [];
             const updates = [];
-            const { getConnectedWallDocsBySourceId } = await import("../services/connected-walls.js");
+            const { getConnectedWallDocsBySourceId } = await import(
+              '../services/connected-walls.js'
+            );
             const connected = getConnectedWallDocsBySourceId(doc.id) || [];
             const wallIds = [doc.id, ...connected.map((d) => d.id)];
             for (const t of tokens) {
-              const current = t.document.getFlag?.(MODULE_ID, "walls") || {};
+              const current = t.document.getFlag?.(MODULE_ID, 'walls') || {};
               const next = { ...current };
               let changedAny = false;
               for (const wid of wallIds) {
-                if (next[wid] !== "hidden") { next[wid] = "hidden"; changedAny = true; }
+                if (next[wid] !== 'hidden') {
+                  next[wid] = 'hidden';
+                  changedAny = true;
+                }
               }
               if (changedAny) {
                 const patch = { _id: t.document.id };
@@ -56,13 +65,13 @@ export function registerHooks() {
             if (updates.length) {
               // Only GMs can update token documents
               if (game.user.isGM) {
-                await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+                await canvas.scene?.updateEmbeddedDocuments?.('Token', updates, { diff: false });
               }
             }
           } catch (_) {}
           // Mirror hidden flag to connected walls
           try {
-            const { mirrorHiddenFlagToConnected } = await import("../services/connected-walls.js");
+            const { mirrorHiddenFlagToConnected } = await import('../services/connected-walls.js');
             await mirrorHiddenFlagToConnected(doc, true);
           } catch (_) {}
         } else {
@@ -70,15 +79,20 @@ export function registerHooks() {
           try {
             const tokens = canvas.tokens?.placeables || [];
             const updates = [];
-            const { getConnectedWallDocsBySourceId } = await import("../services/connected-walls.js");
+            const { getConnectedWallDocsBySourceId } = await import(
+              '../services/connected-walls.js'
+            );
             const connected = getConnectedWallDocsBySourceId(doc.id) || [];
             const wallIds = [doc.id, ...connected.map((d) => d.id)];
             for (const t of tokens) {
-              const current = t.document.getFlag?.(MODULE_ID, "walls") || {};
+              const current = t.document.getFlag?.(MODULE_ID, 'walls') || {};
               let changedAny = false;
               const next = { ...current };
               for (const wid of wallIds) {
-                if (next[wid]) { delete next[wid]; changedAny = true; }
+                if (next[wid]) {
+                  delete next[wid];
+                  changedAny = true;
+                }
               }
               if (changedAny) {
                 const patch = { _id: t.document.id };
@@ -89,39 +103,65 @@ export function registerHooks() {
             if (updates.length) {
               // Only GMs can update token documents
               if (game.user.isGM) {
-                await canvas.scene?.updateEmbeddedDocuments?.("Token", updates, { diff: false });
+                await canvas.scene?.updateEmbeddedDocuments?.('Token', updates, { diff: false });
               }
             }
           } catch (_) {}
           // Mirror hidden flag to connected walls (set hidden=false)
           try {
-            const { mirrorHiddenFlagToConnected } = await import("../services/connected-walls.js");
+            const { mirrorHiddenFlagToConnected } = await import('../services/connected-walls.js');
             await mirrorHiddenFlagToConnected(doc, false);
           } catch (_) {}
         }
       }
     } catch (_) {}
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
-  Hooks.on("deleteWall", async () => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('deleteWall', async () => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
   // Refresh indicators on selection changes so only selected player tokens reveal observed walls
-  Hooks.on("controlToken", async (_token, _controlled) => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('controlToken', async (_token, _controlled) => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
-  Hooks.on("updateToken", async () => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('updateToken', async () => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
-  Hooks.on("createToken", async () => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('createToken', async () => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
-  Hooks.on("deleteToken", async () => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('deleteToken', async () => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
-  Hooks.on("refreshToken", async () => {
-    try { const { updateWallVisuals } = await import("../services/visual-effects.js"); const id = canvas.tokens.controlled?.[0]?.id || null; await updateWallVisuals(id); } catch (_) {}
+  Hooks.on('refreshToken', async () => {
+    try {
+      const { updateWallVisuals } = await import('../services/visual-effects.js');
+      const id = canvas.tokens.controlled?.[0]?.id || null;
+      await updateWallVisuals(id);
+    } catch (_) {}
   });
 }
-
-

@@ -3,30 +3,28 @@
  * Uses ApplicationV2 for modern FoundryVTT compatibility
  */
 
-import { MODULE_ID, MODULE_TITLE } from "../../constants.js";
-import { getDesiredOverrideStatesForAction } from "../services/data/action-state-config.js";
-import { getVisibilityStateConfig } from "../services/data/visibility-states.js";
-import { notify } from "../services/infra/notifications.js";
-import {
-    hasActiveEncounter
-} from "../services/infra/shared-utils.js";
-import { BaseActionDialog } from "./base-action-dialog.js";
+import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
+import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
+import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
+import { notify } from '../services/infra/notifications.js';
+import { hasActiveEncounter } from '../services/infra/shared-utils.js';
+import { BaseActionDialog } from './base-action-dialog.js';
 
 // Store reference to current hide dialog
 let currentHideDialog = null;
 
 export class HidePreviewDialog extends BaseActionDialog {
   static DEFAULT_OPTIONS = {
-    tag: "div",
-    classes: ["pf2e-visioner", "hide-preview-dialog"],
+    tag: 'div',
+    classes: ['pf2e-visioner', 'hide-preview-dialog'],
     window: {
-      title: "Hide Results",
-      icon: "fas fa-eye-slash",
+      title: 'Hide Results',
+      icon: 'fas fa-eye-slash',
       resizable: true,
     },
     position: {
       width: 600,
-      height: "auto",
+      height: 'auto',
     },
     actions: {
       close: HidePreviewDialog._onClose,
@@ -41,7 +39,7 @@ export class HidePreviewDialog extends BaseActionDialog {
 
   static PARTS = {
     content: {
-      template: "modules/pf2e-visioner/templates/hide-preview.hbs",
+      template: 'modules/pf2e-visioner/templates/hide-preview.hbs',
     },
   };
 
@@ -50,7 +48,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     options.window = {
       ...options.window,
       title: `Hide Results`,
-      icon: "fas fa-eye-slash",
+      icon: 'fas fa-eye-slash',
     };
 
     super(options);
@@ -58,12 +56,16 @@ export class HidePreviewDialog extends BaseActionDialog {
     this.actorToken = actorToken;
     this.outcomes = outcomes || [];
     // Preserve an immutable base list for live filtering toggles
-    try { this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : []; } catch (_) { this._originalOutcomes = outcomes || []; }
+    try {
+      this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : [];
+    } catch (_) {
+      this._originalOutcomes = outcomes || [];
+    }
     this.changes = changes || [];
-    this.actionData = { ...(actionData || {}), actionType: "hide" };
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
-    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
-    this.bulkActionState = "initial"; // Track bulk action state
+    this.actionData = { ...(actionData || {}), actionType: 'hide' };
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
+    this.bulkActionState = 'initial'; // Track bulk action state
 
     // Store reference for singleton behavior
     currentHideDialog = this;
@@ -79,11 +81,18 @@ export class HidePreviewDialog extends BaseActionDialog {
     this.updateChangesCount();
     try {
       const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
-      if (cb) cb.addEventListener('change', () => {
-        this.ignoreAllies = !!cb.checked; this.bulkActionState = "initial";
-        // Recompute filtered list and preserve overrides before re-rendering
-        this.getFilteredOutcomes().then((list) => { this.outcomes = list; this.render({ force: true }); }).catch(() => this.render({ force: true }));
-      });
+      if (cb)
+        cb.addEventListener('change', () => {
+          this.ignoreAllies = !!cb.checked;
+          this.bulkActionState = 'initial';
+          // Recompute filtered list and preserve overrides before re-rendering
+          this.getFilteredOutcomes()
+            .then((list) => {
+              this.outcomes = list;
+              this.render({ force: true });
+            })
+            .catch(() => this.render({ force: true }));
+        });
     } catch (_) {}
   }
 
@@ -96,30 +105,35 @@ export class HidePreviewDialog extends BaseActionDialog {
     const context = await super._prepareContext(options);
 
     // Check if cover for hide action is enabled (works with both auto and manual cover)
-    const showCover = game.settings.get(MODULE_ID, "autoCoverHideAction");
+    const showCover = game.settings.get(MODULE_ID, 'autoCoverHideAction');
     context.showAutoCover = showCover;
 
     // Get filtered outcomes from the original list using encounter helper, ally filtering, then extra RAW filtering
-    const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
-    let filteredOutcomes = this.applyEncounterFilter(baseList, "target", "No encounter observers found for this action");
+    const baseList = Array.isArray(this._originalOutcomes)
+      ? this._originalOutcomes
+      : this.outcomes || [];
+    let filteredOutcomes = this.applyEncounterFilter(
+      baseList,
+      'target',
+      'No encounter observers found for this action',
+    );
     // Apply ally filtering for display purposes
     try {
-      const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-      filteredOutcomes = filterOutcomesByAllies(filteredOutcomes, this.actorToken, this.ignoreAllies, "target");
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filteredOutcomes = filterOutcomesByAllies(
+        filteredOutcomes,
+        this.actorToken,
+        this.ignoreAllies,
+        'target',
+      );
     } catch (_) {}
 
     // Note: autoCover data is already calculated in hide-action.js and should be preserved
     // No need to call getCoverBetween here as it would overwrite the rich autoCover object
 
     // Show notification if encounter filter results in empty list
-    if (
-      this.encounterOnly &&
-      hasActiveEncounter() &&
-      filteredOutcomes.length === 0
-    ) {
-      notify.info(
-        `${MODULE_TITLE}: No encounter observers found for this action`
-      );
+    if (this.encounterOnly && hasActiveEncounter() && filteredOutcomes.length === 0) {
+      notify.info(`${MODULE_TITLE}: No encounter observers found for this action`);
     }
 
     // Process outcomes to add additional properties needed by template
@@ -162,12 +176,18 @@ export class HidePreviewDialog extends BaseActionDialog {
    */
   async getFilteredOutcomes() {
     try {
-      const baseList = Array.isArray(this._originalOutcomes) ? this._originalOutcomes : (this.outcomes || []);
-      let filtered = this.applyEncounterFilter(baseList, "target", "No encounter observers found for this action");
+      const baseList = Array.isArray(this._originalOutcomes)
+        ? this._originalOutcomes
+        : this.outcomes || [];
+      let filtered = this.applyEncounterFilter(
+        baseList,
+        'target',
+        'No encounter observers found for this action',
+      );
       // Apply ally filtering via live checkbox
       try {
-        const { filterOutcomesByAllies } = await import("../services/infra/shared-utils.js");
-        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, "target");
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
       } catch (_) {}
       if (!Array.isArray(filtered)) return [];
       // Preserve override selections and recompute actionability
@@ -178,9 +198,12 @@ export class HidePreviewDialog extends BaseActionDialog {
           const currentVisibility = o.oldVisibility || o.currentVisibility;
           const effectiveNewState = overrideState || o.newVisibility || currentVisibility;
           const baseOldState = o.oldVisibility || currentVisibility;
-          const hasActionableChange = baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
+          const hasActionableChange =
+            baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
           return { ...o, overrideState, hasActionableChange };
-        } catch (_) { return { ...o }; }
+        } catch (_) {
+          return { ...o };
+        }
       });
       return merged;
     } catch (_) {
@@ -189,14 +212,16 @@ export class HidePreviewDialog extends BaseActionDialog {
   }
 
   // Token id in Hide outcomes is under `target`
-  getOutcomeTokenId(outcome) { return outcome?.target?.id ?? null; }
+  getOutcomeTokenId(outcome) {
+    return outcome?.target?.id ?? null;
+  }
 
   /**
    * Get available visibility states for an outcome based on Hide rules
    * Hide can only make you hidden from observers who can currently see you
    */
   getAvailableStatesForOutcome(outcome) {
-    const desired = getDesiredOverrideStatesForAction("hide");
+    const desired = getDesiredOverrideStatesForAction('hide');
     const built = this.buildOverrideStates(desired, outcome);
     // Inject labels expected by template
     return built.map((s) => ({ ...s, label: this.getStateLabel(s.value) }));
@@ -204,10 +229,10 @@ export class HidePreviewDialog extends BaseActionDialog {
 
   getStateLabel(state) {
     const labels = {
-      observed: "Observed",
-      concealed: "Concealed",
-      hidden: "Hidden",
-      undetected: "Undetected",
+      observed: 'Observed',
+      concealed: 'Concealed',
+      hidden: 'Hidden',
+      undetected: 'Undetected',
     };
     return labels[state] || state;
   }
@@ -220,9 +245,9 @@ export class HidePreviewDialog extends BaseActionDialog {
   async _renderHTML(context, options) {
     const html = await foundry.applications.handlebars.renderTemplate(
       this.constructor.PARTS.content.template,
-      context
+      context,
     );
-    
+
     return html;
   }
 
@@ -231,7 +256,7 @@ export class HidePreviewDialog extends BaseActionDialog {
    */
   _replaceHTML(result, content, options) {
     content.innerHTML = result;
-    
+
     return content;
   }
 
@@ -251,20 +276,16 @@ export class HidePreviewDialog extends BaseActionDialog {
       // Set the initial override state to the calculated new visibility
       outcome.overrideState = outcome.newVisibility;
       // Mark the calculated outcome as selected in the UI
-      const row = this.element.querySelector(
-        `tr[data-token-id="${outcome.target.id}"]`
-      );
+      const row = this.element.querySelector(`tr[data-token-id="${outcome.target.id}"]`);
       if (row) {
-        const container = row.querySelector(".override-icons");
+        const container = row.querySelector('.override-icons');
         if (container) {
-          container
-            .querySelectorAll(".state-icon")
-            .forEach((i) => i.classList.remove("selected"));
+          container.querySelectorAll('.state-icon').forEach((i) => i.classList.remove('selected'));
           const calculatedIcon = container.querySelector(
-            `.state-icon[data-state="${outcome.newVisibility}"]`
+            `.state-icon[data-state="${outcome.newVisibility}"]`,
           );
           if (calculatedIcon) {
-            calculatedIcon.classList.add("selected");
+            calculatedIcon.classList.add('selected');
           }
         }
       }
@@ -325,7 +346,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     app.encounterOnly = target.checked;
 
     // Reset bulk action state
-    app.bulkActionState = "initial";
+    app.bulkActionState = 'initial';
 
     // Re-render the dialog - _prepareContext will handle the filtering
     app.render({ force: true });
@@ -342,7 +363,9 @@ export class HidePreviewDialog extends BaseActionDialog {
 
   // removed: updateRowButtonsToReverted duplicated; using BaseActionDialog implementation
 
-  getChangesCounterClass() { return "hide-preview-dialog-changes-count"; }
+  getChangesCounterClass() {
+    return 'hide-preview-dialog-changes-count';
+  }
 
   // Static button handler methods
   static async _onClose(event, target) {
@@ -354,19 +377,19 @@ export class HidePreviewDialog extends BaseActionDialog {
     const app = currentHideDialog;
 
     if (!app) {
-      console.error("[Hide Dialog] Could not find application instance");
+      console.error('[Hide Dialog] Could not find application instance');
       return;
     }
 
     // Ensure bulkActionState is initialized
     if (!app.bulkActionState) {
-      app.bulkActionState = "initial";
+      app.bulkActionState = 'initial';
     }
 
     // Check if already applied
-    if (app.bulkActionState === "applied") {
+    if (app.bulkActionState === 'applied') {
       notify.warn(
-        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`
+        `${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`,
       );
       return;
     }
@@ -393,15 +416,20 @@ export class HidePreviewDialog extends BaseActionDialog {
       const state = o?.overrideState || o?.newVisibility;
       if (id && state) overrides[id] = state;
     }
-    await (await import("../services/index.js")).applyNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
+    await (
+      await import('../services/index.js')
+    ).applyNowHide(
+      { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
+      { html: () => {}, attr: () => {} },
+    );
 
     // Update button states
-    app.bulkActionState = "applied";
+    app.bulkActionState = 'applied';
     app.updateBulkActionButtons();
     app.updateRowButtonsToApplied(changedOutcomes);
     app.updateChangesCount();
     notify.info(
-      `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`
+      `${MODULE_TITLE}: Applied ${changedOutcomes.length} hide visibility changes. Dialog remains open for further adjustments.`,
     );
   }
 
@@ -414,36 +442,41 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     // Ensure bulkActionState is initialized
     if (!app.bulkActionState) {
-      app.bulkActionState = "initial";
+      app.bulkActionState = 'initial';
     }
 
     // Check if already reverted
-    if (app.bulkActionState === "reverted") {
+    if (app.bulkActionState === 'reverted') {
       notify.warn(
-        `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`
+        `${MODULE_TITLE}: Revert All has already been used. Use Apply All to reapply changes.`,
       );
       return;
     }
 
     try {
-      const { revertNowHide } = await import("../services/index.js");
-      await revertNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies }, { html: () => {}, attr: () => {} });
+      const { revertNowHide } = await import('../services/index.js');
+      await revertNowHide(
+        { ...app.actionData, ignoreAllies: app.ignoreAllies },
+        { html: () => {}, attr: () => {} },
+      );
     } catch (error) {}
 
-    app.bulkActionState = "reverted";
+    app.bulkActionState = 'reverted';
     app.updateBulkActionButtons();
-    app.updateRowButtonsToReverted(app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })));
+    app.updateRowButtonsToReverted(
+      app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
+    );
     app.updateChangesCount();
 
     notify.info(
-      `${MODULE_TITLE}: Reverted all tokens to original visibility. Dialog remains open for further adjustments.`
+      `${MODULE_TITLE}: Reverted all tokens to original visibility. Dialog remains open for further adjustments.`,
     );
   }
 
   static async _onApplyChange(event, target) {
     const app = currentHideDialog;
     if (!app) {
-      console.error("[Hide Dialog] Could not find application instance");
+      console.error('[Hide Dialog] Could not find application instance');
       return;
     }
 
@@ -460,29 +493,30 @@ export class HidePreviewDialog extends BaseActionDialog {
     const hasChange = effectiveNewState !== outcome.oldVisibility;
 
     if (!hasChange) {
-      notify.warn(
-        `${MODULE_TITLE}: No change to apply for ${outcome.target.name}`
-      );
+      notify.warn(`${MODULE_TITLE}: No change to apply for ${outcome.target.name}`);
       return;
     }
 
     try {
       const overrides = { [outcome.target.id]: outcome.overrideState || outcome.newVisibility };
-      await (await import("../services/index.js")).applyNowHide({ ...app.actionData, ignoreAllies: app.ignoreAllies, overrides }, { html: () => {}, attr: () => {} });
+      await (
+        await import('../services/index.js')
+      ).applyNowHide(
+        { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
+        { html: () => {}, attr: () => {} },
+      );
 
       app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
     } catch (error) {
-      notify.error(
-        `${MODULE_TITLE}: Error applying change for ${outcome.target.name}`
-      );
+      notify.error(`${MODULE_TITLE}: Error applying change for ${outcome.target.name}`);
     }
   }
 
   static async _onRevertChange(event, target) {
     const app = currentHideDialog;
     if (!app) {
-      console.error("[Hide Dialog] Could not find application instance");
+      console.error('[Hide Dialog] Could not find application instance');
       return;
     }
 
@@ -490,24 +524,24 @@ export class HidePreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
 
     if (!outcome) {
-      notify.warn(
-        `${MODULE_TITLE}: Could not find outcome for this token`
-      );
+      notify.warn(`${MODULE_TITLE}: Could not find outcome for this token`);
       return;
     }
 
     try {
-      const { revertNowHide } = await import("../services/index.js");
+      const { revertNowHide } = await import('../services/index.js');
       // Pass the specific tokenId for per-row revert
-      const actionDataWithTarget = { ...app.actionData, ignoreAllies: app.ignoreAllies, targetTokenId: tokenId };
+      const actionDataWithTarget = {
+        ...app.actionData,
+        ignoreAllies: app.ignoreAllies,
+        targetTokenId: tokenId,
+      };
       await revertNowHide(actionDataWithTarget, { html: () => {}, attr: () => {} });
 
       app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
     } catch (error) {
-      notify.error(
-        `${MODULE_TITLE}: Error reverting change for ${outcome.target.name}`
-      );
+      notify.error(`${MODULE_TITLE}: Error reverting change for ${outcome.target.name}`);
     }
   }
 }

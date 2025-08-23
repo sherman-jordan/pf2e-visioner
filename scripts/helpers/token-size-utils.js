@@ -1,22 +1,22 @@
 /**
  * Token Size Utilities
- * 
+ *
  * Centralized functions for calculating correct token sizes based on PF2e creature size
  * instead of relying on potentially incorrect document.width/height values.
  */
 
 // Size to grid squares mapping (PF2e rules)
 const CREATURE_SIZE_TO_SQUARES = {
-  'tiny': 0.5,      // Takes up less than 1 square
-  'sm': 1,          // Small = 1 square
-  'small': 1,       // Small = 1 square  
-  'med': 1,         // Medium = 1 square
-  'medium': 1,      // Medium = 1 square
-  'lg': 2,          // Large = 2x2 squares
-  'large': 2,       // Large = 2x2 squares
-  'huge': 3,        // Huge = 3x3 squares
-  'grg': 4,         // Gargantuan = 4x4 squares
-  'gargantuan': 4   // Gargantuan = 4x4 squares
+  tiny: 0.5, // Takes up less than 1 square
+  sm: 1, // Small = 1 square
+  small: 1, // Small = 1 square
+  med: 1, // Medium = 1 square
+  medium: 1, // Medium = 1 square
+  lg: 2, // Large = 2x2 squares
+  large: 2, // Large = 2x2 squares
+  huge: 3, // Huge = 3x3 squares
+  grg: 4, // Gargantuan = 4x4 squares
+  gargantuan: 4, // Gargantuan = 4x4 squares
 };
 
 /**
@@ -28,13 +28,13 @@ export function getCorrectTokenGridSize(token) {
   try {
     // Get the creature size from the actor data (PF2e system)
     const creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
-    
+
     // Get the number of grid squares this size should occupy
     const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1;
-    
+
     return { width: squares, height: squares };
   } catch (error) {
-    console.warn("PF2E Visioner: Error getting creature size, defaulting to medium", error);
+    console.warn('PF2E Visioner: Error getting creature size, defaulting to medium', error);
     return { width: 1, height: 1 };
   }
 }
@@ -47,14 +47,14 @@ export function getCorrectTokenGridSize(token) {
 export function getCorrectTokenRect(token) {
   const x1 = token.document.x;
   const y1 = token.document.y;
-  
+
   // Use correct size calculation instead of document.width/height
   const gridSize = canvas.grid.size;
   const correctSize = getCorrectTokenGridSize(token);
-  
+
   const width = correctSize.width * gridSize;
   const height = correctSize.height * gridSize;
-  
+
   return { x1, y1, x2: x1 + width, y2: y1 + height };
 }
 
@@ -87,6 +87,6 @@ export function getCorrectTokenCenter(token) {
   const rect = getCorrectTokenRect(token);
   return {
     x: (rect.x1 + rect.x2) / 2,
-    y: (rect.y1 + rect.y2) / 2
+    y: (rect.y1 + rect.y2) / 2,
   };
 }

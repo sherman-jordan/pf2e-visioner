@@ -17,13 +17,9 @@ export function reconstructRollFromMessage(messageId) {
 
 // Generic helper: ensure a skill-check roll is present on actionData
 export function ensureActionRoll(actionData) {
-  if (actionData.roll && typeof actionData.roll.total === "number") return actionData;
+  if (actionData.roll && typeof actionData.roll.total === 'number') return actionData;
   if (!actionData.messageId) return actionData;
   const reconstructed = reconstructRollFromMessage(actionData.messageId);
   if (reconstructed) actionData.roll = reconstructed;
   return actionData;
 }
-
-
-
-

@@ -1,6 +1,6 @@
 /**
  * Tests for Token Size Utilities
- * 
+ *
  * Tests the centralized token size calculation functions.
  */
 
@@ -15,9 +15,9 @@ describe('Token Size Utilities', () => {
       tokens: { controlled: [], placeables: [] },
       walls: { placeables: [] },
       lighting: { placeables: [] },
-      terrain: { placeables: [] }
+      terrain: { placeables: [] },
     };
-    
+
     // Extend existing global canvas instead of replacing it
     Object.assign(global.canvas, mockCanvas);
   });
@@ -31,19 +31,19 @@ describe('Token Size Utilities', () => {
         y: options.y || 0,
         width: options.docWidth || 1, // This might be wrong in real scenarios
         height: options.docHeight || 1,
-        ...options.document
+        ...options.document,
       },
       actor: {
         system: {
           traits: {
             size: {
-              value: creatureSize
-            }
-          }
+              value: creatureSize,
+            },
+          },
         },
-        ...options.actor
+        ...options.actor,
       },
-      ...options
+      ...options,
     };
   }
 
@@ -73,7 +73,7 @@ describe('Token Size Utilities', () => {
       const invalidSize = createTestToken('invalid', 'invalid-size');
       const nullSize = {
         document: { x: 0, y: 0 },
-        actor: { system: { traits: { size: { value: null } } } }
+        actor: { system: { traits: { size: { value: null } } } },
       };
 
       // All should default to medium (1x1)
@@ -97,10 +97,10 @@ describe('Token Size Utilities', () => {
 
       // Medium: 1 square = 100px
       expect(mediumRect).toEqual({ x1: 100, y1: 100, x2: 200, y2: 200 });
-      
+
       // Large: 2 squares = 200px
       expect(largeRect).toEqual({ x1: 200, y1: 200, x2: 400, y2: 400 });
-      
+
       // Tiny: 0.5 squares = 50px
       expect(tinyRect).toEqual({ x1: 0, y1: 0, x2: 50, y2: 50 });
     });
@@ -108,7 +108,9 @@ describe('Token Size Utilities', () => {
 
   describe('getCorrectTokenWidth and getCorrectTokenHeight', () => {
     test('returns correct pixel dimensions', async () => {
-      const { getCorrectTokenWidth, getCorrectTokenHeight } = await import('../../scripts/helpers/token-size-utils.js');
+      const { getCorrectTokenWidth, getCorrectTokenHeight } = await import(
+        '../../scripts/helpers/token-size-utils.js'
+      );
 
       const medium = createTestToken('medium', 'med');
       const large = createTestToken('large', 'lg');
@@ -117,11 +119,11 @@ describe('Token Size Utilities', () => {
       // Medium: 1 square = 100px
       expect(getCorrectTokenWidth(medium)).toBe(100);
       expect(getCorrectTokenHeight(medium)).toBe(100);
-      
+
       // Large: 2 squares = 200px
       expect(getCorrectTokenWidth(large)).toBe(200);
       expect(getCorrectTokenHeight(large)).toBe(200);
-      
+
       // Tiny: 0.5 squares = 50px
       expect(getCorrectTokenWidth(tiny)).toBe(50);
       expect(getCorrectTokenHeight(tiny)).toBe(50);
@@ -140,21 +142,24 @@ describe('Token Size Utilities', () => {
 
       // Medium at (100,100): center at (150, 150)
       expect(mediumCenter).toEqual({ x: 150, y: 150 });
-      
-      // Large at (200,200): center at (300, 300) 
+
+      // Large at (200,200): center at (300, 300)
       expect(largeCenter).toEqual({ x: 300, y: 300 });
     });
   });
 
   describe('Integration with existing code', () => {
     test('replaces document.width/height calculations correctly', async () => {
-      const { getCorrectTokenWidth, getCorrectTokenHeight } = await import('../../scripts/helpers/token-size-utils.js');
+      const { getCorrectTokenWidth, getCorrectTokenHeight } = await import(
+        '../../scripts/helpers/token-size-utils.js'
+      );
 
       // Test token with incorrect document values (simulating the bug)
       const buggyToken = createTestToken('medium', 'med', {
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         docWidth: 2, // Wrong! Should be 1 for medium
-        docHeight: 2 // Wrong! Should be 1 for medium
+        docHeight: 2, // Wrong! Should be 1 for medium
       });
 
       // Old calculation (buggy)

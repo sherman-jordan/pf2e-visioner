@@ -3,19 +3,24 @@
  * Handles both visibility and cover management for tokens
  */
 
+import { getCoverMap, getVisibilityMap } from '../../utils.js';
+
+import { MODULE_ID } from '../../constants.js';
+import { bindTokenManagerActions } from './actions/index.js';
 import {
-  getCoverMap,
-  getVisibilityMap
-} from "../../utils.js";
+  addTokenBorder as addBorderUtil,
+  removeTokenBorder as removeBorderUtil,
+} from './borders.js';
+import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from './config.js';
+import {
+  applySelectionHighlight,
+  attachCanvasHoverHandlers,
+  attachSelectionHandlers,
+  detachCanvasHoverHandlers,
+  detachSelectionHandlers,
+} from './highlighting.js';
 
-import { MODULE_ID } from "../../constants.js";
-import { bindTokenManagerActions } from "./actions/index.js";
-import { addTokenBorder as addBorderUtil, removeTokenBorder as removeBorderUtil } from "./borders.js";
-import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from "./config.js";
-import { applySelectionHighlight, attachCanvasHoverHandlers, attachSelectionHandlers, detachCanvasHoverHandlers, detachSelectionHandlers } from "./highlighting.js";
-
-export class VisionerTokenManager extends foundry.applications.api
-  .ApplicationV2 {
+export class VisionerTokenManager extends foundry.applications.api.ApplicationV2 {
   // Track the current instance to prevent multiple dialogs
   static currentInstance = null;
   static _canvasHoverHandlers = new Map();
@@ -67,19 +72,18 @@ export class VisionerTokenManager extends foundry.applications.api
     // Smart default mode selection
     // If the token is controlled by current user, default to Target Mode ("how others see me")
     // Otherwise, default to Observer Mode ("how I see others")
-    const isControlledByUser =
-      observer.actor?.hasPlayerOwner && observer.isOwner;
-    const isLootObserver = observer.actor?.type === "loot";
+    const isControlledByUser = observer.actor?.hasPlayerOwner && observer.isOwner;
+    const isLootObserver = observer.actor?.type === 'loot';
     this.mode = isLootObserver
-      ? "target"
-      : options.mode || (isControlledByUser ? "target" : "observer");
+      ? 'target'
+      : options.mode || (isControlledByUser ? 'target' : 'observer');
 
     // Initialize active tab (visibility or cover)
-    this.activeTab = options.activeTab || "visibility";
+    this.activeTab = options.activeTab || 'visibility';
 
     // Initialize filters based on settings (defaults only)
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
-    this.ignoreAllies = game.settings.get(MODULE_ID, "ignoreAllies");
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
     // Per-manager ignore walls toggle (UI convenience only)
     this.ignoreWalls = false;
 
@@ -110,17 +114,12 @@ export class VisionerTokenManager extends foundry.applications.api
     this.coverData = getCoverMap(newObserver);
 
     // Update mode based on new observer
-    const isControlledByUser =
-      newObserver.actor?.hasPlayerOwner && newObserver.isOwner;
-    const isLootObserver = newObserver.actor?.type === "loot";
-    this.mode = isLootObserver
-      ? "target"
-      : isControlledByUser
-      ? "target"
-      : "observer";
+    const isControlledByUser = newObserver.actor?.hasPlayerOwner && newObserver.isOwner;
+    const isLootObserver = newObserver.actor?.type === 'loot';
+    this.mode = isLootObserver ? 'target' : isControlledByUser ? 'target' : 'observer';
 
     // Reset encounter filter to default for new observer
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
 
     // Re-render the dialog with new data
     this.render({ force: true });
@@ -135,10 +134,10 @@ export class VisionerTokenManager extends foundry.applications.api
     this.observer = newObserver;
     this.visibilityData = getVisibilityMap(newObserver);
     this.coverData = getCoverMap(newObserver);
-    this.mode = newObserver.actor?.type === "loot" ? "target" : mode;
+    this.mode = newObserver.actor?.type === 'loot' ? 'target' : mode;
 
     // Reset encounter filter to default for new observer
-    this.encounterOnly = game.settings.get(MODULE_ID, "defaultEncounterFilter");
+    this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
 
     // Re-render the dialog with new data
     this.render({ force: true });
@@ -148,7 +147,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Prepare context data for the template
    */
   async _prepareContext(options) {
-    const { buildContext } = await import("./context.js");
+    const { buildContext } = await import('./context.js');
     return buildContext(this, options);
   }
 
@@ -158,7 +157,7 @@ export class VisionerTokenManager extends foundry.applications.api
   async _renderHTML(context, options) {
     const html = await foundry.applications.handlebars.renderTemplate(
       this.constructor.PARTS.form.template,
-      context
+      context,
     );
     return html;
   }
@@ -174,7 +173,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Handle form submission
    */
   static async formHandler(event, form, formData) {
-    const { formHandler } = await import("./actions/index.js");
+    const { formHandler } = await import('./actions/index.js');
     return formHandler.call(this, event, form, formData);
   }
 
@@ -182,7 +181,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Apply changes and close
    */
   static async applyCurrent(event, button) {
-    const { applyCurrent } = await import("./actions/index.js");
+    const { applyCurrent } = await import('./actions/index.js');
     return applyCurrent.call(this, event, button);
   }
 
@@ -190,7 +189,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Apply both Visibility and Cover changes for the current mode
    */
   static async applyBoth(event, button) {
-    const { applyBoth } = await import("./actions/index.js");
+    const { applyBoth } = await import('./actions/index.js');
     return applyBoth.call(this, event, button);
   }
 
@@ -198,7 +197,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Reset all visibility and cover states
    */
   static async resetAll(event, button) {
-    const { resetAll } = await import("./actions/index.js");
+    const { resetAll } = await import('./actions/index.js');
     return resetAll.call(this, event, button);
   }
 
@@ -206,7 +205,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle between Observer and Target modes
    */
   static async toggleMode(event, button) {
-    const { toggleMode } = await import("./actions/index.js");
+    const { toggleMode } = await import('./actions/index.js');
     return toggleMode.call(this, event, button);
   }
 
@@ -214,7 +213,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle between Visibility and Cover tabs
    */
   static async toggleTab(event, button) {
-    const { toggleTab } = await import("./actions/index.js");
+    const { toggleTab } = await import('./actions/index.js');
     return toggleTab.call(this, event, button);
   }
 
@@ -222,7 +221,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle ignore allies filter
    */
   static async toggleIgnoreAllies(event, button) {
-    const { toggleIgnoreAllies } = await import("./actions/index.js");
+    const { toggleIgnoreAllies } = await import('./actions/index.js');
     return toggleIgnoreAllies.call(this, event, button);
   }
 
@@ -230,7 +229,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Toggle encounter filtering and refresh results
    */
   static async toggleEncounterFilter(event, button) {
-    const { toggleEncounterFilter } = await import("./actions/index.js");
+    const { toggleEncounterFilter } = await import('./actions/index.js');
     return toggleEncounterFilter.call(this, event, button);
   }
 
@@ -238,7 +237,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Bulk set visibility state for tokens
    */
   static async bulkSetVisibilityState(event, button) {
-    const { bulkSetVisibilityState } = await import("./actions/index.js");
+    const { bulkSetVisibilityState } = await import('./actions/index.js');
     return bulkSetVisibilityState.call(this, event, button);
   }
 
@@ -246,7 +245,7 @@ export class VisionerTokenManager extends foundry.applications.api
    * Bulk set cover state for tokens
    */
   static async bulkSetCoverState(event, button) {
-    const { bulkSetCoverState } = await import("./actions/index.js");
+    const { bulkSetCoverState } = await import('./actions/index.js');
     return bulkSetCoverState.call(this, event, button);
   }
 
@@ -256,7 +255,7 @@ export class VisionerTokenManager extends foundry.applications.api
   _onRender(context, options) {
     super._onRender(context, options);
     try {
-      const showOutcome = game.settings.get(MODULE_ID, "integrateRollOutcome");
+      const showOutcome = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       if (showOutcome) {
         // Ensure sufficient width to display Outcome column fully
         const minWidth = 705;
@@ -303,8 +302,8 @@ export class VisionerTokenManager extends foundry.applications.api
     try {
       if (this.element) {
         this.element
-          .querySelectorAll("tr.token-row.row-hover")
-          ?.forEach((el) => el.classList.remove("row-hover"));
+          .querySelectorAll('tr.token-row.row-hover')
+          ?.forEach((el) => el.classList.remove('row-hover'));
       }
     } catch (_) {}
 
@@ -321,7 +320,6 @@ export class VisionerTokenManager extends foundry.applications.api
   /**
    * Selection-based row highlight handlers
    */
-  
 
   /**
    * Clean up all token borders when closing the application

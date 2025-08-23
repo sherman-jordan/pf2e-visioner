@@ -7,8 +7,8 @@ import '../setup.js';
 
 // Import the actual functions to test
 import {
-    filterOutcomesByAllies,
-    shouldFilterAlly
+  filterOutcomesByAllies,
+  shouldFilterAlly,
 } from '../../scripts/chat/services/infra/shared-utils.js';
 
 describe('Ally Filtering Logic', () => {
@@ -23,7 +23,7 @@ describe('Ally Filtering Logic', () => {
     neutralToken = createMockToken('neutral', 'character');
     lootToken = createMockToken('loot', 'character');
     hazardToken = createMockToken('hazard', 'character');
-    
+
     // Then override the actor types
     enemyToken.actor.type = 'npc';
     neutralToken.actor.type = 'npc';
@@ -38,7 +38,7 @@ describe('Ally Filtering Logic', () => {
 
     // Set up dispositions as fallback
     playerToken.document.disposition = 1; // Friendly
-    allyToken.document.disposition = 1;   // Friendly  
+    allyToken.document.disposition = 1; // Friendly
     enemyToken.document.disposition = -1; // Hostile
     neutralToken.document.disposition = 0; // Neutral
   });
@@ -122,67 +122,53 @@ describe('Ally Filtering Logic', () => {
 
   describe('filterOutcomesByAllies Function', () => {
     test('returns all outcomes when ignoreAllies is false', () => {
-      const outcomes = [
-        { target: allyToken },
-        { target: enemyToken },
-        { target: neutralToken }
-      ];
+      const outcomes = [{ target: allyToken }, { target: enemyToken }, { target: neutralToken }];
 
       const filtered = filterOutcomesByAllies(outcomes, playerToken, false, 'target');
       expect(filtered).toEqual(outcomes);
     });
 
     test('filters out allies when ignoreAllies is true', () => {
-      const outcomes = [
-        { target: allyToken },
-        { target: enemyToken },
-        { target: neutralToken }
-      ];
+      const outcomes = [{ target: allyToken }, { target: enemyToken }, { target: neutralToken }];
 
       const filtered = filterOutcomesByAllies(outcomes, playerToken, true, 'target');
-      
+
       // Should only include enemies and neutrals, not allies
       expect(filtered).toHaveLength(2);
-      expect(filtered.find(o => o.target === allyToken)).toBeUndefined();
-      expect(filtered.find(o => o.target === enemyToken)).toBeDefined();
-      expect(filtered.find(o => o.target === neutralToken)).toBeDefined();
+      expect(filtered.find((o) => o.target === allyToken)).toBeUndefined();
+      expect(filtered.find((o) => o.target === enemyToken)).toBeDefined();
+      expect(filtered.find((o) => o.target === neutralToken)).toBeDefined();
     });
 
     test('preserves wall outcomes regardless of filtering', () => {
       const outcomes = [
         { _isWall: true, wallId: 'wall1' },
         { target: allyToken },
-        { target: enemyToken }
+        { target: enemyToken },
       ];
 
       const filtered = filterOutcomesByAllies(outcomes, playerToken, true, 'target');
-      
+
       // Wall should always be preserved
-      expect(filtered.find(o => o._isWall)).toBeDefined();
-      expect(filtered.find(o => o.target === allyToken)).toBeUndefined();
-      expect(filtered.find(o => o.target === enemyToken)).toBeDefined();
+      expect(filtered.find((o) => o._isWall)).toBeDefined();
+      expect(filtered.find((o) => o.target === allyToken)).toBeUndefined();
+      expect(filtered.find((o) => o.target === enemyToken)).toBeDefined();
     });
 
     test('handles different token property names', () => {
-      const outcomes = [
-        { observer: allyToken },
-        { observer: enemyToken }
-      ];
+      const outcomes = [{ observer: allyToken }, { observer: enemyToken }];
 
       const filtered = filterOutcomesByAllies(outcomes, playerToken, true, 'observer');
-      
+
       expect(filtered).toHaveLength(1);
       expect(filtered[0].observer).toBe(enemyToken);
     });
 
     test('handles null preferIgnoreAllies parameter', () => {
-      const outcomes = [
-        { target: allyToken },
-        { target: enemyToken }
-      ];
+      const outcomes = [{ target: allyToken }, { target: enemyToken }];
 
       const filtered = filterOutcomesByAllies(outcomes, playerToken, null, 'target');
-      
+
       // When preferIgnoreAllies is null (not true), no filtering should occur
       expect(filtered).toHaveLength(2);
       expect(filtered).toEqual(outcomes);
@@ -191,11 +177,11 @@ describe('Ally Filtering Logic', () => {
     test('gracefully handles invalid outcomes array', () => {
       const filtered1 = filterOutcomesByAllies(null, playerToken, true, 'target');
       const filtered2 = filterOutcomesByAllies(undefined, playerToken, true, 'target');
-      const filtered3 = filterOutcomesByAllies("not an array", playerToken, true, 'target');
+      const filtered3 = filterOutcomesByAllies('not an array', playerToken, true, 'target');
 
       expect(filtered1).toBe(null);
       expect(filtered2).toBe(undefined);
-      expect(filtered3).toBe("not an array");
+      expect(filtered3).toBe('not an array');
     });
 
     test('handles outcomes without target tokens', () => {
@@ -203,15 +189,17 @@ describe('Ally Filtering Logic', () => {
         { target: allyToken },
         { target: null },
         { target: undefined },
-        { /* no target property */ }
+        {
+          /* no target property */
+        },
       ];
 
       const filtered = filterOutcomesByAllies(outcomes, playerToken, true, 'target');
-      
+
       // Should filter out the ally but the invalid/missing targets will be filtered out too
       // because the function checks if the target token exists
       expect(filtered).toHaveLength(0); // All filtered out (ally + invalid targets)
-      expect(filtered.find(o => o.target === allyToken)).toBeUndefined();
+      expect(filtered.find((o) => o.target === allyToken)).toBeUndefined();
     });
   });
 
@@ -219,26 +207,26 @@ describe('Ally Filtering Logic', () => {
     test('Sneak action filtering - observers see sneaking token', () => {
       // In sneak, observers (other tokens) see the sneaking token differently
       const sneakOutcomes = [
-        { token: allyToken },    // Ally observer
-        { token: enemyToken },   // Enemy observer
+        { token: allyToken }, // Ally observer
+        { token: enemyToken }, // Enemy observer
       ];
 
       const filtered = filterOutcomesByAllies(sneakOutcomes, playerToken, true, 'token');
-      
+
       // Should only affect enemies, not allies
       expect(filtered).toHaveLength(1);
       expect(filtered[0].token).toBe(enemyToken);
     });
 
     test('Diversion action filtering - observers see diverting token', () => {
-      // In diversion, observers see the diverting token differently  
+      // In diversion, observers see the diverting token differently
       const diversionOutcomes = [
-        { observer: allyToken },    // Ally observer
-        { observer: enemyToken },   // Enemy observer
+        { observer: allyToken }, // Ally observer
+        { observer: enemyToken }, // Enemy observer
       ];
 
       const filtered = filterOutcomesByAllies(diversionOutcomes, playerToken, true, 'observer');
-      
+
       // Should only affect enemies, not allies
       expect(filtered).toHaveLength(1);
       expect(filtered[0].observer).toBe(enemyToken);
@@ -247,12 +235,12 @@ describe('Ally Filtering Logic', () => {
     test('Seek action filtering - seeker looks for targets', () => {
       // In seek, seeker looks for targets (usually enemies)
       const seekOutcomes = [
-        { target: allyToken },    // Ally target
-        { target: enemyToken },   // Enemy target
+        { target: allyToken }, // Ally target
+        { target: enemyToken }, // Enemy target
       ];
 
       const filtered = filterOutcomesByAllies(seekOutcomes, playerToken, true, 'target');
-      
+
       // Should only target enemies, not allies
       expect(filtered).toHaveLength(1);
       expect(filtered[0].target).toBe(enemyToken);

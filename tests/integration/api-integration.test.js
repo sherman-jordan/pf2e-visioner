@@ -1,5 +1,5 @@
 /**
- * API Integration tests for PF2E Visioner 
+ * API Integration tests for PF2E Visioner
  * Tests the integration between different module components
  */
 
@@ -13,42 +13,46 @@ describe('PF2E Visioner API Integration Tests', () => {
     // Create test tokens
     observer = createMockToken({
       id: 'observer-pc',
-      x: 100, y: 100,
+      x: 100,
+      y: 100,
       actor: createMockActor({
         id: 'actor-pc',
         type: 'character',
-        hasPlayerOwner: true
-      })
+        hasPlayerOwner: true,
+      }),
     });
 
     target = createMockToken({
-      id: 'target-npc', 
-      x: 300, y: 300,
+      id: 'target-npc',
+      x: 300,
+      y: 300,
       actor: createMockActor({
         id: 'actor-npc',
         type: 'npc',
-        hasPlayerOwner: false
-      })
+        hasPlayerOwner: false,
+      }),
     });
 
     ally = createMockToken({
       id: 'ally-pc',
-      x: 150, y: 150,
+      x: 150,
+      y: 150,
       actor: createMockActor({
-        id: 'actor-ally', 
+        id: 'actor-ally',
         type: 'character',
-        hasPlayerOwner: true
-      })
+        hasPlayerOwner: true,
+      }),
     });
 
     enemy = createMockToken({
       id: 'enemy-npc',
-      x: 400, y: 400,
+      x: 400,
+      y: 400,
       actor: createMockActor({
         id: 'actor-enemy',
         type: 'npc',
-        hasPlayerOwner: false
-      })
+        hasPlayerOwner: false,
+      }),
     });
   });
 
@@ -131,7 +135,7 @@ describe('PF2E Visioner API Integration Tests', () => {
 
       // Update to different states
       const states = ['hidden', 'concealed', 'undetected', 'observed'];
-      
+
       for (const state of states) {
         await setVisibilityBetween(observer, target, state);
         expect(getVisibilityBetween(observer, target)).toBe(state);
@@ -141,7 +145,7 @@ describe('PF2E Visioner API Integration Tests', () => {
     test('should handle concurrent state operations', async () => {
       // Set up multiple simultaneous operations
       const promises = [];
-      
+
       promises.push(setVisibilityBetween(observer, target, 'hidden'));
       promises.push(setVisibilityBetween(ally, target, 'concealed'));
       promises.push(setCoverBetween(observer, target, 'standard'));
@@ -163,14 +167,16 @@ describe('PF2E Visioner API Integration Tests', () => {
       // Test with different actor types
       const lootToken = createMockToken({
         id: 'loot-token',
-        x: 500, y: 500,
-        actor: createMockActor({ type: 'loot' })
+        x: 500,
+        y: 500,
+        actor: createMockActor({ type: 'loot' }),
       });
 
       const vehicleToken = createMockToken({
         id: 'vehicle-token',
-        x: 600, y: 600,
-        actor: createMockActor({ type: 'vehicle' })
+        x: 600,
+        y: 600,
+        actor: createMockActor({ type: 'vehicle' }),
       });
 
       // Set states for different token types
@@ -190,7 +196,7 @@ describe('PF2E Visioner API Integration Tests', () => {
       // Test with tokens that have minimal data
       const minimalToken = createMockToken({
         id: 'minimal-token',
-        actor: null // No actor
+        actor: null, // No actor
       });
 
       // Should not throw errors
@@ -209,13 +215,13 @@ describe('PF2E Visioner API Integration Tests', () => {
   describe('Performance Integration', () => {
     test('should handle many tokens efficiently', async () => {
       // Create many tokens
-      const manyTokens = Array.from({ length: 50 }, (_, i) => 
+      const manyTokens = Array.from({ length: 50 }, (_, i) =>
         createMockToken({
           id: `perf-token-${i}`,
           x: (i % 10) * 50,
           y: Math.floor(i / 10) * 50,
-          actor: createMockActor({ type: 'character' })
-        })
+          actor: createMockActor({ type: 'character' }),
+        }),
       );
 
       const startTime = performance.now();
@@ -250,7 +256,7 @@ describe('PF2E Visioner API Integration Tests', () => {
       for (let i = 0; i < 100; i++) {
         const visState = ['observed', 'hidden', 'concealed', 'undetected'][i % 4];
         const coverState = ['none', 'lesser', 'standard', 'greater'][i % 4];
-        
+
         await setVisibilityBetween(observer, target, visState);
         await setCoverBetween(observer, target, coverState);
       }

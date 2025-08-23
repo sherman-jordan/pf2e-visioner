@@ -1,6 +1,6 @@
 /**
  * Tests for Token Size Calculation Fix
- * 
+ *
  * Verifies that token sizes are calculated correctly based on creature size
  * rather than relying on potentially incorrect document.width/height values.
  */
@@ -16,9 +16,9 @@ describe('Token Size Calculation Fix', () => {
       tokens: { controlled: [], placeables: [] },
       walls: { placeables: [] },
       lighting: { placeables: [] },
-      terrain: { placeables: [] }
+      terrain: { placeables: [] },
     };
-    
+
     // Extend existing global canvas instead of replacing it
     Object.assign(global.canvas, mockCanvas);
   });
@@ -32,19 +32,19 @@ describe('Token Size Calculation Fix', () => {
         y: options.y || 0,
         width: options.docWidth || 1, // This might be wrong in real scenarios
         height: options.docHeight || 1,
-        ...options.document
+        ...options.document,
       },
       actor: {
         system: {
           traits: {
             size: {
-              value: creatureSize
-            }
-          }
+              value: creatureSize,
+            },
+          },
         },
-        ...options.actor
+        ...options.actor,
       },
-      ...options
+      ...options,
     };
   }
 
@@ -52,16 +52,16 @@ describe('Token Size Calculation Fix', () => {
     test('validates PF2e creature size rules', () => {
       // Test the size mapping matches PF2e rules
       const CREATURE_SIZE_TO_SQUARES = {
-        'tiny': 0.5,      // Takes up less than 1 square
-        'sm': 1,          // Small = 1 square
-        'small': 1,       // Small = 1 square  
-        'med': 1,         // Medium = 1 square
-        'medium': 1,      // Medium = 1 square
-        'lg': 2,          // Large = 2x2 squares
-        'large': 2,       // Large = 2x2 squares
-        'huge': 3,        // Huge = 3x3 squares
-        'grg': 4,         // Gargantuan = 4x4 squares
-        'gargantuan': 4   // Gargantuan = 4x4 squares
+        tiny: 0.5, // Takes up less than 1 square
+        sm: 1, // Small = 1 square
+        small: 1, // Small = 1 square
+        med: 1, // Medium = 1 square
+        medium: 1, // Medium = 1 square
+        lg: 2, // Large = 2x2 squares
+        large: 2, // Large = 2x2 squares
+        huge: 3, // Huge = 3x3 squares
+        grg: 4, // Gargantuan = 4x4 squares
+        gargantuan: 4, // Gargantuan = 4x4 squares
       };
 
       // Verify each size maps to correct number of squares
@@ -82,22 +82,30 @@ describe('Token Size Calculation Fix', () => {
     test('calculates correct rectangles for different creature sizes', async () => {
       // Import the auto-cover module to test the fixed getTokenRect function
       // We'll test this indirectly by checking the logic
-      
+
       const calculateCorrectTokenRect = (token) => {
         const CREATURE_SIZE_TO_SQUARES = {
-          'tiny': 0.5, 'sm': 1, 'small': 1, 'med': 1, 'medium': 1, 
-          'lg': 2, 'large': 2, 'huge': 3, 'grg': 4, 'gargantuan': 4
+          tiny: 0.5,
+          sm: 1,
+          small: 1,
+          med: 1,
+          medium: 1,
+          lg: 2,
+          large: 2,
+          huge: 3,
+          grg: 4,
+          gargantuan: 4,
         };
-        
+
         const creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
         const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1;
-        
+
         const x1 = token.document.x;
         const y1 = token.document.y;
         const gridSize = 100; // Mock grid size
         const width = squares * gridSize;
         const height = squares * gridSize;
-        
+
         return { x1, y1, x2: x1 + width, y2: y1 + height };
       };
 
@@ -128,25 +136,33 @@ describe('Token Size Calculation Fix', () => {
     test('handles missing or invalid creature size gracefully', () => {
       const calculateCorrectTokenRect = (token) => {
         const CREATURE_SIZE_TO_SQUARES = {
-          'tiny': 0.5, 'sm': 1, 'small': 1, 'med': 1, 'medium': 1, 
-          'lg': 2, 'large': 2, 'huge': 3, 'grg': 4, 'gargantuan': 4
+          tiny: 0.5,
+          sm: 1,
+          small: 1,
+          med: 1,
+          medium: 1,
+          lg: 2,
+          large: 2,
+          huge: 3,
+          grg: 4,
+          gargantuan: 4,
         };
-        
+
         let creatureSize;
         try {
           creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
         } catch (error) {
           creatureSize = 'med';
         }
-        
+
         const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1; // Default to medium
-        
+
         const x1 = token.document.x;
         const y1 = token.document.y;
         const gridSize = 100;
         const width = squares * gridSize;
         const height = squares * gridSize;
-        
+
         return { x1, y1, x2: x1 + width, y2: y1 + height };
       };
 
@@ -163,7 +179,7 @@ describe('Token Size Calculation Fix', () => {
       // Test token with null size
       const nullSizeToken = {
         document: { x: 0, y: 0 },
-        actor: { system: { traits: { size: { value: null } } } }
+        actor: { system: { traits: { size: { value: null } } } },
       };
       const nullRect = calculateCorrectTokenRect(nullSizeToken);
       expect(nullRect).toEqual({ x1: 0, y1: 0, x2: 100, y2: 100 }); // Default to medium
@@ -175,10 +191,18 @@ describe('Token Size Calculation Fix', () => {
       // Test the logic used in cover visualization
       const getCorrectTokenGridSize = (token) => {
         const CREATURE_SIZE_TO_SQUARES = {
-          'tiny': 0.5, 'sm': 1, 'small': 1, 'med': 1, 'medium': 1, 
-          'lg': 2, 'large': 2, 'huge': 3, 'grg': 4, 'gargantuan': 4
+          tiny: 0.5,
+          sm: 1,
+          small: 1,
+          med: 1,
+          medium: 1,
+          lg: 2,
+          large: 2,
+          huge: 3,
+          grg: 4,
+          gargantuan: 4,
         };
-        
+
         try {
           const creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
           const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1;
@@ -205,10 +229,18 @@ describe('Token Size Calculation Fix', () => {
     test('validates pixel calculations for cover visualization', () => {
       const getCorrectTokenGridSize = (token) => {
         const CREATURE_SIZE_TO_SQUARES = {
-          'tiny': 0.5, 'sm': 1, 'small': 1, 'med': 1, 'medium': 1, 
-          'lg': 2, 'large': 2, 'huge': 3, 'grg': 4, 'gargantuan': 4
+          tiny: 0.5,
+          sm: 1,
+          small: 1,
+          med: 1,
+          medium: 1,
+          lg: 2,
+          large: 2,
+          huge: 3,
+          grg: 4,
+          gargantuan: 4,
         };
-        
+
         const creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
         const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1;
         return { width: squares, height: squares };
@@ -219,13 +251,13 @@ describe('Token Size Calculation Fix', () => {
         return {
           x1: token.document.x,
           y1: token.document.y,
-          x2: token.document.x + (correctSize.width * gridSize),
-          y2: token.document.y + (correctSize.height * gridSize)
+          x2: token.document.x + correctSize.width * gridSize,
+          y2: token.document.y + correctSize.height * gridSize,
         };
       };
 
       const gridSize = 100;
-      
+
       // Test that a medium creature at (0,0) occupies exactly 1 grid square
       const mediumToken = createTestToken('medium', 'med', { x: 0, y: 0 });
       const mediumRect = calculateVisualizationRect(mediumToken, gridSize);
@@ -243,10 +275,18 @@ describe('Token Size Calculation Fix', () => {
       // This test specifically addresses the reported bug
       const getCorrectTokenGridSize = (token) => {
         const CREATURE_SIZE_TO_SQUARES = {
-          'tiny': 0.5, 'sm': 1, 'small': 1, 'med': 1, 'medium': 1, 
-          'lg': 2, 'large': 2, 'huge': 3, 'grg': 4, 'gargantuan': 4
+          tiny: 0.5,
+          sm: 1,
+          small: 1,
+          med: 1,
+          medium: 1,
+          lg: 2,
+          large: 2,
+          huge: 3,
+          grg: 4,
+          gargantuan: 4,
         };
-        
+
         const creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
         const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1;
         return { width: squares, height: squares };
@@ -254,22 +294,23 @@ describe('Token Size Calculation Fix', () => {
 
       // Create a medium creature (the one showing incorrectly as 2x2 in the bug report)
       const mediumCreature = createTestToken('medium-creature', 'med', {
-        x: 200, y: 200,
+        x: 200,
+        y: 200,
         docWidth: 2, // This might be the incorrect value causing the bug
-        docHeight: 2
+        docHeight: 2,
       });
 
       const correctSize = getCorrectTokenGridSize(mediumCreature);
-      
+
       // The fix should return 1x1 for medium creatures, regardless of document.width/height
       expect(correctSize.width).toBe(1);
       expect(correctSize.height).toBe(1);
-      
+
       // Calculate pixel size
       const gridSize = 100;
       const pixelWidth = correctSize.width * gridSize;
       const pixelHeight = correctSize.height * gridSize;
-      
+
       // Should be 100x100 pixels (1 grid square), not 200x200 (2x2 grid squares)
       expect(pixelWidth).toBe(100);
       expect(pixelHeight).toBe(100);
@@ -278,10 +319,18 @@ describe('Token Size Calculation Fix', () => {
     test('BUG FIX: large creature should show as 2x2, not 4x4 in visualization', () => {
       const getCorrectTokenGridSize = (token) => {
         const CREATURE_SIZE_TO_SQUARES = {
-          'tiny': 0.5, 'sm': 1, 'small': 1, 'med': 1, 'medium': 1, 
-          'lg': 2, 'large': 2, 'huge': 3, 'grg': 4, 'gargantuan': 4
+          tiny: 0.5,
+          sm: 1,
+          small: 1,
+          med: 1,
+          medium: 1,
+          lg: 2,
+          large: 2,
+          huge: 3,
+          grg: 4,
+          gargantuan: 4,
         };
-        
+
         const creatureSize = token?.actor?.system?.traits?.size?.value ?? 'med';
         const squares = CREATURE_SIZE_TO_SQUARES[creatureSize] ?? 1;
         return { width: squares, height: squares };
@@ -289,22 +338,23 @@ describe('Token Size Calculation Fix', () => {
 
       // Create a large creature (might also be showing incorrectly as 4x4)
       const largeCreature = createTestToken('large-creature', 'lg', {
-        x: 300, y: 300,
+        x: 300,
+        y: 300,
         docWidth: 4, // This might be the incorrect value
-        docHeight: 4
+        docHeight: 4,
       });
 
       const correctSize = getCorrectTokenGridSize(largeCreature);
-      
+
       // The fix should return 2x2 for large creatures, regardless of document.width/height
       expect(correctSize.width).toBe(2);
       expect(correctSize.height).toBe(2);
-      
+
       // Calculate pixel size
       const gridSize = 100;
       const pixelWidth = correctSize.width * gridSize;
       const pixelHeight = correctSize.height * gridSize;
-      
+
       // Should be 200x200 pixels (2x2 grid squares), not 400x400 (4x4 grid squares)
       expect(pixelWidth).toBe(200);
       expect(pixelHeight).toBe(200);

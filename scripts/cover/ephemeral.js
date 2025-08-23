@@ -3,10 +3,10 @@
  * Creates ephemeral effects for cover states using PF2e's native EphemeralEffect system
  */
 
-import { COVER_STATES, MODULE_ID } from "../constants.js";
-import { updateReflexStealthAcrossCoverAggregates } from "./aggregates.js";
-import { dedupeCoverAggregates, reconcileCoverAggregatesAgainstMaps } from "./batch.js";
-import { runWithCoverEffectLock } from "./utils.js";
+import { COVER_STATES, MODULE_ID } from '../constants.js';
+import { updateReflexStealthAcrossCoverAggregates } from './aggregates.js';
+import { dedupeCoverAggregates, reconcileCoverAggregatesAgainstMaps } from './batch.js';
+import { runWithCoverEffectLock } from './utils.js';
 
 // cover lock moved to cover/utils.js
 
@@ -23,10 +23,10 @@ export async function createEphemeralCoverEffect(
   effectReceiverToken,
   effectSourceToken,
   coverState,
-  options = {}
+  options = {},
 ) {
   // Skip if no cover or invalid state
-  if (!coverState || coverState === "none" || !COVER_STATES[coverState]) {
+  if (!coverState || coverState === 'none' || !COVER_STATES[coverState]) {
     return;
   }
 
@@ -34,8 +34,7 @@ export async function createEphemeralCoverEffect(
   const existingEffect = effectReceiverToken.actor.itemTypes.effect.find(
     (e) =>
       e.flags?.[MODULE_ID]?.isEphemeralCover &&
-      e.flags?.[MODULE_ID]?.observerActorSignature ===
-        effectSourceToken.actor.signature
+      e.flags?.[MODULE_ID]?.observerActorSignature === effectSourceToken.actor.signature,
   );
 
   if (existingEffect) {
@@ -48,9 +47,7 @@ export async function createEphemeralCoverEffect(
       if (effectReceiverToken.actor.items.get(existingEffect.id)) {
         // Only GMs can delete effects
         if (game.user.isGM) {
-          await effectReceiverToken.actor.deleteEmbeddedDocuments("Item", [
-            existingEffect.id,
-          ]);
+          await effectReceiverToken.actor.deleteEmbeddedDocuments('Item', [existingEffect.id]);
         }
       }
     } catch (_) {
@@ -62,33 +59,32 @@ export async function createEphemeralCoverEffect(
 
   // Pick a representative image per cover level
   const coverEffectImageByState = {
-    lesser: "systems/pf2e/icons/equipment/shields/buckler.webp",
-    standard: "systems/pf2e/icons/equipment/shields/steel-shield.webp",
-    greater: "systems/pf2e/icons/equipment/shields/tower-shield.webp",
+    lesser: 'systems/pf2e/icons/equipment/shields/buckler.webp',
+    standard: 'systems/pf2e/icons/equipment/shields/steel-shield.webp',
+    greater: 'systems/pf2e/icons/equipment/shields/tower-shield.webp',
   };
 
   const effectImg =
-    coverEffectImageByState[coverState] ||
-    "systems/pf2e/icons/equipment/shields/steel-shield.webp";
+    coverEffectImageByState[coverState] || 'systems/pf2e/icons/equipment/shields/steel-shield.webp';
 
   const ephemeralEffect = {
     name: `Cover against ${effectSourceToken.name}`,
-    type: "effect",
+    type: 'effect',
     system: {
       description: {
         value: `<p>You have ${coverState} cover against ${effectSourceToken.name}, granting a +${stateConfig.bonusAC} circumstance bonus to AC.</p>`,
-        gm: "",
+        gm: '',
       },
       rules: [
         {
-          key: "RollOption",
-          domain: "all",
+          key: 'RollOption',
+          domain: 'all',
           option: `cover-against:${effectSourceToken.id}`,
         },
         {
-          key: "FlatModifier",
-          selector: "ac",
-          type: "circumstance",
+          key: 'FlatModifier',
+          selector: 'ac',
+          type: 'circumstance',
           value: stateConfig.bonusAC,
           predicate: [
             `origin:signature:${effectSourceToken.actor.signature || effectSourceToken.actor.id}`,
@@ -108,13 +104,13 @@ export async function createEphemeralCoverEffect(
         options.durationRounds >= 0
           ? {
               value: options.durationRounds,
-              unit: "rounds",
-              expiry: "turn-start",
+              unit: 'rounds',
+              expiry: 'turn-start',
               sustained: false,
             }
           : {
               value: -1,
-              unit: "unlimited",
+              unit: 'unlimited',
               expiry: null,
               sustained: false,
             },
@@ -125,8 +121,7 @@ export async function createEphemeralCoverEffect(
       start: {
         value: 0,
         initiative: options.initiative
-          ? game.combat?.getCombatantByToken(effectReceiverToken?.id)
-              ?.initiative
+          ? game.combat?.getCombatantByToken(effectReceiverToken?.id)?.initiative
           : null,
       },
       badge: null,
@@ -145,34 +140,31 @@ export async function createEphemeralCoverEffect(
   };
 
   // Add reflex and stealth bonuses for standard and greater cover
-  if (coverState === "standard" || coverState === "greater") {
+  if (coverState === 'standard' || coverState === 'greater') {
     ephemeralEffect.system.rules.push(
       {
-        key: "FlatModifier",
-        selector: "reflex",
-        type: "circumstance",
+        key: 'FlatModifier',
+        selector: 'reflex',
+        type: 'circumstance',
         value: stateConfig.bonusReflex,
-        predicate: ["area-effect"],
+        predicate: ['area-effect'],
       },
       {
-        key: "FlatModifier",
-        predicate: ["action:hide", "action:sneak", "avoid-detection"],
-        selector: "stealth",
-        type: "circumstance",
+        key: 'FlatModifier',
+        predicate: ['action:hide', 'action:sneak', 'avoid-detection'],
+        selector: 'stealth',
+        type: 'circumstance',
         value: stateConfig.bonusStealth,
-      }
+      },
     );
   }
 
   try {
-    await effectReceiverToken.actor.createEmbeddedDocuments("Item", [
-      ephemeralEffect,
-    ]);
+    await effectReceiverToken.actor.createEmbeddedDocuments('Item', [ephemeralEffect]);
   } catch (error) {
-    console.error("Failed to create ephemeral cover effect:", error);
+    console.error('Failed to create ephemeral cover effect:', error);
   }
 }
-
 
 // upsertReflexStealthForMaxCoverOnThisAggregate now in cover/aggregates
 
@@ -183,7 +175,6 @@ export async function createEphemeralCoverEffect(
 // moved helpers to scripts/helpers/cover-helpers.js
 
 // moved: updateAggregateCoverMetaForState is imported from ./cover/aggregates.js
-
 
 // moved: removeObserverFromCoverAggregate now lives in cover/aggregates.js
 
@@ -198,13 +189,12 @@ export async function createEphemeralCoverEffect(
 /**
  * Clean up all ephemeral cover effects from all actors
  */
-export { cleanupAllCoverEffects } from "./cleanup.js";
-
+export { cleanupAllCoverEffects } from './cleanup.js';
 
 // covered by export above; keep wrapper for API compatibility
 export async function cleanupCoverEffectsForObserver(targetToken, observerToken) {
   await runWithCoverEffectLock(targetToken.actor, async () => {
-    const { cleanupCoverEffectsForObserver } = await import("./cleanup.js");
+    const { cleanupCoverEffectsForObserver } = await import('./cleanup.js');
     await cleanupCoverEffectsForObserver(targetToken, observerToken);
   });
 }
@@ -222,11 +212,20 @@ export async function cleanupCoverEffectsForObserver(targetToken, observerToken)
  * Clean up all cover effects related to a deleted token
  * @param {TokenDocument} tokenDoc - The token document being deleted
  */
-export { cleanupDeletedTokenCoverEffects } from "./cleanup.js";
+export { cleanupDeletedTokenCoverEffects } from './cleanup.js';
 
-export async function updateEphemeralCoverEffects(targetToken, observerToken, coverState, options = {}) {
-  const { batchUpdateCoverEffects } = await import("./batch.js");
-  return batchUpdateCoverEffects(observerToken, [{ target: targetToken, state: coverState }], options);
+export async function updateEphemeralCoverEffects(
+  targetToken,
+  observerToken,
+  coverState,
+  options = {},
+) {
+  const { batchUpdateCoverEffects } = await import('./batch.js');
+  return batchUpdateCoverEffects(
+    observerToken,
+    [{ target: targetToken, state: coverState }],
+    options,
+  );
 }
 
 /**
@@ -235,7 +234,7 @@ export async function updateEphemeralCoverEffects(targetToken, observerToken, co
  * @param {Array<Object>} targetUpdates - Array of {target: Token, state: string} objects
  * @param {Object} options - Optional configuration
  */
-export { batchUpdateCoverEffects } from "./batch.js";
+export { batchUpdateCoverEffects } from './batch.js';
 
 /**
  * Public helper: force a reconcile/cleanup of a target token's cover aggregates

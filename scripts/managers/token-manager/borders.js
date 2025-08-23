@@ -33,9 +33,9 @@ export function removeTokenBorder(token) {
         token._highlightBorder.parent.removeChild(token._highlightBorder);
       }
     } catch (_) {}
-    try { token._highlightBorder.destroy(); } catch (_) {}
+    try {
+      token._highlightBorder.destroy();
+    } catch (_) {}
     delete token._highlightBorder;
   }
 }
-
-

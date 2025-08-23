@@ -1,13 +1,13 @@
 /**
  * Comprehensive tests for Auto-Cover Core Algorithms
- * 
+ *
  * Tests the core cover calculation algorithms and business logic:
  * - Coverage percentage thresholds (50%/70% rules)
  * - Size-based cover rules (size difference >= 2)
  * - Tactical corner-to-corner logic
  * - Wall intersection logic
  * - Filter settings behavior
- * 
+ *
  * Focus: Test the business rules and algorithms, not complex integration.
  */
 
@@ -23,9 +23,9 @@ describe('Auto-Cover Core Algorithms', () => {
       walls: { placeables: [] },
       tokens: { placeables: [] },
       lighting: { placeables: [] },
-      terrain: { placeables: [] }
+      terrain: { placeables: [] },
     };
-    
+
     mockGame = {
       settings: {
         get: jest.fn().mockImplementation((module, setting) => {
@@ -37,8 +37,8 @@ describe('Auto-Cover Core Algorithms', () => {
           if (setting === 'autoCoverAllowProneBlockers') return false;
           if (setting === 'autoCoverRespectIgnoreFlag') return true;
           return false;
-        })
-      }
+        }),
+      },
     };
 
     // Extend existing global canvas instead of replacing it
@@ -53,9 +53,11 @@ describe('Auto-Cover Core Algorithms', () => {
       document: {
         x,
         y,
-        width: size === 'tiny' ? 0.5 : size === 'sm' ? 1 : size === 'lg' ? 2 : size === 'huge' ? 3 : 1,
-        height: size === 'tiny' ? 0.5 : size === 'sm' ? 1 : size === 'lg' ? 2 : size === 'huge' ? 3 : 1,
-        ...options.document
+        width:
+          size === 'tiny' ? 0.5 : size === 'sm' ? 1 : size === 'lg' ? 2 : size === 'huge' ? 3 : 1,
+        height:
+          size === 'tiny' ? 0.5 : size === 'sm' ? 1 : size === 'lg' ? 2 : size === 'huge' ? 3 : 1,
+        ...options.document,
       },
       actor: {
         id: `actor-${id}`,
@@ -63,15 +65,15 @@ describe('Auto-Cover Core Algorithms', () => {
         system: {
           traits: { size: { value: size } },
           attributes: {
-            hp: { value: options.hp || 10, max: 10 }
-          }
+            hp: { value: options.hp || 10, max: 10 },
+          },
         },
         alliance: options.alliance || 'opposition',
-        ...options.actor
+        ...options.actor,
       },
       center: { x: x + 50, y: y + 50 }, // Assume 100px grid
       getCenter: () => ({ x: x + 50, y: y + 50 }),
-      ...options
+      ...options,
     };
   }
 
@@ -79,9 +81,9 @@ describe('Auto-Cover Core Algorithms', () => {
     test('validates coverage percentage thresholds (PF2e rules)', () => {
       // Test the coverage calculation logic directly
       const evaluateCoverageThresholds = (coveragePercent) => {
-        const lesserThreshold = 50;  // Standard cover at 50%
+        const lesserThreshold = 50; // Standard cover at 50%
         const greaterThreshold = 70; // Greater cover at 70%
-        
+
         if (coveragePercent >= greaterThreshold) return 'greater';
         if (coveragePercent >= lesserThreshold) return 'standard';
         if (coveragePercent > 0) return 'lesser';
@@ -92,10 +94,10 @@ describe('Auto-Cover Core Algorithms', () => {
       expect(evaluateCoverageThresholds(0)).toBe('none');
       expect(evaluateCoverageThresholds(25)).toBe('lesser');
       expect(evaluateCoverageThresholds(49)).toBe('lesser');
-      expect(evaluateCoverageThresholds(50)).toBe('standard');  // Boundary
+      expect(evaluateCoverageThresholds(50)).toBe('standard'); // Boundary
       expect(evaluateCoverageThresholds(65)).toBe('standard');
       expect(evaluateCoverageThresholds(69)).toBe('standard');
-      expect(evaluateCoverageThresholds(70)).toBe('greater');   // Boundary
+      expect(evaluateCoverageThresholds(70)).toBe('greater'); // Boundary
       expect(evaluateCoverageThresholds(85)).toBe('greater');
       expect(evaluateCoverageThresholds(100)).toBe('greater');
     });
@@ -108,15 +110,15 @@ describe('Auto-Cover Core Algorithms', () => {
       };
 
       // Test coverage calculations
-      expect(calculateCoverage(0, 100)).toBe(0);      // No intersection
-      expect(calculateCoverage(25, 100)).toBe(25);    // 25% coverage
-      expect(calculateCoverage(50, 100)).toBe(50);    // 50% coverage (standard)
-      expect(calculateCoverage(70, 100)).toBe(70);    // 70% coverage (greater)
-      expect(calculateCoverage(100, 100)).toBe(100);  // Full coverage
+      expect(calculateCoverage(0, 100)).toBe(0); // No intersection
+      expect(calculateCoverage(25, 100)).toBe(25); // 25% coverage
+      expect(calculateCoverage(50, 100)).toBe(50); // 50% coverage (standard)
+      expect(calculateCoverage(70, 100)).toBe(70); // 70% coverage (greater)
+      expect(calculateCoverage(100, 100)).toBe(100); // Full coverage
 
       // Edge cases
-      expect(calculateCoverage(-5, 100)).toBe(0);     // Negative intersection
-      expect(calculateCoverage(50, 0)).toBe(0);       // Zero token side
+      expect(calculateCoverage(-5, 100)).toBe(0); // Negative intersection
+      expect(calculateCoverage(50, 0)).toBe(0); // Zero token side
     });
 
     test('validates multiple blocker aggregation logic', () => {
@@ -125,11 +127,11 @@ describe('Auto-Cover Core Algorithms', () => {
         let sawAny = false;
         let meetsStandard = false;
         let meetsGreater = false;
-        
+
         for (const blocker of blockers) {
           if (blocker.coverage <= 0) continue;
           sawAny = true;
-          
+
           if (blocker.coverage >= 70) {
             meetsGreater = true;
             break; // Greater cover found, no need to continue
@@ -138,8 +140,8 @@ describe('Auto-Cover Core Algorithms', () => {
             meetsStandard = true;
           }
         }
-        
-        return meetsGreater ? 'greater' : (meetsStandard ? 'standard' : (sawAny ? 'lesser' : 'none'));
+
+        return meetsGreater ? 'greater' : meetsStandard ? 'standard' : sawAny ? 'lesser' : 'none';
       };
 
       // Test various combinations
@@ -156,36 +158,58 @@ describe('Auto-Cover Core Algorithms', () => {
   describe('Size-Based Algorithm Logic', () => {
     test('validates size difference rules for standard cover (PF2e rules)', () => {
       // Test the size-based cover logic - PF2e rules require size difference >= 2
-      const SIZE_ORDER = { tiny: 0, sm: 1, small: 1, med: 2, medium: 2, lg: 3, large: 3, huge: 4, grg: 5, gargantuan: 5 };
-      
+      const SIZE_ORDER = {
+        tiny: 0,
+        sm: 1,
+        small: 1,
+        med: 2,
+        medium: 2,
+        lg: 3,
+        large: 3,
+        huge: 4,
+        grg: 5,
+        gargantuan: 5,
+      };
+
       const getSizeRank = (size) => SIZE_ORDER[size] ?? 2;
-      
+
       const evaluateSizeCover = (attackerSize, targetSize, blockerSize) => {
         const attackerRank = getSizeRank(attackerSize);
         const targetRank = getSizeRank(targetSize);
         const blockerRank = getSizeRank(blockerSize);
-        
+
         const sizeDiffAttacker = blockerRank - attackerRank;
         const sizeDiffTarget = blockerRank - targetRank;
         const grantsStandard = sizeDiffAttacker >= 2 && sizeDiffTarget >= 2;
-        
+
         return grantsStandard ? 'standard' : 'lesser';
       };
 
       // Test various size combinations (critical PF2e rules)
-      expect(evaluateSizeCover('med', 'med', 'med')).toBe('lesser');    // 2-2=0, 2-2=0 (no standard)
-      expect(evaluateSizeCover('med', 'med', 'lg')).toBe('lesser');     // 3-2=1, 3-2=1 (no standard)
+      expect(evaluateSizeCover('med', 'med', 'med')).toBe('lesser'); // 2-2=0, 2-2=0 (no standard)
+      expect(evaluateSizeCover('med', 'med', 'lg')).toBe('lesser'); // 3-2=1, 3-2=1 (no standard)
       expect(evaluateSizeCover('med', 'med', 'huge')).toBe('standard'); // 4-2=2, 4-2=2 (standard!)
-      expect(evaluateSizeCover('tiny', 'sm', 'lg')).toBe('standard');   // 3-0=3, 3-1=2 (standard!)
-      expect(evaluateSizeCover('sm', 'med', 'huge')).toBe('standard');  // 4-1=3, 4-2=2 (standard!)
-      
+      expect(evaluateSizeCover('tiny', 'sm', 'lg')).toBe('standard'); // 3-0=3, 3-1=2 (standard!)
+      expect(evaluateSizeCover('sm', 'med', 'huge')).toBe('standard'); // 4-1=3, 4-2=2 (standard!)
+
       // Edge cases
       expect(evaluateSizeCover('huge', 'huge', 'tiny')).toBe('lesser'); // Smaller blocker
       expect(evaluateSizeCover('tiny', 'tiny', 'grg')).toBe('standard'); // 5-0=5, 5-0=5 (standard!)
     });
 
     test('validates size rank mapping', () => {
-      const SIZE_ORDER = { tiny: 0, sm: 1, small: 1, med: 2, medium: 2, lg: 3, large: 3, huge: 4, grg: 5, gargantuan: 5 };
+      const SIZE_ORDER = {
+        tiny: 0,
+        sm: 1,
+        small: 1,
+        med: 2,
+        medium: 2,
+        lg: 3,
+        large: 3,
+        huge: 4,
+        grg: 5,
+        gargantuan: 5,
+      };
       const getSizeRank = (size) => SIZE_ORDER[size] ?? 2;
 
       // Test all size mappings
@@ -199,7 +223,7 @@ describe('Auto-Cover Core Algorithms', () => {
       expect(getSizeRank('huge')).toBe(4);
       expect(getSizeRank('grg')).toBe(5);
       expect(getSizeRank('gargantuan')).toBe(5);
-      
+
       // Default fallback
       expect(getSizeRank('unknown')).toBe(2);
       expect(getSizeRank(null)).toBe(2);
@@ -211,18 +235,18 @@ describe('Auto-Cover Core Algorithms', () => {
       const evaluateBothSizeRequirements = (attackerSize, targetSize, blockerSize) => {
         const SIZE_ORDER = { tiny: 0, sm: 1, med: 2, lg: 3, huge: 4, grg: 5 };
         const getSizeRank = (size) => SIZE_ORDER[size] ?? 2;
-        
+
         const attackerRank = getSizeRank(attackerSize);
         const targetRank = getSizeRank(targetSize);
         const blockerRank = getSizeRank(blockerSize);
-        
+
         const sizeDiffAttacker = blockerRank - attackerRank;
         const sizeDiffTarget = blockerRank - targetRank;
-        
+
         return {
           attackerDiff: sizeDiffAttacker,
           targetDiff: sizeDiffTarget,
-          grantsStandard: sizeDiffAttacker >= 2 && sizeDiffTarget >= 2
+          grantsStandard: sizeDiffAttacker >= 2 && sizeDiffTarget >= 2,
         };
       };
 
@@ -250,7 +274,7 @@ describe('Auto-Cover Core Algorithms', () => {
       // Test the tiny creature special handling in tactical mode
       const calculateTinyEffectiveArea = (centerX, centerY, gridSize) => {
         const halfEffective = gridSize * 0.35; // 0.7 square effective area (35% from center)
-        
+
         return [
           { x: centerX - halfEffective, y: centerY - halfEffective }, // top-left
           { x: centerX + halfEffective, y: centerY - halfEffective }, // top-right
@@ -260,16 +284,17 @@ describe('Auto-Cover Core Algorithms', () => {
       };
 
       const gridSize = 100;
-      const centerX = 150, centerY = 150;
+      const centerX = 150,
+        centerY = 150;
       const corners = calculateTinyEffectiveArea(centerX, centerY, gridSize);
-      
+
       // Verify the effective area is calculated correctly
       expect(corners).toHaveLength(4);
       expect(corners[0]).toEqual({ x: 115, y: 115 }); // top-left
       expect(corners[1]).toEqual({ x: 185, y: 115 }); // top-right
       expect(corners[2]).toEqual({ x: 185, y: 185 }); // bottom-right
       expect(corners[3]).toEqual({ x: 115, y: 185 }); // bottom-left
-      
+
       // Verify it's 0.7 squares (70% of grid size)
       const effectiveWidth = corners[1].x - corners[0].x;
       const effectiveHeight = corners[2].y - corners[1].y;
@@ -292,10 +317,10 @@ describe('Auto-Cover Core Algorithms', () => {
       };
 
       // Test various blocking scenarios
-      expect(calculateTacticalCoverPercentage(4, 0)).toBe(0);   // 0/4 lines blocked
-      expect(calculateTacticalCoverPercentage(4, 1)).toBe(25);  // 1/4 lines blocked
-      expect(calculateTacticalCoverPercentage(4, 2)).toBe(50);  // 2/4 lines blocked
-      expect(calculateTacticalCoverPercentage(4, 3)).toBe(75);  // 3/4 lines blocked
+      expect(calculateTacticalCoverPercentage(4, 0)).toBe(0); // 0/4 lines blocked
+      expect(calculateTacticalCoverPercentage(4, 1)).toBe(25); // 1/4 lines blocked
+      expect(calculateTacticalCoverPercentage(4, 2)).toBe(50); // 2/4 lines blocked
+      expect(calculateTacticalCoverPercentage(4, 3)).toBe(75); // 3/4 lines blocked
       expect(calculateTacticalCoverPercentage(4, 4)).toBe(100); // 4/4 lines blocked
 
       // Test cover level evaluation
@@ -314,7 +339,7 @@ describe('Auto-Cover Core Algorithms', () => {
         const coverRanks = { none: 0, lesser: 1, standard: 2, greater: 3 };
         let bestCover = 'none';
         let bestCornerIndex = -1;
-        
+
         for (let i = 0; i < attackerCorners.length; i++) {
           const coverLevel = coverResults[i];
           if (coverRanks[coverLevel] > coverRanks[bestCover]) {
@@ -322,17 +347,17 @@ describe('Auto-Cover Core Algorithms', () => {
             bestCornerIndex = i;
           }
         }
-        
+
         return { bestCover, bestCornerIndex };
       };
 
       const attackerCorners = ['corner1', 'corner2', 'corner3', 'corner4'];
       const coverResults = ['none', 'lesser', 'standard', 'lesser'];
-      
+
       const result = findBestTacticalCover(attackerCorners, coverResults);
       expect(result.bestCover).toBe('standard');
       expect(result.bestCornerIndex).toBe(2); // Third corner (index 2) provides standard cover
-      
+
       // Test with greater cover
       const coverResults2 = ['lesser', 'greater', 'standard', 'none'];
       const result2 = findBestTacticalCover(attackerCorners, coverResults2);
@@ -353,7 +378,7 @@ describe('Auto-Cover Core Algorithms', () => {
         const centerX = (rect.x1 + rect.x2) / 2;
         const centerY = (rect.y1 + rect.y2) / 2;
         const halfEffective = gridSize * 0.35;
-        
+
         return [
           { x: centerX - halfEffective, y: centerY - halfEffective },
           { x: centerX + halfEffective, y: centerY - halfEffective },
@@ -373,7 +398,7 @@ describe('Auto-Cover Core Algorithms', () => {
       expect(regularCorners[2]).toEqual({ x: 150, y: 150 });
 
       // Tiny corners use effective area from center
-      expect(tinyCorners[0]).toEqual({ x: 90, y: 90 });   // Center 125 - 35 = 90
+      expect(tinyCorners[0]).toEqual({ x: 90, y: 90 }); // Center 125 - 35 = 90
       expect(tinyCorners[2]).toEqual({ x: 160, y: 160 }); // Center 125 + 35 = 160
     });
   });
@@ -382,60 +407,87 @@ describe('Auto-Cover Core Algorithms', () => {
     test('validates line segment intersection algorithm', () => {
       // Test the core line intersection logic used for wall blocking
       const segmentsIntersect = (p1, p2, q1, q2) => {
-        const orientation = (a, b, c) => Math.sign((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
-        const onSegment = (a, b, c) => 
-          Math.min(a.x, b.x) <= c.x && c.x <= Math.max(a.x, b.x) && 
-          Math.min(a.y, b.y) <= c.y && c.y <= Math.max(a.y, b.y);
-        
+        const orientation = (a, b, c) =>
+          Math.sign((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
+        const onSegment = (a, b, c) =>
+          Math.min(a.x, b.x) <= c.x &&
+          c.x <= Math.max(a.x, b.x) &&
+          Math.min(a.y, b.y) <= c.y &&
+          c.y <= Math.max(a.y, b.y);
+
         const o1 = orientation(p1, p2, q1);
         const o2 = orientation(p1, p2, q2);
         const o3 = orientation(q1, q2, p1);
         const o4 = orientation(q1, q2, p2);
-        
+
         // General case: different orientations
         if (o1 !== o2 && o3 !== o4) return true;
-        
+
         // Special cases: collinear points
         if (o1 === 0 && onSegment(p1, p2, q1)) return true;
         if (o2 === 0 && onSegment(p1, p2, q2)) return true;
         if (o3 === 0 && onSegment(q1, q2, p1)) return true;
         if (o4 === 0 && onSegment(q1, q2, p2)) return true;
-        
+
         return false;
       };
 
       // Test clear intersections
-      expect(segmentsIntersect(
-        { x: 0, y: 0 }, { x: 100, y: 0 },    // Horizontal line
-        { x: 50, y: -10 }, { x: 50, y: 10 }  // Vertical line crossing it
-      )).toBe(true);
+      expect(
+        segmentsIntersect(
+          { x: 0, y: 0 },
+          { x: 100, y: 0 }, // Horizontal line
+          { x: 50, y: -10 },
+          { x: 50, y: 10 }, // Vertical line crossing it
+        ),
+      ).toBe(true);
 
-      expect(segmentsIntersect(
-        { x: 0, y: 0 }, { x: 100, y: 100 },  // Diagonal line
-        { x: 0, y: 100 }, { x: 100, y: 0 }   // Crossing diagonal
-      )).toBe(true);
+      expect(
+        segmentsIntersect(
+          { x: 0, y: 0 },
+          { x: 100, y: 100 }, // Diagonal line
+          { x: 0, y: 100 },
+          { x: 100, y: 0 }, // Crossing diagonal
+        ),
+      ).toBe(true);
 
       // Test clear non-intersections
-      expect(segmentsIntersect(
-        { x: 0, y: 0 }, { x: 100, y: 0 },    // Horizontal line
-        { x: 50, y: 10 }, { x: 50, y: 20 }   // Vertical line not crossing it
-      )).toBe(false);
+      expect(
+        segmentsIntersect(
+          { x: 0, y: 0 },
+          { x: 100, y: 0 }, // Horizontal line
+          { x: 50, y: 10 },
+          { x: 50, y: 20 }, // Vertical line not crossing it
+        ),
+      ).toBe(false);
 
-      expect(segmentsIntersect(
-        { x: 0, y: 0 }, { x: 50, y: 0 },     // Short horizontal line
-        { x: 60, y: -10 }, { x: 60, y: 10 }  // Vertical line past it
-      )).toBe(false);
+      expect(
+        segmentsIntersect(
+          { x: 0, y: 0 },
+          { x: 50, y: 0 }, // Short horizontal line
+          { x: 60, y: -10 },
+          { x: 60, y: 10 }, // Vertical line past it
+        ),
+      ).toBe(false);
 
       // Test edge cases
-      expect(segmentsIntersect(
-        { x: 0, y: 0 }, { x: 100, y: 0 },    // Horizontal line
-        { x: 50, y: 0 }, { x: 50, y: 0 }     // Point on the line
-      )).toBe(true);
+      expect(
+        segmentsIntersect(
+          { x: 0, y: 0 },
+          { x: 100, y: 0 }, // Horizontal line
+          { x: 50, y: 0 },
+          { x: 50, y: 0 }, // Point on the line
+        ),
+      ).toBe(true);
 
-      expect(segmentsIntersect(
-        { x: 0, y: 0 }, { x: 100, y: 0 },    // Horizontal line
-        { x: 0, y: 0 }, { x: 50, y: 0 }      // Overlapping segment
-      )).toBe(true);
+      expect(
+        segmentsIntersect(
+          { x: 0, y: 0 },
+          { x: 100, y: 0 }, // Horizontal line
+          { x: 0, y: 0 },
+          { x: 50, y: 0 }, // Overlapping segment
+        ),
+      ).toBe(true);
     });
 
     test('validates wall blocking evaluation logic', () => {
@@ -455,27 +507,33 @@ describe('Auto-Cover Core Algorithms', () => {
       const lineOfSight = { start: { x: 0, y: 0 }, end: { x: 100, y: 0 } };
 
       // Test with blocking wall
-      const blockingWalls = [{
-        blocksMovement: true,
-        blocksSight: true,
-        intersectsLine: () => true
-      }];
+      const blockingWalls = [
+        {
+          blocksMovement: true,
+          blocksSight: true,
+          intersectsLine: () => true,
+        },
+      ];
       expect(evaluateWallCover(lineOfSight, blockingWalls)).toBe('standard');
 
       // Test with non-blocking wall
-      const nonBlockingWalls = [{
-        blocksMovement: false,
-        blocksSight: false,
-        intersectsLine: () => true
-      }];
+      const nonBlockingWalls = [
+        {
+          blocksMovement: false,
+          blocksSight: false,
+          intersectsLine: () => true,
+        },
+      ];
       expect(evaluateWallCover(lineOfSight, nonBlockingWalls)).toBe('none');
 
       // Test with wall that doesn't intersect
-      const nonIntersectingWalls = [{
-        blocksMovement: true,
-        blocksSight: true,
-        intersectsLine: () => false
-      }];
+      const nonIntersectingWalls = [
+        {
+          blocksMovement: true,
+          blocksSight: true,
+          intersectsLine: () => false,
+        },
+      ];
       expect(evaluateWallCover(lineOfSight, nonIntersectingWalls)).toBe('none');
 
       // Test with no walls
@@ -490,9 +548,9 @@ describe('Auto-Cover Core Algorithms', () => {
       };
 
       // Test different wall configurations
-      expect(shouldWallBlock({ move: 0, sight: 1 })).toBe(true);  // Blocks movement
-      expect(shouldWallBlock({ move: 1, sight: 0 })).toBe(true);  // Blocks sight
-      expect(shouldWallBlock({ move: 0, sight: 0 })).toBe(true);  // Blocks both
+      expect(shouldWallBlock({ move: 0, sight: 1 })).toBe(true); // Blocks movement
+      expect(shouldWallBlock({ move: 1, sight: 0 })).toBe(true); // Blocks sight
+      expect(shouldWallBlock({ move: 0, sight: 0 })).toBe(true); // Blocks both
       expect(shouldWallBlock({ move: 1, sight: 1 })).toBe(false); // Blocks neither
       expect(shouldWallBlock({ move: 2, sight: 2 })).toBe(false); // Open walls
     });
@@ -503,7 +561,7 @@ describe('Auto-Cover Core Algorithms', () => {
       // Test the ally filtering algorithm
       const shouldFilterAlly = (attacker, blocker, ignoreAllies) => {
         if (!ignoreAllies) return false; // Don't filter if setting is off
-        
+
         // Filter if both attacker and blocker are allies
         return attacker.alliance === blocker.alliance && attacker.alliance === 'party';
       };
@@ -513,8 +571,8 @@ describe('Auto-Cover Core Algorithms', () => {
       const enemyBlocker = { alliance: 'opposition' };
 
       // Test with ally filtering ON
-      expect(shouldFilterAlly(partyAttacker, partyBlocker, true)).toBe(true);   // Filter ally
-      expect(shouldFilterAlly(partyAttacker, enemyBlocker, true)).toBe(false);  // Don't filter enemy
+      expect(shouldFilterAlly(partyAttacker, partyBlocker, true)).toBe(true); // Filter ally
+      expect(shouldFilterAlly(partyAttacker, enemyBlocker, true)).toBe(false); // Don't filter enemy
 
       // Test with ally filtering OFF
       expect(shouldFilterAlly(partyAttacker, partyBlocker, false)).toBe(false); // Don't filter ally
@@ -525,23 +583,25 @@ describe('Auto-Cover Core Algorithms', () => {
       // Test the dead token filtering algorithm
       const shouldFilterDead = (token, ignoreDead) => {
         if (!ignoreDead) return false; // Don't filter if setting is off
-        
+
         const hp = token.actor?.system?.attributes?.hp;
         return hp && hp.value <= 0;
       };
 
       const aliveToken = { actor: { system: { attributes: { hp: { value: 10, max: 10 } } } } };
       const deadToken = { actor: { system: { attributes: { hp: { value: 0, max: 10 } } } } };
-      const unconsciousToken = { actor: { system: { attributes: { hp: { value: -5, max: 10 } } } } };
+      const unconsciousToken = {
+        actor: { system: { attributes: { hp: { value: -5, max: 10 } } } },
+      };
 
       // Test with dead filtering ON
-      expect(shouldFilterDead(aliveToken, true)).toBe(false);        // Don't filter alive
-      expect(shouldFilterDead(deadToken, true)).toBe(true);          // Filter dead
-      expect(shouldFilterDead(unconsciousToken, true)).toBe(true);   // Filter unconscious
+      expect(shouldFilterDead(aliveToken, true)).toBe(false); // Don't filter alive
+      expect(shouldFilterDead(deadToken, true)).toBe(true); // Filter dead
+      expect(shouldFilterDead(unconsciousToken, true)).toBe(true); // Filter unconscious
 
       // Test with dead filtering OFF
-      expect(shouldFilterDead(aliveToken, false)).toBe(false);       // Don't filter alive
-      expect(shouldFilterDead(deadToken, false)).toBe(false);        // Don't filter dead
+      expect(shouldFilterDead(aliveToken, false)).toBe(false); // Don't filter alive
+      expect(shouldFilterDead(deadToken, false)).toBe(false); // Don't filter dead
       expect(shouldFilterDead(unconsciousToken, false)).toBe(false); // Don't filter unconscious
     });
 
@@ -549,7 +609,7 @@ describe('Auto-Cover Core Algorithms', () => {
       // Test the undetected token filtering algorithm
       const shouldFilterUndetected = (attacker, blocker, ignoreUndetected) => {
         if (!ignoreUndetected) return false; // Don't filter if setting is off
-        
+
         // Check if blocker is undetected by attacker
         const visibility = getVisibilityBetween(attacker, blocker);
         return visibility === 'undetected';
@@ -568,60 +628,65 @@ describe('Auto-Cover Core Algorithms', () => {
       const undetectedBlocker = { id: 'undetected', isHidden: true, isConcealed: false };
 
       // Test with undetected filtering ON
-      expect(shouldFilterUndetected(attacker, observedBlocker, true)).toBe(false);   // Don't filter observed
-      expect(shouldFilterUndetected(attacker, concealedBlocker, true)).toBe(false);  // Don't filter concealed
-      expect(shouldFilterUndetected(attacker, undetectedBlocker, true)).toBe(true);  // Filter undetected
+      expect(shouldFilterUndetected(attacker, observedBlocker, true)).toBe(false); // Don't filter observed
+      expect(shouldFilterUndetected(attacker, concealedBlocker, true)).toBe(false); // Don't filter concealed
+      expect(shouldFilterUndetected(attacker, undetectedBlocker, true)).toBe(true); // Filter undetected
 
       // Test with undetected filtering OFF
-      expect(shouldFilterUndetected(attacker, observedBlocker, false)).toBe(false);  // Don't filter observed
+      expect(shouldFilterUndetected(attacker, observedBlocker, false)).toBe(false); // Don't filter observed
       expect(shouldFilterUndetected(attacker, concealedBlocker, false)).toBe(false); // Don't filter concealed
-      expect(shouldFilterUndetected(attacker, undetectedBlocker, false)).toBe(false);// Don't filter undetected
+      expect(shouldFilterUndetected(attacker, undetectedBlocker, false)).toBe(false); // Don't filter undetected
     });
 
     test('validates prone blocker filtering logic', () => {
       // Test the prone blocker filtering algorithm
       const shouldFilterProne = (blocker, allowProneBlockers) => {
         if (allowProneBlockers) return false; // Don't filter if setting allows prone
-        
+
         // Check if blocker is prone
         return blocker.actor?.statuses?.has?.('prone') || blocker.isProne;
       };
 
       const standingBlocker = { actor: { statuses: { has: () => false } }, isProne: false };
-      const proneBlocker = { actor: { statuses: { has: (status) => status === 'prone' } }, isProne: true };
+      const proneBlocker = {
+        actor: { statuses: { has: (status) => status === 'prone' } },
+        isProne: true,
+      };
 
       // Test with prone blocking DISABLED (filter prone)
       expect(shouldFilterProne(standingBlocker, false)).toBe(false); // Don't filter standing
-      expect(shouldFilterProne(proneBlocker, false)).toBe(true);     // Filter prone
+      expect(shouldFilterProne(proneBlocker, false)).toBe(true); // Filter prone
 
       // Test with prone blocking ENABLED (don't filter prone)
-      expect(shouldFilterProne(standingBlocker, true)).toBe(false);  // Don't filter standing
-      expect(shouldFilterProne(proneBlocker, true)).toBe(false);     // Don't filter prone
+      expect(shouldFilterProne(standingBlocker, true)).toBe(false); // Don't filter standing
+      expect(shouldFilterProne(proneBlocker, true)).toBe(false); // Don't filter prone
     });
 
     test('validates ignore flag filtering logic', () => {
       // Test the ignore flag filtering algorithm
       const shouldFilterIgnoreFlag = (blocker, respectIgnoreFlag) => {
         if (!respectIgnoreFlag) return false; // Don't filter if setting is off
-        
+
         // Check if blocker has ignore flag
         return blocker.document?.getFlag?.('pf2e-visioner', 'ignoreCover') === true;
       };
 
-      const normalBlocker = { 
-        document: { getFlag: () => false } 
+      const normalBlocker = {
+        document: { getFlag: () => false },
       };
-      const ignoredBlocker = { 
-        document: { getFlag: (module, flag) => module === 'pf2e-visioner' && flag === 'ignoreCover' } 
+      const ignoredBlocker = {
+        document: {
+          getFlag: (module, flag) => module === 'pf2e-visioner' && flag === 'ignoreCover',
+        },
       };
 
       // Test with ignore flag respect ON
-      expect(shouldFilterIgnoreFlag(normalBlocker, true)).toBe(false);  // Don't filter normal
-      expect(shouldFilterIgnoreFlag(ignoredBlocker, true)).toBe(true);  // Filter ignored
+      expect(shouldFilterIgnoreFlag(normalBlocker, true)).toBe(false); // Don't filter normal
+      expect(shouldFilterIgnoreFlag(ignoredBlocker, true)).toBe(true); // Filter ignored
 
       // Test with ignore flag respect OFF
       expect(shouldFilterIgnoreFlag(normalBlocker, false)).toBe(false); // Don't filter normal
-      expect(shouldFilterIgnoreFlag(ignoredBlocker, false)).toBe(false);// Don't filter ignored
+      expect(shouldFilterIgnoreFlag(ignoredBlocker, false)).toBe(false); // Don't filter ignored
     });
   });
 
@@ -630,7 +695,7 @@ describe('Auto-Cover Core Algorithms', () => {
       // Test how different cover sources combine
       const combineCoverLevels = (wallCover, tokenCover) => {
         const coverRanks = { none: 0, lesser: 1, standard: 2, greater: 3 };
-        
+
         // Return the higher of the two cover levels
         return coverRanks[wallCover] >= coverRanks[tokenCover] ? wallCover : tokenCover;
       };
@@ -648,11 +713,16 @@ describe('Auto-Cover Core Algorithms', () => {
       // Test the different intersection mode behaviors
       const getIntersectionBehavior = (mode) => {
         switch (mode) {
-          case 'any': return 'Size-based calculation with any intersection';
-          case 'center': return 'Strict center-to-center ray intersection';
-          case 'coverage': return 'Coverage percentage calculation (50%/70% thresholds)';
-          case 'tactical': return 'Corner-to-corner tactical calculation';
-          default: return 'Unknown mode';
+          case 'any':
+            return 'Size-based calculation with any intersection';
+          case 'center':
+            return 'Strict center-to-center ray intersection';
+          case 'coverage':
+            return 'Coverage percentage calculation (50%/70% thresholds)';
+          case 'tactical':
+            return 'Corner-to-corner tactical calculation';
+          default:
+            return 'Unknown mode';
         }
       };
 
@@ -668,7 +738,7 @@ describe('Auto-Cover Core Algorithms', () => {
       const safeGetCover = (attacker, target) => {
         if (!attacker || !target) return 'none';
         if (attacker.id === target.id) return 'none';
-        
+
         // Proceed with cover calculation
         return 'calculated';
       };
@@ -686,12 +756,12 @@ describe('Auto-Cover Core Algorithms', () => {
       const getTokenRect = (token) => {
         const doc = token.document;
         const gridSize = 100; // Assume 100px grid
-        
+
         return {
           x1: doc.x,
           y1: doc.y,
-          x2: doc.x + (doc.width * gridSize),
-          y2: doc.y + (doc.height * gridSize)
+          x2: doc.x + doc.width * gridSize,
+          y2: doc.y + doc.height * gridSize,
         };
       };
 
@@ -699,7 +769,7 @@ describe('Auto-Cover Core Algorithms', () => {
         const rect = getTokenRect(token);
         return {
           x: (rect.x1 + rect.x2) / 2,
-          y: (rect.y1 + rect.y2) / 2
+          y: (rect.y1 + rect.y2) / 2,
         };
       };
 
@@ -707,7 +777,7 @@ describe('Auto-Cover Core Algorithms', () => {
       const medToken = { document: { x: 100, y: 100, width: 1, height: 1 } };
       const medRect = getTokenRect(medToken);
       const medCenter = getTokenCenter(medToken);
-      
+
       expect(medRect).toEqual({ x1: 100, y1: 100, x2: 200, y2: 200 });
       expect(medCenter).toEqual({ x: 150, y: 150 });
 
@@ -715,7 +785,7 @@ describe('Auto-Cover Core Algorithms', () => {
       const lgToken = { document: { x: 0, y: 0, width: 2, height: 2 } };
       const lgRect = getTokenRect(lgToken);
       const lgCenter = getTokenCenter(lgToken);
-      
+
       expect(lgRect).toEqual({ x1: 0, y1: 0, x2: 200, y2: 200 });
       expect(lgCenter).toEqual({ x: 100, y: 100 });
 
@@ -723,7 +793,7 @@ describe('Auto-Cover Core Algorithms', () => {
       const tinyToken = { document: { x: 50, y: 50, width: 0.5, height: 0.5 } };
       const tinyRect = getTokenRect(tinyToken);
       const tinyCenter = getTokenCenter(tinyToken);
-      
+
       expect(tinyRect).toEqual({ x1: 50, y1: 50, x2: 100, y2: 100 });
       expect(tinyCenter).toEqual({ x: 75, y: 75 });
     });

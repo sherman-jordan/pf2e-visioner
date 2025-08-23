@@ -3,7 +3,7 @@
  * This file handles the registration of custom rule elements
  */
 
-import { api } from "../api.js";
+import { api } from '../api.js';
 
 // Map to store recent changes to prevent loops
 const recentChanges = new Map();
@@ -12,7 +12,7 @@ const recentChanges = new Map();
  * Initialize and register custom rule elements
  */
 export function initializeRuleElements() {
-  Hooks.once("ready", registerRuleElements);
+  Hooks.once('ready', registerRuleElements);
 }
 
 /**
@@ -20,9 +20,7 @@ export function initializeRuleElements() {
  */
 function registerRuleElements() {
   if (!game.pf2e?.RuleElement) {
-    console.error(
-      "PF2E Visioner | PF2e system not ready, rule elements not registered",
-    );
+    console.error('PF2E Visioner | PF2e system not ready, rule elements not registered');
     return;
   }
 
@@ -36,34 +34,29 @@ function registerRuleElements() {
     if (!VisibilityRuleElement) return;
 
     // Register with PF2e
-    game.pf2e.RuleElements.custom.PF2eVisionerVisibility =
-      VisibilityRuleElement;
+    game.pf2e.RuleElements.custom.PF2eVisionerVisibility = VisibilityRuleElement;
 
     // Add to UI dropdown
     if (CONFIG.PF2E?.ruleElementTypes) {
-      CONFIG.PF2E.ruleElementTypes.PF2eVisionerVisibility =
-        "PF2eVisionerVisibility";
+      CONFIG.PF2E.ruleElementTypes.PF2eVisionerVisibility = 'PF2eVisionerVisibility';
     }
 
     // Add translations
     if (game.i18n) {
-      const key = "PF2E.RuleElement.PF2eVisionerVisibility";
+      const key = 'PF2E.RuleElement.PF2eVisionerVisibility';
       if (!game.i18n.has(key)) {
         game.i18n.translations.PF2E = game.i18n.translations.PF2E || {};
-        game.i18n.translations.PF2E.RuleElement =
-          game.i18n.translations.PF2E.RuleElement || {};
-        game.i18n.translations.PF2E.RuleElement.PF2eVisionerVisibility =
-          "PF2e Visioner Visibility";
+        game.i18n.translations.PF2E.RuleElement = game.i18n.translations.PF2E.RuleElement || {};
+        game.i18n.translations.PF2E.RuleElement.PF2eVisionerVisibility = 'PF2e Visioner Visibility';
       }
     }
 
     // Add global test function
     if (window.PF2EVisioner) {
-      window.PF2EVisioner.createVisibilityRuleElementExample =
-        createVisibilityRuleElementExample;
+      window.PF2EVisioner.createVisibilityRuleElementExample = createVisibilityRuleElementExample;
     }
   } catch (error) {
-    console.error("PF2E Visioner | Error registering rule elements:", error);
+    console.error('PF2E Visioner | Error registering rule elements:', error);
   }
 }
 
@@ -72,25 +65,23 @@ function registerRuleElements() {
  */
 function createVisibilityRuleElement(baseRuleElementClass, fields) {
   if (!baseRuleElementClass || !fields) {
-    console.error(
-      "PF2E Visioner | Missing dependencies for VisibilityRuleElement creation",
-    );
+    console.error('PF2E Visioner | Missing dependencies for VisibilityRuleElement creation');
     return null;
   }
 
   return class VisibilityRuleElement extends baseRuleElementClass {
     // Static properties for documentation
     static get name() {
-      return "PF2eVisionerVisibility";
+      return 'PF2eVisionerVisibility';
     }
     static get documentation() {
-      return "https://github.com/roileaf/pf2e-visioner/blob/main/RULE_ELEMENTS.md#pf2evisioner-visibility-rule-element";
+      return 'https://github.com/roileaf/pf2e-visioner/blob/main/RULE_ELEMENTS.md#pf2evisioner-visibility-rule-element';
     }
     static get description() {
-      return "Change visibility statuses and apply ephemeral effects programmatically";
+      return 'Change visibility statuses and apply ephemeral effects programmatically';
     }
     static get defaultKey() {
-      return "PF2eVisionerVisibility";
+      return 'PF2eVisionerVisibility';
     }
 
     // Define the schema
@@ -99,65 +90,65 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
 
       schema.subject = new fields.StringField({
         required: true,
-        choices: ["self"],
-        initial: "self",
-        label: "Subject",
+        choices: ['self'],
+        initial: 'self',
+        label: 'Subject',
       });
 
       schema.observers = new fields.StringField({
         required: true,
-        choices: ["all", "allies", "enemies", "selected", "targeted"],
-        initial: "all",
-        label: "Observers",
+        choices: ['all', 'allies', 'enemies', 'selected', 'targeted'],
+        initial: 'all',
+        label: 'Observers',
       });
 
       schema.direction = new fields.StringField({
         required: false,
-        choices: ["from", "to"],
-        initial: "from",
-        label: "Direction",
+        choices: ['from', 'to'],
+        initial: 'from',
+        label: 'Direction',
         hint: "'from': observers see subject as hidden, 'to': subject sees observers as hidden. Effects always on subject.",
       });
 
       schema.mode = new fields.StringField({
         required: true,
-        choices: ["set", "increase", "decrease", "remove"],
-        initial: "set",
-        label: "Mode",
+        choices: ['set', 'increase', 'decrease', 'remove'],
+        initial: 'set',
+        label: 'Mode',
         hint: "'set': directly set visibility state, 'increase'/'decrease': adjust visibility by steps, 'remove': reset to observed and remove effects",
       });
 
       schema.status = new fields.StringField({
         required: true,
-        choices: ["observed", "concealed", "hidden", "undetected"],
-        initial: "hidden",
-        label: "Status",
+        choices: ['observed', 'concealed', 'hidden', 'undetected'],
+        initial: 'hidden',
+        label: 'Status',
       });
 
       schema.steps = new fields.NumberField({
         required: false,
         initial: 1,
-        label: "Steps",
+        label: 'Steps',
       });
 
       schema.durationRounds = new fields.NumberField({
         required: false,
         nullable: true,
         initial: null,
-        label: "Duration (Rounds)",
+        label: 'Duration (Rounds)',
       });
 
       schema.requiresInitiative = new fields.BooleanField({
         required: false,
         initial: false,
-        label: "Requires Initiative",
+        label: 'Requires Initiative',
       });
 
       schema.range = new fields.NumberField({
         required: false,
         nullable: true,
         initial: null,
-        label: "Range (feet)",
+        label: 'Range (feet)',
       });
 
       return schema;
@@ -171,13 +162,13 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
       this.resetVisibility();
     }
     beforeRoll(domains, rollOptions) {
-      if (domains.includes("attack-roll")) this.addRollOptions(rollOptions);
+      if (domains.includes('attack-roll')) this.addRollOptions(rollOptions);
     }
     afterRoll({ roll, domains }) {
-      if (domains.includes("attack-roll")) this.applyVisibilityChange();
+      if (domains.includes('attack-roll')) this.applyVisibilityChange();
     }
     onUpdateEncounter({ event }) {
-      if (event === "turn-start") this.applyVisibilityChange();
+      if (event === 'turn-start') this.applyVisibilityChange();
     }
 
     /**
@@ -201,13 +192,13 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
           // FROM: observers (sourceTokens) see subject (targetToken) as hidden
           // TO: subject (sourceToken) sees observers (targetTokens) as hidden
           const [observerToken, subjectToken] =
-            this.direction === "from"
+            this.direction === 'from'
               ? [sourceToken, targetToken] // sourceToken (observer) sees targetToken (subject) as hidden
               : [sourceToken, targetToken]; // sourceToken (subject) sees targetToken (observer) as hidden
 
           // Get current visibility
           const currentVisibility =
-            api.getVisibility(observerToken.id, subjectToken.id) || "observed";
+            api.getVisibility(observerToken.id, subjectToken.id) || 'observed';
 
           // Calculate new visibility
           const newVisibility = this.calculateNewVisibility(currentVisibility);
@@ -232,21 +223,16 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
             // Specify which token gets the effect based on direction
             // FROM direction: effect on subject (not observer)
             // TO direction: effect on subject
-            effectTarget: "subject",
+            effectTarget: 'subject',
             direction: this.direction,
           };
 
           // For remove mode, ensure we remove all effects
-          if (this.mode === "remove") {
+          if (this.mode === 'remove') {
             options.removeAllEffects = true;
           }
 
-          await api.setVisibility(
-            observerToken.id,
-            subjectToken.id,
-            newVisibility,
-            options,
-          );
+          await api.setVisibility(observerToken.id, subjectToken.id, newVisibility, options);
         }
       }
     }
@@ -263,9 +249,7 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
 
       // Get the primary token (self or target)
       const primaryToken =
-        this.subject === "self"
-          ? this.actor.getActiveTokens()[0]
-          : game.user.targets.first();
+        this.subject === 'self' ? this.actor.getActiveTokens()[0] : game.user.targets.first();
 
       if (!primaryToken) {
         return { sourceTokens: [], targetTokens: [] };
@@ -273,34 +257,24 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
 
       // Get all potential tokens based on observers setting
       const allTokens =
-        canvas.tokens?.placeables.filter(
-          (t) => t.actor && t.id !== primaryToken.id,
-        ) || [];
+        canvas.tokens?.placeables.filter((t) => t.actor && t.id !== primaryToken.id) || [];
       let observerTokens = [];
 
       switch (this.observers) {
-        case "all":
+        case 'all':
           observerTokens = allTokens;
           break;
-        case "allies":
-          observerTokens = allTokens.filter((t) =>
-            this.areAllies(primaryToken.actor, t.actor),
-          );
+        case 'allies':
+          observerTokens = allTokens.filter((t) => this.areAllies(primaryToken.actor, t.actor));
           break;
-        case "enemies":
-          observerTokens = allTokens.filter(
-            (t) => !this.areAllies(primaryToken.actor, t.actor),
-          );
+        case 'enemies':
+          observerTokens = allTokens.filter((t) => !this.areAllies(primaryToken.actor, t.actor));
           break;
-        case "selected":
-          observerTokens =
-            canvas.tokens?.controlled.filter((t) => t.id !== primaryToken.id) ||
-            [];
+        case 'selected':
+          observerTokens = canvas.tokens?.controlled.filter((t) => t.id !== primaryToken.id) || [];
           break;
-        case "targeted":
-          observerTokens = Array.from(game.user.targets).filter(
-            (t) => t.id !== primaryToken.id,
-          );
+        case 'targeted':
+          observerTokens = Array.from(game.user.targets).filter((t) => t.id !== primaryToken.id);
           break;
       }
 
@@ -313,7 +287,7 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
       }
 
       // Assign tokens based on direction
-      if (this.direction === "from") {
+      if (this.direction === 'from') {
         // "from" means the subject is hidden FROM the observers
         // The effect is placed on the observers (target tokens)
         // Observers see the subject as hidden/undetected
@@ -335,23 +309,23 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
      */
     calculateNewVisibility(currentVisibility) {
       // Visibility progression from most to least visible
-      const states = ["observed", "concealed", "hidden", "undetected"];
+      const states = ['observed', 'concealed', 'hidden', 'undetected'];
       const currentIndex = states.indexOf(currentVisibility);
       const steps = Math.min(this.steps || 1, states.length - 1);
 
       switch (this.mode) {
-        case "set":
+        case 'set':
           return this.status;
 
-        case "increase": // Less visible (move right in array)
+        case 'increase': // Less visible (move right in array)
           return states[Math.min(currentIndex + steps, states.length - 1)];
 
-        case "decrease": // More visible (move left in array)
+        case 'decrease': // More visible (move left in array)
           return states[Math.max(currentIndex - steps, 0)];
 
-        case "remove":
+        case 'remove':
           // Always return observed for remove mode
-          return "observed";
+          return 'observed';
 
         default:
           return currentVisibility;
@@ -375,22 +349,17 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
           // FROM: observers (sourceTokens) see subject (targetToken) as hidden
           // TO: subject (sourceToken) sees observers (targetTokens) as hidden
           const [observerToken, subjectToken] =
-            this.direction === "from"
+            this.direction === 'from'
               ? [sourceToken, targetToken] // sourceToken (observer) sees targetToken (subject) as hidden
               : [sourceToken, targetToken]; // sourceToken (subject) sees targetToken (observer) as hidden
 
-          await api.setVisibility(
-            observerToken.id,
-            subjectToken.id,
-            "observed",
-            {
-              // Specify which token gets the effect based on direction
-              // FROM direction: effect on subject (not observer)
-              // TO direction: effect on subject
-              effectTarget: "subject",
-              direction: this.direction,
-            },
-          );
+          await api.setVisibility(observerToken.id, subjectToken.id, 'observed', {
+            // Specify which token gets the effect based on direction
+            // FROM direction: effect on subject (not observer)
+            // TO direction: effect on subject
+            effectTarget: 'subject',
+            direction: this.direction,
+          });
         }
       }
     }
@@ -412,14 +381,11 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
           // FROM: observers (sourceTokens) see subject (targetToken) as hidden
           // TO: subject (sourceToken) sees observers (targetTokens) as hidden
           const [observerToken, subjectToken] =
-            this.direction === "from"
+            this.direction === 'from'
               ? [sourceToken, targetToken] // sourceToken (observer) sees targetToken (subject) as hidden
               : [sourceToken, targetToken]; // sourceToken (subject) sees targetToken (observer) as hidden
 
-          const currentVisibility = api.getVisibility(
-            observerToken.id,
-            subjectToken.id,
-          );
+          const currentVisibility = api.getVisibility(observerToken.id, subjectToken.id);
           if (!currentVisibility) continue;
 
           rollOptions.add(`visibility:${currentVisibility}`);
@@ -442,8 +408,7 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
 
       const isPCvsPC = actor1.hasPlayerOwner && actor2.hasPlayerOwner;
       const isNPCvsNPC = !actor1.hasPlayerOwner && !actor2.hasPlayerOwner;
-      const sameDisposition =
-        actor1.token?.disposition === actor2.token?.disposition;
+      const sameDisposition = actor1.token?.disposition === actor2.token?.disposition;
 
       return isPCvsPC || (isNPCvsNPC && sameDisposition);
     }
@@ -455,117 +420,114 @@ function createVisibilityRuleElement(baseRuleElementClass, fields) {
  */
 async function createVisibilityRuleElementExample() {
   if (!game.pf2e?.RuleElements?.custom?.PF2eVisionerVisibility) {
-    console.error("PF2eVisionerVisibility rule element is not registered yet!");
+    console.error('PF2eVisionerVisibility rule element is not registered yet!');
     return null;
   }
 
   // Example item data
   const examples = [
     {
-      name: "Hide",
-      img: "systems/pf2e/icons/spells/cloak-of-shadow.webp",
+      name: 'Hide',
+      img: 'systems/pf2e/icons/spells/cloak-of-shadow.webp',
       description:
-        "<p>You become hidden to all creatures.</p><p>Use this when you successfully Hide.</p>",
+        '<p>You become hidden to all creatures.</p><p>Use this when you successfully Hide.</p>',
       rules: [
         {
-          key: "PF2eVisionerVisibility",
-          subject: "self",
-          observers: "all",
-          direction: "from",
-          mode: "set",
-          status: "hidden",
+          key: 'PF2eVisionerVisibility',
+          subject: 'self',
+          observers: 'all',
+          direction: 'from',
+          mode: 'set',
+          status: 'hidden',
           durationRounds: 10,
         },
       ],
-      traits: ["visual"],
+      traits: ['visual'],
     },
     {
-      name: "Conceal Target",
-      img: "systems/pf2e/icons/spells/obscuring-mist.webp",
-      description:
-        "<p>You magically conceal the target from all observers.</p>",
+      name: 'Conceal Target',
+      img: 'systems/pf2e/icons/spells/obscuring-mist.webp',
+      description: '<p>You magically conceal the target from all observers.</p>',
       rules: [
         {
-          key: "PF2eVisionerVisibility",
-          subject: "target",
-          observers: "all",
-          direction: "from",
-          mode: "set",
-          status: "concealed",
+          key: 'PF2eVisionerVisibility',
+          subject: 'target',
+          observers: 'all',
+          direction: 'from',
+          mode: 'set',
+          status: 'concealed',
           durationRounds: 10,
         },
       ],
-      traits: ["illusion", "magical"],
+      traits: ['illusion', 'magical'],
     },
     {
-      name: "Obscuring Mist",
-      img: "systems/pf2e/icons/spells/obscuring-mist.webp",
-      description:
-        "<p>You surround yourself with a mist that makes you harder to see.</p>",
+      name: 'Obscuring Mist',
+      img: 'systems/pf2e/icons/spells/obscuring-mist.webp',
+      description: '<p>You surround yourself with a mist that makes you harder to see.</p>',
       rules: [
         {
-          key: "PF2eVisionerVisibility",
-          subject: "self",
-          observers: "all",
-          direction: "from",
-          mode: "increase",
+          key: 'PF2eVisionerVisibility',
+          subject: 'self',
+          observers: 'all',
+          direction: 'from',
+          mode: 'increase',
           steps: 1,
           durationRounds: 10,
         },
       ],
-      traits: ["conjuration", "water"],
+      traits: ['conjuration', 'water'],
     },
     {
-      name: "Reveal",
-      img: "systems/pf2e/icons/spells/true-seeing.webp",
-      description: "<p>You reveal the target, making them easier to see.</p>",
+      name: 'Reveal',
+      img: 'systems/pf2e/icons/spells/true-seeing.webp',
+      description: '<p>You reveal the target, making them easier to see.</p>',
       rules: [
         {
-          key: "PF2eVisionerVisibility",
-          subject: "target",
-          observers: "all",
-          direction: "from",
-          mode: "decrease",
+          key: 'PF2eVisionerVisibility',
+          subject: 'target',
+          observers: 'all',
+          direction: 'from',
+          mode: 'decrease',
           steps: 1,
           durationRounds: 10,
         },
       ],
-      traits: ["divination", "revelation"],
+      traits: ['divination', 'revelation'],
     },
     {
-      name: "Enhanced Vision",
-      img: "systems/pf2e/icons/spells/see-invisibility.webp",
-      description: "<p>You can see hidden creatures better.</p>",
+      name: 'Enhanced Vision',
+      img: 'systems/pf2e/icons/spells/see-invisibility.webp',
+      description: '<p>You can see hidden creatures better.</p>',
       rules: [
         {
-          key: "PF2eVisionerVisibility",
-          subject: "self",
-          observers: "all",
-          direction: "to",
-          mode: "decrease",
+          key: 'PF2eVisionerVisibility',
+          subject: 'self',
+          observers: 'all',
+          direction: 'to',
+          mode: 'decrease',
           steps: 1,
           durationRounds: 10,
         },
       ],
-      traits: ["divination", "detection"],
+      traits: ['divination', 'detection'],
     },
     {
-      name: "Blur Vision",
-      img: "systems/pf2e/icons/spells/blur.webp",
-      description:
-        "<p>You blur the target's vision, making it harder for them to see others.</p>",
+      name: 'Blur Vision',
+      img: 'systems/pf2e/icons/spells/blur.webp',
+      description: "<p>You blur the target's vision, making it harder for them to see others.</p>",
       rules: [
         {
-          key: "PF2eVisionerVisibility",
-          subject: "target",
-          observers: "all",
-          direction: "to",
-          mode: "increase",
+          key: 'PF2eVisionerVisibility',
+          subject: 'target',
+          observers: 'all',
+          direction: 'to',
+          mode: 'increase',
           steps: 1,
           durationRounds: 10,
         },
       ],
-      traits: ["transmutation", "visual"],
+      traits: ['transmutation', 'visual'],
     },
   ];
 
@@ -576,13 +538,13 @@ async function createVisibilityRuleElementExample() {
     for (const example of examples) {
       const itemData = {
         name: example.name,
-        type: "effect",
+        type: 'effect',
         img: example.img,
         system: {
           description: { value: example.description },
-          duration: { value: 1, unit: "minutes" },
+          duration: { value: 1, unit: 'minutes' },
           rules: example.rules,
-          traits: { value: example.traits, rarity: "common" },
+          traits: { value: example.traits, rarity: 'common' },
         },
       };
 
@@ -592,7 +554,7 @@ async function createVisibilityRuleElementExample() {
     }
     return createdItems;
   } catch (error) {
-    console.error("Error creating example items:", error);
+    console.error('Error creating example items:', error);
     return null;
   }
 }

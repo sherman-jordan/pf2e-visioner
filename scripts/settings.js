@@ -2,57 +2,55 @@
  * Module settings registration and management
  */
 
-import { reinjectChatAutomationStyles } from "./chat/chat-automation-styles.js";
-import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from "./constants.js";
+import { reinjectChatAutomationStyles } from './chat/chat-automation-styles.js';
+import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from './constants.js';
 
 // Define grouped settings sections to declutter the native list.
 // All keys listed here will be hidden from the default module settings UI
 // and rendered inside our custom grouped settings form instead.
 const SETTINGS_GROUPS = {
   General: [
-    "defaultEncounterFilter",
-    "ignoreAllies",
-    "includeLootActors",
-    "lootStealthDC",
-    "useHudButton",
-    "integrateRollOutcome",
-    "enforceRawRequirements",
-    "keybindingOpensTMInTargetMode",
-    "sneakRawEnforcement",
-    "enableAllTokensVision",
-    "autoCoverHideAction",
+    'defaultEncounterFilter',
+    'ignoreAllies',
+    'includeLootActors',
+    'lootStealthDC',
+    'useHudButton',
+    'integrateRollOutcome',
+    'enforceRawRequirements',
+    'keybindingOpensTMInTargetMode',
+    'sneakRawEnforcement',
+    'enableAllTokensVision',
+    'autoCoverHideAction',
   ],
-  "Visibility & Hover": [
-    "enableHoverTooltips",
-    "allowPlayerTooltips",
-    "blockPlayerTargetTooltips",
-    "tooltipFontSize",
-    "colorblindMode",
-    "hiddenWallsEnabled",
-    "wallStealthDC",
+  'Visibility & Hover': [
+    'enableHoverTooltips',
+    'allowPlayerTooltips',
+    'blockPlayerTargetTooltips',
+    'tooltipFontSize',
+    'colorblindMode',
+    'hiddenWallsEnabled',
+    'wallStealthDC',
   ],
-  "Seek & Range": [
-    "seekUseTemplate",
-    "limitSeekRangeInCombat",
-    "limitSeekRangeOutOfCombat",
-    "customSeekDistance",
-    "customSeekDistanceOutOfCombat",
+  'Seek & Range': [
+    'seekUseTemplate',
+    'limitSeekRangeInCombat',
+    'limitSeekRangeOutOfCombat',
+    'customSeekDistance',
+    'customSeekDistanceOutOfCombat',
   ],
-  "Auto-cover": [
-    "autoCover",
-    "autoCoverTokenIntersectionMode",
-    "autoCoverCoverageStandardPct",
-    "autoCoverCoverageGreaterPct",
-    "autoCoverIgnoreUndetected",
-    "autoCoverVisualizationOnlyInEncounter",
-    "autoCoverIgnoreDead",
-    "autoCoverIgnoreAllies",
-    "autoCoverRespectIgnoreFlag",
-    "autoCoverAllowProneBlockers",
+  'Auto-cover': [
+    'autoCover',
+    'autoCoverTokenIntersectionMode',
+    'autoCoverCoverageStandardPct',
+    'autoCoverCoverageGreaterPct',
+    'autoCoverIgnoreUndetected',
+    'autoCoverVisualizationOnlyInEncounter',
+    'autoCoverIgnoreDead',
+    'autoCoverIgnoreAllies',
+    'autoCoverRespectIgnoreFlag',
+    'autoCoverAllowProneBlockers',
   ],
-  Advanced: [
-    "debug",
-  ],
+  Advanced: ['debug'],
 };
 
 function isGroupedKey(key) {
@@ -63,16 +61,19 @@ let currentVisionerSettingsApp = null;
 
 class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
-    id: "pf2e-visioner-settings",
-    tag: "div",
+    id: 'pf2e-visioner-settings',
+    tag: 'div',
     window: {
-      title: "PF2E Visioner Settings",
-      icon: "fas fa-sliders-h",
+      title: 'PF2E Visioner Settings',
+      icon: 'fas fa-sliders-h',
       resizable: true,
     },
     position: { width: 640, height: 600 },
-    classes: ["pf2e-visioner-settings-window"],
-    actions: { submit: VisionerSettingsForm._onSubmit, switchGroup: VisionerSettingsForm._onSwitchGroup },
+    classes: ['pf2e-visioner-settings-window'],
+    actions: {
+      submit: VisionerSettingsForm._onSubmit,
+      switchGroup: VisionerSettingsForm._onSwitchGroup,
+    },
   };
 
   constructor(options = {}) {
@@ -83,11 +84,17 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
     // Default to the first defined group
     try {
       if (!this.activeGroupKey) this.activeGroupKey = Object.keys(SETTINGS_GROUPS)[0];
-    } catch (_) { this.activeGroupKey = "General"; }
+    } catch (_) {
+      this.activeGroupKey = 'General';
+    }
   }
 
   async _prepareContext() {
-    const categories = Object.keys(SETTINGS_GROUPS).map((k) => ({ key: k, title: k, active: k === this.activeGroupKey }));
+    const categories = Object.keys(SETTINGS_GROUPS).map((k) => ({
+      key: k,
+      title: k,
+      active: k === this.activeGroupKey,
+    }));
     const groups = [];
     const activeKeys = SETTINGS_GROUPS[this.activeGroupKey] || [];
     const items = [];
@@ -100,25 +107,29 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       let current = saved;
       if (pendingRaw !== undefined) {
         if (cfg.type === Boolean) current = !!pendingRaw;
-        else if (cfg.type === Number) current = pendingRaw !== "" && pendingRaw != null ? Number(pendingRaw) : saved;
+        else if (cfg.type === Number)
+          current = pendingRaw !== '' && pendingRaw != null ? Number(pendingRaw) : saved;
         else current = String(pendingRaw);
       }
-      let inputType = "text";
+      let inputType = 'text';
       let choicesList = null;
-      if (cfg.choices && typeof cfg.choices === "object") {
-        inputType = "select";
+      if (cfg.choices && typeof cfg.choices === 'object') {
+        inputType = 'select';
         try {
-          choicesList = Object.entries(cfg.choices).map(([val, label]) => ({ value: val, label, selected: String(current) === String(val) }));
+          choicesList = Object.entries(cfg.choices).map(([val, label]) => ({
+            value: val,
+            label,
+            selected: String(current) === String(val),
+          }));
         } catch (_) {
           choicesList = null;
         }
-      }
-      else if (cfg.type === Boolean) inputType = "checkbox";
-      else if (cfg.type === Number) inputType = "number";
+      } else if (cfg.type === Boolean) inputType = 'checkbox';
+      else if (cfg.type === Number) inputType = 'number';
       items.push({
         key,
         name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
-        hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ""),
+        hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ''),
         value: current,
         inputType,
         choices: choicesList,
@@ -133,7 +144,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
   async _renderHTML(context, _options) {
     return await foundry.applications.handlebars.renderTemplate(
-      "modules/pf2e-visioner/templates/settings-menu.hbs",
+      'modules/pf2e-visioner/templates/settings-menu.hbs',
       context,
     );
   }
@@ -145,7 +156,9 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       const tabs = content.querySelectorAll('[data-action="switchGroup"][data-key]');
       tabs.forEach((btn) => {
         btn.addEventListener('click', () => {
-          try { VisionerSettingsForm._onSwitchGroup(null, btn); } catch (_) {}
+          try {
+            VisionerSettingsForm._onSwitchGroup(null, btn);
+          } catch (_) {}
         });
       });
 
@@ -154,7 +167,8 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         try {
           const input = content.querySelector(`[name="settings.${name}"]`);
           if (!input) return;
-          const group = input.closest('.pv-form-row') || input.closest('.form-group') || input.parentElement;
+          const group =
+            input.closest('.pv-form-row') || input.closest('.form-group') || input.parentElement;
           if (!group) return;
           if (!group.dataset.pvDisplay) {
             const computed = getComputedStyle(group)?.display || '';
@@ -166,7 +180,9 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
       // Coverage thresholds visible only when mode === 'coverage'
       const modeSel = content.querySelector('[name="settings.autoCoverTokenIntersectionMode"]');
-      const applyCoverageModeVisibility = () => { /* thresholds are fixed; keep them hidden */ };
+      const applyCoverageModeVisibility = () => {
+        /* thresholds are fixed; keep them hidden */
+      };
       if (modeSel) {
         modeSel.addEventListener('change', applyCoverageModeVisibility);
         applyCoverageModeVisibility();
@@ -202,25 +218,32 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         // Re-apply distances visibility after checkbox hide/show decision
         applySeekVisibility();
       };
-      if (useTemplateToggle) useTemplateToggle.addEventListener('change', applySeekTemplateVisibility);
+      if (useTemplateToggle)
+        useTemplateToggle.addEventListener('change', applySeekTemplateVisibility);
       applySeekTemplateVisibility();
 
       // Hide "Block Player Target Tooltips" unless "Allow Player Tooltips" is enabled
-      const allowPlayerTooltipsToggle = content.querySelector('[name="settings.allowPlayerTooltips"]');
+      const allowPlayerTooltipsToggle = content.querySelector(
+        '[name="settings.allowPlayerTooltips"]',
+      );
       const applyPlayerTooltipVisibility = () => {
         const on = !!allowPlayerTooltipsToggle?.checked;
         toggleSettingVisibility('blockPlayerTargetTooltips', on);
       };
-      if (allowPlayerTooltipsToggle) allowPlayerTooltipsToggle.addEventListener('change', applyPlayerTooltipVisibility);
+      if (allowPlayerTooltipsToggle)
+        allowPlayerTooltipsToggle.addEventListener('change', applyPlayerTooltipVisibility);
       applyPlayerTooltipVisibility();
 
       // Hide tooltip size unless hover tooltips are enabled
-      const enableHoverTooltipsToggle = content.querySelector('[name="settings.enableHoverTooltips"]');
+      const enableHoverTooltipsToggle = content.querySelector(
+        '[name="settings.enableHoverTooltips"]',
+      );
       const applyHoverTooltipVisibility = () => {
         const on = !!enableHoverTooltipsToggle?.checked;
         toggleSettingVisibility('tooltipFontSize', on);
       };
-      if (enableHoverTooltipsToggle) enableHoverTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
+      if (enableHoverTooltipsToggle)
+        enableHoverTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
       applyHoverTooltipVisibility();
 
       // Hide all Auto-cover settings unless the main toggle is on
@@ -240,7 +263,9 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         for (const key of autoCoverDependents) toggleSettingVisibility(key, on);
         // Re-apply coverage sub-visibility if turning on
         if (on) {
-          try { applyCoverageModeVisibility(); } catch (_) {}
+          try {
+            applyCoverageModeVisibility();
+          } catch (_) {}
         }
       };
       if (autoCoverToggle) autoCoverToggle.addEventListener('change', applyAutoCoverVisibility);
@@ -252,10 +277,12 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
   static async _onSubmit(event, _button) {
     const app = currentVisionerSettingsApp || this;
     try {
-      const formEl = app.element.querySelector("form.pf2e-visioner-settings");
+      const formEl = app.element.querySelector('form.pf2e-visioner-settings');
       if (!formEl) return app.close();
       // Capture any unsaved edits from the currently visible group before reading form data
-      try { app._capturePendingChanges(); } catch (_) {}
+      try {
+        app._capturePendingChanges();
+      } catch (_) {}
       const fd = new FormData(formEl);
       const rawMap = Object.fromEntries(fd.entries());
       // Merge previously edited values from other tabs
@@ -274,15 +301,23 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         if (raw === undefined) continue;
         const saved = game.settings.get(MODULE_ID, key);
         let value;
-        if (cfg.type === Boolean) value = raw === "on" || raw === "true" || raw === true;
-        else if (cfg.type === Number) value = raw != null && raw !== "" ? Number(raw) : saved;
+        if (cfg.type === Boolean) value = raw === 'on' || raw === 'true' || raw === true;
+        else if (cfg.type === Number) value = raw != null && raw !== '' ? Number(raw) : saved;
         else value = raw != null ? raw : saved;
         if (value !== saved) await game.settings.set(MODULE_ID, key, value);
       }
       // Reset pending after successful save
-      try { app._pendingChanges = {}; } catch (_) {}
-      try { await app.close(); } catch (_) {}
-    } catch (e) { /* noop */ try { await app.close(); } catch (_) {} }
+      try {
+        app._pendingChanges = {};
+      } catch (_) {}
+      try {
+        await app.close();
+      } catch (_) {}
+    } catch (e) {
+      /* noop */ try {
+        await app.close();
+      } catch (_) {}
+    }
   }
 
   static _onSwitchGroup(_event, button) {
@@ -292,7 +327,9 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       const app = currentVisionerSettingsApp;
       if (!app) return;
       // Preserve edits from the current group before switching
-      try { app._capturePendingChanges(); } catch (_) {}
+      try {
+        app._capturePendingChanges();
+      } catch (_) {}
       app.activeGroupKey = key;
       app.render({ force: true });
     } catch (_) {}
@@ -327,68 +364,78 @@ export function registerSettings() {
       if (isGroupedKey(key)) settingConfig.config = false;
 
       // Add onChange handler for settings that require restart
-      if (key === "enableHoverTooltips") {
+      if (key === 'enableHoverTooltips') {
         // Live-apply without world reload
         settingConfig.onChange = async (value) => {
           try {
-            const { initializeHoverTooltips, cleanupHoverTooltips } = await import("./services/hover-tooltips.js");
-            if (value) initializeHoverTooltips(); else cleanupHoverTooltips();
+            const { initializeHoverTooltips, cleanupHoverTooltips } = await import(
+              './services/hover-tooltips.js'
+            );
+            if (value) initializeHoverTooltips();
+            else cleanupHoverTooltips();
           } catch (_) {}
         };
-      } else if (key === "allowPlayerTooltips") {
+      } else if (key === 'allowPlayerTooltips') {
         settingConfig.onChange = () => {};
-
-      } else if (key === "useHudButton" || key === "enableHoverTooltips") {
+      } else if (key === 'useHudButton' || key === 'enableHoverTooltips') {
         settingConfig.onChange = () => {
           SettingsConfig.reloadConfirm({
             world: true,
           });
         };
-      } else if (key === "ignoreAllies") {
+      } else if (key === 'ignoreAllies') {
         settingConfig.onChange = () => {};
-
-      } else if (key === "defaultEncounterFilter") {
+      } else if (key === 'defaultEncounterFilter') {
         settingConfig.onChange = () => {};
-
-      } else if (key === "seekUseTemplate") {
+      } else if (key === 'seekUseTemplate') {
         // No reload needed: panel logic reads this setting at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "limitSeekRangeInCombat") {
+      } else if (key === 'limitSeekRangeInCombat') {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "limitSeekRangeOutOfCombat") {
+      } else if (key === 'limitSeekRangeOutOfCombat') {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "customSeekDistance") {
+      } else if (key === 'customSeekDistance') {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "customSeekDistanceOutOfCombat") {
+      } else if (key === 'customSeekDistanceOutOfCombat') {
         // No reload needed: seek distance is read at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "autoCover" || key === "autoCoverTokenIntersectionMode" || 
-        key === "autoCoverCoverageStandardPct" || key === "autoCoverCoverageGreaterPct" || 
-        key === "autoCoverIgnoreUndetected" || key === "autoCoverIgnoreDead" || 
-        key === "autoCoverIgnoreAllies" || key === "autoCoverRespectIgnoreFlag" || 
-        key === "autoCoverAllowProneBlockers") {
+      } else if (
+        key === 'autoCover' ||
+        key === 'autoCoverTokenIntersectionMode' ||
+        key === 'autoCoverCoverageStandardPct' ||
+        key === 'autoCoverCoverageGreaterPct' ||
+        key === 'autoCoverIgnoreUndetected' ||
+        key === 'autoCoverIgnoreDead' ||
+        key === 'autoCoverIgnoreAllies' ||
+        key === 'autoCoverRespectIgnoreFlag' ||
+        key === 'autoCoverAllowProneBlockers'
+      ) {
         // No reload needed: auto-cover is read at runtime
         settingConfig.onChange = () => {};
-      } else if (key === "blockPlayerTargetTooltips") {
+      } else if (key === 'blockPlayerTargetTooltips') {
         // No reload: will take effect on next hover; ensure initialized when allowed
         settingConfig.onChange = async () => {
           try {
-            const { initializeHoverTooltips } = await import("./services/hover-tooltips.js");
-            if (game.settings.get(MODULE_ID, "enableHoverTooltips") && game.settings.get(MODULE_ID, "allowPlayerTooltips")) initializeHoverTooltips();
+            const { initializeHoverTooltips } = await import('./services/hover-tooltips.js');
+            if (
+              game.settings.get(MODULE_ID, 'enableHoverTooltips') &&
+              game.settings.get(MODULE_ID, 'allowPlayerTooltips')
+            )
+              initializeHoverTooltips();
           } catch (_) {}
         };
-      } else if (key === "hiddenWallsEnabled") {
+      } else if (key === 'hiddenWallsEnabled') {
         // Refresh wall visuals when toggled
         settingConfig.onChange = async () => {
           try {
-            const { updateWallVisuals } = await import("./services/visual-effects.js");
+            const { updateWallVisuals } = await import('./services/visual-effects.js');
             await updateWallVisuals();
           } catch (_) {}
         };
-      } else if (key === "tooltipFontSize") {
+      } else if (key === 'tooltipFontSize') {
         settingConfig.onChange = (value) => {
           // Map preset to sizes
           const presets = {
@@ -400,55 +447,57 @@ export function registerSettings() {
           };
           const preset = presets[value] ?? presets.medium;
           document.documentElement.style.setProperty(
-            "--pf2e-visioner-tooltip-font-size",
+            '--pf2e-visioner-tooltip-font-size',
             `${preset.font}px`,
           );
           document.documentElement.style.setProperty(
-            "--pf2e-visioner-tooltip-icon-size",
+            '--pf2e-visioner-tooltip-icon-size',
             `${preset.icon}px`,
           );
           document.documentElement.style.setProperty(
-            "--pf2e-visioner-tooltip-badge-border",
+            '--pf2e-visioner-tooltip-badge-border',
             `${preset.border}px`,
           );
         };
-      } else if (key === "colorblindMode") {
+      } else if (key === 'colorblindMode') {
         settingConfig.onChange = (value) => {
           // Apply colorblind mode CSS class to the body
           document.body.classList.remove(
-            "pf2e-visioner-colorblind-protanopia",
-            "pf2e-visioner-colorblind-deuteranopia",
-            "pf2e-visioner-colorblind-tritanopia",
-            "pf2e-visioner-colorblind-achromatopsia",
+            'pf2e-visioner-colorblind-protanopia',
+            'pf2e-visioner-colorblind-deuteranopia',
+            'pf2e-visioner-colorblind-tritanopia',
+            'pf2e-visioner-colorblind-achromatopsia',
           );
 
-          if (value !== "none") {
+          if (value !== 'none') {
             document.body.classList.add(`pf2e-visioner-colorblind-${value}`);
           }
-          
+
           // Apply to any existing .pf2e-visioner containers to ensure immediate effect
           const containers = document.querySelectorAll('.pf2e-visioner');
-          containers.forEach(container => {
+          containers.forEach((container) => {
             container.classList.remove(
-              "pf2e-visioner-colorblind-protanopia",
-              "pf2e-visioner-colorblind-deuteranopia",
-              "pf2e-visioner-colorblind-tritanopia",
-              "pf2e-visioner-colorblind-achromatopsia",
+              'pf2e-visioner-colorblind-protanopia',
+              'pf2e-visioner-colorblind-deuteranopia',
+              'pf2e-visioner-colorblind-tritanopia',
+              'pf2e-visioner-colorblind-achromatopsia',
             );
-            
-            if (value !== "none") {
+
+            if (value !== 'none') {
               container.classList.add(`pf2e-visioner-colorblind-${value}`);
             }
           });
-          
+
           // Re-inject chat automation styles to apply new colorblind colors
           try {
             reinjectChatAutomationStyles();
-            console.log(`[PF2E Visioner] Re-injected chat automation styles for colorblind mode: ${value}`);
+            console.log(
+              `[PF2E Visioner] Re-injected chat automation styles for colorblind mode: ${value}`,
+            );
           } catch (error) {
             console.warn(`[PF2E Visioner] Failed to re-inject chat automation styles:`, error);
           }
-          
+
           // Force immediate visual update by triggering a re-render
           setTimeout(() => {
             const tokenManager = document.querySelector('.pf2e-visioner.token-visibility-manager');
@@ -460,7 +509,7 @@ export function registerSettings() {
             }
           }, 10);
         };
-      } else if (key === "keybindingOpensTMInTargetMode") {
+      } else if (key === 'keybindingOpensTMInTargetMode') {
         // No reload needed: swap mode is read at runtime
         settingConfig.onChange = () => {};
       }
@@ -474,11 +523,11 @@ export function registerSettings() {
 
     // Register a single grouped settings menu entry
     try {
-      game.settings.registerMenu(MODULE_ID, "groupedSettings", {
-        name: "PF2E Visioner Settings",
-        label: "Open",
-        hint: "Grouped settings by category (General, Visibility & Hover, Seek & Range, Auto Cover, Advanced)",
-        icon: "fas fa-sliders-h",
+      game.settings.registerMenu(MODULE_ID, 'groupedSettings', {
+        name: 'PF2E Visioner Settings',
+        label: 'Open',
+        hint: 'Grouped settings by category (General, Visibility & Hover, Seek & Range, Auto Cover, Advanced)',
+        icon: 'fas fa-sliders-h',
         type: VisionerSettingsForm,
         restricted: true,
       });
@@ -496,29 +545,41 @@ export function registerKeybindings() {
     const keybindingConfig = { ...config };
 
     // Add appropriate handler
-    if (key === "openTokenManager") {
+    if (key === 'openTokenManager') {
       keybindingConfig.onDown = async () => {
-        const mode = game.settings.get(MODULE_ID, "keybindingOpensTMInTargetMode") ? "target" : "observer";
-        const { api } = await import("./api.js");
-        await api.openTokenManager(null, {mode});
+        const mode = game.settings.get(MODULE_ID, 'keybindingOpensTMInTargetMode')
+          ? 'target'
+          : 'observer';
+        const { api } = await import('./api.js');
+        await api.openTokenManager(null, { mode });
       };
-    } else if (key === "openQuickPanel") {
+    } else if (key === 'openQuickPanel') {
       keybindingConfig.onDown = async () => {
         try {
-          const { VisionerQuickPanel } = await import("./managers/quick-panel.js");
-          const existing = VisionerQuickPanel.current || Object.values(ui.windows || {}).find((w) => w instanceof VisionerQuickPanel) || null;
+          const { VisionerQuickPanel } = await import('./managers/quick-panel.js');
+          const existing =
+            VisionerQuickPanel.current ||
+            Object.values(ui.windows || {}).find((w) => w instanceof VisionerQuickPanel) ||
+            null;
           // Toggle: if open, close it
-          if (existing) { try { await existing.close(); } catch (_) {} return; }
+          if (existing) {
+            try {
+              await existing.close();
+            } catch (_) {}
+            return;
+          }
 
           // If minimized floater exists, restore at its position
-          const floater = document.getElementById("pf2e-visioner-floating-qp");
+          const floater = document.getElementById('pf2e-visioner-floating-qp');
           if (floater) {
-            const left = parseInt(floater.style.left || "0", 10) || 120;
-            const top = parseInt(floater.style.top || "0", 10) || 120;
+            const left = parseInt(floater.style.left || '0', 10) || 120;
+            const top = parseInt(floater.style.top || '0', 10) || 120;
             const qp = new VisionerQuickPanel();
             qp.position = { ...(qp.position || {}), left, top };
             qp.render(true);
-            try { qp._removeFloatingButton(); } catch (_) {}
+            try {
+              qp._removeFloatingButton();
+            } catch (_) {}
             return;
           }
 
@@ -527,24 +588,25 @@ export function registerKeybindings() {
           qp.render(true);
         } catch (_) {}
       };
-    } else if (key === "openVisibilityManager") {
+    } else if (key === 'openVisibilityManager') {
       keybindingConfig.onDown = async () => {
-        const { api } = await import("./api.js");
+        const { api } = await import('./api.js');
         await api.openVisibilityManager();
       };
-    } else if (key === "toggleObserverMode") {
+    } else if (key === 'toggleObserverMode') {
       keybindingConfig.onDown = async () => {
-        const { setTooltipMode } = await import("./services/hover-tooltips.js");
-        setTooltipMode("observer");
+        const { setTooltipMode } = await import('./services/hover-tooltips.js');
+        setTooltipMode('observer');
       };
       keybindingConfig.onUp = async () => {
-        const { setTooltipMode } = await import("./services/hover-tooltips.js");
-        setTooltipMode("target");
+        const { setTooltipMode } = await import('./services/hover-tooltips.js');
+        setTooltipMode('target');
       };
-    } else if (key === "showAutoCoverOverlay") {
+    } else if (key === 'showAutoCoverOverlay') {
       keybindingConfig.onDown = async () => {
         try {
-          const { HoverTooltips, showAutoCoverComputedOverlay, hideAutoCoverComputedOverlay } = await import("./services/hover-tooltips.js");
+          const { HoverTooltips, showAutoCoverComputedOverlay, hideAutoCoverComputedOverlay } =
+            await import('./services/hover-tooltips.js');
           // Decide source token: hovered or first controlled
           let token = HoverTooltips.currentHoveredToken;
           if (!token) token = canvas.tokens.controlled?.[0] || null;
@@ -556,7 +618,7 @@ export function registerKeybindings() {
       };
       keybindingConfig.onUp = async () => {
         try {
-          const { hideAutoCoverComputedOverlay } = await import("./services/hover-tooltips.js");
+          const { hideAutoCoverComputedOverlay } = await import('./services/hover-tooltips.js');
           hideAutoCoverComputedOverlay();
         } catch (_) {}
       };

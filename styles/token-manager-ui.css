@@ -4,186 +4,184 @@
  */
 
 .pf2e-visioner {
+  /* DC and outcome columns */
+  .visioner-token-manager table .dc-column,
+  .visioner-token-manager table .outcome-column {
+    text-align: center;
+    white-space: nowrap;
+  }
 
-/* DC and outcome columns */
-.visioner-token-manager table .dc-column,
-.visioner-token-manager table .outcome-column {
-  text-align: center;
-  white-space: nowrap;
-}
+  /* Ensure table allows natural sizing so long labels aren't clipped */
+  .visioner-token-manager .visibility-table {
+    table-layout: auto;
+  }
 
-/* Ensure table allows natural sizing so long labels aren't clipped */
-.visioner-token-manager .visibility-table {
-  table-layout: auto;
-}
+  .visioner-token-manager .dc-value {
+    font-weight: 600;
+  }
 
-.visioner-token-manager .dc-value {
-  font-weight: 600;
-}
+  .visioner-token-manager .dc-outcome {
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+  }
 
-.visioner-token-manager .dc-outcome {
-  margin-left: 8px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.visioner-token-manager .dc-outcome.success {
-  background: var(--visibility-observed-bg-medium);
-  color: var(--visibility-observed);
-  border: 1px solid var(--visibility-observed);
-}
-.visioner-token-manager .dc-outcome.critical-success {
-  background: var(--visibility-observed-bg-strong);
-  color: var(--visibility-observed);
-  border: 1px solid var(--visibility-observed);
-}
-.visioner-token-manager .dc-outcome.failure {
-  background: var(--visibility-undetected-bg);
-  color: var(--pf2e-visioner-danger);
-  border: 1px solid var(--visibility-undetected);
-}
-.visioner-token-manager .dc-outcome.critical-failure {
-  background: var(--visibility-undetected-bg-strong);
-  color: var(--pf2e-visioner-danger);
-  border: 1px solid var(--visibility-undetected);
-}
-/*
+  .visioner-token-manager .dc-outcome.success {
+    background: var(--visibility-observed-bg-medium);
+    color: var(--visibility-observed);
+    border: 1px solid var(--visibility-observed);
+  }
+  .visioner-token-manager .dc-outcome.critical-success {
+    background: var(--visibility-observed-bg-strong);
+    color: var(--visibility-observed);
+    border: 1px solid var(--visibility-observed);
+  }
+  .visioner-token-manager .dc-outcome.failure {
+    background: var(--visibility-undetected-bg);
+    color: var(--pf2e-visioner-danger);
+    border: 1px solid var(--visibility-undetected);
+  }
+  .visioner-token-manager .dc-outcome.critical-failure {
+    background: var(--visibility-undetected-bg-strong);
+    color: var(--pf2e-visioner-danger);
+    border: 1px solid var(--visibility-undetected);
+  }
+  /*
  * Token Manager UI Improvements
  * Modern, compact UI for the token manager
  */
 
-/* Icon-only tab navigation */
+  /* Icon-only tab navigation */
 
-.visioner-token-manager {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
+  .visioner-token-manager {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 
-.visioner-token-manager .icon-tab-navigation {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-  z-index: 3;
-}
+  .visioner-token-manager .icon-tab-navigation {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    z-index: 3;
+  }
 
-.icon-tab-button {
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-  font-size: 16px;
-}
+  .icon-tab-button {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    font-size: 16px;
+  }
 
-.icon-tab-button:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-  transform: scale(1.05);
-}
+  .icon-tab-button:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
+  }
 
-.icon-tab-button.active {
-  background-color: var(--pf2e-visioner-primary);
-  color: white;
-  border-color: var(--pf2e-visioner-primary);
-  box-shadow: 0 0 8px var(--color-shadow-highlight);
-}
+  .icon-tab-button.active {
+    background-color: var(--pf2e-visioner-primary);
+    color: white;
+    border-color: var(--pf2e-visioner-primary);
+    box-shadow: 0 0 8px var(--color-shadow-highlight);
+  }
 
-/* Compact legend styles */
-.compact-legend {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 8px;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  flex-wrap: wrap;
-}
+  /* Compact legend styles */
+  .compact-legend {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    flex-wrap: wrap;
+  }
 
-.compact-legend .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  cursor: default;
-  position: relative;
-}
+  .compact-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    cursor: default;
+    position: relative;
+  }
 
-.compact-legend .legend-item i {
-  font-size: 14px;
-}
+  .compact-legend .legend-item i {
+    font-size: 14px;
+  }
 
-.compact-legend .legend-item span {
-  font-size: 12px;
-  white-space: nowrap;
-}
+  .compact-legend .legend-item span {
+    font-size: 12px;
+    white-space: nowrap;
+  }
 
-.compact-legend .bonus-badge {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  padding: 1px 6px;
-  font-size: 10px;
-  font-weight: bold;
-}
+  .compact-legend .bonus-badge {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: bold;
+  }
 
-/* Adjust the observer info section */
-.observer-info {
-  padding-bottom: 0;
-}
+  /* Adjust the observer info section */
+  .observer-info {
+    padding-bottom: 0;
+  }
 
-/* Layout: make center content flex so footer never overlaps */
-.visioner-tab-content {
-  margin-top: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0; /* allow child overflow area to size correctly */
-}
+  /* Layout: make center content flex so footer never overlaps */
+  .visioner-tab-content {
+    margin-top: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* allow child overflow area to size correctly */
+  }
 
-/* Scrollable tables area that respects footer height */
-.visioner-token-manager .tab-panel {
-  display: none;
-}
-.visioner-token-manager .tab-panel.active {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.visioner-token-manager .tables-content {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 2px;
-}
+  /* Scrollable tables area that respects footer height */
+  .visioner-token-manager .tab-panel {
+    display: none;
+  }
+  .visioner-token-manager .tab-panel.active {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .visioner-token-manager .tables-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
 
-/* Footer: stick to bottom of the window content without covering rows */
-.visioner-token-manager .sheet-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  background: var(--color-bg);
-  padding-top: 8px;
-  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
-}
-
+  /* Footer: stick to bottom of the window content without covering rows */
+  .visioner-token-manager .sheet-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--color-bg);
+    padding-top: 8px;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+  }
 } /* End .pf2e-visioner scope */
 
 /* Cover State Indicator Colors - Professional styling */

@@ -2,8 +2,8 @@
  * Visibility map store and helpers
  */
 
-import { MODULE_ID } from "../constants.js";
-import { updateEphemeralEffectsForVisibility } from "../visibility/ephemeral.js";
+import { MODULE_ID } from '../constants.js';
+import { updateEphemeralEffectsForVisibility } from '../visibility/ephemeral.js';
 
 /**
  * Get the visibility map for a token
@@ -11,7 +11,7 @@ import { updateEphemeralEffectsForVisibility } from "../visibility/ephemeral.js"
  * @returns {Record<string,string>}
  */
 export function getVisibilityMap(token) {
-  const map = token?.document.getFlag(MODULE_ID, "visibility") ?? {};
+  const map = token?.document.getFlag(MODULE_ID, 'visibility') ?? {};
   return map;
 }
 
@@ -24,7 +24,7 @@ export async function setVisibilityMap(token, visibilityMap) {
   if (!token?.document) return;
   // Only GMs can update token documents
   if (!game.user.isGM) return;
-  
+
   const path = `flags.${MODULE_ID}.visibility`;
   const result = await token.document.update({ [path]: visibilityMap }, { diff: false });
   return result;
@@ -37,7 +37,7 @@ export async function setVisibilityMap(token, visibilityMap) {
  */
 export function getVisibilityBetween(observer, target) {
   const visibilityMap = getVisibilityMap(observer);
-  return visibilityMap[target?.document?.id] || "observed";
+  return visibilityMap[target?.document?.id] || 'observed';
 }
 
 /**
@@ -51,7 +51,7 @@ export async function setVisibilityBetween(
   observer,
   target,
   state,
-  options = { skipEphemeralUpdate: false, direction: "observer_to_target", skipCleanup: false },
+  options = { skipEphemeralUpdate: false, direction: 'observer_to_target', skipCleanup: false },
 ) {
   if (!observer?.document?.id || !target?.document?.id) return;
 
@@ -63,8 +63,6 @@ export async function setVisibilityBetween(
   try {
     await updateEphemeralEffectsForVisibility(observer, target, state, options);
   } catch (error) {
-    console.error("PF2E Visioner: Error updating off-guard effects:", error);
+    console.error('PF2E Visioner: Error updating off-guard effects:', error);
   }
 }
-
-

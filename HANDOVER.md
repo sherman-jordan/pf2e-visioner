@@ -13,6 +13,7 @@ This document provides a comprehensive overview of the PF2E Visioner module's cu
 ## 🏗️ Architecture Overview
 
 ### Core Philosophy
+
 The module follows a **modular, single-responsibility architecture** with clear separation of concerns:
 
 - **ESModule-based**: Modern JavaScript module system with tree-shaking
@@ -80,6 +81,7 @@ scripts/
 ## 🔧 Development Patterns & Conventions
 
 ### Code Style & Standards
+
 - **ESModule imports/exports**: Always use modern module syntax
 - **ApplicationV2**: All UI components use FoundryVTT v13's modern framework
 - **Async/await**: Prefer over Promise chains
@@ -88,12 +90,14 @@ scripts/
 - **No time-based operations**: User preference - avoid setTimeout/setInterval [[memory:4992324]]
 
 ### Data Management Patterns
+
 1. **Flag-based persistence**: All state stored in `token.flags["pf2e-visioner"]`
 2. **Batch operations**: Always prefer bulk document updates over individual operations
 3. **State reconciliation**: Updates merge with existing data, never overwrite completely
 4. **Cleanup on deletion**: Automatic cleanup when tokens/actors are removed
 
 ### UI Patterns
+
 1. **Tabbed interfaces**: Visibility and Cover tabs in main manager
 2. **Bulk actions**: "Apply All", "Revert All" with per-row controls
 3. **Progress indicators**: Long operations show progress bars
@@ -101,6 +105,7 @@ scripts/
 5. **Colorblind support**: Multiple accessibility modes with pattern indicators
 
 ### Quick Panel (VisionerQuickPanel)
+
 1. **Purpose**: Rapid visibility and cover management without opening full manager
 2. **Layout**: Compact interface with visibility/cover buttons and quick selection tools
 3. **Quick Selection Buttons**:
@@ -119,6 +124,7 @@ scripts/
 6. **Usage**: Ideal for GMs managing large encounters or quick visibility adjustments
 
 ### Performance Patterns
+
 1. **Lazy loading**: Dynamic imports for heavy modules (dialogs, batch operations)
 2. **Debounced updates**: Visual effects batched to avoid excessive redraws
 3. **Efficient queries**: Canvas token filtering optimized for large scenes
@@ -127,30 +133,35 @@ scripts/
 ## 🎯 Core Features & Systems
 
 ### 1. Visibility System
+
 - **States**: Observed, Concealed, Hidden, Undetected
 - **Per-observer tracking**: Each token has individual visibility map
 - **PF2E integration**: Automatic condition application with mechanical effects
 - **Visual feedback**: Token overlays, opacity changes, indicators
 
-### 2. Cover System  
+### 2. Cover System
+
 - **States**: None, Lesser (+1 AC), Standard (+2 AC), Greater (+4 AC)
 - **Auto-cover detection**: Multiple intersection algorithms (Any, 10%, Center, Coverage, Tactical)
 - **Roll-time application**: Cover applied only during attacks, then cleaned up
 - **Override system**: GM can override auto-calculated cover in roll dialogs
 
 ### 3. Chat Automation
+
 - **PF2E Actions**: Seek, Hide, Sneak, Point Out, Create a Diversion, Take Cover
 - **Attack Consequences**: Post-damage visibility updates for hidden/undetected attackers
 - **Template system**: Seek can use placed templates for area targeting
 - **Player/GM workflow**: Players trigger, GMs resolve with preview dialogs
 
 ### 4. Cover Visualization
+
 - **Interactive grid**: Hold keybind while hovering to show cover levels
 - **Color-coded**: Green (none), Yellow (lesser), Orange (standard), Red (greater)
 - **Fog of war aware**: Only shows information in visible areas
 - **Performance optimized**: Client-side rendering with efficient algorithms
 
 ### 5. Cover Override Indication ✅ **NEW FEATURE**
+
 - **Chat message indicators**: Visual indicators appear in chat when auto cover calculations are overridden
 - **Override sources tracked**: Distinguishes between popup overrides (keybind) and roll dialog overrides
 - **Clear messaging**: Shows original detected cover vs final applied cover (e.g., "Standard Cover → Lesser Cover")
@@ -158,6 +169,7 @@ scripts/
 - **Non-intrusive**: Appears as a subtle warning-colored bar in chat messages
 
 ### 6. Party Token Integration ✅ **VALIDATED IN PRODUCTION**
+
 - **State preservation**: Saves visibility/cover when tokens consolidated into party
 - **Automatic restoration**: Restores state when tokens brought back from party
 - **Effect preservation**: Module effects saved and restored with tokens
@@ -168,22 +180,26 @@ scripts/
 ## ⚠️ Critical Development Quirks & Gotchas
 
 ### 1. Token vs TokenDocument Distinction
+
 - **Always check**: Some functions expect Token objects, others TokenDocument
 - **Canvas availability**: During deletion, tokens may not be in canvas.tokens
 - **Use token.document**: To get TokenDocument from Token object
 
 ### 2. Flag Management
+
 - **Never overwrite**: Always merge with existing flag data
 - **Use proper paths**: `flags["pf2e-visioner"].visibility` not `flags.pf2e-visioner.visibility`
 - **Batch updates**: Use scene.updateEmbeddedDocuments for multiple token updates
 
 ### 3. Effect System Complexity
+
 - **Ephemeral vs Aggregate**: Two types of effects with different lifecycles
 - **Cleanup critical**: Always clean up effects to prevent orphaned data
 - **Batch creation**: Create multiple effects in single operation for performance
 
 ### 4. Auto-Cover Architecture (Simplified v2.6.5+)
-- **Dual-phase system**: 
+
+- **Dual-phase system**:
   1. **libWrapper phase**: Immediate DC modification for roll calculation
   2. **Chat message phase**: Persistent state management and visual updates
 - **Keybind-only popups**: Override dialog only appears when user holds configured keybind
@@ -195,16 +211,19 @@ scripts/
 - **Override tracking**: Stores override information in chat message flags (`flags["pf2e-visioner"].coverOverride`) for visual indication
 
 ### 5. ApplicationV2 Patterns
+
 - **Instance management**: Track singleton instances to prevent duplicates
 - **Render lifecycle**: Use proper render/close lifecycle methods
 - **Event handling**: Use built-in action system, not manual event binding
 
 ### 6. Testing Infrastructure
+
 - **Jest-based**: Comprehensive test suite with 586+ tests
 - **Canvas mocking**: Real HTML5 canvas integration for drawing tests
 - **Coverage requirements**: Strict thresholds enforced in CI/CD
 
 ### 7. Effect System Architecture ✅ **BY DESIGN**
+
 - **Custom aggregate effects**: Module intentionally uses custom effects instead of real PF2E conditions for performance
 - **Why custom effects**: One aggregate effect can handle multiple observers, more efficient than individual conditions
 - **Icon resolution**: Uses `getPF2eConditionIcon()` to get proper PF2E condition icons from `game.pf2e.ConditionManager`
@@ -214,21 +233,25 @@ scripts/
 ## 🔍 Common Issues & Solutions
 
 ### Performance Issues
+
 - **Large scenes**: Module handles 50+ tokens efficiently through batching
 - **Visual updates**: Debounced to prevent excessive canvas redraws
 - **Memory leaks**: Automatic cleanup of event listeners and temporary data
 
 ### State Synchronization
+
 - **Cross-client**: Uses socketlib for perception refresh broadcasts
 - **Race conditions**: GM-only operations prevent conflicts
 - **State corruption**: Robust error handling with automatic recovery
 
 ### UI Responsiveness
+
 - **Progress indicators**: Long operations show progress to users
 - **Non-blocking**: Heavy operations use async patterns
 - **Error feedback**: Clear user notifications for all error conditions
 
 ### Party Token Edge Cases ✅ **PRODUCTION TESTED**
+
 - **Duplicate events**: FoundryVTT fires multiple creation events - system handles gracefully
 - **Undefined token IDs**: Early creation events may have undefined IDs - proper validation prevents errors
 - **Actor type filtering**: Only character tokens are consolidated, familiars/NPCs ignored correctly
@@ -256,17 +279,20 @@ scripts/
 ## 📊 Settings & Configuration
 
 ### World Settings (GM-only)
+
 - **Auto-Cover**: Master toggle and behavior configuration
 - **Action Automation**: Template usage, range limits, raw enforcement
 - **UI Behavior**: Default filters, HUD buttons, tooltip permissions
 - **Performance**: Debug mode, ally filtering, encounter filtering
 
 ### Client Settings (Per-user)
+
 - **Accessibility**: Colorblind modes, tooltip font sizes
 - **Keybindings**: Customizable keyboard shortcuts
 - **Visual Preferences**: Tooltip behavior, hover modes
 
 ### Hidden/Advanced Settings
+
 - **Token flags**: `ignoreAutoCover`, `hiddenWall`, `stealthDC`
 - **Wall flags**: `provideCover`, `hiddenWall`
 - **Scene flags**: `partyTokenStateCache` for party token preservation
@@ -274,19 +300,22 @@ scripts/
 ## 🧪 Testing Strategy
 
 ### Test Categories
+
 1. **Unit Tests**: Individual functions and classes
-2. **Integration Tests**: Complex scenarios and interactions  
+2. **Integration Tests**: Complex scenarios and interactions
 3. **Performance Tests**: Stress testing with many tokens
 4. **Regression Tests**: Prevent bugs from returning
 5. **Canvas Tests**: Real drawing operations with HTML5 canvas
 
 ### Coverage Requirements
+
 - **Branches**: 80%+ (currently relaxed for development)
 - **Functions**: 80%+
 - **Lines**: 80%+
 - **Statements**: 80%+
 
 ### Test Commands
+
 ```bash
 npm test              # Run all tests
 npm run test:coverage # Generate coverage report
@@ -297,6 +326,7 @@ npm run test:ci       # CI mode with strict requirements
 ## 🚀 Release Process
 
 ### Pre-Release Checklist
+
 1. **Full test suite**: `npm run test:ci`
 2. **Linting**: `npm run lint`
 3. **Coverage check**: Ensure thresholds met
@@ -305,6 +335,7 @@ npm run test:ci       # CI mode with strict requirements
 6. **Changelog**: Document all changes
 
 ### Version Strategy
+
 - **Major**: Breaking changes, major feature additions
 - **Minor**: New features, significant improvements
 - **Patch**: Bug fixes, minor improvements
@@ -312,10 +343,12 @@ npm run test:ci       # CI mode with strict requirements
 ## 🔗 Key Dependencies
 
 ### Required Modules
+
 - **lib-wrapper**: For safe function wrapping (auto-cover system)
 - **socketlib**: Cross-client communication (optional but recommended)
 
 ### Development Dependencies
+
 - **Jest**: Testing framework with jsdom environment
 - **ESLint**: Code linting with custom rules
 - **Babel**: ES6+ transpilation for tests
@@ -333,6 +366,7 @@ npm run test:ci       # CI mode with strict requirements
 ## 💡 Future Development Guidelines
 
 ### Adding New Features
+
 1. **Write tests first**: Follow TDD principles
 2. **Update documentation**: Keep all docs current
 3. **Performance consideration**: Benchmark new code
@@ -340,12 +374,14 @@ npm run test:ci       # CI mode with strict requirements
 5. **Backward compatibility**: Maintain save game compatibility
 
 ### Code Quality
+
 - **Single responsibility**: Each file/function has one clear purpose
 - **Error handling**: Graceful degradation with user feedback
 - **Logging**: Comprehensive debug logging when debug mode enabled
 - **Memory efficiency**: Clean up resources and avoid leaks
 
 ### User Experience
+
 - **Progressive disclosure**: Advanced features don't clutter basic UI
 - **Feedback**: Clear notifications for all user actions
 - **Performance**: Operations complete quickly or show progress
@@ -356,18 +392,21 @@ npm run test:ci       # CI mode with strict requirements
 ## 🆘 Emergency Procedures
 
 ### Critical Bug Response
+
 1. **Identify scope**: Affects saves? Causes crashes? Data loss?
 2. **Immediate mitigation**: Disable problematic features via settings
 3. **Hotfix process**: Minimal change to resolve critical issue
 4. **Communication**: Update users via GitHub issues/Discord
 
 ### Data Recovery
+
 - **Scene corruption**: Use `api.clearAllSceneData()` to reset
 - **Party token issues**: Use `manuallyRestoreAllPartyTokens()` ✅ **TESTED & WORKING**
 - **Effect cleanup**: Use `cleanupAllCoverEffects()` for orphaned effects
 - **Party cache inspection**: Check scene flags `pf2e-visioner.partyTokenStateCache` for debugging
 
 ### Performance Issues
+
 - **Large scenes**: Increase batch sizes, reduce visual updates
 - **Memory leaks**: Check event listener cleanup, effect management
 - **Canvas performance**: Optimize drawing operations, reduce redraws
@@ -375,6 +414,7 @@ npm run test:ci       # CI mode with strict requirements
 ## 🐛 Recent Bug Fixes (Latest)
 
 ### ⚠️ Chat message update bug
+
 - **Issue**: Visioner buttons disappear when chat messages are updated (e.g., `message.update({"flags.pf2e.test": "foo"})`)
 - **Root cause**: `processedMessages` cache prevents re-injection when message is re-rendered after updates
 - **Solution**: Added DOM check in `entry-service.js` - if message is cached but no `.pf2e-visioner-automation-panel` exists, allow re-injection
@@ -383,12 +423,14 @@ npm run test:ci       # CI mode with strict requirements
 - **Technical**: Uses `html.find('.pf2e-visioner-automation-panel').length > 0` to detect if UI was removed by update
 
 ### ✅ Player error handling
+
 - **Status**: Already implemented - players don't see red console errors during token operations
 - **Coverage**: Comprehensive test suite added in `tests/unit/chat-message-updates.test.js`
 - **Scenarios tested**: Token deletion race conditions, party consolidation errors, effect update failures
 - **Pattern**: All player-facing operations use try-catch with `console.warn` instead of throwing errors
 
 ### ✅ Party Token Integration Testing
+
 - **Coverage**: Comprehensive test suite added in `tests/unit/party-token-integration.test.js` (18 test cases)
 - **State Management**: Tests for saving/restoring visibility maps, cover maps, observer states, and effects
 - **Race Conditions**: Tests for parallel token deletion, cleanup skipping, effect rebuild failures
@@ -399,14 +441,15 @@ npm run test:ci       # CI mode with strict requirements
 - **Bug Coverage**: All previously fixed issues (duplicate effects, race conditions, ally relationships) are tested
 
 ### ✅ Auto-Cover Simplified Architecture (v2.6.5+)
+
 - **Issue**: Complex auto-cover system with multiple code paths caused timing issues and inconsistent cover application
 - **Impact**: ✅ FIXED - Simplified architecture with keybind-only popups and reliable automatic cover detection
 - **Technical**: Complete refactor of auto-cover system in `scripts/hooks/auto-cover.js` and `scripts/cover/auto-cover.js`
 - **Root Cause**: Previous complex libWrapper logic with multiple override paths created race conditions and timing conflicts
-- **New Simplified Approach**: 
+- **New Simplified Approach**:
   - **Keybind-only popups**: Cover override popup only shows when user holds configured keybind (default: X key)
   - **Automatic detection**: When keybind not held, system automatically applies detected cover without user intervention
-  - **Dual-phase processing**: 
+  - **Dual-phase processing**:
     1. **libWrapper phase**: Modifies target actor DC immediately before roll calculation (ensures AC bonus is applied)
     2. **Chat message phase**: Applies persistent cover state and updates visual indicators
   - **Global override storage**: Uses `window.pf2eVisionerPopupOverrides` and `window.pf2eVisionerDialogOverrides` Maps for communication between phases
@@ -419,7 +462,7 @@ npm run test:ci       # CI mode with strict requirements
   - **Automatic operation**: Works seamlessly without user intervention in normal cases
   - **Correct timing**: DC modification happens at the right moment in PF2e's roll calculation
 - **Testing**: New test suite in `tests/unit/simplified-auto-cover-core.test.js` and `tests/integration/auto-cover-workflow.test.js`
-- **User Experience**: 
+- **User Experience**:
   - **Normal attacks**: Automatic cover detection and application, no interruption
   - **Override needed**: Hold keybind (X) while clicking attack to see popup with override options
   - **Roll dialogs**: When PF2e roll dialog appears, cover override buttons are injected for manual selection
@@ -429,22 +472,26 @@ npm run test:ci       # CI mode with strict requirements
 ## 🐛 Recent Bug Fixes
 
 ### Colorblind Mode Fix (2025-01-20)
+
 **MAJOR BUG FIX COMPLETED**: Fixed colorblind mode not working at all and not applying on module load.
 
 ### Colorblind Mode CSS Fix (2025-01-20)
+
 **CRITICAL BUG FIX COMPLETED**: Fixed colorblind mode CSS not actually changing colors due to hardcoded RGBA values bypassing CSS custom properties.
 
 **Root Cause**: The colorblind mode classes were being applied correctly, but the CSS was using hardcoded RGBA colors (like `rgba(76, 175, 80, 0.2)`) instead of CSS custom properties that could be overridden by colorblind mode.
 
 **Issues Fixed**:
+
 1. **Hardcoded RGBA colors** - 57+ instances of hardcoded colors in CSS files that bypassed colorblind overrides
 2. **Missing CSS custom properties** - No CSS variables for background colors with alpha transparency
 3. **Incomplete colorblind overrides** - Colorblind CSS only overrode text colors, not background colors
 
 **Solution Implemented**:
+
 1. **Added CSS custom properties** for all visibility state background colors in `base.css`:
    - `--visibility-observed-bg-light` (0.05 alpha)
-   - `--visibility-observed-bg` (0.1 alpha) 
+   - `--visibility-observed-bg` (0.1 alpha)
    - `--visibility-observed-bg-medium` (0.15 alpha)
    - `--visibility-observed-bg-strong` (0.2 alpha)
    - `--visibility-observed-bg-solid` (0.9 alpha)
@@ -477,7 +524,7 @@ npm run test:ci       # CI mode with strict requirements
 7. **Comprehensive colorblind mode overhaul**:
    - **CRITICAL FIX**: Separated colorblind modes into distinct color schemes instead of using one scheme for all
    - **Protanopia (Red-blind)**: Uses blue/yellow/purple/pink palette, avoids red and green
-   - **Deuteranopia (Green-blind)**: Uses blue/yellow/orange/magenta palette, avoids green and red  
+   - **Deuteranopia (Green-blind)**: Uses blue/yellow/orange/magenta palette, avoids green and red
    - **Tritanopia (Blue-blind)**: Uses green/yellow/orange/crimson palette, avoids blue and purple
    - **Achromatopsia (Complete colorblind)**: Uses pure grayscale with distinct brightness levels
    - Fixed all hardcoded colors in `chat-automation-styles.js` (200+ color replacements)
@@ -504,79 +551,87 @@ npm run test:ci       # CI mode with strict requirements
    - **Cover system support**: All cover state indicators (`.cover-none`, `.cover-lesser`, `.cover-standard`, `.cover-greater`) now have colorblind support
 
 10. **Final comprehensive colorblind element discovery and fixes**:
-   - **CRITICAL MISSING ELEMENTS FOUND**: Target/Observer mode toggles, tab navigation buttons, help text elements
-   - **Target mode toggle**: `.mode-toggle.target-active .toggle-option:last-child` - was using red `var(--pf2e-visioner-danger)`
-   - **Observer mode toggle**: `.mode-toggle.observer-active .toggle-option:first-child` - was using blue `var(--pf2e-visioner-info)`
-   - **Tab navigation buttons**: `.icon-tab-navigation .icon-tab-button[data-tab="visibility/cover"]` - were using visibility/cover colors
-   - **Help text elements**: `.help-text.success/.warning/.error` - were using success/warning/danger colors
-   - **Party select icons**: `.party-select i` - was using info color
-   - **Added explicit colorblind overrides** for ALL these elements across all four colorblind modes
-   - **Each element now has proper colors** for Protanopia, Deuteranopia, Tritanopia, and Achromatopsia
+
+- **CRITICAL MISSING ELEMENTS FOUND**: Target/Observer mode toggles, tab navigation buttons, help text elements
+- **Target mode toggle**: `.mode-toggle.target-active .toggle-option:last-child` - was using red `var(--pf2e-visioner-danger)`
+- **Observer mode toggle**: `.mode-toggle.observer-active .toggle-option:first-child` - was using blue `var(--pf2e-visioner-info)`
+- **Tab navigation buttons**: `.icon-tab-navigation .icon-tab-button[data-tab="visibility/cover"]` - were using visibility/cover colors
+- **Help text elements**: `.help-text.success/.warning/.error` - were using success/warning/danger colors
+- **Party select icons**: `.party-select i` - was using info color
+- **Added explicit colorblind overrides** for ALL these elements across all four colorblind modes
+- **Each element now has proper colors** for Protanopia, Deuteranopia, Tritanopia, and Achromatopsia
 
 11. **CRITICAL: Legend icons and cover bulk buttons colorblind support**:
-   - **LEGEND ICONS FIXED**: Found that legend icons use `.visibility-observed`, `.visibility-concealed`, `.visibility-hidden`, `.visibility-undetected` classes
-   - **These classes were NOT covered** by previous colorblind CSS - they are the actual icon colors in the legend
-   - **Added explicit colorblind overrides** for all visibility state classes across all four colorblind modes
-   - **COVER BULK BUTTONS FIXED**: Found cover state bulk buttons use `data-state="none/lesser/standard/greater"`
-   - **Added colorblind support** for all cover state bulk buttons across all four colorblind modes
-   - **Legend icons now change colors** when switching colorblind modes (green circle → blue, red ghost → purple, etc.)
-   - **Cover bulk buttons now change colors** when switching colorblind modes
+
+- **LEGEND ICONS FIXED**: Found that legend icons use `.visibility-observed`, `.visibility-concealed`, `.visibility-hidden`, `.visibility-undetected` classes
+- **These classes were NOT covered** by previous colorblind CSS - they are the actual icon colors in the legend
+- **Added explicit colorblind overrides** for all visibility state classes across all four colorblind modes
+- **COVER BULK BUTTONS FIXED**: Found cover state bulk buttons use `data-state="none/lesser/standard/greater"`
+- **Added colorblind support** for all cover state bulk buttons across all four colorblind modes
+- **Legend icons now change colors** when switching colorblind modes (green circle → blue, red ghost → purple, etc.)
+- **Cover bulk buttons now change colors** when switching colorblind modes
 
 12. **COMPREHENSIVE TEMPLATE AUDIT - ALL ELEMENTS COVERED**:
-   - **SYSTEMATIC TEMPLATE REVIEW**: Audited EVERY template file in the module
-   - **Templates reviewed**: `consequences-preview.hbs`, `hide-preview.hbs`, `take-cover-preview.hbs`, `sneak-preview.hbs`, `seek-preview.hbs`, `settings-menu.hbs`, `quick-panel.hbs`, `token-manager.hbs`, `wall-manager.hbs`
-   - **ALL TEMPLATE ELEMENTS FOUND**: 
-     - `.outcome.success/.failure/.critical-success/.critical-failure` - Roll outcome indicators
-     - `.apply-change/.revert-change` - Action buttons in preview dialogs
-     - `.bulk-action-btn.apply-all/.revert-all` - Bulk action buttons
-     - `.row-action-btn.apply-change/.revert-change` - Row-level action buttons
-     - `.party-select/.enemy-select` - Selection buttons in quick panel
-     - `.auto-cover-icon` - Auto-cover feature icon
-     - `.state-icon.selected/.calculated-outcome` - Selected and calculated state indicators
-   - **COMPREHENSIVE COLORBLIND SUPPORT ADDED**: All elements now have explicit colorblind overrides for all four colorblind modes
-   - **COVERS ALL DIALOGS**: Hide, Seek, Sneak, Take Cover, Consequences, Settings, Quick Panel, Token Manager
-   - **NO MORE MISSED ELEMENTS**: Every single interactive element across all templates now respects colorblind mode
+
+- **SYSTEMATIC TEMPLATE REVIEW**: Audited EVERY template file in the module
+- **Templates reviewed**: `consequences-preview.hbs`, `hide-preview.hbs`, `take-cover-preview.hbs`, `sneak-preview.hbs`, `seek-preview.hbs`, `settings-menu.hbs`, `quick-panel.hbs`, `token-manager.hbs`, `wall-manager.hbs`
+- **ALL TEMPLATE ELEMENTS FOUND**:
+  - `.outcome.success/.failure/.critical-success/.critical-failure` - Roll outcome indicators
+  - `.apply-change/.revert-change` - Action buttons in preview dialogs
+  - `.bulk-action-btn.apply-all/.revert-all` - Bulk action buttons
+  - `.row-action-btn.apply-change/.revert-change` - Row-level action buttons
+  - `.party-select/.enemy-select` - Selection buttons in quick panel
+  - `.auto-cover-icon` - Auto-cover feature icon
+  - `.state-icon.selected/.calculated-outcome` - Selected and calculated state indicators
+- **COMPREHENSIVE COLORBLIND SUPPORT ADDED**: All elements now have explicit colorblind overrides for all four colorblind modes
+- **COVERS ALL DIALOGS**: Hide, Seek, Sneak, Take Cover, Consequences, Settings, Quick Panel, Token Manager
+- **NO MORE MISSED ELEMENTS**: Every single interactive element across all templates now respects colorblind mode
 
 13. **CRITICAL: Bulk state header ICONS colorblind fix**:
-   - **ROOT CAUSE IDENTIFIED**: Bulk state header buttons contain `<i>` icons that were not being targeted by colorblind CSS
-   - **SPECIFIC ISSUE**: Rules like `.bulk-state-header[data-state="observed"]` only styled the button, not the icon inside
-   - **EXISTING CSS STRUCTURE**: The original CSS already targets both button and icon: `.bulk-state-header[data-state="observed"] i`
-   - **SOLUTION**: Added comprehensive icon targeting for ALL colorblind modes and ALL visibility states
-   - **SELECTORS ADDED**: 
-     - `body.pf2e-visioner-colorblind-* .bulk-actions-header .bulk-state-header[data-state="*"] i`
-     - `body.pf2e-visioner-colorblind-* .bulk-actions-header .bulk-state-header[data-state="*"]:hover i`
-   - **COVERS ALL STATES**: observed, concealed, hidden, undetected for all four colorblind modes
-   - **INCLUDES HOVER STATES**: Both normal and hover states for complete coverage
-   - **NOW WORKING**: Bulk state header icons now properly change colors when switching colorblind modes
-   - **COVER STATE ICONS ALSO FIXED**: Added identical icon targeting for cover state bulk buttons (none, lesser, standard, greater)
-   - **COMPLETE COVERAGE**: Both visibility AND cover bulk state header icons now respect colorblind modes
+
+- **ROOT CAUSE IDENTIFIED**: Bulk state header buttons contain `<i>` icons that were not being targeted by colorblind CSS
+- **SPECIFIC ISSUE**: Rules like `.bulk-state-header[data-state="observed"]` only styled the button, not the icon inside
+- **EXISTING CSS STRUCTURE**: The original CSS already targets both button and icon: `.bulk-state-header[data-state="observed"] i`
+- **SOLUTION**: Added comprehensive icon targeting for ALL colorblind modes and ALL visibility states
+- **SELECTORS ADDED**:
+  - `body.pf2e-visioner-colorblind-* .bulk-actions-header .bulk-state-header[data-state="*"] i`
+  - `body.pf2e-visioner-colorblind-* .bulk-actions-header .bulk-state-header[data-state="*"]:hover i`
+- **COVERS ALL STATES**: observed, concealed, hidden, undetected for all four colorblind modes
+- **INCLUDES HOVER STATES**: Both normal and hover states for complete coverage
+- **NOW WORKING**: Bulk state header icons now properly change colors when switching colorblind modes
+- **COVER STATE ICONS ALSO FIXED**: Added identical icon targeting for cover state bulk buttons (none, lesser, standard, greater)
+- **COMPLETE COVERAGE**: Both visibility AND cover bulk state header icons now respect colorblind modes
 
 14. **Roll/DC display elements colorblind support**:
-   - **ROLL TOTAL FIXED**: Changed `.roll-total` from hardcoded `#29b6f6` to `var(--pf2e-visioner-info)`
-   - **MARGIN DISPLAY FIXED**: Changed `.margin-display` from hardcoded `#aaa` to `var(--color-text-secondary)`
-   - **DC VALUE ALREADY CORRECT**: `.dc-value` already uses `var(--visibility-undetected)` which works with colorblind modes
-   - **ELEMENTS AFFECTED**: All preview dialogs (Hide, Seek, Sneak, Point Out results tables)
-   - **NOW WORKING**: Roll totals, DC values, and margin displays now respect colorblind mode settings
+
+- **ROLL TOTAL FIXED**: Changed `.roll-total` from hardcoded `#29b6f6` to `var(--pf2e-visioner-info)`
+- **MARGIN DISPLAY FIXED**: Changed `.margin-display` from hardcoded `#aaa` to `var(--color-text-secondary)`
+- **DC VALUE ALREADY CORRECT**: `.dc-value` already uses `var(--visibility-undetected)` which works with colorblind modes
+- **ELEMENTS AFFECTED**: All preview dialogs (Hide, Seek, Sneak, Point Out results tables)
+- **NOW WORKING**: Roll totals, DC values, and margin displays now respect colorblind mode settings
 
 15. **Cover section elements and explicit roll/DC colorblind rules**:
-   - **COVER SECTION ELEMENTS FIXED**: Added explicit colorblind rules for `.cover-section .state-icon[data-state="*"]` and `.cover-section .bulk-actions-header .bulk-state-header[data-state="*"]`
-   - **NESTED SELECTOR COVERAGE**: Covers all cover section elements including icons inside bulk buttons
-   - **EXPLICIT ROLL/DC RULES**: Added direct colorblind CSS rules for `.roll-result`, `.roll-total`, and `.dc-value` elements
-   - **COMPREHENSIVE COVERAGE**: All four colorblind modes now have explicit rules for:
-     - Cover section state icons (none, lesser, standard, greater)
-     - Cover section bulk buttons and their icons
-     - Roll result displays in all preview dialogs
-     - DC value displays in all preview dialogs
-   - **GUARANTEED OVERRIDE**: Uses `!important` declarations to ensure colorblind colors take precedence over any other styling
+
+- **COVER SECTION ELEMENTS FIXED**: Added explicit colorblind rules for `.cover-section .state-icon[data-state="*"]` and `.cover-section .bulk-actions-header .bulk-state-header[data-state="*"]`
+- **NESTED SELECTOR COVERAGE**: Covers all cover section elements including icons inside bulk buttons
+- **EXPLICIT ROLL/DC RULES**: Added direct colorblind CSS rules for `.roll-result`, `.roll-total`, and `.dc-value` elements
+- **COMPREHENSIVE COVERAGE**: All four colorblind modes now have explicit rules for:
+  - Cover section state icons (none, lesser, standard, greater)
+  - Cover section bulk buttons and their icons
+  - Roll result displays in all preview dialogs
+  - DC value displays in all preview dialogs
+- **GUARANTEED OVERRIDE**: Uses `!important` declarations to ensure colorblind colors take precedence over any other styling
 
 16. **General state icon cover states colorblind support**:
-   - **GENERAL COVERAGE ADDED**: Added colorblind rules for `.pf2e-visioner .state-icon[data-state="none/lesser/standard/greater"]`
-   - **COVERS ALL CONTEXTS**: Works for state icons in ANY container, not just `.cover-section`
-   - **ICON SELECTION DIALOGS**: Ensures cover state selection interfaces respect colorblind modes
-   - **COMPLETE STATE COVERAGE**: All cover states (none, lesser, standard, greater) now have explicit colorblind support
-   - **ALL COLORBLIND MODES**: Protanopia, Deuteranopia, Tritanopia, and Achromatopsia all covered
+
+- **GENERAL COVERAGE ADDED**: Added colorblind rules for `.pf2e-visioner .state-icon[data-state="none/lesser/standard/greater"]`
+- **COVERS ALL CONTEXTS**: Works for state icons in ANY container, not just `.cover-section`
+- **ICON SELECTION DIALOGS**: Ensures cover state selection interfaces respect colorblind modes
+- **COMPLETE STATE COVERAGE**: All cover states (none, lesser, standard, greater) now have explicit colorblind support
+- **ALL COLORBLIND MODES**: Protanopia, Deuteranopia, Tritanopia, and Achromatopsia all covered
 
 **Root Cause**: Multiple issues:
+
 1. **Invalid CSS syntax** using SCSS `&` selectors in plain CSS files
 2. **Missing proper class application** to UI elements
 3. **Hardcoded inline colors** in templates that couldn't be overridden by CSS custom properties
@@ -588,6 +643,7 @@ npm run test:ci       # CI mode with strict requirements
 9. **Insufficient hook coverage** for dynamic UI elements like chat messages
 
 **Fix Implemented**:
+
 1. **CSS Syntax Fix**: Converted SCSS `&` syntax to proper CSS `.pf2e-visioner.pf2e-visioner-colorblind-*` selectors in `colorblind.css` and `colorblind-buttons.css`
 2. **Settings Handler Fix**: Enhanced the onChange handler in `settings.js` to properly apply colorblind classes to both `document.body` and `.pf2e-visioner` containers
 3. **Template System Overhaul**: Replaced all inline `style="color: {{state.color}}"` with CSS classes like `{{state.cssClass}}` in ALL templates:
@@ -627,9 +683,10 @@ npm run test:ci       # CI mode with strict requirements
     - Colorblind mode overrides all color properties comprehensively
 
 **Result**: The colorblind mode now works comprehensively across **EVERY SINGLE UI ELEMENT** in the entire module and applies immediately upon module load:
+
 - ✅ **Module Load** - Colorblind mode applies immediately during setup and ready phases
 - ✅ **Token Manager** - All visibility/cover states, legends, current states, bulk actions
-- ✅ **Quick Panel** - All visibility/cover buttons, party/enemy selection buttons  
+- ✅ **Quick Panel** - All visibility/cover buttons, party/enemy selection buttons
 - ✅ **Chat Dialogs** - Seek, Hide, Sneak, Take Cover preview dialogs
 - ✅ **Settings Menu** - Auto-cover icons and UI elements
 - ✅ **Auto-Cover** - Cover state indicators in Hide action dialogs
@@ -642,12 +699,14 @@ npm run test:ci       # CI mode with strict requirements
 - ✅ **Immediate Application** - Colorblind mode applies as soon as the module loads, not just when settings change
 
 **Colorblind Mode Features**:
+
 - **Protanopia (Red-blind)**: Uses blues, yellows, and purples for maximum contrast
-- **Deuteranopia (Green-blind)**: Uses blues, yellows, and magentas for maximum contrast  
+- **Deuteranopia (Green-blind)**: Uses blues, yellows, and magentas for maximum contrast
 - **Tritanopia (Blue-blind)**: Uses reds, greens, and yellows for maximum contrast
 - **Achromatopsia (Complete color blindness)**: Uses high-contrast grayscale with pattern indicators
 
 **Technical Implementation**:
+
 - **CSS Custom Properties**: All colors now use CSS custom properties with fallback values
 - **Comprehensive Overrides**: Colorblind mode overrides all color properties, not just visibility/cover states
 - **Multiple Hook Points**: Colorblind mode applies at setup, ready, and during all UI rendering
@@ -655,9 +714,10 @@ npm run test:ci       # CI mode with strict requirements
 - **Performance Optimized**: Colorblind mode applies efficiently without performance impact
 
 ### Cover Visualization Alignment Fix (Previous)
-**MAJOR BUG FIX COMPLETED**: Fixed cover visualization alignment issue where tokens appeared larger than their actual grid size (medium showing as 2x2, large as 4x4). 
 
-**Root Cause**: Improper grid alignment - even-sized tokens (2x2, 4x4) need centers between grid intersections, while odd-sized tokens (1x1, 3x3) need centers on grid intersections. 
+**MAJOR BUG FIX COMPLETED**: Fixed cover visualization alignment issue where tokens appeared larger than their actual grid size (medium showing as 2x2, large as 4x4).
+
+**Root Cause**: Improper grid alignment - even-sized tokens (2x2, 4x4) need centers between grid intersections, while odd-sized tokens (1x1, 3x3) need centers on grid intersections.
 
 **Fix**: Implemented in `cover-visualization.js` with token size-aware grid alignment logic.
 

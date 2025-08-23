@@ -28,6 +28,11 @@
       "standard": "Standardowa osłona",
       "greater": "Większa osłona"
     },
+    "COVER_OVERRIDE": {
+      "POPUP_OVERRIDE": "Osłona zastąpiona za pomocą wyskakującego okienka skrótów klawiszowych: {original} → {final}",
+      "DIALOG_OVERRIDE": "Osłona zastąpiona w oknie dialogowym rzutu: {original} → {final}",
+      "GENERIC_OVERRIDE": "Osłona zastąpiona: {original} → {final}"
+    },
     "VISUAL_EFFECTS": {
       "HIDDEN_OVERLAY": "Ten token jest ukryty przed Twoim widokiem",
       "UNDETECTED_OVERLAY": "Ten token jest niewykryty przez ciebie",

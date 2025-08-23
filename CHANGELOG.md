@@ -5,6 +5,7 @@
 ### Added
 
 - Auto-cover: 3d sampling mode (experimental) will take creature elevation and size into consideration for both auto cover and visualization
+- Visioner tools: add option to hide them
 
 ### Fixed
 

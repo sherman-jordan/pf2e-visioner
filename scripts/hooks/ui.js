@@ -158,6 +158,10 @@ export function registerUIHooks() {
   Hooks.on('getSceneControlButtons', (controls) => {
     if (!game.user.isGM) return;
     try {
+      // Respect setting to hide Visioner tools from scene controls
+      const hideTools = game.settings.get(MODULE_ID, 'hideVisionerSceneTools');
+      if (hideTools) return;
+
       const groups = Array.isArray(controls) ? controls : Object.values(controls || {});
       // === WALL TOOL ADDITIONS ===
       const walls = groups.find((c) => c?.name === 'walls');
@@ -489,14 +493,6 @@ function onRenderWallConfig(app, html) {
     const form = root.querySelector('form') || root;
     // Avoid duplicate injection
     if (form.querySelector('.pf2e-visioner-wall-settings')) return;
-
-    const provideCoverCurrent = app?.document?.getFlag?.(MODULE_ID, 'provideCover');
-    const provideCoverChecked = provideCoverCurrent !== false; // default to true when undefined
-    const hiddenWallsEnabled = !!game.settings.get(MODULE_ID, 'hiddenWallsEnabled');
-    const hiddenWallCurrent = !!app?.document?.getFlag?.(MODULE_ID, 'hiddenWall');
-    const wallIdentifier = app?.document?.getFlag?.(MODULE_ID, 'wallIdentifier') ?? '';
-    const dcCurrent = Number(app?.document?.getFlag?.(MODULE_ID, 'stealthDC')) || '';
-
     // Build a single grouped fieldset with a quick settings button (no Provide Cover here)
     const fs = document.createElement('fieldset');
     fs.className = 'pf2e-visioner-wall-settings';

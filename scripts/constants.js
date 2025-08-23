@@ -284,6 +284,16 @@ export const DEFAULT_SETTINGS = {
     default: true,
   },
 
+  // Hide Visioner tools in Tokens and Walls scene controls
+  hideVisionerSceneTools: {
+    name: 'Hide Visioner Tools in Scene Controls',
+    hint: 'If enabled, Visioner buttons/toggles on the Tokens and Walls toolbars are hidden. You can still access features via menus and keybinds.',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  },
+
   blockPlayerTargetTooltips: {
     name: 'PF2E_VISIONER.SETTINGS.BLOCK_PLAYER_TARGET_TOOLTIPS.name',
     hint: 'PF2E_VISIONER.SETTINGS.BLOCK_PLAYER_TARGET_TOOLTIPS.hint',
@@ -357,7 +367,7 @@ export const DEFAULT_SETTINGS = {
     default: true,
   },
   autoCoverVisualizationRespectFogForGM: {
-    name: 'Auto-Cover: GM Respects Fog of War',
+    name: 'Auto-Cover: GM Respects Line of Sight',
     hint: 'If enabled, GMs will see the cover heatmap limited to explored areas (same as players). If disabled, GMs see the full scene.',
     scope: 'world',
     config: true,

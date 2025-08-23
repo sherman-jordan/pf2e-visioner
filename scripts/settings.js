@@ -15,6 +15,7 @@ const SETTINGS_GROUPS = {
     'includeLootActors',
     'lootStealthDC',
     'useHudButton',
+    'hideVisionerSceneTools',
     'integrateRollOutcome',
     'enforceRawRequirements',
     'keybindingOpensTMInTargetMode',
@@ -426,6 +427,16 @@ export function registerSettings() {
               game.settings.get(MODULE_ID, 'allowPlayerTooltips')
             )
               initializeHoverTooltips();
+          } catch (_) {}
+        };
+      } else if (key === 'hideVisionerSceneTools') {
+        // Rebuild scene controls to add/remove Visioner tools immediately
+        settingConfig.onChange = () => {
+          try {
+            ui.controls.render();
+            SettingsConfig.reloadConfirm({
+              world: true,
+            });
           } catch (_) {}
         };
       } else if (key === 'hiddenWallsEnabled') {

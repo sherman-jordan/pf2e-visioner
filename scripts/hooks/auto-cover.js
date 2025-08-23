@@ -40,6 +40,12 @@ export function registerAutoCoverHooks() {
               const target = resolveTargetFromCtx(context);
               
               if (attacker && target && (attacker.isOwner || game.user.isGM)) {
+                // Ensure visibility-driven off-guard ephemerals are up-to-date on defender before any DC calculation
+                try {
+                  const { getVisibilityBetween, setVisibilityBetween } = await import("../utils.js");
+                  const currentVisEarly = getVisibilityBetween(attacker, target);
+                  await setVisibilityBetween(attacker, target, currentVisEarly, { skipEphemeralUpdate: false, direction: "observer_to_target" });
+                } catch (_) {}
                 // Check for custom keybind - ONLY show popup when keybind is held
                 const isHoldingCoverOverrideKey = () => {
                   try {
@@ -102,18 +108,14 @@ export function registerAutoCoverHooks() {
                       const bonus = getCoverBonusByState(chosen) || 0;
                       
                       if (bonus > 0) {
-                        // Clone the target actor with the cover effect
+                        // Clone the target actor with a temporary cover effect so the roll shows an itemized bonus
                         const tgtActor = target.actor;
                         const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
-                        
-                        // Remove any existing cover effects
+                        // Remove any existing one-roll cover effects we may have added
                         const filteredItems = items.filter((i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true));
-                        
-                        // Add the new cover effect
                         const { getCoverLabel, getCoverImageForState } = await import("../helpers/cover-helpers.js");
                         const label = getCoverLabel(chosen);
                         const img = getCoverImageForState(chosen);
-                        
                         filteredItems.push({
                           name: label,
                           type: 'effect',
@@ -131,15 +133,35 @@ export function registerAutoCoverHooks() {
                           img,
                           flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } }
                         });
-                        
-                        // Update the context to use the cloned actor
+                        // If defender is hidden/undetected to attacker, add a one-roll Flat-Footed item so it shows on the roll
+                        try {
+                          const { getVisibilityBetween } = await import("../stores/visibility-map.js");
+                          const visState = getVisibilityBetween(target, attacker);
+                          if (["hidden", "undetected"].includes(visState)) {
+                            const reason = visState.charAt(0).toUpperCase() + visState.slice(1);
+                            filteredItems.push({
+                              name: `Off-Guard (${reason})`,
+                              type: 'effect',
+                              system: {
+                                description: { value: `<p>Off-Guard (${reason}): -2 circumstance penalty to AC for this roll.</p>`, gm: '' },
+                                rules: [{ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: -2 }],
+                                traits: { otherTags: [], value: [] },
+                                level: { value: 1 },
+                                duration: { value: -1, unit: 'unlimited' },
+                                tokenIcon: { show: false },
+                                unidentified: false,
+                                start: { value: 0 },
+                                badge: null
+                              },
+                              img: "icons/svg/terror.svg",
+                              flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralOffGuardRoll: true } }
+                            });
+                          }
+                        } catch (_) {}
                         const clonedActor = tgtActor.clone({ items: filteredItems }, { keepId: true });
-                        
-                        // Update the DC object to use the cloned actor's statistics
                         const dcObj = context.dc;
                         if (dcObj?.slug) {
                           const clonedStat = clonedActor.getStatistic?.(dcObj.slug)?.dc;
-                          
                           if (clonedStat) {
                             dcObj.value = clonedStat.value;
                             dcObj.statistic = clonedStat;
@@ -159,18 +181,14 @@ export function registerAutoCoverHooks() {
                   const bonus = getCoverBonusByState(state) || 0;
                     
                     if (bonus > 0) {
-                      // Clone the target actor with the cover effect
+                      // Clone the target actor with a temporary cover effect so the roll shows an itemized bonus
                       const tgtActor = target.actor;
                       const items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
-                      
-                      // Remove any existing cover effects
+                      // Remove any existing one-roll cover effects we may have added
                       const filteredItems = items.filter((i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true));
-                      
-                      // Add the new cover effect
                       const { getCoverLabel, getCoverImageForState } = await import("../helpers/cover-helpers.js");
                       const label = getCoverLabel(state);
                       const img = getCoverImageForState(state);
-                      
                       filteredItems.push({
                         name: label,
                         type: 'effect',
@@ -188,11 +206,32 @@ export function registerAutoCoverHooks() {
                         img,
                         flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } }
                       });
-                      
-                      // Update the context to use the cloned actor
+                      // If defender is hidden/undetected to attacker, add a one-roll Flat-Footed item so it shows on the roll
+                      try {
+                        const { getVisibilityBetween } = await import("../stores/visibility-map.js");
+                        const visState = getVisibilityBetween(target, attacker);
+                        if (["hidden", "undetected"].includes(visState)) {
+                          const reason = visState.charAt(0).toUpperCase() + visState.slice(1);
+                          filteredItems.push({
+                            name: `Off-Guard (${reason})`,
+                            type: 'effect',
+                            system: {
+                              description: { value: `<p>Off-Guard (${reason}): -2 circumstance penalty to AC for this roll.</p>`, gm: '' },
+                              rules: [{ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: -2 }],
+                              traits: { otherTags: [], value: [] },
+                              level: { value: 1 },
+                              duration: { value: -1, unit: 'unlimited' },
+                              tokenIcon: { show: false },
+                              unidentified: false,
+                              start: { value: 0 },
+                              badge: null
+                            },
+                            img: "icons/svg/terror.svg",
+                            flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralOffGuardRoll: true } }
+                          });
+                        }
+                      } catch (_) {}
                       const clonedActor = tgtActor.clone({ items: filteredItems }, { keepId: true });
-                      
-                      // Update the DC object to use the cloned actor's statistics
                       const dcObj = context.dc;
                       if (dcObj?.slug) {
                         const clonedStat = clonedActor.getStatistic?.(dcObj.slug)?.dc;
@@ -210,6 +249,8 @@ export function registerAutoCoverHooks() {
             console.warn("PF2E Visioner | Error in popup wrapper:", e);
           }
           
+          // (Moved earlier) off-guard ephemerals ensured before calculation
+
           return await wrapped(check, context, event, callback);
         },
         "WRAPPER"

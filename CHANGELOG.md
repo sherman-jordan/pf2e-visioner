@@ -12,6 +12,7 @@
 - Seek showing for messages with 'seek' text in them
 - Colorblind support for tooltips
 - Take cover showing for current conditions message
+- Allow players to change client settings
 
 
 ## [2.6.9] - 2025-08-23

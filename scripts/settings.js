@@ -92,13 +92,31 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
   }
 
   async _prepareContext() {
-    const categories = Object.keys(SETTINGS_GROUPS).map((k) => ({
+    const isGM = !!game.user?.isGM;
+    const keyVisible = (key) => {
+      const cfg = DEFAULT_SETTINGS[key];
+      if (!cfg) return false;
+      if (cfg.restricted && !isGM) return false;
+      return true;
+    };
+
+    // Only show categories (tabs) that have at least one visible item
+    const visibleCategoryKeys = Object.keys(SETTINGS_GROUPS).filter((cat) =>
+      (SETTINGS_GROUPS[cat] || []).some((k) => keyVisible(k)),
+    );
+
+    // If current active group has no visible items, switch to the first visible group
+    if (!visibleCategoryKeys.includes(this.activeGroupKey)) {
+      this.activeGroupKey = visibleCategoryKeys[0] || this.activeGroupKey;
+    }
+
+    const categories = visibleCategoryKeys.map((k) => ({
       key: k,
       title: k,
       active: k === this.activeGroupKey,
     }));
     const groups = [];
-    const activeKeys = SETTINGS_GROUPS[this.activeGroupKey] || [];
+    const activeKeys = (SETTINGS_GROUPS[this.activeGroupKey] || []).filter((k) => keyVisible(k));
     const items = [];
     for (const key of activeKeys) {
       const cfg = DEFAULT_SETTINGS[key];
@@ -232,8 +250,9 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         const on = !!allowPlayerTooltipsToggle?.checked;
         toggleSettingVisibility('blockPlayerTargetTooltips', on);
       };
-      if (allowPlayerTooltipsToggle)
+      if (allowPlayerTooltipsToggle) {
         allowPlayerTooltipsToggle.addEventListener('change', applyPlayerTooltipVisibility);
+      }
       applyPlayerTooltipVisibility();
 
       // Hide tooltip size unless hover tooltips are enabled
@@ -241,11 +260,28 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         '[name="settings.enableHoverTooltips"]',
       );
       const applyHoverTooltipVisibility = () => {
-        const on = !!enableHoverTooltipsToggle?.checked;
+        // If the GM-only toggle isn't present (e.g., for players), base visibility
+        // on both global enablement and whether players are allowed to see tooltips.
+        let on;
+        try {
+          if (enableHoverTooltipsToggle) {
+            // In GM view, use the checkbox state directly
+            on = !!enableHoverTooltipsToggle.checked;
+          } else {
+            const globallyEnabled = !!game.settings.get(MODULE_ID, 'enableHoverTooltips');
+            const playersAllowed = !!game.settings.get(MODULE_ID, 'allowPlayerTooltips');
+            on = globallyEnabled && playersAllowed;
+          }
+        } catch (_) {
+          on = !!enableHoverTooltipsToggle?.checked;
+        }
         toggleSettingVisibility('tooltipFontSize', on);
       };
       if (enableHoverTooltipsToggle)
         enableHoverTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
+      // Also react to Allow Player Tooltips changes (GM view) so preview updates
+      if (allowPlayerTooltipsToggle)
+        allowPlayerTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
       applyHoverTooltipVisibility();
 
       // Hide all Auto-cover settings unless the main toggle is on
@@ -541,7 +577,7 @@ export function registerSettings() {
         hint: 'Grouped settings by category (General, Visibility & Hover, Seek & Range, Auto Cover, Advanced)',
         icon: 'fas fa-sliders-h',
         type: VisionerSettingsForm,
-        restricted: true,
+        restricted: false,
       });
     } catch (_) {}
   } catch (error) {

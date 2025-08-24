@@ -9,122 +9,51 @@ import {
   getCoverBonusByState,
   getCoverImageForState,
   getCoverLabel,
+  getCoverStealthBonusByState,
 } from '../helpers/cover-helpers.js';
-import { getCoverBetween, getVisibilityBetween, setCoverBetween } from '../utils.js';
+import {
+  distancePointToSegment,
+  segmentIntersectsRect
+} from '../helpers/geometry-utils.js';
+import {
+  getTokenRect
+} from '../helpers/size-elevation-utils.js';
+import { getCoverBetween, setCoverBetween } from '../utils.js';
+import {
+  isAttackContext,
+  isAttackLikeMessageData,
+  normalizeTokenRef,
+  resolveAttackerFromCtx,
+  resolveTargetFromCtx,
+  resolveTargetTokenIdFromData,
+} from './context-resolution.js';
+import {
+  evaluateCoverBy3DSampling,
+  evaluateCoverByCoverage,
+  evaluateCoverBySize,
+  evaluateCoverByTactical,
+} from './cover-evaluation.js';
+import {
+  getAutoCoverFilterSettings,
+  getIntersectionMode,
+} from './settings-config.js';
+import {
+  getEligibleBlockingTokens,
+} from './token-filtering.js';
+import {
+  evaluateWallsCover
+} from './wall-detection.js';
 
-// ----- helpers
-function normalizeTokenRef(ref) {
-  try {
-    if (!ref) return null;
-    let s = typeof ref === 'string' ? ref.trim() : String(ref);
-    // Strip surrounding quotes
-    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))
-      s = s.slice(1, -1);
-    // If it's a UUID, extract the final Token.<id> segment
-    const m = s.match(/Token\.([^.\s]+)$/);
-    if (m && m[1]) return m[1];
-    // Otherwise assume it's already the token id
-    return s;
-  } catch (_) {
-    return ref;
-  }
-}
 
-// For 'any' mode, be more permissive: if center-to-center misses, also try
-// attacker center → target corners and target center → attacker corners.
-function intersectsBetweenTokens(attacker, target, rect, mode) {
-  const p1 = attacker.center ?? attacker.getCenter?.();
-  const p2 = target.center ?? target.getCenter?.();
-  if (p1 && p2 && centerLineIntersectsRect(p1, p2, rect, mode)) return true;
-  if (mode !== 'any') return false;
 
-  try {
-    const aRect = getTokenRect(attacker);
-    const tRect = getTokenRect(target);
-    const aSize = attacker?.actor?.system?.traits?.size?.value ?? 'med';
-    const tSize = target?.actor?.system?.traits?.size?.value ?? 'med';
-    const aCorners = getTokenCorners(attacker, aRect, aSize);
-    const tCorners = getTokenCorners(target, tRect, tSize);
 
-    // attacker center → target corners
-    if (p1) {
-      for (const tc of tCorners) {
-        if (segmentIntersectsRect(p1, tc, rect)) return true;
-      }
-    }
-    // target center → attacker corners
-    if (p2) {
-      for (const ac of aCorners) {
-        if (segmentIntersectsRect(p2, ac, rect)) return true;
-      }
-    }
-  } catch (_) {}
 
-  return false;
-}
 
-// ----- elevation/height utilities -----
-function parseFeet(value) {
-  if (value == null) return null;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const m = value.trim().match(/(-?\d+(?:\.\d+)?)/);
-    if (m) return Number(m[1]);
-  }
-  return null;
-}
 
-const SIZE_TO_HEIGHT_FT = {
-  tiny: 2.5,
-  sm: 5,
-  small: 5,
-  med: 5,
-  medium: 5,
-  lg: 10,
-  large: 10,
-  huge: 15,
-  grg: 20,
-  gargantuan: 20,
-};
 
-function getTokenHeightFt(token) {
-  try {
-    // 1) Module flag override on token document
-    const flagH = token?.document?.getFlag?.(MODULE_ID, 'heightFt');
-    const fromFlag = parseFeet(flagH);
-    if (fromFlag != null) return fromFlag;
-    // Size-only mode: use actor size category to determine height
-    const size = token?.actor?.system?.traits?.size?.value ?? 'med';
-    return SIZE_TO_HEIGHT_FT[size] ?? 5;
-  } catch (_) {
-    return 5;
-  }
-}
 
-function getTokenVerticalSpanFt(token) {
-  try {
-    const elev = Number(token?.document?.elevation ?? token?.elevation ?? 0) || 0;
-    const h = getTokenHeightFt(token);
-    const bottom = Math.min(elev, elev + h);
-    const top = Math.max(elev, elev + h);
-    return { bottom, top };
-  } catch (_) {
-    const elev = Number(token?.document?.elevation ?? token?.elevation ?? 0) || 0;
-    return { bottom: elev, top: elev + 5 };
-  }
-}
-const SIZE_ORDER = {
-  tiny: 0,
-  sm: 1,
-  small: 1,
-  med: 2,
-  medium: 2,
-  lg: 3,
-  large: 3,
-  huge: 4,
-  grg: 5,
-  gargantuan: 5,
-};
+
+
 
 // Track attacker→target pairs for cleanup when the final message lacks target info
 const _activePairsByAttacker = new Map(); // attackerId -> Set<targetId>
@@ -162,570 +91,57 @@ function _getActivePairsInvolving(tokenId) {
   return pairs;
 }
 
-export function getSizeRank(token) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Detect cover using an arbitrary origin point instead of an attacker token.
+ * origin: { x:number, y:number }
+ */
+export function detectCoverStateFromPoint(origin, target, options = {}) {
   try {
-    const v = token?.actor?.system?.traits?.size?.value ?? 'med';
-    return SIZE_ORDER[v] ?? 2;
-  } catch (_) {
-    return 2;
-  }
-}
-function getTokenRect(token) {
-  const x1 = token.document.x;
-  const y1 = token.document.y;
-  const width = token.document.width * canvas.grid.size;
-  const height = token.document.height * canvas.grid.size;
-  return { x1, y1, x2: x1 + width, y2: y1 + height };
-}
-// Common corner extraction with special handling for tiny creatures
-function getTokenCorners(token, rect, sizeValue) {
-  try {
-    const size = sizeValue ?? token?.actor?.system?.traits?.size?.value ?? 'med';
-    if (size === 'tiny') {
-      const centerX = (rect.x1 + rect.x2) / 2;
-      const centerY = (rect.y1 + rect.y2) / 2;
-      const gridSize = canvas?.grid?.size || 50;
-      // Use 0.7-square effective area for cover (35% from center in each direction)
-      const halfEffective = gridSize * 0.35;
-      return [
-        { x: centerX - halfEffective, y: centerY - halfEffective }, // top-left
-        { x: centerX + halfEffective, y: centerY - halfEffective }, // top-right
-        { x: centerX + halfEffective, y: centerY + halfEffective }, // bottom-right
-        { x: centerX - halfEffective, y: centerY + halfEffective }, // bottom-left
-      ];
-    }
-    // Regular creatures use document boundaries
-    return [
-      { x: rect.x1, y: rect.y1 }, // top-left
-      { x: rect.x2, y: rect.y1 }, // top-right
-      { x: rect.x2, y: rect.y2 }, // bottom-right
-      { x: rect.x1, y: rect.y2 }, // bottom-left
-    ];
-  } catch (_) {
-    // Fallback to token center if anything goes wrong
-    const c = token.center ?? token.getCenter?.() ?? { x: 0, y: 0 };
-    return [c, c, c, c];
-  }
-}
-function getTokenBoundaryPoints(token) {
-  try {
-    const rect = getTokenRect(token);
-    const cx = (rect.x1 + rect.x2) / 2;
-    const cy = (rect.y1 + rect.y2) / 2;
-    return [
-      { x: rect.x1, y: rect.y1 }, // top-left
-      { x: rect.x2, y: rect.y1 }, // top-right
-      { x: rect.x2, y: rect.y2 }, // bottom-right
-      { x: rect.x1, y: rect.y2 }, // bottom-left
-      { x: cx, y: rect.y1 }, // mid-top
-      { x: rect.x2, y: cy }, // mid-right
-      { x: cx, y: rect.y2 }, // mid-bottom
-      { x: rect.x1, y: cy }, // mid-left
-      { x: cx, y: cy }, // center
-    ];
-  } catch (_) {
-    const c = token.center ?? token.getCenter?.() ?? { x: 0, y: 0 };
-    return [c];
-  }
-}
-function pointInRect(px, py, rect) {
-  return px >= rect.x1 && px <= rect.x2 && py >= rect.y1 && py <= rect.y2;
-}
-function segmentsIntersect(p1, p2, q1, q2) {
-  // Correct orientation test uses vectors AB and AC (not AB and BC)
-  const o = (a, b, c) => Math.sign((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
-  const onSeg = (a, b, c) =>
-    Math.min(a.x, b.x) <= c.x &&
-    c.x <= Math.max(a.x, b.x) &&
-    Math.min(a.y, b.y) <= c.y &&
-    c.y <= Math.max(a.y, b.y);
-  const o1 = o(p1, p2, q1);
-  const o2 = o(p1, p2, q2);
-  const o3 = o(q1, q2, p1);
-  const o4 = o(q1, q2, p2);
-  if (o1 !== o2 && o3 !== o4) return true;
-  if (o1 === 0 && onSeg(p1, p2, q1)) return true;
-  if (o2 === 0 && onSeg(p1, p2, q2)) return true;
-  if (o3 === 0 && onSeg(q1, q2, p1)) return true;
-  if (o4 === 0 && onSeg(q1, q2, p2)) return true;
-  return false;
-}
-function segmentIntersectsRect(p1, p2, rect) {
-  if (pointInRect(p1.x, p1.y, rect) || pointInRect(p2.x, p2.y, rect)) return true;
-  const r1 = { x: rect.x1, y: rect.y1 };
-  const r2 = { x: rect.x2, y: rect.y1 };
-  const r3 = { x: rect.x2, y: rect.y2 };
-  const r4 = { x: rect.x1, y: rect.y2 };
-  return (
-    segmentsIntersect(p1, p2, r1, r2) ||
-    segmentsIntersect(p1, p2, r2, r3) ||
-    segmentsIntersect(p1, p2, r3, r4) ||
-    segmentsIntersect(p1, p2, r4, r1)
-  );
-}
+    if (!origin || !target) return 'none';
 
-function segmentIntersectsAnyBlockingWall(p1, p2) {
-  try {
-    const walls = canvas?.walls?.placeables || [];
-    if (!walls.length) return false;
-    for (const wall of walls) {
-      try {
-        const d = wall.document;
-        if (!d) continue;
-        // Skip walls explicitly marked as not providing cover
-        try {
-          const provides = d.getFlag?.(MODULE_ID, 'provideCover');
-          if (provides === false) continue;
-        } catch (_) {}
-        // Skip open doors; treat closed/locked doors and normal walls as blockers
-        const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
-        const doorState = Number(d.ds ?? d.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
-        if (isDoor && doorState === 1) continue; // open door → no cover contribution
-        const [x1, y1, x2, y2] = Array.isArray(d.c) ? d.c : [d.x, d.y, d.x2, d.y2];
-        if ([x1, y1, x2, y2].some((n) => typeof n !== 'number')) continue;
-        const w1 = { x: x1, y: y1 };
-        const w2 = { x: x2, y: y2 };
-        if (segmentsIntersect(p1, p2, w1, w2)) return true;
-      } catch (_) {
-        /* ignore malformed wall */
-      }
-    }
-    return false;
-  } catch (_) {
-    return false;
-  }
-}
+    // Build a minimal attacker-like object with a center at the origin point
+    const pseudoAttacker = {
+      id: 'template-origin',
+      center: { x: Number(origin.x) || 0, y: Number(origin.y) || 0 },
+      getCenter: () => ({ x: Number(origin.x) || 0, y: Number(origin.y) || 0 }),
+      actor: null,
+      document: { x: origin.x, y: origin.y, width: 0, height: 0 },
+    };
 
-function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
-  const topLeft = { x: rect.x1, y: rect.y1 };
-  const topRight = { x: rect.x2, y: rect.y1 };
-  const bottomRight = { x: rect.x2, y: rect.y2 };
-  const bottomLeft = { x: rect.x1, y: rect.y2 };
-  const edges = {
-    top: [topLeft, topRight],
-    right: [topRight, bottomRight],
-    bottom: [bottomRight, bottomLeft],
-    left: [bottomLeft, topLeft],
-  };
-  const hits = new Set();
-  if (segmentsIntersect(p1, p2, edges.top[0], edges.top[1])) hits.add('top');
-  if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add('bottom');
-  if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add('left');
-  if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add('right');
-  if (mode === 'center') {
-    const cx = (rect.x1 + rect.x2) / 2;
-    const cy = (rect.y1 + rect.y2) / 2;
-    const dist = distancePointToSegment({ x: cx, y: cy }, p1, p2);
-    // Treat as pass-through if the center lies near the line segment (within 1px)
-    return dist <= 1 && pointBetweenOnSegment({ x: cx, y: cy }, p1, p2);
-  }
-  if (mode === 'any' || mode === 'length10') {
-    const len = segmentRectIntersectionLength(p1, p2, rect);
-    if (len <= 0) return false;
-    if (mode === 'any') return true; // any graze counts
-
-    if (mode === 'length10') {
-      // Grid-square-based approach: 10% of total grid squares
-      const width = Math.abs(rect.x2 - rect.x1);
-      const height = Math.abs(rect.y2 - rect.y1);
-
-      // Calculate grid squares (assuming each square is ~50px in standard FoundryVTT)
-      const gridSize = canvas?.grid?.size || 50;
-      const widthSquares = Math.round(width / gridSize);
-      const heightSquares = Math.round(height / gridSize);
-      const totalSquares = widthSquares * heightSquares;
-
-      // Convert intersection length to "square equivalents"
-      // A full diagonal through one square ≈ √2 * gridSize ≈ 71px
-      const squareEquivalent = len / (gridSize * Math.sqrt(2));
-      const squarePercentage = (squareEquivalent / totalSquares) * 100;
-
-      return squarePercentage >= 10;
-    }
-
-    // For other modes (length50), use the old diagonal approach
-    const width = Math.abs(rect.x2 - rect.x1);
-    const height = Math.abs(rect.y2 - rect.y1);
-    const tokenDiagonal = Math.sqrt(width * width + height * height);
-    const ratio = len / tokenDiagonal;
-    const threshold = 0.5;
-    return ratio >= threshold;
-  }
-  // 'any' behaves like edge-hit (any side), not strict center capture
-  return hits.size > 0;
-}
-
-function segmentRectIntersectionLength(p1, p2, rect) {
-  // Liang-Barsky clipping to get [t0,t1] of the segment inside the rect
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  let t0 = 0;
-  let t1 = 1;
-  const p = [-dx, dx, -dy, dy];
-  const q = [p1.x - rect.x1, rect.x2 - p1.x, p1.y - rect.y1, rect.y2 - p1.y];
-  for (let i = 0; i < 4; i += 1) {
-    const pi = p[i];
-    const qi = q[i];
-    if (pi === 0) {
-      if (qi < 0) return 0;
-    } else {
-      const r = qi / pi;
-      if (pi < 0) {
-        if (r > t1) return 0;
-        if (r > t0) t0 = r;
-      } else {
-        if (r < t0) return 0;
-        if (r < t1) t1 = r;
-      }
-    }
-  }
-  if (t0 > t1) return 0;
-  const segLen = Math.hypot(dx, dy);
-  return Math.max(0, segLen * Math.max(0, t1 - t0));
-}
-
-function segmentRectIntersectionRange(p1, p2, rect) {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  let t0 = 0;
-  let t1 = 1;
-  const p = [-dx, dx, -dy, dy];
-  const q = [p1.x - rect.x1, rect.x2 - p1.x, p1.y - rect.y1, rect.y2 - p1.y];
-  for (let i = 0; i < 4; i += 1) {
-    const pi = p[i];
-    const qi = q[i];
-    if (pi === 0) {
-      if (qi < 0) return null;
-    } else {
-      const r = qi / pi;
-      if (pi < 0) {
-        if (r > t1) return null;
-        if (r > t0) t0 = r;
-      } else {
-        if (r < t0) return null;
-        if (r < t1) t1 = r;
-      }
-    }
-  }
-  if (t0 > t1) return null;
-  return [Math.max(0, t0), Math.min(1, t1)];
-}
-
-function distancePointToSegment(pt, a, b) {
-  const abx = b.x - a.x;
-  const aby = b.y - a.y;
-  const apx = pt.x - a.x;
-  const apy = pt.y - a.y;
-  const ab2 = abx * abx + aby * aby;
-  if (ab2 === 0) return Math.hypot(apx, apy);
-  let t = (apx * abx + apy * aby) / ab2;
-  t = Math.max(0, Math.min(1, t));
-  const cx = a.x + t * abx;
-  const cy = a.y + t * aby;
-  return Math.hypot(pt.x - cx, pt.y - cy);
-}
-
-function pointBetweenOnSegment(pt, a, b) {
-  const minX = Math.min(a.x, b.x) - 1e-6;
-  const maxX = Math.max(a.x, b.x) + 1e-6;
-  const minY = Math.min(a.y, b.y) - 1e-6;
-  const maxY = Math.max(a.y, b.y) + 1e-6;
-  return pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY;
-}
-
-// ----- strategy helpers: configuration and evaluators
-
-function getIntersectionMode() {
-  const mode = game.settings?.get?.(MODULE_ID, 'autoCoverTokenIntersectionMode');
-  return mode || 'any';
-}
-
-function getAutoCoverFilterSettings(attacker) {
-  const ignoreUndetected = !!game.settings?.get?.(MODULE_ID, 'autoCoverIgnoreUndetected');
-  const ignoreDead = !!game.settings?.get?.(MODULE_ID, 'autoCoverIgnoreDead');
-  const ignoreAllies = !!game.settings?.get?.(MODULE_ID, 'autoCoverIgnoreAllies');
-  const respectIgnoreFlag = !!game.settings?.get?.(MODULE_ID, 'autoCoverRespectIgnoreFlag');
-  const allowProneBlockers = !!game.settings?.get?.(MODULE_ID, 'autoCoverAllowProneBlockers');
-  return {
-    ignoreUndetected,
-    ignoreDead,
-    ignoreAllies,
-    respectIgnoreFlag,
-    allowProneBlockers,
-    attackerAlliance: attacker?.actor?.alliance,
-  };
-}
-
-function getEligibleBlockingTokens(attacker, target, filters) {
-  const out = [];
-
-  for (const blocker of canvas.tokens.placeables) {
-    if (!blocker?.actor) continue;
-    if (blocker === attacker || blocker === target) continue;
-
-    // Exclude controlled/selected tokens from being blockers
-    if (
-      canvas.tokens.controlled.includes(blocker) ||
-      blocker.id === attacker.id ||
-      blocker.id === target.id
-    )
-      continue;
-
-    const type = blocker.actor?.type;
-    if (type === 'loot' || type === 'hazard') continue;
-    if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover')) {
-      continue;
-    }
-    // Always ignore Foundry hidden tokens
-    if (blocker.document.hidden) {
-      continue;
-    }
-
-    // Check PF2e undetected tokens only if the setting is enabled
-    if (filters.ignoreUndetected) {
-      try {
-        // Use custom visibility perspective if provided, otherwise use attacker
-        const perspectiveToken = filters.visibilityPerspective || attacker;
-        const vis = getVisibilityBetween(perspectiveToken, blocker);
-        if (vis === 'undetected') {
-          continue;
-        }
-      } catch (_) {}
-    }
-    if (filters.ignoreDead && blocker.actor?.hitPoints?.value === 0) {
-      continue;
-    }
-    if (!filters.allowProneBlockers) {
-      try {
-        const itemConditions = blocker.actor?.itemTypes?.condition || [];
-        const legacyConditions =
-          blocker.actor?.conditions?.conditions || blocker.actor?.conditions || [];
-        const isProne =
-          itemConditions.some((c) => c?.slug === 'prone') ||
-          legacyConditions.some((c) => c?.slug === 'prone');
-        if (isProne) {
-          continue;
-        }
-      } catch (_) {}
-    }
-    if (filters.ignoreAllies && blocker.actor?.alliance === filters.attackerAlliance) {
-      continue;
-    }
-
-    out.push(blocker);
-  }
-
-  return out;
-}
-
-function evaluateCoverByCoverage(p1, p2, blockers) {
-  // Fixed side coverage thresholds: Standard at 50%, Greater at 70%
-  const lesserT = 50;
-  const greaterT = 70;
-
-  let sawAny = false;
-  let meetsStd = false;
-  let meetsGrt = false;
-  for (const b of blockers) {
-    const rect = getTokenRect(b);
-    const len = segmentRectIntersectionLength(p1, p2, rect);
-    if (len <= 0) continue;
-    sawAny = true;
-    const width = Math.abs(rect.x2 - rect.x1);
-    const height = Math.abs(rect.y2 - rect.y1);
-    const side = Math.max(width, height); // larger side in pixels
-    const f = (len / Math.max(1, side)) * 100; // percent side coverage
-    if (f >= greaterT) {
-      meetsGrt = true;
-      break;
-    }
-    if (f >= lesserT) {
-      meetsStd = true;
-    }
-  }
-
-  const result = meetsGrt ? 'greater' : meetsStd ? 'standard' : sawAny ? 'lesser' : 'none';
-  return result;
-}
-
-function evaluateCoverBySize(attacker, target, p1, p2, blockers, intersectionMode) {
-  let any = false;
-  let standard = false;
-  const attackerSize = getSizeRank(attacker);
-  const targetSize = getSizeRank(target);
-
-  for (const blocker of blockers) {
-    const rect = getTokenRect(blocker);
-    if (!intersectsBetweenTokens(attacker, target, rect, intersectionMode)) continue;
-    any = true;
-    const blockerSize = getSizeRank(blocker);
-    const sizeDiffAttacker = blockerSize - attackerSize;
-    const sizeDiffTarget = blockerSize - targetSize;
-    const grantsStandard = sizeDiffAttacker >= 2 && sizeDiffTarget >= 2;
-
-    if (grantsStandard) standard = true;
-  }
-
-  const result = any ? (standard ? 'standard' : 'lesser') : 'none';
-  return result;
-}
-
-function evaluateCoverByTactical(attacker, target, blockers) {
-  // Tactical mode: corner-to-corner calculations
-  // Choose the best corner of the attacker and check lines from all target corners to that corner
-  // This matches the "choose a corner" tactical rule
-
-  const attackerRect = getTokenRect(attacker);
-  const targetRect = getTokenRect(target);
-
-  // Debug token sizes and rectangles
-  const attackerSizeValue = attacker?.actor?.system?.traits?.size?.value ?? 'med';
-  const targetSizeValue = target?.actor?.system?.traits?.size?.value ?? 'med';
-
-  const attackerCorners = getTokenCorners(attacker, attackerRect, attackerSizeValue);
-  const targetCorners = getTokenCorners(target, targetRect, targetSizeValue);
-
-  let bestCover = 'greater'; // Start with worst case
-
-  // Try each attacker corner and find the one with the least cover (best for attacking)
-  for (let a = 0; a < attackerCorners.length; a++) {
-    const attackerCorner = attackerCorners[a];
-    let blockedLines = 0;
-    const totalLines = targetCorners.length;
-
-    // Check lines from all target corners to this attacker corner
-    for (let t = 0; t < targetCorners.length; t++) {
-      const targetCorner = targetCorners[t];
-      let lineBlocked = false;
-      let blockedBy = 'none';
-
-      // Check if this line is blocked by walls
-      if (segmentIntersectsAnyBlockingWall(targetCorner, attackerCorner)) {
-        lineBlocked = true;
-        blockedBy = 'wall';
-      }
-
-      // Check if this line is blocked by any token blockers
-      if (!lineBlocked) {
-        for (const blocker of blockers) {
-          if (blocker === attacker || blocker === target) continue;
-
-          const blockerRect = getTokenRect(blocker);
-          const intersectionLength = segmentRectIntersectionLength(
-            targetCorner,
-            attackerCorner,
-            blockerRect,
-          );
-          if (intersectionLength > 0) {
-            lineBlocked = true;
-            blockedBy = `token:${blocker.name}(${intersectionLength.toFixed(1)}px)`;
-            break;
-          }
-        }
-      }
-
-      if (lineBlocked) blockedLines++;
-    }
-
-    // Determine cover level for this attacker corner
-    let coverForThisCorner;
-    if (blockedLines === 0) coverForThisCorner = 'none';
-    else if (blockedLines === 1) coverForThisCorner = 'lesser';
-    else if (blockedLines <= 3) coverForThisCorner = 'standard';
-    else coverForThisCorner = 'greater';
-
-    // Keep the best (lowest) cover result
-    const coverOrder = ['none', 'lesser', 'standard', 'greater'];
-    if (coverOrder.indexOf(coverForThisCorner) < coverOrder.indexOf(bestCover)) {
-      bestCover = coverForThisCorner;
-    }
-  }
-
-  // Return the best (lowest) cover across attacker corners
-  return bestCover;
-}
-
-function evaluateCoverBy3DSampling(attacker, target, allBlockers) {
-  try {
-    const attSpan = getTokenVerticalSpanFt(attacker);
-    const tgtSpan = getTokenVerticalSpanFt(target);
-
-    // Compute overlap band between attacker and target vertical spans
-    const bandLow = Math.max(
-      Math.min(attSpan.bottom, attSpan.top),
-      Math.min(tgtSpan.bottom, tgtSpan.top),
-    );
-    const bandHigh = Math.min(
-      Math.max(attSpan.bottom, attSpan.top),
-      Math.max(tgtSpan.bottom, tgtSpan.top),
-    );
-
-    let samples;
-    if (bandHigh > bandLow) {
-      // Vertical overlap – sample within the overlapping band
-      const mid = (bandLow + bandHigh) / 2;
-      samples = [
-        bandLow + 0.1 * (bandHigh - bandLow),
-        mid,
-        bandHigh - 0.1 * (bandHigh - bandLow),
-      ];
-    } else {
-      // No vertical overlap – interpolate between attacker and target mid-heights
-      const zA = (attSpan.bottom + attSpan.top) / 2;
-      const zT = (tgtSpan.bottom + tgtSpan.top) / 2;
-      samples = [0.1, 0.5, 0.9].map((t) => zA + t * (zT - zA));
-    }
-
-    const coverOrder = ['none', 'lesser', 'standard', 'greater'];
-    let worst = 'none';
-
-    const overlapsZ = (span, z) => span.bottom < z && span.top > z; // strict interior overlap
-
-    for (const z of samples) {
-      // Filter blockers whose vertical span crosses this Z slice
-      const blockersAtZ = [];
-      for (const b of allBlockers) {
-        try {
-          const bs = getTokenVerticalSpanFt(b);
-          if (overlapsZ(bs, z)) blockersAtZ.push(b);
-        } catch (_) {}
-      }
-
-      // Evaluate center-to-center per slice: count intersecting blockers
-      const p1 = attacker.center ?? attacker.getCenter();
-      const p2 = target.center ?? target.getCenter();
-      let count = 0;
-      let hasStandardBySize = false;
-      const attackerSize = getSizeRank(attacker);
-      const targetSize = getSizeRank(target);
-      for (const blk of blockersAtZ) {
-        const rect = getTokenRect(blk);
-        if (segmentIntersectsRect(p1, p2, rect)) {
-          count++;
-          // size-based upgrade check
-          try {
-            const blockerSize = getSizeRank(blk);
-            const sizeDiffAttacker = blockerSize - attackerSize;
-            const sizeDiffTarget = blockerSize - targetSize;
-            if (sizeDiffAttacker >= 2 && sizeDiffTarget >= 2) hasStandardBySize = true;
-          } catch (_) {}
-        }
-      }
-      let coverAtZ = count === 0 ? 'none' : count === 1 ? 'lesser' : count <= 3 ? 'standard' : 'greater';
-      if (hasStandardBySize && coverAtZ === 'lesser') coverAtZ = 'standard';
-      if (coverOrder.indexOf(coverAtZ) > coverOrder.indexOf(worst)) worst = coverAtZ;
-      if (worst === 'greater') break; // early exit
-    }
-
-    return worst;
+    // Reuse the normal path using the pseudo attacker
+    return detectCoverStateForAttack(pseudoAttacker, target, options);
   } catch (_) {
     return 'none';
   }
 }
 
-function evaluateWallsCover(p1, p2) {
-  return segmentIntersectsAnyBlockingWall(p1, p2) ? 'standard' : 'none';
-}
+
 
 export function detectCoverStateForAttack(attacker, target, options = {}) {
   try {
@@ -797,98 +213,409 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
   }
 }
 
-export function isAttackContext(ctx) {
-  const type = ctx?.type ?? '';
-  const traits = Array.isArray(ctx?.traits) ? ctx.traits : [];
-  return type === 'attack-roll' || type === 'spell-attack-roll' || traits.includes('attack');
-}
-export function resolveAttackerFromCtx(ctx) {
-  try {
-    const tokenObj = ctx?.token?.object || ctx?.token;
-    if (tokenObj?.id) return tokenObj;
-    if (ctx?.token?.isEmbedded && ctx?.token?.object?.id) return ctx.token.object;
-    const tokenIdRaw =
-      ctx?.token?.id ||
-      ctx?.tokenId ||
-      ctx?.origin?.tokenId ||
-      ctx?.actor?.getActiveTokens?.()?.[0]?.id;
-    const tokenId = normalizeTokenRef(tokenIdRaw);
-    return tokenId ? canvas?.tokens?.get?.(tokenId) || null : null;
-  } catch (_) {
-    return null;
-  }
-}
-export function resolveTargetFromCtx(ctx) {
-  try {
-    const tObj = ctx?.target?.token?.object || ctx?.target?.token;
-    if (tObj?.id) return tObj;
-    const targetIdRaw =
-      typeof ctx?.target?.token === 'string'
-        ? ctx.target.token
-        : ctx?.target?.tokenId || ctx?.targetTokenId;
-    const targetId = normalizeTokenRef(targetIdRaw);
-    if (targetId) {
-      const byCtx = canvas?.tokens?.get?.(targetId);
-      if (byCtx) return byCtx;
-    }
-    const t =
-      Array.from(game?.user?.targets ?? [])?.[0] || Array.from(canvas?.tokens?.targets ?? [])?.[0];
-    return t || null;
-  } catch (_) {
-    return null;
-  }
-}
-export function isAttackLikeMessageData(data) {
-  const flags = data?.flags?.pf2e ?? {};
-  const ctx = flags.context ?? {};
-  const type = ctx?.type ?? '';
-  const traits = ctx?.traits ?? [];
-  if (type === 'attack-roll' || type === 'spell-attack-roll') return true;
-  if (Array.isArray(traits) && traits.includes('attack')) return true;
-  return false;
-}
-export function resolveTargetTokenIdFromData(data) {
-  try {
-    const ctxTarget = data?.flags?.pf2e?.context?.target?.token;
-    if (ctxTarget) return normalizeTokenRef(ctxTarget);
-  } catch (_) {}
-  try {
-    const pf2eTarget = data?.flags?.pf2e?.target?.token;
-    if (pf2eTarget) return normalizeTokenRef(pf2eTarget);
-  } catch (_) {}
-  try {
-    const arr = data?.flags?.pf2e?.context?.targets;
-    if (Array.isArray(arr) && arr.length > 0) {
-      const first = arr[0];
-      if (first?.token) return normalizeTokenRef(first.token);
-      if (typeof first === 'string') return normalizeTokenRef(first);
-    }
-  } catch (_) {}
-  return null;
-}
+
+
+
+
+
 
 // ----- hook handlers (used by hooks/visioner-auto-cover.js)
 export async function onPreCreateChatMessage(doc, data) {
   try {
     if (!game.settings.get('pf2e-visioner', 'autoCover')) return;
-    if (!isAttackLikeMessageData(data)) return;
+    
+    // CRITICAL: Check if this message was already handled by popup wrapper
+    const ctx = data?.flags?.pf2e?.context || {};
+    const ctxType = ctx?.type || '';
+    
+    // For reflex saves, check if popup wrapper handled it recently
+    if (ctxType === 'saving-throw') {
+      const speakerTokenId = normalizeTokenRef(data?.speaker?.token);
+      const targetTokenId = resolveTargetTokenIdFromData(data);
+      
+      if (speakerTokenId && window.pf2eVisionerPopupHandled) {
+        // Try multiple key patterns to match what popup wrapper stored
+        const possibleKeys = [
+          `${speakerTokenId}-${targetTokenId}-reflex`,
+          `${targetTokenId}-${speakerTokenId}-reflex`
+        ];
+        
+        for (const key of possibleKeys) {
+          const timestamp = window.pf2eVisionerPopupHandled.get(key);
+          if (timestamp && (Date.now() - timestamp) < 5000) { // 5 second window
+            console.debug('PF2E Visioner | onPreCreateChatMessage: SKIPPING - already handled by popup wrapper', {
+              key,
+              ageMs: Date.now() - timestamp,
+              contextType: ctxType,
+              contextStatistic: ctx.statistic
+            });
+            // Clean up the flag after use
+            window.pf2eVisionerPopupHandled.delete(key);
+            return;
+          }
+        }
+      }
+    }
+    
+    const attackLike = isAttackLikeMessageData(data);
+    if (!attackLike) {
+      try {
+        const type = ctxType || '(none)';
+        const traits = ctx?.traits;
+        console.debug('PF2E Visioner | onPreCreateChatMessage: non-attack-like message skipped', {
+          type,
+          traits,
+          hasAreaTrait: Array.isArray(traits) ? traits.includes('area') : typeof traits?.has === 'function' && traits.has('area'),
+        });
+      } catch (_) {}
+      return;
+    }
 
     const speakerTokenId = normalizeTokenRef(data?.speaker?.token);
     const targetTokenId = resolveTargetTokenIdFromData(data);
-    if (!speakerTokenId || !targetTokenId) return;
+    try {
+      const ctx = data?.flags?.pf2e?.context || {};
+      console.debug('PF2E Visioner | onPreCreateChatMessage: context', {
+        type: ctxType,
+        statistic: ctx?.statistic,
+        saveType: ctx?.save?.type,
+        saveStat: ctx?.save?.statistic,
+        traits: ctx?.traits,
+        options: ctx?.options,
+      });
+    } catch (_) {}
 
     const tokens = canvas?.tokens;
     if (!tokens?.get) return;
 
-    const attacker = tokens.get(speakerTokenId);
+    // Determine attacker differently for saving throws: the speaker is the defender
+    let attackerSource = 'speaker';
+    let attackerTokenId = speakerTokenId;
+    if (ctxType === 'saving-throw') {
+      // 1) PF2E context.origin.token (preferred for system saves)
+      try {
+        const ctxOriginToken = data?.flags?.pf2e?.context?.origin?.token;
+        const normalizedCtx = ctxOriginToken ? normalizeTokenRef(ctxOriginToken) : null;
+        if (normalizedCtx) {
+          attackerSource = 'pf2e.context.origin.token';
+          attackerTokenId = normalizedCtx;
+        }
+      } catch (_) {}
+      // 1b) PF2E origin.token (top-level)
+      if (attackerSource === 'speaker') {
+        try {
+          const originToken = data?.flags?.pf2e?.origin?.token;
+          const normalized = originToken ? normalizeTokenRef(originToken) : null;
+          if (normalized) {
+            attackerSource = 'pf2e.origin.token';
+            attackerTokenId = normalized;
+          }
+        } catch (_) {}
+      }
+      // 1c) PF2E origin.uuid (extract Token segment if present)
+      if (attackerSource === 'speaker') {
+        try {
+          const originUUID = data?.flags?.pf2e?.origin?.uuid;
+          const normalized = originUUID ? normalizeTokenRef(originUUID) : null;
+          if (normalized) {
+            attackerSource = 'pf2e.origin.uuid';
+            attackerTokenId = normalized;
+          }
+        } catch (_) {}
+      }
+      // 2) PF2E origin actor -> find a token on scene
+      if (attackerSource === 'speaker') {
+        try {
+          const originActorId = data?.flags?.pf2e?.context?.origin?.actor || data?.flags?.pf2e?.origin?.actor;
+          if (originActorId) {
+            const t = Array.from(tokens?.placeables || []).find((tk) => tk?.actor?.id === originActorId);
+            if (t?.id) {
+              attackerSource = 'pf2e.origin.actor';
+              attackerTokenId = t.id;
+            }
+          }
+        } catch (_) {}
+      }
+      // 3) Latest template origin cache (pick newest ts)
+      if (attackerSource === 'speaker') {
+        try {
+          const entries = Array.from(window?.pf2eVisionerTemplateOrigins?.entries?.() || []);
+          if (entries.length) {
+            entries.sort((a, b) => (b?.[1]?.ts || 0) - (a?.[1]?.ts || 0));
+            const candidateId = entries[0]?.[0];
+            if (candidateId && typeof candidateId === 'string') {
+              attackerSource = 'template:latest';
+              attackerTokenId = candidateId;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    let attacker = tokens.get(attackerTokenId);
+    if (!attacker) return;
+    try {
+      console.debug('PF2E Visioner | onPreCreateChatMessage: speaker/target/attacker ids', {
+        speakerTokenId,
+        targetTokenId,
+        attackerTokenId,
+        attackerSource,
+      });
+    } catch (_) {}
+
+    // Handle area damage with multiple targets (no single target in PF2E flags)
+    if (!targetTokenId && ctxType === 'damage-roll') {
+      let tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
+      // If toolbelt didn't attach targets yet, try our recent cache from template placement
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        try {
+          const out = [];
+          for (const k of (window?.pf2eVisionerTemplateCoverByTarget || new Map()).keys()) {
+            const [attId, tgtId] = String(k).split('-');
+            if (attId === attacker.id && tgtId) out.push(tgtId);
+          }
+          if (out.length > 0) tbTargets = out;
+        } catch (_) {}
+      }
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        console.debug('PF2E Visioner | damage-roll: no targets found (pf2e/pf2e-toolbelt/cache)');
+        return;
+      }
+      console.debug('PF2E Visioner | damage-roll: applying cover for multiple targets', {
+        count: tbTargets.length,
+      });
+      let originPoint = null;
+      try {
+        const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
+        if (originRec) {
+          originPoint = originRec.point;
+          console.debug('PF2E Visioner | damage-roll: found recent template origin', {
+            origin: originPoint,
+            tsAgeMs: Date.now() - (originRec?.ts || 0),
+          });
+        }
+      } catch (_) {}
+      for (const tRef of tbTargets) {
+        const tid = normalizeTokenRef(tRef);
+        const tgt = tid ? tokens.get(tid) : null;
+        if (!tgt) continue;
+        let state;
+        // Prefer cached placement cover state if available
+        try {
+          const key = `${attacker.id}-${tgt.id}`;
+          const rec = window?.pf2eVisionerTemplateCoverByTarget?.get?.(key);
+          if (rec?.state) {
+            state = rec.state;
+            console.debug('PF2E Visioner | damage-roll: using cached placement cover', { targetId: tgt.id, state, bonus: rec?.bonus, origin: rec?.origin });
+          }
+        } catch (_) {}
+        // Fallback: compute from stored origin or attacker center
+        if (!state) {
+          try {
+            if (originPoint) {
+              console.debug('PF2E Visioner | damage-roll: using template origin for target', {
+                targetId: tgt.id,
+                origin: originPoint,
+              });
+              state = detectCoverStateFromPoint(originPoint, tgt);
+            }
+          } catch (_) {}
+        }
+        if (!state) state = detectCoverStateForAttack(attacker, tgt);
+        // Log computed cover with bonus
+        try {
+          const { getCoverBonusByState } = await import('../helpers/cover-helpers.js');
+          const bonus = getCoverBonusByState(state) || 0;
+          console.debug('PF2E Visioner | damage-roll: computed cover', {
+            targetId: tgt.id,
+            state,
+            bonus,
+          });
+        } catch (_) {}
+        // Apply without ephemeral update; damage messages are not attack checks
+        try {
+          await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
+          console.debug('PF2E Visioner | damage-roll: setCoverBetween applied', {
+            attackerId: attacker.id,
+            targetId: tgt.id,
+            state,
+          });
+          try {
+            Hooks.callAll('pf2e-visioner.coverMapUpdated', {
+              observerId: attacker.id,
+              targetId: tgt.id,
+              state,
+            });
+          } catch (_) {}
+        } catch (e) {
+          console.warn('PF2E Visioner | damage-roll: failed to set cover for target', tgt?.id, e);
+        }
+      }
+      // We handled multi-target damage here; stop further single-target flow
+      return;
+    }
+
+    // Handle saving-throw with multiple targets (pf2e-toolbelt group save buttons)
+    if (!targetTokenId && ctxType === 'saving-throw') {
+      let tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
+      // Fallback to cached targets from template placement
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        try {
+          const out = [];
+          for (const k of (window?.pf2eVisionerTemplateCoverByTarget || new Map()).keys()) {
+            const [attId, tgtId] = String(k).split('-');
+            if (attId === attacker.id && tgtId) out.push(tgtId);
+          }
+          if (out.length > 0) tbTargets = out;
+        } catch (_) {}
+      }
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        console.debug('PF2E Visioner | saving-throw: no targets found (pf2e/pf2e-toolbelt/cache)');
+        return;
+      }
+      console.debug('PF2E Visioner | saving-throw: applying cover for multiple targets', {
+        count: tbTargets.length,
+      });
+      let originPoint = null;
+      try {
+        const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
+        if (originRec) {
+          originPoint = originRec.point;
+          console.debug('PF2E Visioner | saving-throw: found recent template origin', {
+            origin: originPoint,
+            tsAgeMs: Date.now() - (originRec?.ts || 0),
+          });
+        }
+      } catch (_) {}
+      for (const tRef of tbTargets) {
+        const tid = normalizeTokenRef(tRef);
+        const tgt = tid ? tokens.get(tid) : null;
+        if (!tgt) continue;
+        let state;
+        // Prefer cached placement cover state if available
+        try {
+          const key = `${attacker.id}-${tgt.id}`;
+          const rec = window?.pf2eVisionerTemplateCoverByTarget?.get?.(key);
+          if (rec?.state) {
+            state = rec.state;
+            console.debug('PF2E Visioner | saving-throw: using cached placement cover', {
+              targetId: tgt.id,
+              state,
+              bonus: rec?.bonus,
+              origin: rec?.origin,
+            });
+          }
+        } catch (_) {}
+        // Fallback: compute from stored origin or attacker center
+        if (!state) {
+          try {
+            if (originPoint) {
+              console.debug('PF2E Visioner | saving-throw: using template origin for target', {
+                targetId: tgt.id,
+                origin: originPoint,
+              });
+              state = detectCoverStateFromPoint(originPoint, tgt);
+            }
+          } catch (_) {}
+        }
+        if (!state) state = detectCoverStateForAttack(attacker, tgt);
+        // Apply without ephemeral update; ephemeral bonuses are handled by the roll wrapper
+        try {
+          await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
+          console.debug('PF2E Visioner | saving-throw: setCoverBetween applied', {
+            attackerId: attacker.id,
+            targetId: tgt.id,
+            state,
+          });
+          // Chat-message injection no longer needed: handled by roll wrapper via CheckModifier.push()
+          console.debug('PF2E Visioner | saving-throw: skipping chat message modifier injection (handled by roll wrapper)');
+          
+          try {
+            Hooks.callAll('pf2e-visioner.coverMapUpdated', {
+              observerId: attacker.id,
+              targetId: tgt.id,
+              state,
+            });
+          } catch (_) {}
+        } catch (e) {
+          console.warn('PF2E Visioner | saving-throw: failed to set cover for target', tgt?.id, e);
+        }
+      }
+      // We handled multi-target saves here; stop further single-target flow
+      return;
+    }
+
     const target = tokens.get(targetTokenId);
-    if (!attacker || !target) return;
+    if (!target) return;
+    console.debug('PF2E Visioner | onPreCreateChatMessage: attacker/target resolved', {
+      attackerId: attacker?.id,
+      targetId: target?.id,
+    });
+
+    // Guard: if attacker and defender are the same on a saving throw, try alternate resolution once
+    if (ctxType === 'saving-throw' && attacker?.id === target?.id) {
+      console.warn('PF2E Visioner | saving-throw: attacker and defender identical; attempting alternate attacker resolution');
+      // Try latest template origin as a last resort
+      try {
+        const entries = Array.from(window?.pf2eVisionerTemplateOrigins?.entries?.() || []);
+        if (entries.length) {
+          entries.sort((a, b) => (b?.[1]?.ts || 0) - (a?.[1]?.ts || 0));
+          const candidateId = entries[0]?.[0];
+          const alt = candidateId ? tokens.get(candidateId) : null;
+          if (alt && alt.id !== target.id) {
+            attacker = alt;
+            console.debug('PF2E Visioner | saving-throw: attacker replaced by latest template origin', {
+              attackerId: attacker.id,
+            });
+          }
+        }
+      } catch (_) {}
+    }
 
     // Only proceed if this user owns the attacking token or is the GM
-    if (!attacker.isOwner && !game.user.isGM) return;
+    if (!attacker.isOwner && !game.user.isGM) {
+      console.debug('PF2E Visioner | onPreCreateChatMessage: skipped (no ownership and not GM)', {
+        attackerId: attacker.id,
+        userIsGM: game.user.isGM,
+      });
+      return;
+    }
 
     // Detect base cover state
-    let state = detectCoverStateForAttack(attacker, target);
+    let state;
+    // If a stored template origin was recorded for this attacker, prefer using that point
+    try {
+      const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
+      if (originRec) {
+        console.debug('PF2E Visioner | onPreCreateChatMessage: using template origin', {
+          origin: originRec.point,
+        });
+        state = detectCoverStateFromPoint(originRec.point, target);
+      }
+    } catch (_) {}
+    if (!state) {
+      console.debug('PF2E Visioner | onPreCreateChatMessage: using attacker center for cover');
+      try {
+        const current = getCoverBetween?.(attacker, target);
+        console.debug('PF2E Visioner | onPreCreateChatMessage: current stored cover before compute', { current });
+      } catch (_) {}
+      state = detectCoverStateForAttack(attacker, target);
+      try {
+        console.debug('PF2E Visioner | onPreCreateChatMessage: computed state via detectCoverStateForAttack', { state });
+      } catch (_) {}
+    }
+    
+    // Reflex save chat-message injection no longer needed; handled by roll wrapper
+    // Intentionally left blank here to avoid duplication in message flags
+    
+    try {
+      const { getCoverBonusByState } = await import('../helpers/cover-helpers.js');
+      const bonus = getCoverBonusByState(state) || 0;
+      console.debug('PF2E Visioner | onPreCreateChatMessage: computed cover', {
+        state,
+        bonus,
+      });
+    } catch (_) {}
     const originalDetectedState = state;
     let wasOverridden = false;
     let overrideSource = null;
@@ -1018,6 +745,164 @@ export async function onRenderChatMessage(message) {
   const attacker = tokens.get(attackerId);
   if (!attacker) return;
 
+  // Post-create handling for damage rolls: toolbelt targets are available now
+  try {
+    const ctxType = data?.flags?.pf2e?.context?.type || '';
+    if (!targetId && ctxType === 'damage-roll') {
+      let tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        try {
+          const out = [];
+          for (const k of (window?.pf2eVisionerTemplateCoverByTarget || new Map()).keys()) {
+            const [attId, tgtId] = String(k).split('-');
+            if (attId === attacker.id && tgtId) out.push(tgtId);
+          }
+          if (out.length > 0) tbTargets = out;
+        } catch (_) {}
+      }
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        console.debug('PF2E Visioner | onRenderChatMessage damage-roll: no targets (pf2e/pf2e-toolbelt/cache)');
+        return;
+      }
+      console.debug('PF2E Visioner | onRenderChatMessage damage-roll: applying cover for multiple targets', {
+        count: tbTargets.length,
+      });
+      let originPoint = null;
+      try {
+        const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
+        if (originRec) originPoint = originRec.point;
+      } catch (_) {}
+      for (const tRef of tbTargets) {
+        const tid = normalizeTokenRef(tRef);
+        const tgt = tid ? tokens.get(tid) : null;
+        if (!tgt) continue;
+        let state;
+        try {
+          const key = `${attacker.id}-${tgt.id}`;
+          const rec = window?.pf2eVisionerTemplateCoverByTarget?.get?.(key);
+          if (rec?.state) {
+            state = rec.state;
+            console.debug('PF2E Visioner | onRenderChatMessage damage-roll: using cached placement cover', {
+              targetId: tgt.id,
+              state,
+            });
+          }
+        } catch (_) {}
+        if (!state) {
+          try {
+            if (originPoint) {
+              state = detectCoverStateFromPoint(originPoint, tgt);
+            }
+          } catch (_) {}
+        }
+        if (!state) state = detectCoverStateForAttack(attacker, tgt);
+        try {
+          const bonus = getCoverBonusByState(state) || 0;
+          console.debug('PF2E Visioner | onRenderChatMessage damage-roll: computed cover', {
+            targetId: tgt.id,
+            state,
+            bonus,
+          });
+        } catch (_) {}
+        try {
+          await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
+          try {
+            Hooks.callAll('pf2e-visioner.coverMapUpdated', {
+              observerId: attacker.id,
+              targetId: tgt.id,
+              state,
+            });
+          } catch (_) {}
+        } catch (e) {
+          console.warn('PF2E Visioner | onRenderChatMessage damage-roll: failed to set cover for target', tgt?.id, e);
+        }
+      }
+      // We've applied cover for all damage targets; skip the generic cleanup block
+      return;
+    }
+  } catch (_) {}
+
+  // Post-create handling for saving throws: toolbelt targets may be available now
+  try {
+    const ctxType = data?.flags?.pf2e?.context?.type || '';
+    if (!targetId && ctxType === 'saving-throw') {
+      let tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        try {
+          const out = [];
+          for (const k of (window?.pf2eVisionerTemplateCoverByTarget || new Map()).keys()) {
+            const [attId, tgtId] = String(k).split('-');
+            if (attId === attacker.id && tgtId) out.push(tgtId);
+          }
+          if (out.length > 0) tbTargets = out;
+        } catch (_) {}
+      }
+      if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
+        console.debug('PF2E Visioner | onRenderChatMessage saving-throw: no targets (pf2e/pf2e-toolbelt/cache)');
+        return;
+      }
+      console.debug('PF2E Visioner | onRenderChatMessage saving-throw: applying cover for multiple targets', {
+        count: tbTargets.length,
+      });
+      let originPoint = null;
+      try {
+        const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
+        if (originRec) originPoint = originRec.point;
+      } catch (_) {}
+      for (const tRef of tbTargets) {
+        const tid = normalizeTokenRef(tRef);
+        const tgt = tid ? tokens.get(tid) : null;
+        if (!tgt) continue;
+        let state;
+        try {
+          const key = `${attacker.id}-${tgt.id}`;
+          const rec = window?.pf2eVisionerTemplateCoverByTarget?.get?.(key);
+          if (rec?.state) {
+            state = rec.state;
+            console.debug('PF2E Visioner | onRenderChatMessage saving-throw: using cached placement cover', {
+              targetId: tgt.id,
+              state,
+            });
+          }
+        } catch (_) {}
+        if (!state) {
+          try {
+            if (originPoint) {
+              state = detectCoverStateFromPoint(originPoint, tgt);
+            }
+          } catch (_) {}
+        }
+        if (!state) state = detectCoverStateForAttack(attacker, tgt);
+        try {
+          const bonus = getCoverBonusByState(state) || 0;
+          console.debug('PF2E Visioner | onRenderChatMessage saving-throw: computed cover', {
+            targetId: tgt.id,
+            state,
+            bonus,
+          });
+        } catch (_) {}
+        try {
+          await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
+          try {
+            Hooks.callAll('pf2e-visioner.coverMapUpdated', {
+              observerId: attacker.id,
+              targetId: tgt.id,
+              state,
+            });
+          } catch (_) {}
+        } catch (e) {
+          console.warn(
+            'PF2E Visioner | onRenderChatMessage saving-throw: failed to set cover for target',
+            tgt?.id,
+            e,
+          );
+        }
+      }
+      // We've applied cover for all save targets; skip the generic cleanup block
+      return;
+    }
+  } catch (_) {}
+
   // Only proceed if this user owns the attacking token or is the GM
   if (!attacker.isOwner && !game.user.isGM) return;
 
@@ -1049,13 +934,330 @@ export async function onRenderChatMessage(message) {
 export async function onRenderCheckModifiersDialog(dialog, html) {
   try {
     if (!game.settings.get('pf2e-visioner', 'autoCover')) return;
+    
     const ctx = dialog?.context ?? {};
-    if (!isAttackContext(ctx)) return;
-    const attacker = resolveAttackerFromCtx(ctx);
-    const target = resolveTargetFromCtx(ctx);
-    if (!attacker || !target) return;
-    const state = detectCoverStateForAttack(attacker, target);
-    if (state !== 'none') {
+    
+    // ENHANCED: Handle both attack contexts AND saving throw contexts
+    const isAttackCtx = isAttackContext(ctx);
+    const isSavingThrowCtx = ctx?.type === 'saving-throw';
+    const isStealthCheck = ctx?.type === 'skill-check' && ctx?.domains.includes('stealth');
+    // Only proceed if this is an attack or saving throw
+    if (!isAttackCtx && !isSavingThrowCtx && !isStealthCheck ) {
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: not attack or saving throw context, skipping');
+      return;
+    }
+    
+    let attacker = null;
+    let target = null;
+    let state = 'none';
+    
+    if (isAttackCtx) {
+      // Original attack logic
+      attacker = resolveAttackerFromCtx(ctx);
+      target = resolveTargetFromCtx(ctx);
+      if (!attacker || !target) return;
+      state = detectCoverStateForAttack(attacker, target);
+      
+    } else if (isStealthCheck) {
+      // NEW: Handle stealth check contexts
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: stealth check context detected', {
+        type: ctx.type,
+        statistic: ctx.statistic,
+        domains: ctx.domains,
+        actor: ctx.actor?.name
+      });
+      
+      // Resolve hider (actor making the stealth check)
+      const hider = ctx?.actor?.getActiveTokens?.()?.[0] || ctx?.token?.object;
+      if (!hider) {
+        console.debug('PF2E Visioner | onRenderCheckModifiersDialog: no hider token found for stealth check');
+        return;
+      }
+
+      // Find the first observer the hider has cover from
+      let bestObserver = null;
+      let bestState = 'none';
+      let coverOverride = false;
+      
+      // Check for cover overrides first (similar to hide action)
+      // 1. Roll dialog override (highest priority)
+      if (dialog?._pvCoverOverride) {
+        bestState = dialog._pvCoverOverride;
+        coverOverride = true;
+        console.debug('PF2E Visioner | Stealth dialog: Found roll dialog override:', {
+          coverState: bestState,
+          dialogOverride: dialog._pvCoverOverride
+        });
+      }
+      // 2. Global popup/dialog overrides
+      else {
+        try {
+          const observers = (canvas?.tokens?.placeables || [])
+            .filter((t) => t && t.actor && t.id !== hider.id);
+          
+          for (const obs of observers) {
+            const overrideKey = `${hider.id}-${obs.id}`;
+            
+            // Check popup override
+            if (window.pf2eVisionerPopupOverrides?.has(overrideKey)) {
+              bestState = window.pf2eVisionerPopupOverrides.get(overrideKey);
+              bestObserver = obs;
+              coverOverride = true;
+              console.debug('PF2E Visioner | Stealth dialog: Found popup override:', {
+                overrideKey,
+                coverState: bestState
+              });
+              break;
+            }
+            // Check global dialog override
+            else if (window.pf2eVisionerDialogOverrides?.has(overrideKey)) {
+              bestState = window.pf2eVisionerDialogOverrides.get(overrideKey);
+              bestObserver = obs;
+              coverOverride = true;
+              console.debug('PF2E Visioner | Stealth dialog: Found global dialog override:', {
+                overrideKey,
+                coverState: bestState
+              });
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+      
+      // If no override found, calculate cover automatically
+      if (!coverOverride) {
+        try {
+          const observers = (canvas?.tokens?.placeables || [])
+            .filter((t) => t && t.actor && t.id !== hider.id);
+          for (const obs of observers) {
+            const s = detectCoverStateForAttack(hider, obs);
+            if (s && s !== 'none') {
+              bestObserver = obs;
+              bestState = s;
+              break; // first observer with cover
+            }
+          }
+        } catch (_) {}
+      }
+
+      attacker = hider;
+      target = bestObserver;
+      state = bestState;
+
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: stealth tokens resolved', {
+        hiderId: attacker?.id,
+        observerId: target?.id,
+        state
+      });
+      
+      if (isStealthCheck && state !== 'none') {
+        const bonus = getCoverStealthBonusByState(state) || 0;
+        if (bonus > 1) {
+          console.debug('PF2E Visioner | onRenderCheckModifiersDialog: injecting cover modifier for stealth check', {
+            state,
+            bonus
+          });
+          // Persist for downstream Hide outcome adjustments
+          try {
+            if (typeof window !== 'undefined') {
+              window.pf2eVisionerStealthLast = { state, bonus, ts: Date.now(), source: 'dialog' };
+            }
+          } catch (_) {}
+          
+          // Check if cover modifier already exists in the dialog
+          const existingMods = dialog?.check?.modifiers || [];
+          const hasExistingCover = existingMods.some(m => m?.slug === 'pf2e-visioner-cover');
+          
+          if (!hasExistingCover) {
+            // Create and inject the cover modifier directly into the dialog's check object
+            let coverModifier;
+            try {
+              if (game?.pf2e?.Modifier) {
+                coverModifier = new game.pf2e.Modifier({
+                  slug: 'pf2e-visioner-cover',
+                  label: state === 'greater' ? 'Greater Cover' : 
+                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  modifier: bonus,
+                  type: 'circumstance'
+                });
+              } else {
+                coverModifier = {
+                  slug: 'pf2e-visioner-cover',
+                  label: state === 'greater' ? 'Greater Cover' : 
+                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  modifier: bonus,
+                  type: 'circumstance'
+                };
+              }
+              
+              // Add to the dialog's check modifiers
+              if (dialog.check && Array.isArray(dialog.check.modifiers)) {
+                dialog.check.modifiers.push(coverModifier);
+                
+                // Recalculate the total
+                if (typeof dialog.check.calculateTotal === 'function') {
+                  const rollOptions = new Set(ctx.options || []);
+                  // rollOptions.add('action:hide');
+                  // rollOptions.add('action:sneak');
+                  // rollOptions.add('avoid-detection');
+                  dialog.check.calculateTotal(rollOptions);
+                }
+                
+                console.debug('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier injected into dialog check', {
+                  modifier: coverModifier,
+                  totalModifiers: dialog.check.modifiers.length,
+                  newTotal: dialog.check.totalModifier
+                });
+                
+                // Force the dialog to re-render to show the new modifier
+                try {
+                  dialog.render(false);
+                  console.debug('PF2E Visioner | onRenderCheckModifiersDialog: dialog re-rendered with cover modifier');
+                } catch (e) {
+                  console.debug('PF2E Visioner | Dialog re-render failed:', e);
+                }
+              }
+            } catch (e) {
+              console.warn('PF2E Visioner | Failed to inject cover modifier into dialog:', e);
+            }
+          } else {
+            console.debug('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier already exists in dialog');
+          }
+        }
+      }
+    } 
+    else if (isSavingThrowCtx) {
+      // NEW: Handle saving throw contexts
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: saving throw context detected', {
+        type: ctx.type,
+        statistic: ctx.statistic,
+        domains: ctx.domains,
+        actor: ctx.actor?.name
+      });
+      
+      // For saving throws, the actor making the save is the "target" (defender)
+      target = ctx.actor?.getActiveTokens?.()?.[0];
+      if (!target) {
+        console.debug('PF2E Visioner | onRenderCheckModifiersDialog: no target token found for saving throw');
+        return;
+      }
+      
+      // Try to find the attacker (origin of the effect requiring the save)
+      // Check recent template origins first
+      const templateOrigins = window?.pf2eVisionerTemplateOrigins;
+      if (templateOrigins) {
+        for (const [tokenId, data] of templateOrigins.entries()) {
+          if (data.ts && (Date.now() - data.ts) < 30000) { // 30 second window
+            const token = canvas.tokens.get(tokenId);
+            if (token && token.id !== target.id) {
+              attacker = token;
+              console.debug('PF2E Visioner | onRenderCheckModifiersDialog: found attacker from template origin', {
+                attackerId: attacker.id,
+                templateAge: Date.now() - data.ts
+              });
+              break;
+            }
+          }
+        }
+      }
+      
+      // Fallback: controlled token or targeted tokens
+      if (!attacker) {
+        attacker = canvas.tokens.controlled?.[0] || 
+                  Array.from(game.user.targets)?.[0]?.document?.object;
+      }
+      
+      if (!attacker) {
+        console.debug('PF2E Visioner | onRenderCheckModifiersDialog: no attacker found for saving throw');
+        return;
+      }
+      
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: tokens resolved for saving throw', {
+        attackerId: attacker.id,
+        targetId: target.id
+      });
+      
+      // Calculate cover for saving throw
+      state = detectCoverStateForAttack(attacker, target);
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: calculated cover state for saving throw', {
+        state
+      });
+      
+      // CRITICAL: For reflex saves with area effects, automatically inject the cover modifier
+      const isReflexSave = ctx.statistic === 'reflex' || 
+                          (Array.isArray(ctx.domains) && ctx.domains.includes('reflex'));
+      
+      if (isReflexSave && state !== 'none') {
+        const bonus = getCoverBonusByState(state) || 0;
+        if (bonus > 1) {
+          console.debug('PF2E Visioner | onRenderCheckModifiersDialog: injecting cover modifier for reflex save', {
+            state,
+            bonus
+          });
+          
+          // Check if cover modifier already exists in the dialog
+          const existingMods = dialog?.check?.modifiers || [];
+          const hasExistingCover = existingMods.some(m => m?.slug === 'pf2e-visioner-cover');
+          
+          if (!hasExistingCover) {
+            // Create and inject the cover modifier directly into the dialog's check object
+            let coverModifier;
+            try {
+              if (game?.pf2e?.Modifier) {
+                coverModifier = new game.pf2e.Modifier({
+                  slug: 'pf2e-visioner-cover',
+                  label: state === 'greater' ? 'Greater Cover' : 
+                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  modifier: bonus,
+                  type: 'circumstance'
+                });
+              } else {
+                coverModifier = {
+                  slug: 'pf2e-visioner-cover',
+                  label: state === 'greater' ? 'Greater Cover' : 
+                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  modifier: bonus,
+                  type: 'circumstance'
+                };
+              }
+              
+              // Add to the dialog's check modifiers
+              if (dialog.check && Array.isArray(dialog.check.modifiers)) {
+                dialog.check.modifiers.push(coverModifier);
+                
+                // Recalculate the total
+                if (typeof dialog.check.calculateTotal === 'function') {
+                  const rollOptions = new Set(ctx.options || []);
+                  rollOptions.add('area-effect');
+                  dialog.check.calculateTotal(rollOptions);
+                }
+                
+                console.debug('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier injected into dialog check', {
+                  modifier: coverModifier,
+                  totalModifiers: dialog.check.modifiers.length,
+                  newTotal: dialog.check.totalModifier
+                });
+                
+                // Force the dialog to re-render to show the new modifier
+                try {
+                  dialog.render(false);
+                  console.debug('PF2E Visioner | onRenderCheckModifiersDialog: dialog re-rendered with cover modifier');
+                } catch (e) {
+                  console.debug('PF2E Visioner | Dialog re-render failed:', e);
+                }
+              }
+            } catch (e) {
+              console.warn('PF2E Visioner | Failed to inject cover modifier into dialog:', e);
+            }
+          } else {
+            console.debug('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier already exists in dialog');
+          }
+        }
+      }
+    }
+    
+    // Apply cover state between tokens (for both attacks and saves)
+    if (attacker && target && state !== 'none') {
       await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
       try {
         Hooks.callAll('pf2e-visioner.coverMapUpdated', {
@@ -1083,7 +1285,10 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         const states = ['none', 'lesser', 'standard', 'greater'];
         for (const s of states) {
           const label = getCoverLabel(s);
-          const bonus = getCoverBonusByState(s);
+          // Use appropriate bonus function based on context
+          const bonus = isStealthCheck ? 
+            getCoverStealthBonusByState(s) : 
+            getCoverBonusByState(s);
           const isActive = s === current;
           const cfg = COVER_STATES?.[s] || {};
           const iconClass =
@@ -1114,7 +1319,18 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           try {
             const btn = ev.currentTarget;
             const sel = btn?.dataset?.state || 'none';
+            const oldOverride = dialog._pvCoverOverride;
             dialog._pvCoverOverride = sel;
+            
+            console.debug('PF2E Visioner | Cover override button clicked:', {
+              selectedState: sel,
+              oldOverride,
+              newOverride: dialog._pvCoverOverride,
+              isStealthCheck,
+              dialogId: dialog.id,
+              dialogTitle: dialog.title
+            });
+            
             container.find('.pv-cover-btn').each((_, el) => {
               const active = el.dataset?.state === sel;
               el.classList.toggle('active', active);
@@ -1122,7 +1338,9 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                 ? 'var(--color-bg-tertiary, rgba(0,0,0,0.2))'
                 : 'transparent';
             });
-          } catch (_) {}
+          } catch (e) {
+            console.error('PF2E Visioner | Error in cover override button click:', e);
+          }
         });
       }
     } catch (_) {}
@@ -1130,6 +1348,14 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
     // Ensure current roll uses selected (or auto) cover via dialog injection
     try {
       const rollBtnEl = html?.find?.('button.roll')?.[0];
+      console.debug('PF2E Visioner | Looking for roll button:', {
+        foundButton: !!rollBtnEl,
+        buttonId: rollBtnEl?.id,
+        alreadyBound: rollBtnEl?.dataset?.pvCoverBind,
+        dialogId: dialog.id,
+        isStealthCheck
+      });
+      
       if (rollBtnEl && !rollBtnEl.dataset?.pvCoverBind) {
         rollBtnEl.dataset.pvCoverBind = '1';
         rollBtnEl.addEventListener(
@@ -1141,6 +1367,13 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               const tgtActor = tgt?.actor;
               if (!tgtActor) return;
               const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
+              
+              console.debug('PF2E Visioner | Roll button clicked with override:', {
+                chosen,
+                dialogOverride: dialog?._pvCoverOverride,
+                isStealthCheck,
+                dialogId: dialog.id
+              });
 
               // Store the dialog override for onPreCreateChatMessage to use
               // We'll store it in a temporary global that gets picked up by the message creation
@@ -1160,6 +1393,11 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
 
                   for (const overrideKey of overrideKeys) {
                     window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
+                    console.debug('PF2E Visioner | Stored dialog override:', {
+                      key: overrideKey,
+                      value: chosen,
+                      isStealthCheck
+                    });
                   }
                 } else {
                   console.warn(
@@ -1167,8 +1405,29 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                   );
                 }
               }
+              
+              // For stealth checks, also store a direct override for the hide action
+              if (isStealthCheck && chosen !== 'none') {
+                // Store with hider->observer relationship for hide action
+                const hider = attacker;
+                const observers = (canvas?.tokens?.placeables || [])
+                  .filter((t) => t && t.actor && t.id !== hider?.getActiveTokens?.()?.[0]?.id);
+                
+                for (const obs of observers) {
+                  const hideActionKey = `${hider?.getActiveTokens?.()?.[0]?.id}-${obs.id}`;
+                  window.pf2eVisionerDialogOverrides.set(hideActionKey, chosen);
+                  console.debug('PF2E Visioner | Stored hide action override:', {
+                    key: hideActionKey,
+                    value: chosen,
+                    hiderName: hider?.name,
+                    observerName: obs.name
+                  });
+                }
+              }
 
-              const bonus = getCoverBonusByState(chosen) || 0;
+              const bonus = isStealthCheck ? 
+                getCoverStealthBonusByState(chosen) : 
+                getCoverBonusByState(chosen) || 0;
               let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
               // Always remove any previous Visioner one-shot cover effect to ensure override takes precedence
               items = items.filter(
@@ -1180,17 +1439,49 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               if (bonus > 0) {
                 const label = getCoverLabel(chosen);
                 const img = getCoverImageForState(chosen);
+                
+                // Create appropriate effect based on context
+                const effectRules = [];
+                if (isStealthCheck) {
+                  // For stealth checks, add stealth bonus
+                  effectRules.push({
+                    key: 'FlatModifier',
+                    selector: 'stealth',
+                    type: 'circumstance',
+                    value: bonus,
+                  });
+                } else {
+                  // For attack/reflex contexts, add AC and reflex bonuses
+                  effectRules.push(
+                    {
+                      key: 'FlatModifier',
+                      selector: 'ac',
+                      type: 'circumstance',
+                      value: bonus,
+                    },
+                    {
+                      key: 'FlatModifier',
+                      selector: 'reflex',
+                      type: 'circumstance',
+                      value: bonus,
+                      predicate: ['area-effect'],
+                    }
+                  );
+                }
+                
+                const description = isStealthCheck ?
+                  `<p>${label}: +${bonus} circumstance bonus to Stealth for this roll.</p>` :
+                  `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`;
+                
                 items.push({
                   name: label,
                   type: 'effect',
                   system: {
                     description: {
-                      value: `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`,
+                      value: description,
                       gm: '',
                     },
-                    rules: [
-                      { key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus },
-                    ],
+                    rules: effectRules,
                     traits: { otherTags: [], value: [] },
                     level: { value: 1 },
                     duration: { value: -1, unit: 'unlimited' },
@@ -1220,58 +1511,6 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
     } catch (_) {}
   } catch (_) {}
 }
-
-// Intercept stealth rolls to apply DC reduction from cover
-Hooks.on?.('preCreateChatMessage', (messageData) => {
-  try {
-    if (!game.settings.get(MODULE_ID, 'autoCover')) return;
-
-    // Check if this is a stealth check
-    const flags = messageData?.flags?.pf2e || {};
-    const context = flags?.context || {};
-    const isStealthCheck =
-      context?.type === 'skill-check' &&
-      (context?.skill === 'stealth' ||
-        context?.statistic === 'stealth' ||
-        messageData?.flavor?.toLowerCase()?.includes('stealth'));
-
-    if (!isStealthCheck) return;
-
-    // Look for any open stealth modifier dialog with cover bonus
-    const stealthDialog = Object.values(ui.windows).find(
-      (w) => w.constructor.name === 'CheckModifiersDialog' && w._pvStealthCoverBonus > 0,
-    );
-
-    if (!stealthDialog || !stealthDialog._pvStealthCoverBonus) return;
-
-    const coverBonus = stealthDialog._pvStealthCoverBonus;
-
-    // Reduce the DC by the cover bonus (equivalent to adding bonus to roll)
-    if (context.dc && typeof context.dc.value === 'number') {
-      const originalDC = context.dc.value;
-      context.dc.value = Math.max(0, originalDC - coverBonus);
-
-      // Add a note about the cover adjustment
-      const coverNote =
-        coverBonus === 4
-          ? ' (DC reduced by 4 for Greater Cover)'
-          : coverBonus === 2
-            ? ' (DC reduced by 2 for Standard Cover)'
-            : '';
-
-      if (context.dc.label) {
-        context.dc.label += coverNote;
-      } else {
-        context.dc.label = `DC ${context.dc.value}${coverNote}`;
-      }
-
-      // Also update the messageData flags
-      foundry.utils.setProperty(messageData, 'flags.pf2e.context.dc', context.dc);
-    }
-  } catch (e) {
-    console.warn('PF2E Visioner | Error adjusting stealth DC for cover:', e);
-  }
-});
 
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
 export async function onUpdateToken(tokenDoc, changes) {

@@ -95,15 +95,74 @@ export class HideActionHandler extends ActionHandlerBase {
           (w) => w.constructor.name === 'CheckModifiersDialog',
         );
 
+        console.debug('PF2E Visioner | Hide action: Checking for stealth dialog override:', {
+          foundDialog: !!stealthDialog,
+          dialogId: stealthDialog?.id,
+          dialogTitle: stealthDialog?.title,
+          dialogOverride: stealthDialog?._pvCoverOverride,
+          allDialogs: Object.values(ui.windows).map(w => ({ 
+            name: w.constructor.name, 
+            id: w.id, 
+            title: w.title, 
+            override: w._pvCoverOverride 
+          }))
+        });
+
         let coverState = null;
         let isOverride = false;
         let coverSource = 'none';
 
-        if (stealthDialog?._pvStealthCoverOverride) {
-          coverState = stealthDialog._pvStealthCoverOverride;
+        // Check for cover overrides in priority order:
+        // 1. Roll dialog override (highest priority)
+        if (stealthDialog?._pvCoverOverride) {
+          coverState = stealthDialog._pvCoverOverride;
           isOverride = true;
-          coverSource = 'override';
-        } else {
+          coverSource = 'dialog';
+          console.debug('PF2E Visioner | Hide action: Found roll dialog override:', {
+            coverState,
+            dialogOverride: stealthDialog._pvCoverOverride
+          });
+        }
+        // 2. Global popup override (from keybind popup)
+        else {
+          try {
+            const hidingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
+            const overrideKey = `${hidingToken?.id}-${subject?.id}`;
+            
+            console.debug('PF2E Visioner | Hide action: Checking global overrides:', {
+              hidingTokenId: hidingToken?.id,
+              subjectId: subject?.id,
+              overrideKey,
+              hasPopupOverrides: !!window.pf2eVisionerPopupOverrides,
+              hasDialogOverrides: !!window.pf2eVisionerDialogOverrides,
+              popupOverrideKeys: window.pf2eVisionerPopupOverrides ? Array.from(window.pf2eVisionerPopupOverrides.keys()) : [],
+              dialogOverrideKeys: window.pf2eVisionerDialogOverrides ? Array.from(window.pf2eVisionerDialogOverrides.keys()) : []
+            });
+            
+            if (window.pf2eVisionerPopupOverrides?.has(overrideKey)) {
+              coverState = window.pf2eVisionerPopupOverrides.get(overrideKey);
+              isOverride = true;
+              coverSource = 'popup';
+              console.debug('PF2E Visioner | Hide action: Found popup override:', {
+                overrideKey,
+                coverState
+              });
+            }
+            // 3. Global dialog override (from roll dialog buttons)
+            else if (window.pf2eVisionerDialogOverrides?.has(overrideKey)) {
+              coverState = window.pf2eVisionerDialogOverrides.get(overrideKey);
+              isOverride = true;
+              coverSource = 'dialog';
+              console.debug('PF2E Visioner | Hide action: Found global dialog override:', {
+                overrideKey,
+                coverState
+              });
+            }
+          } catch (_) {}
+        }
+        
+        // 4. If no override, calculate auto-cover or manual cover
+        if (!coverState || coverState === 'none') {
           // Try auto-cover first (if enabled)
           if (game.settings.get(MODULE_ID, 'autoCover')) {
             try {
@@ -136,8 +195,21 @@ export class HideActionHandler extends ActionHandlerBase {
           }
         }
 
-        if (coverState && coverState !== 'none') {
+        if (coverState) {
           const coverConfig = COVER_STATES[coverState];
+          
+          // Calculate the actual stealth bonus for the final cover state (after overrides)
+          const actualStealthBonus = coverConfig?.bonusStealth || 0;
+          
+          // Debug logging to track cover override processing
+          console.debug('PF2E Visioner | Hide action cover state processing:', {
+            coverState,
+            isOverride,
+            coverSource,
+            coverConfig,
+            actualStealthBonus,
+            originalBonus: actionData?.context?._visionerStealth?.bonus
+          });
 
           result.autoCover = {
             state: coverState,
@@ -145,13 +217,10 @@ export class HideActionHandler extends ActionHandlerBase {
             icon: coverConfig.icon,
             color: coverConfig.color,
             cssClass: coverConfig.cssClass,
-            bonus: coverConfig.bonusStealth,
+            bonus: actualStealthBonus, // Use recalculated bonus, not original roll bonus
             isOverride,
             source: coverSource, // Track whether this came from auto, manual, or override
           };
-
-          // Apply DC reduction
-          adjustedDC -= result.autoCover.bonus;
         }
       } catch (e) {
         console.error(`PF2E Visioner | Error in cover calculation for Hide action:`, e);
@@ -159,7 +228,11 @@ export class HideActionHandler extends ActionHandlerBase {
     }
 
     // Calculate roll information (stealth vs observer's perception DC)
-    const total = Number(actionData?.roll?.total ?? 0);
+    const baseTotal = Number(actionData?.roll?.total ?? 0);
+    const observerCoverState = result?.autoCover?.state ?? 'none';
+    const injectedStealthBonus = Number(result?.autoCover?.bonus);
+    const shouldSubtract = enableCoverHideAction && observerCoverState === 'none' && Number.isFinite(injectedStealthBonus) && injectedStealthBonus > 0;
+    const total = shouldSubtract ? baseTotal - injectedStealthBonus : baseTotal;
     const die = Number(
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
     );

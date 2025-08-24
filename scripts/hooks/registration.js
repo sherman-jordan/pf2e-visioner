@@ -9,6 +9,7 @@ import { registerCombatHooks } from './combat.js';
 import { onCanvasReady, onReady } from './lifecycle.js';
 import { registerTokenHooks } from './token-events.js';
 import { registerUIHooks } from './ui.js';
+import { MODULE_ID } from '../constants.js';
 
 export function registerHooks() {
   Hooks.on('ready', onReady);

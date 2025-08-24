@@ -9,6 +9,11 @@ export function getCoverBonusByState(state) {
   return cfg ? cfg.bonusAC : 0;
 }
 
+export function getCoverStealthBonusByState(state) {
+  const cfg = COVER_STATES[state];
+  return cfg ? cfg.bonusStealth : 0;
+}
+
 export function getCoverLabel(state) {
   const entry = COVER_STATES[state];
   if (entry?.label) {

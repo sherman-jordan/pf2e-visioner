@@ -4,7 +4,7 @@
  */
 
 // Debug logger removed
-import { COVER_STATES, MODULE_ID } from '../constants.js';
+import { COVER_STATES } from '../constants.js';
 import {
   getCoverBonusByState,
   getCoverImageForState,
@@ -185,16 +185,14 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
       }
     }
 
-    const intersectionModeValue = game.settings?.get?.(MODULE_ID, 'autoCoverTokenIntersectionMode');
-    const useCoverage = intersectionModeValue === 'coverage';
-    const useTactical = intersectionModeValue === 'tactical';
-    const useSampling3d = intersectionModeValue === 'sampling3d';
+    const useCoverage = intersectionMode === 'coverage';
+    const useTactical = intersectionMode === 'tactical';
+    const useSampling3d = intersectionMode === 'sampling3d';
 
     let tokenCover;
     if (useSampling3d) {
       // For 3D sampling, fetch blockers and slice by Z ourselves
-      const allBlockers = getEligibleBlockingTokens(attacker, target, filters);
-      tokenCover = evaluateCoverBy3DSampling(attacker, target, allBlockers);
+      tokenCover = evaluateCoverBy3DSampling(attacker, target, blockers);
     } else if (useTactical) {
       tokenCover = evaluateCoverByTactical(attacker, target, blockers);
     } else if (useCoverage) {

@@ -20,7 +20,8 @@ export function segmentIntersectsAnyBlockingWall(p1, p2) {
     for (const wall of walls) {
       try {
         const d = wall.document;
-        if (!d) continue;
+        // Walls with sight=0 (does not block vision)
+        if (!d || d.sight === 0) continue;
         
         // Skip walls explicitly marked as not providing cover
         try {
@@ -28,7 +29,7 @@ export function segmentIntersectsAnyBlockingWall(p1, p2) {
           if (provides === false) continue;
         } catch (_) {}
         
-        // Skip open doors; treat closed/locked doors and normal walls as blockers
+        // Skip open doors - they never provide cover
         const isDoor = Number(d.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
         const doorState = Number(d.ds ?? d.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
         if (isDoor && doorState === 1) continue; // open door → no cover contribution

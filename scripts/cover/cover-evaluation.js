@@ -5,14 +5,14 @@
 
 import { segmentIntersectsRect } from '../helpers/geometry-utils.js';
 import {
-    getSizeRank,
-    getTokenCorners,
-    getTokenRect,
-    getTokenVerticalSpanFt,
+  getSizeRank,
+  getTokenCorners,
+  getTokenRect,
+  getTokenVerticalSpanFt,
 } from '../helpers/size-elevation-utils.js';
 import {
-    intersectsBetweenTokens,
-    segmentRectIntersectionLength,
+  intersectsBetweenTokens,
+  segmentRectIntersectionLength,
 } from './line-intersection.js';
 import { segmentIntersectsAnyBlockingWall } from './wall-detection.js';
 
@@ -70,8 +70,14 @@ export function evaluateCoverBySize(attacker, target, p1, p2, blockers, intersec
   const targetSize = getSizeRank(target);
 
   for (const blocker of blockers) {
+    // Skip if blocker is the same as attacker or target
+    if (blocker.id === attacker.id || blocker.id === target.id) continue;
+    
     const rect = getTokenRect(blocker);
-    if (!intersectsBetweenTokens(attacker, target, rect, intersectionMode)) continue;
+    
+    // Pass the blocker to intersectsBetweenTokens to prevent self-blocking
+    if (!intersectsBetweenTokens(attacker, target, rect, intersectionMode, blocker)) continue;
+    
     any = true;
     const blockerSize = getSizeRank(blocker);
     const sizeDiffAttacker = blockerSize - attackerSize;

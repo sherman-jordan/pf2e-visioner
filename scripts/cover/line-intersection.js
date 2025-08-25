@@ -4,15 +4,10 @@
  */
 
 import {
-    distancePointToSegment,
-    pointBetweenOnSegment,
-    segmentIntersectsRect,
-    segmentsIntersect,
+  distancePointToSegment,
+  pointBetweenOnSegment,
+  segmentsIntersect
 } from '../helpers/geometry-utils.js';
-import {
-    getTokenCorners,
-    getTokenRect,
-} from '../helpers/size-elevation-utils.js';
 
 /**
  * Check if a line intersects with a rectangle in various modes
@@ -50,7 +45,13 @@ export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   if (mode === 'any' || mode === 'length10') {
     const len = segmentRectIntersectionLength(p1, p2, rect);
     if (len <= 0) return false;
-    if (mode === 'any') return true; // any graze counts
+    
+    if (mode === 'any') {
+      // For ANY mode, we want to check if there's a significant intersection
+      // Simply use a small percentage of the token's width as threshold
+      const width = Math.abs(rect.x2 - rect.x1);
+      return len > (width * 0.05); // 5% of token width minimum
+    }
 
     if (mode === 'length10') {
       // Grid-square-based approach: 10% of total grid squares
@@ -79,7 +80,7 @@ export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
     const threshold = 0.5;
     return ratio >= threshold;
   }
-  // 'any' behaves like edge-hit (any side), not strict center capture
+  // For other modes, check if at least one edge is hit
   return hits.size > 0;
 }
 
@@ -161,34 +162,27 @@ export function segmentRectIntersectionRange(p1, p2, rect) {
  * @param {Object} target - Target token object
  * @param {Object} rect - Rectangle with x1, y1, x2, y2 properties
  * @param {string} mode - Intersection mode
+ * @param {Object} [blocker] - The blocker token associated with the rectangle
  * @returns {boolean} True if intersection occurs
  */
-export function intersectsBetweenTokens(attacker, target, rect, mode) {
+export function intersectsBetweenTokens(attacker, target, rect, mode, blocker) {
+  // Prevent a token from being considered as providing cover to itself
+  if (blocker && (blocker.id === target.id || blocker.id === attacker.id)) {
+    return false;
+  }
+
   const p1 = attacker.center ?? attacker.getCenter?.();
   const p2 = target.center ?? target.getCenter?.();
+  
+  // Primary check: center-to-center ray
   if (p1 && p2 && centerLineIntersectsRect(p1, p2, rect, mode)) return true;
   if (mode !== 'any') return false;
 
   try {
-    const aRect = getTokenRect(attacker);
-    const tRect = getTokenRect(target);
-    const aSize = attacker?.actor?.system?.traits?.size?.value ?? 'med';
-    const tSize = target?.actor?.system?.traits?.size?.value ?? 'med';
-    const aCorners = getTokenCorners(attacker, aRect, aSize);
-    const tCorners = getTokenCorners(target, tRect, tSize);
-
-    // attacker center → target corners
-    if (p1) {
-      for (const tc of tCorners) {
-        if (segmentIntersectsRect(p1, tc, rect)) return true;
-      }
-    }
-    // target center → attacker corners
-    if (p2) {
-      for (const ac of aCorners) {
-        if (segmentIntersectsRect(p2, ac, rect)) return true;
-      }
-    }
+    // For 'any' mode, only check center-to-center ray
+    // This makes behavior more predictable and avoids excessive cover detection
+    // No additional ray checks for 'any' mode
+    return false;
   } catch (_) {}
 
   return false;

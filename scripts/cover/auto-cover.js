@@ -581,16 +581,66 @@ export async function onPreCreateChatMessage(doc, data) {
 
     // Detect base cover state
     let state;
+    
+    // For saving throws, first check our dedicated template data map (preferred source)
+    if (ctxType === 'saving-throw') {
+      try {
+        const savedTemplateData = window?.pf2eVisionerTemplateData;
+        
+        if (savedTemplateData && savedTemplateData.size > 0 && target) {
+          console.debug('PF2E Visioner | onPreCreateChatMessage: Checking template data for saving throw', {
+            templateCount: savedTemplateData.size,
+            targetId: target.id
+          });
+          
+          // Find the most recent template that contains this target
+          let mostRecentTemplate = null;
+          let mostRecentTs = 0;
+          
+          for (const [id, data] of savedTemplateData.entries()) {
+            // Check if this target is in the template's targets
+            if (data.targets && data.targets[target.id]) {
+              // Found a match - check if it's the most recent
+              if (data.timestamp > mostRecentTs) {
+                mostRecentTemplate = { id, data };
+                mostRecentTs = data.timestamp;
+              }
+            }
+          }
+          
+          if (mostRecentTemplate) {
+            const { id, data } = mostRecentTemplate;
+            
+            // Use precalculated cover
+            if (data.targets[target.id]) {
+              state = data.targets[target.id].state;
+              
+              console.debug('PF2E Visioner | onPreCreateChatMessage: USING PRECALCULATED COVER FROM TEMPLATE', {
+                templateId: id,
+                templateAge: Date.now() - data.timestamp,
+                targetId: target.id,
+                state,
+                bonus: data.targets[target.id].bonus
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.debug('PF2E Visioner | onPreCreateChatMessage: Error checking template data for saving throw', e);
+      }
+    }
+    
     // If a stored template origin was recorded for this attacker, prefer using that point
     try {
       const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
-      if (originRec) {
+      if (originRec && !state) { // Only use this if we haven't already determined state from template data
         console.debug('PF2E Visioner | onPreCreateChatMessage: using template origin', {
           origin: originRec.point,
         });
         state = detectCoverStateFromPoint(originRec.point, target);
       }
     } catch (_) {}
+    
     if (!state) {
       console.debug('PF2E Visioner | onPreCreateChatMessage: using attacker center for cover');
       try {
@@ -1176,9 +1226,219 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
       });
       
       // Calculate cover for saving throw
-      state = detectCoverStateForAttack(attacker, target);
-      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: calculated cover state for saving throw', {
-        state
+      // For AOE reflex saves, use template data and precalculated cover values
+      let state;
+      let templateId = null;
+      let templateData = null;
+      let templateOriginPoint = null;
+      
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: Checking for template data', {
+        targetId: target?.id,
+        targetName: target?.name,
+        dialogId: dialog?.id
+      });
+      
+      // First check our dedicated template data map (preferred source)
+      const savedTemplateData = window?.pf2eVisionerTemplateData;
+      
+      if (savedTemplateData && savedTemplateData.size > 0 && target) {
+        // Find the most recent template that contains this target
+        let mostRecentTemplate = null;
+        let mostRecentTs = 0;
+        
+        for (const [id, data] of savedTemplateData.entries()) {
+          // Check if this target is in the template's targets
+          if (data.targets && data.targets[target.id]) {
+            // Found a match - check if it's the most recent
+            if (data.timestamp > mostRecentTs) {
+              mostRecentTemplate = { id, data };
+              mostRecentTs = data.timestamp;
+            }
+          }
+        }
+        
+        if (mostRecentTemplate) {
+          const { id, data } = mostRecentTemplate;
+          templateId = id;
+          templateData = data;
+          templateOriginPoint = data.center;
+          
+          // Use precalculated cover
+          if (data.targets[target.id]) {
+            state = data.targets[target.id].state;
+            
+            console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING PRECALCULATED COVER', {
+              templateId: id,
+              templateAge: Date.now() - data.timestamp,
+              targetId: target.id,
+              state,
+              bonus: data.targets[target.id].bonus
+            });
+          }
+        } else {
+          // Try one more fallback - check if there are any recent templates at all
+          // This handles cases where the template data might not have been fully processed yet
+          console.debug('PF2E Visioner | onRenderCheckModifiersDialog: No direct template match, checking recent templates');
+          
+          // Find the most recent template overall
+          let mostRecentTemplate = null;
+          let mostRecentTs = 0;
+          
+          for (const [id, data] of savedTemplateData.entries()) {
+            if (data.timestamp > mostRecentTs) {
+              mostRecentTemplate = { id, data };
+              mostRecentTs = data.timestamp;
+            }
+          }
+          
+          if (mostRecentTemplate) {
+            const { id, data } = mostRecentTemplate;
+            templateId = id;
+            templateData = data;
+            templateOriginPoint = data.center;
+            
+            // Try to get the attacker token if creator ID is available
+            if (data.creatorId && !data.creatorId.startsWith('actor:')) {
+              attacker = canvas.tokens.get(data.creatorId) || null;
+            }
+            
+            console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING MOST RECENT TEMPLATE AS FALLBACK', {
+              templateId: id,
+              templateAge: Date.now() - data.timestamp,
+              hasAttacker: !!attacker,
+              attackerName: attacker?.name || 'Unknown',
+              creatorId: data.creatorId,
+              creatorType: data.creatorType
+            });
+            
+            // Calculate cover from template origin point
+            if (templateOriginPoint && target) {
+              const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
+              state = detectCoverStateFromPoint(templateOriginPoint, target);
+              
+              console.debug('PF2E Visioner | onRenderCheckModifiersDialog: CALCULATED COVER FROM TEMPLATE ORIGIN (fallback)', {
+                targetId: target.id,
+                state,
+                originPoint: templateOriginPoint
+              });
+            }
+          }
+        }
+      }
+      
+      // If we didn't find a match in active templates, try the attacker-based lookup
+      if (!state && attacker && target) {
+        // Check for cached cover data by attacker-target pair
+        const cachedKey = `${attacker.id}-${target.id}`;
+        const cachedCover = window?.pf2eVisionerTemplateCoverByTarget?.get?.(cachedKey);
+        
+        if (cachedCover) {
+          state = cachedCover.state;
+          templateOriginPoint = cachedCover.origin;
+          console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING CACHED COVER DATA', {
+            attackerId: attacker.id,
+            targetId: target.id,
+            state,
+            bonus: cachedCover.bonus
+          });
+        }
+      }
+      
+      // If no template data matched, try legacy methods
+      if (!state) {
+        // Try the attacker-based lookup
+        if (attacker && target) {
+          // Try the old template origins map
+          const templateOriginsVar = window?.pf2eVisionerTemplateOrigins;
+          if (templateOriginsVar && templateOriginsVar.has(attacker.id)) {
+            const originData = templateOriginsVar.get(attacker.id);
+            const templateOriginPoint = originData?.point;
+            
+            if (templateOriginPoint) {
+              console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING LEGACY TEMPLATE DATA', {
+                attackerId: attacker.id,
+                targetId: target.id
+              });
+              
+              // Calculate cover from template origin point
+              const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
+              state = detectCoverStateFromPoint(templateOriginPoint, target);
+            }
+          }
+        }
+      }
+      
+      // Check for area effect traits/options in the context
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: Checking for area effect traits', {
+        hasContextTraits: !!ctx?.traits,
+        contextTraits: ctx?.traits,
+        hasContextOptions: !!ctx?.options,
+        contextOptions: ctx?.options,
+        contextType: ctx?.type,
+        contextStatistic: ctx?.statistic,
+        contextDomains: ctx?.domains
+      });
+      
+      const isAreaEffect = (ctx?.traits?.has?.('area') || 
+                          Array.isArray(ctx?.traits) && ctx.traits.includes('area')) ||
+                         (Array.isArray(ctx?.options) && ctx.options.includes('area-effect')) ||
+                         (ctx?.options?.has && ctx.options.has('area-effect'));
+      
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: Area effect detection result', {
+        isAreaEffect,
+        hasAreaTrait: ctx?.traits?.has?.('area'),
+        hasAreaInTraitsArray: Array.isArray(ctx?.traits) && ctx.traits.includes('area'),
+        hasAreaEffectInOptions: (Array.isArray(ctx?.options) && ctx.options.includes('area-effect')) || 
+                               (ctx?.options?.has && ctx.options.has('area-effect'))
+      });
+      
+      // For area effects with no template data, we still want to calculate cover
+      if (!state && isAreaEffect) {
+        console.debug('PF2E Visioner | onRenderCheckModifiersDialog: AREA EFFECT DETECTED FROM CONTEXT');
+        
+        // Try to use attacker position as proxy origin point
+        let originPoint = null;
+        if (attacker) {
+          originPoint = attacker.center || { x: attacker.x, y: attacker.y };
+        } 
+        // If no attacker, try to use target position as fallback
+        else if (target) {
+          originPoint = target.center || { x: target.x, y: target.y };
+        }
+        
+        if (originPoint) {
+          console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING PROXY ORIGIN POINT', {
+            x: originPoint.x,
+            y: originPoint.y,
+            targetId: target.id
+          });
+          
+          // Since this is an area effect with no template data, use calculated cover
+          if (attacker && target) {
+            const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
+            state = detectCoverStateForAttack(attacker, target);
+          } else if (originPoint && target) {
+            const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
+            state = detectCoverStateFromPoint(originPoint, target);
+          }
+        }
+      } 
+      
+      // Final fallback - standard calculation
+      if (!state && attacker && target) {
+        console.debug('PF2E Visioner | onRenderCheckModifiersDialog: FALLBACK TO STANDARD CALCULATION');
+        const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
+        state = detectCoverStateForAttack(attacker, target);
+      }
+      
+      // Log final state determination
+      console.debug('PF2E Visioner | onRenderCheckModifiersDialog: FINAL COVER STATE', {
+        state: state || 'none',
+        targetId: target?.id,
+        attackerId: attacker?.id,
+        templateId,
+        fromTemplateData: !!templateData,
+        dialogId: dialog?.id
       });
       
       // CRITICAL: For reflex saves with area effects, automatically inject the cover modifier
@@ -1187,7 +1447,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
       
       if (isReflexSave && state !== 'none') {
         const bonus = getCoverBonusByState(state) || 0;
-        if (bonus > 1) {
+        if (bonus > 0) { // Changed from > 1 to > 0 to catch all valid bonuses
           console.debug('PF2E Visioner | onRenderCheckModifiersDialog: injecting cover modifier for reflex save', {
             state,
             bonus
@@ -1506,7 +1766,11 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           true,
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      // Add more detailed error logging for better troubleshooting
+      // This is a fix for the missing catch/finally error
+      console.error('PF2E Visioner | Error in dialog roll button handler:', e);
+    }
   } catch (_) {}
 }
 

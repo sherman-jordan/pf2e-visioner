@@ -4,6 +4,8 @@
  */
 
 import { MODULE_ID } from '../constants.js';
+console.debug('PF2E Visioner | MODULE_ID imported:', MODULE_ID);
+
 import {
   detectCoverStateForAttack,
   detectCoverStateFromPoint,
@@ -24,136 +26,406 @@ import { getCoverBonusByState } from '../helpers/cover-helpers.js';
 // - window.pf2eVisionerDialogOverrides (from roll dialog)
 
 export function registerAutoCoverHooks() {
+  console.debug('PF2E Visioner | registerAutoCoverHooks called');
   Hooks.on('preCreateChatMessage', onPreCreateChatMessage);
   Hooks.on('renderChatMessageHTML', onRenderChatMessage);
   Hooks.on('renderCheckModifiersDialog', onRenderCheckModifiersDialog);
   Hooks.on('updateToken', onUpdateToken);
 
-  // Store recent template origins keyed by attacker token id for point-based cover calc
-  if (!window.pf2eVisionerTemplateOrigins) window.pf2eVisionerTemplateOrigins = new Map();
+  // Store template data with their targets for reflex save calculations
+  console.debug('PF2E Visioner | Initializing template data maps');
+  if (!window.pf2eVisionerTemplateData) {
+    window.pf2eVisionerTemplateData = new Map();
+    console.debug('PF2E Visioner | Created new pf2eVisionerTemplateData map');
+  } else {
+    console.debug('PF2E Visioner | pf2eVisionerTemplateData map already exists', {
+      size: window.pf2eVisionerTemplateData.size
+    });
+  }
 
-  // Capture measured template origin during placement (pre-create)
-  Hooks.on('preCreateMeasuredTemplate', (doc, data) => {
-    try {
-      if (!game.settings.get(MODULE_ID, 'autoCover')) return;
-      const x = Number(data?.x ?? doc?.x ?? 0);
-      const y = Number(data?.y ?? doc?.y ?? 0);
-      // Associate with the user's primary controlled token (best-guess attacker)
-      const attacker = canvas.tokens.controlled?.[0] ?? game.user.character?.getActiveTokens?.()?.[0];
-      if (!attacker) return;
-      window.pf2eVisionerTemplateOrigins.set(attacker.id, {
-        point: { x, y },
-        shape: {
-          t: String(doc.t || doc.type || 'circle'),
-          distance: Number(doc.distance) || 0,
-          direction: Number(doc.direction ?? 0),
-          angle: Number(doc.angle ?? 90),
-        },
-        ts: Date.now(),
-      });
-      console.debug('PF2E Visioner | preCreateMeasuredTemplate: origin set', {
-        attacker: attacker.id,
-        x,
-        y,
-      });
-    } catch (_) {}
+  // Temporary map to track which templates are currently being processed for reflex saves
+  if (!window.pf2eVisionerActiveReflexSaves) {
+    window.pf2eVisionerActiveReflexSaves = new Map();
+    console.debug('PF2E Visioner | Created new pf2eVisionerActiveReflexSaves map');
+  } else {
+    console.debug('PF2E Visioner | pf2eVisionerActiveReflexSaves map already exists', {
+      size: window.pf2eVisionerActiveReflexSaves.size
+    });
+  }
+
+  // Clean up old templates periodically (those older than 10 minutes)
+  console.debug('PF2E Visioner | Registering ready hook for template cleanup');
+  Hooks.on('ready', () => {
+    console.debug('PF2E Visioner | Ready hook called for template cleanup');
+    const cleanupInterval = setInterval(() => {
+      try {
+        if (!window.pf2eVisionerTemplateData) return;
+        const now = Date.now();
+        const oldTemplates = [];
+        
+        for (const [id, data] of window.pf2eVisionerTemplateData.entries()) {
+          // Keep templates with active reflex saves regardless of age
+          if (window.pf2eVisionerActiveReflexSaves?.has?.(id)) continue;
+          
+          // Remove templates older than 10 minutes
+          if (now - data.timestamp > 600000) { // 10 minutes
+            oldTemplates.push(id);
+          }
+        }
+        
+        // Only remove template data from our maps, don't delete templates from canvas
+        for (const id of oldTemplates) {
+          window.pf2eVisionerTemplateData.delete(id);
+        }
+        
+        if (oldTemplates.length > 0) {
+          console.debug('PF2E Visioner | Template data cleanup:', {
+            removedCount: oldTemplates.length,
+            remainingCount: window.pf2eVisionerTemplateData.size
+          });
+        }
+      } catch (e) {
+        console.error('PF2E Visioner | Error in template data cleanup:', e);
+      }
+    }, 60000); // Check every minute
+    
+    // Clean up interval when module is deactivated
+    Hooks.once('closeGame', () => {
+      if (cleanupInterval) clearInterval(cleanupInterval);
+    });
   });
 
-  // Reinforce origin after creation and keep it fresh for a short window
-  Hooks.on('createMeasuredTemplate', (doc) => {
+  // Hook into Measured Template creation (when template is added to the canvas)
+  // Using createMeasuredTemplate instead of renderMeasuredTemplate as it's more reliably called
+  console.debug('PF2E Visioner | Registering createMeasuredTemplate hook');
+  Hooks.on('createMeasuredTemplate', async (document, options, userId) => {
     try {
-      if (!game.settings.get(MODULE_ID, 'autoCover')) return;
-      const x = Number(doc?.x ?? 0);
-      const y = Number(doc?.y ?? 0);
-      const attacker = canvas.tokens.controlled?.[0] ?? game.user.character?.getActiveTokens?.()?.[0];
-      if (!attacker) return;
-      window.pf2eVisionerTemplateOrigins.set(attacker.id, { point: { x, y }, ts: Date.now() });
-      console.debug('PF2E Visioner | createMeasuredTemplate: origin reinforced', {
-        attacker: attacker.id,
-        x,
-        y,
+      console.debug('PF2E Visioner | createMeasuredTemplate HOOK - START', {
+        templateId: document?.id,
+        templateDocument: document?.toJSON?.(),
+        userId,
+        isOwnUser: userId === game.userId
+      });
+      
+      // Only process templates created by this user
+      if (userId !== game.userId) {
+        console.debug('PF2E Visioner | createMeasuredTemplate: skipping template from other user');
+        return;
+      }
+      
+      // Check if autoCover is enabled
+      const autoCoverEnabled = game.settings.get(MODULE_ID, 'autoCover');
+      console.debug('PF2E Visioner | autoCover setting:', autoCoverEnabled);
+      
+      if (!autoCoverEnabled) {
+        console.debug('PF2E Visioner | autoCover is disabled, skipping template processing');
+        return;
+      }
+      
+      // Get template details
+      const x = Number(document?.x ?? 0);
+      const y = Number(document?.y ?? 0);
+      const center = { x, y };
+      const tType = String(document.t || document.type || 'circle');
+      const radiusFeet = Number(document.distance) || 0;
+      const dirDeg = Number(document.direction ?? 0);
+      const halfAngle = Number(document.angle ?? 90) / 2;
+
+      // Try to determine the caster/creator of the template
+      let creator = null;
+      let creatorId = null;
+      let creatorType = 'unknown';
+      
+      // First, check if this is a spell template with a source actor
+      if (document.flags?.pf2e?.origin?.type === 'spell') {
+        // Get actor from document ID
+        try {
+          const originActorId = document.flags.pf2e.origin.actorId;
+          const actor = game.actors.get(originActorId);
+          
+          if (actor) {
+            // Find a token for this actor on the current scene
+            const tokens = canvas.tokens.placeables.filter(t => t.actor?.id === actor.id);
+            if (tokens.length > 0) {
+              creator = tokens[0];
+              creatorId = creator.id;
+              creatorType = 'spell-origin';
+            } else {
+              // Use actor ID if no token is found
+              creatorId = `actor:${actor.id}`;
+              creatorType = 'actor-only';
+            }
+          }
+        } catch (e) {
+          console.debug('PF2E Visioner | Error getting spell origin actor:', e);
+        }
+      }
+      
+      // If not found via spell origin, check for controlled token
+      if (!creatorId) {
+        creator = canvas.tokens.controlled?.[0] ?? game.user.character?.getActiveTokens?.()?.[0];
+        if (creator) {
+          creatorId = creator.id;
+          creatorType = 'controlled';
+        }
+      }
+      
+      console.debug('PF2E Visioner | createMeasuredTemplate: Template creator determined', {
+        creatorId,
+        creatorType,
+        creatorName: creator?.name || 'Unknown',
+        templateId: document.id
       });
 
-      // Cache cover states for currently targeted tokens that are inside the placed template
-      try {
-        if (!window.pf2eVisionerTemplateCoverByTarget) window.pf2eVisionerTemplateCoverByTarget = new Map();
-        // Consider all tokens on scene (not just targeted) as candidates for AoE damage workflows
-        const candidates = canvas.tokens.placeables.filter((t) => t?.actor);
-        console.debug('PF2E Visioner | createMeasuredTemplate: candidate tokens at placement', {
-          count: candidates.length,
-          ids: candidates.map((t) => t.id),
-        });
-        if (candidates.length) {
-          // Determine which targeted tokens are inside the template radius/shape
-          const radiusFeet = Number(doc.distance) || 0;
-          const center = { x, y };
-          const tType = String(doc.t || doc.type || 'circle');
-          const gridSize = canvas.grid?.size || 100;
-          const feetPerSquare = canvas.dimensions?.distance || 5;
-          const radiusSquares = radiusFeet / feetPerSquare;
-          const radiusWorld = radiusSquares * gridSize;
+      // Find all tokens inside the template
+      const gridSize = canvas.grid?.size || 100;
+      const feetPerSquare = canvas.dimensions?.distance || 5;
+      const radiusSquares = radiusFeet / feetPerSquare;
+      const radiusWorld = radiusSquares * gridSize;
+      
+      const candidates = canvas.tokens.placeables.filter((t) => t?.actor);
+      console.debug('PF2E Visioner | createMeasuredTemplate: checking tokens', {
+        templateId: document.id,
+        candidateCount: candidates.length,
+        radiusFeet, 
+        radiusWorld,
+        templateType: tType,
+        center
+      });
+      
+      const norm = (a) => ((a % 360) + 360) % 360;
+      const angDist = (a, b) => {
+        const d = Math.abs(norm(a) - norm(b));
+        return d > 180 ? 360 - d : d;
+      };
 
-          const dirDeg = Number(doc.direction ?? 0);
-          const halfAngle = Number(doc.angle ?? 90) / 2;
-          const norm = (a) => ((a % 360) + 360) % 360;
-          const angDist = (a, b) => {
-            const d = Math.abs(norm(a) - norm(b));
-            return d > 180 ? 360 - d : d;
-          };
-
-          const tokensInside = candidates.filter((t) => {
-            try {
-              const cx = (t.center?.x ?? t.x);
-              const cy = (t.center?.y ?? t.y);
-              const dx = cx - center.x;
-              const dy = cy - center.y;
-              const dist = Math.hypot(dx, dy);
-              if (dist > radiusWorld + 1) return false;
-              if (tType === 'cone') {
-                const theta = (Math.atan2(dy, dx) * 180) / Math.PI; // -180..180
-                const delta = angDist(theta, dirDeg);
-                return delta <= halfAngle + 0.5; // small tolerance
-              }
-              // Default: circle-like
-              return true;
-            } catch (_) {
-              return false;
-            }
-          });
-          console.debug('PF2E Visioner | createMeasuredTemplate: tokens inside template', {
-            count: tokensInside.length,
-            ids: tokensInside.map((t) => t.id),
-          });
-          for (const tgt of tokensInside) {
-            try {
-              const state = detectCoverStateFromPoint(center, tgt);
-              const key = `${attacker.id}-${tgt.id}`;
-              window.pf2eVisionerTemplateCoverByTarget.set(key, {
-                state,
-                bonus: getCoverBonusByState(state) || 0,
-                origin: center,
-                ts: Date.now(),
-              });
-              console.debug('PF2E Visioner | createMeasuredTemplate: cached cover', {
-                key,
-                state,
-                bonus: getCoverBonusByState(state) || 0,
-              });
-            } catch (_) {}
+      const tokensInside = candidates.filter((t) => {
+        try {
+          const cx = (t.center?.x ?? t.x);
+          const cy = (t.center?.y ?? t.y);
+          const dx = cx - center.x;
+          const dy = cy - center.y;
+          const dist = Math.hypot(dx, dy);
+          
+          if (dist > radiusWorld + 1) return false;
+          if (tType === 'cone') {
+            const theta = (Math.atan2(dy, dx) * 180) / Math.PI; // -180..180
+            const delta = angDist(theta, dirDeg);
+            return delta <= halfAngle + 0.5; // small tolerance
           }
-          // Note: no auto-expiration; entries persist until overwritten or session ends
+          // Default: circle-like
+          return true;
+        } catch (_) {
+          return false;
         }
-      } catch (_) {}
-
-      // Ensure any client-side preview overlay is cleaned
-      try {
-        if (window.pf2eVisionerTemplateOverlay?.graphics) {
-          window.pf2eVisionerTemplateOverlay.graphics.destroy(true);
+      });
+      
+      console.debug('PF2E Visioner | createMeasuredTemplate: tokens inside template', {
+        templateId: document.id,
+        count: tokensInside.length,
+        ids: tokensInside.map((t) => t.id),
+      });
+      
+      // Calculate cover for each token inside and store in our template data map
+      const targetData = {};
+      const tokenIds = [];
+      
+      for (const token of tokensInside) {
+        try {
+          // Calculate cover from template center to token
+          const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
+          const state = detectCoverStateFromPoint(center, token);
+          const { getCoverBonusByState } = await import('../helpers/cover-helpers.js');
+          const bonus = getCoverBonusByState(state) || 0;
+          
+          targetData[token.id] = {
+            tokenId: token.id,
+            tokenName: token.name,
+            actorId: token.actor?.id,
+            actorName: token.actor?.name,
+            state,
+            bonus,
+            saveProcessed: false
+          };
+          
+          tokenIds.push(token.id);
+          
+          console.debug('PF2E Visioner | createMeasuredTemplate: cover calculated', {
+            templateId: document.id,
+            tokenId: token.id,
+            tokenName: token.name,
+            state,
+            bonus
+          });
+        } catch (e) {
+          console.error('PF2E Visioner | Error calculating cover for token:', e);
         }
-        window.pf2eVisionerTemplateOverlay = null;
-        console.debug('PF2E Visioner | createMeasuredTemplate: preview overlay cleaned');
-      } catch (_) {}
-    } catch (_) {}
+      }
+      
+      // Store template data with all targets inside it
+      const templateData = {
+        id: document.id,
+        type: tType,
+        center,
+        radiusFeet,
+        dirDeg,
+        halfAngle,
+        creatorId,
+        creatorType,
+        tokenIds,
+        targets: targetData,
+        timestamp: Date.now()
+      };
+      
+      window.pf2eVisionerTemplateData.set(document.id, templateData);
+      
+      console.debug('PF2E Visioner | createMeasuredTemplate: template data stored', {
+        templateId: document.id,
+        targetCount: tokenIds.length,
+        creatorId,
+        timestamp: templateData.timestamp,
+        templateDataSize: window.pf2eVisionerTemplateData.size,
+        targetDataKeys: Object.keys(targetData)
+      });
+      
+      // Backwards compatibility: also store in the old template origins map
+      if (creatorId && creatorId.indexOf('actor:') !== 0) {
+        if (!window.pf2eVisionerTemplateOrigins) window.pf2eVisionerTemplateOrigins = new Map();
+        window.pf2eVisionerTemplateOrigins.set(creatorId, {
+          point: center,
+          shape: {
+            t: tType,
+            distance: radiusFeet,
+            direction: dirDeg,
+            angle: halfAngle * 2,
+          },
+          ts: Date.now(),
+          templateId: document.id
+        });
+        
+        console.debug('PF2E Visioner | Template origins map updated', {
+          creatorId,
+          templateOriginsMapSize: window.pf2eVisionerTemplateOrigins.size
+        });
+      }
+      
+      console.debug('PF2E Visioner | createMeasuredTemplate HOOK - END', {
+        templateId: document.id,
+        storedTokenCount: tokenIds.length
+      });
+    } catch (e) {
+      console.error('PF2E Visioner | Error in createMeasuredTemplate hook:', e);
+    }
+  });
+  
+  // Hook into document updates for MeasuredTemplate
+  console.debug('PF2E Visioner | Registering updateDocument hook for MeasuredTemplate');
+  Hooks.on('updateDocument', (document, changes, options, userId) => {
+    try {
+      // Check if this is a MeasuredTemplate document
+      if (document?.documentName === 'MeasuredTemplate') {
+        console.debug('PF2E Visioner | updateDocument HOOK for MeasuredTemplate', {
+          templateId: document?.id,
+          changes,
+          timestamp: Date.now()
+        });
+        
+        // If position or shape changed, we might need to recalculate cover
+        if (changes.x !== undefined || changes.y !== undefined || 
+            changes.distance !== undefined || changes.direction !== undefined || 
+            changes.angle !== undefined || changes.t !== undefined) {
+          
+          console.debug('PF2E Visioner | updateDocument: template shape/position changed, triggering recalculation', {
+            templateId: document.id,
+            changes
+          });
+          
+          // Trigger recalculation by calling our create hook logic
+          // This is a simplified version - in a real implementation we might want to optimize this
+          // For now, we'll just log that a recalculation might be needed
+        }
+      }
+    } catch (e) {
+      console.error('PF2E Visioner | Error in updateDocument hook:', e);
+    }
+  });
+  
+  // Clean up template data when template is deleted
+  console.debug('PF2E Visioner | Registering deleteDocument hook for MeasuredTemplate');
+  Hooks.on('deleteDocument', (document, options, userId) => {
+    try {
+      // Check if this is a MeasuredTemplate document
+      if (document?.documentName === 'MeasuredTemplate') {
+        console.debug('PF2E Visioner | deleteDocument HOOK for MeasuredTemplate', {
+          templateId: document?.id,
+          timestamp: Date.now()
+        });
+        
+        if (window.pf2eVisionerTemplateData && document?.id) {
+          // Get template data before removing
+          const templateData = window.pf2eVisionerTemplateData.get(document.id);
+          
+          // Check if this template is currently being used for reflex saves
+          const isTemplateActiveForReflexSaves = window.pf2eVisionerActiveReflexSaves?.has?.(document.id);
+          
+          if (isTemplateActiveForReflexSaves) {
+            // If the template is currently being used for reflex saves, don't delete it immediately
+            // Instead, mark it for cleanup after a delay to allow reflex saves to be processed
+            console.debug('PF2E Visioner | deleteDocument: template is active for reflex saves, scheduling delayed cleanup', {
+              templateId: document.id,
+              templateAge: templateData ? Date.now() - templateData.timestamp : 'unknown'
+            });
+            
+            // Schedule cleanup after 10 seconds to allow reflex saves to be processed
+            setTimeout(() => {
+              try {
+                if (window.pf2eVisionerTemplateData?.has?.(document.id)) {
+                  console.debug('PF2E Visioner | deleteDocument: delayed cleanup of template data', {
+                    templateId: document.id,
+                    reason: 'timeout after reflex save processing'
+                  });
+                  
+                  // Remove from our maps
+                  window.pf2eVisionerTemplateData.delete(document.id);
+                  
+                  // Also clean up from active reflex saves tracking
+                  if (window.pf2eVisionerActiveReflexSaves) {
+                    window.pf2eVisionerActiveReflexSaves.delete(document.id);
+                  }
+                }
+              } catch (e) {
+                console.error('PF2E Visioner | Error in delayed template cleanup:', e);
+              }
+            }, 10000); // 10 seconds delay
+          } else {
+            // If the template is not being used for reflex saves, we can delete it immediately
+            console.debug('PF2E Visioner | deleteDocument: template not active for reflex saves, immediate cleanup', {
+              templateId: document.id
+            });
+            
+            // Only remove from our maps, don't delete the actual template from canvas
+            window.pf2eVisionerTemplateData.delete(document.id);
+            
+            // Also clean up from active reflex saves tracking
+            if (window.pf2eVisionerActiveReflexSaves) {
+              window.pf2eVisionerActiveReflexSaves.delete(document.id);
+            }
+            
+            console.debug('PF2E Visioner | deleteDocument: template data removed from tracking maps', {
+              templateId: document.id,
+              hadData: !!templateData,
+              remainingTemplates: window.pf2eVisionerTemplateData.size,
+              templateData: templateData ? {
+                targets: Object.keys(templateData.targets || {}),
+                timestamp: templateData.timestamp
+              } : null
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('PF2E Visioner | Error in deleteDocument hook:', e);
+    }
   });
 
   // Simple libWrapper ONLY for popup detection - all other logic in onPreCreateChatMessage
@@ -228,78 +500,256 @@ export function registerAutoCoverHooks() {
                 return await wrapped(check, context, event, callback);
               }
               
-              // Find the attacker (origin of the area effect)
+              // Find the attacker (origin of the area effect) and template data
               let attacker = null;
+              let templateOriginPoint = null;
+              let isTargetInTemplate = false;
+              let templateId = null;
+              let templateData = null;
               
-              console.debug('PF2E Visioner | 📍 SEARCHING FOR ATTACKER');
-              
-              // Check recent template origins first (primary method for area effects)
-              const templateOrigins = window?.pf2eVisionerTemplateOrigins;
-              console.debug('PF2E Visioner | Template origins available:', {
-                hasTemplateOrigins: !!templateOrigins,
-                templateOriginsSize: templateOrigins?.size || 0,
-                templateOrigins: templateOrigins ? Array.from(templateOrigins.entries()).map(([id, data]) => ({
-                  tokenId: id,
-                  age: Date.now() - (data.ts || 0),
-                  hasPoint: !!data.point
-                })) : []
+              console.debug('PF2E Visioner | 📍 SEARCHING FOR TEMPLATE ORIGIN', {
+                targetId: target.id,
+                targetName: target.name,
+                reflexSaveId: `${target.id}-${Date.now()}`
               });
               
-              if (templateOrigins) {
-                for (const [tokenId, data] of templateOrigins.entries()) {
-                  const age = Date.now() - (data.ts || 0);
-                  console.debug('PF2E Visioner | Checking template origin:', {
-                    tokenId,
-                    age,
-                    isRecent: age < 30000,
-                    targetId: target.id
+              // First check our dedicated template data map
+              const savedTemplateData = window?.pf2eVisionerTemplateData;
+              
+              console.debug('PF2E Visioner | Checking template data map', {
+                hasTemplateDataMap: !!savedTemplateData,
+                templateDataMapSize: savedTemplateData?.size || 0,
+                targetId: target.id
+              });
+              
+              if (savedTemplateData && savedTemplateData.size > 0) {
+                console.debug('PF2E Visioner | Template data available:', {
+                  templateCount: savedTemplateData.size,
+                  targetId: target.id,
+                  templateIds: Array.from(savedTemplateData.keys())
+                });
+                
+                // Find the most recent template that contains this target
+                let mostRecentTemplate = null;
+                let mostRecentTs = 0;
+                
+                for (const [id, data] of savedTemplateData.entries()) {
+                  console.debug('PF2E Visioner | Checking template for target', {
+                    templateId: id,
+                    targetId: target.id,
+                    hasTargets: !!data.targets,
+                    targetInTemplate: !!data.targets?.[target.id],
+                    timestamp: data.timestamp
                   });
                   
-                  if (data.ts && age < 30000) { // 30 second window
-                    const token = canvas.tokens.get(tokenId);
-                    console.debug('PF2E Visioner | Template origin token check:', {
-                      tokenId,
-                      tokenExists: !!token,
-                      tokenName: token?.name,
-                      isDifferentFromTarget: token && token.id !== target.id
-                    });
-                    
-                    if (token && token.id !== target.id) {
-                      attacker = token;
-                      console.debug('PF2E Visioner | ✅ Found attacker from template origin', {
-                        attackerId: attacker.id,
-                        attackerName: attacker.name,
-                        templateAge: age
-                      });
-                      break;
+                  // Check if this target is in the template's targets
+                  if (data.targets && data.targets[target.id]) {
+                    // Found a match - check if it's the most recent
+                    if (data.timestamp > mostRecentTs) {
+                      mostRecentTemplate = { id, data };
+                      mostRecentTs = data.timestamp;
                     }
                   }
                 }
-              }
-              
-              // Fallback: controlled token or other methods
-              if (!attacker) {
-                console.debug('PF2E Visioner | 🔄 Using fallback attacker resolution');
-                const controlled = canvas.tokens.controlled?.[0];
-                const targeted = Array.from(game.user.targets)?.[0]?.document?.object;
                 
-                console.debug('PF2E Visioner | Fallback options:', {
-                  controlledToken: controlled?.id,
-                  targetedToken: targeted?.id
+                if (mostRecentTemplate) {
+                  const { id, data } = mostRecentTemplate;
+                  templateId = id;
+                  templateData = data;
+                  templateOriginPoint = data.center;
+                  isTargetInTemplate = true;
+                  
+                  // Track that this template is being used for a reflex save
+                  if (!window.pf2eVisionerActiveReflexSaves) window.pf2eVisionerActiveReflexSaves = new Map();
+                  window.pf2eVisionerActiveReflexSaves.set(id, Date.now());
+                  
+                  // Try to get the attacker token if creator ID is available
+                  if (data.creatorId && !data.creatorId.startsWith('actor:')) {
+                    attacker = canvas.tokens.get(data.creatorId) || null;
+                  }
+                  
+                  console.debug('PF2E Visioner | ✅ FOUND TEMPLATE DATA FOR TARGET', {
+                    templateId: id,
+                    templateAge: Date.now() - data.timestamp,
+                    targetId: target.id,
+                    hasAttacker: !!attacker,
+                    attackerName: attacker?.name || 'Unknown',
+                    creatorId: data.creatorId,
+                    creatorType: data.creatorType,
+                    coverState: data.targets[target.id]?.state || 'unknown',
+                    coverBonus: data.targets[target.id]?.bonus || 0
+                  });
+                } else {
+                  console.debug('PF2E Visioner | ❌ No template found containing target', {
+                    targetId: target.id,
+                    templateCount: savedTemplateData.size
+                  });
+                }
+              } else {
+                console.debug('PF2E Visioner | ❌ No template data available', {
+                  targetId: target.id,
+                  hasTemplateDataMap: !!savedTemplateData
                 });
-                
-                attacker = controlled || targeted;
               }
               
-              console.debug('PF2E Visioner | 🎯 FINAL ATTACKER RESOLUTION', {
-                attackerId: attacker?.id,
-                attackerName: attacker?.name,
-                hasAttacker: !!attacker
-              });
+              // Mark that this target's save has been processed for this template
+              if (templateData && templateData.targets && templateData.targets[target.id]) {
+                templateData.targets[target.id].saveProcessed = true;
+                
+                // Check if all targets have been processed
+                const allProcessed = Object.values(templateData.targets).every(t => t.saveProcessed);
+                
+                if (allProcessed) {
+                  console.debug('PF2E Visioner | ✅ ALL TARGETS PROCESSED FOR TEMPLATE', {
+                    templateId,
+                    targetCount: Object.keys(templateData.targets).length
+                  });
+                  
+                  // Schedule cleanup if all targets have been processed
+                  setTimeout(() => {
+                    try {
+                      // Only clean up if it hasn't been cleaned up already
+                      if (window.pf2eVisionerTemplateData?.has?.(templateId)) {
+                        // Only remove template data from our maps, don't delete templates from canvas
+                        window.pf2eVisionerTemplateData.delete(templateId);
+                        
+                        if (window.pf2eVisionerActiveReflexSaves) {
+                          window.pf2eVisionerActiveReflexSaves.delete(templateId);
+                        }
+                        
+                        console.debug('PF2E Visioner | 🔄 TEMPLATE DATA CLEANED UP AFTER PROCESSING', {
+                          templateId,
+                          remainingTemplates: window.pf2eVisionerTemplateData?.size || 0
+                        });
+                      }
+                    } catch (e) {
+                      console.error('PF2E Visioner | Error cleaning up template data:', e);
+                    }
+                  }, 5000); // Give a 5 second buffer to ensure all related operations complete
+                }
+              }
               
-              if (!attacker) {
-                console.debug('PF2E Visioner | ❌ No attacker found for reflex save - ABORTING');
-                return await wrapped(check, context, event, callback);
+              // IMPORTANT: If we have an attacker token but no template data or the target is not in the template,
+              // handle the alternative detection based on domains and traits
+              if (!attacker || !isTargetInTemplate) {
+                // Try to determine if this is an AOE attack from context (area trait, etc.)
+                const isAreaEffect = (context?.traits?.has?.('area') || 
+                                     Array.isArray(context?.traits) && context.traits.includes('area')) ||
+                                    (Array.isArray(context?.options) && context.options.includes('area-effect'));
+                
+                if (isAreaEffect) {
+                  console.debug('PF2E Visioner | ❗ Target might be in template - area effect traits detected');
+                  
+                  // Since we know this is an area effect but don't have template data,
+                  // try to get an attacker token and assume target is valid
+                  if (!attacker) {
+                    // Try controlled token or targeted token as fallback
+                    const controlled = canvas.tokens.controlled?.[0];
+                    const targeted = Array.from(game.user.targets || [])?.[0]?.document?.object;
+                    
+                    attacker = controlled || targeted;
+                    console.debug('PF2E Visioner | Using fallback attacker for area effect', {
+                      attackerId: attacker?.id,
+                      attackerName: attacker?.name
+                    });
+                  }
+                  
+                  // Assume the target is in the template since we detected area traits
+                  isTargetInTemplate = true;
+                } else {
+                  // Try one more fallback - check if there are any recent templates at all
+                  // This handles cases where the template data might not have been fully processed yet
+                  if (savedTemplateData && savedTemplateData.size > 0) {
+                    console.debug('PF2E Visioner | ❗ No direct template match, checking recent templates');
+                    
+                    // Find the most recent template overall
+                    let mostRecentTemplate = null;
+                    let mostRecentTs = 0;
+                    
+                    for (const [id, data] of savedTemplateData.entries()) {
+                      if (data.timestamp > mostRecentTs) {
+                        mostRecentTemplate = { id, data };
+                        mostRecentTs = data.timestamp;
+                      }
+                    }
+                    
+                    if (mostRecentTemplate) {
+                      const { id, data } = mostRecentTemplate;
+                      templateId = id;
+                      templateData = data;
+                      templateOriginPoint = data.center;
+                      
+                      // Try to get the attacker token if creator ID is available
+                      if (data.creatorId && !data.creatorId.startsWith('actor:')) {
+                        attacker = canvas.tokens.get(data.creatorId) || null;
+                      }
+                      
+                      console.debug('PF2E Visioner | ✅ USING MOST RECENT TEMPLATE AS FALLBACK', {
+                        templateId: id,
+                        templateAge: Date.now() - data.timestamp,
+                        hasAttacker: !!attacker,
+                        attackerName: attacker?.name || 'Unknown',
+                        creatorId: data.creatorId,
+                        creatorType: data.creatorType
+                      });
+                      
+                      // For area effects, we'll calculate cover from the template origin even if we can't verify the target is inside
+                      isTargetInTemplate = true;
+                    }
+                  }
+                  
+                  // IMPORTANT: If we have an attacker token but no template data or the target is not in the template,
+                  // handle the alternative detection based on domains and traits
+                  if (!attacker || !isTargetInTemplate) {
+                    console.debug('PF2E Visioner | Checking for area effect traits', {
+                      hasContextTraits: !!context?.traits,
+                      contextTraits: context?.traits,
+                      hasContextOptions: !!context?.options,
+                      contextOptions: context?.options,
+                      contextType: context?.type,
+                      contextStatistic: context?.statistic,
+                      contextDomains: context?.domains
+                    });
+                    
+                    // Try to determine if this is an AOE attack from context (area trait, etc.)
+                    const isAreaEffect = (context?.traits?.has?.('area') || 
+                                         Array.isArray(context?.traits) && context.traits.includes('area')) ||
+                                        (Array.isArray(context?.options) && context.options.includes('area-effect')) ||
+                                        (context?.options?.has && context.options.has('area-effect'));
+                    
+                    console.debug('PF2E Visioner | Area effect detection result', {
+                      isAreaEffect,
+                      hasAreaTrait: context?.traits?.has?.('area'),
+                      hasAreaInTraitsArray: Array.isArray(context?.traits) && context.traits.includes('area'),
+                      hasAreaEffectInOptions: (Array.isArray(context?.options) && context.options.includes('area-effect')) || 
+                                             (context?.options?.has && context.options.has('area-effect'))
+                    });
+                    
+                    if (isAreaEffect) {
+                      console.debug('PF2E Visioner | ❗ Target might be in template - area effect traits detected');
+                      
+                      // Since we know this is an area effect but don't have template data,
+                      // try to get an attacker token and assume target is valid
+                      if (!attacker) {
+                        // Try controlled token or targeted token as fallback
+                        const controlled = canvas.tokens.controlled?.[0];
+                        const targeted = Array.from(game.user.targets || [])?.[0]?.document?.object;
+                        
+                        attacker = controlled || targeted;
+                        console.debug('PF2E Visioner | Using fallback attacker for area effect', {
+                          attackerId: attacker?.id,
+                          attackerName: attacker?.name
+                        });
+                      }
+                      
+                      // Assume the target is in the template since we detected area traits
+                      isTargetInTemplate = true;
+                    } else {
+                      console.debug('PF2E Visioner | ❌ Target is not inside any recent template - ABORTING REFLEX SAVE');
+                      return await wrapped(check, context, event, callback);
+                    }
+                  }
+                }
               }
               
               console.debug('PF2E Visioner | Reflex save tokens resolved', {
@@ -310,87 +760,112 @@ export function registerAutoCoverHooks() {
               // Calculate cover state
               console.debug('PF2E Visioner | 📀 CALCULATING COVER STATE');
               
-              // CRITICAL DEBUG: Check if attacker and target are the same
-              console.debug('PF2E Visioner | 🔍 COVER CALCULATION DEBUG:', {
-                attackerId: attacker.id,
-                targetId: target.id,
-                attackerName: attacker.name,
-                targetName: target.name,
-                sameToken: attacker.id === target.id,
-                reason: attacker.id === target.id ? 'SAME TOKEN - NO COVER POSSIBLE' : 'DIFFERENT TOKENS - COVER POSSIBLE'
-              });
+              // For AOE reflex saves, use the precalculated cover from template data
+              let state;
               
-              if (attacker.id === target.id) {
-                console.debug('PF2E Visioner | ⚠️ FIXING SAME TOKEN ISSUE - trying to find real attacker');
+              // If we found a template and it has precalculated cover for this target, use it
+              if (templateData && templateData.targets && templateData.targets[target.id]) {
+                state = templateData.targets[target.id].state;
                 
-                // Use the working system's attacker resolution
-                const workingSystemAttacker = resolveAttackerFromCtx(context);
-                if (workingSystemAttacker && workingSystemAttacker.id !== target.id) {
-                  console.debug('PF2E Visioner | ✅ CORRECTED ATTACKER:', {
-                    oldAttacker: attacker.id,
-                    newAttacker: workingSystemAttacker.id,
-                    newAttackerName: workingSystemAttacker.name
-                  });
-                  attacker = workingSystemAttacker;
-                } else {
-                  console.debug('PF2E Visioner | ❌ Working system resolution failed, trying context origin');
-                  
-                  // Try to find attacker from context origin/item
-                  let originAttacker = null;
-                  if (context?.origin?.actor) {
-                    const originActor = context.origin.actor;
-                    originAttacker = originActor.getActiveTokens()?.[0];
-                    console.debug('PF2E Visioner | Found origin attacker:', {
-                      originActorName: originActor.name,
-                      originTokenId: originAttacker?.id
-                    });
-                  } else if (context?.item?.actor) {
-                    const itemActor = context.item.actor;
-                    originAttacker = itemActor.getActiveTokens()?.[0];
-                    console.debug('PF2E Visioner | Found item attacker:', {
-                      itemActorName: itemActor.name,
-                      itemTokenId: originAttacker?.id
-                    });
+                console.debug('PF2E Visioner | ✅ USING PRECALCULATED COVER FROM TEMPLATE', {
+                  templateId,
+                  targetId: target.id,
+                  state,
+                  bonus: templateData.targets[target.id].bonus
+                });
+              }
+              // If we have a template origin point but no precalculated state, calculate it now
+              else if (templateOriginPoint) {
+                // Import the detectCoverStateFromPoint function
+                const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
+                state = detectCoverStateFromPoint(templateOriginPoint, target);
+                
+                console.debug('PF2E Visioner | 🎯 CALCULATED COVER FROM TEMPLATE ORIGIN', {
+                  targetId: target.id,
+                  state,
+                  originPoint: templateOriginPoint
+                });
+              }
+              // If we have an attacker token but no template data, use standard calculation
+              else if (attacker) {
+                // Fallback to normal calculation
+                console.debug('PF2E Visioner | ⚠️ FALLBACK: Using standard token-to-token cover calculation');
+                const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
+                state = detectCoverStateForAttack(attacker, target);
+              }
+              // Final fallback - check for area effect traits in context
+              else {
+                // Try to determine if this is an AOE attack from context (area trait, etc.)
+                const isAreaEffect = (context?.traits?.has?.('area') || 
+                                     Array.isArray(context?.traits) && context.traits.includes('area')) ||
+                                    (Array.isArray(context?.options) && context.options.includes('area-effect')) ||
+                                    (context?.options?.has && context.options.has('area-effect'));
+                
+                if (isAreaEffect) {
+                  console.debug('PF2E Visioner | ❗ Area effect traits detected but no template data found');
+                  // Try to get attacker from alternative methods
+                  if (!attacker) {
+                    const controlled = canvas.tokens.controlled?.[0];
+                    const targeted = Array.from(game.user.targets || [])?.[0]?.document?.object;
+                    attacker = controlled || targeted;
                   }
                   
-                  if (originAttacker && originAttacker.id !== target.id) {
-                    console.debug('PF2E Visioner | ✅ CORRECTED ATTACKER FROM ORIGIN:', {
-                      oldAttacker: attacker.id,
-                      newAttacker: originAttacker.id,
-                      newAttackerName: originAttacker.name
+                  if (attacker) {
+                    // Use standard calculation
+                    const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
+                    state = detectCoverStateForAttack(attacker, target);
+                    console.debug('PF2E Visioner | ⚠️ AREA EFFECT WITH NO TEMPLATE: Using standard calculation', {
+                      attackerId: attacker.id,
+                      targetId: target.id,
+                      state
                     });
-                    attacker = originAttacker;
-                  } else {
-                    console.debug('PF2E Visioner | ❌ Origin method failed, trying controlled tokens');
-                    
-                    // Find any controlled token that's not the target
-                    const controlled = canvas.tokens.controlled.find(t => t.id !== target.id);
-                    if (controlled) {
-                      console.debug('PF2E Visioner | ✅ USING CONTROLLED TOKEN AS ATTACKER:', {
-                        controlledId: controlled.id,
-                        controlledName: controlled.name
-                      });
-                      attacker = controlled;
-                    } else {
-                      console.debug('PF2E Visioner | ❌ All methods failed - will use same token (no cover expected)');
-                    }
                   }
                 }
               }
               
-              const state = detectCoverStateForAttack(attacker, target);
-              console.debug('PF2E Visioner | Computed cover state for reflex save', { 
+              // Last resort fallback - if we still don't have a state, try to calculate from context
+              if (!state) {
+                console.debug('PF2E Visioner | ❗ No cover state determined yet, trying context-based calculation');
+                
+                // Try to get any available attacker
+                if (!attacker) {
+                  const controlled = canvas.tokens.controlled?.[0];
+                  const targeted = Array.from(game.user.targets || [])?.[0]?.document?.object;
+                  attacker = controlled || targeted;
+                }
+                
+                // If we have an attacker now, try standard calculation
+                if (attacker) {
+                  const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
+                  state = detectCoverStateForAttack(attacker, target);
+                  console.debug('PF2E Visioner | 🎯 LAST RESORT: Calculated cover from available attacker', {
+                    attackerId: attacker.id,
+                    targetId: target.id,
+                    state
+                  });
+                }
+              }
+              
+              if (!state) {
+                console.debug('PF2E Visioner | ❌ No valid cover state could be determined - ABORTING');
+                return await wrapped(check, context, event, callback);
+              }
+              
+              console.debug('PF2E Visioner | Computed final cover state for reflex save', { 
                 state,
-                attackerId: attacker.id,
+                attackerId: attacker?.id,
                 targetId: target.id,
-                finalAttackerName: attacker.name,
-                finalTargetName: target.name
+                fromTemplateData: !!templateData,
+                templateId
               });
+              
               // Persist cover info early so it's available for final safety injection
               try {
                 const earlyBonus = getCoverBonusByState(state) || 0;
                 context._visionerCover = { state, bonus: earlyBonus };
-              } catch (_) {}
+              } catch (e) {
+                console.error('PF2E Visioner | Error persisting cover info:', e);
+              }
               
               if (state !== 'none') {
                 const bonus = getCoverBonusByState(state) || 0;
@@ -497,8 +972,17 @@ export function registerAutoCoverHooks() {
                   
                   // Ensure area-effect is in the roll options to trigger the predicate
                   if (!context.options) context.options = [];
-                  if (!context.options.includes('area-effect')) {
+                  // Handle both arrays and Sets for context.options
+                  if (Array.isArray(context.options)) {
+                    if (!context.options.includes('area-effect')) {
+                      context.options.push('area-effect');
+                    }
+                  } else if (context.options?.has && !context.options.has('area-effect')) {
+                    // If it's a Set, we need to convert it to an array to add the option
+                    context.options = Array.from(context.options);
                     context.options.push('area-effect');
+                  } else if (!context.options) {
+                    context.options = ['area-effect'];
                   }
                   
                   // Store computed cover for final pre-roll safety injection
@@ -561,7 +1045,8 @@ export function registerAutoCoverHooks() {
                       try {
                         const testRollOptions = new Set(context.options || []);
                         testRollOptions.add('area-effect');
-                        const testCheck = reflexStat.createCheck({ options: Array.from(testRollOptions) });
+                        // Use the correct method for creating checks in current PF2E system version
+                        const testCheck = reflexStat.check?.clone({ options: testRollOptions });
                         console.debug('PF2E Visioner | 🧪 TEST ROLL WITH CLONED ACTOR:', {
                           checkModifier: testCheck?.modifier,
                           checkModifiers: testCheck?.modifiers?.map(m => ({
@@ -607,7 +1092,8 @@ export function registerAutoCoverHooks() {
                           type: m.type,
                           slug: m.slug
                         })) || [],
-                        hasAreaEffectOptions: context.options?.includes('area-effect')
+                        hasAreaEffectOptions: (Array.isArray(context.options) && context.options.includes('area-effect')) || 
+                                            (context.options?.has && context.options.has('area-effect'))
                       });
                     }
                   } catch (e) {
@@ -631,19 +1117,20 @@ export function registerAutoCoverHooks() {
                     context.options = Array.from(optSet);
 
                     const statObj = context.actor?.getStatistic?.(statSlug);
-                    if (statObj?.createCheck) {
+                    // Use the correct method for creating checks in current PF2E system version
+                    if (statObj?.check?.clone) {
                       const rebuildCtx = {
                         domains: context.domains,
-                        options: context.options,
+                        options: new Set(context.options),
                         type: 'saving-throw'
                       };
-                      const rebuilt = statObj.createCheck(rebuildCtx);
+                      const rebuilt = statObj.check.clone(rebuildCtx);
                       console.debug('PF2E Visioner | ♻️ Rebuilt CheckModifier from cloned actor', {
                         statSlug,
                         oldModifier: check?.modifier,
                         newModifier: rebuilt?.modifier,
                         domains: rebuildCtx.domains,
-                        options: rebuildCtx.options
+                        options: Array.from(rebuildCtx.options)
                       });
                       check = rebuilt;
 

@@ -102,5 +102,8 @@
       "no-console": "off",
       "prettier/prettier": "error"
     }
+  },
+  "volta": {
+    "node": "20.19.4"
   }
 }

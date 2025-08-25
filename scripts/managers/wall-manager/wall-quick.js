@@ -57,7 +57,53 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
 
   _replaceHTML(result, content, _options) {
     content.innerHTML = result;
+    
+    // Add event listener for the hidden wall checkbox
+    const hiddenWallCheckbox = content.querySelector('input[name="hiddenWall"]');
+    const hiddenWallSections = content.querySelectorAll('.hidden-wall-section');
+    
+    if (hiddenWallCheckbox && hiddenWallSections.length > 0) {
+      // Set initial state
+      hiddenWallSections.forEach(section => {
+        section.style.display = hiddenWallCheckbox.checked ? '' : 'none';
+      });
+      
+      // Add change listener
+      hiddenWallCheckbox.addEventListener('change', (event) => {
+        hiddenWallSections.forEach(section => {
+          section.style.display = event.target.checked ? '' : 'none';
+        });
+      });
+    }
+    
     return content;
+  }
+
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+    
+    // Also bind after render in case _replaceHTML wasn't called
+    try {
+      const root = this.element;
+      const hiddenWallCheckbox = root.querySelector('input[name="hiddenWall"]');
+      const hiddenWallSections = root.querySelectorAll('.hidden-wall-section');
+      
+      if (hiddenWallCheckbox && hiddenWallSections.length > 0) {
+        // Set initial state
+        hiddenWallSections.forEach(section => {
+          section.style.display = hiddenWallCheckbox.checked ? '' : 'none';
+        });
+        
+        // Add change listener
+        hiddenWallCheckbox.addEventListener('change', (event) => {
+          hiddenWallSections.forEach(section => {
+            section.style.display = event.target.checked ? '' : 'none';
+          });
+        });
+      }
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   static async _onApply(event, _button) {

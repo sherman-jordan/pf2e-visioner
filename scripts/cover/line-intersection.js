@@ -178,12 +178,5 @@ export function intersectsBetweenTokens(attacker, target, rect, mode, blocker) {
   if (p1 && p2 && centerLineIntersectsRect(p1, p2, rect, mode)) return true;
   if (mode !== 'any') return false;
 
-  try {
-    // For 'any' mode, only check center-to-center ray
-    // This makes behavior more predictable and avoids excessive cover detection
-    // No additional ray checks for 'any' mode
-    return false;
-  } catch (_) {}
-
   return false;
 }

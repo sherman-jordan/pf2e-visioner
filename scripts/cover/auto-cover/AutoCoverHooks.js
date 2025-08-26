@@ -25,9 +25,9 @@ export class AutoCoverHooks {
         this.autoCoverSystem = autoCoverSystem;
 
         // Initialize use cases
-        this.attackRollUseCase = new AttackRollUseCase();
-        this.savingThrowUseCase = new SavingThrowUseCase();
-        this.stealthCheckUseCase = new StealthCheckUseCase();
+        this.attackRollUseCase = new AttackRollUseCase(autoCoverSystem);
+        this.savingThrowUseCase = new SavingThrowUseCase(autoCoverSystem);
+        this.stealthCheckUseCase = new StealthCheckUseCase(autoCoverSystem);
 
         // Initialize UI manager
         this.coverUIManager = new CoverUIManager(autoCoverSystem);
@@ -147,7 +147,7 @@ export class AutoCoverHooks {
      * @param {Object} message - Chat message
      * @returns {Promise}
      */
-    async onRenderChatMessage(message) {
+    async onRenderChatMessage(message, html) {
         try {
             // Skip if auto-cover is disabled
             if (!this.autoCoverSystem.isEnabled()) return;
@@ -159,9 +159,8 @@ export class AutoCoverHooks {
             const useCase = this._getUseCaseForContext(ctx);
 
             if (!useCase) return;
-
             // Call the use case's render method
-            await useCase.handleRenderChatMessage(message);
+            await useCase.handleRenderChatMessage(message, html);
         } catch (error) {
             console.error('PF2E Visioner | Error in onRenderChatMessage:', error);
         }
@@ -185,7 +184,7 @@ export class AutoCoverHooks {
             if (!useCase) return;
 
             // Handle the dialog with the appropriate use case
-            await useCase.handleCheckDialog(dialog, ctx);
+            await useCase.handleCheckDialog(dialog, html);
 
         } catch (error) {
             console.error('PF2E Visioner | Error in onRenderCheckModifiersDialog:', error);
@@ -446,13 +445,6 @@ export class AutoCoverHooks {
      */
     async onSystemReady() {
         try {
-            // Initialize the UI manager after system is ready
-            if (this.coverUIManager && typeof this.coverUIManager.initialize === 'function') {
-                this.coverUIManager.initialize();
-            } else {
-                console.debug('PF2E Visioner | CoverUIManager.initialize not found, skipping UI initialization');
-            }
-
             // Register libWrapper if available - this has been moved to avoid duplicate registrations
             // We're now using a static flag to track if wrappers have been registered already
             if (!AutoCoverHooks._wrappersRegistered &&

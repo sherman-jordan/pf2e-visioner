@@ -175,6 +175,10 @@ export class AutoCoverSystem {
         return this._pendingOverrides.get(key);
     }
 
+    getPendingOverrides() {
+        return this._pendingOverrides;
+    }
+
     /**
      * Gets the template manager
      * @returns {TemplateManager}

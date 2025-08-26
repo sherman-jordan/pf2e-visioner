@@ -2,21 +2,20 @@
  * BaseUseCase.js
  * Base abstract class for auto-cover use cases
  */
-
-import { AutoCoverSystem } from "../AutoCoverSystem.js";
-
+import { CoverUIManager } from "../CoverUIManager.js";
 export class BaseAutoCoverUseCase {
     /**
      * Constructor
      * @param {AutoCoverSystem} autoCoverSystem - The auto-cover system instance
      */
-    constructor() {
+    constructor(autoCoverSystem) {
         // Ensure this class is not instantiated directly
         if (this.constructor === BaseAutoCoverUseCase) {
             throw new Error("BaseUseCase is an abstract class and cannot be instantiated directly");
         }
 
-        this.autoCoverSystem = new AutoCoverSystem();
+        this.coverUIManager = new CoverUIManager(autoCoverSystem);
+        this.autoCoverSystem = autoCoverSystem;
         this.useCaseType = this.constructor.name;
     }
 
@@ -43,6 +42,22 @@ export class BaseAutoCoverUseCase {
             console.info(`PF2E Visioner | ${this.useCaseType}.${method}: ${message}`, logData);
         } else {
             console.debug(`PF2E Visioner | ${this.useCaseType}.${method}: ${message}`, logData);
+        }
+    }
+
+
+    async handleRenderChatMessage(message, html) {
+        try {
+
+            // Always check for cover override indicators first, regardless of action data
+            const shouldShow = await this.coverUIManager.shouldShowCoverOverrideIndicator(message);
+
+            if (shouldShow) {
+                await this.coverUIManager.injectCoverOverrideIndicator(message, html);
+            }
+
+        } catch (error) {
+            console.error('PF2E Visioner | Error in onRenderChatMessage:', error);
         }
     }
 
@@ -249,5 +264,84 @@ export class BaseAutoCoverUseCase {
         } catch (_) {
             return ref;
         }
+    }
+
+
+    async _extractAndApplyOverrides(doc, attacker, target, originalDetectedState) {
+        let state = originalDetectedState;
+        let wasOverridden = false;
+        let overrideSource = null;
+
+        try {
+            if (window.pf2eVisionerPopupOverrides) {
+                const overrideKey = `${attacker.id}-${target.id}`;
+                const popupOverride = window.pf2eVisionerPopupOverrides.get(overrideKey);
+                if (popupOverride !== undefined) {
+                    if (popupOverride !== originalDetectedState) {
+                        wasOverridden = true;
+                        overrideSource = 'popup';
+                    }
+                    state = popupOverride;
+                    window.pf2eVisionerPopupOverrides.delete(overrideKey);
+                }
+            }
+        } catch (e) {
+            console.warn('PF2E Visioner | Failed to check popup override:', e);
+        }
+
+        try {
+            if (window.pf2eVisionerDialogOverrides) {
+                const possibleKeys = [
+                    `${attacker.actor?.id}-${target.id}`,
+                    `${attacker.id}-${target.id}`,
+                    `${attacker.actor?.id}-${target.actor?.id}`,
+                    `${attacker.actor?.uuid}-${target.id}`,
+                ];
+                let dialogOverride = undefined;
+                let usedKey = null;
+                for (const key of possibleKeys) {
+                    if (window.pf2eVisionerDialogOverrides.has(key)) {
+                        dialogOverride = window.pf2eVisionerDialogOverrides.get(key);
+                        usedKey = key;
+                        break;
+                    }
+                }
+                if (dialogOverride !== undefined) {
+                    if (dialogOverride !== originalDetectedState) {
+                        wasOverridden = true;
+                        overrideSource = 'dialog';
+                    }
+                    state = dialogOverride;
+                }
+                window.pf2eVisionerDialogOverrides.delete(usedKey);
+            }
+        } catch (e) {
+            console.warn('PF2E Visioner | Failed to check dialog override:', e);
+        }
+
+        if (wasOverridden) {
+            try {
+
+                const overrideData = {
+                    originalDetected: originalDetectedState,
+                    finalState: state,
+                    overrideSource,
+                    attackerName: attacker.name,
+                    targetName: target.name,
+                };
+
+                if (doc && doc.updateSource) {
+                    try {
+                        doc.updateSource({ 'flags.pf2e-visioner.coverOverride': overrideData });
+                    } catch (e) {
+                        console.warn('PF2E Visioner | Failed to update document source:', e);
+                    }
+                }
+            } catch (e) {
+                console.warn('PF2E Visioner | Failed to store override info in message flags:', e);
+            }
+        }
+
+        return { state, wasOverridden, overrideSource };
     }
 }

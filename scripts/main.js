@@ -122,6 +122,12 @@ Hooks.once('init', async () => {
     const { api } = await import('./api.js');
     game.modules.get('pf2e-visioner').api = api;
 
+    // Create global API for compatibility with other modules
+    window.visioneerApi = {
+      getVisibility: api.getVisibility,
+      // Add other API functions that may be needed for compatibility
+    };
+
     // Initialize detection wrapper
     initializeDetectionWrapper();
 

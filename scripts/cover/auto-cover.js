@@ -18,6 +18,9 @@ import {
 import {
   getTokenRect
 } from '../helpers/size-elevation-utils.js';
+import {
+  evaluateWallsCover
+} from '../helpers/wall-detection.js';
 import { getCoverBetween, setCoverBetween } from '../utils.js';
 import {
   isAttackContext,
@@ -40,9 +43,6 @@ import {
 import {
   getEligibleBlockingTokens,
 } from './token-filtering.js';
-import {
-  evaluateWallsCover
-} from './wall-detection.js';
 
 
 
@@ -143,7 +143,7 @@ export function detectCoverStateFromPoint(origin, target, options = {}) {
 
 
 
-export function detectCoverStateForAttack(attacker, target, options = {}) {
+export function detectCoverStateForAttack(attacker, target) {
   try {
     if (!attacker || !target) return 'none';
 
@@ -157,7 +157,7 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
 
     // Token blockers
     const intersectionMode = getIntersectionMode();
-    const filters = { ...getAutoCoverFilterSettings(attacker), ...options.filterOverrides };
+    const filters = { ...getAutoCoverFilterSettings(attacker) };
     let blockers = getEligibleBlockingTokens(attacker, target, filters);
 
     // Strict center-to-center: only consider blockers that the exact center-to-center ray intersects,
@@ -221,23 +221,23 @@ export function detectCoverStateForAttack(attacker, target, options = {}) {
 export async function onPreCreateChatMessage(doc, data) {
   try {
     if (!game.settings.get('pf2e-visioner', 'autoCover')) return;
-    
+
     // CRITICAL: Check if this message was already handled by popup wrapper
     const ctx = data?.flags?.pf2e?.context || {};
     const ctxType = ctx?.type || '';
-    
+
     // For reflex saves, check if popup wrapper handled it recently
     if (ctxType === 'saving-throw') {
       const speakerTokenId = normalizeTokenRef(data?.speaker?.token);
       const targetTokenId = resolveTargetTokenIdFromData(data);
-      
+
       if (speakerTokenId && window.pf2eVisionerPopupHandled) {
         // Try multiple key patterns to match what popup wrapper stored
         const possibleKeys = [
           `${speakerTokenId}-${targetTokenId}-reflex`,
           `${targetTokenId}-${speakerTokenId}-reflex`
         ];
-        
+
         for (const key of possibleKeys) {
           const timestamp = window.pf2eVisionerPopupHandled.get(key);
           if (timestamp && (Date.now() - timestamp) < 5000) { // 5 second window
@@ -254,7 +254,7 @@ export async function onPreCreateChatMessage(doc, data) {
         }
       }
     }
-    
+
     const attackLike = isAttackLikeMessageData(data);
     if (!attackLike) {
       try {
@@ -265,7 +265,7 @@ export async function onPreCreateChatMessage(doc, data) {
           traits,
           hasAreaTrait: Array.isArray(traits) ? traits.includes('area') : typeof traits?.has === 'function' && traits.has('area'),
         });
-      } catch (_) {}
+      } catch (_) { }
       return;
     }
 
@@ -281,7 +281,7 @@ export async function onPreCreateChatMessage(doc, data) {
         traits: ctx?.traits,
         options: ctx?.options,
       });
-    } catch (_) {}
+    } catch (_) { }
 
     const tokens = canvas?.tokens;
     if (!tokens?.get) return;
@@ -298,7 +298,7 @@ export async function onPreCreateChatMessage(doc, data) {
           attackerSource = 'pf2e.context.origin.token';
           attackerTokenId = normalizedCtx;
         }
-      } catch (_) {}
+      } catch (_) { }
       // 1b) PF2E origin.token (top-level)
       if (attackerSource === 'speaker') {
         try {
@@ -308,7 +308,7 @@ export async function onPreCreateChatMessage(doc, data) {
             attackerSource = 'pf2e.origin.token';
             attackerTokenId = normalized;
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       // 1c) PF2E origin.uuid (extract Token segment if present)
       if (attackerSource === 'speaker') {
@@ -319,7 +319,7 @@ export async function onPreCreateChatMessage(doc, data) {
             attackerSource = 'pf2e.origin.uuid';
             attackerTokenId = normalized;
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       // 2) PF2E origin actor -> find a token on scene
       if (attackerSource === 'speaker') {
@@ -332,7 +332,7 @@ export async function onPreCreateChatMessage(doc, data) {
               attackerTokenId = t.id;
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       // 3) Latest template origin cache (pick newest ts)
       if (attackerSource === 'speaker') {
@@ -346,7 +346,7 @@ export async function onPreCreateChatMessage(doc, data) {
               attackerTokenId = candidateId;
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
@@ -359,7 +359,7 @@ export async function onPreCreateChatMessage(doc, data) {
         attackerTokenId,
         attackerSource,
       });
-    } catch (_) {}
+    } catch (_) { }
 
     // Handle area damage with multiple targets (no single target in PF2E flags)
     if (!targetTokenId && ctxType === 'damage-roll') {
@@ -373,7 +373,7 @@ export async function onPreCreateChatMessage(doc, data) {
             if (attId === attacker.id && tgtId) out.push(tgtId);
           }
           if (out.length > 0) tbTargets = out;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
         console.debug('PF2E Visioner | damage-roll: no targets found (pf2e/pf2e-toolbelt/cache)');
@@ -392,7 +392,7 @@ export async function onPreCreateChatMessage(doc, data) {
             tsAgeMs: Date.now() - (originRec?.ts || 0),
           });
         }
-      } catch (_) {}
+      } catch (_) { }
       for (const tRef of tbTargets) {
         const tid = normalizeTokenRef(tRef);
         const tgt = tid ? tokens.get(tid) : null;
@@ -406,7 +406,7 @@ export async function onPreCreateChatMessage(doc, data) {
             state = rec.state;
             console.debug('PF2E Visioner | damage-roll: using cached placement cover', { targetId: tgt.id, state, bonus: rec?.bonus, origin: rec?.origin });
           }
-        } catch (_) {}
+        } catch (_) { }
         // Fallback: compute from stored origin or attacker center
         if (!state) {
           try {
@@ -417,7 +417,7 @@ export async function onPreCreateChatMessage(doc, data) {
               });
               state = detectCoverStateFromPoint(originPoint, tgt);
             }
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!state) state = detectCoverStateForAttack(attacker, tgt);
         // Log computed cover with bonus
@@ -429,7 +429,7 @@ export async function onPreCreateChatMessage(doc, data) {
             state,
             bonus,
           });
-        } catch (_) {}
+        } catch (_) { }
         // Apply without ephemeral update; damage messages are not attack checks
         try {
           await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
@@ -444,7 +444,7 @@ export async function onPreCreateChatMessage(doc, data) {
               targetId: tgt.id,
               state,
             });
-          } catch (_) {}
+          } catch (_) { }
         } catch (e) {
           console.warn('PF2E Visioner | damage-roll: failed to set cover for target', tgt?.id, e);
         }
@@ -465,7 +465,7 @@ export async function onPreCreateChatMessage(doc, data) {
             if (attId === attacker.id && tgtId) out.push(tgtId);
           }
           if (out.length > 0) tbTargets = out;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
         console.debug('PF2E Visioner | saving-throw: no targets found (pf2e/pf2e-toolbelt/cache)');
@@ -484,7 +484,7 @@ export async function onPreCreateChatMessage(doc, data) {
             tsAgeMs: Date.now() - (originRec?.ts || 0),
           });
         }
-      } catch (_) {}
+      } catch (_) { }
       for (const tRef of tbTargets) {
         const tid = normalizeTokenRef(tRef);
         const tgt = tid ? tokens.get(tid) : null;
@@ -503,7 +503,7 @@ export async function onPreCreateChatMessage(doc, data) {
               origin: rec?.origin,
             });
           }
-        } catch (_) {}
+        } catch (_) { }
         // Fallback: compute from stored origin or attacker center
         if (!state) {
           try {
@@ -514,7 +514,7 @@ export async function onPreCreateChatMessage(doc, data) {
               });
               state = detectCoverStateFromPoint(originPoint, tgt);
             }
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!state) state = detectCoverStateForAttack(attacker, tgt);
         // Apply without ephemeral update; ephemeral bonuses are handled by the roll wrapper
@@ -527,14 +527,14 @@ export async function onPreCreateChatMessage(doc, data) {
           });
           // Chat-message injection no longer needed: handled by roll wrapper via CheckModifier.push()
           console.debug('PF2E Visioner | saving-throw: skipping chat message modifier injection (handled by roll wrapper)');
-          
+
           try {
             Hooks.callAll('pf2e-visioner.coverMapUpdated', {
               observerId: attacker.id,
               targetId: tgt.id,
               state,
             });
-          } catch (_) {}
+          } catch (_) { }
         } catch (e) {
           console.warn('PF2E Visioner | saving-throw: failed to set cover for target', tgt?.id, e);
         }
@@ -567,7 +567,7 @@ export async function onPreCreateChatMessage(doc, data) {
             });
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Only proceed if this user owns the attacking token or is the GM
@@ -581,22 +581,22 @@ export async function onPreCreateChatMessage(doc, data) {
 
     // Detect base cover state
     let state;
-    
+
     // For saving throws, first check our dedicated template data map (preferred source)
     if (ctxType === 'saving-throw') {
       try {
         const savedTemplateData = window?.pf2eVisionerTemplateData;
-        
+
         if (savedTemplateData && savedTemplateData.size > 0 && target) {
           console.debug('PF2E Visioner | onPreCreateChatMessage: Checking template data for saving throw', {
             templateCount: savedTemplateData.size,
             targetId: target.id
           });
-          
+
           // Find the most recent template that contains this target
           let mostRecentTemplate = null;
           let mostRecentTs = 0;
-          
+
           for (const [id, data] of savedTemplateData.entries()) {
             // Check if this target is in the template's targets
             if (data.targets && data.targets[target.id]) {
@@ -607,14 +607,14 @@ export async function onPreCreateChatMessage(doc, data) {
               }
             }
           }
-          
+
           if (mostRecentTemplate) {
             const { id, data } = mostRecentTemplate;
-            
+
             // Use precalculated cover
             if (data.targets[target.id]) {
               state = data.targets[target.id].state;
-              
+
               console.debug('PF2E Visioner | onPreCreateChatMessage: USING PRECALCULATED COVER FROM TEMPLATE', {
                 templateId: id,
                 templateAge: Date.now() - data.timestamp,
@@ -629,7 +629,7 @@ export async function onPreCreateChatMessage(doc, data) {
         console.debug('PF2E Visioner | onPreCreateChatMessage: Error checking template data for saving throw', e);
       }
     }
-    
+
     // If a stored template origin was recorded for this attacker, prefer using that point
     try {
       const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
@@ -639,23 +639,23 @@ export async function onPreCreateChatMessage(doc, data) {
         });
         state = detectCoverStateFromPoint(originRec.point, target);
       }
-    } catch (_) {}
-    
+    } catch (_) { }
+
     if (!state) {
       console.debug('PF2E Visioner | onPreCreateChatMessage: using attacker center for cover');
       try {
         const current = getCoverBetween?.(attacker, target);
         console.debug('PF2E Visioner | onPreCreateChatMessage: current stored cover before compute', { current });
-      } catch (_) {}
+      } catch (_) { }
       state = detectCoverStateForAttack(attacker, target);
       try {
         console.debug('PF2E Visioner | onPreCreateChatMessage: computed state via detectCoverStateForAttack', { state });
-      } catch (_) {}
+      } catch (_) { }
     }
-    
+
     // Reflex save chat-message injection no longer needed; handled by roll wrapper
     // Intentionally left blank here to avoid duplication in message flags
-    
+
     try {
       const { getCoverBonusByState } = await import('../helpers/cover-helpers.js');
       const bonus = getCoverBonusByState(state) || 0;
@@ -663,7 +663,7 @@ export async function onPreCreateChatMessage(doc, data) {
         state,
         bonus,
       });
-    } catch (_) {}
+    } catch (_) { }
     const originalDetectedState = state;
     let wasOverridden = false;
     let overrideSource = null;
@@ -768,7 +768,7 @@ export async function onPreCreateChatMessage(doc, data) {
           targetId: target.id,
           state,
         });
-      } catch (_) {}
+      } catch (_) { }
       _recordPair(attacker.id, target.id);
     }
   } catch (e) {
@@ -806,7 +806,7 @@ export async function onRenderChatMessage(message) {
             if (attId === attacker.id && tgtId) out.push(tgtId);
           }
           if (out.length > 0) tbTargets = out;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
         console.debug('PF2E Visioner | onRenderChatMessage damage-roll: no targets (pf2e/pf2e-toolbelt/cache)');
@@ -819,7 +819,7 @@ export async function onRenderChatMessage(message) {
       try {
         const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
         if (originRec) originPoint = originRec.point;
-      } catch (_) {}
+      } catch (_) { }
       for (const tRef of tbTargets) {
         const tid = normalizeTokenRef(tRef);
         const tgt = tid ? tokens.get(tid) : null;
@@ -835,13 +835,13 @@ export async function onRenderChatMessage(message) {
               state,
             });
           }
-        } catch (_) {}
+        } catch (_) { }
         if (!state) {
           try {
             if (originPoint) {
               state = detectCoverStateFromPoint(originPoint, tgt);
             }
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!state) state = detectCoverStateForAttack(attacker, tgt);
         try {
@@ -851,7 +851,7 @@ export async function onRenderChatMessage(message) {
             state,
             bonus,
           });
-        } catch (_) {}
+        } catch (_) { }
         try {
           await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
           try {
@@ -860,7 +860,7 @@ export async function onRenderChatMessage(message) {
               targetId: tgt.id,
               state,
             });
-          } catch (_) {}
+          } catch (_) { }
         } catch (e) {
           console.warn('PF2E Visioner | onRenderChatMessage damage-roll: failed to set cover for target', tgt?.id, e);
         }
@@ -868,7 +868,7 @@ export async function onRenderChatMessage(message) {
       // We've applied cover for all damage targets; skip the generic cleanup block
       return;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // Post-create handling for saving throws: toolbelt targets may be available now
   try {
@@ -883,7 +883,7 @@ export async function onRenderChatMessage(message) {
             if (attId === attacker.id && tgtId) out.push(tgtId);
           }
           if (out.length > 0) tbTargets = out;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!Array.isArray(tbTargets) || tbTargets.length === 0) {
         console.debug('PF2E Visioner | onRenderChatMessage saving-throw: no targets (pf2e/pf2e-toolbelt/cache)');
@@ -896,7 +896,7 @@ export async function onRenderChatMessage(message) {
       try {
         const originRec = window?.pf2eVisionerTemplateOrigins?.get?.(attacker.id);
         if (originRec) originPoint = originRec.point;
-      } catch (_) {}
+      } catch (_) { }
       for (const tRef of tbTargets) {
         const tid = normalizeTokenRef(tRef);
         const tgt = tid ? tokens.get(tid) : null;
@@ -912,13 +912,13 @@ export async function onRenderChatMessage(message) {
               state,
             });
           }
-        } catch (_) {}
+        } catch (_) { }
         if (!state) {
           try {
             if (originPoint) {
               state = detectCoverStateFromPoint(originPoint, tgt);
             }
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!state) state = detectCoverStateForAttack(attacker, tgt);
         try {
@@ -928,7 +928,7 @@ export async function onRenderChatMessage(message) {
             state,
             bonus,
           });
-        } catch (_) {}
+        } catch (_) { }
         try {
           await setCoverBetween(attacker, tgt, state, { skipEphemeralUpdate: true });
           try {
@@ -937,7 +937,7 @@ export async function onRenderChatMessage(message) {
               targetId: tgt.id,
               state,
             });
-          } catch (_) {}
+          } catch (_) { }
         } catch (e) {
           console.warn(
             'PF2E Visioner | onRenderChatMessage saving-throw: failed to set cover for target',
@@ -949,7 +949,7 @@ export async function onRenderChatMessage(message) {
       // We've applied cover for all save targets; skip the generic cleanup block
       return;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // Only proceed if this user owns the attacking token or is the GM
   if (!attacker.isOwner && !game.user.isGM) return;
@@ -967,7 +967,7 @@ export async function onRenderChatMessage(message) {
           targetId: target.id,
           state: 'none',
         });
-      } catch (_) {}
+      } catch (_) { }
       // Remove ephemeral cover effects for this specific attacker
       try {
         const { cleanupCoverEffectsForObserver } = await import('../cover/ephemeral.js');
@@ -976,36 +976,36 @@ export async function onRenderChatMessage(message) {
         console.warn('PF2E Visioner | Failed to cleanup ephemeral cover effects:', e);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export async function onRenderCheckModifiersDialog(dialog, html) {
   try {
     if (!game.settings.get('pf2e-visioner', 'autoCover')) return;
-    
+
     const ctx = dialog?.context ?? {};
-    
+
     // ENHANCED: Handle both attack contexts AND saving throw contexts
     const isAttackCtx = isAttackContext(ctx);
     const isSavingThrowCtx = ctx?.type === 'saving-throw';
     const isStealthCheck = ctx?.type === 'skill-check' && ctx?.domains.includes('stealth');
     // Only proceed if this is an attack or saving throw
-    if (!isAttackCtx && !isSavingThrowCtx && !isStealthCheck ) {
+    if (!isAttackCtx && !isSavingThrowCtx && !isStealthCheck) {
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: not attack or saving throw context, skipping');
       return;
     }
-    
+
     let attacker = null;
     let target = null;
     let state = 'none';
-    
+
     if (isAttackCtx) {
       // Original attack logic
       attacker = resolveAttackerFromCtx(ctx);
       target = resolveTargetFromCtx(ctx);
       if (!attacker || !target) return;
       state = detectCoverStateForAttack(attacker, target);
-      
+
     } else if (isStealthCheck) {
       // NEW: Handle stealth check contexts
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: stealth check context detected', {
@@ -1014,7 +1014,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         domains: ctx.domains,
         actor: ctx.actor?.name
       });
-      
+
       // Resolve hider (actor making the stealth check)
       const hider = ctx?.actor?.getActiveTokens?.()?.[0] || ctx?.token?.object;
       if (!hider) {
@@ -1026,7 +1026,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
       let bestObserver = null;
       let bestState = 'none';
       let coverOverride = false;
-      
+
       // Check for cover overrides first (similar to hide action)
       // 1. Roll dialog override (highest priority)
       if (dialog?._pvCoverOverride) {
@@ -1042,10 +1042,10 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         try {
           const observers = (canvas?.tokens?.placeables || [])
             .filter((t) => t && t.actor && t.id !== hider.id);
-          
+
           for (const obs of observers) {
             const overrideKey = `${hider.id}-${obs.id}`;
-            
+
             // Check popup override
             if (window.pf2eVisionerPopupOverrides?.has(overrideKey)) {
               bestState = window.pf2eVisionerPopupOverrides.get(overrideKey);
@@ -1069,9 +1069,9 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               break;
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
-      
+
       // If no override found, calculate cover automatically
       if (!coverOverride) {
         try {
@@ -1085,7 +1085,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               break; // first observer with cover
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
 
       attacker = hider;
@@ -1097,7 +1097,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         observerId: target?.id,
         state
       });
-      
+
       if (isStealthCheck && state !== 'none') {
         const bonus = getCoverStealthBonusByState(state) || 0;
         if (bonus > 1) {
@@ -1110,12 +1110,12 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             if (typeof window !== 'undefined') {
               window.pf2eVisionerStealthLast = { state, bonus, ts: Date.now(), source: 'dialog' };
             }
-          } catch (_) {}
-          
+          } catch (_) { }
+
           // Check if cover modifier already exists in the dialog
           const existingMods = dialog?.check?.modifiers || [];
           const hasExistingCover = existingMods.some(m => m?.slug === 'pf2e-visioner-cover');
-          
+
           if (!hasExistingCover) {
             // Create and inject the cover modifier directly into the dialog's check object
             let coverModifier;
@@ -1123,25 +1123,25 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               if (game?.pf2e?.Modifier) {
                 coverModifier = new game.pf2e.Modifier({
                   slug: 'pf2e-visioner-cover',
-                  label: state === 'greater' ? 'Greater Cover' : 
-                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  label: state === 'greater' ? 'Greater Cover' :
+                    state === 'standard' ? 'Cover' : 'Lesser Cover',
                   modifier: bonus,
                   type: 'circumstance'
                 });
               } else {
                 coverModifier = {
                   slug: 'pf2e-visioner-cover',
-                  label: state === 'greater' ? 'Greater Cover' : 
-                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  label: state === 'greater' ? 'Greater Cover' :
+                    state === 'standard' ? 'Cover' : 'Lesser Cover',
                   modifier: bonus,
                   type: 'circumstance'
                 };
               }
-              
+
               // Add to the dialog's check modifiers
               if (dialog.check && Array.isArray(dialog.check.modifiers)) {
                 dialog.check.modifiers.push(coverModifier);
-                
+
                 // Recalculate the total
                 if (typeof dialog.check.calculateTotal === 'function') {
                   const rollOptions = new Set(ctx.options || []);
@@ -1150,13 +1150,13 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                   // rollOptions.add('avoid-detection');
                   dialog.check.calculateTotal(rollOptions);
                 }
-                
+
                 console.debug('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier injected into dialog check', {
                   modifier: coverModifier,
                   totalModifiers: dialog.check.modifiers.length,
                   newTotal: dialog.check.totalModifier
                 });
-                
+
                 // Force the dialog to re-render to show the new modifier
                 try {
                   dialog.render(false);
@@ -1173,7 +1173,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           }
         }
       }
-    } 
+    }
     else if (isSavingThrowCtx) {
       // NEW: Handle saving throw contexts
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: saving throw context detected', {
@@ -1182,14 +1182,14 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         domains: ctx.domains,
         actor: ctx.actor?.name
       });
-      
+
       // For saving throws, the actor making the save is the "target" (defender)
       target = ctx.actor?.getActiveTokens?.()?.[0];
       if (!target) {
         console.debug('PF2E Visioner | onRenderCheckModifiersDialog: no target token found for saving throw');
         return;
       }
-      
+
       // Try to find the attacker (origin of the effect requiring the save)
       // Check recent template origins first
       const templateOrigins = window?.pf2eVisionerTemplateOrigins;
@@ -1208,44 +1208,44 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           }
         }
       }
-      
+
       // Fallback: controlled token or targeted tokens
       if (!attacker) {
-        attacker = canvas.tokens.controlled?.[0] || 
-                  Array.from(game.user.targets)?.[0]?.document?.object;
+        attacker = canvas.tokens.controlled?.[0] ||
+          Array.from(game.user.targets)?.[0]?.document?.object;
       }
-      
+
       if (!attacker) {
         console.debug('PF2E Visioner | onRenderCheckModifiersDialog: no attacker found for saving throw');
         return;
       }
-      
+
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: tokens resolved for saving throw', {
         attackerId: attacker.id,
         targetId: target.id
       });
-      
+
       // Calculate cover for saving throw
       // For AOE reflex saves, use template data and precalculated cover values
       let state;
       let templateId = null;
       let templateData = null;
       let templateOriginPoint = null;
-      
+
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: Checking for template data', {
         targetId: target?.id,
         targetName: target?.name,
         dialogId: dialog?.id
       });
-      
+
       // First check our dedicated template data map (preferred source)
       const savedTemplateData = window?.pf2eVisionerTemplateData;
-      
+
       if (savedTemplateData && savedTemplateData.size > 0 && target) {
         // Find the most recent template that contains this target
         let mostRecentTemplate = null;
         let mostRecentTs = 0;
-        
+
         for (const [id, data] of savedTemplateData.entries()) {
           // Check if this target is in the template's targets
           if (data.targets && data.targets[target.id]) {
@@ -1256,17 +1256,17 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             }
           }
         }
-        
+
         if (mostRecentTemplate) {
           const { id, data } = mostRecentTemplate;
           templateId = id;
           templateData = data;
           templateOriginPoint = data.center;
-          
+
           // Use precalculated cover
           if (data.targets[target.id]) {
             state = data.targets[target.id].state;
-            
+
             console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING PRECALCULATED COVER', {
               templateId: id,
               templateAge: Date.now() - data.timestamp,
@@ -1279,29 +1279,29 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           // Try one more fallback - check if there are any recent templates at all
           // This handles cases where the template data might not have been fully processed yet
           console.debug('PF2E Visioner | onRenderCheckModifiersDialog: No direct template match, checking recent templates');
-          
+
           // Find the most recent template overall
           let mostRecentTemplate = null;
           let mostRecentTs = 0;
-          
+
           for (const [id, data] of savedTemplateData.entries()) {
             if (data.timestamp > mostRecentTs) {
               mostRecentTemplate = { id, data };
               mostRecentTs = data.timestamp;
             }
           }
-          
+
           if (mostRecentTemplate) {
             const { id, data } = mostRecentTemplate;
             templateId = id;
             templateData = data;
             templateOriginPoint = data.center;
-            
+
             // Try to get the attacker token if creator ID is available
             if (data.creatorId && !data.creatorId.startsWith('actor:')) {
               attacker = canvas.tokens.get(data.creatorId) || null;
             }
-            
+
             console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING MOST RECENT TEMPLATE AS FALLBACK', {
               templateId: id,
               templateAge: Date.now() - data.timestamp,
@@ -1310,12 +1310,12 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               creatorId: data.creatorId,
               creatorType: data.creatorType
             });
-            
+
             // Calculate cover from template origin point
             if (templateOriginPoint && target) {
               const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
               state = detectCoverStateFromPoint(templateOriginPoint, target);
-              
+
               console.debug('PF2E Visioner | onRenderCheckModifiersDialog: CALCULATED COVER FROM TEMPLATE ORIGIN (fallback)', {
                 targetId: target.id,
                 state,
@@ -1325,13 +1325,13 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           }
         }
       }
-      
+
       // If we didn't find a match in active templates, try the attacker-based lookup
       if (!state && attacker && target) {
         // Check for cached cover data by attacker-target pair
         const cachedKey = `${attacker.id}-${target.id}`;
         const cachedCover = window?.pf2eVisionerTemplateCoverByTarget?.get?.(cachedKey);
-        
+
         if (cachedCover) {
           state = cachedCover.state;
           templateOriginPoint = cachedCover.origin;
@@ -1343,7 +1343,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           });
         }
       }
-      
+
       // If no template data matched, try legacy methods
       if (!state) {
         // Try the attacker-based lookup
@@ -1353,13 +1353,13 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           if (templateOriginsVar && templateOriginsVar.has(attacker.id)) {
             const originData = templateOriginsVar.get(attacker.id);
             const templateOriginPoint = originData?.point;
-            
+
             if (templateOriginPoint) {
               console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING LEGACY TEMPLATE DATA', {
                 attackerId: attacker.id,
                 targetId: target.id
               });
-              
+
               // Calculate cover from template origin point
               const { detectCoverStateFromPoint } = await import('../cover/auto-cover.js');
               state = detectCoverStateFromPoint(templateOriginPoint, target);
@@ -1367,7 +1367,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           }
         }
       }
-      
+
       // Check for area effect traits/options in the context
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: Checking for area effect traits', {
         hasContextTraits: !!ctx?.traits,
@@ -1378,41 +1378,41 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         contextStatistic: ctx?.statistic,
         contextDomains: ctx?.domains
       });
-      
-      const isAreaEffect = (ctx?.traits?.has?.('area') || 
-                          Array.isArray(ctx?.traits) && ctx.traits.includes('area')) ||
-                         (Array.isArray(ctx?.options) && ctx.options.includes('area-effect')) ||
-                         (ctx?.options?.has && ctx.options.has('area-effect'));
-      
+
+      const isAreaEffect = (ctx?.traits?.has?.('area') ||
+        Array.isArray(ctx?.traits) && ctx.traits.includes('area')) ||
+        (Array.isArray(ctx?.options) && ctx.options.includes('area-effect')) ||
+        (ctx?.options?.has && ctx.options.has('area-effect'));
+
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: Area effect detection result', {
         isAreaEffect,
         hasAreaTrait: ctx?.traits?.has?.('area'),
         hasAreaInTraitsArray: Array.isArray(ctx?.traits) && ctx.traits.includes('area'),
-        hasAreaEffectInOptions: (Array.isArray(ctx?.options) && ctx.options.includes('area-effect')) || 
-                               (ctx?.options?.has && ctx.options.has('area-effect'))
+        hasAreaEffectInOptions: (Array.isArray(ctx?.options) && ctx.options.includes('area-effect')) ||
+          (ctx?.options?.has && ctx.options.has('area-effect'))
       });
-      
+
       // For area effects with no template data, we still want to calculate cover
       if (!state && isAreaEffect) {
         console.debug('PF2E Visioner | onRenderCheckModifiersDialog: AREA EFFECT DETECTED FROM CONTEXT');
-        
+
         // Try to use attacker position as proxy origin point
         let originPoint = null;
         if (attacker) {
           originPoint = attacker.center || { x: attacker.x, y: attacker.y };
-        } 
+        }
         // If no attacker, try to use target position as fallback
         else if (target) {
           originPoint = target.center || { x: target.x, y: target.y };
         }
-        
+
         if (originPoint) {
           console.debug('PF2E Visioner | onRenderCheckModifiersDialog: USING PROXY ORIGIN POINT', {
             x: originPoint.x,
             y: originPoint.y,
             targetId: target.id
           });
-          
+
           // Since this is an area effect with no template data, use calculated cover
           if (attacker && target) {
             const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
@@ -1422,15 +1422,15 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             state = detectCoverStateFromPoint(originPoint, target);
           }
         }
-      } 
-      
+      }
+
       // Final fallback - standard calculation
       if (!state && attacker && target) {
         console.debug('PF2E Visioner | onRenderCheckModifiersDialog: FALLBACK TO STANDARD CALCULATION');
         const { detectCoverStateForAttack } = await import('../cover/auto-cover.js');
         state = detectCoverStateForAttack(attacker, target);
       }
-      
+
       // Log final state determination
       console.debug('PF2E Visioner | onRenderCheckModifiersDialog: FINAL COVER STATE', {
         state: state || 'none',
@@ -1440,11 +1440,11 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         fromTemplateData: !!templateData,
         dialogId: dialog?.id
       });
-      
+
       // CRITICAL: For reflex saves with area effects, automatically inject the cover modifier
-      const isReflexSave = ctx.statistic === 'reflex' || 
-                          (Array.isArray(ctx.domains) && ctx.domains.includes('reflex'));
-      
+      const isReflexSave = ctx.statistic === 'reflex' ||
+        (Array.isArray(ctx.domains) && ctx.domains.includes('reflex'));
+
       if (isReflexSave && state !== 'none') {
         const bonus = getCoverBonusByState(state) || 0;
         if (bonus > 0) { // Changed from > 1 to > 0 to catch all valid bonuses
@@ -1452,11 +1452,11 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             state,
             bonus
           });
-          
+
           // Check if cover modifier already exists in the dialog
           const existingMods = dialog?.check?.modifiers || [];
           const hasExistingCover = existingMods.some(m => m?.slug === 'pf2e-visioner-cover');
-          
+
           if (!hasExistingCover) {
             // Create and inject the cover modifier directly into the dialog's check object
             let coverModifier;
@@ -1464,38 +1464,38 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               if (game?.pf2e?.Modifier) {
                 coverModifier = new game.pf2e.Modifier({
                   slug: 'pf2e-visioner-cover',
-                  label: state === 'greater' ? 'Greater Cover' : 
-                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  label: state === 'greater' ? 'Greater Cover' :
+                    state === 'standard' ? 'Cover' : 'Lesser Cover',
                   modifier: bonus,
                   type: 'circumstance'
                 });
               } else {
                 coverModifier = {
                   slug: 'pf2e-visioner-cover',
-                  label: state === 'greater' ? 'Greater Cover' : 
-                         state === 'standard' ? 'Cover' : 'Lesser Cover',
+                  label: state === 'greater' ? 'Greater Cover' :
+                    state === 'standard' ? 'Cover' : 'Lesser Cover',
                   modifier: bonus,
                   type: 'circumstance'
                 };
               }
-              
+
               // Add to the dialog's check modifiers
               if (dialog.check && Array.isArray(dialog.check.modifiers)) {
                 dialog.check.modifiers.push(coverModifier);
-                
+
                 // Recalculate the total
                 if (typeof dialog.check.calculateTotal === 'function') {
                   const rollOptions = new Set(ctx.options || []);
                   rollOptions.add('area-effect');
                   dialog.check.calculateTotal(rollOptions);
                 }
-                
+
                 console.debug('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier injected into dialog check', {
                   modifier: coverModifier,
                   totalModifiers: dialog.check.modifiers.length,
                   newTotal: dialog.check.totalModifier
                 });
-                
+
                 // Force the dialog to re-render to show the new modifier
                 try {
                   dialog.render(false);
@@ -1513,7 +1513,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         }
       }
     }
-    
+
     // Apply cover state between tokens (for both attacks and saves)
     if (attacker && target && state !== 'none') {
       await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });
@@ -1523,7 +1523,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           targetId: target.id,
           state,
         });
-      } catch (_) {}
+      } catch (_) { }
       _recordPair(attacker.id, target.id);
     }
 
@@ -1544,8 +1544,8 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         for (const s of states) {
           const label = getCoverLabel(s);
           // Use appropriate bonus function based on context
-          const bonus = isStealthCheck ? 
-            getCoverStealthBonusByState(s) : 
+          const bonus = isStealthCheck ?
+            getCoverStealthBonusByState(s) :
             getCoverBonusByState(s);
           const isActive = s === current;
           const cfg = COVER_STATES?.[s] || {};
@@ -1579,7 +1579,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
             const sel = btn?.dataset?.state || 'none';
             const oldOverride = dialog._pvCoverOverride;
             dialog._pvCoverOverride = sel;
-            
+
             console.debug('PF2E Visioner | Cover override button clicked:', {
               selectedState: sel,
               oldOverride,
@@ -1588,7 +1588,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               dialogId: dialog.id,
               dialogTitle: dialog.title
             });
-            
+
             container.find('.pv-cover-btn').each((_, el) => {
               const active = el.dataset?.state === sel;
               el.classList.toggle('active', active);
@@ -1601,7 +1601,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
           }
         });
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Ensure current roll uses selected (or auto) cover via dialog injection
     try {
@@ -1613,7 +1613,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
         dialogId: dialog.id,
         isStealthCheck
       });
-      
+
       if (rollBtnEl && !rollBtnEl.dataset?.pvCoverBind) {
         rollBtnEl.dataset.pvCoverBind = '1';
         rollBtnEl.addEventListener(
@@ -1625,7 +1625,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               const tgtActor = tgt?.actor;
               if (!tgtActor) return;
               const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
-              
+
               console.debug('PF2E Visioner | Roll button clicked with override:', {
                 chosen,
                 dialogOverride: dialog?._pvCoverOverride,
@@ -1663,14 +1663,14 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                   );
                 }
               }
-              
+
               // For stealth checks, also store a direct override for the hide action
               if (isStealthCheck && chosen !== 'none') {
                 // Store with hider->observer relationship for hide action
                 const hider = attacker;
                 const observers = (canvas?.tokens?.placeables || [])
                   .filter((t) => t && t.actor && t.id !== hider?.getActiveTokens?.()?.[0]?.id);
-                
+
                 for (const obs of observers) {
                   const hideActionKey = `${hider?.getActiveTokens?.()?.[0]?.id}-${obs.id}`;
                   window.pf2eVisionerDialogOverrides.set(hideActionKey, chosen);
@@ -1683,8 +1683,8 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                 }
               }
 
-              const bonus = isStealthCheck ? 
-                getCoverStealthBonusByState(chosen) : 
+              const bonus = isStealthCheck ?
+                getCoverStealthBonusByState(chosen) :
                 getCoverBonusByState(chosen) || 0;
               let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
               // Always remove any previous Visioner one-shot cover effect to ensure override takes precedence
@@ -1697,7 +1697,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
               if (bonus > 0) {
                 const label = getCoverLabel(chosen);
                 const img = getCoverImageForState(chosen);
-                
+
                 // Create appropriate effect based on context
                 const effectRules = [];
                 if (isStealthCheck) {
@@ -1726,11 +1726,11 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                     }
                   );
                 }
-                
+
                 const description = isStealthCheck ?
                   `<p>${label}: +${bonus} circumstance bonus to Stealth for this roll.</p>` :
                   `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`;
-                
+
                 items.push({
                   name: label,
                   type: 'effect',
@@ -1761,7 +1761,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
                   dcObj.statistic = st;
                 }
               }
-            } catch (_) {}
+            } catch (_) { }
           },
           true,
         );
@@ -1771,7 +1771,7 @@ export async function onRenderCheckModifiersDialog(dialog, html) {
       // This is a fix for the missing catch/finally error
       console.error('PF2E Visioner | Error in dialog roll button handler:', e);
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // Recalculate active auto-cover pairs when a token moves/resizes during an ongoing attack flow
@@ -1806,7 +1806,7 @@ export async function onUpdateToken(tokenDoc, changes) {
           targetId: target.id,
           state,
         });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Additionally, clear any existing cover map entries involving the moved token, even if not in active pairs
@@ -1826,9 +1826,9 @@ export async function onUpdateToken(tokenDoc, changes) {
                   targetId: other.id,
                   state: 'none',
                 });
-              } catch (_) {}
+              } catch (_) { }
             }
-          } catch (_) {}
+          } catch (_) { }
           // other → moved: clear
           try {
             const prevOM = getCoverBetween(other, moved);
@@ -1840,11 +1840,11 @@ export async function onUpdateToken(tokenDoc, changes) {
                   targetId: moved.id,
                   state: 'none',
                 });
-              } catch (_) {}
+              } catch (_) { }
             }
-          } catch (_) {}
+          } catch (_) { }
         }
       }
-    } catch (_) {}
-  } catch (_) {}
+    } catch (_) { }
+  } catch (_) { }
 }

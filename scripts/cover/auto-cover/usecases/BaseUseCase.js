@@ -1,0 +1,253 @@
+/**
+ * BaseUseCase.js
+ * Base abstract class for auto-cover use cases
+ */
+
+import { AutoCoverSystem } from "../AutoCoverSystem.js";
+
+export class BaseAutoCoverUseCase {
+    /**
+     * Constructor
+     * @param {AutoCoverSystem} autoCoverSystem - The auto-cover system instance
+     */
+    constructor() {
+        // Ensure this class is not instantiated directly
+        if (this.constructor === BaseAutoCoverUseCase) {
+            throw new Error("BaseUseCase is an abstract class and cannot be instantiated directly");
+        }
+
+        this.autoCoverSystem = new AutoCoverSystem();
+        this.useCaseType = this.constructor.name;
+    }
+
+    /**
+     * Log a message with the use case type and a structured format
+     * @param {string} method - Method name
+     * @param {string} message - Log message
+     * @param {Object} data - Optional data to include in the log
+     * @param {string} level - Log level (debug, info, warn, error)
+     * @protected
+     */
+    _log(method, message, data = {}, level = 'debug') {
+        const logData = {
+            useCase: this.useCaseType,
+            method,
+            ...data
+        };
+
+        if (level === 'error') {
+            console.error(`PF2E Visioner | ${this.useCaseType}.${method}: ${message}`, logData);
+        } else if (level === 'warn') {
+            console.warn(`PF2E Visioner | ${this.useCaseType}.${method}: ${message}`, logData);
+        } else if (level === 'info') {
+            console.info(`PF2E Visioner | ${this.useCaseType}.${method}: ${message}`, logData);
+        } else {
+            console.debug(`PF2E Visioner | ${this.useCaseType}.${method}: ${message}`, logData);
+        }
+    }
+
+    /**
+     * Handle a chat message context
+     * @param {Object} data - Message data
+     * @returns {Promise<Object>} Result with tokens and cover state
+     */
+    async handlePreCreateChatMessage(data) {
+        throw new Error("Method 'handleChatMessage' must be implemented by subclasses");
+    }
+
+    /**
+     * Handle a check modifiers dialog context
+     * @param {Object} dialog - Dialog object
+     * @param {Object} ctx - Check context
+     * @returns {Promise<Object>} Result with tokens and cover state
+     */
+    async handleCheckDialog(dialog, ctx) {
+        throw new Error("Method 'handleCheckDialog' must be implemented by subclasses");
+    }
+
+    /**
+     * Handle check roll context
+     * @param {Object} check - Check object
+     * @param {Object} context - Check context
+     * @returns {Promise<Object>} Result with tokens and cover state
+     */
+    async handleCheckRoll(check, context) {
+        throw new Error("Method 'handleRoll' must be implemented by subclasses");
+    }
+
+    /**
+     * Clean up any effects or state changes after a roll completes
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @returns {Promise<void>}
+     */
+    async cleanupAfterRoll(attacker, target) {
+        this._log('cleanupAfterRoll', 'Cleaning up after roll', {
+            attacker: attacker?.name,
+            attackerId: attacker?.id,
+            target: target?.name,
+            targetId: target?.id
+        });
+
+        if (attacker && target) {
+            // Clean up auto-cover state
+            await this.autoCoverSystem.cleanupCover(attacker, target);
+
+            // Also directly remove any ephemeral cover roll effects from the target
+            if (target.actor && game.user.isGM) {
+                try {
+                    const ephemeralEffects = target.actor.itemTypes?.effect?.filter(
+                        e => e.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true
+                    );
+
+                    if (ephemeralEffects && ephemeralEffects.length > 0) {
+                        this._log('cleanupAfterRoll', `Removing ${ephemeralEffects.length} ephemeral cover effects`, {
+                            target: target.name
+                        });
+
+                        // Double-check that effects still exist to avoid "does not exist" errors
+                        const validEffectIds = [];
+                        for (const effect of ephemeralEffects) {
+                            const stillExists = target.actor.items.get(effect.id);
+                            if (stillExists) {
+                                validEffectIds.push(effect.id);
+                            } else {
+                                this._log('cleanupAfterRoll', 'Effect already removed, skipping', {
+                                    effectId: effect.id,
+                                    effectName: effect.name
+                                });
+                            }
+                        }
+
+                        if (validEffectIds.length > 0) {
+                            await target.actor.deleteEmbeddedDocuments('Item', validEffectIds);
+                            this._log('cleanupAfterRoll', `Successfully removed ${validEffectIds.length} effects`, {
+                                target: target.name
+                            });
+                        } else {
+                            this._log('cleanupAfterRoll', 'All effects were already removed by another process', {
+                                target: target.name,
+                                originalCount: ephemeralEffects.length
+                            });
+                        }
+                    }
+                } catch (error) {
+                    // Check if it's a benign race: effect already gone
+                    const msg = String(error?.message || error);
+                    if (msg.includes('does not exist')) {
+                        // Downgrade to debug to avoid noisy console warnings for expected races
+                        this._log('cleanupAfterRoll', 'Race condition: effect already removed elsewhere', { error: msg }, 'debug');
+                    } else {
+                        // Log other types of errors but don't re-throw to avoid breaking the cleanup flow
+                        this._log('cleanupAfterRoll', 'Error removing ephemeral cover effects', { error }, 'error');
+                    }
+                }
+            }
+        }
+    }    /**
+     * Check if the use case can handle the given context type
+     * @param {string} ctxType - Context type
+     * @returns {boolean} Whether this use case can handle the context type
+     */
+    canHandle(ctxType) {
+        throw new Error("Method 'canHandle' must be implemented by subclasses");
+    }
+
+    /**
+     * Resolve tokens from message data
+     * @param {Object} data - Message data
+     * @returns {Promise<Object>} Result with attacker, target, and isMultiTarget flag
+     * @protected
+     */
+    async _resolveTokensFromMessage(data) {
+        throw new Error("Method '_resolveTokensFromMessage' must be implemented by subclasses");
+    }
+
+    /**
+     * Detect cover state between tokens
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @returns {string} Cover state
+     * @protected
+     */
+    _detectCover(attacker, target) {
+        if (!attacker || !target) {
+            this._log('_detectCover', 'Missing attacker or target', {
+                attackerExists: !!attacker,
+                targetExists: !!target
+            }, 'warn');
+            return 'none';
+        }
+
+        this._log('_detectCover', 'Detecting cover between tokens', {
+            attacker: attacker.name,
+            attackerId: attacker.id,
+            target: target.name,
+            targetId: target.id
+        });
+
+        // Check template origin first
+        const templateManager = this.autoCoverSystem.getTemplateManager();
+        const originRec = templateManager.getTemplateOrigin(attacker.id);
+
+        let coverState;
+        if (originRec) {
+            this._log('_detectCover', 'Using template origin for cover detection', {
+                originPoint: originRec.point,
+                templateTimestamp: originRec.ts
+            });
+            coverState = this.autoCoverSystem.detectCoverFromPoint(originRec.point, target);
+        } else {
+            // Default: detect from attacker to target directly
+            coverState = this.autoCoverSystem.detectCoverForAttack(attacker, target);
+        }
+
+        this._log('_detectCover', 'Cover detection result', {
+            state: coverState,
+            attacker: attacker.name,
+            target: target.name
+        });
+
+        return coverState;
+    }
+
+    /**
+     * Normalize token reference
+     * @param {string|Object} ref - Token reference
+     * @returns {string|null} Normalized token ID
+     * @protected
+     */
+    _normalizeTokenRef(ref) {
+        if (!ref) return null;
+        if (typeof ref === 'string') return ref;
+        return ref.id || null;
+    }
+
+    /**
+     * Get a token by ID
+     * @param {string} tokenId - Token ID
+     * @returns {Object|null} Token object
+     * @protected
+     */
+    _getToken(tokenId) {
+        if (!tokenId || !canvas?.tokens?.get) return null;
+        return canvas.tokens.get(tokenId);
+    }
+
+    normalizeTokenRef(ref) {
+        try {
+            if (!ref) return null;
+            let s = typeof ref === 'string' ? ref.trim() : String(ref);
+            // Strip surrounding quotes
+            if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))
+                s = s.slice(1, -1);
+            // If it's a UUID, extract the final Token.<id> segment
+            const m = s.match(/Token\.([^.\s]+)$/);
+            if (m && m[1]) return m[1];
+            // Otherwise assume it's already the token id
+            return s;
+        } catch (_) {
+            return ref;
+        }
+    }
+}

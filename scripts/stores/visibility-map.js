@@ -66,3 +66,46 @@ export async function setVisibilityBetween(
     console.error('PF2E Visioner: Error updating off-guard effects:', error);
   }
 }
+
+/**
+ * Get visibility state between tokens with flexible parameter handling for compatibility
+ * @param {Token|string} observer - Observer token or token ID
+ * @param {Token|string} target - Target token or token ID 
+ * @param {string} direction - Direction of visibility (observer_to_target or target_to_observer)
+ * @returns {string} Visibility state
+ */
+export function getVisibility(observer, target, direction = 'observer_to_target') {
+  try {
+    // Resolve tokens if IDs are provided
+    let observerToken = observer;
+    let targetToken = target;
+
+    if (typeof observer === 'string') {
+      observerToken = canvas.tokens.get(observer);
+      if (!observerToken) {
+        console.warn(`PF2E Visioner: Observer token with ID '${observer}' not found`);
+        return 'observed'; // Default to observed if token not found
+      }
+    }
+
+    if (typeof target === 'string') {
+      targetToken = canvas.tokens.get(target);
+      if (!targetToken) {
+        console.warn(`PF2E Visioner: Target token with ID '${target}' not found`);
+        return 'observed'; // Default to observed if token not found
+      }
+    }
+
+    // Handle direction (for bidirectional visibility systems)
+    if (direction === 'target_to_observer') {
+      // Swap observer and target for reverse direction lookup
+      return getVisibilityBetween(targetToken, observerToken);
+    }
+
+    // Default: observer_to_target
+    return getVisibilityBetween(observerToken, targetToken);
+  } catch (error) {
+    console.error('PF2E Visioner: Error in getVisibility function:', error);
+    return 'observed'; // Default fallback value
+  }
+}

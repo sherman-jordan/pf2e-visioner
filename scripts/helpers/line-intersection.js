@@ -7,7 +7,7 @@ import {
   distancePointToSegment,
   pointBetweenOnSegment,
   segmentsIntersect
-} from '../helpers/geometry-utils.js';
+} from './geometry-utils.js';
 
 /**
  * Check if a line intersects with a rectangle in various modes
@@ -33,7 +33,7 @@ export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add('bottom');
   if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add('left');
   if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add('right');
-  
+
   if (mode === 'center') {
     const cx = (rect.x1 + rect.x2) / 2;
     const cy = (rect.y1 + rect.y2) / 2;
@@ -41,11 +41,11 @@ export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
     // Treat as pass-through if the center lies near the line segment (within 1px)
     return dist <= 1 && pointBetweenOnSegment({ x: cx, y: cy }, p1, p2);
   }
-  
+
   if (mode === 'any' || mode === 'length10') {
     const len = segmentRectIntersectionLength(p1, p2, rect);
     if (len <= 0) return false;
-    
+
     if (mode === 'any') {
       // For ANY mode, we want to check if there's a significant intersection
       // Simply use a small percentage of the token's width as threshold
@@ -173,7 +173,7 @@ export function intersectsBetweenTokens(attacker, target, rect, mode, blocker) {
 
   const p1 = attacker.center ?? attacker.getCenter?.();
   const p2 = target.center ?? target.getCenter?.();
-  
+
   // Primary check: center-to-center ray
   if (p1 && p2 && centerLineIntersectsRect(p1, p2, rect, mode)) return true;
   if (mode !== 'any') return false;

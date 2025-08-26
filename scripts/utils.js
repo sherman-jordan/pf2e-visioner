@@ -8,10 +8,10 @@ import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from './constants.js';
 export { cleanupDeletedToken, restoreDeletedTokenMaps } from './services/scene-cleanup.js';
 export { getCoverBetween, getCoverMap, setCoverBetween, setCoverMap } from './stores/cover-map.js';
 export {
-  getVisibilityBetween,
+  getVisibility, getVisibilityBetween,
   getVisibilityMap,
   setVisibilityBetween,
-  setVisibilityMap,
+  setVisibilityMap
 } from './stores/visibility-map.js';
 
 /**
@@ -408,6 +408,6 @@ export function getLastRollTotalForActor(actor, requiredSlug = null) {
         /* ignore and continue */
       }
     }
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }

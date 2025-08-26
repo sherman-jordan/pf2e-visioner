@@ -5,16 +5,16 @@
 
 import { segmentIntersectsRect } from '../helpers/geometry-utils.js';
 import {
+  intersectsBetweenTokens,
+  segmentRectIntersectionLength,
+} from '../helpers/line-intersection.js';
+import {
   getSizeRank,
   getTokenCorners,
   getTokenRect,
   getTokenVerticalSpanFt,
 } from '../helpers/size-elevation-utils.js';
-import {
-  intersectsBetweenTokens,
-  segmentRectIntersectionLength,
-} from './line-intersection.js';
-import { segmentIntersectsAnyBlockingWall } from './wall-detection.js';
+import { segmentIntersectsAnyBlockingWall } from '../helpers/wall-detection.js';
 
 /**
  * Evaluate cover using coverage-based calculation (percentage of blocker side coverage)
@@ -72,12 +72,12 @@ export function evaluateCoverBySize(attacker, target, p1, p2, blockers, intersec
   for (const blocker of blockers) {
     // Skip if blocker is the same as attacker or target
     if (blocker.id === attacker.id || blocker.id === target.id) continue;
-    
+
     const rect = getTokenRect(blocker);
-    
+
     // Pass the blocker to intersectsBetweenTokens to prevent self-blocking
     if (!intersectsBetweenTokens(attacker, target, rect, intersectionMode, blocker)) continue;
-    
+
     any = true;
     const blockerSize = getSizeRank(blocker);
     const sizeDiffAttacker = blockerSize - attackerSize;
@@ -119,18 +119,15 @@ export function evaluateCoverByTactical(attacker, target, blockers) {
   for (let a = 0; a < attackerCorners.length; a++) {
     const attackerCorner = attackerCorners[a];
     let blockedLines = 0;
-    const totalLines = targetCorners.length;
 
     // Check lines from all target corners to this attacker corner
     for (let t = 0; t < targetCorners.length; t++) {
       const targetCorner = targetCorners[t];
       let lineBlocked = false;
-      let blockedBy = 'none';
 
       // Check if this line is blocked by walls
       if (segmentIntersectsAnyBlockingWall(targetCorner, attackerCorner)) {
         lineBlocked = true;
-        blockedBy = 'wall';
       }
 
       // Check if this line is blocked by any token blockers
@@ -146,7 +143,6 @@ export function evaluateCoverByTactical(attacker, target, blockers) {
           );
           if (intersectionLength > 0) {
             lineBlocked = true;
-            blockedBy = `token:${blocker.name}(${intersectionLength.toFixed(1)}px)`;
             break;
           }
         }
@@ -223,7 +219,7 @@ export function evaluateCoverBy3DSampling(attacker, target, allBlockers) {
         try {
           const bs = getTokenVerticalSpanFt(b);
           if (overlapsZ(bs, z)) blockersAtZ.push(b);
-        } catch (_) {}
+        } catch (_) { }
       }
 
       // Evaluate center-to-center per slice: count intersecting blockers
@@ -243,7 +239,7 @@ export function evaluateCoverBy3DSampling(attacker, target, allBlockers) {
             const sizeDiffAttacker = blockerSize - attackerSize;
             const sizeDiffTarget = blockerSize - targetSize;
             if (sizeDiffAttacker >= 2 && sizeDiffTarget >= 2) hasStandardBySize = true;
-          } catch (_) {}
+          } catch (_) { }
         }
       }
       let coverAtZ = count === 0 ? 'none' : count === 1 ? 'lesser' : count <= 3 ? 'standard' : 'greater';

@@ -372,4 +372,38 @@ export class BaseAutoCoverUseCase {
             return null;
         }
     }
+
+
+    /**
+     * Resolve target token ID from message data
+     * @param {Object} data - Message data
+     * @returns {string|null}
+     * @private
+     */
+    _resolveTargetTokenIdFromData(data) {
+        try {
+            const pf2eTarget = data?.flags?.pf2e?.context?.target?.token ?? data?.flags?.pf2e?.target?.token;
+            if (pf2eTarget) {
+                return this.normalizeTokenRef(pf2eTarget);
+            }
+        } catch (_) { }
+        try {
+            const context = data?.flags?.pf2e?.context;
+            if (context?.target?.token) return this.normalizeTokenRef(context.target.token);
+            if (context?.target?.actor) {
+                const first = Array.from(canvas?.tokens?.placeables || [])
+                    .find((t) => t.actor?.id === context.target.actor)?.id;
+                if (typeof first === 'string') {
+                    return this.normalizeTokenRef(first);
+                }
+            }
+        } catch (_) { }
+        // Fallback: pf2e-toolbelt target helper may carry targets for area damage
+        try {
+            const tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
+            if (Array.isArray(tbTargets) && tbTargets.length === 1) {
+                return this.normalizeTokenRef(tbTargets[0]);
+            }
+        } catch (_) { }
+    }
 }

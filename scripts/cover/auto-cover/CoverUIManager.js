@@ -3,7 +3,7 @@
  * Manages UI elements for auto-cover functionality
  */
 import { COVER_STATES, MODULE_ID } from '../../constants.js';
-import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from '../../helpers/cover-helpers.js';
+import { getCoverBonusByState, getCoverLabel } from '../../helpers/cover-helpers.js';
 import { CoverQuickOverrideDialog } from '../quick-override-dialog.js';
 // (AutoCoverSystem import not required here)
 
@@ -18,12 +18,14 @@ export class CoverUIManager {
 
     /**
      * Injects cover override UI into a roll/dialog (buttons + roll binding)
-     * @param {Dialog} dialog
-     * @param {HTMLElement|jQuery} html
-     * @param {string} state
-     * @param {Token} target
+     * @param {Dialog} dialog - The check modifiers dialog
+     * @param {HTMLElement|jQuery} html - Dialog HTML
+     * @param {string} state - Detected cover state to preselect
+     * @param {Token} target - The defending/observed token
+     * @param {(args: { chosen: string, dialog: any, dctx: any, subject: Token|null, target: Token|null, targetActor: Actor|null }) => void} [onChosen]
+     *        Optional callback to handle chosen state on roll. If omitted, a default AC effect + override store is applied.
      */
-    async injectDialogCoverUI(dialog, html, state, target) {
+    async injectDialogCoverUI(dialog, html, state, target, onChosen) {
         try {
             if (html?.find?.('.pv-cover-override').length === 0) {
                 const current = dialog?._pvCoverOverride ?? state ?? 'none';
@@ -42,22 +44,17 @@ export class CoverUIManager {
                     const bonus = getCoverBonusByState(s);
                     const isActive = s === current;
                     const cfg = COVER_STATES?.[s] || {};
-                    const iconClass =
-                        cfg.icon ||
-                        (s === 'none'
-                            ? 'fas fa-shield-slash'
-                            : s === 'lesser'
-                                ? 'fa-regular fa-shield'
-                                : s === 'standard'
-                                    ? 'fas fa-shield-alt'
-                                    : 'fas fa-shield');
+                    const iconClass = cfg.icon || (s === 'none'
+                        ? 'fas fa-shield-slash'
+                        : s === 'lesser' ? 'fa-regular fa-shield'
+                            : s === 'standard' ? 'fas fa-shield-alt' : 'fas fa-shield');
                     const color = cfg.color || 'inherit';
                     const tooltip = `${label}${bonus > 0 ? ` (+${bonus})` : ''}`;
                     const btn = $(`
-                    <button type="button" class="pv-cover-btn" data-state="${s}" title="${tooltip}" data-tooltip="${tooltip}" data-tooltip-direction="UP" aria-label="${tooltip}" style="width:28px; height:28px; padding:0; line-height:0; border:1px solid rgba(255,255,255,0.2); border-radius:6px; background:${isActive ? 'var(--color-bg-tertiary, rgba(0,0,0,0.2))' : 'transparent'}; color:inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
-                      <i class="${iconClass}" style="color:${color}; display:block; width:18px; height:18px; line-height:18px; text-align:center; font-size:16px; margin:0;"></i>
-                    </button>
-                  `);
+                        <button type="button" class="pv-cover-btn" data-state="${s}" title="${tooltip}" data-tooltip="${tooltip}" data-tooltip-direction="UP" aria-label="${tooltip}" style="width:28px; height:28px; padding:0; line-height:0; border:1px solid rgba(255,255,255,0.2); border-radius:6px; background:${isActive ? 'var(--color-bg-tertiary, rgba(0,0,0,0.2))' : 'transparent'}; color:inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
+                          <i class="${iconClass}" style="color:${color}; display:block; width:18px; height:18px; line-height:18px; text-align:center; font-size:16px; margin:0;"></i>
+                        </button>
+                    `);
                     if (isActive) btn.addClass('active');
                     btns.append(btn);
                 }
@@ -71,7 +68,6 @@ export class CoverUIManager {
                         const btn = ev.currentTarget;
                         const sel = btn?.dataset?.state || 'none';
                         dialog._pvCoverOverride = sel;
-
                         container.find('.pv-cover-btn').each((_, el) => {
                             const active = el.dataset?.state === sel;
                             el.classList.toggle('active', active);
@@ -88,80 +84,28 @@ export class CoverUIManager {
             // Ensure current roll uses selected (or auto) cover via dialog injection
             try {
                 const rollBtnEl = html?.find?.('button.roll')?.[0];
-
                 if (rollBtnEl && !rollBtnEl.dataset?.pvCoverBind) {
                     rollBtnEl.dataset.pvCoverBind = '1';
-                    rollBtnEl.addEventListener(
-                        'click',
-                        () => {
-                            try {
-                                const dctx = dialog?.context || {};
-                                const tgt = dctx?.target || target;
-                                const tgtActor = tgt?.actor;
-                                if (!tgtActor) return;
-                                const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
+                    rollBtnEl.addEventListener('click', () => {
+                        try {
+                            const dctx = dialog?.context || {};
+                            const tgt = dctx?.target || target;
+                            const tgtActor = tgt?.actor;
+                            if (!tgtActor) return;
+                            const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
+                            const subject = dctx?.actor || null;
 
-                                // Store the dialog override for onPreCreateChatMessage to use
-                                if (!window.pf2eVisionerDialogOverrides)
-                                    window.pf2eVisionerDialogOverrides = new Map();
-                                const attacker = dctx?.actor;
-                                if (attacker && tgt) {
-                                    const targetTokenId = tgt.id || tgt.token?.id || target?.id;
-                                    if (targetTokenId) {
-                                        const overrideKeys = [
-                                            `${attacker.id}-${targetTokenId}`,
-                                            `${attacker.uuid}-${targetTokenId}`,
-                                        ];
-                                        for (const overrideKey of overrideKeys) {
-                                            window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
-                                        }
-                                    } else {
-                                        console.warn('PF2E Visioner | Could not resolve target token ID for dialog override');
-                                    }
+                            // Delegate to callback if provided
+                            if (typeof onChosen === 'function') {
+                                try {
+                                    onChosen({ chosen, dialog, dctx, subject, target: tgt, targetActor: tgtActor });
+                                } catch (cbErr) {
+                                    console.warn('PF2E Visioner | onChosen callback failed:', cbErr);
                                 }
-
-                                const bonus = getCoverBonusByState(chosen) || 0;
-                                let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
-                                items = items.filter(
-                                    (i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true),
-                                );
-                                if (bonus > 0) {
-                                    const label = getCoverLabel(chosen);
-                                    const img = getCoverImageForState(chosen);
-                                    const effectRules = [];
-                                    effectRules.push({ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus });
-                                    const description = `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`;
-                                    items.push({
-                                        name: label,
-                                        type: 'effect',
-                                        system: {
-                                            description: { value: description, gm: '' },
-                                            rules: effectRules,
-                                            traits: { otherTags: [], value: [] },
-                                            level: { value: 1 },
-                                            duration: { value: -1, unit: 'unlimited' },
-                                            tokenIcon: { show: false },
-                                            unidentified: true,
-                                            start: { value: 0 },
-                                            badge: null,
-                                        },
-                                        img,
-                                        flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } },
-                                    });
-                                }
-                                tgt.actor = tgtActor.clone({ items }, { keepId: true });
-                                const dcObj = dctx.dc;
-                                if (dcObj?.slug) {
-                                    const st = tgt.actor.getStatistic(dcObj.slug)?.dc;
-                                    if (st) {
-                                        dcObj.value = st.value;
-                                        dcObj.statistic = st;
-                                    }
-                                }
-                            } catch (_) { }
-                        },
-                        true,
-                    );
+                                return;
+                            }
+                        } catch (_) { }
+                    }, true);
                 }
             } catch (e) {
                 console.error('PF2E Visioner | Error in dialog roll button handler:', e);
@@ -171,7 +115,7 @@ export class CoverUIManager {
         }
     }
 
-    // Popup/keybind/dialog helpers (moved from AttackRollUseCase)
+    // Popup/keybind/dialog helpers
     async isHoldingCoverOverrideKey() {
         try {
             const keybinding = game.keybindings.get(MODULE_ID, 'holdCoverOverride');

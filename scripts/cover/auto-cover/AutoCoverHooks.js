@@ -647,7 +647,7 @@ export class AutoCoverHooks {
 
         // Check for stealth context
         if (ctx.type === 'skill-check' &&
-            (ctx.skill === 'stealth' || (Array.isArray(ctx.domains) && ctx.domains.includes('stealth')))) {
+            (Array.isArray(ctx.domains) && ctx.domains.includes('stealth'))) {
             console.debug('PF2E Visioner | Resolved stealth use case');
             return this.stealthCheckUseCase;
         }

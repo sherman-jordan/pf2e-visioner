@@ -162,7 +162,7 @@ export class AutoCoverSystem {
      * @param {string} messageId 
      * @param {Object} data 
      */
-    storeOverride(key, data) {
+    setOverride(key, data) {
         this._pendingOverrides.set(key, data);
     }
 

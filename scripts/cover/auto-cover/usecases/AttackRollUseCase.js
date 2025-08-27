@@ -59,7 +59,67 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
         let state = this._detectCover(attacker, target);
         // Delegate dialog UI injection to CoverUIManager
         try {
-            await this.coverUI.injectDialogCoverUI(dialog, html, state, target);
+            await this.coverUI.injectDialogCoverUI(dialog, html, state, target, ({ chosen, dctx, subject: attacker, target: tgt, targetActor: tgtActor }) => {
+                try {
+                    if (!window.pf2eVisionerDialogOverrides)
+                        window.pf2eVisionerDialogOverrides = new Map();
+                    if (attacker && tgt) {
+                        const targetTokenId = tgt.id || tgt.token?.id || target?.id;
+                        if (targetTokenId) {
+                            const overrideKeys = [
+                                `${attacker.id}-${targetTokenId}`,
+                                `${attacker.uuid}-${targetTokenId}`,
+                            ];
+                            for (const overrideKey of overrideKeys) {
+                                window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
+                            }
+                        } else {
+                            console.warn('PF2E Visioner | Could not resolve target token ID for dialog override');
+                        }
+                    }
+                } catch (_) { }
+
+                try {
+                    const bonus = getCoverBonusByState(chosen) || 0;
+                    let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
+                    items = items.filter(
+                        (i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true),
+                    );
+                    if (bonus > 0) {
+                        const label = getCoverLabel(chosen);
+                        const img = getCoverImageForState(chosen);
+                        const effectRules = [];
+                        effectRules.push({ key: 'FlatModifier', selector: 'ac', type: 'circumstance', value: bonus });
+                        const description = `<p>${label}: +${bonus} circumstance bonus to AC for this roll.</p>`;
+                        items.push({
+                            name: label,
+                            type: 'effect',
+                            system: {
+                                description: { value: description, gm: '' },
+                                rules: effectRules,
+                                traits: { otherTags: [], value: [] },
+                                level: { value: 1 },
+                                duration: { value: -1, unit: 'unlimited' },
+                                tokenIcon: { show: false },
+                                unidentified: true,
+                                start: { value: 0 },
+                                badge: null,
+                            },
+                            img,
+                            flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } },
+                        });
+                    }
+                    tgt.actor = tgtActor.clone({ items }, { keepId: true });
+                    const dcObj = dctx.dc;
+                    if (dcObj?.slug) {
+                        const st = tgt.actor.getStatistic(dcObj.slug)?.dc;
+                        if (st) {
+                            dcObj.value = st.value;
+                            dcObj.statistic = st;
+                        }
+                    }
+                } catch (_) { }
+            });
         } catch (e) {
             console.warn('PF2E Visioner | Failed to inject dialog cover UI via CoverUIManager:', e);
         }
@@ -227,40 +287,6 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
                 dcObj.statistic = clonedStat;
             }
         }
-    }
-
-
-    /**
-     * Resolve target token ID from message data
-     * @param {Object} data - Message data
-     * @returns {string|null}
-     * @private
-     */
-    _resolveTargetTokenIdFromData(data) {
-        try {
-            const pf2eTarget = data?.flags?.pf2e?.context?.target?.token ?? data?.flags?.pf2e?.target?.token;
-            if (pf2eTarget) {
-                return this.normalizeTokenRef(pf2eTarget);
-            }
-        } catch (_) { }
-        try {
-            const context = data?.flags?.pf2e?.context;
-            if (context?.target?.token) return this.normalizeTokenRef(context.target.token);
-            if (context?.target?.actor) {
-                const first = Array.from(canvas?.tokens?.placeables || [])
-                    .find((t) => t.actor?.id === context.target.actor)?.id;
-                if (typeof first === 'string') {
-                    return this.normalizeTokenRef(first);
-                }
-            }
-        } catch (_) { }
-        // Fallback: pf2e-toolbelt target helper may carry targets for area damage
-        try {
-            const tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
-            if (Array.isArray(tbTargets) && tbTargets.length === 1) {
-                return this.normalizeTokenRef(tbTargets[0]);
-            }
-        } catch (_) { }
     }
 
     /**

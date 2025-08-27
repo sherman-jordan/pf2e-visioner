@@ -2,7 +2,7 @@
 
 ![Latest Downloads](https://img.shields.io/github/downloads/roi007leaf/pf2e-visioner/latest/total?color=blue&label=latest%20downloads)
 
-# PF2E Visioner – Advanced Visibility and Perception Toolkit
+# PF2E Visioner – Advanced Visibility and Cover Toolkit
 
 PF2E Visioner is a comprehensive visibility and perception toolkit for Foundry VTT's Pathfinder 2nd Edition system. It provides granular control over what each creature can see, automates PF2E perception mechanics, and offers an intuitive user experience for both GMs and players.
 

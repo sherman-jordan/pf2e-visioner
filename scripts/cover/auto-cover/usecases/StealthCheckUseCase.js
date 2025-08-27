@@ -312,20 +312,6 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
     }
 
     /**
-     * Handle check roll context
-     * @param {Object} context - Check context
-     * @returns {Promise<Object>} Result with tokens and cover state
-     */
-    async handleCheckRoll(context) {
-        try {
-            return await this.handleCheckDialog(null, context);
-        } catch (error) {
-            console.error('PF2E Visioner | StealthCheckUseCase.handleCheckRoll error:', error);
-            return { success: false };
-        }
-    }
-
-    /**
      * Resolve tokens from message data
      * @param {Object} data - Message data
      * @returns {Promise<Object>} Result with stealther and observer

@@ -344,4 +344,32 @@ export class BaseAutoCoverUseCase {
 
         return { state, wasOverridden, overrideSource };
     }
+
+
+    /**
+     * Resolve target from context
+     * @param {Object} ctx - Context object
+     * @returns {Object|null}
+     * @private
+     */
+    _resolveTargetFromCtx(ctx) {
+        try {
+            const tObj = ctx?.target?.token?.object || ctx?.target?.token;
+            if (tObj?.id) return tObj;
+            const targetIdRaw =
+                typeof ctx?.target?.token === 'string'
+                    ? ctx.target.token
+                    : ctx?.target?.tokenId || ctx?.targetTokenId;
+            const targetId = this.normalizeTokenRef(targetIdRaw);
+            if (targetId) {
+                const byCtx = canvas?.tokens?.get?.(targetId);
+                if (byCtx) return byCtx;
+            }
+            const t =
+                Array.from(game?.user?.targets ?? [])?.[0] || Array.from(canvas?.tokens?.targets ?? [])?.[0];
+            return t || null;
+        } catch (_) {
+            return null;
+        }
+    }
 }

@@ -248,20 +248,23 @@ export function registerUIHooks() {
       // === TOKEN TOOL ADDITIONS ===
       const tokens = groups.find((c) => c?.name === 'tokens' || c?.name === 'token');
       if (tokens) {
-        // Quick Edit button (opens Visioner Quick Panel)
-        addTool(tokens.tools, {
-          name: 'pf2e-visioner-quick-edit',
-          title: 'PF2E Visioner: Quick Edit (Selected ↔ Targeted)',
-          icon: 'fa-solid fa-bolt',
-          button: true,
-          onChange: async () => {
-            try {
-              const { VisionerQuickPanel } = await import('../managers/quick-panel.js');
-              if (!game.user?.isGM) return;
-              new VisionerQuickPanel({}).render(true);
-            } catch (_) {}
-          },
-        });
+        console.log('hideQuickEditTool', game.settings.get(MODULE_ID, 'hideQuickEditTool'));
+        // Quick Edit button (opens Visioner Quick Panel) - only show if setting is disabled
+        if (!game.settings.get(MODULE_ID, 'hideQuickEditTool')) {
+          addTool(tokens.tools, {
+            name: 'pf2e-visioner-quick-edit',
+            title: 'PF2E Visioner: Quick Edit (Selected ↔ Targeted)',
+            icon: 'fa-solid fa-bolt',
+            button: true,
+            onChange: async () => {
+              try {
+                const { VisionerQuickPanel } = await import('../managers/quick-panel.js');
+                if (!game.user?.isGM) return;
+                new VisionerQuickPanel({}).render(true);
+              } catch (_) {}
+            },
+          });
+        }
         // Toggle Provide Auto-Cover (Selected Tokens)
         const selectedTokens = canvas?.tokens?.controlled ?? [];
         addTool(tokens.tools, {

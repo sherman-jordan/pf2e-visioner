@@ -14,6 +14,7 @@ PF2E Visioner is a comprehensive visibility and cover toolkit for Foundry VTT's 
 
 - Foundry VTT v13.341+
 - PF2e System v6.0.0+
+- libwrapper
 - Recommended: socketlib (for cross-client perception refresh)
 
 ---

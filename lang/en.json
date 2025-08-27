@@ -260,6 +260,10 @@
         "name": "Default Stealth DC for Walls",
         "hint": "DC used when considering hidden walls as Seek targets (when a wall has no explicit DC set)."
       },
+      "HIDE_QUICK_EDIT_TOOL": {
+        "name": "Hide Quick Edit Tool",
+        "hint": "If enabled, the Quick Edit tool will be hidden from the token controls toolbar."
+      },
       "INCLUDE_LOOT_ACTORS": {
         "name": "Include loot actors in visibility manager",
         "hint": "Allow configuring visibility states for loot actors (chests, containers) per observer. Visual only; no PF2E conditions are applied."

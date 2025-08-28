@@ -43,6 +43,7 @@ export async function extractActionData(message) {
 
   // Check for explicit sneak action first (more specific)
   const isSneakAction =
+    context && // Require context to exist as it should on an actual roll. 
     !isCreateADiversionAction &&
     !isAvoidNoticeAction &&
     ((context?.type === 'skill-check' &&
@@ -55,9 +56,10 @@ export async function extractActionData(message) {
 
   // Check for hide action after sneak (less specific, can overlap)
   const isHideAction =
+    context && // Require context to exist it always does on the actual roll
     !isCreateADiversionAction &&
     !isSneakAction && // Don't classify as hide if already identified as sneak
-    ((context?.type === 'skill-check' &&
+    ((context.type === 'skill-check' &&
       (context.options?.includes('action:hide') || context.slug === 'hide')) ||
       (message.flavor?.toLowerCase?.().includes?.('hide') &&
         !message.flavor?.toLowerCase?.().includes?.('create a diversion') &&
@@ -65,14 +67,15 @@ export async function extractActionData(message) {
     !message.flavor?.toLowerCase?.().includes?.('sneak');
 
   const isAttackRoll =
-    context?.type === 'attack-roll' ||
+    ( context?.type === 'attack-roll' ||
     context?.type === 'spell-attack-roll' ||
     context?.type === 'strike-attack-roll' ||
     message.content?.includes('Attack Roll') ||
     message.content?.includes('Strike') ||
-    context?.options?.some((opt) => opt.includes('attack-roll')) ||
-    context?.options?.some((opt) => opt.includes('strike'));
-
+    context?.options?.some((opt) => opt.includes('attack-roll')) ) &&
+    ( !context?.domains?.some((dom) => dom.includes('skill-check')) &&
+    context?.type != 'self-effect' );
+    
   // Skip attack consequences for damage-taken messages
   const isDamageTakenMessage =
     context?.type === 'damage-taken' || message.flags?.pf2e?.appliedDamage;

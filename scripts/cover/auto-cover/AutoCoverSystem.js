@@ -6,6 +6,7 @@
 import { MODULE_ID } from '../../constants.js';
 import { CoverDetector } from './CoverDetector.js';
 import { CoverStateManager } from './CoverStateManager.js';
+import { CoverOverrideManager } from '../CoverOverrideManager.js';
 import { TemplateManager } from './TemplateManager.js';
 
 export class AutoCoverSystem {
@@ -28,22 +29,24 @@ export class AutoCoverSystem {
     _templateManager = null;
 
     /**
+     * @type {CoverOverrideManager}
+     * @private
+     */
+    _overrideManager = null;
+
+    /**
      * Store attacker→target pairs for cleanup
      * @type {Map<string, Set<string>>}
      * @private
      */
     _activePairsByAttacker = new Map();
 
-    /**
-     * @type {Map<string, Object>}
-     * @private
-     */
-    _pendingOverrides = new Map();
 
     constructor() {
         this._detector = new CoverDetector();
         this._stateManager = new CoverStateManager();
         this._templateManager = new TemplateManager();
+        this._overrideManager = new CoverOverrideManager(); // Use global singleton
 
         // Initialize global template trackers if needed
         if (!window.pf2eVisionerTemplateData) {
@@ -157,26 +160,114 @@ export class AutoCoverSystem {
         await this.setCoverBetween(attacker, target, 'none', { skipEphemeralUpdate: true });
     }
 
+
+
+ 
+
+
+
     /**
-     * Stores a cover override
-     * @param {string} messageId 
-     * @param {Object} data 
+     * Gets the override manager
+     * @returns {CoverOverrideManager}
      */
-    setOverride(key, data) {
-        this._pendingOverrides.set(key, data);
+    getOverrideManager() {
+        return this._overrideManager;
     }
 
     /**
-     * Gets a pending override
-     * @param {string} messageId 
+     * Set a popup override for token pair
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @param {string} coverState 
+     * @param {string} originalState 
+     */
+    setPopupOverride(token1, token2, coverState, originalState) {
+        this._overrideManager.setPopupOverride(token1, token2, coverState, originalState);
+    }
+
+    /**
+     * Set a dialog override for token pair
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @param {string} coverState 
+     * @param {string} originalState 
+     */
+    setDialogOverride(token1, token2, coverState, originalState) {
+        this._overrideManager.setDialogOverride(token1, token2, coverState, originalState);
+    }
+
+    /**
+     * Get and consume override for token pair
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @param {string} rollId 
+     * @param {boolean} deleteOnConsume - Whether to delete the override after consuming (default: true)
      * @returns {Object|null}
      */
-    getOverride(key) {
-        return this._pendingOverrides.get(key);
+    consumeCoverOverride(token1, token2, rollId = null, deleteOnConsume = true) {
+        return this._overrideManager.consumeOverride(token1, token2, rollId, deleteOnConsume);
     }
 
-    getPendingOverrides() {
-        return this._pendingOverrides;
+    /**
+     * Get popup override for token pair without consuming
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @returns {Object|null}
+     */
+    getPopupOverride(token1, token2) {
+        return this._overrideManager.getPopupOverride(token1, token2);
+    }
+
+    /**
+     * Get dialog override for token pair without consuming
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @returns {Object|null}
+     */
+    getDialogOverride(token1, token2) {
+        return this._overrideManager.getDialogOverride(token1, token2);
+    }
+
+    /**
+     * Consume popup override only
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @param {boolean} deleteOnConsume 
+     * @returns {Object|null}
+     */
+    consumePopupOverride(token1, token2, deleteOnConsume = true) {
+        return this._overrideManager.consumePopupOverride(token1, token2, deleteOnConsume);
+    }
+
+    /**
+     * Consume dialog override only
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @param {boolean} deleteOnConsume 
+     * @returns {Object|null}
+     */
+    consumeDialogOverride(token1, token2, deleteOnConsume = true) {
+        return this._overrideManager.consumeDialogOverride(token1, token2, deleteOnConsume);
+    }
+
+    /**
+     * Check if there's an override for token pair
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     * @param {string} rollId 
+     * @returns {boolean}
+     */
+    hasCoverOverride(token1, token2, rollId = null) {
+        return this._overrideManager.hasOverride(token1, token2, rollId);
+    }
+
+    /**
+     * Clear overrides for a token pair
+     * @param {Object|string} token1 
+     * @param {Object|string} token2 
+     */
+    clearCoverOverrides(token1, token2) {
+        this._overrideManager.clearOverrides(token1, token2);
     }
 
     /**

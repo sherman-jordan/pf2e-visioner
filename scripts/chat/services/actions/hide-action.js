@@ -1,5 +1,5 @@
 import { COVER_STATES, MODULE_ID } from '../../../constants.js';
-import { AutoCoverSystem } from '../../../cover/auto-cover/AutoCoverSystem.js';
+import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import { StealthCheckUseCase } from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
 import { appliedHideChangesByMessage } from '../data/message-cache.js';
 import { shouldFilterAlly } from '../infra/shared-utils.js';
@@ -8,8 +8,10 @@ import { ActionHandlerBase } from './base-action.js';
 export class HideActionHandler extends ActionHandlerBase {
   constructor() {
     super('hide');
-    this.autoCoverSystem = new AutoCoverSystem();
+    // Use the singleton instance to share state with StealthCheckUseCase
+    this.autoCoverSystem = autoCoverSystem;
     this.stealthCheckUseCase = new StealthCheckUseCase(this.autoCoverSystem);
+    // Use the global singleton override manager directly
   }
   getCacheMap() {
     return appliedHideChangesByMessage;
@@ -99,52 +101,51 @@ export class HideActionHandler extends ActionHandlerBase {
         let isOverride = false;
         let coverSource = 'none';
 
-        // Compute base cover (automatic -> manual fallback)
+        // Compute base cover (manual first, then auto-cover fallback)
         try {
-          if (game.settings.get(MODULE_ID, 'autoCover')) {
-            const autoDetected = this.stealthCheckUseCase._detectCover(hidingToken, subject);
-            if (autoDetected) {
+          // First check for manual cover
+          const manualDetected = this.autoCoverSystem.getCoverBetween(subject, hidingToken);
+          if (manualDetected && manualDetected !== 'none') {
+            coverState = manualDetected;
+            coverSource = 'manual';
+          } else if (game.settings.get(MODULE_ID, 'autoCover')) {
+            // Fallback to auto-cover detection if no manual cover
+            // For cover detection: observer is "attacking" (perceiving) the hiding token
+            // So observer is attacker, hiding token is target
+            const autoDetected = this.stealthCheckUseCase._detectCover(subject, hidingToken);
+            if (autoDetected && autoDetected !== 'none') {
               coverState = autoDetected;
               coverSource = 'automatic';
             }
           }
         } catch (e) {
-          console.warn(`PF2E Visioner | Auto-cover calculation failed for Hide action:`, e);
-        }
-
-        if (!coverState || coverState === 'none') {
-          try {
-            const manualDetected = this.autoCoverSystem.getCoverBetween(hidingToken, subject);
-            if (manualDetected) {
-              coverState = manualDetected;
-              coverSource = 'manual';
-            }
-          } catch (e) {
-            console.warn(`PF2E Visioner | Manual cover lookup failed for Hide action:`, e);
-          }
+          console.warn(`PF2E Visioner | Cover calculation failed for Hide action:`, e);
         }
 
         // Apply overrides last (take precedence over base)
+        // Delete on consume since this is the final consumer
+        let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
         try {
-          const overrideKey = `${hidingToken?.id}-${subject?.id}`;
-          if (window.pf2eVisionerPopupOverrides?.has(overrideKey)) {
-            debugger;
-            coverState = (coverState !== 'none' || !coverState) && window.pf2eVisionerPopupOverrides.get(overrideKey);
-            isOverride = true;
-            coverSource = 'popup';
-          } else if (window.pf2eVisionerDialogOverrides?.has(overrideKey)) {
-            debugger;
-            coverState = (coverState !== 'none' || !coverState) && window.pf2eVisionerDialogOverrides.get(overrideKey);
-            isOverride = true;
-            coverSource = 'dialog';
+          // NOTE: Override parameter order is DIFFERENT from cover detection!
+          // Stealth check stores overrides as (hiding token -> observer)
+          // Cover detection uses (observer -> hiding token)
+          const overrideData = this.autoCoverSystem.consumeCoverOverride(hidingToken, subject, null, true);
+          if (overrideData) {
+            // Don't use overrideData.originalState - use what we actually detected for this observer
+            coverState = overrideData.state;
+            
+            // Only mark as override if there's actually a difference from what we detected
+            if (originalDetectedState !== coverState) {
+              isOverride = true;
+              coverSource = overrideData.source;
+            }
           }
-
         } catch (_) { }
 
+        // Always create autoCover object if we have a cover state (even without override)
         if (coverState) {
           const coverConfig = COVER_STATES[coverState];
           const actualStealthBonus = coverConfig?.bonusStealth || 0;
-          debugger;
           result.autoCover = {
             state: coverState,
             label: game.i18n.localize(coverConfig.label),
@@ -154,6 +155,20 @@ export class HideActionHandler extends ActionHandlerBase {
             bonus: actualStealthBonus,
             isOverride,
             source: coverSource,
+            // Add override details for template display (only if actually overridden)
+            ...(isOverride && originalDetectedState !== coverState && {
+              overrideDetails: {
+                originalState: originalDetectedState,
+                originalLabel: game.i18n.localize(COVER_STATES[originalDetectedState]?.label || 'None'),
+                originalIcon: COVER_STATES[originalDetectedState]?.icon || 'fas fa-shield',
+                originalColor: COVER_STATES[originalDetectedState]?.color || '#999',
+                finalState: coverState,
+                finalLabel: game.i18n.localize(coverConfig.label),
+                finalIcon: coverConfig.icon,
+                finalColor: coverConfig.color,
+                source: coverSource
+              }
+            })
           };
         }
       } catch (e) {
@@ -162,12 +177,25 @@ export class HideActionHandler extends ActionHandlerBase {
     }
 
     // Calculate roll information (stealth vs observer's perception DC)
-    debugger;
     const baseTotal = Number(actionData?.roll?.total ?? 0);
-    const observerCoverState = result?.autoCover?.state ?? 'none';
     const injectedStealthBonus = Number(actionData.context._visionerStealth?.bonus ?? 0);
-    const shouldSubtract = enableCoverHideAction && observerCoverState === 'none';
-    const total = shouldSubtract ? baseTotal - injectedStealthBonus : baseTotal;
+    
+    // Check if we detected 'none' but have an override - then subtract the injected bonus
+    const wasNoneButOverridden = enableCoverHideAction && 
+                                 result?.autoCover?.isOverride && 
+                                 result?.autoCover?.overrideDetails?.originalState === 'none';
+    const total = wasNoneButOverridden ? baseTotal - injectedStealthBonus : baseTotal;
+    
+    // Calculate what the total would have been with original detected cover
+    let originalTotal = null;
+    if (result?.autoCover?.isOverride && result?.autoCover?.overrideDetails) {
+      const originalState = result.autoCover.overrideDetails.originalState;
+      const originalCoverConfig = COVER_STATES[originalState];
+      const originalBonus = originalCoverConfig?.bonusStealth || 0;
+      // Base roll without any cover bonus + original detected cover bonus
+      const baseRollWithoutCover = baseTotal - injectedStealthBonus;
+      originalTotal = baseRollWithoutCover + originalBonus;
+    }
     const die = Number(
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
     );
@@ -191,6 +219,8 @@ export class HideActionHandler extends ActionHandlerBase {
       newVisibility,
       changed: newVisibility !== current,
       autoCover: result.autoCover, // Add auto-cover information
+      // Add original total for override display
+      originalRollTotal: originalTotal,
     };
   }
   outcomeToChange(actionData, outcome) {

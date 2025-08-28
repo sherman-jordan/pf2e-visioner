@@ -5,14 +5,11 @@
 import { COVER_STATES, MODULE_ID } from '../../constants.js';
 import { getCoverBonusByState, getCoverLabel } from '../../helpers/cover-helpers.js';
 import { CoverQuickOverrideDialog } from '../quick-override-dialog.js';
-// (AutoCoverSystem import not required here)
+import autoCoverSystem from './AutoCoverSystem.js';
 
 export class CoverUIManager {
 
-    /**
-     * @param {AutoCoverSystem} autoCoverSystem
-     */
-    constructor(autoCoverSystem) {
+    constructor() {
         this.autoCoverSystem = autoCoverSystem;
     }
 
@@ -22,7 +19,7 @@ export class CoverUIManager {
      * @param {HTMLElement|jQuery} html - Dialog HTML
      * @param {string} state - Detected cover state to preselect
      * @param {Token} target - The defending/observed token
-     * @param {(args: { chosen: string, dialog: any, dctx: any, subject: Token|null, target: Token|null, targetActor: Actor|null }) => void} [onChosen]
+     * @param {(args: { chosen: string, dialog: any, dctx: any, subject: Token|null, target: Token|null, targetActor: Actor|null, originalState: string }) => void} [onChosen]
      *        Optional callback to handle chosen state on roll. If omitted, a default AC effect + override store is applied.
      */
     async injectDialogCoverUI(dialog, html, state, target, onChosen) {
@@ -98,7 +95,7 @@ export class CoverUIManager {
                             // Delegate to callback if provided
                             if (typeof onChosen === 'function') {
                                 try {
-                                    onChosen({ chosen, dialog, dctx, subject, target: tgt, targetActor: tgtActor });
+                                    onChosen({ chosen, dialog, dctx, subject, target: tgt, targetActor: tgtActor, originalState: state });
                                 } catch (cbErr) {
                                     console.warn('PF2E Visioner | onChosen callback failed:', cbErr);
                                 }
@@ -163,6 +160,9 @@ export class CoverUIManager {
      */
     async showPopupAndApply(detectedState) {
         try {
+            if (game.user.flags?.pf2e?.settings?.showCheckDialogs) {
+                return
+            }
             const chosen = await this.getCoverPopupChosenState(detectedState);
             return { chosen };
         } catch (e) {
@@ -186,6 +186,8 @@ export class CoverUIManager {
             // Check if this message has cover override information
             let overrideInfo = message?.flags?.['pf2e-visioner']?.coverOverride;
 
+            // If no override info in message flags, we could try checking the manager
+            // but we need token information which isn't available here
             if (!overrideInfo) {
                 return;
             }
@@ -204,7 +206,6 @@ export class CoverUIManager {
             // Get human-readable labels
             const originalLabel = getCoverLabel(originalDetected);
             const finalLabel = getCoverLabel(finalState);
-
 
             // Create compact override indicator with crossed-out original and hover tooltip
             const tooltipText =
@@ -344,3 +345,7 @@ export class CoverUIManager {
         }
     }
 }
+
+// Singleton instance
+const coverUIManager = new CoverUIManager(autoCoverSystem);
+export default coverUIManager;

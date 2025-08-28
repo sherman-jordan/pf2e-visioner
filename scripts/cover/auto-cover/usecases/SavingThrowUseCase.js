@@ -10,14 +10,8 @@ import {
   getCoverLabel,
 } from '../../../helpers/cover-helpers.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
-import { CoverUIManager } from '../CoverUIManager.js';
 
 export class SavingThrowUseCase extends BaseAutoCoverUseCase {
-
-      constructor(autoCoverSystem) {
-          super(autoCoverSystem);
-          this.coverUI = new CoverUIManager(this.autoCoverSystem);
-      }
 
   /**
      * Handle a chat message context
@@ -779,9 +773,7 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
                 });
 
                 // Store the dialog override for onPreCreateChatMessage to use
-                // We'll store it in a temporary global that gets picked up by the message creation
-                if (!window.pf2eVisionerDialogOverrides)
-                  window.pf2eVisionerDialogOverrides = new Map();
+                // Use the new CoverOverrideManager system
                 const attacker = dctx?.actor;
                 if (attacker && tgt) {
                   // Get the proper target token ID - try multiple sources
@@ -795,7 +787,7 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
                     ];
 
                     for (const overrideKey of overrideKeys) {
-                      window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
+                      this.autoCoverSystem.setDialogOverride(overrideKey, chosen, state);
                       console.debug('PF2E Visioner | Stored dialog override:', {
                         key: overrideKey,
                         value: chosen,

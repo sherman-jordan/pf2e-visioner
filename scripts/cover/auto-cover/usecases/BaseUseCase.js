@@ -2,19 +2,17 @@
  * BaseUseCase.js
  * Base abstract class for auto-cover use cases
  */
-import { CoverUIManager } from "../CoverUIManager.js";
+import coverUIManager from "../CoverUIManager.js";
+import autoCoverSystem from "../AutoCoverSystem.js";
 export class BaseAutoCoverUseCase {
-    /**
-     * Constructor
-     * @param {AutoCoverSystem} autoCoverSystem - The auto-cover system instance
-     */
-    constructor(autoCoverSystem) {
+
+    constructor() {
         // Ensure this class is not instantiated directly
         if (this.constructor === BaseAutoCoverUseCase) {
             throw new Error("BaseUseCase is an abstract class and cannot be instantiated directly");
         }
 
-        this.coverUIManager = new CoverUIManager(autoCoverSystem);
+        this.coverUIManager = coverUIManager;
         this.autoCoverSystem = autoCoverSystem;
         this.useCaseType = this.constructor.name;
     }
@@ -48,7 +46,6 @@ export class BaseAutoCoverUseCase {
 
     async handleRenderChatMessage(message, html) {
         try {
-
             // Always check for cover override indicators first, regardless of action data
             const shouldShow = await this.coverUIManager.shouldShowCoverOverrideIndicator(message);
 
@@ -273,47 +270,41 @@ export class BaseAutoCoverUseCase {
         let overrideSource = null;
 
         try {
-            if (window.pf2eVisionerPopupOverrides) {
-                const overrideKey = `${attacker.id}-${target.id}`;
-                const popupOverride = window.pf2eVisionerPopupOverrides.get(overrideKey);
-                if (popupOverride !== undefined) {
-                    if (popupOverride !== originalDetectedState) {
-                        wasOverridden = true;
-                        overrideSource = 'popup';
-                    }
-                    state = popupOverride;
-                    window.pf2eVisionerPopupOverrides.delete(overrideKey);
+            const overrideKey = `${attacker.id}-${target.id}`;
+            const popupOverride = this.autoCoverSystem.consumePopupOverride(overrideKey);
+            if (popupOverride !== null) {
+                const overrideState = popupOverride.state;
+                if (overrideState !== originalDetectedState) {
+                    wasOverridden = true;
+                    overrideSource = 'popup';
                 }
+                state = overrideState;
             }
         } catch (e) {
             console.warn('PF2E Visioner | Failed to check popup override:', e);
         }
 
         try {
-            if (window.pf2eVisionerDialogOverrides) {
-                const possibleKeys = [
-                    `${attacker.actor?.id}-${target.id}`,
-                    `${attacker.id}-${target.id}`,
-                    `${attacker.actor?.id}-${target.actor?.id}`,
-                    `${attacker.actor?.uuid}-${target.id}`,
-                ];
-                let dialogOverride = undefined;
-                let usedKey = null;
-                for (const key of possibleKeys) {
-                    if (window.pf2eVisionerDialogOverrides.has(key)) {
-                        dialogOverride = window.pf2eVisionerDialogOverrides.get(key);
-                        usedKey = key;
-                        break;
-                    }
+            const possibleKeys = [
+                `${attacker.actor?.id}-${target.id}`,
+                `${attacker.id}-${target.id}`,
+                `${attacker.actor?.id}-${target.actor?.id}`,
+                `${attacker.actor?.uuid}-${target.id}`,
+            ];
+            let dialogOverride = null;
+            for (const key of possibleKeys) {
+                dialogOverride = this.autoCoverSystem.consumeDialogOverride(key);
+                if (dialogOverride !== null) {
+                    break;
                 }
-                if (dialogOverride !== undefined) {
-                    if (dialogOverride !== originalDetectedState) {
-                        wasOverridden = true;
-                        overrideSource = 'dialog';
-                    }
-                    state = dialogOverride;
+            }
+            if (dialogOverride !== null) {
+                const overrideState = dialogOverride.state;
+                if (overrideState !== originalDetectedState) {
+                    wasOverridden = true;
+                    overrideSource = 'dialog';
                 }
-                window.pf2eVisionerDialogOverrides.delete(usedKey);
+                state = overrideState;
             }
         } catch (e) {
             console.warn('PF2E Visioner | Failed to check dialog override:', e);

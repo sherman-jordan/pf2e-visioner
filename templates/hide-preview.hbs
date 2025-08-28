@@ -55,12 +55,46 @@
             {{#if ../showAutoCover}}
             <td class="auto-cover">
               {{#if outcome.autoCover}}
-                <div class="auto-cover-info {{#if outcome.autoCover.isOverride}}override{{/if}}">
-                  <span class="auto-cover-icon">
-                    <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
-                  </span>
+                <div class="auto-cover-info-hide {{#if outcome.autoCover.isOverride}}override{{/if}}">
                   {{#if outcome.autoCover.isOverride}}
-                    <span class="override-indicator" title="Cover override from stealth roll dialog">🎯</span>
+                    {{#if outcome.autoCover.overrideDetails}}
+                      <!-- Show detailed override indicator with original → final transition -->
+                      <span class="auto-cover-override-detailed" 
+                            title="Cover overridden {{#if (eq outcome.autoCover.source 'popup')}}via keybind popup{{else if (eq outcome.autoCover.source 'dialog')}}in roll dialog{{else}}manually{{/if}}: {{outcome.autoCover.overrideDetails.originalLabel}} → {{outcome.autoCover.overrideDetails.finalLabel}}">
+                        <!-- Original state (no crossing out) -->
+                        <span class="original-cover" style="
+                          color: {{outcome.autoCover.overrideDetails.originalColor}};
+                          display: inline-flex;
+                          align-items: center;
+                        ">
+                          <i class="{{outcome.autoCover.overrideDetails.originalIcon}}" style="font-size: 1.1em;"></i>
+                        </span>
+                        <!-- Arrow -->
+                        <i class="fas fa-arrow-right" style="
+                          color: #999;
+                          font-size: 1em;
+                          margin: 0 2px;
+                        "></i>
+                        <!-- Final state -->
+                        <span class="final-cover" style="
+                          color: {{outcome.autoCover.overrideDetails.finalColor}};
+                          display: inline-flex;
+                          align-items: center;
+                        ">
+                          <i class="{{outcome.autoCover.overrideDetails.finalIcon}}" style="font-size: 1.1em;"></i>
+                        </span>
+                      </span>
+                    {{else}}
+                      <!-- Fallback: simple override indicator -->
+                      <span class="auto-cover-icon">
+                        <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
+                      </span>
+                    {{/if}}
+                  {{else}}
+                    <!-- Normal display without override -->
+                    <span class="auto-cover-icon">
+                      <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
+                    </span>
                   {{/if}}
                 </div>
               {{else}}
@@ -72,6 +106,11 @@
               <div class="roll-vs-dc">
                 <div class="roll-dc-line">
                   <span class="roll-total">{{outcome.rollTotal}}</span>
+                  {{#if (and outcome.autoCover.isOverride outcome.originalRollTotal (ne outcome.originalRollTotal outcome.rollTotal))}}
+                    <span class="original-roll-total" style="font-size: 0.8em; opacity: 0.7; margin-left: 2px;">
+                      ({{outcome.originalRollTotal}})
+                    </span>
+                  {{/if}}
                   <span class="vs-text">vs DC</span>
                   <span class="dc-value">{{outcome.dc}}</span>
                 </div>

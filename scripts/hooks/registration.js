@@ -12,9 +12,12 @@ import { registerTokenHooks } from './token-events.js';
 import { registerUIHooks } from './ui.js';
 
 export function registerHooks() {
+  
   Hooks.on('ready', onReady);
   Hooks.on('canvasReady', onCanvasReady);
+  
   registerChatHooks();
+  
   Hooks.on('highlightObjects', onHighlightObjects);
 
   // Token lifecycle

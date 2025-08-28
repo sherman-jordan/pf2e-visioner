@@ -401,6 +401,39 @@
     color: var(--pf2e-visioner-warning);
   }
 
+  /* Auto-cover override indicator styling */
+  .auto-cover-override-detailed {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.9em;
+    cursor: help;
+  }
+
+  .auto-cover-override-detailed .original-cover {
+    opacity: 0.7;
+  }
+
+  .auto-cover-override-detailed .final-cover {
+    font-weight: 500;
+  }
+
+  .auto-cover-info.override {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 3px;
+    padding: 2px 4px;
+  }
+
+  .auto-cover-info-hide.override {
+    padding: 2px 4px;
+  }
+
+  .override-indicator {
+    font-size: 0.8em;
+    cursor: help;
+  }
+
   /* Quick Panel Button Styling */
   .pf2e-visioner-quick-panel .state-icon {
     background: var(--color-bg-option);
@@ -666,13 +699,29 @@
 }
 
 /* Map visibility states to colors (global, not scoped) */
-.pf2e-visioner-tooltip-badge.visibility-observed { color: var(--visibility-observed); }
-.pf2e-visioner-tooltip-badge.visibility-concealed { color: var(--visibility-concealed); }
-.pf2e-visioner-tooltip-badge.visibility-hidden { color: var(--visibility-hidden); }
-.pf2e-visioner-tooltip-badge.visibility-undetected { color: var(--visibility-undetected); }
+.pf2e-visioner-tooltip-badge.visibility-observed {
+  color: var(--visibility-observed);
+}
+.pf2e-visioner-tooltip-badge.visibility-concealed {
+  color: var(--visibility-concealed);
+}
+.pf2e-visioner-tooltip-badge.visibility-hidden {
+  color: var(--visibility-hidden);
+}
+.pf2e-visioner-tooltip-badge.visibility-undetected {
+  color: var(--visibility-undetected);
+}
 
 /* Map cover states to colors (global, not scoped) */
-.pf2e-visioner-tooltip-badge.cover-none { color: var(--cover-none); }
-.pf2e-visioner-tooltip-badge.cover-lesser { color: var(--cover-lesser); }
-.pf2e-visioner-tooltip-badge.cover-standard { color: var(--cover-standard); }
-.pf2e-visioner-tooltip-badge.cover-greater { color: var(--cover-greater); }
+.pf2e-visioner-tooltip-badge.cover-none {
+  color: var(--cover-none);
+}
+.pf2e-visioner-tooltip-badge.cover-lesser {
+  color: var(--cover-lesser);
+}
+.pf2e-visioner-tooltip-badge.cover-standard {
+  color: var(--cover-standard);
+}
+.pf2e-visioner-tooltip-badge.cover-greater {
+  color: var(--cover-greater);
+}

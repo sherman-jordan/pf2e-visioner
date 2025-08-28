@@ -4,8 +4,9 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
-import { CoverUIManager } from './CoverUIManager.js';
+import coverUIManager from './CoverUIManager.js';
 import { AttackRollUseCase, SavingThrowUseCase, StealthCheckUseCase } from './usecases/index.js';
+import autoCoverSystem from './AutoCoverSystem.js';
 
 export class AutoCoverHooks {
     /**
@@ -17,11 +18,7 @@ export class AutoCoverHooks {
      */
     static _wrappersRegistered = false;
 
-    /**
-     * Initialize the hooks manager
-     * @param {Object} autoCoverSystem - The auto-cover system instance
-     */
-    constructor(autoCoverSystem) {
+    constructor() {
         this.autoCoverSystem = autoCoverSystem;
 
         // Initialize use cases
@@ -30,7 +27,15 @@ export class AutoCoverHooks {
         this.stealthCheckUseCase = new StealthCheckUseCase(autoCoverSystem);
 
         // Initialize UI manager
-        this.coverUIManager = new CoverUIManager(autoCoverSystem);
+        this.coverUIManager = coverUIManager;
+    }
+
+    /**
+     * Get the CoverUIManager instance
+     * @returns {CoverUIManager}
+     */
+    getCoverUIManager() {
+        return this.coverUIManager;
     }
 
     /**
@@ -86,13 +91,42 @@ export class AutoCoverHooks {
             }
 
             const instance = new AutoCoverHooks(system);
+            
+            // Store the instance globally for access by other components
+            if (!window.pf2eVisionerAutoCoverHooks) {
+                window.pf2eVisionerAutoCoverHooks = instance;
+                console.debug('PF2E Visioner | AutoCoverHooks instance stored globally');
+            }
 
             // Core message hooks
             Hooks.on('preCreateChatMessage', instance.onPreCreateChatMessage.bind(instance));
-            Hooks.on('renderChatMessageHTML', instance.onRenderChatMessage.bind(instance));
+            
+            // Test multiple hooks to see which ones fire for attack rolls
+            Hooks.on('renderChatMessage', (message, html) => {
+                const ctx = message?.flags?.pf2e?.context || {};
+                if (ctx.type === 'attack-roll') {
+                    return instance.onRenderChatMessage.bind(instance)(message, html);
+                }
+            });
+            
+            Hooks.on('renderChatMessageHTML', (message, html) => {
+                return instance.onRenderChatMessage.bind(instance)(message, html);
+            });
+            
+            // Also test createChatMessage to see if we should inject indicators there
+            Hooks.on('createChatMessage', () => {
+                // Hook for potential future use
+            });
 
             // Dialog hooks
             Hooks.on('renderCheckModifiersDialog', instance.onRenderCheckModifiersDialog.bind(instance));
+            
+            // Debug hook to test if any dialog hooks are firing
+            Hooks.on('renderApplication', (app) => {
+                if (app.constructor.name.includes('Check') || app.constructor.name.includes('Dialog')) {
+                    // Hook for potential debugging - currently unused
+                }
+            });
 
             // Token hooks
             Hooks.on('updateToken', instance.onUpdateToken.bind(instance));
@@ -150,15 +184,21 @@ export class AutoCoverHooks {
     async onRenderChatMessage(message, html) {
         try {
             // Skip if auto-cover is disabled
-            if (!this.autoCoverSystem.isEnabled()) return;
+            if (!this.autoCoverSystem.isEnabled()) {
+                return;
+            }
 
             const data = message?.toObject?.() || {};
 
             // Find the appropriate use case for this context
             const ctx = data?.flags?.pf2e?.context || {};
+            
             const useCase = this._getUseCaseForContext(ctx);
 
-            if (!useCase) return;
+            if (!useCase) {
+                return;
+            }
+            
             // Call the use case's render method
             await useCase.handleRenderChatMessage(message, html);
         } catch (error) {
@@ -175,13 +215,18 @@ export class AutoCoverHooks {
     async onRenderCheckModifiersDialog(dialog, html) {
         try {
             // Skip if auto-cover is disabled
-            if (!this.autoCoverSystem.isEnabled()) return;
+            if (!this.autoCoverSystem.isEnabled()) {
+                return;
+            }
 
             const ctx = dialog?.context ?? {};
 
             // Find the appropriate use case for this context
             const useCase = this._getUseCaseForContext(ctx);
-            if (!useCase) return;
+            
+            if (!useCase) {
+                return;
+            }
 
             // Handle the dialog with the appropriate use case
             await useCase.handleCheckDialog(dialog, html);

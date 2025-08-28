@@ -4,15 +4,9 @@
  */
 
 import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from '../../../helpers/cover-helpers.js';
-import { CoverUIManager } from '../CoverUIManager.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
+
 export class AttackRollUseCase extends BaseAutoCoverUseCase {
-
-    constructor(autoCoverSystem) {
-        super(autoCoverSystem);
-        this.coverUI = new CoverUIManager(this.autoCoverSystem);
-    }
-
     /**
      * Handle a chat message context
      * @param {Object} data - Message data
@@ -35,11 +29,53 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
         // Preserve original detected state for override comparison
         const originalDetectedState = state;
 
-        // Check for popup or dialog overrides and persist override metadata as needed
-        const overrideResult = await this._extractAndApplyOverrides(doc, attacker, target, originalDetectedState);
-        state = overrideResult.state;
+        // Use the CoverOverrideManager directly
+        let wasOverridden = false;
+        let overrideSource = null;
 
-
+        try {
+            const overrideManager = this.autoCoverSystem.getOverrideManager();
+            
+            // Check for any override for this token pair
+            const override = overrideManager.consumeOverride(attacker, target);
+            
+            if (override) {
+                state = override.state;
+                overrideSource = override.source;
+                wasOverridden = (state !== originalDetectedState);
+                
+                // Store override information in chat message flags for the indicator
+                if (wasOverridden) {
+                    try {
+                        if (!data.flags) data.flags = {};
+                        if (!data.flags['pf2e-visioner']) data.flags['pf2e-visioner'] = {};
+                        
+                        const overrideData = {
+                            originalDetected: originalDetectedState,
+                            finalState: state,
+                            overrideSource: overrideSource,
+                            attackerName: attacker.name,
+                            targetName: target.name,
+                        };
+                        
+                        data.flags['pf2e-visioner'].coverOverride = overrideData;
+                        
+                        // Also try to update the document source if available
+                        if (doc && doc.updateSource) {
+                            try {
+                                doc.updateSource({ 'flags.pf2e-visioner.coverOverride': overrideData });
+                            } catch (e) {
+                                console.warn('PF2E Visioner | Failed to update document source:', e);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('PF2E Visioner | Failed to store override info in message flags:', e);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('PF2E Visioner | Failed to check cover override:', e);
+        }
     }
 
 
@@ -57,27 +93,23 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
         let target = this._resolveTargetFromCtx(ctx);
         if (!attacker || !target) return;
         let state = this._detectCover(attacker, target);
+        
         // Delegate dialog UI injection to CoverUIManager
         try {
-            await this.coverUI.injectDialogCoverUI(dialog, html, state, target, ({ chosen, dctx, subject: attacker, target: tgt, targetActor: tgtActor }) => {
+            await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
                 try {
-                    if (!window.pf2eVisionerDialogOverrides)
-                        window.pf2eVisionerDialogOverrides = new Map();
-                    if (attacker && tgt) {
-                        const targetTokenId = tgt.id || tgt.token?.id || target?.id;
-                        if (targetTokenId) {
-                            const overrideKeys = [
-                                `${attacker.id}-${targetTokenId}`,
-                                `${attacker.uuid}-${targetTokenId}`,
-                            ];
-                            for (const overrideKey of overrideKeys) {
-                                window.pf2eVisionerDialogOverrides.set(overrideKey, chosen);
-                            }
-                        } else {
-                            console.warn('PF2E Visioner | Could not resolve target token ID for dialog override');
-                        }
+                    if (attacker && target) {
+                        // Use the correctly resolved token objects from outer scope
+                        this.autoCoverSystem.setDialogOverride(attacker, target, chosen, state);
+                    } else {
+                        console.warn('PF2E Visioner | Could not resolve token objects for dialog override', {
+                            hasAttacker: !!attacker,
+                            hasTarget: !!target
+                        });
                     }
-                } catch (_) { }
+                } catch (e) {
+                    console.warn('PF2E Visioner | Failed to set dialog override:', e);
+                }
 
                 try {
                     const bonus = getCoverBonusByState(chosen) || 0;
@@ -125,23 +157,29 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
         }
     }
 
-    async handleRenderChatMessage(message, html) {
-        // Allow all users to clean up their own effects
-        // GM can clean up any effects
-
-        if (!game.settings.get('pf2e-visioner', 'autoCover')) return;
+    async handleRenderChatMessage(message, html) {   
         const data = message?.toObject?.() || {};
         const attackerIdRaw =
             data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
         const attackerId = this.normalizeTokenRef(attackerIdRaw);
         const targetId = this._resolveTargetTokenIdFromData(data);
-        if (!attackerId) return;
+        
+        // Always call parent method first to handle cover override indicators
+        await super.handleRenderChatMessage(message, html);
+        
+        if (!attackerId) {
+            return;
+        }
+        
         const tokens = canvas?.tokens;
-        if (!tokens?.get) return;
+        if (!tokens?.get) {
+            return;
+        }
+        
         const attacker = tokens.get(attackerId);
-        if (!attacker) return;
-
-        super.handleRenderChatMessage(message, html);
+        if (!attacker) {
+            return;
+        }
 
         // Only proceed if this user owns the attacking token or is the GM
         if (!attacker.isOwner && !game.user.isGM) return;
@@ -191,7 +229,7 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
                 let chosen = null;
                 try {
                     // Only show popup if keybind is held
-                    const popupResult = await this.coverUI.showPopupAndApply(detected);
+                    const popupResult = await this.coverUIManager.showPopupAndApply(detected);
                     chosen = popupResult.chosen;
                 } catch (e) {
                     console.warn('PF2E Visioner | Popup error (delegated):', e);
@@ -202,9 +240,7 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
 
                 // Store the override for onPreCreateChatMessage if popup was used
                 if (chosen !== null) {
-                    if (!window.pf2eVisionerPopupOverrides) window.pf2eVisionerPopupOverrides = new Map();
-                    const overrideKey = `${attacker.id}-${target.id}`;
-                    window.pf2eVisionerPopupOverrides.set(overrideKey, chosen);
+                    this.autoCoverSystem.setPopupOverride(attacker, target, chosen, detected);
                 }
 
                 // Apply effect/clone/stat logic for the final state
@@ -297,18 +333,39 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
      */
     _resolveAttackerFromCtx(ctx) {
         try {
+            // First try to get a token object directly
             const tokenObj = ctx?.token?.object || ctx?.token;
-            if (tokenObj?.id) return tokenObj;
-            if (ctx?.token?.isEmbedded && ctx?.token?.object?.id) return ctx.token.object;
-            // Try a variety of sources, including origin.token (UUID like Scene.X.Token.Y)
+            if (tokenObj?.id && tokenObj.document) {
+                // This is already a token object
+                return tokenObj;
+            }
+            
+            if (ctx?.token?.isEmbedded && ctx?.token?.object?.id) {
+                return ctx.token.object;
+            }
+            
+            // Try a variety of sources to get a token ID
             const tokenIdRaw =
                 ctx?.token?.id ||
                 ctx?.tokenId ||
                 ctx?.origin?.tokenId ||
-                ctx?.origin?.token ||
-                ctx?.actor?.getActiveTokens?.()?.[0]?.id;
+                ctx?.origin?.token;
+            
             const tokenId = this.normalizeTokenRef(tokenIdRaw);
-            return tokenId ? canvas?.tokens?.get?.(tokenId) || null : null;
+            if (tokenId) {
+                const token = canvas?.tokens?.get?.(tokenId);
+                if (token) return token;
+            }
+            
+            // Last resort: if we have an actor, find its active token
+            if (ctx?.actor?.getActiveTokens) {
+                const activeTokens = ctx.actor.getActiveTokens();
+                if (activeTokens.length > 0) {
+                    return activeTokens[0];
+                }
+            }
+            
+            return null;
         } catch (_) {
             return null;
         }

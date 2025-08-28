@@ -59,7 +59,7 @@ export async function extractActionData(message) {
     context && // Require context to exist, as it always does on the actual roll.
     !isCreateADiversionAction &&
     !isSneakAction && // Don't classify as hide if already identified as sneak
-    ((context.type === 'skill-check' &&
+    ((context?.type === 'skill-check' &&
       (context.options?.includes('action:hide') || context.slug === 'hide')) ||
       (message.flavor?.toLowerCase?.().includes?.('hide') &&
         !message.flavor?.toLowerCase?.().includes?.('create a diversion') &&

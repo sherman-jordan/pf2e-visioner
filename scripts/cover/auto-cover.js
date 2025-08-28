@@ -984,6 +984,32 @@ export async function onPreCreateChatMessage(doc, data) {
       }
     }
 
+    // Store auto-cover information in chat message flags for display to all users
+    if (state !== 'none') {
+      try {
+        if (!data.flags) data.flags = {};
+        if (!data.flags['pf2e-visioner']) data.flags['pf2e-visioner'] = {};
+        const autoCoverData = {
+          coverState: state,
+          attackerName: attacker.name,
+          targetName: target.name,
+          wasAutoApplied: !wasOverridden,
+        };
+        data.flags['pf2e-visioner'].autoCover = autoCoverData;
+
+        // Also try to update the document directly if it exists
+        if (doc && doc.updateSource) {
+          try {
+            doc.updateSource({ 'flags.pf2e-visioner.autoCover': autoCoverData });
+          } catch (e) {
+            console.warn('PF2E Visioner | Failed to update document source with auto-cover:', e);
+          }
+        }
+      } catch (e) {
+        console.warn('PF2E Visioner | Failed to store auto-cover info in message flags:', e);
+      }
+    }
+
     // Apply cover if any
     if (state !== 'none') {
       await setCoverBetween(attacker, target, state, { skipEphemeralUpdate: true });

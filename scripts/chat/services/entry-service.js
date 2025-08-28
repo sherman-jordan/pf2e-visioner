@@ -3,13 +3,22 @@ import {
   injectCoverOverrideIndicator,
   shouldShowCoverOverrideIndicator,
 } from './cover-override-indicator.js';
+import {
+  injectAutoCoverIndicator,
+  shouldShowAutoCoverIndicator,
+} from './auto-cover-indicator.js';
 import { processedMessages } from './data/message-cache.js';
 
 export async function handleRenderChatMessage(message, html) {
-  // Always check for cover override indicators first, regardless of action data
-  const shouldShow = await shouldShowCoverOverrideIndicator(message);
+  // Always check for auto-cover indicators first (for all users)
+  const shouldShowAutoCover = shouldShowAutoCoverIndicator(message);
+  if (shouldShowAutoCover) {
+    await injectAutoCoverIndicator(message, html);
+  }
 
-  if (shouldShow) {
+  // Check for cover override indicators (GM only)
+  const shouldShowOverride = await shouldShowCoverOverrideIndicator(message);
+  if (shouldShowOverride) {
     await injectCoverOverrideIndicator(message, html);
   }
   const actionData = await extractActionData(message);

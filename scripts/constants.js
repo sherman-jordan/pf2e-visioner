@@ -435,8 +435,8 @@ export const DEFAULT_SETTINGS = {
     default: true,
   },
   autoCoverHideAction: {
-    name: 'Show Cover in Hide Results',
-    hint: 'If enabled, Hide action results will show cover information (both automatic and manual) and apply DC reductions based on cover.',
+    name: 'Show Cover in Stealth Actions',
+    hint: 'If enabled, Hide and Sneak action results will show cover information (both automatic and manual) and apply DC reductions based on cover.',
     scope: 'world',
     config: true,
     restricted: true,

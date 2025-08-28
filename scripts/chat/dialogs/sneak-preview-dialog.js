@@ -76,6 +76,10 @@ export class SneakPreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
+    // Check if cover should be shown
+    const showCover = game.settings.get(MODULE_ID, 'autoCoverHideAction');
+    context.showAutoCover = showCover;
+
     // Start from original list if available so toggles can re-include allies
     const baseList = Array.isArray(this._originalOutcomes)
       ? this._originalOutcomes

@@ -192,13 +192,6 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
             if (state !== 'none') {
                 const bonus = getCoverStealthBonusByState(state) || 0;
                 if (bonus > 1) {
-                    // Persist for downstream Hide outcome adjustments
-                    try {
-                        if (typeof window !== 'undefined') {
-                            window.pf2eVisionerStealthLast = { state, bonus, ts: Date.now(), source: 'dialog' };
-                        }
-                    } catch (_) { }
-
                     // Check if cover modifier already exists in the dialog
                     const existingMods = dialog?.check?.modifiers || [];
                     const hasExistingCover = existingMods.some(m => m?.slug === 'pf2e-visioner-cover');

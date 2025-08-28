@@ -425,7 +425,8 @@
     padding: 2px 4px;
   }
 
-  .auto-cover-info-hide.override {
+  .auto-cover-info-hide.override,
+  .auto-cover-info-sneak.override {
     padding: 2px 4px;
   }
 

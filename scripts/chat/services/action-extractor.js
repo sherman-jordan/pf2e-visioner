@@ -56,7 +56,7 @@ export async function extractActionData(message) {
 
   // Check for hide action after sneak (less specific, can overlap)
   const isHideAction =
-    context && // Require context to exist it always does on the actual roll
+    context && // Require context to exist, as it always does on the actual roll.
     !isCreateADiversionAction &&
     !isSneakAction && // Don't classify as hide if already identified as sneak
     ((context.type === 'skill-check' &&

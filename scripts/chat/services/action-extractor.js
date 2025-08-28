@@ -43,7 +43,7 @@ export async function extractActionData(message) {
 
   // Check for explicit sneak action first (more specific)
   const isSneakAction =
-    context && // Require context to exist as it should on an actual roll. 
+    context && // Require context to exist as it should on an actual roll.
     !isCreateADiversionAction &&
     !isAvoidNoticeAction &&
     ((context?.type === 'skill-check' &&

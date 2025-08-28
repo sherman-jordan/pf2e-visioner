@@ -74,7 +74,7 @@ export async function extractActionData(message) {
     message.content?.includes('Strike') ||
     context?.options?.some((opt) => opt.includes('attack-roll')) ) &&
     ( !context?.domains?.some((dom) => dom.includes('skill-check')) &&
-    context?.type != 'self-effect' );
+    context?.type !== 'self-effect' );
     
   // Skip attack consequences for damage-taken messages
   const isDamageTakenMessage =

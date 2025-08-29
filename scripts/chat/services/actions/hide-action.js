@@ -186,7 +186,7 @@ export class HideActionHandler extends ActionHandlerBase {
         const finalBonus = Number(result.autoCover?.bonus ?? 0);
         if (finalBonus > 0) injectedStealthBonus = finalBonus;
       }
-    } catch (_) {}
+    } catch (_) { }
 
     let total = baseTotal;
     let originalTotal = null;

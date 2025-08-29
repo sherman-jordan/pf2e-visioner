@@ -210,7 +210,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         } catch (_) {}
       };
       const onControl = () => highlight();
-      const onDelete = () => highlight();
+      const onDelete = async (wallDocument) => {
+        try {
+          // Clean up visual effects for deleted wall first
+          const { cleanupDeletedWallVisuals } = await import('../../services/visual-effects.js');
+          await cleanupDeletedWallVisuals(wallDocument);
+        } catch (_) {}
+        highlight();
+      };
       Hooks.on('controlWall', onControl);
       Hooks.on('deleteWall', onDelete);
       Hooks.on('createWall', onControl);

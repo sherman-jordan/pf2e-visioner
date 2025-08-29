@@ -83,6 +83,145 @@ function isDiceSoNiceAnimating() {
 }
 
 /**
+ * Clean up visual indicators for a deleted wall
+ * This function handles cleanup when a wall is deleted, ensuring that
+ * any visual indicators are properly removed from all clients
+ */
+export async function cleanupDeletedWallVisuals(wallDocument) {
+  try {
+    if (!wallDocument?.id) return;
+    
+    const wallId = wallDocument.id;
+    
+    // Search through all potential canvas layers where wall indicators might exist
+    const layers = [
+      canvas.effects?.foreground,
+      canvas.effects,
+      canvas.walls,
+      canvas.interface,
+      canvas.stage  // Sometimes indicators can end up here
+    ].filter(Boolean);
+    
+    // Look for any PIXI graphics objects that might be orphaned wall indicators
+    function searchAndRemoveIndicators(container) {
+      if (!container?.children) return;
+      
+      const toRemove = [];
+      for (const child of container.children) {
+        try {
+          // Check if this is a wall indicator that belongs to the deleted wall
+          if (child._pvWallId === wallId || 
+              child._wallDocumentId === wallId ||
+              (child._associatedWallId && child._associatedWallId === wallId)) {
+            toRemove.push(child);
+          }
+          
+          // Recursively search children
+          if (child.children && child.children.length > 0) {
+            searchAndRemoveIndicators(child);
+          }
+        } catch (_) {}
+      }
+      
+      // Remove found indicators
+      for (const indicator of toRemove) {
+        try {
+          if (indicator.parent) {
+            indicator.parent.removeChild(indicator);
+          }
+          indicator.destroy?.({ children: true, texture: true, baseTexture: true });
+        } catch (_) {}
+      }
+    }
+    
+    // Search all layers
+    for (const layer of layers) {
+      searchAndRemoveIndicators(layer);
+    }
+    
+    // Also search for wall references in the walls layer placeables
+    // In case there are any lingering references
+    const walls = canvas?.walls?.placeables || [];
+    for (const wall of walls) {
+      try {
+        // Clean up hidden indicator references
+        if (wall._pvHiddenIndicator) {
+          if (wall._pvHiddenIndicator._pvWallId === wallId || 
+              wall._pvHiddenIndicator._wallDocumentId === wallId) {
+            try {
+              if (wall._pvHiddenIndicator.parent) {
+                wall._pvHiddenIndicator.parent.removeChild(wall._pvHiddenIndicator);
+              }
+              wall._pvHiddenIndicator.destroy?.();
+            } catch (_) {}
+            wall._pvHiddenIndicator = null;
+          }
+        }
+        
+        // Clean up see-through masks
+        if (wall._pvSeeThroughMasks && Array.isArray(wall._pvSeeThroughMasks)) {
+          const filteredMasks = wall._pvSeeThroughMasks.filter(mask => {
+            if (mask._pvWallId === wallId || mask._wallDocumentId === wallId) {
+              try {
+                if (mask.parent) mask.parent.removeChild(mask);
+                mask.destroy?.();
+              } catch (_) {}
+              return false;
+            }
+            return true;
+          });
+          wall._pvSeeThroughMasks = filteredMasks;
+        }
+        
+        // Stop animation if it's associated with the deleted wall
+        if (wall._pvAnimationActive && (wall.id === wallId || wall.document?.id === wallId)) {
+          wall._pvAnimationActive = false;
+        }
+      } catch (_) {}
+    }
+    
+    // Clean up any token wall flags that reference the deleted wall
+    try {
+      const tokens = canvas.tokens?.placeables || [];
+      const tokenUpdates = [];
+      
+      for (const token of tokens) {
+        try {
+          const wallMap = token.document?.getFlag?.(MODULE_ID, 'walls') || {};
+          if (wallMap[wallId]) {
+            const newWallMap = { ...wallMap };
+            delete newWallMap[wallId];
+            tokenUpdates.push({
+              _id: token.id,
+              [`flags.${MODULE_ID}.walls`]: newWallMap
+            });
+          }
+        } catch (_) {}
+      }
+      
+      if (tokenUpdates.length > 0 && game.user?.isGM) {
+        await canvas.scene?.updateEmbeddedDocuments?.('Token', tokenUpdates, { diff: false });
+      }
+    } catch (error) {
+      console.warn(`[${MODULE_ID}] Error cleaning up token wall flags:`, error);
+    }
+    
+    // Force a canvas refresh to ensure visual updates are applied
+    try {
+      canvas.perception?.update?.({
+        refreshLighting: false,
+        refreshVision: false,
+        refreshOcclusion: false,
+        refreshEffects: true
+      });
+    } catch (_) {}
+    
+  } catch (error) {
+    console.warn(`[${MODULE_ID}] Error cleaning up deleted wall visuals:`, error);
+  }
+}
+
+/**
  * Visual-only walls toggle per observer
  * Hides walls for this client if the active observer has them set as hidden
  */
@@ -219,12 +358,20 @@ export async function updateWallVisuals(observerId = null) {
             ]);
             g.endFill();
 
+            // Mark this indicator with the wall ID for cleanup tracking
+            g._pvWallId = d.id;
+            g._wallDocumentId = d.id;
+
             // Create animated effect container
             const effectContainer = new PIXI.Container();
+            effectContainer._pvWallId = d.id;
+            effectContainer._wallDocumentId = d.id;
             g.addChild(effectContainer);
 
             // Shockwave effect
             const shimmer = new PIXI.Graphics();
+            shimmer._pvWallId = d.id;
+            shimmer._wallDocumentId = d.id;
             effectContainer.addChild(shimmer);
 
             // Sparkle particles (even more sparkles with variety!)
@@ -235,6 +382,11 @@ export async function updateWallVisuals(observerId = null) {
               const size = 1.5 + Math.random() * 1.5; // Random sizes 1.5-3px
               sparkle.drawCircle(0, 0, size);
               sparkle.endFill();
+              
+              // Mark sparkles with wall ID for cleanup
+              sparkle._pvWallId = d.id;
+              sparkle._wallDocumentId = d.id;
+              
               effectContainer.addChild(sparkle);
 
               // Store initial random properties for organic movement
@@ -375,6 +527,11 @@ export async function updateWallVisuals(observerId = null) {
               const isDoor = Number(d.door) > 0;
               const maskColor = isDoor ? 0xffd166 : 0x9b59b6; // Yellow for doors, purple for walls
               mask.beginFill(maskColor, 1.0);
+              
+              // Mark mask with wall ID for cleanup
+              mask._pvWallId = d.id;
+              mask._wallDocumentId = d.id;
+              
               const dx = x2 - x1;
               const dy = y2 - y1;
               const len = Math.hypot(dx, dy) || 1;

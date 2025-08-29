@@ -636,7 +636,7 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
         originalCoverBonus = Math.max(...allCoverBonuses);
       }
     }
-    
+
     // If still no bonus found from outcomes, assume the original was Standard Cover (+2)
     // since we see Standard Cover in the logs, this is likely what was applied originally
     if (originalCoverBonus === 0) {

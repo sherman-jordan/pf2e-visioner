@@ -125,8 +125,13 @@ export function registerHooks() {
       await updateWallVisuals(id);
     } catch (_) { }
   });
-  Hooks.on('deleteWall', async () => {
+  Hooks.on('deleteWall', async (wallDocument) => {
     try {
+      // Clean up any lingering visual indicators for the deleted wall
+      const { cleanupDeletedWallVisuals } = await import('../services/visual-effects.js');
+      await cleanupDeletedWallVisuals(wallDocument);
+      
+      // Update wall visuals for remaining walls
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);

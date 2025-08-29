@@ -8,6 +8,7 @@
  */
 
 import { jest } from '@jest/globals';
+import autoCoverSystem from '../../scripts/cover/auto-cover/AutoCoverSystem.js';
 
 describe('Cover Detection Core Logic', () => {
   let originalGame, originalCanvas;
@@ -41,9 +42,8 @@ describe('Cover Detection Core Logic', () => {
     jest.restoreAllMocks();
   });
 
-  describe('detectCoverStateForAttack - Core Algorithm', () => {
+  describe('autoCoverSystem.detectCoverBetweenTokens - Core Algorithm', () => {
     test('returns none for same token (attacker and target identical)', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const token = {
         id: 'same-token',
@@ -51,12 +51,11 @@ describe('Cover Detection Core Logic', () => {
         getCenter: () => ({ x: 100, y: 100 }),
       };
 
-      const result = detectCoverStateForAttack(token, token);
+      const result = autoCoverSystem.detectCoverBetweenTokens(token, token);
       expect(result).toBe('none');
     });
 
     test('returns none for null/undefined tokens', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const validToken = {
         id: 'valid',
@@ -64,13 +63,12 @@ describe('Cover Detection Core Logic', () => {
         getCenter: () => ({ x: 100, y: 100 }),
       };
 
-      expect(detectCoverStateForAttack(null, validToken)).toBe('none');
-      expect(detectCoverStateForAttack(validToken, null)).toBe('none');
-      expect(detectCoverStateForAttack(null, null)).toBe('none');
+      expect(autoCoverSystem.detectCoverBetweenTokens(null, validToken)).toBe('none');
+      expect(autoCoverSystem.detectCoverBetweenTokens(validToken, null)).toBe('none');
+      expect(autoCoverSystem.detectCoverBetweenTokens(null, null)).toBe('none');
     });
 
     test('detects wall cover between tokens', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       // Setup tokens on opposite sides of a wall
       const attacker = {
@@ -106,7 +104,7 @@ describe('Cover Detection Core Logic', () => {
         terrain: { placeables: [] },
       };
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
       // Wall should provide cover (exact level depends on wall height/thickness logic)
       expect(['lesser', 'standard', 'greater']).toContain(result);
@@ -114,7 +112,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('ignores open doors for cover calculation', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const attacker = {
         id: 'attacker',
@@ -149,14 +146,13 @@ describe('Cover Detection Core Logic', () => {
         terrain: { placeables: [] },
       };
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
       // Open door should NOT provide cover
       expect(result).toBe('none');
     });
 
     test('detects token cover from blocking creatures', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const attacker = {
         id: 'attacker',
@@ -200,7 +196,7 @@ describe('Cover Detection Core Logic', () => {
         terrain: { placeables: [] },
       };
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
       // Test that the function runs without error and returns a valid cover state
       expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
@@ -208,7 +204,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('ignores dead tokens for cover calculation when setting enabled', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       // Enable ignore dead setting
       global.game.settings.get = jest.fn().mockImplementation((module, setting) => {
@@ -257,14 +252,13 @@ describe('Cover Detection Core Logic', () => {
         terrain: { placeables: [] },
       };
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
       // Dead token should be ignored, no cover
       expect(result).toBe('none');
     });
 
     test('handles complex scenarios with multiple cover sources', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const attacker = {
         id: 'attacker',
@@ -317,7 +311,7 @@ describe('Cover Detection Core Logic', () => {
         terrain: { placeables: [] },
       };
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
       // Test that the function handles complex scenarios without error
       expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
@@ -327,7 +321,6 @@ describe('Cover Detection Core Logic', () => {
 
   describe('Cover Detection Edge Cases', () => {
     test('handles tokens with missing center coordinates', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const attacker = {
         id: 'attacker',
@@ -348,11 +341,10 @@ describe('Cover Detection Core Logic', () => {
       };
 
       // Should handle gracefully without crashing
-      expect(() => detectCoverStateForAttack(attacker, target)).not.toThrow();
+      expect(() => autoCoverSystem.detectCoverBetweenTokens(attacker, target)).not.toThrow();
     });
 
     test('handles empty canvas (no walls, tokens, terrain)', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const attacker = {
         id: 'attacker',
@@ -372,14 +364,13 @@ describe('Cover Detection Core Logic', () => {
         terrain: { placeables: [] },
       };
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
       // Empty canvas should result in no cover
       expect(result).toBe('none');
     });
 
     test('handles corrupted wall data gracefully', async () => {
-      const { detectCoverStateForAttack } = await import('../../scripts/cover/auto-cover.js');
 
       const attacker = {
         id: 'attacker',
@@ -418,9 +409,9 @@ describe('Cover Detection Core Logic', () => {
       };
 
       // Should handle corrupted data without crashing
-      expect(() => detectCoverStateForAttack(attacker, target)).not.toThrow();
+      expect(() => autoCoverSystem.detectCoverBetweenTokens(attacker, target)).not.toThrow();
 
-      const result = detectCoverStateForAttack(attacker, target);
+      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
       expect(typeof result).toBe('string');
       expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
     });

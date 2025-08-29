@@ -52,7 +52,7 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
    * @returns {Promise<Object>} Result with tokens and cover state
    */
   async handleRenderChatMessage(message, html) {
-    return;
+    await super.handleRenderChatMessage(message, html);
   }
 
   /**
@@ -276,15 +276,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
         }
       }
 
-      // Consolidated fallback logic: if we don't have an attacker or template membership, try area-effect
-      console.debug('SavingThrowUseCase | fallback check', {
-        hasAttacker: !!attacker,
-        isTargetInTemplate,
-        needsFallback: !attacker || !isTargetInTemplate,
-        controlledTokens: canvas.tokens.controlled?.length || 0,
-        targetedTokens: game.user.targets?.size || 0
-      });
-
       if (!attacker || !isTargetInTemplate) {
         const area = this._isAreaEffect(context);
         if (area) {
@@ -332,6 +323,23 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
         console.debug('SavingThrowUseCase | persisted early cover info', { state, earlyBonus });
       } catch (e) {
         console.error('PF2E Visioner | Error persisting cover info:', e);
+      }
+
+      let chosen = null;
+      try {
+        // Only show popup if keybind is held
+        const popupResult = await this.coverUIManager.showPopupAndApply(state);
+        chosen = popupResult.chosen;
+      } catch (e) {
+        console.warn('PF2E Visioner | Popup error (delegated):', e);
+      }
+
+      // If popup was used and a choice was made, use it; otherwise, use detected state
+      state = chosen !== null ? chosen : state;
+
+      // Store the override for onPreCreateChatMessage if popup was used
+      if (chosen !== null) {
+        this.autoCoverSystem.setPopupOverride(attacker, target, chosen, state);
       }
 
       if (state !== 'none') {

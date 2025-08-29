@@ -3,7 +3,7 @@
  */
 
 import { MODULE_ID } from './constants.js';
-import { detectCoverStateForAttack } from './cover/auto-cover-new.js';
+import autoCoverSystem from './cover/auto-cover/AutoCoverSystem.js';
 import { VisionerTokenManager } from './managers/token-manager/token-manager.js';
 import {
   rebuildAndRefresh,
@@ -707,12 +707,12 @@ export class Pf2eVisionerApi {
 
       if (forceRecalculate) {
         // Force fresh calculation
-        coverState = detectCoverStateForAttack(observerToken, targetToken, { rawPrereq });
+        coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, targetToken, { rawPrereq });
       } else {
         // Try to get cached cover first, then fall back to fresh calculation
         coverState = (observerToken, targetToken);
         if (!coverState || coverState === 'none') {
-          coverState = detectCoverStateForAttack(observerToken, targetToken, { rawPrereq });
+          coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, targetToken, { rawPrereq });
         }
       }
 

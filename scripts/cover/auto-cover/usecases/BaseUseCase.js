@@ -2,8 +2,8 @@
  * BaseUseCase.js
  * Base abstract class for auto-cover use cases
  */
-import coverUIManager from "../CoverUIManager.js";
 import autoCoverSystem from "../AutoCoverSystem.js";
+import coverUIManager from "../CoverUIManager.js";
 export class BaseAutoCoverUseCase {
 
     constructor() {
@@ -211,7 +211,7 @@ export class BaseAutoCoverUseCase {
             coverState = this.autoCoverSystem.detectCoverFromPoint(originRec.point, target);
         } else {
             // Default: detect from attacker to target directly
-            coverState = this.autoCoverSystem.detectCoverForAttack(attacker, target);
+            coverState = this.autoCoverSystem.detectCoverBetweenTokens(attacker, target);
         }
 
         this._log('_detectCover', 'Cover detection result', {

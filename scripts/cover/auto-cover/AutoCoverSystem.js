@@ -4,9 +4,9 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
+import { CoverOverrideManager } from '../CoverOverrideManager.js';
 import { CoverDetector } from './CoverDetector.js';
 import { CoverStateManager } from './CoverStateManager.js';
-import { CoverOverrideManager } from '../CoverOverrideManager.js';
 import { TemplateManager } from './TemplateManager.js';
 
 export class AutoCoverSystem {
@@ -131,8 +131,8 @@ export class AutoCoverSystem {
      * @param {Object} options - Additional options
      * @returns {string} Cover state ('none', 'lesser', 'standard', 'greater')
      */
-    detectCoverForAttack(attacker, target, options = {}) {
-        return this._detector.detectForAttack(attacker, target, options);
+    detectCoverBetweenTokens(attacker, target, options = {}) {
+        return this._detector.detectBetweenTokens(attacker, target, options);
     }
 
     /**
@@ -159,11 +159,6 @@ export class AutoCoverSystem {
         if (!attacker || !target) return;
         await this.setCoverBetween(attacker, target, 'none', { skipEphemeralUpdate: true });
     }
-
-
-
- 
-
 
 
     /**
@@ -194,6 +189,10 @@ export class AutoCoverSystem {
      */
     setDialogOverride(token1, token2, coverState, originalState) {
         this._overrideManager.setDialogOverride(token1, token2, coverState, originalState);
+    }
+
+    setRollOverride(token1, token2, rollId, originalState, coverState) {
+        this._overrideManager.setRollOverride(token1, token2, coverState, originalState, rollId);
     }
 
     /**

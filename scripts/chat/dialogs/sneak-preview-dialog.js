@@ -24,7 +24,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         minimizable: false,
       },
       position: {
-        width: 500,
+        width: 620,
         height: 'auto',
       },
       form: {
@@ -99,7 +99,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         this.ignoreAllies,
         'token',
       );
-    } catch (_) {}
+    } catch (_) { }
 
     const cfg = (s) => this.visibilityConfig(s);
 
@@ -207,7 +207,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
             })
             .catch(() => this.render({ force: true }));
         });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Use BaseActionDialog.markInitialSelections
@@ -300,7 +300,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Apply only this row via services using overrides map
       const { applyNowSneak } = await import('../services/index.js');
       const overrides = { [tokenId]: effectiveNewState };
-      await applyNowSneak({ ...app.actionData, overrides }, { html: () => {}, attr: () => {} });
+      await applyNowSneak({ ...app.actionData, overrides }, { html: () => { }, attr: () => { } });
     } catch (error) {
       console.warn('Error applying visibility changes:', error);
       // Continue execution even if visibility changes fail
@@ -384,7 +384,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Pass the dialog's current ignoreAllies state to ensure consistency
       await applyNowSneak(
         { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
-        { html: () => {}, attr: () => {} },
+        { html: () => { }, attr: () => { } },
       );
     } catch (error) {
       console.warn('Error applying visibility changes for bulk apply:', error);
@@ -434,7 +434,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const { revertNowSneak } = await import('../services/index.js');
       await revertNowSneak(
         { ...app.actionData, ignoreAllies: app.ignoreAllies },
-        { html: () => {}, attr: () => {} },
+        { html: () => { }, attr: () => { } },
       );
     } catch (error) {
       console.warn('Error reverting visibility changes for bulk revert:', error);
@@ -471,7 +471,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (this._selectionHookId) {
       try {
         Hooks.off('controlToken', this._selectionHookId);
-      } catch (_) {}
+      } catch (_) { }
       this._selectionHookId = null;
     }
     currentSneakDialog = null;

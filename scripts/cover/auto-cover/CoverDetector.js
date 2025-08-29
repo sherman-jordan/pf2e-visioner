@@ -38,7 +38,7 @@ export class CoverDetector {
             };
 
             // Reuse the normal path using the pseudo attacker
-            return this.detectForAttack(pseudoAttacker, target, options);
+            return this.detectBetweenTokens(pseudoAttacker, target, options);
         } catch (error) {
             console.error('PF2E Visioner | CoverDetector.detectFromPoint error:', error);
             return 'none';
@@ -52,7 +52,7 @@ export class CoverDetector {
      * @param {Object} options - Additional options
      * @returns {string} Cover state ('none', 'lesser', 'standard', 'greater')
      */
-    detectForAttack(attacker, target) {
+    detectBetweenTokens(attacker, target) {
         try {
             if (!attacker || !target) return 'none';
 
@@ -104,11 +104,9 @@ export class CoverDetector {
                 tokenCover = this._evaluateCreatureSizeCover(attacker, target, blockers);
             }
 
-            // Combine wall and token cover
-            if (wallCover === 'standard') {
-                const res = tokenCover === 'greater' ? 'greater' : 'standard';
-                return res;
-            }
+            // Combine wall and token cover (walls can now yield standard or greater)
+            if (wallCover === 'greater') return 'greater';
+            if (wallCover === 'standard') return tokenCover === 'greater' ? 'greater' : 'standard';
             return tokenCover;
         } catch (error) {
             console.error('PF2E Visioner | CoverDetector.detectForAttack error:', error);
@@ -179,49 +177,101 @@ export class CoverDetector {
     _evaluateWallsCover(p1, p2) {
         if (!canvas?.walls) return 'none';
 
-        // Use our helper to create a ray
-        const ray = this._createRay(p1, p2);
-
-        // Try different methods for wall collision detection depending on Foundry version
-        let hasCollision = false;
-
+        // Compute percent of target token blocked by walls along multiple sight rays and map to cover thresholds
         try {
-            // For Foundry v13+, use the sight collision system
-            if (CONFIG?.Canvas?.polygonBackends?.sight) {
-                hasCollision = CONFIG.Canvas.polygonBackends.sight.testCollision(p1, p2, { type: "sight", mode: "any" });
+            const stdT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverStandardThreshold') ?? 50));
+            const grtT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverGreaterThreshold') ?? 70));
+
+            // Resolve a lightweight target token from p2 (best-effort)
+            const target = this._findNearestTokenToPoint(p2);
+            if (!target) {
+                // Fallback: single-ray quick test if we cannot resolve the token geometry
+                const ray = this._createRay(p1, p2);
+                let blocked = false;
+                try {
+                    if (CONFIG?.Canvas?.polygonBackends?.sight) blocked = CONFIG.Canvas.polygonBackends.sight.testCollision(p1, p2, { type: 'sight', mode: 'any' });
+                    else if (typeof canvas.walls.raycast === 'function') blocked = !!canvas.walls.raycast(ray.A, ray.B);
+                    else if (typeof canvas.walls.checkCollision === 'function') blocked = canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
+                } catch (_) { }
+                return blocked ? 'standard' : 'none';
             }
-            // Fallback to walls.raycast if available
-            else if (typeof canvas.walls.raycast === 'function') {
-                const result = canvas.walls.raycast(ray.A, ray.B);
-                hasCollision = !!result;
+
+            const pct = this._estimateWallCoveragePercent(p1, target);
+            const allowGreater = !!game.settings.get('pf2e-visioner', 'wallCoverAllowGreater');
+            if (pct >= grtT) return allowGreater ? 'greater' : 'standard';
+            if (pct >= stdT) return 'standard';
+            return 'none';
+        } catch (error) {
+            console.warn('PF2E Visioner | Error in wall coverage evaluation:', error);
+            return 'none';
+        }
+    }
+
+    /**
+     * Find nearest token to a point (screen coords). Best-effort helper for wall coverage.
+     */
+    _findNearestTokenToPoint(p) {
+        try {
+            const tokens = canvas?.tokens?.placeables || [];
+            let best = null;
+            let bestD = Infinity;
+            for (const t of tokens) {
+                const c = t.center ?? t.getCenter?.();
+                if (!c) continue;
+                const dx = c.x - p.x; const dy = c.y - p.y;
+                const d = dx * dx + dy * dy;
+                if (d < bestD) { bestD = d; best = t; }
             }
-            // Fallback to older checkCollision if available
-            else if (typeof canvas.walls.checkCollision === 'function') {
-                hasCollision = canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
-            }
-            // Last resort: try to find any walls in the scene that intersect with our ray
-            else {
+            return best;
+        } catch (_) { return null; }
+    }
+
+    /**
+     * Estimate percent of the target token's edge directions that are blocked by walls from origin p1.
+     * Samples multiple points along the target perimeter and casts rays to each, counting wall collisions.
+     */
+    _estimateWallCoveragePercent(p1, target) {
+        try {
+            const rect = getTokenRect(target);
+            const points = [];
+            const samplePerEdge = 5; // 4 edges * 5 = 20 sample points
+            const pushLerp = (ax, ay, bx, by) => {
+                for (let i = 0; i <= samplePerEdge; i++) {
+                    const t = i / samplePerEdge;
+                    points.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
+                }
+            };
+            // Edges: top, right, bottom, left
+            pushLerp(rect.x1, rect.y1, rect.x2, rect.y1);
+            pushLerp(rect.x2, rect.y1, rect.x2, rect.y2);
+            pushLerp(rect.x2, rect.y2, rect.x1, rect.y2);
+            pushLerp(rect.x1, rect.y2, rect.x1, rect.y1);
+
+            let blocked = 0;
+            const testRayBlocked = (a, b) => {
+                const ray = this._createRay(a, b);
+                try {
+                    if (CONFIG?.Canvas?.polygonBackends?.sight) return !!CONFIG.Canvas.polygonBackends.sight.testCollision(a, b, { type: 'sight', mode: 'any' });
+                    if (typeof canvas.walls.raycast === 'function') return !!canvas.walls.raycast(ray.A, ray.B);
+                    if (typeof canvas.walls.checkCollision === 'function') return !!canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
+                } catch (_) { }
+                // Fallback: simple segment-vs-wall iteration (best-effort)
                 const walls = canvas.walls.objects?.children || [];
                 for (const wall of walls) {
-                    if (wall.document.sense && this._lineIntersection(
-                        ray.A.x, ray.A.y, ray.B.x, ray.B.y,
-                        wall.coords[0], wall.coords[1], wall.coords[2], wall.coords[3]
-                    )) {
-                        hasCollision = true;
-                        break;
-                    }
+                    const c = wall?.coords;
+                    if (!c) continue;
+                    if (this._lineIntersection(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3])) return true;
                 }
+                return false;
+            };
+
+            for (const pt of points) {
+                if (testRayBlocked(p1, pt)) blocked++;
             }
-        } catch (error) {
-            console.warn('PF2E Visioner | Error in wall collision detection:', error);
-        }
 
-        if (hasCollision) {
-            // If wall is between points, provide standard cover
-            return 'standard';
-        }
-
-        return 'none';
+            const pct = (blocked / Math.max(1, points.length)) * 100;
+            return pct;
+        } catch (_) { return 0; }
     }
 
     /**
@@ -588,6 +638,17 @@ export class CoverDetector {
             console.error('PF2E Visioner | Error in evaluateCoverByCoverage:', error);
             return 'none';
         }
+    }
+
+    /**
+     * Basic 2D line segment intersection test.
+     */
+    _lineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
+        const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (d === 0) return false;
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
+        const u = -(((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d);
+        return t >= 0 && t <= 1 && u >= 0 && u <= 1;
     }
 
     /**

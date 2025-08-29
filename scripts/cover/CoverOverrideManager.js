@@ -8,7 +8,7 @@ export class CoverOverrideManager {
         this.popupOverrides = new Map(); // For popup-based overrides
         this.dialogOverrides = new Map(); // For dialog-based overrides
         this.rollOverrides = new Map(); // For roll-specific overrides
-        
+
         // Cleanup old overrides periodically
         this.cleanupInterval = setInterval(() => this.cleanup(), 30000); // 30 seconds
     }
@@ -95,7 +95,7 @@ export class CoverOverrideManager {
      */
     getOverride(token1, token2, rollId = null) {
         const key = this._generateKey(token1, token2);
-        
+
         // Priority order: roll-specific > dialog > popup
         if (rollId) {
             const rollKey = `${key}-${rollId}`;
@@ -103,15 +103,15 @@ export class CoverOverrideManager {
                 return this.rollOverrides.get(rollKey);
             }
         }
-        
+
         if (this.dialogOverrides.has(key)) {
             return this.dialogOverrides.get(key);
         }
-        
+
         if (this.popupOverrides.has(key)) {
             return this.popupOverrides.get(key);
         }
-        
+
         return null;
     }
 
@@ -136,12 +136,11 @@ export class CoverOverrideManager {
      */
     consumeOverride(token1, token2, rollId = null, deleteOnConsume = true) {
         const key = this._generateKey(token1, token2);
-        
+
         // Check roll-specific first
         if (rollId) {
             const rollKey = `${key}-${rollId}`;
             if (this.rollOverrides.has(rollKey)) {
-              debugger;
                 const override = this.rollOverrides.get(rollKey);
                 if (deleteOnConsume) {
                     this.rollOverrides.delete(rollKey);
@@ -149,27 +148,25 @@ export class CoverOverrideManager {
                 return override;
             }
         }
-        
+
         // Then dialog overrides
         if (this.dialogOverrides.has(key)) {
-          debugger;
             const override = this.dialogOverrides.get(key);
             if (deleteOnConsume) {
                 this.dialogOverrides.delete(key);
             }
             return override;
         }
-        
+
         // Finally popup overrides
         if (this.popupOverrides.has(key)) {
-          debugger;
             const override = this.popupOverrides.get(key);
             if (deleteOnConsume) {
                 this.popupOverrides.delete(key);
             }
             return override;
         }
-        
+
         return null;
     }
 
@@ -242,7 +239,7 @@ export class CoverOverrideManager {
         const key = this._generateKey(token1, token2);
         this.popupOverrides.delete(key);
         this.dialogOverrides.delete(key);
-        
+
         // Clear roll-specific overrides for this pair
         for (const rollKey of this.rollOverrides.keys()) {
             if (rollKey.startsWith(key + '-')) {
@@ -265,19 +262,19 @@ export class CoverOverrideManager {
      */
     cleanup() {
         const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-        
+
         for (const [key, override] of this.popupOverrides.entries()) {
             if (override.timestamp < fiveMinutesAgo) {
                 this.popupOverrides.delete(key);
             }
         }
-        
+
         for (const [key, override] of this.dialogOverrides.entries()) {
             if (override.timestamp < fiveMinutesAgo) {
                 this.dialogOverrides.delete(key);
             }
         }
-        
+
         for (const [key, override] of this.rollOverrides.entries()) {
             if (override.timestamp < fiveMinutesAgo) {
                 this.rollOverrides.delete(key);

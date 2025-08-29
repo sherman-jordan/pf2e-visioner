@@ -52,7 +52,6 @@ export class HideActionHandler extends ActionHandlerBase {
 
     // RAW filter: only observers that currently see the actor as Concealed
     // OR (Observed AND actor has Standard or Greater cover) are relevant.
-    const autoCover = game.settings.get(MODULE_ID, 'autoCover');
     const { getVisibilityBetween, getCoverBetween } = await import('../../../utils.js');
     return base.filter((observer) => {
       try {
@@ -61,10 +60,10 @@ export class HideActionHandler extends ActionHandlerBase {
         if (vis === 'observed') {
           // Prefer live auto-cover for relevance (do not mutate state), then fall back to stored map
           let cover = 'none';
-          if (autoCover) {
+          if (this.autoCoverSystem.isEnabled()) {
             try {
               cover =
-                this.stealthCheckUseCase._detectCover(actorToken, observer, { rawPrereq: true }) || 'none';
+                this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
             } catch (_) { }
           }
           if (cover === 'none') {
@@ -108,7 +107,7 @@ export class HideActionHandler extends ActionHandlerBase {
           if (manualDetected && manualDetected !== 'none') {
             coverState = manualDetected;
             coverSource = 'manual';
-          } else if (game.settings.get(MODULE_ID, 'autoCover')) {
+          } else if (this.autoCoverSystem.isEnabled()) {
             // Fallback to auto-cover detection if no manual cover
             // For cover detection: observer is "attacking" (perceiving) the hiding token
             // So observer is attacker, hiding token is target
@@ -123,17 +122,19 @@ export class HideActionHandler extends ActionHandlerBase {
         }
 
         // Apply overrides last (take precedence over base)
+        // Prefer roll-specific override if a rollId exists in the action or message context.
         // Delete on consume since this is the final consumer
         let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
         try {
+          const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
           // NOTE: Override parameter order is DIFFERENT from cover detection!
           // Stealth check stores overrides as (hiding token -> observer)
           // Cover detection uses (observer -> hiding token)
-          const overrideData = this.autoCoverSystem.consumeCoverOverride(hidingToken, subject, null, true);
+          const overrideData = this.autoCoverSystem.consumeCoverOverride(hidingToken, subject, rollId, true);
           if (overrideData) {
             // Don't use overrideData.originalState - use what we actually detected for this observer
             coverState = overrideData.state;
-            
+
             // Only mark as override if there's actually a difference from what we detected
             if (originalDetectedState !== coverState) {
               isOverride = true;
@@ -178,23 +179,29 @@ export class HideActionHandler extends ActionHandlerBase {
 
     // Calculate roll information (stealth vs observer's perception DC)
     const baseTotal = Number(actionData?.roll?.total ?? 0);
-    const injectedStealthBonus = Number(actionData.context._visionerStealth?.bonus ?? 0);
-    
-    // Check if we detected 'none' but have an override - then subtract the injected bonus
-    const wasNoneButOverridden = enableCoverHideAction && 
-                                 result?.autoCover?.isOverride && 
-                                 result?.autoCover?.overrideDetails?.originalState === 'none';
-    const total = wasNoneButOverridden ? baseTotal - injectedStealthBonus : baseTotal;
-    
-    // Calculate what the total would have been with original detected cover
+    // Prefer the final applied cover from autoCover (overrideDetails.finalState or state); fallback to dialog context
+    let injectedStealthBonus = Number(actionData?.context?._visionerStealth?.bonus ?? 0);
+    try {
+      if (enableCoverHideAction && result?.autoCover) {
+        const finalBonus = Number(result.autoCover?.bonus ?? 0);
+        if (finalBonus > 0) injectedStealthBonus = finalBonus;
+      }
+    } catch (_) {}
+
+    let total = baseTotal;
     let originalTotal = null;
-    if (result?.autoCover?.isOverride && result?.autoCover?.overrideDetails) {
+    if (enableCoverHideAction && result?.autoCover?.isOverride && result?.autoCover?.overrideDetails) {
       const originalState = result.autoCover.overrideDetails.originalState;
-      const originalCoverConfig = COVER_STATES[originalState];
-      const originalBonus = originalCoverConfig?.bonusStealth || 0;
-      // Base roll without any cover bonus + original detected cover bonus
-      const baseRollWithoutCover = baseTotal - injectedStealthBonus;
-      originalTotal = baseRollWithoutCover + originalBonus;
+      const originalBonus = Number(COVER_STATES?.[originalState]?.bonusStealth || 0);
+      if (originalState === 'none') {
+        // Original detection had no cover: show base roll without the applied (final) modifier
+        total = baseTotal - injectedStealthBonus;
+        originalTotal = null; // no bracket in this case
+      } else {
+        // Original detection had some cover: keep shown total, bracket shows total minus detected modifier
+        total = baseTotal;
+        originalTotal = baseTotal - originalBonus;
+      }
     }
     const die = Number(
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,

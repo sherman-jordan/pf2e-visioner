@@ -72,10 +72,10 @@ export class SneakActionHandler extends ActionHandlerBase {
     const { getVisibilityBetween } = await import('../../../utils.js');
     const { extractPerceptionDC, determineOutcome } = await import('../infra/shared-utils.js');
     const current = getVisibilityBetween(subject, actionData.actor);
-    
+
     // Calculate roll information (stealth vs observer's perception DC)
     let adjustedDC = extractPerceptionDC(subject);
-    
+
     // Initialize result object for auto-cover data
     const result = {};
 
@@ -96,7 +96,7 @@ export class SneakActionHandler extends ActionHandlerBase {
           if (manualDetected && manualDetected !== 'none') {
             coverState = manualDetected;
             coverSource = 'manual';
-          } else if (game.settings.get(MODULE_ID, 'autoCover')) {
+          } else if (this.autoCoverSystem.isEnabled()) {
             // Fallback to auto-cover detection if no manual cover
             // For cover detection: observer is "attacking" (perceiving) the sneaking token
             // So observer is attacker, sneaking token is target
@@ -111,17 +111,19 @@ export class SneakActionHandler extends ActionHandlerBase {
         }
 
         // Apply overrides last (take precedence over base)
+        // Prefer roll-specific override if a rollId exists in the action or message context.
         // Delete on consume since this is the final consumer
         let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
         try {
+          const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
           // NOTE: Override parameter order is DIFFERENT from cover detection!
           // Stealth check stores overrides as (sneaking token -> observer)
           // Cover detection uses (observer -> sneaking token)
-          const overrideData = this.autoCoverSystem.consumeCoverOverride(sneakingToken, subject, null, true);
+          const overrideData = this.autoCoverSystem.consumeCoverOverride(sneakingToken, subject, rollId, true);
           if (overrideData) {
             // Don't use overrideData.originalState - use what we actually detected for this observer
             coverState = overrideData.state;
-            
+
             // Only mark as override if there's actually a difference from what we detected
             if (originalDetectedState !== coverState) {
               isOverride = true;
@@ -166,41 +168,32 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     // Calculate roll information (stealth vs observer's perception DC)
     const baseTotal = Number(actionData?.roll?.total ?? 0);
-    const injectedStealthBonus = Number(actionData?.context?._visionerStealth?.bonus ?? 0);
-    
-    // For cover override calculations:
-    // - baseTotal is the final roll result (includes any applied cover bonuses)
-    // - injectedStealthBonus is the cover bonus that was actually applied
-    // - We need to show the "true" roll result based on the final cover state
+    // Prefer the final applied cover from autoCover (overrideDetails.finalState or state); fallback to dialog context
+    let injectedStealthBonus = Number(actionData?.context?._visionerStealth?.bonus ?? 0);
+    try {
+      if (enableCoverSneakAction && result?.autoCover) {
+        const finalBonus = Number(result.autoCover?.bonus ?? 0);
+        if (finalBonus > 0) injectedStealthBonus = finalBonus;
+      }
+    } catch (_) {}
+
     let total = baseTotal;
     let originalTotal = null;
-    
-    if (enableCoverSneakAction && result?.autoCover?.isOverride) {
-      if (result.autoCover.overrideDetails) {
-        const originalState = result.autoCover.overrideDetails.originalState;
-        const finalState = result.autoCover.overrideDetails.finalState;
-        
-        if (originalState !== 'none' && finalState === 'none') {
-          // Override from some cover to none: subtract the applied bonus to get base roll
-          total = baseTotal - injectedStealthBonus;
-          originalTotal = baseTotal; // Show what it was with original cover
-        } else if (originalState === 'none' && finalState !== 'none') {
-          // Override from none to some cover: baseTotal includes the cover bonus, 
-          // but we want to show the base roll without cover
-          total = baseTotal - injectedStealthBonus;
-          originalTotal = baseTotal; // Show what it is with the new cover
-        } else {
-          // Override from one cover to another cover
-          const originalCoverConfig = COVER_STATES[originalState];
-          const originalBonus = originalCoverConfig?.bonusStealth || 0;
-          // Calculate what the roll would have been with original cover
-          const baseRollWithoutCover = baseTotal - injectedStealthBonus;
-          total = baseTotal; // Keep current total with new cover
-          originalTotal = baseRollWithoutCover + originalBonus; // Show original cover total
-        }
+
+    if (enableCoverSneakAction && result?.autoCover?.isOverride && result?.autoCover?.overrideDetails) {
+      const originalState = result.autoCover.overrideDetails.originalState;
+      const originalBonus = Number(COVER_STATES?.[originalState]?.bonusStealth || 0);
+      if (originalState === 'none') {
+        // Original detection had no cover: show base roll without the applied (final) modifier
+        total = baseTotal - injectedStealthBonus;
+        originalTotal = null; // no bracket in this case
+      } else {
+        // Original detection had some cover: keep shown total, bracket shows total minus detected modifier
+        total = baseTotal;
+        originalTotal = baseTotal - originalBonus;
       }
     }
-    
+
     const dc = adjustedDC;
     const die = Number(
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,

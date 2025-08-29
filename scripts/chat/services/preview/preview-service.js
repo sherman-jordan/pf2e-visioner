@@ -50,7 +50,7 @@ export async function previewActionResults(actionData) {
               );
               return;
             }
-          } catch (_) {}
+          } catch (_) { }
 
           // Do NOT pre-filter allies at discovery time; let the dialog control it live
           const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
@@ -86,6 +86,17 @@ export async function previewActionResults(actionData) {
         const { HidePreviewDialog } = await import('../../dialogs/hide-preview-dialog.js');
         const handler = new HideActionHandler();
         await handler.ensurePrerequisites(actionData);
+        // // If a Check Modifiers dialog is open, copy its rollId into actionData.context for override consumption
+        // try {
+        //   const stealthDialog = Object.values(ui.windows).find(
+        //     (w) => w?.constructor?.name === 'CheckModifiersDialog',
+        //   );
+        //   const rollId = stealthDialog?._pvRollId || stealthDialog?.context?._visionerRollId;
+        //   if (rollId) {
+        //     actionData.context = actionData.context || {};
+        //     actionData.context._visionerRollId = rollId;
+        //   }
+        // } catch (_) {}
         // RAW enforcement gate: do not open dialog if prerequisites fail
         try {
           const { checkForValidTargets } = await import('../infra/target-checker.js');
@@ -97,7 +108,7 @@ export async function previewActionResults(actionData) {
             );
             return;
           }
-        } catch (_) {}
+        } catch (_) { }
         // Do NOT pre-filter allies; let dialog control it
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(
@@ -114,6 +125,19 @@ export async function previewActionResults(actionData) {
         const { SneakActionHandler } = await import('../actions/sneak-action.js');
         const { SneakPreviewDialog } = await import('../../dialogs/sneak-preview-dialog.js');
         const handler = new SneakActionHandler();
+        // Ensure roll and any needed context are present (mirrors other actions)
+        await handler.ensurePrerequisites(actionData);
+        // If a Check Modifiers dialog is open, copy its rollId into actionData.context for override consumption
+        try {
+          const stealthDialog = Object.values(ui.windows).find(
+            (w) => w?.constructor?.name === 'CheckModifiersDialog',
+          );
+          const rollId = stealthDialog?._pvRollId || stealthDialog?.context?._visionerRollId;
+          if (rollId) {
+            actionData.context = actionData.context || {};
+            actionData.context._visionerRollId = rollId;
+          }
+        } catch (_) { }
         // RAW enforcement gate: do not open dialog if prerequisites fail
         try {
           const { checkForValidTargets } = await import('../infra/target-checker.js');
@@ -125,16 +149,11 @@ export async function previewActionResults(actionData) {
             );
             return;
           }
-        } catch (_) {}
+        } catch (_) { }
         // Do NOT pre-filter allies; let dialog control it
-        const subjects = await handler.discoverSubjects({
-          actor: actionData.actor,
-          ignoreAllies: false,
-        });
+        const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(
-          subjects.map((s) =>
-            handler.analyzeOutcome({ actor: actionData.actor, roll: actionData.roll }, s),
-          ),
+          subjects.map((s) => handler.analyzeOutcome(actionData, s)),
         );
         const changes = outcomes.filter((o) => o && o.changed);
         new SneakPreviewDialog(actionData.actor, outcomes, changes, actionData).render(true);
@@ -191,7 +210,7 @@ export async function previewActionResults(actionData) {
             );
             return;
           }
-        } catch (_) {}
+        } catch (_) { }
 
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(

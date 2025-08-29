@@ -4,10 +4,70 @@
  */
 
 import { COVER_STATES } from '../../../constants.js';
-import { getCoverImageForState, getCoverLabel, getCoverStealthBonusByState } from '../../../helpers/cover-helpers.js';
+import { getCoverLabel, getCoverStealthBonusByState } from '../../../helpers/cover-helpers.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
 
 export class StealthCheckUseCase extends BaseAutoCoverUseCase {
+    /**
+     * Inject/update/remove the cover modifier on a CheckModifiersDialog's check.
+     * - If keepWhenZero=false: keep only when bonus > 1 (standard/greater), otherwise remove.
+     * - If keepWhenZero=true: allow 0 to update existing or be shown transiently (used on onChosen path).
+     */
+    _applyDialogCoverModifier(dialog, bonus, label, { keepWhenZero = false } = {}) {
+        try {
+            if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
+            const mods = dialog.check.modifiers;
+            const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');
+
+            const shouldKeep = keepWhenZero ? (bonus > 1 || bonus === 0) : (bonus > 1);
+
+            if (shouldKeep) {
+                if (existing) {
+                    try { if ('modifier' in existing) existing.modifier = bonus; } catch (_) { }
+                    try { if ('value' in existing) existing.value = bonus; } catch (_) { }
+                    try { if ('label' in existing) existing.label = label; } catch (_) { }
+                    try { if ('name' in existing) existing.name = label; } catch (_) { }
+                    try { existing.enabled = true; } catch (_) { }
+                } else {
+                    let coverModifier;
+                    try {
+                        if (game?.pf2e?.Modifier) {
+                            coverModifier = new game.pf2e.Modifier({
+                                slug: 'pf2e-visioner-cover',
+                                label,
+                                modifier: bonus,
+                                type: 'circumstance',
+                            });
+                        } else {
+                            coverModifier = { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance' };
+                        }
+                        if (typeof dialog.check.push === 'function') {
+                            dialog.check.push(coverModifier);
+                        } else {
+                            mods.push(coverModifier);
+                        }
+                    } catch (e) {
+                        console.warn('PF2E Visioner | Failed to create cover modifier:', e);
+                    }
+                }
+            } else if (existing) {
+                const idx = mods.indexOf(existing);
+                if (idx >= 0) mods.splice(idx, 1);
+            }
+
+            try {
+                if (typeof dialog.check.calculateTotal === 'function') dialog.check.calculateTotal();
+            } catch (e) {
+                console.warn('PF2E Visioner | Failed to recalculate dialog total:', e);
+            }
+
+            try {
+                dialog.render(false);
+            } catch (e) {
+                console.warn('PF2E Visioner | Dialog re-render failed:', e);
+            }
+        } catch (_) { }
+    }
 
     /**
      * Handle a chat message context
@@ -70,7 +130,9 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
             let wasOverridden = false;
             let overrideSource = null;
             try {
-                const overrideData = this.autoCoverSystem.consumeCoverOverride(hider, target, null, false);
+                // Prefer roll-specific override if a rollId is present in message context
+                const rollId = ctx?._visionerRollId || data?.flags?.['pf2e-visioner']?.rollId || null;
+                const overrideData = this.autoCoverSystem.consumeCoverOverride(hider, target, rollId, false);
                 if (overrideData) {
                     if (overrideData.state !== originalDetectedState) {
                         wasOverridden = true;
@@ -97,13 +159,8 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
                     data.flags['pf2e-visioner'].coverOverride = overrideData;
 
                     // Store in temporary map as backup in case flags don't persist
-                    const tempKey = `${hider.id}-${target.id}-${Date.now()}`;
-                    this.autoCoverSystem.setOverride(tempKey, {
-                        ...overrideData,
-                        hiderId: hider.id,
-                        targetId: target.id,
-                        timestamp: Date.now(),
-                    });
+                    this.autoCoverSystem.setRollOverride(hider, target, ctx?._visionerRollId, overrideData.originalDetected, overrideData.finalState);
+
 
                     // Also try to update the document directly if it exists
                     if (doc && doc.updateSource) {
@@ -139,275 +196,66 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
             const ctx = dialog?.context ?? {};
 
             let target = null;
-            let state = 'none';
-
             // Resolve hider (actor making the stealth check)
             const hider = ctx?.actor?.getActiveTokens?.()?.[0] || ctx?.token?.object;
             if (!hider) {
                 return;
             }
 
-            // Find the first observer the hider has cover from
-            let bestObserver = null;
-            let bestState = 'none';
-            let coverOverride = false;
+            let detectedState = 'none';
 
-            // 2. Check override manager for existing overrides
-            
             try {
                 const observers = (canvas?.tokens?.placeables || [])
                     .filter((t) => t && t.actor && t.id !== hider.id);
-
                 for (const obs of observers) {
-                    const overrideData = this.autoCoverSystem.consumeCoverOverride(hider, obs, null, true);
-                    if (overrideData) {
-                        bestState = overrideData.state;
-                        bestObserver = obs;
-                        coverOverride = true;
-                        break;
+                    const s = this._detectCover(hider, obs);
+                    if (s && s !== 'none') {
+                        target = obs;
+                        detectedState = s;
+                        break; // first observer with cover
                     }
                 }
             } catch (_) { }
-            
 
-            // If no override found, calculate cover automatically
-            if (!coverOverride) {
-                try {
-                    const observers = (canvas?.tokens?.placeables || [])
-                        .filter((t) => t && t.actor && t.id !== hider.id);
-                    for (const obs of observers) {
-                        const s = this._detectCover(hider, obs);
-                        if (s && s !== 'none') {
-                            bestObserver = obs;
-                            bestState = s;
-                            break; // first observer with cover
-                        }
-                    }
-                } catch (_) { }
-            }
-
-            target = bestObserver;
-            state = bestState;
-
-            if (state !== 'none') {
-                const bonus = getCoverStealthBonusByState(state) || 0;
-                if (bonus > 1) {
-                    // Check if cover modifier already exists in the dialog
-                    const existingMods = dialog?.check?.modifiers || [];
-                    const hasExistingCover = existingMods.some(m => m?.slug === 'pf2e-visioner-cover');
-
-                    if (!hasExistingCover || hasExistingCover && coverOverride) {
-                        // Create and inject the cover modifier directly into the dialog's check object
-                        let coverModifier;
-                        try {
-                            if (game?.pf2e?.Modifier) {
-                                coverModifier = new game.pf2e.Modifier({
-                                    slug: 'pf2e-visioner-cover',
-                                    label: getCoverLabel(state),
-                                    modifier: bonus,
-                                    type: 'circumstance'
-                                });
-                            } else {
-                                coverModifier = {
-                                    slug: 'pf2e-visioner-cover',
-                                    label: getCoverLabel(state),
-                                    modifier: bonus,
-                                    type: 'circumstance'
-                                };
-                            }
-
-                            // Add/update/remove the dialog's check modifier without reassigning the getter property
-                            if (dialog.check && Array.isArray(dialog.check.modifiers)) {
-                                const mods = dialog.check.modifiers;
-                                const existing = mods.find(m => m?.slug === 'pf2e-visioner-cover');
-
-                                // Only keep a modifier for standard/greater (bonus > 1)
-                                if (bonus > 1) {
-                                    const label = getCoverLabel(state);
-                                    if (existing) {
-                                        try { if ('modifier' in existing) existing.modifier = bonus; } catch (_) { }
-                                        try { if ('value' in existing) existing.value = bonus; } catch (_) { }
-                                        try { if ('label' in existing) existing.label = label; } catch (_) { }
-                                        try { if ('name' in existing) existing.name = label; } catch (_) { }
-                                        try { existing.enabled = true; } catch (_) { }
-                                    } else {
-                                        if (typeof dialog.check.push === 'function') {
-                                            dialog.check.push(coverModifier);
-                                        } else {
-                                            mods.push(coverModifier);
-                                        }
-                                    }
-                                } else if (existing) {
-                                    const idx = mods.indexOf(existing);
-                                    if (idx >= 0) mods.splice(idx, 1);
-                                }
-
-                                // Recalculate the total
-                                if (typeof dialog.check.calculateTotal === 'function') {
-                                    dialog.check.calculateTotal();
-                                }
-
-                                // Force the dialog to re-render to show the new modifier
-                                try {
-                                    dialog.render(false);
-                                } catch (e) {
-                                    console.warn('PF2E Visioner | Dialog re-render failed:', e);
-                                }
-                            }
-                        } catch (e) {
-                            console.warn('PF2E Visioner | Failed to inject cover modifier into dialog:', e);
-                        }
-                    } else {
-                        console.warn('PF2E Visioner | onRenderCheckModifiersDialog: cover modifier already exists in dialog');
-                    }
-                }
-            }
-
-
-
-            // Apply cover state between tokens (for both attacks and saves)
-            if (hider && target && state !== 'none') {
-                await this.autoCoverSystem.setCoverBetween(hider, target, state, { skipEphemeralUpdate: true });
-                this.autoCoverSystem.recordPair(hider.id, target.id);
-            }
 
             // Inject cover override UI, using a callback to apply stealth-specific behavior on chosen state
             try {
-                await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, async ({ chosen, dctx, subject: hider, target: tgt, targetActor: tgtActor, originalState }) => {
+                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, async ({ chosen, subject: hider, target: tgt, rollId }) => {
                     try {
-                        if (!tgtActor) return;
-
                         // Only store as override if the user actually changed the state
-                        const wasChanged = chosen !== (originalState || state);
-                        
+                        const wasChanged = chosen !== detectedState;
+
                         if (wasChanged) {
-                            // Store dialog override for this specific hider->observer pair
+                            // Store roll-specific override for this specific hider->observer pair
                             if (hider && tgt) {
                                 const targetTokenId = tgt.id || tgt.token?.id || null;
                                 if (targetTokenId) {
-                                    this.autoCoverSystem.setDialogOverride(hider, tgt, chosen, originalState || state);
+                                    this.autoCoverSystem.setRollOverride(hider, tgt, rollId, detectedState, chosen);
                                 } else {
                                     console.warn('PF2E Visioner | Could not resolve target token ID for dialog override');
                                 }
                             }
 
-                            // Additionally store overrides for Hide/Sneak across all observers
+                            // Additionally store roll-specific overrides for Hide/Sneak across all observers
                             if (chosen !== 'none') {
                                 const observers = (canvas?.tokens?.placeables || [])
-                                    .filter((t) => t && t.actor && t.id !== hider?.getActiveTokens?.()?.[0]?.id);
+                                    .filter((t) => t && t.actor && t.id !== hider?.id);
                                 for (const obs of observers) {
-                                    this.autoCoverSystem.setDialogOverride(hider?.getActiveTokens?.()?.[0], obs, chosen, originalState || state);
+                                    this.autoCoverSystem.setRollOverride(hider, obs, rollId, detectedState, chosen);
                                 }
                             }
+                            detectedState = chosen
                         }
 
                         // Calculate the new bonus for the chosen state
-                        const newBonus = getCoverStealthBonusByState(chosen) || 0;
-                        
-                        // Update the current dialog's modifiers immediately
-                        if (dialog?.check?.modifiers && Array.isArray(dialog.check.modifiers)) {
-                            const mods = dialog.check.modifiers;
-                            const existing = mods.find(m => m?.slug === 'pf2e-visioner-cover');
+                        const newBonus = getCoverStealthBonusByState(detectedState);
 
-                            if (newBonus > 1 || newBonus === 0) {
-                                // Add or update the cover modifier
-                                const label = getCoverLabel(chosen);
-                                if (existing) {
-                                    // Update existing modifier
-                                    try { if ('modifier' in existing) existing.modifier = newBonus; } catch (_) { }
-                                    try { if ('value' in existing) existing.value = newBonus; } catch (_) { }
-                                    try { if ('label' in existing) existing.label = label; } catch (_) { }
-                                    try { if ('name' in existing) existing.name = label; } catch (_) { }
-                                    try { existing.enabled = true; } catch (_) { }
-                                } else {
-                                    // Add new modifier
-                                    let coverModifier;
-                                    try {
-                                        if (game?.pf2e?.Modifier) {
-                                            coverModifier = new game.pf2e.Modifier({
-                                                slug: 'pf2e-visioner-cover',
-                                                label: label,
-                                                modifier: newBonus,
-                                                type: 'circumstance'
-                                            });
-                                        } else {
-                                            coverModifier = {
-                                                slug: 'pf2e-visioner-cover',
-                                                label: label,
-                                                modifier: newBonus,
-                                                type: 'circumstance'
-                                            };
-                                        }
-                                        mods.push(coverModifier);
-                                    } catch (e) {
-                                        console.warn('PF2E Visioner | Failed to create cover modifier:', e);
-                                    }
-                                }
-                            } else if (existing) {
-                                // Remove existing modifier if bonus is 0 (none state)
-                                const idx = mods.indexOf(existing);
-                                if (idx >= 0) mods.splice(idx, 1);
-                            }
-
-                            // Recalculate the total
-                            try {
-                                if (typeof dialog.check.calculateTotal === 'function') {
-                                    dialog.check.calculateTotal();
-                                }
-                            } catch (e) {
-                                console.warn('PF2E Visioner | Failed to recalculate dialog total:', e);
-                            }
-
-                            // Force the dialog to re-render to show the new modifier
-                            try {
-                                dialog.render(false);
-                            } catch (e) {
-                                console.warn('PF2E Visioner | Dialog re-render failed:', e);
-                            }
-                        }
-
-                        // Continue with the original ephemeral effect creation for the actor
-                        const bonus = getCoverStealthBonusByState(chosen) || 0;
-                        let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
-                        items = items.filter(
-                            (i) => !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true),
-                        );
-                        let clonedActor = tgtActor;
-                        if (bonus > 0) {
-                            const label = getCoverLabel(chosen);
-                            const img = getCoverImageForState(chosen);
-                            const effectRules = [
-                                { key: 'FlatModifier', selector: 'stealth', type: 'circumstance', value: bonus },
-                            ];
-                            const description = `<p>${label}: +${bonus} circumstance bonus to Stealth for this roll.</p>`;
-                            items.push({
-                                name: label,
-                                type: 'effect',
-                                system: {
-                                    description: { value: description, gm: '' },
-                                    rules: effectRules,
-                                    traits: { otherTags: [], value: [] },
-                                    level: { value: 1 },
-                                    duration: { value: -1, unit: 'unlimited' },
-                                    tokenIcon: { show: false },
-                                    unidentified: true,
-                                    start: { value: 0 },
-                                    badge: null,
-                                },
-                                img,
-                                flags: { 'pf2e-visioner': { forThisRoll: true, ephemeralCoverRoll: true } },
-                            });
-                        }
-                        if (bonus > 0) {
-                            clonedActor = tgtActor.clone({ items }, { keepId: true });
-                        }
-                        const dcObj = dctx?.dc;
-                        if (dcObj?.slug) {
-                            const st = (clonedActor || tgtActor).getStatistic(dcObj.slug)?.dc;
-                            if (st) {
-                                dcObj.value = st.value;
-                                dcObj.statistic = st;
-                            }
+                        // Update the current dialog's modifiers immediately (in onChosen allow zero to be kept)
+                        this._applyDialogCoverModifier(dialog, newBonus, getCoverLabel(chosen), { keepWhenZero: true });
+                        // Apply cover state between tokens (for both attacks and saves)
+                        if (hider && target && detectedState !== 'none') {
+                            await this.autoCoverSystem.setCoverBetween(hider, target, detectedState, { skipEphemeralUpdate: true });
+                            this.autoCoverSystem.recordPair(hider.id, target.id);
                         }
                     } catch (cbErr) {
                         console.error('PF2E Visioner | Stealth onChosen callback error:', cbErr);
@@ -498,12 +346,14 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
 
                         try {
                             const originalState = state;
-                            const popupResult = await this.coverUIManager.showPopupAndApply(state);
-                            if (popupResult.chosen) {
-                                state = popupResult.chosen;
+                            const { chosen, rollId } = await this.coverUIManager.showPopupAndApply(state);
+                            if (chosen) {
+                                context._visionerRollId = rollId;
+                                state = chosen;
                                 // Only store as override if it actually changed
                                 if (state !== originalState) {
-                                    observers.map(obs => this.autoCoverSystem.setPopupOverride(hider, obs, state, originalState));
+                                    // Store a roll-specific override so it won't leak into later dialogs
+                                    observers.map(obs => this.autoCoverSystem.setRollOverride(hider, obs, rollId, originalState, state));
                                     isOverride = true;
                                 }
                             };
@@ -511,7 +361,7 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
                             console.warn('PF2E Visioner | Popup error (delegated):', e);
                         }
                         const bonus = Number(COVER_STATES?.[state]?.bonusStealth ?? 0);
-                        try { context._visionerStealth = { state, bonus, isOverride, source: isOverride ? 'override' : 'automatic' }; } catch (_) { }
+                        try { context._visionerStealth = { state, bonus, isOverride, rollId: context?._visionerRollId, source: isOverride ? 'override' : 'automatic' }; } catch (_) { }
                     } catch (e) {
                         console.warn('PF2E Visioner | ⚠️ Stealth cover handling failed', e);
                     }
@@ -556,93 +406,6 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
             console.error('PF2E Visioner | StealthCheckUseCase.handleRoll error:', error);
             return { success: false };
         }
-    }
-
-    /**
-     * Resolve tokens from message data
-     * @param {Object} data - Message data
-     * @returns {Promise<Object>} Result with stealther and observer
-     * @protected
-     */
-    async _resolveTokensFromMessage(data) {
-        // The speaker is the stealther (token making the stealth check)
-        const stealtherTokenId = this._normalizeTokenRef(data?.speaker?.token);
-        const stealther = this._getToken(stealtherTokenId);
-
-        if (!stealther) return { stealther: null, observer: null };
-
-        // Try to determine the observer from the message data
-        const observerTokenId = this._resolveObserverTokenIdFromData(data);
-        const observer = observerTokenId ? this._getToken(observerTokenId) : this._findBestObserver(stealther);
-
-        return { stealther, observer };
-    }
-
-    /**
-     * Resolve observer token ID from message data
-     * @param {Object} data - Message data
-     * @returns {string|null}
-     * @private
-     */
-    _resolveObserverTokenIdFromData(data) {
-        if (!data) return null;
-
-        // First, try to get target from PF2e context
-        const ctx = data?.flags?.pf2e?.context || {};
-        if (ctx.target?.token?.id) {
-            return ctx.target.token.id;
-        }
-
-        // Next, try PF2e-toolbelt target helper
-        const tbTargets = data?.flags?.['pf2e-toolbelt']?.targetHelper?.targets;
-        if (Array.isArray(tbTargets) && tbTargets.length === 1) {
-            return this._normalizeTokenRef(tbTargets[0]);
-        }
-
-        return null;
-    }
-
-    /**
-     * Find the best observer for a stealther
-     * @param {Object} stealther - Stealther token
-     * @returns {Object|null} Observer token
-     * @private
-     */
-    _findBestObserver(stealther) {
-        if (!stealther || !canvas?.tokens?.placeables) return null;
-
-        // First check if there's a currently targeted token
-        if (game.user.targets.size === 1) {
-            return game.user.targets.first();
-        }
-
-        // Otherwise, find the nearest hostile token
-        const hostiles = canvas.tokens.placeables.filter(t =>
-            t.id !== stealther.id &&
-            t.actor &&
-            t.document.disposition !== stealther.document.disposition
-        );
-
-        if (hostiles.length === 0) return null;
-
-        // Find the closest hostile
-        const stealtherCenter = stealther.center ?? stealther.getCenter();
-        let closestToken = null;
-        let closestDistance = Infinity;
-
-        for (const token of hostiles) {
-            const tokenCenter = token.center ?? token.getCenter();
-            const dx = tokenCenter.x - stealtherCenter.x;
-            const dy = tokenCenter.y - stealtherCenter.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestToken = token;
-            }
-        }
-
-        return closestToken;
     }
 
     /**

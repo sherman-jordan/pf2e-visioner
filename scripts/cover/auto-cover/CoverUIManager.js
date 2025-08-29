@@ -90,12 +90,14 @@ export class CoverUIManager {
                             const tgtActor = tgt?.actor;
                             if (!tgtActor) return;
                             const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
-                            const subject = dctx?.actor || null;
+                            const subjectToken = dctx?.actor?.token;
+                            const subjectActor = dctx?.actor || null;
 
                             // Delegate to callback if provided
                             if (typeof onChosen === 'function') {
                                 try {
-                                    onChosen({ chosen, dialog, dctx, subject, target: tgt, targetActor: tgtActor, originalState: state });
+                                    dctx._visionerRollId = foundry?.utils?.randomID?.();
+                                    onChosen({ chosen, dialog, dctx, subject: subjectToken, subjectActor, target: tgt, targetActor: tgtActor, originalState: state, rollId: dctx._visionerRollId });
                                 } catch (cbErr) {
                                     console.warn('PF2E Visioner | onChosen callback failed:', cbErr);
                                 }
@@ -164,7 +166,7 @@ export class CoverUIManager {
                 return
             }
             const chosen = await this.getCoverPopupChosenState(detectedState);
-            return { chosen };
+            return { chosen, rollId: foundry?.utils?.randomID?.() };
         } catch (e) {
             console.warn('PF2E Visioner | Popup error in CoverUIManager:', e);
             return { chosen: null };

@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.7.1] - 2025-08-28
+
+### Added
+- Ability to hide quick edit button @camrun91
+
+### Fixed
+- Attack consequences displaying on non attack @camrun91
+- Hide results showing on various checks @camrun91
+- Sneak results could show on other checks @camrun91
+
 ## [2.7.0] - 2025-08-23
 
 ### Added

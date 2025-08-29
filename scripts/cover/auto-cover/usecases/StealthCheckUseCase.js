@@ -76,23 +76,10 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
      */
     async handlePreCreateChatMessage(data, doc = null) {
         try {
-            // CRITICAL: Check if this message was already handled by popup wrapper
             const ctx = data?.flags?.pf2e?.context || {};
-            const ctxType = ctx?.type || '';
-
             const speakerTokenId = this.normalizeTokenRef(data?.speaker?.token);
             const targetTokenId = this._resolveTargetTokenIdFromData(data);
-            try {
-                const ctx = data?.flags?.pf2e?.context || {};
-                console.debug('PF2E Visioner | onPreCreateChatMessage: context', {
-                    type: ctxType,
-                    statistic: ctx?.statistic,
-                    saveType: ctx?.save?.type,
-                    saveStat: ctx?.save?.statistic,
-                    traits: ctx?.traits,
-                    options: ctx?.options,
-                });
-            } catch (_) { }
+
 
             const tokens = canvas?.tokens;
             if (!tokens?.get) return;

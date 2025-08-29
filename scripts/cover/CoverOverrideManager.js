@@ -306,3 +306,6 @@ export class CoverOverrideManager {
         this.clearAll();
     }
 }
+
+const coverOverrideManager = new CoverOverrideManager();
+export default coverOverrideManager;

@@ -54,36 +54,13 @@ export class AutoCoverHooks {
     static registerHooks() {
         // Prevent duplicate registration
         if (AutoCoverHooks._hooksRegistered) {
-            console.debug('PF2E Visioner | Auto-cover hooks already registered, skipping duplicate registration');
             return;
         }
 
-        console.debug('PF2E Visioner | Registering auto-cover hooks');
         AutoCoverHooks._hooksRegistered = true;
 
-        // Create an instance to handle hooks
-        let autoCoverSystem = null;
+        initializeHooks(autoCoverSystem);
 
-        // Try to get the auto-cover system from the global namespace first
-        if (window.pf2eVisioner?.systems?.autoCover) {
-            autoCoverSystem = window.pf2eVisioner.systems.autoCover;
-            initializeHooks(autoCoverSystem);
-        }
-        // Fall back to importing it directly if not found in global
-        else {
-            console.debug('PF2E Visioner | Auto-cover system not found in global scope, attempting to import directly');
-            // Using dynamic import as this is an ES module
-            import('./AutoCoverSystem.js').then(module => {
-                autoCoverSystem = module.default;
-                if (autoCoverSystem) {
-                    initializeHooks(autoCoverSystem);
-                } else {
-                    console.error('PF2E Visioner | Failed to import auto-cover system: system not found in module');
-                }
-            }).catch(error => {
-                console.error('PF2E Visioner | Failed to import auto-cover system:', error);
-            });
-        }
 
         // Helper function to set up hooks with an instance
         function initializeHooks(system) {
@@ -93,12 +70,6 @@ export class AutoCoverHooks {
             }
 
             const instance = new AutoCoverHooks(system);
-
-            // Store the instance globally for access by other components
-            if (!window.pf2eVisionerAutoCoverHooks) {
-                window.pf2eVisionerAutoCoverHooks = instance;
-                console.debug('PF2E Visioner | AutoCoverHooks instance stored globally');
-            }
 
             // Core message hooks
             Hooks.on('preCreateChatMessage', instance.onPreCreateChatMessage.bind(instance));
@@ -140,11 +111,6 @@ export class AutoCoverHooks {
 
             // System hooks
             Hooks.on('pf2e.systemReady', instance.onSystemReady.bind(instance));
-
-            // Ready hook for any final initialization
-            Hooks.once('ready', instance.onReady.bind(instance));
-
-            console.debug('PF2E Visioner | Auto-cover hooks registered successfully');
 
             return instance;
         }
@@ -363,12 +329,11 @@ export class AutoCoverHooks {
                         'WRAPPER'
                     );
 
-                    console.debug('PF2E Visioner | Successfully registered Check.roll wrapper');
 
                     // Mark wrappers as registered
                     AutoCoverHooks._wrappersRegistered = true;
                 } catch (error) {
-                    console.warn('PF2E Visioner | Error registering Check.roll wrapper:', error);
+                    console.error('PF2E Visioner | Error registering Check.roll wrapper:', error);
                 }
 
                 /* 
@@ -384,23 +349,6 @@ export class AutoCoverHooks {
     }
 
     /**
-     * Handle ready hook
-     */
-    async onReady() {
-        try {
-            // Perform any additional initialization required after ready
-            if (this.autoCoverSystem && typeof this.autoCoverSystem.onReady === 'function') {
-                this.autoCoverSystem.onReady();
-                console.debug('PF2E Visioner | Auto-cover system initialized');
-            } else {
-                console.debug('PF2E Visioner | AutoCoverSystem.onReady not found, skipping system initialization');
-            }
-        } catch (error) {
-            console.error('PF2E Visioner | Error in onReady:', error);
-        }
-    }
-
-    /**
      * Wrapper for Check.roll
      * @param {Function} wrapped - Original function
      * @param {Object} check - Check object
@@ -411,110 +359,27 @@ export class AutoCoverHooks {
      * @private
      */
     async _wrapCheckRoll(wrapped, check, context = {}, event = null, callback) {
-        console.debug('PF2E Visioner | Check.roll wrapper entered', {
-            contextType: context?.type,
-            skill: context?.skill,
-            domains: context?.domains,
-            checkType: check?.type,
-            statistic: context?.statistic,
-            token: context?.token?.id
-        });
-
         try {
             // Skip if auto-cover is disabled
             if (!this.autoCoverSystem.isEnabled()) {
-                console.debug('PF2E Visioner | Auto-cover is disabled, skipping cover detection');
                 return await wrapped(check, context, event, callback);
             }
 
             // Get the appropriate use case for this context
             const useCase = this._getUseCaseForContext(context);
             if (!useCase) {
-                console.debug('PF2E Visioner | No suitable use case found for context', {
-                    contextType: context?.type,
-                    domains: context?.domains
-                });
+
                 return await wrapped(check, context, event, callback);
             }
-
-            console.debug('PF2E Visioner | Found use case for check roll', {
-                useCaseType: useCase.constructor.name,
-                contextType: context?.type
-            });
-
-            console.warn('PF2E Visioner | About to call useCase.handleRoll with context.coverOverrideState', {
-                coverOverrideState: context.coverOverrideState,
-                globalOverrideAtTime: window.PF2E_VISIONER_COVER_OVERRIDE
-            });
             // Handle the roll with the appropriate use case
             await useCase.handleCheckRoll(check, context);
 
         } catch (error) {
-            console.warn('PF2E Visioner | Error in Check.roll wrapper:', error);
+            console.error('PF2E Visioner | Error in Check.roll wrapper:', error);
         }
 
         // Call original function
         return await wrapped(check, context, event, callback);
-    }
-
-    // _wrapTemplatePreview method removed - no longer compatible with Foundry v13
-
-    /**
-     * Check if data is from an attack-like message
-     * @param {Object} data - Message data
-     * @returns {boolean}
-     * @private
-     */
-    _isAttackLikeMessageData(data) {
-        if (!data) return false;
-
-        // Check for PF2e context
-        const ctx = data?.flags?.pf2e?.context || {};
-        if (!ctx) return false;
-
-        // Check for specific types
-        const ctxType = ctx.type || '';
-        if (['attack-roll', 'saving-throw', 'damage-roll'].includes(ctxType)) {
-            return true;
-        }
-
-        // Check for skill checks that might include cover
-        if (ctxType === 'skill-check' && ctx.skill === 'stealth') {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the bonus value for a cover state
-     * @param {string} state - Cover state ('none', 'lesser', 'standard', 'greater')
-     * @returns {number} - Bonus value (negative for AC penalties)
-     * @private
-     */
-    _getCoverBonus(state) {
-        switch (state) {
-            case 'lesser':
-                return -1;
-            case 'standard':
-                return -2;
-            case 'greater':
-                return -4;
-            default:
-                return 0;
-        }
-    }
-
-    /**
-     * Normalize token reference
-     * @param {string|Object} ref - Token reference
-     * @returns {string|null}
-     * @private
-     */
-    _normalizeTokenRef(ref) {
-        if (!ref) return null;
-        if (typeof ref === 'string') return ref;
-        return ref.id || null;
     }
 
     /**
@@ -525,39 +390,24 @@ export class AutoCoverHooks {
      */
     _getUseCaseForContext(ctx) {
         if (!ctx) {
-            console.debug('PF2E Visioner | No context provided for use case resolution');
             return null;
         }
 
-        console.debug('PF2E Visioner | Finding use case for context', {
-            contextType: ctx.type,
-            skill: ctx.skill,
-            domains: ctx.domains,
-            action: ctx.action
-        });
-
         // Check for attack context
         if (this._isAttackContext(ctx)) {
-            console.debug('PF2E Visioner | Resolved attack use case');
             return this.attackRollUseCase;
         }
 
         // Check for saving throw context
         if (ctx.type === 'saving-throw') {
-            console.debug('PF2E Visioner | Resolved saving throw use case');
             return this.savingThrowUseCase;
         }
 
         // Check for stealth context
         if (ctx.type === 'skill-check' &&
             (Array.isArray(ctx.domains) && ctx.domains.includes('stealth'))) {
-            console.debug('PF2E Visioner | Resolved stealth use case');
             return this.stealthCheckUseCase;
         }
-
-        console.debug('PF2E Visioner | No matching use case found for context', {
-            contextType: ctx.type
-        });
         return null;
     }
 

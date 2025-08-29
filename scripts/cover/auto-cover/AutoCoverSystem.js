@@ -4,10 +4,10 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
+import coverOverrideManager from '../../cover/CoverOverrideManager.js';
 import { getCoverBonusByState } from '../../helpers/cover-helpers.js';
-import { CoverOverrideManager } from '../CoverOverrideManager.js';
-import { CoverDetector } from './CoverDetector.js';
-import { CoverStateManager } from './CoverStateManager.js';
+import coverDetector from './CoverDetector.js';
+import coverStateManager from './CoverStateManager.js';
 export class AutoCoverSystem {
     /**
      * @type {CoverDetector}
@@ -37,9 +37,9 @@ export class AutoCoverSystem {
 
 
     constructor() {
-        this._detector = new CoverDetector();
-        this._stateManager = new CoverStateManager();
-        this._overrideManager = new CoverOverrideManager(); // Use global singleton
+        this._detector = coverDetector;
+        this._stateManager = coverStateManager;
+        this._overrideManager = coverOverrideManager;
     }
 
     /**
@@ -251,17 +251,6 @@ export class AutoCoverSystem {
      */
     clearCoverOverrides(token1, token2) {
         this._overrideManager.clearOverrides(token1, token2);
-    }
-
-    /**
-     * Handle system initialization when Foundry is ready
-     * This method is called by AutoCoverHooks.onReady
-     */
-    onReady() {
-        console.debug('PF2E Visioner | Auto-cover system ready event handler');
-
-        // Additional initialization can be performed here if needed
-        // For now, we'll just log that we're ready
     }
 
     /**

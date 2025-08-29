@@ -242,7 +242,7 @@ class CoverVisualization {
         }
       } catch (error) {
         // Silently fail if mouse position detection fails
-        console.debug('PF2E Visioner: Could not detect mouse position for token detection');
+        console.error('PF2E Visioner: Could not detect mouse position for token detection');
       }
     }
 
@@ -261,7 +261,7 @@ class CoverVisualization {
         }
       } catch (error) {
         // Silently fail if mouse position detection fails
-        console.debug('PF2E Visioner: Could not validate mouse position for token detection');
+        console.error('PF2E Visioner: Could not validate mouse position for token detection');
       }
     }
   }
@@ -374,7 +374,7 @@ class CoverVisualization {
       }
     } catch (error) {
       // Silently fail if mouse position detection fails
-      console.debug('PF2E Visioner: Could not validate hover state');
+      console.error('PF2E Visioner: Could not validate hover state');
     }
   }
 

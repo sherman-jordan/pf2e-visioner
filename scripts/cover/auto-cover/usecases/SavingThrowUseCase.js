@@ -28,10 +28,8 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
         (Array.isArray(context?.traits) && context.traits.includes('area'))) ||
         (Array.isArray(context?.options) && context.options.includes('area-effect')) ||
         (context?.options?.has && context.options.has('area-effect'));
-      console.debug('SavingThrowUseCase | _isAreaEffect', { hasArea, traits: context?.traits, options: context?.options });
       return !!hasArea;
     } catch (e) {
-      console.debug('SavingThrowUseCase | _isAreaEffect error', e);
       return false;
     }
   }
@@ -63,8 +61,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
    */
   async handleCheckDialog(dialog, html) {
     const ctx = dialog?.context || {};
-
-    debugger;
     let attacker = this._resolveAttackerFromCtx(ctx);
     let target = this._resolveTargetFromCtx(ctx);
     if (!attacker || !target) return;
@@ -72,11 +68,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
     // Check for active template data with precalculated cover state
     let state;
     const savedTemplateData = this.templateManager.getTemplatesData();
-    console.debug('SavingThrowUseCase | handleCheckDialog template check', {
-      hasTemplateData: !!(savedTemplateData && savedTemplateData.size > 0),
-      templateCount: savedTemplateData?.size || 0,
-      targetId: target.id
-    });
 
     if (savedTemplateData && savedTemplateData.size > 0) {
       // Find the most recent template that contains this target
@@ -95,24 +86,18 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
       }
 
       if (mostRecentTemplate) {
-        const { id, data } = mostRecentTemplate;
+        const { data } = mostRecentTemplate;
         state = data.targets[target.id].state;
-        console.debug('SavingThrowUseCase | handleCheckDialog using precalculated templateData state', {
-          templateId: id,
-          targetId: target.id,
-          state
-        });
       }
     }
 
     // Fallback to direct token calculation if no template data
     if (!state) {
-      console.debug('SavingThrowUseCase | handleCheckDialog using direct token calculation');
       state = this._detectCover(attacker, target);
     }
 
     try {
-      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
+      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen }) => {
         if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
         const mods = dialog.check.modifiers;
         const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');
@@ -151,7 +136,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
             }
           }
         } else if (existing) {
-          debugger;
           const idx = mods.indexOf(existing);
           if (idx >= 0) mods.splice(idx, 1);
         }
@@ -182,8 +166,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
    */
   async handleCheckRoll(check, context) {
     try {
-      console.debug('SavingThrowUseCase | handleCheckRoll start', { checkExists: !!check, hasContext: !!context });
-
       // For reflex saves, the actor making the save is the "target" (defender)
       let target = context.actor?.getActiveTokens?.()?.[0];
       if (!target) {
@@ -192,11 +174,9 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
       }
 
       if (!target) {
-        console.debug('SavingThrowUseCase | no target resolved, aborting');
         return;
       }
 
-      console.debug('SavingThrowUseCase | resolved target', { id: target.id, name: target.name });
 
       // Find the attacker (origin of the area effect) and template data
       let attacker = null;
@@ -206,11 +186,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
 
       // First check our dedicated template data map
       const savedTemplateData = this.templateManager.getTemplatesData();
-      console.debug('SavingThrowUseCase | template data check', {
-        hasTemplateData: !!(savedTemplateData && savedTemplateData.size > 0),
-        templateCount: savedTemplateData?.size || 0,
-        targetId: target.id
-      });
 
       if (savedTemplateData && savedTemplateData.size > 0) {
 
@@ -286,9 +261,7 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
             attacker = controlled || targeted;
           }
           isTargetInTemplate = true;
-          console.debug('SavingThrowUseCase | area-effect fallback used', { attackerId: attacker?.id });
         } else {
-          console.debug('SavingThrowUseCase | no attacker/template and not area-effect — aborting');
           return;
         }
       }
@@ -300,18 +273,14 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
       // If we found a template and it has precalculated cover for this target, use it
       if (templateData && templateData.targets && templateData.targets[target.id]) {
         state = templateData.targets[target.id].state;
-        console.debug('SavingThrowUseCase | using precalculated templateData state', { templateId, targetId: target.id, state });
       }
       // If we have an attacker token, use standard calculation
       else if (attacker) {
         // Fallback to normal calculation
-        console.debug('SavingThrowUseCase | calculating cover between tokens', { attackerId: attacker?.id, attackerName: attacker?.name });
         state = this.autoCoverSystem.detectCoverBetweenTokens(attacker, target);
-        console.debug('SavingThrowUseCase | result from detectCoverBetweenTokens', { state });
       }
 
       if (!state) {
-        console.debug('SavingThrowUseCase | NO STATE FOUND - aborting handleCheckRoll');
         return;
       }
 
@@ -320,7 +289,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
       try {
         const earlyBonus = this.autoCoverSystem.getCoverBonusByState(state) || 0;
         context._visionerCover = { state, bonus: earlyBonus };
-        console.debug('SavingThrowUseCase | persisted early cover info', { state, earlyBonus });
       } catch (e) {
         console.error('PF2E Visioner | Error persisting cover info:', e);
       }
@@ -344,7 +312,6 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
 
       if (state !== 'none') {
         const bonus = this.autoCoverSystem.getCoverBonusByState(state) || 0;
-        console.debug('SavingThrowUseCase | processing cover effect', { state, bonus });
 
         if (bonus > 0) {
           const tgtActor = target.actor;
@@ -475,33 +442,25 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
                   if (Array.isArray(check.modifiers)) check.modifiers.push(pf2eMod);
                 }
               } catch (injErr) {
-                console.debug('PF2E Visioner | ⚠️ Failed fallback injection of cover modifier:', injErr);
+                console.error('PF2E Visioner | ⚠️ Failed fallback injection of cover modifier:', injErr);
               }
-            } else {
-              console.debug('PF2E Visioner | ⚠️ Could not rebuild CheckModifier: statistic not found', {
-                statSlug: context?.statistic,
-                domains: context?.domains
-              });
             }
           } catch (rebuildErr) {
-            console.debug('PF2E Visioner | ❌ Failed to rebuild CheckModifier for reflex save:', rebuildErr);
+            console.error('PF2E Visioner | ❌ Failed to rebuild CheckModifier for reflex save:', rebuildErr);
           }
         }
       }
     } catch (e) {
-      console.warn('PF2E Visioner | ❌ Error in popup wrapper:', e);
+      console.error('PF2E Visioner | ❌ Error in popup wrapper:', e);
     }
 
     // (Moved earlier) off-guard ephemerals ensured before calculation
 
     // FINAL REFLEX COVER INJECTION (minimal): push cover modifier into the Check
     try {
-      console.debug('SavingThrowUseCase | FINAL INJECTION ATTEMPT - checking if needed');
       const coverInfo = context?._visionerCover;
       const bonus = Number(coverInfo?.bonus) || 0;
-      console.debug('SavingThrowUseCase | FINAL INJECTION - cover info', { coverInfo, bonus });
       if (bonus > 1) {
-        console.debug('SavingThrowUseCase | FINAL INJECTION - bonus > 1, proceeding');
         const state = coverInfo?.state ?? 'standard';
         // Ensure predicate support
         const optSet = new Set(Array.isArray(context.options) ? context.options : []);
@@ -525,22 +484,14 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
         }
 
         const already = !!(check?.modifiers && typeof check.modifiers.some === 'function' && check.modifiers.some(m => m?.slug === 'pf2e-visioner-cover'));
-        console.debug('SavingThrowUseCase | FINAL INJECTION - modifier check', { already, hasCheckPush: !!(check && typeof check.push === 'function') });
         if (!already && check && typeof check.push === 'function') {
           check.push(pf2eMod);
-          console.debug('SavingThrowUseCase | FINAL INJECTION - modifier pushed to check');
-        } else {
-          console.debug('SavingThrowUseCase | FINAL INJECTION - skipped (already exists or no check.push)');
         }
 
-      } else {
-        console.debug('SavingThrowUseCase | FINAL INJECTION - skipped (bonus <= 1)');
       }
     } catch (finalErr) {
-      console.debug('PF2E Visioner | ⚠️ Minimal reflex injection failed', finalErr);
+      console.error('PF2E Visioner | ⚠️ Minimal reflex injection failed', finalErr);
     }
-
-    console.debug('SavingThrowUseCase | handleCheckRoll complete');
   }
 
 

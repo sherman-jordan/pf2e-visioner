@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
+import { getCoverBonusByState } from '../../helpers/cover-helpers.js';
 
 export class CoverStateManager {
     /**
@@ -99,44 +100,6 @@ export class CoverStateManager {
     }
 
     /**
-     * Legacy method - sets the auto-cover state for a token (not recommended)
-     * @param {Object} token - The token to update
-     * @param {string} state - The cover state to set
-     * @param {string} source - The source of the cover (attacker ID)
-     * @returns {Promise}
-     * @deprecated Use setCoverBetween instead
-     */
-    async setCoverState(token, state, source = null) {
-        console.warn('PF2E Visioner | setCoverState is deprecated, use setCoverBetween instead');
-        if (!token?.document || !source) return;
-
-        // If source is provided as ID, try to get the token
-        const sourceToken = typeof source === 'string' ? canvas.tokens.get(source) : source;
-        if (!sourceToken) return;
-
-        // Use the new method
-        await this.setCoverBetween(sourceToken, token, state);
-    }
-
-    /**
-     * Gets the auto-cover bonus for a state
-     * @param {string} state - The cover state
-     * @returns {number} The bonus value
-     */
-    getCoverBonus(state) {
-        switch (state) {
-            case 'lesser':
-                return 1;
-            case 'standard':
-                return 2;
-            case 'greater':
-                return 4;
-            default:
-                return 0;
-        }
-    }
-
-    /**
      * Removes all auto-cover flags from a token
      * @param {Object} token - The token to clean
      * @returns {Promise}
@@ -190,7 +153,7 @@ export class CoverStateManager {
             if (state === 'none') return;
 
             // Get the bonus for the current cover state
-            const bonus = this.getCoverBonus(state);
+            const bonus = getCoverBonusByState(state);
             if (bonus <= 0) return;
 
             // Pick a representative image per cover level
@@ -293,3 +256,6 @@ export class CoverStateManager {
         }
     }
 }
+
+const coverStateManager = new CoverStateManager();
+export default coverStateManager;

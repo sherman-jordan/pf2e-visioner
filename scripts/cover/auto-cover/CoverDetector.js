@@ -504,14 +504,6 @@ export class CoverDetector {
 
             const result = any ? (standard ? 'standard' : 'lesser') : 'none';
 
-            if (result !== 'none') {
-                console.debug('PF2E Visioner | Size-based cover detected', {
-                    result,
-                    attackerName: attacker.name,
-                    targetName: target.name
-                });
-            }
-
             return result;
         } catch (error) {
             console.error('PF2E Visioner | Error in evaluateCreatureSizeCover:', error);
@@ -688,5 +680,7 @@ export class CoverDetector {
         const result = meetsGrt ? 'greater' : meetsStd ? 'standard' : sawAny ? 'lesser' : 'none';
         return result;
     }
-
 }
+
+const coverDetector = new CoverDetector();
+export default coverDetector;

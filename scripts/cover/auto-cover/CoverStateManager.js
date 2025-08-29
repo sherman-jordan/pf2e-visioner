@@ -30,11 +30,21 @@ export class CoverStateManager {
     getCoverBetween(source, target) {
         if (!source?.document || !target?.document) return 'none';
 
-        // Get the cover map from the source token
-        const coverMap = source.document.getFlag(CoverStateManager.FLAG_SCOPE, CoverStateManager.FLAG_KEY) || {};
+        try {
+            // Get the cover map from the source token
+            const coverMap = source.document.getFlag(CoverStateManager.FLAG_SCOPE, CoverStateManager.FLAG_KEY) || {};
 
-        // Return the state for this specific target, or 'none' if not set
-        return coverMap[target.document.id] || 'none';
+            // Ensure coverMap is an object
+            if (typeof coverMap !== 'object' || coverMap === null) {
+                return 'none';
+            }
+
+            // Return the state for this specific target, or 'none' if not set
+            return coverMap[target.document.id] || 'none';
+        } catch (error) {
+            console.warn('PF2E Visioner | Error getting cover state:', error);
+            return 'none';
+        }
     }
 
     /**
@@ -107,8 +117,6 @@ export class CoverStateManager {
     async clearCover(token) {
         if (!token?.document) return;
         await token.document.unsetFlag(CoverStateManager.FLAG_SCOPE, CoverStateManager.FLAG_KEY);
-        await token.document.unsetFlag(CoverStateManager.FLAG_SCOPE, CoverStateManager.FLAG_SOURCE_KEY);
-        await this._updateVisualEffects(token, 'none');
         // Remove any ephemeral effects
         try {
             const actor = token.actor;

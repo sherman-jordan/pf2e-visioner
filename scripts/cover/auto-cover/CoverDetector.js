@@ -153,21 +153,6 @@ export class CoverDetector {
     }
 
     /**
-     * Helper method to safely get a setting with a default fallback
-     * @param {string} key - The setting key
-     * @param {any} defaultValue - Default value if setting doesn't exist
-     * @returns {any} - The setting value or default
-     * @private
-     */
-    _getSetting(key, defaultValue) {
-        try {
-            return game.settings.get('pf2e-visioner', key) ?? defaultValue;
-        } catch (error) {
-            return defaultValue;
-        }
-    }
-
-    /**
      * Evaluate walls cover
      * @param {Object} p1 
      * @param {Object} p2 

@@ -13,9 +13,9 @@ export class BaseAutoCoverUseCase {
             throw new Error("BaseUseCase is an abstract class and cannot be instantiated directly");
         }
 
-        this.coverUIManager = coverUIManager;
-        this.autoCoverSystem = autoCoverSystem;
-        this.templateManager = templateManager;
+        this.coverUIManager = coverUIManager.default || coverUIManager;
+        this.autoCoverSystem = autoCoverSystem.default || autoCoverSystem;
+        this.templateManager = templateManager.default || templateManager;
         this.useCaseType = this.constructor.name;
     }
 
@@ -248,6 +248,15 @@ export class BaseAutoCoverUseCase {
     normalizeTokenRef(ref) {
         try {
             if (!ref) return null;
+            
+            // Handle object types with _id or id properties
+            if (typeof ref === 'object' && ref !== null) {
+                if (ref._id) return ref._id;
+                if (ref.id) return ref.id;
+                // If it's a complex object, try to convert to string and process
+                ref = String(ref);
+            }
+            
             let s = typeof ref === 'string' ? ref.trim() : String(ref);
             // Strip surrounding quotes
             if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))

@@ -105,6 +105,41 @@ global.canvas = {
     get: jest.fn(),
     addChild: jest.fn(),
     removeChild: jest.fn(),
+    raycast: jest.fn((p1, p2) => {
+      // Mock raycast that checks if any wall intersects the line
+      const walls = global.canvas?.walls?.placeables || [];
+      for (const wall of walls) {
+        try {
+          const d = wall.document;
+          if (!d || d.sight === 0) continue;
+          
+          // Skip open doors
+          const isDoor = Number(d.door) > 0;
+          const doorState = Number(d.ds ?? 0);
+          if (isDoor && doorState === 1) continue;
+          
+          const [x1, y1, x2, y2] = Array.isArray(d.c) ? d.c : [d.x, d.y, d.x2, d.y2];
+          if ([x1, y1, x2, y2].some((n) => typeof n !== 'number')) continue;
+          
+          // Simple line intersection check
+          const denom = (x2 - x1) * (p2.y - p1.y) - (y2 - y1) * (p2.x - p1.x);
+          if (Math.abs(denom) < 1e-10) continue; // parallel lines
+          
+          const t = ((p1.x - x1) * (p2.y - p1.y) - (p1.y - y1) * (p2.x - p1.x)) / denom;
+          const u = -((x1 - p1.x) * (y2 - y1) - (y1 - p1.y) * (x2 - x1)) / denom;
+          
+          if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+            return { t, wall };  // intersection found
+          }
+        } catch (_) { }
+      }
+      return null; // no intersection
+    }),
+    checkCollision: jest.fn((ray) => {
+      // Mock checkCollision that uses raycast
+      const result = global.canvas.walls.raycast(ray.A, ray.B);
+      return !!result;
+    }),
   },
   lighting: {
     placeables: [],
@@ -582,6 +617,18 @@ beforeEach(() => {
   // Reset canvas state
   global.canvas.tokens.controlled = [];
   global.canvas.tokens.placeables = [];
+  
+  // Ensure these properties exist before trying to set them
+  if (!global.canvas.walls) {
+    global.canvas.walls = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+  }
+  if (!global.canvas.lighting) {
+    global.canvas.lighting = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+  }
+  if (!global.canvas.terrain) {
+    global.canvas.terrain = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+  }
+  
   global.canvas.walls.placeables = [];
   global.canvas.lighting.placeables = [];
   global.canvas.terrain.placeables = [];

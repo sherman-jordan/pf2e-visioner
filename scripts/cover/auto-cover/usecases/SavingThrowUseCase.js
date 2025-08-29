@@ -16,9 +16,9 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
 
   constructor() {
     super();
-    this.autoCoverSystem = autoCoverSystem;
-    this.coverUIManager = coverUIManager;
-    this.templateManager = templateManager;
+    this.autoCoverSystem = autoCoverSystem.default || autoCoverSystem;
+    this.coverUIManager = coverUIManager.default || coverUIManager;
+    this.templateManager = templateManager.default || templateManager;
   }
 
   // Lightweight helper that determines whether the current context represents an area effect

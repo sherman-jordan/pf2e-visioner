@@ -56,17 +56,19 @@ export class TemplateManager {
     }
 
     getSpellCreator(document) {
-        let creator, creatorId, creatorType;
+        let creator = null, creatorId = null, creatorType = 'unknown';
         // First, check if this is a spell template with a source actor
         // Get actor from document ID
         try {
-            if (document.flags?.pf2e?.origin?.type !== 'spell') return;
+            if (document?.flags?.pf2e?.origin?.type !== 'spell') {
+                return { creator, creatorId, creatorType };
+            }
             const originActorId = document.flags.pf2e.origin.actorId;
-            const actor = game.actors.get(originActorId);
+            const actor = game?.actors?.get?.(originActorId);
 
             if (actor) {
                 // Find a token for this actor on the current scene
-                const tokens = canvas.tokens.placeables.filter(t => t.actor?.id === actor.id);
+                const tokens = canvas?.tokens?.placeables?.filter?.(t => t.actor?.id === actor.id) || [];
                 if (tokens.length > 0) {
                     creator = tokens[0];
                     creatorId = creator.id;
@@ -81,7 +83,6 @@ export class TemplateManager {
             console.error('PF2E Visioner | Error getting spell origin actor:', e);
         }
         return { creator, creatorId, creatorType };
-
     }
 
     async getCoverBonusForTokensInsideTemplate(tokensInside, center) {
@@ -218,9 +219,14 @@ export class TemplateManager {
      * @returns {Object} Template data
      */
     async registerTemplate(document, userId) {
+        // Guard against null/undefined documents
+        if (!document) {
+            return null;
+        }
+
         // Only process templates created by this user
-        if (userId !== game.userId) {
-            return;
+        if (userId !== game?.userId) {
+            return null;
         }
 
         // Get template details
@@ -247,7 +253,7 @@ export class TemplateManager {
 
         // If not found via spell origin, check for controlled token
         if (!creatorId) {
-            creator = canvas.tokens.controlled?.[0] ?? game.user.character?.getActiveTokens?.()?.[0];
+            creator = canvas?.tokens?.controlled?.[0] ?? game?.user?.character?.getActiveTokens?.()?.[0];
             if (creator) {
                 creatorId = creator.id;
                 creatorType = 'controlled';
@@ -255,15 +261,13 @@ export class TemplateManager {
         }
 
         // Find all tokens inside the template
-        const gridSize = canvas.grid?.size || 100;
-        const feetPerSquare = canvas.dimensions?.distance || 5;
+        const gridSize = canvas?.grid?.size || 100;
+        const feetPerSquare = canvas?.dimensions?.distance || 5;
         const radiusSquares = radiusFeet / feetPerSquare;
         const radiusWorld = radiusSquares * gridSize;
 
-        const candidates = canvas.tokens.placeables.filter((t) => t?.actor);
+        const candidates = canvas?.tokens?.placeables?.filter?.((t) => t?.actor) || [];
         const tokensInside = this._findTokensInsideTemplate(candidates, center, radiusWorld, tType, dirDeg, halfAngle);
-
-
 
         const { targetData, tokenIds } = await this.getCoverBonusForTokensInsideTemplate(tokensInside, center);
 
@@ -288,6 +292,8 @@ export class TemplateManager {
         if (document.flags?.pf2e?.origin?.rollOptions?.includes("origin:item:defense:reflex")) {
             this._activeReflexSaves.set(document.id, { ts: Date.now() });
         }
+
+        return templateData;
     }
 
     /**

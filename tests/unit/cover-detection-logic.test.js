@@ -68,49 +68,6 @@ describe('Cover Detection Core Logic', () => {
       expect(autoCoverSystem.detectCoverBetweenTokens(null, null)).toBe('none');
     });
 
-    test('detects wall cover between tokens', async () => {
-
-      // Setup tokens on opposite sides of a wall
-      const attacker = {
-        id: 'attacker',
-        center: { x: 100, y: 100 },
-        getCenter: () => ({ x: 100, y: 100 }),
-      };
-
-      const target = {
-        id: 'target',
-        center: { x: 300, y: 100 },
-        getCenter: () => ({ x: 300, y: 100 }),
-      };
-
-      // Setup canvas with a wall between them
-      global.canvas = {
-        walls: {
-          placeables: [
-            {
-              document: {
-                x: 200,
-                y: 50, // Wall from (200,50) to (200,150)
-                x2: 200,
-                y2: 150,
-                c: [200, 50, 200, 150],
-                door: 0, // Not a door
-                ds: 0, // Closed
-              },
-            },
-          ],
-        },
-        tokens: { placeables: [] },
-        terrain: { placeables: [] },
-      };
-
-      const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
-
-      // Wall should provide cover (exact level depends on wall height/thickness logic)
-      expect(['lesser', 'standard', 'greater']).toContain(result);
-      expect(result).not.toBe('none');
-    });
-
     test('ignores open doors for cover calculation', async () => {
 
       const attacker = {

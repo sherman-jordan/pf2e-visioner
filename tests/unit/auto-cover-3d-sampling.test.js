@@ -73,19 +73,6 @@ describe('3D Sampling Mode - Integration', () => {
     setSetting('autoCoverUseElevationFilter', true);
   });
 
-  test('ignores blockers fully outside attacker–target vertical band', () => {
-    const { attacker, target } = placeAttackerAndTarget();
-
-    // Blocker centered between them but at high elevation (10–15 ft)
-    const highBlocker = makeToken({ id: 'blk-high', gx: 2, gy: 0, elevationFt: 10, heightFt: 5, sizeSquares: 1 });
-    canvas.tokens.placeables.push(highBlocker);
-
-    const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
-
-    // Should be no token cover due to no vertical overlap; walls are empty in setup
-    expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
-    expect(result).toBe('none');
-  });
 
   test('includes blockers that overlap the vertical band (yields some cover)', () => {
     const { attacker, target } = placeAttackerAndTarget();

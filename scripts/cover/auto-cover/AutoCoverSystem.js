@@ -4,11 +4,10 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
+import { getCoverBonusByState } from '../../helpers/cover-helpers.js';
 import { CoverOverrideManager } from '../CoverOverrideManager.js';
 import { CoverDetector } from './CoverDetector.js';
 import { CoverStateManager } from './CoverStateManager.js';
-import { TemplateManager } from './TemplateManager.js';
-
 export class AutoCoverSystem {
     /**
      * @type {CoverDetector}
@@ -22,11 +21,6 @@ export class AutoCoverSystem {
      */
     _stateManager = null;
 
-    /**
-     * @type {TemplateManager}
-     * @private
-     */
-    _templateManager = null;
 
     /**
      * @type {CoverOverrideManager}
@@ -45,17 +39,7 @@ export class AutoCoverSystem {
     constructor() {
         this._detector = new CoverDetector();
         this._stateManager = new CoverStateManager();
-        this._templateManager = new TemplateManager();
         this._overrideManager = new CoverOverrideManager(); // Use global singleton
-
-        // Initialize global template trackers if needed
-        if (!window.pf2eVisionerTemplateData) {
-            window.pf2eVisionerTemplateData = new Map();
-        }
-
-        if (!window.pf2eVisionerActiveReflexSaves) {
-            window.pf2eVisionerActiveReflexSaves = new Map();
-        }
     }
 
     /**
@@ -270,14 +254,6 @@ export class AutoCoverSystem {
     }
 
     /**
-     * Gets the template manager
-     * @returns {TemplateManager}
-     */
-    getTemplateManager() {
-        return this._templateManager;
-    }
-
-    /**
      * Handle system initialization when Foundry is ready
      * This method is called by AutoCoverHooks.onReady
      */
@@ -302,6 +278,42 @@ export class AutoCoverSystem {
                 targets.delete(tokenId);
             }
         }
+    }
+
+    async onUpdateDocument(document, changes) {
+        if (document?.documentName !== 'Token') return;
+        // Skip if auto-cover is disabled
+        if (!this.autoCoverSystem.isEnabled()) return;
+
+        // Skip if not a position or size change
+        if (!changes.x && !changes.y && !changes.width && !changes.height) return;
+
+        const tokenId = document.id;
+        const token = canvas?.tokens?.get(tokenId);
+        if (!token) return;
+
+        // Update all active cover relationships
+        const pairs = this.autoCoverSystem.getActivePairsInvolving(tokenId);
+        for (const pair of pairs) {
+            const attacker = canvas.tokens.get(pair.attackerId);
+            const target = canvas.tokens.get(pair.targetId);
+
+            if (attacker && target) {
+                await this.autoCoverSystem.cleanupCover(attacker, target);
+            }
+        }
+        return;
+    }
+
+    async onDeleteDocument(document) {
+        // Handle token deletion
+        if (!document?.documentName === 'Token') return;
+        const tokenId = document.id;
+        this.removeAllCoverInvolving(tokenId);
+    }
+
+    getCoverBonusByState(state) {
+        return getCoverBonusByState(state);
     }
 }
 

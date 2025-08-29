@@ -3,8 +3,7 @@
  * Manages template-related cover data for area effects
  */
 
-import { CoverDetector } from './CoverDetector.js';
-
+import autoCoverSystem from './AutoCoverSystem.js';
 export class TemplateManager {
     /**
      * Flag scope for template data
@@ -17,7 +16,7 @@ export class TemplateManager {
      * @type {Map<string, Object>}
      * @private
      */
-    _templateData = null;
+    _templatesData = null;
 
     /**
      * Map of active reflex saves
@@ -31,16 +30,147 @@ export class TemplateManager {
      * @type {Map<string, Object>}
      * @private
      */
-    _templateOrigins = null;
+    _templatesOrigins = null;
 
     constructor() {
         // Initialize or reference global maps for template data
-        this._templateData = window.pf2eVisionerTemplateData = window.pf2eVisionerTemplateData || new Map();
-        this._activeReflexSaves = window.pf2eVisionerActiveReflexSaves = window.pf2eVisionerActiveReflexSaves || new Map();
-        this._templateOrigins = window.pf2eVisionerTemplateOrigins = window.pf2eVisionerTemplateOrigins || new Map();
-
+        this._templatesData = new Map();
+        this._activeReflexSaves = new Map();
+        this._templatesOrigins = new Map();
+        this.autoCoverSystem = autoCoverSystem;
         // Start cleanup timer
         this._startCleanupTimer();
+    }
+
+    getTemplatesData() {
+        return this._templatesData
+    }
+
+
+    async onCreateMeasuredTemplate(document, options, userId) {
+        try {
+            await this.registerTemplate(document, userId);
+        } catch (e) {
+            console.error('PF2E Visioner | Error in createMeasuredTemplate hook:', e);
+        }
+    }
+
+    getSpellCreator(document) {
+        let creator, creatorId, creatorType;
+        // First, check if this is a spell template with a source actor
+        // Get actor from document ID
+        try {
+            if (document.flags?.pf2e?.origin?.type !== 'spell') return;
+            const originActorId = document.flags.pf2e.origin.actorId;
+            const actor = game.actors.get(originActorId);
+
+            if (actor) {
+                // Find a token for this actor on the current scene
+                const tokens = canvas.tokens.placeables.filter(t => t.actor?.id === actor.id);
+                if (tokens.length > 0) {
+                    creator = tokens[0];
+                    creatorId = creator.id;
+                    creatorType = 'spell-origin';
+                } else {
+                    // Use actor ID if no token is found
+                    creatorId = `actor:${actor.id}`;
+                    creatorType = 'actor-only';
+                }
+            }
+        } catch (e) {
+            console.error('PF2E Visioner | Error getting spell origin actor:', e);
+        }
+        return { creator, creatorId, creatorType };
+
+    }
+
+    async getCoverBonusForTokensInsideTemplate(tokensInside, center) {
+        // Calculate cover for each token inside and store in our template data map
+        const targetData = {};
+        const tokenIds = [];
+        for (const token of tokensInside) {
+            try {
+                // Calculate cover from template center to token
+                const state = this.autoCoverSystem.detectCoverFromPoint(center, token);
+                const { getCoverBonusByState } = await import('../../helpers/cover-helpers.js');
+                const bonus = getCoverBonusByState(state) || 0;
+
+                targetData[token.id] = {
+                    tokenId: token.id,
+                    tokenName: token.name,
+                    actorId: token.actor?.id,
+                    actorName: token.actor?.name,
+                    state,
+                    bonus,
+                    saveProcessed: false
+                };
+
+                tokenIds.push(token.id);
+            } catch (e) {
+                console.error('PF2E Visioner | Error calculating cover for token:', e);
+            }
+        }
+        return { targetData, tokenIds };
+    }
+
+    async onUpdateDocument(document, changes) {
+        try {
+            if (document?.documentName !== 'MeasuredTemplate') return;
+
+            // If position or shape changed, we might need to recalculate cover
+            if (changes.x !== undefined || changes.y !== undefined ||
+                changes.distance !== undefined || changes.direction !== undefined ||
+                changes.angle !== undefined || changes.t !== undefined) {
+            }
+
+        } catch (e) {
+            console.error('PF2E Visioner | Error in updateDocument hook:', e);
+        }
+    }
+
+
+    async onDeleteDocument(document) {
+        try {
+
+            if (document?.documentName !== 'MeasuredTemplate') return;
+            // Check if this is a MeasuredTemplate document
+
+            if (this._templatesData.has(document?.id) && document?.id) {
+
+                const isTemplateActiveForReflexSaves = this._activeReflexSaves?.has?.(document.id);
+
+                if (isTemplateActiveForReflexSaves) {
+
+                    // Schedule cleanup after 10 seconds to allow reflex saves to be processed
+                    setTimeout(() => {
+                        try {
+                            if (this._templatesData?.has?.(document.id)) {
+
+                                // Remove from our maps
+                                this._templatesData.delete(document.id);
+
+                                // Also clean up from active reflex saves tracking
+                                if (this._activeReflexSaves) {
+                                    this._activeReflexSaves.delete(document.id);
+                                }
+                            }
+                        } catch (e) {
+                            console.error('PF2E Visioner | Error in delayed template cleanup:', e);
+                        }
+                    }, 10000); // 10 seconds delay
+                } else {
+                    // Only remove from our maps, don't delete the actual template from canvas
+                    this._templatesData.delete(document.id);
+
+                    // Also clean up from active reflex saves tracking
+                    if (this._activeReflexSaves) {
+                        this._activeReflexSaves.delete(document.id);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('PF2E Visioner | Error in deleteDocument hook:', e);
+        }
     }
 
     /**
@@ -65,7 +195,7 @@ export class TemplateManager {
         const now = Date.now();
         const oldTemplates = [];
 
-        for (const [id, data] of this._templateData.entries()) {
+        for (const [id, data] of this._templatesData.entries()) {
             // Keep templates with active reflex saves regardless of age
             if (this._activeReflexSaves.has(id)) continue;
 
@@ -77,14 +207,7 @@ export class TemplateManager {
 
         // Only remove template data from our maps, don't delete templates from canvas
         for (const id of oldTemplates) {
-            this._templateData.delete(id);
-        }
-
-        if (oldTemplates.length > 0) {
-            console.debug('PF2E Visioner | Template data cleanup:', {
-                removedCount: oldTemplates.length,
-                remainingCount: this._templateData.size
-            });
+            this._templatesData.delete(id);
         }
     }
 
@@ -94,89 +217,76 @@ export class TemplateManager {
      * @param {string} creatorId - ID of the token that created the template
      * @returns {Object} Template data
      */
-    registerTemplate(document, creatorId = null) {
-        try {
-            if (!document?.id) return null;
+    async registerTemplate(document, userId) {
+        // Only process templates created by this user
+        if (userId !== game.userId) {
+            return;
+        }
 
-            // Get template details
-            const x = Number(document?.x ?? 0);
-            const y = Number(document?.y ?? 0);
-            const center = { x, y };
-            const tType = String(document.t || document.type || 'circle');
-            const radiusFeet = Number(document.distance) || 0;
-            const dirDeg = Number(document.direction ?? 0);
-            const halfAngle = Number(document.angle ?? 90) / 2;
+        // Get template details
+        const x = Number(document?.x ?? 0);
+        const y = Number(document?.y ?? 0);
+        const center = { x, y };
+        const tType = String(document.t || document.type || 'circle');
+        const radiusFeet = Number(document.distance) || 0;
+        const dirDeg = Number(document.direction ?? 0);
+        const halfAngle = Number(document.angle ?? 90) / 2;
 
-            // Find all tokens inside the template
-            const tokensInside = this._findTokensInsideTemplate(center, radiusFeet, tType, dirDeg, halfAngle);
+        // Try to determine the caster/creator of the template
+        let creator = null;
+        let creatorId = null;
+        let creatorType = 'unknown';
 
-            // Calculate cover for each token and store data
-            const targetData = {};
-            const tokenIds = [];
+        const { creator: spellCreator, creatorId: spellCreatorId, creatorType: spellCreatorType } = this.getSpellCreator(document);
 
-            for (const token of tokensInside) {
-                try {
-                    // Calculate cover from template center to token
-                    const state = this._calculateCoverFromCenter(center, token);
-                    const bonus = this._getCoverBonus(state);
+        if (spellCreator) {
+            creator = spellCreator;
+            creatorId = spellCreatorId;
+            creatorType = spellCreatorType;
+        }
 
-                    targetData[token.id] = {
-                        tokenId: token.id,
-                        tokenName: token.name,
-                        actorId: token.actor?.id,
-                        actorName: token.actor?.name,
-                        state,
-                        bonus,
-                        saveProcessed: false
-                    };
-
-                    tokenIds.push(token.id);
-                } catch (error) {
-                    console.error('PF2E Visioner | Error calculating cover for token:', error);
-                }
+        // If not found via spell origin, check for controlled token
+        if (!creatorId) {
+            creator = canvas.tokens.controlled?.[0] ?? game.user.character?.getActiveTokens?.()?.[0];
+            if (creator) {
+                creatorId = creator.id;
+                creatorType = 'controlled';
             }
+        }
 
-            // Store template data with all targets inside it
-            const templateData = {
-                id: document.id,
-                type: tType,
-                center,
-                radiusFeet,
-                dirDeg,
-                halfAngle,
-                creatorId,
-                tokenIds,
-                targets: targetData,
-                timestamp: Date.now()
-            };
+        // Find all tokens inside the template
+        const gridSize = canvas.grid?.size || 100;
+        const feetPerSquare = canvas.dimensions?.distance || 5;
+        const radiusSquares = radiusFeet / feetPerSquare;
+        const radiusWorld = radiusSquares * gridSize;
 
-            this._templateData.set(document.id, templateData);
+        const candidates = canvas.tokens.placeables.filter((t) => t?.actor);
+        const tokensInside = this._findTokensInsideTemplate(candidates, center, radiusWorld, tType, dirDeg, halfAngle);
 
-            // Also store in the template origins map for backwards compatibility
-            if (creatorId && !creatorId.startsWith('actor:')) {
-                this._templateOrigins.set(creatorId, {
-                    point: center,
-                    shape: {
-                        t: tType,
-                        distance: radiusFeet,
-                        direction: dirDeg,
-                        angle: halfAngle * 2,
-                    },
-                    ts: Date.now(),
-                    templateId: document.id
-                });
-            }
 
-            console.debug('PF2E Visioner | Template registered:', {
-                templateId: document.id,
-                tokenCount: tokenIds.length,
-                creatorId
-            });
 
-            return templateData;
-        } catch (error) {
-            console.error('PF2E Visioner | Error registering template:', error);
-            return null;
+        const { targetData, tokenIds } = await this.getCoverBonusForTokensInsideTemplate(tokensInside, center);
+
+        // Store template data with all targets inside it
+        const templateData = {
+            id: document.id,
+            type: tType,
+            center,
+            radiusFeet,
+            dirDeg,
+            halfAngle,
+            creatorId,
+            creatorType,
+            tokenIds,
+            targets: targetData,
+            timestamp: Date.now()
+        };
+
+        this._templatesData.set(document.id, templateData);
+
+        this.setTemplateOrigin(creatorId, center)
+        if (document.flags?.pf2e?.origin?.rollOptions?.includes("origin:item:defense:reflex")) {
+            this._activeReflexSaves.set(document.id, { ts: Date.now() });
         }
     }
 
@@ -190,14 +300,7 @@ export class TemplateManager {
      * @returns {Array} Tokens inside the template
      * @private
      */
-    _findTokensInsideTemplate(center, radiusFeet, tType, dirDeg, halfAngle) {
-        const gridSize = canvas.grid?.size || 100;
-        const feetPerSquare = canvas.dimensions?.distance || 5;
-        const radiusSquares = radiusFeet / feetPerSquare;
-        const radiusWorld = radiusSquares * gridSize;
-
-        const candidates = canvas.tokens.placeables.filter((t) => t?.actor);
-
+    _findTokensInsideTemplate(candidates, center, radiusWorld, tType, dirDeg, halfAngle) {
         const norm = (a) => ((a % 360) + 360) % 360;
         const angDist = (a, b) => {
             const d = Math.abs(norm(a) - norm(b));
@@ -223,44 +326,7 @@ export class TemplateManager {
             } catch (_) {
                 return false;
             }
-        });
-    }
-
-    /**
-     * Calculate cover from template center to token
-     * @param {Object} center - Template center point
-     * @param {Object} token - Token to check
-     * @returns {string} Cover state
-     * @private
-     */
-    _calculateCoverFromCenter(center, token) {
-        try {
-            // Use our CoverDetector class to detect cover from the template's center point to the token
-            const detector = new CoverDetector();
-            return detector.detectFromPoint(center, token);
-        } catch (error) {
-            console.error('PF2E Visioner | Error calculating cover from center:', error);
-            return 'none';
-        }
-    }
-
-    /**
-     * Get cover bonus for a state
-     * @param {string} state - Cover state
-     * @returns {number} Bonus value
-     * @private
-     */
-    _getCoverBonus(state) {
-        switch (state) {
-            case 'lesser':
-                return 1;
-            case 'standard':
-                return 2;
-            case 'greater':
-                return 4;
-            default:
-                return 0;
-        }
+        })
     }
 
     /**
@@ -269,14 +335,23 @@ export class TemplateManager {
      * @returns {Object|null}
      */
     getTemplateData(templateId) {
-        return this._templateData.get(templateId) || null;
+        return this._templatesData.get(templateId) || null;
+    }
+
+    /**
+     * Check if a template is being used for reflex saves
+     * @param {string} templateId 
+     * @returns {boolean}
+     */
+    getActiveReflexSaveTemplate(templateId) {
+        return this._activeReflexSaves.get(templateId);
     }
 
     /**
      * Mark a template as being used for reflex saves
      * @param {string} templateId 
      */
-    markTemplateActive(templateId) {
+    addActiveReflexSaveTemplate(templateId) {
         if (!templateId) return;
         this._activeReflexSaves.set(templateId, { ts: Date.now() });
     }
@@ -285,7 +360,7 @@ export class TemplateManager {
      * Unmark a template as being used for reflex saves
      * @param {string} templateId 
      */
-    unmarkTemplateActive(templateId) {
+    removeActiveReflexSaveTemplate(templateId) {
         if (!templateId) return;
         this._activeReflexSaves.delete(templateId);
     }
@@ -296,7 +371,7 @@ export class TemplateManager {
      * @returns {Object|null}
      */
     getTemplateOrigin(tokenId) {
-        return this._templateOrigins.get(tokenId) || null;
+        return this._templatesOrigins.get(tokenId) || null;
     }
 
     /**
@@ -306,7 +381,7 @@ export class TemplateManager {
      */
     setTemplateOrigin(tokenId, origin) {
         if (!tokenId || !origin) return;
-        this._templateOrigins.set(tokenId, {
+        this._templatesOrigins.set(tokenId, {
             ...origin,
             ts: Date.now()
         });
@@ -318,7 +393,10 @@ export class TemplateManager {
      */
     removeTemplateData(templateId) {
         if (!templateId) return;
-        this._templateData.delete(templateId);
+        this._templatesData.delete(templateId);
         this._activeReflexSaves.delete(templateId);
     }
 }
+
+const templateManager = new TemplateManager();
+export default templateManager;

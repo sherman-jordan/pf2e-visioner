@@ -4,9 +4,10 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
-import coverUIManager from './CoverUIManager.js';
-import { AttackRollUseCase, SavingThrowUseCase, StealthCheckUseCase } from './usecases/index.js';
 import autoCoverSystem from './AutoCoverSystem.js';
+import coverUIManager from './CoverUIManager.js';
+import templateManager from './TemplateManager.js';
+import { AttackRollUseCase, SavingThrowUseCase, StealthCheckUseCase } from './usecases/index.js';
 
 export class AutoCoverHooks {
     /**
@@ -28,6 +29,7 @@ export class AutoCoverHooks {
 
         // Initialize UI manager
         this.coverUIManager = coverUIManager;
+        this.templateManager = templateManager
     }
 
     /**
@@ -91,7 +93,7 @@ export class AutoCoverHooks {
             }
 
             const instance = new AutoCoverHooks(system);
-            
+
             // Store the instance globally for access by other components
             if (!window.pf2eVisionerAutoCoverHooks) {
                 window.pf2eVisionerAutoCoverHooks = instance;
@@ -100,7 +102,7 @@ export class AutoCoverHooks {
 
             // Core message hooks
             Hooks.on('preCreateChatMessage', instance.onPreCreateChatMessage.bind(instance));
-            
+
             // Test multiple hooks to see which ones fire for attack rolls
             Hooks.on('renderChatMessage', (message, html) => {
                 const ctx = message?.flags?.pf2e?.context || {};
@@ -108,11 +110,11 @@ export class AutoCoverHooks {
                     return instance.onRenderChatMessage.bind(instance)(message, html);
                 }
             });
-            
+
             Hooks.on('renderChatMessageHTML', (message, html) => {
                 return instance.onRenderChatMessage.bind(instance)(message, html);
             });
-            
+
             // Also test createChatMessage to see if we should inject indicators there
             Hooks.on('createChatMessage', () => {
                 // Hook for potential future use
@@ -120,7 +122,7 @@ export class AutoCoverHooks {
 
             // Dialog hooks
             Hooks.on('renderCheckModifiersDialog', instance.onRenderCheckModifiersDialog.bind(instance));
-            
+
             // Debug hook to test if any dialog hooks are firing
             Hooks.on('renderApplication', (app) => {
                 if (app.constructor.name.includes('Check') || app.constructor.name.includes('Dialog')) {
@@ -192,13 +194,13 @@ export class AutoCoverHooks {
 
             // Find the appropriate use case for this context
             const ctx = data?.flags?.pf2e?.context || {};
-            
+
             const useCase = this._getUseCaseForContext(ctx);
 
             if (!useCase) {
                 return;
             }
-            
+
             // Call the use case's render method
             await useCase.handleRenderChatMessage(message, html);
         } catch (error) {
@@ -223,7 +225,7 @@ export class AutoCoverHooks {
 
             // Find the appropriate use case for this context
             const useCase = this._getUseCaseForContext(ctx);
-            
+
             if (!useCase) {
                 return;
             }
@@ -306,21 +308,9 @@ export class AutoCoverHooks {
      * @param {string} userId - User ID who created the template
      * @returns {Promise}
      */
-    async onCreateMeasuredTemplate(document) {
+    async onCreateMeasuredTemplate(document, options, userId) {
         try {
-            // Skip if auto-cover is disabled
-            if (!this.autoCoverSystem.isEnabled()) return;
-
-            // Skip if not from this user
-            const userId = document.user?.id || document.author?.id;
-            if (userId !== game.userId) return;
-
-            // Try to determine the creator token
-            const creatorId = this._determineTemplateCreator(document);
-
-            // Register the template with our manager
-            const templateManager = this.autoCoverSystem.getTemplateManager();
-            templateManager.registerTemplate(document, creatorId);
+            this.templateManager.onCreateMeasuredTemplate(document, options, userId);
         } catch (error) {
             console.error('PF2E Visioner | Error in onCreateMeasuredTemplate:', error);
         }
@@ -333,49 +323,8 @@ export class AutoCoverHooks {
      */
     async onUpdateDocument(document, changes) {
         try {
-            // Check if this is a token update
-            if (document?.documentName === 'Token') {
-                // Skip if auto-cover is disabled
-                if (!this.autoCoverSystem.isEnabled()) return;
-
-                // Skip if not a position or size change
-                if (!changes.x && !changes.y && !changes.width && !changes.height) return;
-
-                const tokenId = document.id;
-                const token = canvas?.tokens?.get(tokenId);
-                if (!token) return;
-
-                // Update all active cover relationships
-                const pairs = this.autoCoverSystem.getActivePairsInvolving(tokenId);
-                for (const pair of pairs) {
-                    const attacker = canvas.tokens.get(pair.attackerId);
-                    const target = canvas.tokens.get(pair.targetId);
-
-                    if (attacker && target) {
-                        await this.autoCoverSystem.cleanupCover(attacker, target);
-                    }
-                }
-                return;
-            }
-
-            // Check if this is a template update
-            if (document?.documentName === 'MeasuredTemplate') {
-                // Skip if auto-cover is disabled
-                if (!this.autoCoverSystem.isEnabled()) return;
-
-                // Check if template shape or position changed
-                if (this._isTemplateShapeChange(changes)) {
-                    console.debug('PF2E Visioner | Template updated, template data will be recalculated');
-
-                    // Re-register the template to recalculate cover
-                    const templateManager = this.autoCoverSystem.getTemplateManager();
-                    const templateData = templateManager.getTemplateData(document.id);
-
-                    if (templateData) {
-                        templateManager.registerTemplate(document, templateData.creatorId);
-                    }
-                }
-            }
+            this.autoCoverSystem.onUpdateDocument(document, changes);
+            this.templateManager.onUpdateDocument(document, changes);
         } catch (error) {
             console.error('PF2E Visioner | Error in onUpdateDocument:', error);
         }
@@ -387,101 +336,10 @@ export class AutoCoverHooks {
      */
     async onDeleteDocument(document) {
         try {
-            // Skip if auto-cover is disabled
-            if (!this.autoCoverSystem.isEnabled()) return;
-
-            // Handle template deletion
-            if (document?.documentName === 'MeasuredTemplate') {
-                this._handleTemplateCleanup(document);
-                return;
-            }
-
-            // Handle token deletion
-            if (document?.documentName === 'Token') {
-                const tokenId = document.id;
-                // Clear any cover associated with this token
-                this.autoCoverSystem.removeAllCoverInvolving(tokenId);
-            }
+            this.autoCoverSystem.onDeleteDocument(document);
+            this.templateManager.onDeleteDocument(document);
         } catch (error) {
             console.error('PF2E Visioner | Error in onDeleteDocument:', error);
-        }
-    }
-
-    /**
-     * Determine template creator from document
-     * @param {Object} document - Template document
-     * @returns {string|null} - Creator token ID
-     * @private
-     */
-    _determineTemplateCreator(document) {
-        let creatorId = null;
-
-        // First try spell origin
-        if (document.flags?.pf2e?.origin?.type === 'spell') {
-            try {
-                const originActorId = document.flags.pf2e.origin.actorId;
-                const actor = game.actors.get(originActorId);
-
-                if (actor) {
-                    const tokens = canvas.tokens.placeables.filter(t => t.actor?.id === actor.id);
-                    if (tokens.length > 0) {
-                        creatorId = tokens[0].id;
-                    }
-                }
-            } catch (error) {
-                console.debug('PF2E Visioner | Error getting spell origin actor:', error);
-            }
-        }
-
-        // If not found via spell origin, check for controlled token
-        if (!creatorId) {
-            const creator = canvas.tokens.controlled?.[0] ??
-                game.user.character?.getActiveTokens?.()?.[0];
-            if (creator) {
-                creatorId = creator.id;
-            }
-        }
-
-        return creatorId;
-    }
-
-    /**
-     * Check if changes include template shape or position changes
-     * @param {Object} changes - Changes object
-     * @returns {boolean}
-     * @private
-     */
-    _isTemplateShapeChange(changes) {
-        return changes.x !== undefined ||
-            changes.y !== undefined ||
-            changes.distance !== undefined ||
-            changes.direction !== undefined ||
-            changes.angle !== undefined ||
-            changes.t !== undefined;
-    }
-
-    /**
-     * Handle cleanup for a deleted template
-     * @param {Object} document - Template document
-     * @private
-     */
-    _handleTemplateCleanup(document) {
-        const templateManager = this.autoCoverSystem.getTemplateManager();
-
-        // Check if this template is being used for reflex saves
-        const isTemplateActiveForReflexSaves = templateManager._activeReflexSaves.has(document.id);
-
-        if (isTemplateActiveForReflexSaves) {
-            // If the template is currently being used for reflex saves, don't delete immediately
-            console.debug('PF2E Visioner | Template is active for reflex saves, scheduling delayed cleanup');
-
-            // Schedule cleanup after 10 seconds
-            setTimeout(() => {
-                templateManager.removeTemplateData(document.id);
-            }, 10000);
-        } else {
-            // If not being used, delete immediately
-            templateManager.removeTemplateData(document.id);
         }
     }
 

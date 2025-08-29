@@ -4,6 +4,7 @@
  */
 import autoCoverSystem from "../AutoCoverSystem.js";
 import coverUIManager from "../CoverUIManager.js";
+import templateManager from "../TemplateManager.js";
 export class BaseAutoCoverUseCase {
 
     constructor() {
@@ -14,6 +15,7 @@ export class BaseAutoCoverUseCase {
 
         this.coverUIManager = coverUIManager;
         this.autoCoverSystem = autoCoverSystem;
+        this.templateManager = templateManager;
         this.useCaseType = this.constructor.name;
     }
 
@@ -199,8 +201,7 @@ export class BaseAutoCoverUseCase {
         });
 
         // Check template origin first
-        const templateManager = this.autoCoverSystem.getTemplateManager();
-        const originRec = templateManager.getTemplateOrigin(attacker.id);
+        const originRec = this.templateManager.getTemplateOrigin(attacker.id);
 
         let coverState;
         if (originRec) {

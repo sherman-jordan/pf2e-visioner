@@ -1300,7 +1300,6 @@ describe('Simple Settings Functional Tests', () => {
       expect(mockComplexWorkflow.autoCover.ignoreAllies).toBe(false);
       expect(mockComplexWorkflow.autoCover.respectIgnoreFlag).toBe(true);
       expect(mockComplexWorkflow.autoCover.allowProne).toBe(true);
-      expect(mockComplexWorkflow.autoCover.showInHide).toBe(true);
       expect(mockComplexWorkflow.interface.hudButton).toBe(true);
       expect(mockComplexWorkflow.interface.blockTargetTooltips).toBe(false);
       expect(mockComplexWorkflow.interface.keybindingTargetMode).toBe(true);

@@ -22,7 +22,6 @@ const SETTINGS_GROUPS = {
     'keybindingOpensTMInTargetMode',
     'sneakRawEnforcement',
     'enableAllTokensVision',
-    'autoCoverHideAction',
   ],
   'Visibility & Hover': [
     'enableHoverTooltips',

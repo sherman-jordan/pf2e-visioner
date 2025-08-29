@@ -104,10 +104,6 @@ export class HidePreviewDialog extends BaseActionDialog {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
-    // Check if cover for hide action is enabled (works with both auto and manual cover)
-    const showCover = game.settings.get(MODULE_ID, 'autoCoverHideAction');
-    context.showAutoCover = showCover;
-
     // Get filtered outcomes from the original list using encounter helper, ally filtering, then extra RAW filtering
     const baseList = Array.isArray(this._originalOutcomes)
       ? this._originalOutcomes

@@ -36,7 +36,7 @@
         <tr>
           <th class="token-image">Token</th>
           <th class="token-name">Name</th>
-          {{#if showAutoCover}}<th class="auto-cover">Cover</th>{{/if}}
+          <th class="auto-cover">Cover</th>
           <th class="roll-result">Roll vs Perception DC</th>
           <th class="outcome">Outcome</th>
           <th class="visibility-change">Visibility Change</th>
@@ -52,7 +52,6 @@
             <td class="token-name">
               <strong title="{{outcome.token.name}}">{{outcome.token.name}}</strong>
             </td>
-            {{#if ../showAutoCover}}
             <td class="auto-cover">
               {{#if outcome.autoCover}}
                 <div class="auto-cover-info-sneak {{#if outcome.autoCover.isOverride}}override{{/if}}">
@@ -99,7 +98,6 @@
                 </div>
               {{else}}
                 <span class="no-cover">None</span>
-              {{/if}}
             </td>
             {{/if}}
             <td class="roll-result">

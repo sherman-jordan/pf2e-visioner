@@ -860,22 +860,6 @@ describe('Simple Settings Functional Tests', () => {
       // This setting determines whether prone tokens can provide cover
     });
 
-    test('autoCoverHideAction affects Hide action cover display', () => {
-      // Test the autoCoverHideAction setting
-
-      // Test with autoCoverHideAction = true
-      game.settings.set('pf2e-visioner', 'autoCoverHideAction', true);
-      const showCoverInHide = game.settings.get('pf2e-visioner', 'autoCoverHideAction');
-      expect(showCoverInHide).toBe(true);
-
-      // Test with autoCoverHideAction = false
-      game.settings.set('pf2e-visioner', 'autoCoverHideAction', false);
-      const hideCoverInHide = game.settings.get('pf2e-visioner', 'autoCoverHideAction');
-      expect(hideCoverInHide).toBe(false);
-
-      // This setting determines whether Hide actions show cover information
-    });
-
     test('auto-cover settings work together in realistic scenarios', () => {
       // Test multiple auto-cover settings working together
 
@@ -887,7 +871,6 @@ describe('Simple Settings Functional Tests', () => {
       game.settings.set('pf2e-visioner', 'autoCoverIgnoreAllies', false);
       game.settings.set('pf2e-visioner', 'autoCoverRespectIgnoreFlag', true);
       game.settings.set('pf2e-visioner', 'autoCoverAllowProneBlockers', true);
-      game.settings.set('pf2e-visioner', 'autoCoverHideAction', true);
 
       // Verify all settings are applied
       expect(game.settings.get('pf2e-visioner', 'autoCover')).toBe(true);
@@ -897,7 +880,6 @@ describe('Simple Settings Functional Tests', () => {
       expect(game.settings.get('pf2e-visioner', 'autoCoverIgnoreAllies')).toBe(false);
       expect(game.settings.get('pf2e-visioner', 'autoCoverRespectIgnoreFlag')).toBe(true);
       expect(game.settings.get('pf2e-visioner', 'autoCoverAllowProneBlockers')).toBe(true);
-      expect(game.settings.get('pf2e-visioner', 'autoCoverHideAction')).toBe(true);
 
       // This demonstrates that all auto-cover settings work together
     });
@@ -1190,7 +1172,6 @@ describe('Simple Settings Functional Tests', () => {
       game.settings.set('pf2e-visioner', 'autoCoverIgnoreAllies', false);
       game.settings.set('pf2e-visioner', 'autoCoverRespectIgnoreFlag', true);
       game.settings.set('pf2e-visioner', 'autoCoverAllowProneBlockers', true);
-      game.settings.set('pf2e-visioner', 'autoCoverHideAction', true);
 
       // Interface settings
       game.settings.set('pf2e-visioner', 'useHudButton', true);
@@ -1228,7 +1209,6 @@ describe('Simple Settings Functional Tests', () => {
       expect(game.settings.get('pf2e-visioner', 'autoCoverIgnoreAllies')).toBe(false);
       expect(game.settings.get('pf2e-visioner', 'autoCoverRespectIgnoreFlag')).toBe(true);
       expect(game.settings.get('pf2e-visioner', 'autoCoverAllowProneBlockers')).toBe(true);
-      expect(game.settings.get('pf2e-visioner', 'autoCoverHideAction')).toBe(true);
       expect(game.settings.get('pf2e-visioner', 'useHudButton')).toBe(true);
       expect(game.settings.get('pf2e-visioner', 'blockPlayerTargetTooltips')).toBe(false);
       expect(game.settings.get('pf2e-visioner', 'keybindingOpensTMInTargetMode')).toBe(true);
@@ -1277,7 +1257,6 @@ describe('Simple Settings Functional Tests', () => {
           ignoreAllies: game.settings.get('pf2e-visioner', 'autoCoverIgnoreAllies'),
           respectIgnoreFlag: game.settings.get('pf2e-visioner', 'autoCoverRespectIgnoreFlag'),
           allowProne: game.settings.get('pf2e-visioner', 'autoCoverAllowProneBlockers'),
-          showInHide: game.settings.get('pf2e-visioner', 'autoCoverHideAction'),
         },
 
         // Interface settings

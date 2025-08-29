@@ -462,15 +462,6 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
-  autoCoverHideAction: {
-    name: 'Show Cover in Stealth Actions',
-    hint: 'If enabled, Hide and Sneak action results will show cover information (both automatic and manual) and apply DC reductions based on cover.',
-    scope: 'world',
-    config: true,
-    restricted: true,
-    type: Boolean,
-    default: false,
-  },
   keybindingOpensTMInTargetMode: {
     name: 'Keybinding Opens Token Manager in Target Mode',
     hint: 'If enabled, the keybinding to open Token Manager in Target mode rather than Observer mode.',

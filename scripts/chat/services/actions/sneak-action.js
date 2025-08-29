@@ -2,7 +2,7 @@ import { COVER_STATES } from '../../../constants.js';
 import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import { StealthCheckUseCase } from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
 import { appliedSneakChangesByMessage } from '../data/message-cache.js';
-import { shouldFilterAlly } from '../infra/shared-utils.js';
+import { calculateStealthRollTotals, shouldFilterAlly } from '../infra/shared-utils.js';
 import { ActionHandlerBase } from './base-action.js';
 
 export class SneakActionHandler extends ActionHandlerBase {
@@ -166,31 +166,13 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     // Calculate roll information (stealth vs observer's perception DC)
     const baseTotal = Number(actionData?.roll?.total ?? 0);
-    // Prefer the final applied cover from autoCover (overrideDetails.finalState or state); fallback to dialog context
-    let injectedStealthBonus = Number(actionData?.context?._visionerStealth?.bonus ?? 0);
-    try {
-      if (result?.autoCover) {
-        const finalBonus = Number(result.autoCover?.bonus ?? 0);
-        if (finalBonus > 0) injectedStealthBonus = finalBonus;
-      }
-    } catch (_) { }
 
-    let total = baseTotal;
-    let originalTotal = null;
-
-    if (result?.autoCover?.isOverride && result?.autoCover?.overrideDetails) {
-      const originalState = result.autoCover.overrideDetails.originalState;
-      const originalBonus = Number(COVER_STATES?.[originalState]?.bonusStealth || 0);
-      if (originalState === 'none') {
-        // Original detection had no cover: show base roll without the applied (final) modifier
-        total = baseTotal - injectedStealthBonus;
-        originalTotal = null; // no bracket in this case
-      } else {
-        // Original detection had some cover: keep shown total, bracket shows total minus detected modifier
-        total = baseTotal;
-        originalTotal = baseTotal - originalBonus;
-      }
-    }
+    // Use shared utility to calculate stealth roll totals with cover adjustments
+    const { total, originalTotal } = calculateStealthRollTotals(
+      baseTotal,
+      result?.autoCover,
+      actionData
+    );
 
     const dc = adjustedDC;
     const die = Number(

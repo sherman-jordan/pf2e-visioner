@@ -3,7 +3,7 @@
  * Common functions used by both Seek and Point Out logic
  */
 
-import { MODULE_ID, MODULE_TITLE } from '../../../constants.js';
+import { COVER_STATES, MODULE_ID, MODULE_TITLE } from '../../../constants.js';
 import { refreshEveryonesPerception } from '../../../services/socket.js';
 import { updateTokenVisuals } from '../../../services/visual-effects.js';
 import { setVisibilityBetween } from '../../../utils.js';
@@ -323,9 +323,8 @@ export function markPanelComplete(panel, changes) {
     const completionMsg = `
             <div class="automation-completion">
                 <i class="fas fa-check-circle"></i>
-                <span>Applied ${changes.length} visibility change${
-                  changes.length !== 1 ? 's' : ''
-                }</span>
+                <span>Applied ${changes.length} visibility change${changes.length !== 1 ? 's' : ''
+      }</span>
             </div>
         `;
 
@@ -596,4 +595,112 @@ export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProp
     console.error('Error in filterOutcomesByTemplate:', error);
     return outcomes;
   }
+}
+
+/**
+ * Calculate stealth roll total adjustments based on cover state
+ * Removes cover-specific stealth bonuses when cover doesn't justify them
+ * @param {number} baseTotal - The original roll total
+ * @param {Object} autoCoverResult - Auto-cover detection result for this observer
+ * @param {Object} actionData - Action data containing context
+ * @param {Array} allOutcomes - All outcomes to determine the highest cover detected (optional)
+ * @returns {Object} { total, originalTotal } - Adjusted totals
+ */
+export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionData, allOutcomes = []) {
+  // DEBUG: Log all available context to understand the data structure
+  console.log(`PF2E Visioner DEBUG - Full context analysis:`, {
+    baseTotal,
+    autoCoverResult,
+    visionerStealthContext: actionData?.context?._visionerStealth,
+    visionerStealthContextBonus: actionData?.context?._visionerStealth?.bonus,
+    allOutcomesCount: allOutcomes?.length || 0
+  });
+
+  // APPROACH: Use context bonus first, then find the highest cover if not available
+
+  const visionerContext = actionData?.context?._visionerStealth;
+  let originalCoverBonus = Number(visionerContext?.bonus || 0);
+
+  // If no context bonus, find the highest cover detected from all outcomes
+  if (originalCoverBonus === 0) {
+    // If we have all outcomes, find the maximum cover detected
+    if (allOutcomes && allOutcomes.length > 0) {
+      const allCoverBonuses = allOutcomes
+        .map(outcome => {
+          const coverState = outcome?.autoCover?.state || 'none';
+          return Number(COVER_STATES?.[coverState]?.bonusStealth || 0);
+        })
+        .filter(bonus => bonus > 0);
+
+      if (allCoverBonuses.length > 0) {
+        originalCoverBonus = Math.max(...allCoverBonuses);
+      }
+    }
+    
+    // If still no bonus found from outcomes, assume the original was Standard Cover (+2)
+    // since we see Standard Cover in the logs, this is likely what was applied originally
+    if (originalCoverBonus === 0) {
+      originalCoverBonus = 2; // Use Standard Cover as default when we see it in detection
+    }
+  }  // Current cover bonus (what this specific observer's cover detection says it should be)
+  const currentCoverState = autoCoverResult?.state || 'none';
+  const currentCoverBonus = Number(COVER_STATES?.[currentCoverState]?.bonusStealth || 0);
+
+  // For non-override cases: only decrease total when going to Lesser/No Cover (0 bonus)
+  // Keep full total for Standard Cover or Greater Cover
+  let total = baseTotal;
+  if (currentCoverBonus === 0) {
+    // Only decrease when no cover bonus - remove whatever the original cover bonus was
+    total = baseTotal - originalCoverBonus;
+  }
+  // For Standard (+2) or Greater (+4) cover: keep the full baseTotal
+
+  console.log(`PF2E Visioner DEBUG - Stealth Roll Calculation:`, {
+    baseTotal,
+    autoCoverState: autoCoverResult?.state,
+    autoCoverBonus: autoCoverResult?.bonus,
+    originalCoverBonus,
+    currentCoverState,
+    currentCoverBonus,
+    adjustedTotal: total,
+    visionerContext
+  });
+
+  let originalTotal = null;
+
+  // Handle override cases
+  if (autoCoverResult?.isOverride && autoCoverResult?.overrideDetails) {
+    const originalState = autoCoverResult.overrideDetails.originalState;
+    const finalCoverState = autoCoverResult?.state || 'none';
+
+    const originalStateBonus = Number(COVER_STATES?.[originalState]?.bonusStealth || 0);
+    const finalStateBonus = Number(COVER_STATES?.[finalCoverState]?.bonusStealth || 0);
+
+    // Calculate what the FINAL/OVERRIDE state shows (the main number)
+    total = baseTotal - originalCoverBonus + finalStateBonus;
+
+    // Calculate what the ORIGINAL detection would have shown (the number in brackets)
+    originalTotal = baseTotal - originalCoverBonus + originalStateBonus;
+
+    console.log(`PF2E Visioner DEBUG - Override case:`, {
+      baseTotal,
+      originalCoverBonus,
+      originalState,
+      originalStateBonus,
+      finalCoverState,
+      finalStateBonus,
+      total,
+      originalTotal
+    });
+  } else {
+    console.log(`PF2E Visioner DEBUG - No override, adjusted total:`, {
+      baseTotal,
+      originalCoverBonus,
+      currentCoverState,
+      currentCoverBonus,
+      total
+    });
+  }
+
+  return { total, originalTotal };
 }

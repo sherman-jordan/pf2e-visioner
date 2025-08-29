@@ -248,7 +248,7 @@ export class BaseAutoCoverUseCase {
     normalizeTokenRef(ref) {
         try {
             if (!ref) return null;
-            
+
             // Handle object types with _id or id properties
             if (typeof ref === 'object' && ref !== null) {
                 if (ref._id) return ref._id;
@@ -256,7 +256,7 @@ export class BaseAutoCoverUseCase {
                 // If it's a complex object, try to convert to string and process
                 ref = String(ref);
             }
-            
+
             let s = typeof ref === 'string' ? ref.trim() : String(ref);
             // Strip surrounding quotes
             if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))

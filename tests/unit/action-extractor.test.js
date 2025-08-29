@@ -1071,6 +1071,52 @@ describe('Action Extractor Tests', () => {
         actionType: 'hide',
       });
     });
+
+    test('handles recall knowledge with hide in the flavor name', async () => {
+      const message = {
+        id: 'msg1',
+        flavor: 'hide lore:',
+      }
+
+      const result = await extractActionData(message);
+      expect(result).toBeNull();
+    })
+
+    test('handles Devise a Stratagem and other self checks', async () => {
+      const message = {
+        id: 'msg1',
+        flags: {
+          pf2e: {
+            context: {
+              type: 'self-effect',
+              item: 'abcdef123'
+            }
+          }
+        }
+      }
+
+      const result = await extractActionData(message);
+      expect(result).toBeNull();
+    })
+
+    test('handles skill checks that should not be processed', async () => {
+      const message = {
+        id: 'msg1',
+        flags: {
+          pf2e: {
+            context: {
+              domains: {
+                0: 'skill-check',
+                1: 'arcana'
+              }
+            }
+          }
+        }
+      }
+
+      const result = await extractActionData(message);
+      expect(result).toBeNull();
+    })
   });
 
   describe('Action Priority and Exclusions', () => {

@@ -32,6 +32,14 @@ const SETTINGS_GROUPS = {
     'hiddenWallsEnabled',
     'wallStealthDC',
   ],
+  'Auto-Visibility': [
+    'autoVisibilityEnabled',
+    'autoVisibilityUpdateOnMovement',
+    'autoVisibilityUpdateOnLighting',
+    'autoVisibilityThrottleDelay',
+    'autoVisibilityRespectManualActions',
+    'autoVisibilityDebugMode',
+  ],
   'Seek & Range': [
     'seekUseTemplate',
     'limitSeekRangeInCombat',
@@ -317,6 +325,24 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         }
       };
 
+      const autoVisibilityDependents = [
+        'autoVisibilityThrottleDelay',
+        'autoVisibilityRespectManualActions',
+        'autoVisibilityDebugMode',
+        'autoVisibilityUpdateOnMovement',
+        'autoVisibilityUpdateOnLighting',
+        'autoVisibilityRespectManualActions',
+
+      ];
+
+      const autoVisibilityToggle = content.querySelector('[name="settings.autoVisibilityEnabled"]');
+      const applyAutoVisibilityVisibility = () => {
+        const on = !!autoVisibilityToggle?.checked;
+        for (const key of autoVisibilityDependents) toggleSettingVisibility(key, on);
+      };
+      if (autoVisibilityToggle) autoVisibilityToggle.addEventListener('change', applyAutoVisibilityVisibility);
+      applyAutoVisibilityVisibility();
+
       const applyWallCoverVisibility = () => {
         const on = !!wallsGreaterCoverToggle?.checked;
         toggleSettingVisibility('wallCoverGreaterThreshold', on);
@@ -577,6 +603,16 @@ export function registerSettings() {
       } else if (key === 'keybindingOpensTMInTargetMode') {
         // No reload needed: swap mode is read at runtime
         settingConfig.onChange = () => { };
+      } else if (key === 'autoVisibilityEnabled') {
+        // Handle auto-visibility system enable/disable
+        settingConfig.onChange = async (value) => {
+          try {
+            const AutoVisibilitySystem = (await import('./visibility/auto-visibility/AutoVisibilitySystem.js')).default;
+            AutoVisibilitySystem.setEnabled(value);
+          } catch (error) {
+            console.error('PF2E Visioner: Error toggling auto-visibility system:', error);
+          }
+        };
       }
 
       try {

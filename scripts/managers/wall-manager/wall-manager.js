@@ -67,7 +67,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     content.innerHTML = result;
     try {
       this._bindSelectionSync(content);
-    } catch (_) {}
+    } catch (_) { }
     return content;
   }
 
@@ -122,14 +122,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       console.error(`[${MODULE_ID}] Wall Manager apply failed`, e);
       try {
         await app.close();
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
   static async _onClose(_event, _button) {
     try {
       await this.close();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   static async _onSelectWall(event, button) {
@@ -144,13 +144,13 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       if (!wall) return;
       try {
         wall.layer?.releaseAll?.();
-      } catch (_) {}
+      } catch (_) { }
       try {
         wall.control?.({ releaseOthers: true });
       } catch (_) {
         try {
           wall.control?.();
-        } catch (_) {}
+        } catch (_) { }
       }
       try {
         const d = wall.document;
@@ -159,7 +159,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         const mx = (x1 + x2) / 2;
         const my = (y1 + y2) / 2;
         canvas?.animatePan?.({ x: mx, y: my, duration: 350 });
-      } catch (_) {}
+      } catch (_) { }
     } catch (e) {
       console.warn(`[${MODULE_ID}] Select wall failed`, e);
     }
@@ -207,7 +207,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             tr.style.outline = on ? '2px solid var(--color-text-hyperlink, #ff9800)' : '';
             tr.style.background = on ? 'rgba(255, 152, 0, 0.12)' : '';
           });
-        } catch (_) {}
+        } catch (_) { }
       };
       const onControl = () => highlight();
       const onDelete = async (wallDocument) => {
@@ -215,7 +215,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           // Clean up visual effects for deleted wall first
           const { cleanupDeletedWallVisuals } = await import('../../services/visual-effects.js');
           await cleanupDeletedWallVisuals(wallDocument);
-        } catch (_) {}
+        } catch (_) { }
         highlight();
       };
       Hooks.on('controlWall', onControl);
@@ -226,23 +226,23 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       this._unbindSelectionSync = () => {
         try {
           Hooks.off('controlWall', onControl);
-        } catch (_) {}
+        } catch (_) { }
         try {
           Hooks.off('deleteWall', onDelete);
-        } catch (_) {}
+        } catch (_) { }
         try {
           Hooks.off('createWall', onControl);
-        } catch (_) {}
+        } catch (_) { }
         try {
           Hooks.off('updateWall', onControl);
-        } catch (_) {}
+        } catch (_) { }
         this._unbindSelectionSync = null;
       };
       this.once?.('close', () => {
         try {
           this._unbindSelectionSync?.();
-        } catch (_) {}
+        } catch (_) { }
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 }

@@ -145,6 +145,72 @@ export const DEFAULT_SETTINGS = {
     default: 'medium',
   },
 
+  // Auto-Visibility System
+  autoVisibilityEnabled: {
+    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_ENABLED.name',
+    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_ENABLED.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: false,
+  },
+
+  autoVisibilityUpdateOnMovement: {
+    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_UPDATE_ON_MOVEMENT.name',
+    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_UPDATE_ON_MOVEMENT.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+
+  autoVisibilityUpdateOnLighting: {
+    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_UPDATE_ON_LIGHTING.name',
+    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_UPDATE_ON_LIGHTING.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+
+  autoVisibilityDebugMode: {
+    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_DEBUG_MODE.name',
+    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_DEBUG_MODE.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: false,
+  },
+
+  autoVisibilityThrottleDelay: {
+    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_THROTTLE_DELAY.name',
+    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_THROTTLE_DELAY.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Number,
+    default: 500,
+    range: {
+      min: 100,
+      max: 2000,
+      step: 100
+    }
+  },
+
+  autoVisibilityRespectManualActions: {
+    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_RESPECT_MANUAL_ACTIONS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_RESPECT_MANUAL_ACTIONS.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+
   colorblindMode: {
     name: 'PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.name',
     hint: 'PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.hint',

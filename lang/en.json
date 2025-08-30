@@ -180,6 +180,30 @@
           "xlarge": "Extra Large"
         }
       },
+      "AUTO_VISIBILITY_ENABLED": {
+        "name": "Enable Auto-Visibility System",
+        "hint": "Automatically set visibility flags based on lighting conditions and creature senses. This system will analyze scene lighting, token positions, and creature abilities to determine appropriate visibility states (observed, concealed, hidden, undetected)."
+      },
+      "AUTO_VISIBILITY_UPDATE_ON_MOVEMENT": {
+        "name": "Update Visibility on Token Movement",
+        "hint": "Automatically recalculate visibility when tokens move. Disable this if you experience performance issues with many tokens."
+      },
+      "AUTO_VISIBILITY_UPDATE_ON_LIGHTING": {
+        "name": "Update Visibility on Lighting Changes",
+        "hint": "Automatically recalculate visibility when scene lighting changes (lights moved, darkness level changed, etc.)."
+      },
+      "AUTO_VISIBILITY_DEBUG_MODE": {
+        "name": "Auto-Visibility Debug Mode",
+        "hint": "Enable detailed console logging for the auto-visibility system. Useful for troubleshooting visibility calculations."
+      },
+      "AUTO_VISIBILITY_THROTTLE_DELAY": {
+        "name": "Auto-Visibility Update Delay (ms)",
+        "hint": "Delay in milliseconds before processing visibility updates after token movement. Higher values reduce lag but make updates less responsive. Recommended: 500ms for normal scenes, 1000ms+ for scenes with many tokens."
+      },
+      "AUTO_VISIBILITY_RESPECT_MANUAL_ACTIONS": {
+        "name": "Respect Manual Visibility Actions",
+        "hint": "When enabled, auto-visibility will not override visibility states set by manual actions like Seek, Hide, Sneak, or Point Out. Disable to allow auto-visibility to always recalculate based on lighting and senses."
+      },
       "COLORBLIND_MODE": {
         "name": "Colorblind Mode",
         "hint": "Select a colorblind mode to adjust colors for better visibility (client-side setting)",

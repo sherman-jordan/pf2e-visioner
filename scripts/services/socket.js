@@ -47,7 +47,6 @@ export function registerSocket() {
  */
 export function refreshLocalPerception() {
   canvas.perception.update({
-    refreshLighting: true,
     refreshVision: true,
     refreshSounds: true,
     refreshOcclusion: true,
@@ -65,15 +64,28 @@ export function refreshLocalPerception() {
  * Forces a refresh on all clients including this one
  * (will call refreshLocalPerception on local client)
  */
+// Debouncing for refreshEveryonesPerception to prevent spam
+let _perceptionRefreshTimeout = null;
+
 export function refreshEveryonesPerception() {
-  if (_socketService.socket) _socketService.executeForEveryone(REFRESH_CHANNEL);
-  try {
-    (async () => {
-      const observerId = canvas.tokens.controlled?.[0]?.id || null;
-      const { updateWallVisuals } = await import('./visual-effects.js');
-      await updateWallVisuals(observerId);
-    })();
-  } catch (_) {}
+  // Debounce to prevent excessive calls that cause jittering and slider resets
+  if (_perceptionRefreshTimeout) {
+    clearTimeout(_perceptionRefreshTimeout);
+  }
+  
+  _perceptionRefreshTimeout = setTimeout(() => {
+    try {
+      if (_socketService.socket) _socketService.executeForEveryone(REFRESH_CHANNEL);
+      
+      (async () => {
+        const observerId = canvas.tokens.controlled?.[0]?.id || null;
+        const { updateWallVisuals } = await import('./visual-effects.js');
+        await updateWallVisuals(observerId);
+      })();
+    } catch (_) {}
+    
+    _perceptionRefreshTimeout = null;
+  }, 100); // 100ms debounce to prevent spam
 }
 
 /*

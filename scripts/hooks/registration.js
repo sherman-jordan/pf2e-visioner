@@ -12,12 +12,12 @@ import { registerTokenHooks } from './token-events.js';
 import { registerUIHooks } from './ui.js';
 
 export function registerHooks() {
-  
+
   Hooks.on('ready', onReady);
   Hooks.on('canvasReady', onCanvasReady);
-  
+
   registerChatHooks();
-  
+
   Hooks.on('highlightObjects', onHighlightObjects);
 
   // Token lifecycle
@@ -130,21 +130,35 @@ export function registerHooks() {
       // Clean up any lingering visual indicators for the deleted wall
       const { cleanupDeletedWallVisuals } = await import('../services/visual-effects.js');
       await cleanupDeletedWallVisuals(wallDocument);
-      
+
       // Update wall visuals for remaining walls
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
     } catch (_) { }
   });
-  // Refresh indicators on selection changes so only selected player tokens reveal observed walls
+
+  // Debounced token selection handler to prevent jittering
+  let controlTokenTimeout = null;
   Hooks.on('controlToken', async (_token, _controlled) => {
     try {
-      const { updateWallVisuals } = await import('../services/visual-effects.js');
-      const id = canvas.tokens.controlled?.[0]?.id || null;
-      await updateWallVisuals(id);
+      // Clear any pending update to prevent rapid-fire calls
+      if (controlTokenTimeout) {
+        clearTimeout(controlTokenTimeout);
+      }
+      
+      // Debounce the visual update to prevent jittering
+      controlTokenTimeout = setTimeout(async () => {
+        try {
+          const { updateWallVisuals } = await import('../services/visual-effects.js');
+          const id = canvas.tokens.controlled?.[0]?.id || null;
+          await updateWallVisuals(id);
+        } catch (_) { }
+        controlTokenTimeout = null;
+      }, 50); // 50ms debounce
     } catch (_) { }
   });
+
   Hooks.on('updateToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');

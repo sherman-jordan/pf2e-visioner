@@ -3,6 +3,7 @@
  */
 
 import { MODULE_ID } from '../constants.js';
+import { autoVisibilitySystem } from '../visibility/auto-visibility/AutoVisibilitySystem.js';
 import { updateEphemeralEffectsForVisibility } from '../visibility/ephemeral.js';
 
 /**
@@ -61,9 +62,19 @@ export async function setVisibilityBetween(
 
   if (options.skipEphemeralUpdate) return;
   try {
+    // Set flag to prevent auto-visibility system from reacting to its own effect changes
+    if (autoVisibilitySystem) {
+      autoVisibilitySystem._setUpdatingEffects(true);
+    }
+    
     await updateEphemeralEffectsForVisibility(observer, target, state, options);
   } catch (error) {
     console.error('PF2E Visioner: Error updating off-guard effects:', error);
+  } finally {
+    // Always clear the flag, even if there was an error
+    if (autoVisibilitySystem) {
+      autoVisibilitySystem._setUpdatingEffects(false);
+    }
   }
 }
 

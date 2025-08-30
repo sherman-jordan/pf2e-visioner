@@ -693,12 +693,21 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
       originalTotal
     });
   } else {
+    // Non-override case: show brackets when current cover bonus is lower than original
+    if (currentCoverBonus < originalCoverBonus) {
+      // Calculate what the original roll modifier would have shown (in brackets)
+      originalTotal = baseTotal; // The original total with the higher modifier
+      // The main total is already calculated above with the lower current cover bonus
+    }
+    
     console.log(`PF2E Visioner DEBUG - No override, adjusted total:`, {
       baseTotal,
       originalCoverBonus,
       currentCoverState,
       currentCoverBonus,
-      total
+      total,
+      originalTotal,
+      showBrackets: currentCoverBonus < originalCoverBonus
     });
   }
 

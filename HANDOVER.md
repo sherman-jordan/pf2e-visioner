@@ -413,6 +413,24 @@ npm run test:ci       # CI mode with strict requirements
 
 ## 🐛 Recent Bug Fixes (Latest)
 
+### ✅ Pre-release Foundry Publishing Prevention (2025-01-20)
+
+- **Issue**: GitHub workflow was publishing pre-releases to Foundry VTT, which should only receive stable releases
+- **Root cause**: `publish-to-foundry` job condition only checked `github.event_name == 'release'` without excluding pre-releases
+- **Solution**: Updated workflow condition to `github.event_name == 'release' && !github.event.release.prerelease`
+- **Files**: `.github/workflows/main.yml` (line 192)
+- **Impact**: ✅ FIXED - Pre-releases now skip Foundry VTT publishing while still creating GitHub releases
+- **Technical**: Uses GitHub's built-in `prerelease` flag to distinguish between stable and pre-releases
+
+### ✅ Hide/Sneak Action Bracket Display Fix (2025-01-20)
+
+- **Issue**: Hide and Sneak action handlers didn't show brackets when per-row detected cover bonus was lower than the roll modifier in non-override cases
+- **Root cause**: `calculateStealthRollTotals` only set `originalTotal` for override cases, not when current cover bonus was lower than original
+- **Solution**: Enhanced bracket logic in `calculateStealthRollTotals` to show brackets when `currentCoverBonus < originalCoverBonus` even without overrides
+- **Files**: `scripts/chat/services/infra/shared-utils.js` (lines 696-701)
+- **Impact**: ✅ FIXED - Brackets now appear consistently when detected cover is lower than applied modifier
+- **Technical**: Added non-override case logic to set `originalTotal = baseTotal` when current cover bonus is lower than original
+
 ### ⚠️ Chat message update bug
 
 - **Issue**: Visioner buttons disappear when chat messages are updated (e.g., `message.update({"flags.pf2e.test": "foo"})`)

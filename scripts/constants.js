@@ -462,6 +462,16 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: false,
   },
+  // Hide Quick Edit tool in token controls
+  hideQuickEditTool: {
+    name: 'Hide Quick Edit Tool',
+    hint: 'If enabled, the Quick Edit tool will be hidden from the token controls toolbar.',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: false,
+  },
 };
 
 /**

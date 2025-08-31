@@ -16,6 +16,7 @@ const SETTINGS_GROUPS = {
     'lootStealthDC',
     'useHudButton',
     'hideVisionerSceneTools',
+    'hideQuickEditTool',
     'integrateRollOutcome',
     'enforceRawRequirements',
     'keybindingOpensTMInTargetMode',

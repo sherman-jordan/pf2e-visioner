@@ -1,5 +1,7 @@
-2025/08/16-07:50:23.068 63ac Log #8: 0 ops saved to Table #9 OK
-2025/08/16-07:50:23.070 63ac Archiving C:\Users\roi00\AppData\Local\FoundryVTT\Data\modules\pf2e-visioner\packs\pf2e-visioner-macros/000008.log: OK
-2025/08/16-07:50:23.070 63ac Table #4: 6 entries OK
-2025/08/16-07:50:23.072 63ac Archiving C:\Users\roi00\AppData\Local\FoundryVTT\Data\modules\pf2e-visioner\packs\pf2e-visioner-macros/MANIFEST-000007: OK
-2025/08/16-07:50:23.077 63ac **** Repaired leveldb C:\Users\roi00\AppData\Local\FoundryVTT\Data\modules\pf2e-visioner\packs\pf2e-visioner-macros; recovered 1 files; 1133 bytes. Some data may have been lost. ****
+2025/08/27-02:20:39.545090 758adffff6c0 Recovering log #19
+2025/08/27-02:20:39.591777 758adffff6c0 Delete type=0 #19
+2025/08/27-02:20:39.591847 758adffff6c0 Delete type=3 #17
+2025/08/27-13:16:31.716097 75883e4536c0 Level-0 table #24: started
+2025/08/27-13:16:31.716222 75883e4536c0 Level-0 table #24: 0 bytes OK
+2025/08/27-13:16:31.725861 75883e4536c0 Delete type=0 #22
+2025/08/27-13:16:31.726147 75883e4536c0 Manual compaction at level-0 from '!macros!DYzIWNerMDEE4VmQ' @ 72057594037927935 : 1 .. '!macros!fqzpWphOkC3UtOx8' @ 0 : 0; will stop at (end)

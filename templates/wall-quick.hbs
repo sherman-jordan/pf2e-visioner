@@ -3,13 +3,13 @@
     <legend>PF2E Visioner</legend>
     <div class="form-group">
       <label>Provide Cover</label>
-      <input type="checkbox" name="provideCover" {{#if provideCover}}checked{{/if}} />
+      <input type="checkbox" name="provideCover" {{#if provideCover}}checked{{/if}} data-tooltip="This wall provides cover in combat" />
       <p class="notes">Uncheck to ignore this wall for auto-cover.</p>
     </div>
     {{#if hiddenWallsEnabled}}
     <div class="form-group">
       <label>Hidden Wall</label>
-      <input type="checkbox" name="hiddenWall" {{#if hiddenWall}}checked{{/if}}
+      <input type="checkbox" name="hiddenWall" {{#if hiddenWall}}checked{{/if}} data-tooltip="Mark this wall as hidden from players"
         data-trigger-change="hidden-wall-sections" />
       <p class="notes">Adds a visible indicator for players;</p>
     </div>

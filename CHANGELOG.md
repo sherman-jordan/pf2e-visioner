@@ -1,5 +1,42 @@
 # Changelog
 
+## [3.0.0] - 2025-01-20
+
+### 🎉 Major Release - Advanced Visibility and Cover Toolkit
+
+This major release transforms PF2E Visioner from a perception toolkit into a comprehensive visibility and cover management system, introducing a complete auto-cover system with roll-time application and extensive UI improvements.
+
+### ✨ New Features
+
+#### 🛡️ Auto-Cover System (Complete Overhaul)
+- **Complete Auto-Cover Architecture**: Brand new modular auto-cover system with separate components:
+  - `AutoCoverSystem` - Main coordination and management
+  - `CoverDetector` - Cover detection algorithms
+  - `CoverStateManager` - State persistence and flag management
+  - `CoverUIManager` - UI injection and dialog management
+  - `CoverOverrideManager` - Override tracking and consumption
+- **Roll-Time Cover Application**: Cover is now applied just-in-time during attacks and cleaned up immediately after
+- **Multiple Use Cases**: Support for Attack Rolls, Saving Throws, and Stealth Checks with context-aware cover application
+- **Template Integration**: Area effects and templates now properly calculate cover bonuses for affected tokens
+- **Elevation Integration**: All cover detection modes now consider height and elevation automatically (removed separate 3D sampling mode)
+- **Hide and Sneak Dialogs overhaul**: Will show cover column by default (setting is removed) with override data if applicable
+- Creatures on the same square as target or attacker will not be considered as blockers anymore
+
+### Fixed
+
+- All the project now uses proper dat-tooltip property instead of titles
+- 
+
+## [2.7.1] - 2025-08-28
+
+### Added
+- Ability to hide quick edit button @camrun91
+
+### Fixed
+- Attack consequences displaying on non attack @camrun91
+- Hide results showing on various checks @camrun91
+- Sneak results could show on other checks @camrun91
+
 ## [2.7.0] - 2025-08-23
 
 ### Added

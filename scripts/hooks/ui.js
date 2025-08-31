@@ -248,7 +248,6 @@ export function registerUIHooks() {
       // === TOKEN TOOL ADDITIONS ===
       const tokens = groups.find((c) => c?.name === 'tokens' || c?.name === 'token');
       if (tokens) {
-        console.log('hideQuickEditTool', game.settings.get(MODULE_ID, 'hideQuickEditTool'));
         // Quick Edit button (opens Visioner Quick Panel) - only show if setting is disabled
         if (!game.settings.get(MODULE_ID, 'hideQuickEditTool')) {
           addTool(tokens.tools, {

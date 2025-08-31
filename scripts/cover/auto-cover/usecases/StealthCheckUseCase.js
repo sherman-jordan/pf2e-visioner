@@ -5,9 +5,18 @@
 
 import { COVER_STATES } from '../../../constants.js';
 import { getCoverLabel, getCoverStealthBonusByState } from '../../../helpers/cover-helpers.js';
+import { CoverModifierService } from '../../../services/CoverModifierService.js';
+import autoCoverSystem from '../AutoCoverSystem.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
 
-export class StealthCheckUseCase extends BaseAutoCoverUseCase {
+class StealthCheckUseCase extends BaseAutoCoverUseCase {
+    constructor() {
+        super();
+        // Use the singleton auto-cover system directly
+        this.autoCoverSystem = autoCoverSystem;
+        // Use the singleton cover modifier service
+        this.coverModifierService = CoverModifierService.getInstance();
+    }
     /**
      * Inject/update/remove the cover modifier on a CheckModifiersDialog's check.
      * - If keepWhenZero=false: keep only when bonus > 1 (standard/greater), otherwise remove.
@@ -209,9 +218,30 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
             try {
                 await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, async ({ chosen, subject: hider, target: tgt, rollId }) => {
                     try {
-                        // Only store as override if the user actually changed the state
+                        // Determine if this will be an override
                         const wasChanged = chosen !== detectedState;
+                        const originalBonus = Number(COVER_STATES?.[detectedState]?.bonusStealth ?? 0);
+                        const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
+                        
 
+                        
+                        if (rollId) {
+                            const modifierData = {
+                                originalState: detectedState,
+                                originalBonus: originalBonus,
+                                finalState: chosen,
+                                finalBonus: finalBonus,
+                                isOverride: wasChanged,
+                                source: wasChanged ? 'dialog-override' : 'automatic',
+                                timestamp: Date.now()
+                            };
+                            
+                            this.coverModifierService.setOriginalCoverModifier(rollId, modifierData);
+
+                            
+                            // Note: Clean up of old entries removed - could be moved to the service if needed
+                        }
+                        
                         if (wasChanged) {
                             // Store roll-specific override for this specific hider->observer pair
                             if (hider && tgt) {
@@ -331,23 +361,55 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
                             state = candidateStates[0];
                         }
 
+                        // Store the original state before any popup changes
+                        const originalDetectedState = state;
+                        const originalBonus = Number(COVER_STATES?.[originalDetectedState]?.bonusStealth ?? 0);
+                        
                         try {
-                            const originalState = state;
                             const { chosen, rollId } = await this.coverUIManager.showPopupAndApply(state);
                             if (chosen) {
                                 context._visionerRollId = rollId;
+                                
+                                // Determine if this was an override
+                                const wasOverridden = chosen !== originalDetectedState;
+                                const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
+                                
+
+                                
+                                if (rollId) {
+                                    const modifierData = {
+                                        originalState: originalDetectedState,
+                                        originalBonus: originalBonus,
+                                        finalState: chosen,
+                                        finalBonus: finalBonus,
+                                        isOverride: wasOverridden,
+                                        source: wasOverridden ? 'popup-override' : 'automatic',
+                                        timestamp: Date.now()
+                                    };
+                                    
+                                    this.coverModifierService.setOriginalCoverModifier(rollId, modifierData);
+
+                                    
+                                    // Note: Clean up of old entries removed - could be moved to the service if needed
+                                } else {
+
+                                }
+                                
+                                // Now update the state to the chosen value
                                 state = chosen;
                                 // Only store as override if it actually changed
-                                if (state !== originalState) {
+                                if (state !== originalDetectedState) {
                                     // Store a roll-specific override so it won't leak into later dialogs
-                                    observers.map(obs => this.autoCoverSystem.setRollOverride(hider, obs, rollId, originalState, state));
+                                    observers.map(obs => this.autoCoverSystem.setRollOverride(hider, obs, rollId, originalDetectedState, state));
                                     isOverride = true;
                                 }
                             };
                         } catch (e) {
                             console.warn('PF2E Visioner | Popup error (delegated):', e);
                         }
+                        
                         const bonus = Number(COVER_STATES?.[state]?.bonusStealth ?? 0);
+                        
                         try { context._visionerStealth = { state, bonus, isOverride, rollId: context?._visionerRollId, source: isOverride ? 'override' : 'automatic' }; } catch (_) { }
                     } catch (e) {
                         console.warn('PF2E Visioner | ⚠️ Stealth cover handling failed', e);
@@ -396,6 +458,15 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
     }
 
     /**
+     * Get the original cover modifier that was applied to a roll
+     * @param {string} rollId - The roll ID
+     * @returns {Object|null} Original cover modifier data or null if not found
+     */
+    getOriginalCoverModifier(rollId) {
+        return this.coverModifierService.getOriginalCoverModifier(rollId);
+    }
+
+    /**
      * Resolve stealther token from stealth check context
      * @param {Object} ctx - Context object
      * @returns {Object|null}
@@ -420,3 +491,11 @@ export class StealthCheckUseCase extends BaseAutoCoverUseCase {
         }
     }
 }
+
+// Singleton instance
+const stealthCheckUseCase = new StealthCheckUseCase();
+export default stealthCheckUseCase;
+
+// Also export the class for reference
+export { StealthCheckUseCase };
+

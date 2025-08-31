@@ -4,6 +4,7 @@
  */
 
 import { COVER_STATES, MODULE_ID, MODULE_TITLE } from '../../../constants.js';
+import { CoverModifierService } from '../../../services/CoverModifierService.js';
 import { refreshEveryonesPerception } from '../../../services/socket.js';
 import { updateTokenVisuals } from '../../../services/visual-effects.js';
 import { setVisibilityBetween } from '../../../utils.js';
@@ -607,100 +608,86 @@ export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProp
  * @returns {Object} { total, originalTotal } - Adjusted totals
  */
 export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionData, allOutcomes = []) {
-  // DEBUG: Log all available context to understand the data structure
-  console.log(`PF2E Visioner DEBUG - Full context analysis:`, {
-    baseTotal,
-    autoCoverResult,
-    visionerStealthContext: actionData?.context?._visionerStealth,
-    visionerStealthContextBonus: actionData?.context?._visionerStealth?.bonus,
-    allOutcomesCount: allOutcomes?.length || 0
-  });
 
-  // APPROACH: Use context bonus first, then find the highest cover if not available
 
+  // Get the original cover bonus that was applied to the base roll
   const visionerContext = actionData?.context?._visionerStealth;
   let originalCoverBonus = Number(visionerContext?.bonus || 0);
 
-  // If no context bonus, find the highest cover detected from all outcomes
-  if (originalCoverBonus === 0) {
-    // If we have all outcomes, find the maximum cover detected
-    if (allOutcomes && allOutcomes.length > 0) {
-      const allCoverBonuses = allOutcomes
-        .map(outcome => {
-          const coverState = outcome?.autoCover?.state || 'none';
-          return Number(COVER_STATES?.[coverState]?.bonusStealth || 0);
-        })
-        .filter(bonus => bonus > 0);
+  // Try to get original modifier from stored map if available
+  const rollId = visionerContext?.rollId || actionData?.context?._visionerRollId || actionData?.flags?.['pf2e-visioner']?.rollId;
+  let originalModifier = null;
+  
+  if (rollId && originalCoverBonus === 0) {
+    try {
+      originalModifier = CoverModifierService.getInstance().getOriginalCoverModifier(rollId);
+      if (originalModifier) {
+        originalCoverBonus = Number(originalModifier.finalBonus || originalModifier.bonus || 0);
 
-      if (allCoverBonuses.length > 0) {
-        originalCoverBonus = Math.max(...allCoverBonuses);
       }
+    } catch (e) {
+      console.warn('PF2E Visioner | Failed to retrieve original cover modifier:', e);
     }
+  }
 
-    // If still no bonus found from outcomes, assume the original was Standard Cover (+2)
-    // since we see Standard Cover in the logs, this is likely what was applied originally
-    if (originalCoverBonus === 0) {
-      originalCoverBonus = 2; // Use Standard Cover as default when we see it in detection
+  // Fallback: try roll modifiers if still no original bonus found
+  if (originalCoverBonus === 0) {
+    const rollModifiers = actionData?.roll?.options?.modifiers || [];
+    const coverModifier = rollModifiers.find(mod => 
+      mod.label?.toLowerCase().includes('cover') || 
+      mod.slug?.toLowerCase().includes('cover')
+    );
+    if (coverModifier) {
+      originalCoverBonus = Number(coverModifier.modifier || 0);
     }
-  }  // Current cover bonus (what this specific observer's cover detection says it should be)
+  }
+
+  // Current cover state and bonus
   const currentCoverState = autoCoverResult?.state || 'none';
   const currentCoverBonus = Number(COVER_STATES?.[currentCoverState]?.bonusStealth || 0);
 
-  // For non-override cases: only decrease total when going to Lesser/No Cover (0 bonus)
-  // Keep full total for Standard Cover or Greater Cover
+  // Check if this is an override case using the stored modifier data (more reliable)
+  const wasOverridden = originalModifier?.isOverride || false;
+  const isOverride = wasOverridden || (autoCoverResult?.isOverride || false);
+  
   let total = baseTotal;
-  if (currentCoverBonus === 0) {
-    // Only decrease when no cover bonus - remove whatever the original cover bonus was
-    total = baseTotal - originalCoverBonus;
-  }
-  // For Standard (+2) or Greater (+4) cover: keep the full baseTotal
-
-  console.log(`PF2E Visioner DEBUG - Stealth Roll Calculation:`, {
-    baseTotal,
-    autoCoverState: autoCoverResult?.state,
-    autoCoverBonus: autoCoverResult?.bonus,
-    originalCoverBonus,
-    currentCoverState,
-    currentCoverBonus,
-    adjustedTotal: total,
-    visionerContext
-  });
-
   let originalTotal = null;
 
-  // Handle override cases
-  if (autoCoverResult?.isOverride && autoCoverResult?.overrideDetails) {
-    const originalState = autoCoverResult.overrideDetails.originalState;
-    const finalCoverState = autoCoverResult?.state || 'none';
-
+  if (isOverride && (autoCoverResult?.overrideDetails || originalModifier)) {
+    // OVERRIDE CASE: Main total shows the override result, brackets show detected result
+    const overrideDetails = autoCoverResult?.overrideDetails || originalModifier;
+    const originalState = overrideDetails.originalState || 'none';
+    const finalState = overrideDetails.finalState || 'none';
+    
     const originalStateBonus = Number(COVER_STATES?.[originalState]?.bonusStealth || 0);
-    const finalStateBonus = Number(COVER_STATES?.[finalCoverState]?.bonusStealth || 0);
-
-    // Calculate what the FINAL/OVERRIDE state shows (the main number)
+    const finalStateBonus = Number(COVER_STATES?.[finalState]?.bonusStealth || 0);
+    
+    // Main total: Show the OVERRIDE result (what was actually applied)
     total = baseTotal - originalCoverBonus + finalStateBonus;
-
-    // Calculate what the ORIGINAL detection would have shown (the number in brackets)
+    
+    // Brackets: Show what this specific observer DETECTED (before override)
     originalTotal = baseTotal - originalCoverBonus + originalStateBonus;
+    
 
-    console.log(`PF2E Visioner DEBUG - Override case:`, {
-      baseTotal,
-      originalCoverBonus,
-      originalState,
-      originalStateBonus,
-      finalCoverState,
-      finalStateBonus,
-      total,
-      originalTotal
-    });
   } else {
-    console.log(`PF2E Visioner DEBUG - No override, adjusted total:`, {
-      baseTotal,
-      originalCoverBonus,
-      currentCoverState,
-      currentCoverBonus,
-      total
-    });
+    // NORMAL CASE: Show detected cover result, no override involved
+    total = baseTotal - originalCoverBonus + currentCoverBonus;
+    
+    // Only show brackets if cover bonus is different from original
+    if (currentCoverBonus !== originalCoverBonus) {
+      originalTotal = baseTotal;
+    }
+    
+
   }
 
-  return { total, originalTotal };
+  // Calculate base roll total (without any cover modifiers) for override display
+  let baseRollTotal = null;
+  if (wasOverridden || isOverride) {
+    baseRollTotal = baseTotal - originalCoverBonus;
+  }
+
+
+  
+  return { total, originalTotal, baseRollTotal };
 }

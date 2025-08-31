@@ -48,7 +48,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
         (getCoverBonusByState(s) || 0);
       const tooltip = `${label}${bonus > 0 ? ` (+${bonus})` : ''}`;
       const active = s === this.selected;
-      return `<button type="button" class="pv-qo-btn${active ? ' active' : ''}" data-state="${s}" title="${tooltip}" data-tooltip="${tooltip}" aria-label="${tooltip}">
+      return `<button type="button" class="pv-qo-btn${active ? ' active' : ''}" data-state="${s}" data-tooltip="${tooltip}" aria-label="${tooltip}">
           <i class="${icon}" style="color:${color}"></i>
       </button>`;
     };

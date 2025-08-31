@@ -4,9 +4,15 @@
  */
 
 import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from '../../../helpers/cover-helpers.js';
+import autoCoverSystem from '../AutoCoverSystem.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
 
-export class AttackRollUseCase extends BaseAutoCoverUseCase {
+class AttackRollUseCase extends BaseAutoCoverUseCase {
+    constructor() {
+        super();
+        // Use the singleton auto-cover system directly
+        this.autoCoverSystem = autoCoverSystem;
+    }
     /**
      * Handle a chat message context
      * @param {Object} data - Message data
@@ -371,3 +377,11 @@ export class AttackRollUseCase extends BaseAutoCoverUseCase {
         }
     }
 }
+
+// Singleton instance
+const attackRollUseCase = new AttackRollUseCase();
+export default attackRollUseCase;
+
+// Also export the class for reference
+export { AttackRollUseCase };
+

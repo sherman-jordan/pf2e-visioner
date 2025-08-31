@@ -31,18 +31,12 @@ describe('AttackRollUseCase', () => {
       setTemplateOrigin: jest.fn(),
     };
 
-    // Mock the modules
-    jest.doMock('../../../../scripts/cover/auto-cover/AutoCoverSystem.js', () => ({
-      default: mockAutoCoverSystem,
-    }));
+    // Mock the modules - return both the mock directly and as default export
+    jest.doMock('../../../../scripts/cover/auto-cover/AutoCoverSystem.js', () => mockAutoCoverSystem);
 
-    jest.doMock('../../../../scripts/cover/auto-cover/CoverUIManager.js', () => ({
-      default: mockCoverUIManager,
-    }));
+    jest.doMock('../../../../scripts/cover/auto-cover/CoverUIManager.js', () => mockCoverUIManager);
 
-    jest.doMock('../../../../scripts/cover/auto-cover/TemplateManager.js', () => ({
-      default: mockTemplateManager,
-    }));
+    jest.doMock('../../../../scripts/cover/auto-cover/TemplateManager.js', () => mockTemplateManager);
 
     // Import the use case
     const { AttackRollUseCase } = await import('../../../../scripts/cover/auto-cover/usecases/AttackRollUseCase.js');
@@ -56,6 +50,7 @@ describe('AttackRollUseCase', () => {
   describe('constructor', () => {
     test('should initialize with correct dependencies', () => {
       expect(attackRollUseCase).toBeDefined();
+      // The BaseUseCase unwraps the default export, so we need to check for the inner mock
       expect(attackRollUseCase.autoCoverSystem).toBe(mockAutoCoverSystem);
       expect(attackRollUseCase.coverUIManager).toBe(mockCoverUIManager);
       expect(attackRollUseCase.templateManager).toBe(mockTemplateManager);

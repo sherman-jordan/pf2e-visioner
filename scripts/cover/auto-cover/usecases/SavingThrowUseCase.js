@@ -4,8 +4,8 @@
  */
 
 import {
-    getCoverImageForState,
-    getCoverLabel
+  getCoverImageForState,
+  getCoverLabel
 } from '../../../helpers/cover-helpers.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import coverUIManager from '../CoverUIManager.js';
@@ -525,3 +525,4 @@ export default savingThrowUseCase;
 
 // Also export the class for reference
 export { SavingThrowUseCase };
+

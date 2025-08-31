@@ -384,3 +384,4 @@ export default attackRollUseCase;
 
 // Also export the class for reference
 export { AttackRollUseCase };
+

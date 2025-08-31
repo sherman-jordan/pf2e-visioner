@@ -207,7 +207,7 @@ export class SneakActionHandler extends ActionHandlerBase {
     const baseTotal = Number(actionData?.roll?.total ?? 0);
 
     // Use shared utility to calculate stealth roll totals with cover adjustments
-    const { total, originalTotal } = calculateStealthRollTotals(
+    const { total, originalTotal, baseRollTotal } = calculateStealthRollTotals(
       baseTotal,
       result?.autoCover,
       actionData
@@ -218,11 +218,39 @@ export class SneakActionHandler extends ActionHandlerBase {
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const margin = total - dc;
+    const originalMargin = originalTotal ? originalTotal - dc : margin;
+    const baseMargin = baseRollTotal ? baseRollTotal - dc : margin;
     const outcome = determineOutcome(total, die, dc);
+    const originalOutcome = originalTotal ? determineOutcome(originalTotal, die, dc) : outcome;
+    
+    // Generate outcome labels
+    const getOutcomeLabel = (outcomeValue) => {
+      switch (outcomeValue) {
+        case 'critical-success': return 'Critical Success';
+        case 'success': return 'Success';
+        case 'failure': return 'Failure';
+        case 'critical-failure': return 'Critical Failure';
+        default: return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
+      }
+    };
+    const originalOutcomeLabel = originalTotal ? getOutcomeLabel(originalOutcome) : null;
 
     // Determine default new visibility using centralized mapping
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     const newVisibility = getDefaultNewStateFor('sneak', current, outcome) || current;
+    
+    // Calculate what the visibility change would have been with original outcome
+    const originalNewVisibility = originalTotal ? 
+      getDefaultNewStateFor('sneak', current, originalOutcome) || current : 
+      newVisibility;
+    
+    // Check if we should show override displays (only if there's a meaningful difference)
+    const shouldShowOverride = result.autoCover?.isOverride && (
+      total !== originalTotal || 
+      margin !== originalMargin || 
+      outcome !== originalOutcome ||
+      newVisibility !== originalNewVisibility
+    );
 
     return {
       token: subject,
@@ -230,7 +258,13 @@ export class SneakActionHandler extends ActionHandlerBase {
       rollTotal: total,
       dieResult: die,
       margin,
+      originalMargin,
+      baseMargin,
       outcome,
+      originalOutcome,
+      originalOutcomeLabel,
+      originalNewVisibility,
+      shouldShowOverride,
       currentVisibility: current,
       oldVisibility: current,
       newVisibility,
@@ -238,6 +272,8 @@ export class SneakActionHandler extends ActionHandlerBase {
       autoCover: result.autoCover, // Add auto-cover information
       // Add original total for override display
       originalRollTotal: originalTotal,
+      // Add base roll total for triple-bracket display
+      baseRollTotal: baseRollTotal,
     };
   }
   outcomeToChange(actionData, outcome) {

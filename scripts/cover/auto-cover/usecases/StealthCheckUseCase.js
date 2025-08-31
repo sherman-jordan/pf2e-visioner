@@ -5,19 +5,17 @@
 
 import { COVER_STATES } from '../../../constants.js';
 import { getCoverLabel, getCoverStealthBonusByState } from '../../../helpers/cover-helpers.js';
+import { CoverModifierService } from '../../../services/CoverModifierService.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
-
-// Global map to store original cover modifiers by rollId
-if (!window.pf2eVisionerOriginalCoverModifiers) {
-    window.pf2eVisionerOriginalCoverModifiers = new Map();
-}
 
 class StealthCheckUseCase extends BaseAutoCoverUseCase {
     constructor() {
         super();
         // Use the singleton auto-cover system directly
         this.autoCoverSystem = autoCoverSystem;
+        // Use the singleton cover modifier service
+        this.coverModifierService = CoverModifierService.getInstance();
     }
     /**
      * Inject/update/remove the cover modifier on a CheckModifiersDialog's check.
@@ -225,14 +223,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         const originalBonus = Number(COVER_STATES?.[detectedState]?.bonusStealth ?? 0);
                         const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
                         
-                        console.log(`PF2E Visioner DEBUG - Storing cover modifier (dialog):`, {
-                            rollId,
-                            originalState: detectedState,
-                            originalBonus,
-                            chosenState: chosen,
-                            finalBonus,
-                            wasOverridden: wasChanged
-                        });
+
                         
                         if (rollId) {
                             const modifierData = {
@@ -245,17 +236,10 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                 timestamp: Date.now()
                             };
                             
-                            window.pf2eVisionerOriginalCoverModifiers.set(rollId, modifierData);
-                            console.log(`PF2E Visioner DEBUG - Stored modifier (dialog) for rollId ${rollId}:`, modifierData);
-                            console.log(`PF2E Visioner DEBUG - Global map now has ${window.pf2eVisionerOriginalCoverModifiers.size} entries`);
+                            this.coverModifierService.setOriginalCoverModifier(rollId, modifierData);
+
                             
-                            // Clean up old entries (older than 5 minutes)
-                            const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-                            for (const [id, data] of window.pf2eVisionerOriginalCoverModifiers.entries()) {
-                                if (data.timestamp < fiveMinutesAgo) {
-                                    window.pf2eVisionerOriginalCoverModifiers.delete(id);
-                                }
-                            }
+                            // Note: Clean up of old entries removed - could be moved to the service if needed
                         }
                         
                         if (wasChanged) {
@@ -390,15 +374,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                 const wasOverridden = chosen !== originalDetectedState;
                                 const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
                                 
-                                console.log(`PF2E Visioner DEBUG - Storing cover modifier (popup):`, {
-                                    rollId,
-                                    originalState: originalDetectedState,
-                                    originalBonus,
-                                    chosenState: chosen,
-                                    finalBonus,
-                                    wasOverridden,
-                                    contextKeys: Object.keys(context || {})
-                                });
+
                                 
                                 if (rollId) {
                                     const modifierData = {
@@ -411,19 +387,12 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                         timestamp: Date.now()
                                     };
                                     
-                                    window.pf2eVisionerOriginalCoverModifiers.set(rollId, modifierData);
-                                    console.log(`PF2E Visioner DEBUG - Stored modifier (popup) for rollId ${rollId}:`, modifierData);
-                                    console.log(`PF2E Visioner DEBUG - Global map now has ${window.pf2eVisionerOriginalCoverModifiers.size} entries`);
+                                    this.coverModifierService.setOriginalCoverModifier(rollId, modifierData);
+
                                     
-                                    // Clean up old entries (older than 5 minutes)
-                                    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-                                    for (const [id, data] of window.pf2eVisionerOriginalCoverModifiers.entries()) {
-                                        if (data.timestamp < fiveMinutesAgo) {
-                                            window.pf2eVisionerOriginalCoverModifiers.delete(id);
-                                        }
-                                    }
+                                    // Note: Clean up of old entries removed - could be moved to the service if needed
                                 } else {
-                                    console.log(`PF2E Visioner DEBUG - No rollId found, cannot store cover modifier`);
+
                                 }
                                 
                                 // Now update the state to the chosen value
@@ -494,8 +463,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
      * @returns {Object|null} Original cover modifier data or null if not found
      */
     getOriginalCoverModifier(rollId) {
-        if (!rollId) return null;
-        return window.pf2eVisionerOriginalCoverModifiers?.get(rollId) || null;
+        return this.coverModifierService.getOriginalCoverModifier(rollId);
     }
 
     /**

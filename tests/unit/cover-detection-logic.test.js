@@ -7,6 +7,7 @@
  * PRINCIPLE: Test real cover detection scenarios, not UI or mocking
  */
 
+import '../setup.js';
 import { jest } from '@jest/globals';
 import autoCoverSystem from '../../scripts/cover/auto-cover/AutoCoverSystem.js';
 

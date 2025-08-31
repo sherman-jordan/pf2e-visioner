@@ -4,7 +4,7 @@
  */
 
 import { COVER_STATES, MODULE_ID, MODULE_TITLE } from '../../../constants.js';
-import stealthCheckUseCase from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
+import { CoverModifierService } from '../../../services/CoverModifierService.js';
 import { refreshEveryonesPerception } from '../../../services/socket.js';
 import { updateTokenVisuals } from '../../../services/visual-effects.js';
 import { setVisibilityBetween } from '../../../utils.js';
@@ -608,13 +608,7 @@ export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProp
  * @returns {Object} { total, originalTotal } - Adjusted totals
  */
 export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionData, allOutcomes = []) {
-  console.log(`PF2E Visioner DEBUG - calculateStealthRollTotals input:`, {
-    baseTotal,
-    autoCoverResult,
-    isOverride: autoCoverResult?.isOverride,
-    overrideDetails: autoCoverResult?.overrideDetails,
-    state: autoCoverResult?.state
-  });
+
 
   // Get the original cover bonus that was applied to the base roll
   const visionerContext = actionData?.context?._visionerStealth;
@@ -626,10 +620,10 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
   
   if (rollId && originalCoverBonus === 0) {
     try {
-      originalModifier = stealthCheckUseCase?.getOriginalCoverModifier?.(rollId);
+      originalModifier = CoverModifierService.getInstance().getOriginalCoverModifier(rollId);
       if (originalModifier) {
         originalCoverBonus = Number(originalModifier.finalBonus || originalModifier.bonus || 0);
-        console.log(`PF2E Visioner DEBUG - Found stored modifier:`, originalModifier);
+
       }
     } catch (e) {
       console.warn('PF2E Visioner | Failed to retrieve original cover modifier:', e);
@@ -652,15 +646,16 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
   const currentCoverState = autoCoverResult?.state || 'none';
   const currentCoverBonus = Number(COVER_STATES?.[currentCoverState]?.bonusStealth || 0);
 
-  // Check if this is an override case using the autoCoverResult.isOverride flag
-  const isOverride = autoCoverResult?.isOverride || false;
+  // Check if this is an override case using the stored modifier data (more reliable)
+  const wasOverridden = originalModifier?.isOverride || false;
+  const isOverride = wasOverridden || (autoCoverResult?.isOverride || false);
   
   let total = baseTotal;
   let originalTotal = null;
 
-  if (isOverride && autoCoverResult?.overrideDetails) {
+  if (isOverride && (autoCoverResult?.overrideDetails || originalModifier)) {
     // OVERRIDE CASE: Main total shows the override result, brackets show detected result
-    const overrideDetails = autoCoverResult.overrideDetails;
+    const overrideDetails = autoCoverResult?.overrideDetails || originalModifier;
     const originalState = overrideDetails.originalState || 'none';
     const finalState = overrideDetails.finalState || 'none';
     
@@ -673,16 +668,7 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
     // Brackets: Show what this specific observer DETECTED (before override)
     originalTotal = baseTotal - originalCoverBonus + originalStateBonus;
     
-    console.log(`PF2E Visioner DEBUG - Override calculation:`, {
-      baseTotal,
-      originalCoverBonus,
-      originalState: originalState,
-      originalStateBonus,
-      finalState: finalState,
-      finalStateBonus,
-      mainTotal: total,
-      bracketTotal: originalTotal
-    });
+
   } else {
     // NORMAL CASE: Show detected cover result, no override involved
     total = baseTotal - originalCoverBonus + currentCoverBonus;
@@ -692,16 +678,16 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
       originalTotal = baseTotal;
     }
     
-    console.log(`PF2E Visioner DEBUG - Normal calculation:`, {
-      baseTotal,
-      originalCoverBonus,
-      currentCoverState,
-      currentCoverBonus,
-      total,
-      originalTotal,
-      showBrackets: currentCoverBonus !== originalCoverBonus
-    });
+
   }
 
-  return { total, originalTotal };
+  // Calculate base roll total (without any cover modifiers) for override display
+  let baseRollTotal = null;
+  if (wasOverridden || isOverride) {
+    baseRollTotal = baseTotal - originalCoverBonus;
+  }
+
+
+  
+  return { total, originalTotal, baseRollTotal };
 }

@@ -132,29 +132,19 @@ export class HideActionHandler extends ActionHandlerBase {
           storedModifier = this.stealthCheckUseCase?.getOriginalCoverModifier?.(rollId);
         }
         
+
+        
         if (storedModifier && storedModifier.isOverride) {
           // Use the stored modifier data to determine override
+          // Keep the actually detected state for this observer as the original
           originalDetectedState = coverState || 'none';
+          // Apply the override final state
           coverState = storedModifier.finalState;
           
-          // Only mark as override if the final state is different from what we detected
-          if (originalDetectedState !== coverState) {
-            isOverride = true;
-            coverSource = storedModifier.source || 'dialog';
-            console.log(`PF2E Visioner DEBUG - Found meaningful override for ${subject.name}:`, {
-              rollId,
-              originalDetectedState,
-              finalState: coverState,
-              isOverride,
-              source: coverSource
-            });
-          } else {
-            console.log(`PF2E Visioner DEBUG - Override found but same as detected for ${subject.name}, treating as normal:`, {
-              rollId,
-              detectedState: originalDetectedState,
-              overrideState: coverState
-            });
-          }
+          // Mark as override since we have a stored override modifier
+          isOverride = true;
+          coverSource = storedModifier.source || 'dialog';
+
         } else {
           // Fallback to the old method (but don't consume yet)
           // NOTE: Override parameter order is DIFFERENT from cover detection!
@@ -207,7 +197,7 @@ export class HideActionHandler extends ActionHandlerBase {
           })
         };
         
-        console.log(`PF2E Visioner DEBUG - Created autoCover for ${subject.name}:`, result.autoCover);
+
       }
     } catch (e) {
       console.error(`PF2E Visioner | Error in cover calculation for Hide action:`, e);
@@ -218,7 +208,7 @@ export class HideActionHandler extends ActionHandlerBase {
     const baseTotal = Number(actionData?.roll?.total ?? 0);
 
     // Use shared utility to calculate stealth roll totals with cover adjustments
-    const { total, originalTotal } = calculateStealthRollTotals(
+    const { total, originalTotal, baseRollTotal } = calculateStealthRollTotals(
       baseTotal,
       result?.autoCover,
       actionData
@@ -228,12 +218,42 @@ export class HideActionHandler extends ActionHandlerBase {
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const margin = total - adjustedDC;
+    const originalMargin = originalTotal ? originalTotal - adjustedDC : margin;
+    const baseMargin = baseRollTotal ? baseRollTotal - adjustedDC : margin;
     const outcome = determineOutcome(total, die, adjustedDC);
+    const originalOutcome = originalTotal ? determineOutcome(originalTotal, die, adjustedDC) : outcome;
+    
+    // Generate outcome labels
+    const getOutcomeLabel = (outcomeValue) => {
+      switch (outcomeValue) {
+        case 'critical-success': return 'Critical Success';
+        case 'success': return 'Success';
+        case 'failure': return 'Failure';
+        case 'critical-failure': return 'Critical Failure';
+        default: return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
+      }
+    };
+    const originalOutcomeLabel = originalTotal ? getOutcomeLabel(originalOutcome) : null;
+
+
 
     // Maintain previous behavior for visibility change while enriching display fields
     // Use centralized mapping for defaults
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
+    
+    // Calculate what the visibility change would have been with original outcome
+    const originalNewVisibility = originalTotal ? 
+      getDefaultNewStateFor('hide', current, originalOutcome) || current : 
+      newVisibility;
+    
+    // Check if we should show override displays (only if there's a meaningful difference)
+    const shouldShowOverride = result.autoCover?.isOverride && (
+      total !== originalTotal || 
+      margin !== originalMargin || 
+      outcome !== originalOutcome ||
+      newVisibility !== originalNewVisibility
+    );
 
     return {
       target: subject,
@@ -241,7 +261,13 @@ export class HideActionHandler extends ActionHandlerBase {
       rollTotal: total,
       dieResult: die,
       margin,
+      originalMargin,
+      baseMargin,
       outcome,
+      originalOutcome,
+      originalOutcomeLabel,
+      originalNewVisibility,
+      shouldShowOverride,
       currentVisibility: current,
       oldVisibility: current,
       newVisibility,
@@ -249,6 +275,8 @@ export class HideActionHandler extends ActionHandlerBase {
       autoCover: result.autoCover, // Add auto-cover information
       // Add original total for override display
       originalRollTotal: originalTotal,
+      // Add base roll total for triple-bracket display
+      baseRollTotal: baseRollTotal,
     };
   }
   outcomeToChange(actionData, outcome) {

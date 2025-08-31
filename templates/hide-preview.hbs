@@ -106,19 +106,30 @@
               <div class="roll-vs-dc">
                 <div class="roll-dc-line">
                   <span class="roll-total">{{outcome.rollTotal}}</span>
-                  {{#if (and outcome.autoCover.isOverride outcome.originalRollTotal)}}
-                    <span class="original-roll-total" style="font-size: 0.8em; opacity: 0.7; margin-left: 2px;">
+                  {{#if (and outcome.shouldShowOverride outcome.originalRollTotal)}}
+                    <span class="original-roll-total" style="font-size: 1em; opacity: 0.7; margin-left: 2px;">
                       ({{outcome.originalRollTotal}})
                     </span>
                   {{/if}}
                   <span class="vs-text">vs DC</span>
                   <span class="dc-value">{{outcome.dc}}</span>
                 </div>
-                <div class="margin-display">({{#if (gt outcome.margin 0)}}+{{/if}}{{outcome.margin}})</div>
+                <div class="margin-display">({{#if (gt outcome.margin 0)}}+{{/if}}{{outcome.margin}})
+                  {{#if (and outcome.shouldShowOverride outcome.originalMargin)}}
+                    <span style="font-size: 1em; opacity: 0.7; margin-left: 2px;">
+                      ({{#if (gt outcome.originalMargin 0)}}+{{/if}}{{outcome.originalMargin}})
+                    </span>
+                  {{/if}}
+                </div>
               </div>
             </td>
             <td class="outcome {{outcome.outcomeClass}}">
-              {{outcome.outcomeLabel}}
+              <div>{{outcome.outcomeLabel}}</div>
+              {{#if (and outcome.shouldShowOverride outcome.originalOutcomeLabel)}}
+                <div style="font-size: 1em; opacity: 0.7; margin-top: 2px;">
+                  ({{outcome.originalOutcomeLabel}})
+                </div>
+              {{/if}}
             </td>
             <td class="visibility-change">
               <div class="visibility-change-inline">
@@ -135,6 +146,14 @@
                   {{/each}}
                 </div>
               </div>
+              {{#if (and outcome.shouldShowOverride outcome.originalNewVisibility)}}
+                <div class="original-visibility-change" style="font-size: 1em; opacity: 0.7; padding-top: 5px; display: flex; align-items: center;">
+                  <span>Original Change:</span>
+                  <span class="state-icon" data-state="{{outcome.originalNewVisibility}}" data-tooltip="Original Cover: {{outcome.originalNewVisibility}}" style="margin-left: 4px;">
+                    {{{visibilityIcon outcome.originalNewVisibility}}}
+                  </span>
+                </div>
+              {{/if}}
             </td>
             <td class="actions">
               {{#if outcome.hasActionableChange}}

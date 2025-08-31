@@ -1,6 +1,6 @@
 {
   "name": "pf2e-visioner",
-  "version": "3.0.0-alpha.4",
+  "version": "3.0.0-alpha.5",
   "description": "Advanced per-token visibility and cover management for Pathfinder 2E",
   "main": "scripts/main.js",
   "scripts": {
@@ -105,5 +105,14 @@
   },
   "volta": {
     "node": "20.19.4"
+  },
+  "dependencies": {
+    "husky": "^9.1.7"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint",
+      "pre-push": "npm run test"
+    }
   }
 }

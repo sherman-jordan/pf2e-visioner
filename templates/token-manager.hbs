@@ -19,7 +19,7 @@
     </div>
     <div class="observer-content">
       <div class="observer-main">
-        <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" title="Click to switch between Observer and Target modes" {{#if lootObserver}}disabled{{/if}}>
+        <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" data-tooltip="Click to switch between Observer and Target modes" {{#if lootObserver}}disabled{{/if}}>
           {{#if lootObserver}}
             <div class="toggle-option active">
               <i class="fas fa-user-secret"></i>
@@ -56,18 +56,18 @@
         <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
           {{#if showEncounterFilter}}
           <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+            <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
             <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
           </label>
           {{/if}}
           <label class="ignore-allies-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" />
+            <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
             <span class="encounter-filter-label">Ignore allies</span>
           </label>
           {{#if isObserverMode}}
             {{#if isVisibilityTab}}
               <label class="ignore-walls-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" {{#if ignoreWalls}}checked{{/if}} data-action="toggleIgnoreWalls" />
+                <input type="checkbox" {{#if ignoreWalls}}checked{{/if}} data-action="toggleIgnoreWalls" data-tooltip="Hide walls from the results list" />
                 <span class="encounter-filter-label">Ignore walls</span>
               </label>
             {{/if}}
@@ -78,11 +78,11 @@
 
     <div class="observer-tools">
       <div class="icon-tab-navigation">
-        <button type="button" class="icon-tab-button {{#if isVisibilityTab}}active{{/if}}" data-action="toggleTab" data-tab="visibility" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_TAB"}}">
+        <button type="button" class="icon-tab-button {{#if isVisibilityTab}}active{{/if}}" data-action="toggleTab" data-tab="visibility" data-tooltip="{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_TAB"}}">
           <i class="fas fa-eye"></i>
         </button>
         {{#unless hideCoverTab}}
-          <button type="button" class="icon-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" title="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
+          <button type="button" class="icon-tab-button {{#if isCoverTab}}active{{/if}}" data-action="toggleTab" data-tab="cover" data-tooltip="{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_TAB"}}">
             <i class="fas fa-shield-alt"></i>
           </button>
         {{/unless}}
@@ -91,7 +91,7 @@
         {{#if isVisibilityTab}}
           <div class="visibility-legend">
             {{#each visibilityStates as |state|}}
-              <div class="legend-item" title="{{state.label}}">
+              <div class="legend-item" data-tooltip="{{state.label}}">
                 <i class="{{state.icon}} {{state.cssClass}}"></i>
                 <span>{{state.label}}</span>
               </div>
@@ -100,7 +100,7 @@
         {{else}}
           <div class="cover-legend">
             {{#each coverStates as |state|}}
-              <div class="legend-item" title="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
+              <div class="legend-item" data-tooltip="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
                 <i class="{{state.icon}} {{state.cssClass}}"></i>
                 <span>{{state.label}}</span>
               </div>
@@ -131,7 +131,7 @@
                 </div>
                 <div class="bulk-actions-header">
                   {{#each visibilityStates as |state|}}
-                    <button type="button" class="bulk-state-header" data-action="bulkPC{{capitalize state.key}}" data-state="{{state.key}}" data-target-type="pc" title="Set all PCs as {{state.label}}">
+                    <button type="button" class="bulk-state-header" data-action="bulkPC{{capitalize state.key}}" data-state="{{state.key}}" data-target-type="pc" data-tooltip="Set all PCs as {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -176,14 +176,14 @@
                           <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                         </td>
                         <td class="token-name">
-                          <strong title="{{target.name}}">{{target.name}}</strong>
+                          <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                         </td>
                         <td class="visibility-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.visibilityStates as |state|}}
                               <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}">
+                                      data-tooltip="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -194,10 +194,10 @@
                           {{#each target.visibilityStates as |state|}}
                             {{#if state.selected}}
                               <span class="state-indicator {{state.cssClass}}"
-                                    {{#if (eq state.value "hidden")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
-                                    {{#if (eq state.value "concealed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
-                                    {{#if (eq state.value "undetected")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
-                                    {{#if (eq state.value "observed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
+                                    {{#if (eq state.value "hidden")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "concealed")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "undetected")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "observed")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
                                 <i class="{{state.icon}}"></i>
                                 {{state.label}}
                               </span>
@@ -214,7 +214,7 @@
                         {{#if ../showOutcomeColumn}}
                           <td class="outcome-column">
                             {{#if target.showOutcome}}
-                              <span class="dc-outcome {{target.outcomeClass}}" title="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                              <span class="dc-outcome {{target.outcomeClass}}" data-tooltip="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
                             {{/if}}
                           </td>
                         {{/if}}
@@ -238,7 +238,7 @@
                 </div>
                 <div class="bulk-actions-header">
                   {{#each visibilityStates as |state|}}
-                    <button type="button" class="bulk-state-header" data-action="bulkNPC{{capitalize state.key}}" data-state="{{state.key}}" data-target-type="npc" title="Set all NPCs as {{state.label}}">
+                    <button type="button" class="bulk-state-header" data-action="bulkNPC{{capitalize state.key}}" data-state="{{state.key}}" data-target-type="npc" data-tooltip="Set all NPCs as {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -283,14 +283,14 @@
                           <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                         </td>
                         <td class="token-name">
-                          <strong title="{{target.name}}">{{target.name}}</strong>
+                          <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                         </td>
                         <td class="visibility-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.visibilityStates as |state|}}
                               <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}">
+                                      data-tooltip="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -301,10 +301,10 @@
                           {{#each target.visibilityStates as |state|}}
                             {{#if state.selected}}
                               <span class="state-indicator {{state.cssClass}}"
-                                    {{#if (eq state.value "hidden")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
-                                    {{#if (eq state.value "concealed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
-                                    {{#if (eq state.value "undetected")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
-                                    {{#if (eq state.value "observed")}}title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
+                                    {{#if (eq state.value "hidden")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "concealed")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "undetected")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
+                                    {{#if (eq state.value "observed")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
                                 <i class="{{state.icon}}"></i>
                                 {{state.label}}
                               </span>
@@ -321,7 +321,7 @@
                         {{#if ../showOutcomeColumn}}
                           <td class="outcome-column">
                             {{#if target.showOutcome}}
-                              <span class="dc-outcome {{target.outcomeClass}}" title="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                              <span class="dc-outcome {{target.outcomeClass}}" data-tooltip="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
                             {{/if}}
                           </td>
                         {{/if}}
@@ -341,10 +341,10 @@
                 <span>Loot</span>
               </div>
               <div class="bulk-actions-header">
-                <button type="button" class="bulk-state-header" data-action="bulkLootObserved" data-state="observed" data-target-type="loot" title="Set all Loot as Observed">
+                <button type="button" class="bulk-state-header" data-action="bulkLootObserved" data-state="observed" data-target-type="loot" data-tooltip="Set all Loot as Observed">
                   <i class="fas fa-eye"></i>
                 </button>
-                <button type="button" class="bulk-state-header" data-action="bulkLootHidden" data-state="hidden" data-target-type="loot" title="Set all Loot as Hidden">
+                <button type="button" class="bulk-state-header" data-action="bulkLootHidden" data-state="hidden" data-target-type="loot" data-tooltip="Set all Loot as Hidden">
                   <i class="fas fa-eye-slash"></i>
                 </button>
               </div>
@@ -388,14 +388,14 @@
                         <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                       </td>
                       <td class="token-name">
-                        <strong title="{{target.name}}">{{target.name}}</strong>
+                        <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                       </td>
                       <td class="visibility-state">
                         <div class="icon-selection" data-target="{{target.id}}">
                           {{#each target.visibilityStates as |state|}}
                             <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                     data-state="{{state.value}}" data-target="{{target.id}}" 
-                                    title="{{state.label}}">
+                                    data-tooltip="{{state.label}}">
                               <i class="{{state.icon}}"></i>
                             </button>
                           {{/each}}
@@ -422,7 +422,7 @@
                       {{#if ../showOutcomeColumn}}
                         <td class="outcome-column">
                           {{#if target.showOutcome}}
-                            <span class="dc-outcome {{target.outcomeClass}}" title="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                            <span class="dc-outcome {{target.outcomeClass}}" data-tooltip="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
                           {{/if}}
                         </td>
                       {{/if}}
@@ -443,10 +443,10 @@
                 <span>Hidden Walls</span>
               </div>
               <div class="bulk-actions-header">
-                <button type="button" class="bulk-state-header" data-action="bulkWallsObserved" data-state="observed" data-target-type="walls" title="Set all listed walls as Observed">
+                <button type="button" class="bulk-state-header" data-action="bulkWallsObserved" data-state="observed" data-target-type="walls" data-tooltip="Set all listed walls as Observed">
                   <i class="fas fa-eye"></i>
                 </button>
-                <button type="button" class="bulk-state-header" data-action="bulkWallsHidden" data-state="hidden" data-target-type="walls" title="Set all listed walls as Hidden">
+                <button type="button" class="bulk-state-header" data-action="bulkWallsHidden" data-state="hidden" data-target-type="walls" data-tooltip="Set all listed walls as Hidden">
                   <i class="fas fa-eye-slash"></i>
                 </button>
               </div>
@@ -474,14 +474,14 @@
                         <img src="{{w.img}}" data-tooltip="{{#if (eq w.doorType 2)}}Secret Door{{else if (eq w.doorType 1)}}Door{{else}}Wall{{/if}}" width="28" height="28" />
                       </td>
                       <td class="token-name">
-                        <strong title="{{w.identifier}}">{{w.identifier}}</strong>
+                        <strong data-tooltip="{{w.identifier}}">{{w.identifier}}</strong>
                       </td>
                       <td class="visibility-state">
                         <div class="icon-selection" data-target="{{w.id}}">
                           {{#each w.visibilityStates as |state|}}
                             <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                     data-state="{{state.value}}" data-target="{{w.id}}" 
-                                    title="{{state.label}}">
+                                    data-tooltip="{{state.label}}">
                               <i class="{{state.icon}}"></i>
                             </button>
                           {{/each}}
@@ -533,7 +533,7 @@
                       data-action="{{#if (eq state.key "none")}}bulkPCNoCover{{else}}bulkPC{{capitalize state.key}}Cover{{/if}}"
                       data-state="{{state.key}}"
                       data-target-type="pc"
-                      title="Set all PCs as {{state.label}}">
+                      data-tooltip="Set all PCs as {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -557,14 +557,14 @@
                           <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                         </td>
                         <td class="token-name">
-                          <strong title="{{target.name}}">{{target.name}}</strong>
+                          <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                         </td>
                         <td class="cover-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.coverStates as |state|}}
                               <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}">
+                                      data-tooltip="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -583,19 +583,19 @@
                         </td>
                         <td class="mechanical-effects">
                           {{#if (eq target.currentCoverState "none")}}
-                            <span class="no-effect cover-none" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
+                            <span class="no-effect cover-none" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
                               <i class="fas fa-check-circle"></i> No cover
                             </span>
                           {{else if (eq target.currentCoverState "lesser")}}
-                            <span class="cover-effect cover-lesser" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-lesser" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +1 AC
                             </span>
                           {{else if (eq target.currentCoverState "standard")}}
-                            <span class="cover-effect cover-standard" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-standard" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
                             </span>
                           {{else if (eq target.currentCoverState "greater")}}
-                            <span class="cover-effect cover-greater" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-greater" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
                             </span>
                           {{/if}}
@@ -625,7 +625,7 @@
                       data-action="{{#if (eq state.key "none")}}bulkNPCNoCover{{else}}bulkNPC{{capitalize state.key}}Cover{{/if}}"
                       data-state="{{state.key}}"
                       data-target-type="npc"
-                      title="Set all NPCs as {{state.label}}">
+                      data-tooltip="Set all NPCs as {{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -650,14 +650,14 @@
                           <img src="{{target.img}}" data-tooltip="{{target.name}}" width="28" height="28" />
                         </td>
                         <td class="token-name">
-                          <strong title="{{target.name}}">{{target.name}}</strong>
+                          <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                         </td>
                         <td class="cover-state">
                           <div class="icon-selection" data-target="{{target.id}}">
                             {{#each target.coverStates as |state|}}
                               <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
                                       data-state="{{state.value}}" data-target="{{target.id}}" 
-                                      title="{{state.label}}">
+                                      data-tooltip="{{state.label}}">
                                 <i class="{{state.icon}}"></i>
                               </button>
                             {{/each}}
@@ -676,19 +676,19 @@
                         </td>
                         <td class="mechanical-effects">
                           {{#if (eq target.currentCoverState "none")}}
-                            <span class="no-effect cover-none" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
+                            <span class="no-effect cover-none" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
                               <i class="fas fa-check-circle"></i> No cover
                             </span>
                           {{else if (eq target.currentCoverState "lesser")}}
-                            <span class="cover-effect cover-lesser" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-lesser" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +1 AC
                             </span>
                           {{else if (eq target.currentCoverState "standard")}}
-                            <span class="cover-effect cover-standard" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-standard" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
                             </span>
                           {{else if (eq target.currentCoverState "greater")}}
-                            <span class="cover-effect cover-greater" title="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
+                            <span class="cover-effect cover-greater" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
                               <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
                             </span>
                           {{/if}}
@@ -714,19 +714,19 @@
 
   {{!-- Action Buttons --}}
   <footer class="sheet-footer flexrow">
-    <button type="button" class="vm-action-button apply" data-action="applyCurrent">
+    <button type="button" class="vm-action-button apply" data-action="applyCurrent" data-tooltip="Apply changes to the current tab only">
       <i class="fas fa-check"></i>
       {{localize "PF2E_VISIONER.TOKEN_MANAGER.APPLY"}}
     </button>
-    <button type="button" class="vm-action-button apply" data-action="applyBoth">
+    <button type="button" class="vm-action-button apply" data-action="applyBoth" data-tooltip="Apply changes to both visibility and cover settings">
       <i class="fas fa-layer-group"></i>
       {{localize "PF2E_VISIONER.TOKEN_MANAGER.APPLY_BOTH"}}
     </button>
-    <button type="button" class="vm-action-button reset" data-action="reset">
+    <button type="button" class="vm-action-button reset" data-action="reset" data-tooltip="Reset all changes to their original state">
       <i class="fas fa-undo"></i>
       {{localize "PF2E_VISIONER.TOKEN_MANAGER.RESET"}}
     </button>
-    <button type="button" class="vm-action-button cancel" data-action="close">
+    <button type="button" class="vm-action-button cancel" data-action="close" data-tooltip="Close without applying any changes">
       <i class="fas fa-times"></i>
       {{localize "PF2E_VISIONER.TOKEN_MANAGER.CANCEL"}}
     </button>

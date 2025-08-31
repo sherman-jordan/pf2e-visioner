@@ -4,16 +4,14 @@
  */
 
 import {
-  getCoverImageForState,
-  getCoverLabel
+    getCoverImageForState,
+    getCoverLabel
 } from '../../../helpers/cover-helpers.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import coverUIManager from '../CoverUIManager.js';
 import templateManager from '../TemplateManager.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
-export class SavingThrowUseCase extends BaseAutoCoverUseCase {
-
-
+class SavingThrowUseCase extends BaseAutoCoverUseCase {
   constructor() {
     super();
     this.autoCoverSystem = autoCoverSystem.default || autoCoverSystem;
@@ -519,5 +517,11 @@ export class SavingThrowUseCase extends BaseAutoCoverUseCase {
       return null;
     }
   }
-
 }
+
+// Singleton instance
+const savingThrowUseCase = new SavingThrowUseCase();
+export default savingThrowUseCase;
+
+// Also export the class for reference
+export { SavingThrowUseCase };

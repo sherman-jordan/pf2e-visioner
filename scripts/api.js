@@ -34,7 +34,7 @@ export class Pf2eVisionerApi {
     return unsetMapsForTokens(scene, tokens);
   }
 
-  static _collectModuleEffectIds(actor) {
+  static _collectModuleEffectIds() {
     return null;
   }
 

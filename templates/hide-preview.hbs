@@ -19,12 +19,12 @@
   <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
     {{#if showEncounterFilter}}
     <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
       <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
     </label>
     {{/if}}
     <label class="ignore-allies-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-      <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" />
+      <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
       <span class="encounter-filter-label">Ignore allies</span>
     </label>
   </div>
@@ -50,7 +50,7 @@
               <img src="{{outcome.tokenImage}}" alt="{{outcome.target.name}}" width="28" height="28" />
             </td>
             <td class="token-name">
-              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              <strong data-tooltip="{{outcome.target.name}}">{{outcome.target.name}}</strong>
             </td>
             <td class="auto-cover">
               {{#if outcome.autoCover}}
@@ -59,7 +59,7 @@
                     {{#if outcome.autoCover.overrideDetails}}
                       <!-- Show detailed override indicator with original → final transition -->
                       <span class="auto-cover-override-detailed" 
-                            title="Cover overridden {{#if (eq outcome.autoCover.source 'popup')}}via keybind popup{{else if (eq outcome.autoCover.source 'dialog')}}in roll dialog{{else}}manually{{/if}}: {{outcome.autoCover.overrideDetails.originalLabel}} → {{outcome.autoCover.overrideDetails.finalLabel}}">
+                            data-tooltip="Cover overridden {{#if (eq outcome.autoCover.source 'popup')}}via keybind popup{{else if (eq outcome.autoCover.source 'dialog')}}in roll dialog{{else}}manually{{/if}}: {{outcome.autoCover.overrideDetails.originalLabel}} → {{outcome.autoCover.overrideDetails.finalLabel}}">
                         <!-- Original state (no crossing out) -->
                         <span class="original-cover" style="
                           color: {{outcome.autoCover.overrideDetails.originalColor}};
@@ -91,20 +91,22 @@
                     {{/if}}
                   {{else}}
                     <!-- Normal display without override -->
-                    <span class="auto-cover-icon">
+                    <span class="auto-cover-icon" data-tooltip="{{outcome.autoCover.label}}{{#if outcome.autoCover.bonus}} (+{{outcome.autoCover.bonus}} Stealth){{/if}}">
                       <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
                     </span>
                   {{/if}}
                 </div>
               {{else}}
-                <span class="no-cover">None</span>
+                <span class="auto-cover-icon no-cover" data-tooltip="No Cover (+0 Stealth)">
+                  <i class="fas fa-shield-slash cover-none" style="color: var(--cover-none, #4caf50);"></i>
+                </span>
               {{/if}}
             </td>
             <td class="roll-result">
               <div class="roll-vs-dc">
                 <div class="roll-dc-line">
                   <span class="roll-total">{{outcome.rollTotal}}</span>
-                  {{#if (and outcome.autoCover.isOverride outcome.originalRollTotal (ne outcome.originalRollTotal outcome.rollTotal))}}
+                  {{#if (and outcome.autoCover.isOverride outcome.originalRollTotal)}}
                     <span class="original-roll-total" style="font-size: 0.8em; opacity: 0.7; margin-left: 2px;">
                       ({{outcome.originalRollTotal}})
                     </span>
@@ -120,14 +122,14 @@
             </td>
             <td class="visibility-change">
               <div class="visibility-change-inline">
-                <span class="state-icon" data-state="{{outcome.oldVisibility}}" title="{{outcome.oldVisibility}}">
+                <span class="state-icon" data-state="{{outcome.oldVisibility}}" data-tooltip="{{outcome.oldVisibility}}">
                   {{{visibilityIcon outcome.oldVisibility}}}
                 </span>
                 <i class="fas fa-arrow-right visibility-arrow"></i>
                 <div class="override-icons">
                   {{#each outcome.availableStates as |state|}}
                     <span class="state-icon {{#if (eq state.value outcome.overrideState)}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}}" 
-                          data-state="{{state.value}}" data-token-id="{{../outcome.target.id}}" title="{{state.label}}">
+                          data-state="{{state.value}}" data-token-id="{{../outcome.target.id}}" data-tooltip="{{state.label}}">
                       {{{visibilityIcon state.value}}}
                     </span>
                   {{/each}}
@@ -136,10 +138,10 @@
             </td>
             <td class="actions">
               {{#if outcome.hasActionableChange}}
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" data-tooltip="Apply this visibility change">
                   <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility">
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" data-tooltip="Revert to original visibility">
                   <i class="fas fa-undo"></i>
                 </button>
               {{else}}
@@ -158,10 +160,10 @@
       <span class="hide-preview-dialog-changes-count">{{changesCount}}</span> of <span class="hide-preview-dialog-total-count">{{totalCount}}</span> observers will have visibility changes.
     </div>
     <div class="hide-preview-dialog-bulk-actions-buttons">
-      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" data-tooltip="Apply all visibility changes">
         <i class="fas fa-check-circle"></i> Apply All
       </button>
-      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes to original state" disabled>
         <i class="fas fa-undo"></i> Revert All
       </button>
     </div>

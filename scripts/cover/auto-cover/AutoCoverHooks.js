@@ -7,7 +7,9 @@ import { MODULE_ID } from '../../constants.js';
 import autoCoverSystem from './AutoCoverSystem.js';
 import coverUIManager from './CoverUIManager.js';
 import templateManager from './TemplateManager.js';
-import { AttackRollUseCase, SavingThrowUseCase, StealthCheckUseCase } from './usecases/index.js';
+import attackRollUseCase from './usecases/AttackRollUseCase.js';
+import savingThrowUseCase from './usecases/SavingThrowUseCase.js';
+import stealthCheckUseCase from './usecases/StealthCheckUseCase.js';
 
 export class AutoCoverHooks {
     /**
@@ -22,10 +24,10 @@ export class AutoCoverHooks {
     constructor() {
         this.autoCoverSystem = autoCoverSystem;
 
-        // Initialize use cases
-        this.attackRollUseCase = new AttackRollUseCase(autoCoverSystem);
-        this.savingThrowUseCase = new SavingThrowUseCase(autoCoverSystem);
-        this.stealthCheckUseCase = new StealthCheckUseCase(autoCoverSystem);
+        // Initialize use cases - all singletons
+        this.attackRollUseCase = attackRollUseCase;
+        this.savingThrowUseCase = savingThrowUseCase;
+        this.stealthCheckUseCase = stealthCheckUseCase;
 
         // Initialize UI manager
         this.coverUIManager = coverUIManager;
@@ -38,6 +40,14 @@ export class AutoCoverHooks {
      */
     getCoverUIManager() {
         return this.coverUIManager;
+    }
+
+    /**
+     * Get the StealthCheckUseCase instance
+     * @returns {StealthCheckUseCase}
+     */
+    getStealthCheckUseCase() {
+        return this.stealthCheckUseCase;
     }
 
     /**

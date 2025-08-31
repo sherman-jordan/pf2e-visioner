@@ -431,6 +431,30 @@ npm run test:ci       # CI mode with strict requirements
 - **Impact**: ✅ FIXED - Brackets now appear consistently when detected cover is lower than applied modifier
 - **Technical**: Added non-override case logic to set `originalTotal = baseTotal` when current cover bonus is lower than original
 
+### ✅ Stealth Roll Calculation Enhancement (2025-01-20)
+
+- **Issue**: Stealth roll calculation showed incorrect totals when detected cover differed from roll modifier, even for Standard Cover
+- **Root cause**: Non-override logic only decreased total for Lesser/No Cover, keeping full baseTotal for Standard/Greater Cover
+- **Solution**: Changed logic to always adjust total based on detected cover bonus: `total = baseTotal - originalCoverBonus + currentCoverBonus`
+- **Files**: `scripts/chat/services/infra/shared-utils.js` (lines 649-651, 691-696)
+- **Impact**: ✅ FIXED - Now shows correct detected cover bonus as main total and original roll modifier in brackets when they differ
+- **Technical**: Updated bracket display to show when `currentCoverBonus !== originalCoverBonus` (any difference, not just lower)
+
+### ✅ Elevation Integration and 3D Sampling Removal (2025-01-20)
+
+- **Issue**: Height and elevation considerations were only available in a separate "3D Sampling" mode, making it inconsistent
+- **Root cause**: Elevation filtering was isolated to one mode instead of being integrated into all cover detection modes
+- **Solution**: Integrated elevation filtering into all cover detection modes and removed the separate 3D sampling mode
+- **Files**: 
+  - `scripts/cover/auto-cover/CoverDetector.js` - Added `_filterBlockersByElevation()` method and integrated it into all modes
+  - `scripts/constants.js` - Removed `sampling3d` option from `autoCoverTokenIntersectionMode` choices
+- **Impact**: ✅ FIXED - All cover detection modes now consider height and elevation automatically
+- **Technical**: 
+  - New `_filterBlockersByElevation()` method calculates relevant elevation bands between attacker and target
+  - Filters blockers based on vertical span overlap with line of sight elevations
+  - Removed duplicate `_evaluateCoverBy3DSampling()` method
+  - All modes (tactical, coverage, any, center) now use elevation-aware blocker filtering
+
 ### ⚠️ Chat message update bug
 
 - **Issue**: Visioner buttons disappear when chat messages are updated (e.g., `message.update({"flags.pf2e.test": "foo"})`)

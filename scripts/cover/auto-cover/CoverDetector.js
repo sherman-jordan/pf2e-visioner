@@ -4,7 +4,7 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
-import { distancePointToSegment, segmentIntersectsRect } from '../../helpers/geometry-utils.js';
+// Removed unused imports that were only used by the removed center intersection mode
 import { intersectsBetweenTokens, segmentRectIntersectionLength } from '../../helpers/line-intersection.js';
 import { getSizeRank, getTokenCorners, getTokenRect, getTokenVerticalSpanFt } from '../../helpers/size-elevation-utils.js';
 import { segmentIntersectsAnyBlockingWall } from '../../helpers/wall-detection.js';
@@ -70,33 +70,12 @@ export class CoverDetector {
             const filters = { ...this._getAutoCoverFilterSettings(attacker) };
             let blockers = this._getEligibleBlockingTokens(attacker, target, filters);
 
-            if (intersectionMode === 'center') {
-                try {
-                    const candidates = [];
-                    for (const b of blockers) {
-                        const rect = getTokenRect(b);
-                        if (segmentIntersectsRect(p1, p2, rect)) {
-                            const cx = (rect.x1 + rect.x2) / 2;
-                            const cy = (rect.y1 + rect.y2) / 2;
-                            const dist = distancePointToSegment({ x: cx, y: cy }, p1, p2);
-                            candidates.push({ b, dist });
-                        }
-                    }
-                    if (candidates.length > 0) {
-                        candidates.sort((a, b) => a.dist - b.dist);
-                        blockers = [candidates[0].b];
-                    } else {
-                        blockers = [];
-                    }
-                } catch (_) { }
-            }
-
+            // Apply elevation filtering (mode-aware)
+            blockers = this._filterBlockersByElevation(attacker, target, blockers, intersectionMode);
 
             // Determine token cover based on intersection mode
             let tokenCover;
-            if (intersectionMode === 'sampling3d') {
-                tokenCover = this._evaluateCoverBy3DSampling(attacker, target, blockers);
-            } else if (intersectionMode === 'tactical') {
+            if (intersectionMode === 'tactical') {
                 tokenCover = this._evaluateCoverByTactical(attacker, target, blockers);
             } else if (intersectionMode === 'coverage') {
                 tokenCover = this._evaluateCoverByCoverage(attacker, target, blockers);
@@ -218,8 +197,17 @@ export class CoverDetector {
     _estimateWallCoveragePercent(p1, target) {
         try {
             const rect = getTokenRect(target);
+            
+            // First, check if there's a clear line to the target center
+            // If there is, then walls adjacent to the target shouldn't provide significant cover
+            const targetCenter = { x: (rect.x1 + rect.x2) / 2, y: (rect.y1 + rect.y2) / 2 };
+            const centerBlocked = this._isRayBlockedByWalls(p1, targetCenter);
+            
+            // If center is not blocked, reduce the impact of edge blocking
+            const centerWeight = centerBlocked ? 1.0 : 0.3;
+            
             const points = [];
-            const samplePerEdge = 5; // 4 edges * 5 = 20 sample points
+            const samplePerEdge = 3; // Reduced sampling for better performance
             const pushLerp = (ax, ay, bx, by) => {
                 for (let i = 0; i <= samplePerEdge; i++) {
                     const t = i / samplePerEdge;
@@ -233,30 +221,393 @@ export class CoverDetector {
             pushLerp(rect.x1, rect.y2, rect.x1, rect.y1);
 
             let blocked = 0;
-            const testRayBlocked = (a, b) => {
+            for (const pt of points) {
+                if (this._isRayBlockedByWalls(p1, pt)) blocked++;
+            }
+
+            const rawPct = (blocked / Math.max(1, points.length)) * 100;
+            const adjustedPct = rawPct * centerWeight;
+            
+            return adjustedPct;
+        } catch (_) { return 0; }
+    }
+    
+    /**
+     * Check if a ray from point A to point B is blocked by walls
+     * Only counts walls that are actually between the points, not beyond point B
+     * @param {Object} a - Start point {x, y}
+     * @param {Object} b - End point {x, y}
+     * @returns {boolean} True if ray is blocked by walls
+     * @private
+     */
+    _isRayBlockedByWalls(a, b) {
                 const ray = this._createRay(a, b);
-                try {
-                    if (CONFIG?.Canvas?.polygonBackends?.sight) return !!CONFIG.Canvas.polygonBackends.sight.testCollision(a, b, { type: 'sight', mode: 'any' });
-                    if (typeof canvas.walls.raycast === 'function') return !!canvas.walls.raycast(ray.A, ray.B);
-                    if (typeof canvas.walls.checkCollision === 'function') return !!canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
+        const rayLength = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+        
+        try {
+            // Try modern Foundry collision detection first
+            if (CONFIG?.Canvas?.polygonBackends?.sight) {
+                return !!CONFIG.Canvas.polygonBackends.sight.testCollision(a, b, { type: 'sight', mode: 'any' });
+            }
+            if (typeof canvas.walls.raycast === 'function') {
+                const collision = canvas.walls.raycast(ray.A, ray.B);
+                return !!collision;
+            }
+            if (typeof canvas.walls.checkCollision === 'function') {
+                return !!canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
+            }
                 } catch (_) { }
-                // Fallback: simple segment-vs-wall iteration (best-effort)
+        
+        // Fallback: manual wall intersection checking with distance validation
                 const walls = canvas.walls.objects?.children || [];
                 for (const wall of walls) {
                     const c = wall?.coords;
                     if (!c) continue;
-                    if (this._lineIntersection(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3])) return true;
+            
+            // Check if the ray intersects this wall
+            const intersection = this._lineIntersectionPoint(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3]);
+            if (intersection) {
+                // Calculate distance from start to intersection point
+                const intersectionDist = Math.sqrt((intersection.x - a.x) ** 2 + (intersection.y - a.y) ** 2);
+                
+                // Only count as blocked if the wall intersection occurs before reaching the target
+                // Use a small tolerance to account for floating point precision
+                if (intersectionDist < rayLength - 1) { // 1 pixel tolerance
+                    return true;
+                }
+            }
                 }
                 return false;
-            };
+    }
 
-            for (const pt of points) {
-                if (testRayBlocked(p1, pt)) blocked++;
+    /**
+     * Filter blockers by elevation - check if blocker can intersect the 3D line of sight
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @param {Array} blockers - Array of potential blocking tokens
+     * @param {string} mode - Intersection mode to determine elevation calculation method
+     * @returns {Array} Filtered array of blockers that can actually block the line of sight
+     * @private
+     */
+    _filterBlockersByElevation(attacker, target, blockers, mode = 'any') {
+        try {
+            const attSpan = getTokenVerticalSpanFt(attacker);
+            const tgtSpan = getTokenVerticalSpanFt(target);
+            
+            if (mode === 'tactical') {
+                // Tactical mode: use corner-to-corner elevation calculations
+                return this._filterBlockersByElevationTactical(attacker, target, blockers, attSpan, tgtSpan);
+            } else if (mode === 'any' || mode === 'length10') {
+                // Any/10% modes: use permissive elevation filtering (horizontal intersection focus)
+                return this._filterBlockersByElevationPermissive(attacker, target, blockers, attSpan, tgtSpan);
+            } else if (mode === 'coverage') {
+                // Coverage mode: use moderate elevation filtering
+                return this._filterBlockersByElevationModerate(attacker, target, blockers, attSpan, tgtSpan);
+            } else {
+                // Default: use center-to-center elevation calculations
+                return this._filterBlockersByElevationCenterToCenter(attacker, target, blockers, attSpan, tgtSpan);
             }
-
-            const pct = (blocked / Math.max(1, points.length)) * 100;
-            return pct;
-        } catch (_) { return 0; }
+        } catch (_) {
+            // If elevation filtering fails, return all blockers
+            return blockers;
+        }
+    }
+    
+    /**
+     * Filter blockers by elevation using center-to-center line of sight
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @param {Array} blockers - Array of potential blocking tokens
+     * @param {Object} attSpan - Attacker vertical span
+     * @param {Object} tgtSpan - Target vertical span
+     * @returns {Array} Filtered array of blockers
+     * @private
+     */
+    _filterBlockersByElevationCenterToCenter(attacker, target, blockers, attSpan, tgtSpan) {
+        // Get horizontal positions
+        const attPos = attacker.center ?? attacker.getCenter();
+        const tgtPos = target.center ?? target.getCenter();
+        
+        return blockers.filter(blocker => {
+            try {
+                const blockerSpan = getTokenVerticalSpanFt(blocker);
+                const blockerPos = blocker.center ?? blocker.getCenter();
+                
+                // Check if blocker is horizontally between attacker and target
+                // If not, it can't block regardless of elevation
+                if (!this._isHorizontallyBetween(attPos, tgtPos, blockerPos)) {
+                    return false;
+                }
+                
+                // Calculate the elevation of the line of sight at the blocker's horizontal position
+                const lineOfSightElevationAtBlocker = this._calculateLineOfSightElevationAt(
+                    attPos, attSpan, tgtPos, tgtSpan, blockerPos
+                );
+                
+                // Check if the blocker's vertical span intersects with the line of sight elevation range
+                return this._verticalSpansIntersect(blockerSpan, lineOfSightElevationAtBlocker);
+                
+            } catch (_) {
+                // If we can't determine elevation, include the blocker to be safe
+                return true;
+            }
+        });
+    }
+    
+    /**
+     * Filter blockers by elevation using permissive logic (any/10% modes)
+     * These modes focus on horizontal intersection, so we're more lenient with elevation
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @param {Array} blockers - Array of potential blocking tokens
+     * @param {Object} attSpan - Attacker vertical span
+     * @param {Object} tgtSpan - Target vertical span
+     * @returns {Array} Filtered array of blockers
+     * @private
+     */
+    _filterBlockersByElevationPermissive(attacker, target, blockers, attSpan, tgtSpan) {
+        // Get horizontal positions
+        const attPos = attacker.center ?? attacker.getCenter();
+        const tgtPos = target.center ?? target.getCenter();
+        
+        return blockers.filter(blocker => {
+            try {
+                const blockerSpan = getTokenVerticalSpanFt(blocker);
+                const blockerPos = blocker.center ?? blocker.getCenter();
+                
+                // Check if blocker is horizontally between attacker and target
+                if (!this._isHorizontallyBetween(attPos, tgtPos, blockerPos)) {
+                    return false;
+                }
+                
+                // For any/10% modes, we use a very permissive elevation check
+                // These modes focus on horizontal intersection, so we're very lenient with elevation
+                // Only filter out blockers that are completely above or below all possible sight lines
+                
+                // Calculate the interpolation factor (how far along the line the blocker is)
+                const totalDist = Math.sqrt((tgtPos.x - attPos.x) ** 2 + (tgtPos.y - attPos.y) ** 2);
+                const blockerDist = Math.sqrt((blockerPos.x - attPos.x) ** 2 + (blockerPos.y - attPos.y) ** 2);
+                const t = totalDist > 0 ? blockerDist / totalDist : 0;
+                
+                // Calculate the range of all possible sight lines at the blocker position
+                const highestSightLine = attSpan.top + t * (tgtSpan.top - attSpan.top);
+                const lowestSightLine = attSpan.bottom + t * (tgtSpan.bottom - attSpan.bottom);
+                const sightLineRange = {
+                    bottom: Math.min(highestSightLine, lowestSightLine),
+                    top: Math.max(highestSightLine, lowestSightLine)
+                };
+                
+                // Very permissive check: blocker provides cover if it has ANY overlap with the sight line range
+                return blockerSpan.bottom < sightLineRange.top && blockerSpan.top > sightLineRange.bottom;
+                
+            } catch (_) {
+                // If we can't determine elevation, include the blocker to be safe
+                return true;
+            }
+        });
+    }
+    
+    /**
+     * Filter blockers by elevation using moderate logic (coverage mode)
+     * Coverage mode uses a balanced approach between strict and permissive
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @param {Array} blockers - Array of potential blocking tokens
+     * @param {Object} attSpan - Attacker vertical span
+     * @param {Object} tgtSpan - Target vertical span
+     * @returns {Array} Filtered array of blockers
+     * @private
+     */
+    _filterBlockersByElevationModerate(attacker, target, blockers, attSpan, tgtSpan) {
+        // Get horizontal positions
+        const attPos = attacker.center ?? attacker.getCenter();
+        const tgtPos = target.center ?? target.getCenter();
+        
+        return blockers.filter(blocker => {
+            try {
+                const blockerSpan = getTokenVerticalSpanFt(blocker);
+                const blockerPos = blocker.center ?? blocker.getCenter();
+                
+                // Check if blocker is horizontally between attacker and target
+                if (!this._isHorizontallyBetween(attPos, tgtPos, blockerPos)) {
+                    return false;
+                }
+                
+                // For coverage mode, use center-to-center line but with more tolerance
+                const lineOfSightElevationAtBlocker = this._calculateLineOfSightElevationAt(
+                    attPos, attSpan, tgtPos, tgtSpan, blockerPos
+                );
+                
+                // Use a larger tolerance for coverage mode (3ft instead of exact)
+                const tolerance = 3; // 3 feet tolerance
+                const adjustedRange = {
+                    bottom: lineOfSightElevationAtBlocker.bottom - tolerance,
+                    top: lineOfSightElevationAtBlocker.top + tolerance
+                };
+                
+                // Check if the blocker's vertical span intersects with the adjusted line of sight range
+                return blockerSpan.bottom < adjustedRange.top && blockerSpan.top > adjustedRange.bottom;
+                
+            } catch (_) {
+                // If we can't determine elevation, include the blocker to be safe
+                return true;
+            }
+        });
+    }
+    
+    /**
+     * Filter blockers by elevation using corner-to-corner line of sight (tactical mode)
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token
+     * @param {Array} blockers - Array of potential blocking tokens
+     * @param {Object} attSpan - Attacker vertical span
+     * @param {Object} tgtSpan - Target vertical span
+     * @returns {Array} Filtered array of blockers
+     * @private
+     */
+    _filterBlockersByElevationTactical(attacker, target, blockers, attSpan, tgtSpan) {
+        // Get token rectangles and corners
+        const attackerRect = getTokenRect(attacker);
+        const targetRect = getTokenRect(target);
+        const attackerSizeValue = attacker?.actor?.system?.traits?.size?.value ?? 'med';
+        const targetSizeValue = target?.actor?.system?.traits?.size?.value ?? 'med';
+        const attackerCorners = getTokenCorners(attacker, attackerRect, attackerSizeValue);
+        const targetCorners = getTokenCorners(target, targetRect, targetSizeValue);
+        
+        return blockers.filter(blocker => {
+            try {
+                const blockerSpan = getTokenVerticalSpanFt(blocker);
+                const blockerPos = blocker.center ?? blocker.getCenter();
+                
+                // Check if any corner-to-corner line could potentially intersect this blocker
+                for (const attackerCorner of attackerCorners) {
+                    for (const targetCorner of targetCorners) {
+                        // Check if blocker is horizontally between these corners
+                        if (!this._isHorizontallyBetween(attackerCorner, targetCorner, blockerPos)) {
+                            continue;
+                        }
+                        
+                        // Calculate elevation of this corner-to-corner line at blocker position
+                        const lineOfSightElevation = this._calculateCornerToCornerElevationAt(
+                            attackerCorner, attSpan, targetCorner, tgtSpan, blockerPos
+                        );
+                        
+                        // If this line intersects the blocker, include the blocker
+                        if (this._verticalSpansIntersect(blockerSpan, lineOfSightElevation)) {
+                            return true;
+                        }
+                    }
+                }
+                
+                // No corner-to-corner line intersects this blocker
+                return false;
+                
+            } catch (_) {
+                // If we can't determine elevation, include the blocker to be safe
+                return true;
+            }
+        });
+    }
+    
+    /**
+     * Check if a point is horizontally between two other points (roughly on the line)
+     * @param {Object} p1 - First point {x, y}
+     * @param {Object} p2 - Second point {x, y}
+     * @param {Object} test - Test point {x, y}
+     * @returns {boolean} True if test point is roughly between p1 and p2
+     * @private
+     */
+    _isHorizontallyBetween(p1, p2, test) {
+        // Use a simple distance check - if the sum of distances from test to p1 and p2
+        // is approximately equal to the distance from p1 to p2, then test is on the line
+        const d1 = Math.sqrt((test.x - p1.x) ** 2 + (test.y - p1.y) ** 2);
+        const d2 = Math.sqrt((test.x - p2.x) ** 2 + (test.y - p2.y) ** 2);
+        const total = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+        
+        // Allow some tolerance for floating point precision and token size
+        const tolerance = Math.max(50, total * 0.1); // 50 pixels or 10% of line length
+        return Math.abs(d1 + d2 - total) <= tolerance;
+    }
+    
+    /**
+     * Calculate the elevation of a corner-to-corner line of sight at a specific horizontal position
+     * @param {Object} attackerCorner - Attacker corner position {x, y}
+     * @param {Object} attSpan - Attacker vertical span {bottom, top}
+     * @param {Object} targetCorner - Target corner position {x, y}
+     * @param {Object} tgtSpan - Target vertical span {bottom, top}
+     * @param {Object} blockerPos - Blocker position {x, y}
+     * @returns {Object} Elevation range {bottom, top} at the blocker position
+     * @private
+     */
+    _calculateCornerToCornerElevationAt(attackerCorner, attSpan, targetCorner, tgtSpan, blockerPos) {
+        // Calculate the interpolation factor (how far along the line the blocker is)
+        const totalDist = Math.sqrt((targetCorner.x - attackerCorner.x) ** 2 + (targetCorner.y - attackerCorner.y) ** 2);
+        const blockerDist = Math.sqrt((blockerPos.x - attackerCorner.x) ** 2 + (blockerPos.y - attackerCorner.y) ** 2);
+        const t = totalDist > 0 ? blockerDist / totalDist : 0;
+        
+        // For corner-to-corner, we use the center elevations of the tokens
+        // (corners are horizontal positions, but elevation is still based on token center)
+        const attackerCenterElevation = (attSpan.bottom + attSpan.top) / 2;
+        const targetCenterElevation = (tgtSpan.bottom + tgtSpan.top) / 2;
+        
+        // Interpolate the corner-to-corner line of sight elevation at the blocker position
+        const lineOfSightElevation = attackerCenterElevation + t * (targetCenterElevation - attackerCenterElevation);
+        
+        // Small tolerance for practical implementation
+        const tolerance = 1; // 1 foot tolerance
+        
+        return {
+            bottom: lineOfSightElevation - tolerance,
+            top: lineOfSightElevation + tolerance
+        };
+    }
+    
+    /**
+     * Calculate the elevation of the center-to-center line of sight at a specific horizontal position
+     * PF2E uses center-to-center line of sight for cover calculations
+     * @param {Object} attPos - Attacker position {x, y}
+     * @param {Object} attSpan - Attacker vertical span {bottom, top}
+     * @param {Object} tgtPos - Target position {x, y}
+     * @param {Object} tgtSpan - Target vertical span {bottom, top}
+     * @param {Object} blockerPos - Blocker position {x, y}
+     * @returns {Object} Elevation range {bottom, top} at the blocker position
+     * @private
+     */
+    _calculateLineOfSightElevationAt(attPos, attSpan, tgtPos, tgtSpan, blockerPos) {
+        // Calculate the interpolation factor (how far along the line the blocker is)
+        const totalDist = Math.sqrt((tgtPos.x - attPos.x) ** 2 + (tgtPos.y - attPos.y) ** 2);
+        const blockerDist = Math.sqrt((blockerPos.x - attPos.x) ** 2 + (blockerPos.y - attPos.y) ** 2);
+        const t = totalDist > 0 ? blockerDist / totalDist : 0;
+        
+        // PF2E uses center-to-center line of sight
+        // Calculate the center elevations of attacker and target
+        const attackerCenterElevation = (attSpan.bottom + attSpan.top) / 2;
+        const targetCenterElevation = (tgtSpan.bottom + tgtSpan.top) / 2;
+        
+        // Interpolate the center-to-center line of sight elevation at the blocker position
+        const lineOfSightElevation = attackerCenterElevation + t * (targetCenterElevation - attackerCenterElevation);
+        
+        // For cover purposes, we need to consider the blocker's height
+        // A blocker provides cover if the line of sight passes through its vertical space
+        // Use the blocker's height as tolerance rather than arbitrary 1ft
+        return {
+            bottom: lineOfSightElevation,
+            top: lineOfSightElevation
+        };
+    }
+    
+    /**
+     * Check if a blocker can provide cover by blocking the center-to-center line of sight
+     * @param {Object} blockerSpan - Blocker's vertical span {bottom, top}
+     * @param {Object} lineOfSightRange - Line of sight elevation {bottom, top} (same value for center-to-center)
+     * @returns {boolean} True if blocker can provide cover
+     * @private
+     */
+    _verticalSpansIntersect(blockerSpan, lineOfSightRange) {
+        // In PF2E, a blocker provides cover if the center-to-center line of sight passes through its vertical space
+        // The line of sight is at a specific elevation, check if it's within the blocker's height
+        const lineOfSightElevation = lineOfSightRange.bottom; // Same as .top for center-to-center
+        return lineOfSightElevation >= blockerSpan.bottom && lineOfSightElevation <= blockerSpan.top;
     }
 
     /**
@@ -323,10 +674,114 @@ export class CoverDetector {
                 continue;
             }
 
+            // Check size-based cover rules
+            if (!this._canTokenProvideCover(attacker, target, blocker)) {
+                continue;
+            }
+
             out.push(blocker);
         }
 
         return out;
+    }
+
+    /**
+     * Check if a blocker token can provide cover based on PF2E cover rules
+     * @param {Object} attacker - Attacker token
+     * @param {Object} target - Target token  
+     * @param {Object} blocker - Potential blocker token
+     * @returns {boolean} True if blocker can provide cover
+     * @private
+     */
+    _canTokenProvideCover(attacker, target, blocker) {
+        try {
+            // Rule 1: Tokens in the same square as attacker or target cannot provide cover
+            if (this._tokensInSameSquare(attacker, blocker) || this._tokensInSameSquare(target, blocker)) {
+                return false;
+            }
+
+            // Rule 2: Get sizes for cover rules
+            const targetSize = this._getTokenSizeCategory(target);
+            const blockerSize = this._getTokenSizeCategory(blocker);
+
+            // Rule 3: Tiny tokens cannot provide cover to non-tiny creatures
+            if (blockerSize === 'tiny' && targetSize !== 'tiny') {
+                return false;
+            }
+
+            // Rule 4: Additional size-based rules from the PF2E cover table
+            // Tiny targets can only get cover from Small+ blockers (already covered by rule 3)
+            // Small+ targets cannot get cover from tiny blockers (already covered by rule 3)
+
+            return true;
+        } catch (_) {
+            // If we can't determine sizes/positions, allow cover to be safe
+            return true;
+        }
+    }
+
+    /**
+     * Check if two tokens are in the same grid square
+     * @param {Object} token1 - First token
+     * @param {Object} token2 - Second token
+     * @returns {boolean} True if tokens occupy the same grid square
+     * @private
+     */
+    _tokensInSameSquare(token1, token2) {
+        try {
+            // Get grid positions (top-left corner of tokens in grid units)
+            const gridSize = canvas?.grid?.size || 50;
+            
+            const token1GridX = Math.floor(token1.document.x / gridSize);
+            const token1GridY = Math.floor(token1.document.y / gridSize);
+            const token2GridX = Math.floor(token2.document.x / gridSize);
+            const token2GridY = Math.floor(token2.document.y / gridSize);
+
+            // For tokens larger than 1x1, check if their grid areas overlap
+            const token1Width = token1.document.width || 1;
+            const token1Height = token1.document.height || 1;
+            const token2Width = token2.document.width || 1;
+            const token2Height = token2.document.height || 1;
+
+            // Check for overlap in both X and Y dimensions
+            const xOverlap = token1GridX < token2GridX + token2Width && token1GridX + token1Width > token2GridX;
+            const yOverlap = token1GridY < token2GridY + token2Height && token1GridY + token1Height > token2GridY;
+
+            return xOverlap && yOverlap;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    /**
+     * Get the size category of a token for cover calculations
+     * @param {Object} token - Token object
+     * @returns {string} Size category ('tiny', 'small', 'medium', 'large', 'huge', 'gargantuan')
+     * @private
+     */
+    _getTokenSizeCategory(token) {
+        try {
+            const size = token?.actor?.system?.traits?.size?.value;
+            if (!size) return 'medium'; // Default to medium if unknown
+            
+            // Normalize size values
+            const sizeMap = {
+                'tiny': 'tiny',
+                'sm': 'small',
+                'small': 'small', 
+                'med': 'medium',
+                'medium': 'medium',
+                'lg': 'large',
+                'large': 'large',
+                'huge': 'huge',
+                'grg': 'gargantuan',
+                'gargantuan': 'gargantuan'
+            };
+            
+            return sizeMap[size] || 'medium';
+        } catch (_) {
+            return 'medium';
+        }
     }
 
     /**
@@ -358,91 +813,7 @@ export class CoverDetector {
         };
     }
 
-    /**
-     * Evaluate cover by 3D sampling
-     * @param {Object} attacker 
-     * @param {Object} target 
-     * @param {Array} blockers 
-     * @returns {string}
-     * @private
-     */
-    _evaluateCoverBy3DSampling(attacker, target, blockers) {
-        try {
-            const attSpan = getTokenVerticalSpanFt(attacker);
-            const tgtSpan = getTokenVerticalSpanFt(target);
 
-            // Compute overlap band between attacker and target vertical spans
-            const bandLow = Math.max(
-                Math.min(attSpan.bottom, attSpan.top),
-                Math.min(tgtSpan.bottom, tgtSpan.top),
-            );
-            const bandHigh = Math.min(
-                Math.max(attSpan.bottom, attSpan.top),
-                Math.max(tgtSpan.bottom, tgtSpan.top),
-            );
-
-            let samples;
-            if (bandHigh > bandLow) {
-                // Vertical overlap – sample within the overlapping band
-                const mid = (bandLow + bandHigh) / 2;
-                samples = [
-                    bandLow + 0.1 * (bandHigh - bandLow),
-                    mid,
-                    bandHigh - 0.1 * (bandHigh - bandLow),
-                ];
-            } else {
-                // No vertical overlap – interpolate between attacker and target mid-heights
-                const zA = (attSpan.bottom + attSpan.top) / 2;
-                const zT = (tgtSpan.bottom + tgtSpan.top) / 2;
-                samples = [0.1, 0.5, 0.9].map((t) => zA + t * (zT - zA));
-            }
-
-            const coverOrder = ['none', 'lesser', 'standard', 'greater'];
-            let worst = 'none';
-
-            const overlapsZ = (span, z) => span.bottom < z && span.top > z; // strict interior overlap
-
-            for (const z of samples) {
-                // Filter blockers whose vertical span crosses this Z slice
-                const blockersAtZ = [];
-                for (const b of blockers) {
-                    try {
-                        const bs = getTokenVerticalSpanFt(b);
-                        if (overlapsZ(bs, z)) blockersAtZ.push(b);
-                    } catch (_) { }
-                }
-
-                // Evaluate center-to-center per slice: count intersecting blockers
-                const p1 = attacker.center ?? attacker.getCenter();
-                const p2 = target.center ?? target.getCenter();
-                let count = 0;
-                let hasStandardBySize = false;
-                const attackerSize = getSizeRank(attacker);
-                const targetSize = getSizeRank(target);
-                for (const blk of blockersAtZ) {
-                    const rect = getTokenRect(blk);
-                    if (segmentIntersectsRect(p1, p2, rect)) {
-                        count++;
-                        // size-based upgrade check
-                        try {
-                            const blockerSize = getSizeRank(blk);
-                            const sizeDiffAttacker = blockerSize - attackerSize;
-                            const sizeDiffTarget = blockerSize - targetSize;
-                            if (sizeDiffAttacker >= 2 && sizeDiffTarget >= 2) hasStandardBySize = true;
-                        } catch (_) { }
-                    }
-                }
-                let coverAtZ = count === 0 ? 'none' : count === 1 ? 'lesser' : count <= 3 ? 'standard' : 'greater';
-                if (hasStandardBySize && coverAtZ === 'lesser') coverAtZ = 'standard';
-                if (coverOrder.indexOf(coverAtZ) > coverOrder.indexOf(worst)) worst = coverAtZ;
-                if (worst === 'greater') break; // early exit
-            }
-
-            return worst;
-        } catch (_) {
-            return 'none';
-        }
-    }
 
     /**
      * Evaluate cover provided by the creature's size
@@ -626,6 +997,29 @@ export class CoverDetector {
         const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
         const u = -(((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d);
         return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+    }
+
+    /**
+     * 2D line segment intersection that returns the intersection point.
+     * @param {number} x1, y1, x2, y2 - First line segment coordinates
+     * @param {number} x3, y3, x4, y4 - Second line segment coordinates
+     * @returns {Object|null} Intersection point {x, y} or null if no intersection
+     */
+    _lineIntersectionPoint(x1, y1, x2, y2, x3, y3, x4, y4) {
+        const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (d === 0) return null; // Lines are parallel
+        
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
+        const u = -(((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d);
+        
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+            // Calculate intersection point
+            const x = x1 + t * (x2 - x1);
+            const y = y1 + t * (y2 - y1);
+            return { x, y };
+        }
+        
+        return null; // No intersection within segments
     }
 
     /**

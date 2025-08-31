@@ -22,16 +22,16 @@
       {{#each rows as |w|}}
         <tr data-wall-id="{{w.id}}">
           <td style="text-align:center">
-            <img src="{{w.img}}" width="32" height="32" title="{{#if (eq w.doorType 2)}}Secret Door{{else if (eq w.doorType 1)}}Door{{else}}Wall{{/if}}" />
+            <img src="{{w.img}}" width="32" height="32" data-tooltip="{{#if (eq w.doorType 2)}}Secret Door{{else if (eq w.doorType 1)}}Door{{else}}Wall{{/if}}" />
           </td>
           <td>
             <input type="text" name="wall.{{w.id}}.identifier" value="{{w.identifier}}" placeholder="Hidden Wall" />
           </td>
           <td style="text-align:center">
-            <input type="checkbox" name="wall.{{w.id}}.hiddenWall" {{#if w.hiddenWall}}checked{{/if}} />
+            <input type="checkbox" name="wall.{{w.id}}.hiddenWall" {{#if w.hiddenWall}}checked{{/if}} data-tooltip="Mark this wall as hidden from players" />
           </td>
           <td style="text-align:center">
-            <input type="checkbox" name="wall.{{w.id}}.provideCover" {{#if w.provideCover}}checked{{/if}} />
+            <input type="checkbox" name="wall.{{w.id}}.provideCover" {{#if w.provideCover}}checked{{/if}} data-tooltip="This wall provides cover in combat" />
           </td>
           <td>
             <input type="number" min="0" step="1" name="wall.{{w.id}}.dc" value="{{w.dc}}" />

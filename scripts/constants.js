@@ -355,7 +355,7 @@ export const DEFAULT_SETTINGS = {
   // Auto-Cover behavior tuning
   autoCoverTokenIntersectionMode: {
     name: 'Auto-Cover: Token Intersection Mode',
-    hint: "Choose how token blockers are evaluated: 'Center' (strict center-to-center ray intersects blocker), 'Any' (size rule: any entry → Lesser; Standard if blocker is ≥2 sizes larger than both attacker and target), 'Coverage' (side coverage with fixed thresholds: Standard at 50%, Greater at 70%), or 'Tactical' (corner-to-corner line calculations for precise cover determination).",
+    hint: "Choose how token blockers are evaluated: 'Any' (size rule: any entry → Lesser; Standard if blocker is ≥2 sizes larger than both attacker and target), '10%' (ray inside ≥10% of blocker side), 'Coverage' (side coverage with fixed thresholds: Standard at 50%, Greater at 70%), or 'Tactical' (corner-to-corner line calculations for precise cover determination).",
     scope: 'world',
     config: true,
     restricted: true,
@@ -363,10 +363,8 @@ export const DEFAULT_SETTINGS = {
     choices: {
       any: 'Any (ray entering blocker)',
       length10: '10% (ray inside ≥10% of blocker side)',
-      center: 'Center (ray passing through center of blocker)',
       coverage: 'Side Coverage (fixed 50%(Standard)/70%(Greater))',
       tactical: 'Tactical (corner-to-corner calculations)',
-      sampling3d: '3D Sampling (multi-height multi-ray approximation)',
     },
     default: 'length10',
   },

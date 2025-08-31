@@ -33,13 +33,13 @@ export function buildSeekPanel(actionData, message) {
         <button type="button" 
                 class="visioner-btn ${buttonClass}" 
                 data-action="open-seek-results"
-                title="${tooltip}">
+                data-tooltip="${tooltip}">
           <i class="${icon}"></i> ${label}
         </button>
         <button type="button"
                 class="visioner-btn ${buttonClass} apply-now"
                 data-action="apply-now-seek"
-                title="Apply all calculated changes without opening the dialog">
+                data-tooltip="Apply all calculated changes without opening the dialog">
           <i class="fas fa-check-double"></i> Apply Changes
         </button>`;
     } else {
@@ -50,7 +50,7 @@ export function buildSeekPanel(actionData, message) {
       <button type="button"
               class="visioner-btn ${buttonClass} setup-template"
               data-action="${hasExistingTemplate ? 'remove-seek-template' : 'setup-seek-template'}"
-              title="${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}">
+              data-tooltip="${game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.SETUP_TEMPLATE_TOOLTIP')}">
         <i class="fas fa-bullseye"></i> ${
           hasExistingTemplate
             ? game.i18n.localize('PF2E_VISIONER.SEEK_AUTOMATION.REMOVE_TEMPLATE')
@@ -62,7 +62,7 @@ export function buildSeekPanel(actionData, message) {
         <button type="button"
                 class="visioner-btn ${buttonClass} apply-now"
                 data-action="apply-now-seek"
-                title="Apply all calculated changes without opening the dialog">
+                data-tooltip="Apply all calculated changes without opening the dialog">
           <i class="fas fa-check-double"></i> Apply Changes
         </button>`;
     }
@@ -72,7 +72,7 @@ export function buildSeekPanel(actionData, message) {
         <button type="button" 
                 class="visioner-btn ${buttonClass}" 
                 data-action="open-seek-results"
-                title="${tooltip}">
+                data-tooltip="${tooltip}">
           <i class="${icon}"></i> ${label}
         </button>` + actionButtonsHtml;
     }
@@ -81,13 +81,13 @@ export function buildSeekPanel(actionData, message) {
       <button type="button" 
               class="visioner-btn ${buttonClass}" 
               data-action="${actionName}"
-              title="${tooltip}">
+              data-tooltip="${tooltip}">
         <i class="${icon}"></i> ${label}
       </button>
       <button type="button"
               class="visioner-btn ${buttonClass} apply-now"
               data-action="apply-now-seek"
-              title="Apply all calculated changes without opening the dialog">
+              data-tooltip="Apply all calculated changes without opening the dialog">
         <i class="fas fa-check-double"></i> Apply Changes
       </button>`;
   }

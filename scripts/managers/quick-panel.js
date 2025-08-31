@@ -441,7 +441,7 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'pf2e-visioner-minimize';
-      btn.title = 'Minimize';
+      btn.setAttribute('data-tooltip', 'Minimize');
       btn.innerHTML = '<i class="fas fa-window-minimize"></i>';
       // Minimal header style
       btn.style.background = 'transparent';

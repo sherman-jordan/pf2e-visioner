@@ -235,10 +235,10 @@ export class BaseActionDialog extends BasePreviewDialog {
 
       if (hasActionableChange) {
         container.innerHTML = `
-          <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${opts.wallId ? `data-wall-id="${opts.wallId}"` : `data-token-id="${tokenId}"`} title="Apply this visibility change">
+          <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${opts.wallId ? `data-wall-id="${opts.wallId}"` : `data-token-id="${tokenId}"`} data-tooltip="Apply this visibility change">
             <i class="fas fa-check"></i>
           </button>
-          <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${opts.wallId ? `data-wall-id="${opts.wallId}"` : `data-token-id="${tokenId}"`} title="Revert to original visibility">
+          <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${opts.wallId ? `data-wall-id="${opts.wallId}"` : `data-token-id="${tokenId}"`} data-tooltip="Revert to original visibility">
             <i class="fas fa-undo"></i>
           </button>
         `;
@@ -303,10 +303,10 @@ export class BaseActionDialog extends BasePreviewDialog {
                       ? `data-token-id="${targetId}"`
                       : '';
                   container.innerHTML = `
-                    <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${idAttr} title="Apply this visibility change">
+                    <button type="button" class="row-action-btn apply-change" data-action="applyChange" ${idAttr} data-tooltip="Apply this visibility change">
                       <i class="fas fa-check"></i>
                     </button>
-                    <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${idAttr} title="Revert to original visibility">
+                    <button type="button" class="row-action-btn revert-change" data-action="revertChange" ${idAttr} data-tooltip="Revert to original visibility">
                       <i class="fas fa-undo"></i>
                     </button>
                   `;

@@ -18,7 +18,7 @@
     {{#if showEncounterFilter}}
     <div class="encounter-filter-section">
         <label class="encounter-filter-checkbox">
-            <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+            <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
             <span class="encounter-filter-label">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ENCOUNTER_ONLY"}}</span>
         </label>
     </div>
@@ -46,15 +46,15 @@
                         {{/if}}
                     </td>
                     <td class="token-name">
-                        <strong title="{{target.name}}">{{target.name}}</strong>
+                        <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                     </td>
                     <td class="visibility-change">
-                        <span class="state-icon" data-state="{{oldVisibility}}" title="{{oldVisibilityState.label}}">
+                        <span class="state-icon" data-state="{{oldVisibility}}" data-tooltip="{{oldVisibilityState.label}}">
                             <i class="{{oldVisibilityState.icon}}"></i>
                         </span>
                         {{#if changed}}
                         <i class="fas fa-arrow-right visibility-arrow"></i>
-                        <span class="state-icon" data-state="{{newVisibility}}" title="{{newVisibilityState.label}}">
+                        <span class="state-icon" data-state="{{newVisibility}}" data-tooltip="{{newVisibilityState.label}}">
                             <i class="{{newVisibilityState.icon}}"></i>
                         </span>
                         {{else}}
@@ -63,10 +63,10 @@
                     </td>
                     <td class="actions">
                         {{#if hasActionableChange}}
-                          <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{target.id}}" title="Apply this visibility change">
+                          <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{target.id}}" data-tooltip="Apply this visibility change">
                               <i class="fas fa-check"></i>
                           </button>
-                          <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{target.id}}" title="Revert to original visibility">
+                          <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{target.id}}" data-tooltip="Revert to original visibility">
                               <i class="fas fa-undo"></i>
                           </button>
                         {{else}}
@@ -86,10 +86,10 @@
         </div>
         
         <div class="point-out-preview-dialog-bulk-actions-buttons">
-            <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+            <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" data-tooltip="Apply all visibility changes">
                 <i class="fas fa-check-circle"></i> Apply All
             </button>
-            <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+            <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes to original state" disabled>
                 <i class="fas fa-undo"></i> Revert All
             </button>
         </div>

@@ -7,7 +7,7 @@ try {
   Handlebars.registerHelper('visibilityIcon', function (state) {
     const cfg = getVisibilityStateConfig(state);
     if (!cfg) return '';
-    const html = `<i class="${cfg.icon} ${cfg.cssClass}" title="${cfg.label}"></i>`;
+    const html = `<i class="${cfg.icon} ${cfg.cssClass}" data-tooltip="${cfg.label}"></i>`;
     return new Handlebars.SafeString(html);
   });
 } catch (_) {

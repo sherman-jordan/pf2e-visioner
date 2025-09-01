@@ -19,13 +19,11 @@ function updateColorblindMode() {
   try {
     // Check if the setting exists before trying to access it
     if (!game.settings.settings.has('pf2e-visioner.colorblindMode')) {
-      console.log('PF2E Visioner: Colorblind mode setting not yet registered, skipping update');
       return;
     }
 
     // Get current colorblind mode setting
     const colorblindMode = game.settings.get('pf2e-visioner', 'colorblindMode');
-    console.log(`PF2E Visioner: Current colorblind mode setting: "${colorblindMode}"`);
 
     // Remove any existing colorblind classes from body
     document.body.classList.remove(
@@ -38,18 +36,12 @@ function updateColorblindMode() {
     // Apply current colorblind mode to body if set
     if (colorblindMode !== 'none') {
       document.body.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
-      console.log(`PF2E Visioner: Applied colorblind mode "${colorblindMode}" to body`);
-    } else {
-      console.log(
-        'PF2E Visioner: No colorblind mode active, removed all colorblind classes from body',
-      );
     }
 
     // Apply to any existing .pf2e-visioner containers
     const containers = document.querySelectorAll('.pf2e-visioner');
-    console.log(`PF2E Visioner: Found ${containers.length} .pf2e-visioner containers to update`);
 
-    containers.forEach((container, index) => {
+    containers.forEach((container) => {
       container.classList.remove(
         'pf2e-visioner-colorblind-protanopia',
         'pf2e-visioner-colorblind-deuteranopia',
@@ -59,45 +51,8 @@ function updateColorblindMode() {
 
       if (colorblindMode !== 'none') {
         container.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
-        console.log(
-          `PF2E Visioner: Applied colorblind mode "${colorblindMode}" to container ${index}`,
-        );
       }
     });
-
-    // Verify the application after a short delay
-    if (colorblindMode !== 'none') {
-      setTimeout(() => {
-        const bodyHasClass = document.body.classList.contains(
-          `pf2e-visioner-colorblind-${colorblindMode}`,
-        );
-        const containersHaveClass = Array.from(document.querySelectorAll('.pf2e-visioner')).some(
-          (container) => container.classList.contains(`pf2e-visioner-colorblind-${colorblindMode}`),
-        );
-        console.log(
-          `PF2E Visioner: Verification - Body has colorblind class: ${bodyHasClass}, Containers have colorblind class: ${containersHaveClass}`,
-        );
-
-        // Check if CSS custom properties are being applied
-        const computedStyle = getComputedStyle(document.body);
-        const visibilityColor = computedStyle.getPropertyValue('--visibility-observed-color');
-        console.log(
-          `PF2E Visioner: CSS Custom Property --visibility-observed-color: "${visibilityColor}"`,
-        );
-
-        // Check if any .pf2e-visioner container has the custom properties
-        const firstContainer = document.querySelector('.pf2e-visioner');
-        if (firstContainer) {
-          const containerStyle = getComputedStyle(firstContainer);
-          const containerVisibilityColor = containerStyle.getPropertyValue(
-            '--visibility-observed-color',
-          );
-          console.log(
-            `PF2E Visioner: Container CSS Custom Property --visibility-observed-color: "${containerVisibilityColor}"`,
-          );
-        }
-      }, 100);
-    }
   } catch (error) {
     console.error('PF2E Visioner: Failed to update colorblind mode:', error);
   }
@@ -121,6 +76,12 @@ Hooks.once('init', async () => {
     // Set up API
     const { api } = await import('./api.js');
     game.modules.get('pf2e-visioner').api = api;
+
+    // Create global API for compatibility with other modules
+    window.visioneerApi = {
+      getVisibility: api.getVisibility,
+      // Add other API functions that may be needed for compatibility
+    };
 
     // Initialize detection wrapper
     initializeDetectionWrapper();
@@ -147,7 +108,6 @@ Hooks.once('init', async () => {
 
 // Apply colorblind mode when canvas is ready (most UI elements are rendered by this point)
 Hooks.once('canvasReady', () => {
-  console.log('PF2E Visioner: Canvas ready, applying colorblind mode');
   updateColorblindMode();
 });
 
@@ -155,7 +115,6 @@ Hooks.once('canvasReady', () => {
 Hooks.once('ready', async () => {
   try {
     // Apply initial colorblind mode again to ensure it's set
-    console.log('PF2E Visioner: Applying colorblind mode on ready');
     updateColorblindMode();
 
     // Clean up any lingering cover effects from previous sessions
@@ -191,10 +150,6 @@ Hooks.on('renderApplication', (app, html) => {
   if (html && html[0] && html[0].classList && html[0].classList.contains('pf2e-visioner')) {
     // Apply colorblind mode to this specific application
     const colorblindMode = game.settings.get('pf2e-visioner', 'colorblindMode');
-    console.log(
-      `PF2E Visioner: Applying colorblind mode "${colorblindMode}" to application`,
-      app.constructor.name,
-    );
 
     if (colorblindMode !== 'none') {
       html[0].classList.remove(
@@ -204,10 +159,6 @@ Hooks.on('renderApplication', (app, html) => {
         'pf2e-visioner-colorblind-achromatopsia',
       );
       html[0].classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
-      console.log(
-        `PF2E Visioner: Added class "pf2e-visioner-colorblind-${colorblindMode}" to`,
-        html[0],
-      );
     }
   }
 });
@@ -264,6 +215,5 @@ Hooks.on('renderVisionerQuickPanel', (app, html) => {
       'pf2e-visioner-colorblind-achromatopsia',
     );
     html[0].classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
-    console.log(`PF2E Visioner: Applied colorblind mode "${colorblindMode}" to quick panel`);
   }
 });

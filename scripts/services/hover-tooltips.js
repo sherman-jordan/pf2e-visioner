@@ -3,7 +3,7 @@
  */
 
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../constants.js';
-import { detectCoverStateForAttack } from '../cover/auto-cover.js';
+import autoCoverSystem from '../cover/auto-cover/AutoCoverSystem.js';
 import { canShowTooltips, computeSizesFromSetting } from '../helpers/tooltip-utils.js';
 import { getCoverMap, getVisibilityMap } from '../utils.js';
 
@@ -71,7 +71,7 @@ class HoverTooltipsImpl {
         '--pf2e-visioner-tooltip-badge-radius',
         `${borderRadius}px`,
       );
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 export const HoverTooltips = new HoverTooltipsImpl();
@@ -145,11 +145,56 @@ export function setTooltipMode(mode) {
 }
 
 /**
+ * Add event listeners to all current tokens
+ */
+function addTokenEventListeners() {
+  canvas.tokens.placeables.forEach((token) => {
+    addTokenEventListener(token);
+  });
+}
+
+/**
+ * Add event listener to a specific token
+ * @param {Token} token - The token to add listeners to
+ */
+export function addTokenEventListener(token) {
+  // Skip if already has listeners
+  if (HoverTooltips.tokenEventHandlers.has(token.id)) {
+    return;
+  }
+
+  const overHandler = () => onTokenHover(token);
+  const outHandler = () => onTokenHoverEnd(token);
+
+  // Store handlers for later cleanup
+  HoverTooltips.tokenEventHandlers.set(token.id, { overHandler, outHandler });
+
+  token.on('pointerover', overHandler);
+  token.on('pointerout', outHandler);
+}
+
+/**
+ * Clean up token event listeners
+ */
+function cleanupTokenEventListeners() {
+  HoverTooltips.tokenEventHandlers.forEach((handlers, tokenId) => {
+    const token = canvas.tokens.get(tokenId);
+    if (token) {
+      token.off('pointerover', handlers.overHandler);
+      token.off('pointerout', handlers.outHandler);
+    }
+  });
+  HoverTooltips.tokenEventHandlers.clear();
+}
+
+/**
  * Initialize hover tooltip system
  */
 export function initializeHoverTooltips() {
   if (HoverTooltips._initialized || _initialized) {
-    // Defensive: avoid duplicate listeners; refresh sizes and return
+    // Scene change: clean up old listeners and reinitialize for new tokens
+    cleanupTokenEventListeners();
+    addTokenEventListeners();
     HoverTooltips.refreshSizes?.();
     return;
   }
@@ -178,16 +223,7 @@ export function initializeHoverTooltips() {
   }
 
   // Add event listeners to canvas for token hover
-  canvas.tokens.placeables.forEach((token) => {
-    const overHandler = () => onTokenHover(token);
-    const outHandler = () => onTokenHoverEnd(token);
-
-    // Store handlers for later cleanup
-    HoverTooltips.tokenEventHandlers.set(token.id, { overHandler, outHandler });
-
-    token.on('pointerover', overHandler);
-    token.on('pointerout', outHandler);
-  });
+  addTokenEventListeners();
 
   // Note: Alt key handled via highlightObjects hook registered in main hooks
   // O key event listeners added globally in registerHooks
@@ -260,7 +296,7 @@ export function onHighlightObjects(highlight) {
         showVisibilityIndicators(HoverTooltips.currentHoveredToken);
         try {
           showCoverIndicators(HoverTooltips.currentHoveredToken);
-        } catch (_) {}
+        } catch (_) { }
       }, 50);
     }
   }
@@ -363,7 +399,7 @@ function showVisibilityIndicators(hoveredToken) {
   // Already suppressed above if Alt overlay is active
   try {
     showCoverIndicators(hoveredToken);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 /**
@@ -506,58 +542,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   }
 }
 
-/**
- * Show cover indicators for a specific token (without clearing existing ones)
- * Mirrors visibility behavior
- * @param {Token} observerToken
- * @param {string} forceMode
- */
-function showCoverIndicatorsForToken(observerToken, forceMode = null) {
-  const effectiveMode = forceMode || HoverTooltips.tooltipMode;
 
-  // For keyboard scenarios (when forceMode is provided), this is a keyboard tooltip
-  const isKeyboardTooltip = !!forceMode;
-  if (!canShowTooltips(effectiveMode, null, isKeyboardTooltip)) {
-    return;
-  }
-  if (!game.user.isGM && !observerToken.isOwner) return;
-
-  const otherTokens = canvas.tokens.placeables.filter((t) => t !== observerToken && t.isVisible);
-  if (otherTokens.length === 0) return;
-
-  if (effectiveMode === 'observer') {
-    otherTokens.forEach((targetToken) => {
-      const coverMap = getCoverMap(observerToken);
-      const coverState = coverMap[targetToken.document.id] || 'none';
-
-      if (coverState !== 'none') {
-        addCoverIndicator(targetToken, observerToken, coverState, 'observer');
-      }
-    });
-  } else {
-    if (!game.user.isGM) {
-      const otherTokensForPlayer = canvas.tokens.placeables.filter(
-        (t) => t !== observerToken && t.isVisible,
-      );
-      otherTokensForPlayer.forEach((otherToken) => {
-        const coverMap = getCoverMap(otherToken);
-        const coverState = coverMap[observerToken.document.id] || 'none';
-        if (coverState !== 'none') {
-          addCoverIndicator(otherToken, otherToken, coverState, 'target');
-        }
-      });
-    } else {
-      otherTokens.forEach((otherToken) => {
-        const coverMap = getCoverMap(otherToken);
-        const coverState = coverMap[observerToken.document.id] || 'none';
-
-        if (coverState !== 'none') {
-          addCoverIndicator(otherToken, otherToken, coverState, 'target');
-        }
-      });
-    }
-  }
-}
 
 /**
  * Compute auto-cover fresh (ignoring stored maps) and render cover-only badges above targets.
@@ -574,7 +559,7 @@ export function showAutoCoverComputedOverlay(sourceToken) {
     for (const target of others) {
       let state = 'none';
       try {
-        state = detectCoverStateForAttack(sourceToken, target) || 'none';
+        state = autoCoverSystem.detectCoverBetweenTokens(sourceToken, target) || 'none';
       } catch (_) {
         state = 'none';
       }
@@ -582,7 +567,7 @@ export function showAutoCoverComputedOverlay(sourceToken) {
         addCoverIndicator(target, sourceToken, state, 'target');
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export function hideAutoCoverComputedOverlay() {
@@ -725,7 +710,7 @@ function addVisibilityIndicator(
       const coverState = coverMap[relationToken.document.id] || 'none';
       if (coverState !== 'none') coverConfig = COVER_STATES[coverState];
     }
-  } catch (_) {}
+  } catch (_) { }
 
   // Compute aligned positions using world->screen transform
   const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
@@ -768,7 +753,7 @@ function addVisibilityIndicator(
         const coverMap = getCoverMap(coverMapSource);
         coverStateName = coverMap[relationToken.document.id] || 'none';
       }
-    } catch (_) {}
+    } catch (_) { }
     indicator._coverBadgeEl = placeBadge(
       coverLeft,
       centerY,
@@ -793,11 +778,11 @@ function ensureBadgeTicker() {
   HoverTooltips.badgeTicker = () => {
     try {
       updateBadgePositions();
-    } catch (_) {}
+    } catch (_) { }
   };
   try {
     canvas.app.ticker.add(HoverTooltips.badgeTicker);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function updateBadgePositions() {
@@ -947,7 +932,7 @@ function hideAllVisibilityIndicators() {
   }
 
   // Clean up all indicators
-  HoverTooltips.visibilityIndicators.forEach((indicator, tokenId) => {
+  HoverTooltips.visibilityIndicators.forEach((indicator) => {
     try {
       // Remove DOM badges if present
       if (indicator._visBadgeEl && indicator._visBadgeEl.parentNode) {
@@ -971,7 +956,7 @@ function hideAllVisibilityIndicators() {
         try {
           if (indicator._coverBadgeEl.parentNode)
             indicator._coverBadgeEl.parentNode.removeChild(indicator._coverBadgeEl);
-        } catch (_) {}
+        } catch (_) { }
         delete indicator._coverBadgeEl;
       }
 
@@ -994,7 +979,7 @@ function hideAllVisibilityIndicators() {
         indicator._visBadgeEl.parentNode.removeChild(indicator._visBadgeEl);
       }
       delete indicator._visBadgeEl;
-    } catch (_) {}
+    } catch (_) { }
   });
 
   // Clear the map
@@ -1009,7 +994,7 @@ function hideAllVisibilityIndicators() {
       canvas.app?.ticker?.remove?.(HoverTooltips.badgeTicker);
       HoverTooltips.badgeTicker = null;
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 /**
@@ -1018,7 +1003,7 @@ function hideAllVisibilityIndicators() {
 function hideAllCoverIndicators() {
   try {
     game.tooltip.deactivate();
-  } catch (_) {}
+  } catch (_) { }
   HoverTooltips.coverIndicators.forEach((indicator) => {
     try {
       if (indicator._coverBadgeEl && indicator._coverBadgeEl.parentNode) {
@@ -1033,7 +1018,7 @@ function hideAllCoverIndicators() {
       }
       if (indicator.parent) indicator.parent.removeChild(indicator);
       indicator.destroy({ children: true, texture: true, baseTexture: true });
-    } catch (_) {}
+    } catch (_) { }
   });
   HoverTooltips.coverIndicators.clear();
   // Stop ticker if nothing remains
@@ -1046,7 +1031,7 @@ function hideAllCoverIndicators() {
       canvas.app?.ticker?.remove?.(HoverTooltips.badgeTicker);
       HoverTooltips.badgeTicker = null;
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 /**
@@ -1063,16 +1048,7 @@ export function cleanupHoverTooltips() {
   setTooltipMode('target');
 
   // Remove only our specific event listeners from tokens
-  HoverTooltips.tokenEventHandlers.forEach((handlers, tokenId) => {
-    const token = canvas.tokens.get(tokenId);
-    if (token) {
-      token.off('pointerover', handlers.overHandler);
-      token.off('pointerout', handlers.outHandler);
-    }
-  });
-
-  // Clear the handlers map
-  HoverTooltips.tokenEventHandlers.clear();
+  cleanupTokenEventListeners();
 
   _initialized = false;
 

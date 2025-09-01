@@ -1,17 +1,9 @@
 import { extractActionData } from './action-extractor.js';
-import {
-  injectCoverOverrideIndicator,
-  shouldShowCoverOverrideIndicator,
-} from './cover-override-indicator.js';
 import { processedMessages } from './data/message-cache.js';
 
 export async function handleRenderChatMessage(message, html) {
   // Always check for cover override indicators first, regardless of action data
-  const shouldShow = await shouldShowCoverOverrideIndicator(message);
-
-  if (shouldShow) {
-    await injectCoverOverrideIndicator(message, html);
-  }
+  // Use singleton CoverUIManager instance
   const actionData = await extractActionData(message);
   if (!actionData) return;
 

@@ -80,15 +80,7 @@ jobs:
         run: npm run lint
 
       - name: Run tests
-        run: npm run test:ci
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+        run: npm run test
 
   # Security and dependency checks
   security:
@@ -193,11 +185,11 @@ jobs:
           tag: ${{ github.event.release.tag_name }}
           body: ${{ github.event.release.body }}
 
-  # Publish to Foundry VTT (only after successful build)
+  # Publish to Foundry VTT (only after successful build, excluding pre-releases)
   publish-to-foundry:
     runs-on: ubuntu-latest
     needs: [build]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && !github.event.release.prerelease
 
     steps:
       - name: Publish to Foundry VTT

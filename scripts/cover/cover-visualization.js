@@ -1,8 +1,7 @@
 import { MODULE_ID } from '../constants.js';
 import { HoverTooltips } from '../services/hover-tooltips.js';
 import { getVisibilityBetween } from '../utils.js';
-import { detectCoverStateForAttack } from './auto-cover.js';
-
+import autoCoverSystem from './auto-cover/AutoCoverSystem.js';
 /**
  * Cover field visualization system
  * Shows cover levels from cursor position to hovered token when hotkey is held
@@ -243,7 +242,7 @@ class CoverVisualization {
         }
       } catch (error) {
         // Silently fail if mouse position detection fails
-        console.debug('PF2E Visioner: Could not detect mouse position for token detection');
+        console.error('PF2E Visioner: Could not detect mouse position for token detection');
       }
     }
 
@@ -262,7 +261,7 @@ class CoverVisualization {
         }
       } catch (error) {
         // Silently fail if mouse position detection fails
-        console.debug('PF2E Visioner: Could not validate mouse position for token detection');
+        console.error('PF2E Visioner: Could not validate mouse position for token detection');
       }
     }
   }
@@ -375,7 +374,7 @@ class CoverVisualization {
       }
     } catch (error) {
       // Silently fail if mouse position detection fails
-      console.debug('PF2E Visioner: Could not validate hover state');
+      console.error('PF2E Visioner: Could not validate hover state');
     }
   }
 
@@ -789,7 +788,7 @@ class CoverVisualization {
       const tokenCenter = token.center ?? token.getCenter();
       const distance = Math.sqrt(
         Math.pow(tokenCenter.x - selectedCenter.x, 2) +
-          Math.pow(tokenCenter.y - selectedCenter.y, 2),
+        Math.pow(tokenCenter.y - selectedCenter.y, 2),
       );
       const gridDistance = Math.ceil(distance / gridSize);
       maxDistance = Math.max(maxDistance, gridDistance);
@@ -859,7 +858,8 @@ class CoverVisualization {
           },
         };
 
-        // Calculate what cover the selected token would have at this position from the hovered token
+        // Calculate what cover the hovered token would have when attacked from this grid position
+        // This shows the cover level that would apply if an attacker were standing at this grid square
         // For visualization, always ignore undetected/hidden tokens regardless of settings
         // Use the selected token's perspective for visibility checks
 
@@ -877,7 +877,9 @@ class CoverVisualization {
         }
 
         if (shouldShowCover) {
-          const coverLevel = detectCoverStateForAttack(hoveredToken, tempAttacker, {
+          // Calculate cover FROM this grid position TO the hovered token
+          // (i.e., what cover does the target have when attacked from this position)
+          const coverLevel = autoCoverSystem.detectCoverBetweenTokens(tempAttacker, hoveredToken, {
             filterOverrides: {
               ignoreUndetected: true,
               visibilityPerspective: selectedToken,
@@ -918,7 +920,7 @@ class CoverVisualization {
         standard: 0xff8c00, // Orange - standard cover
         greater: 0xd946ef, // Magenta - greater cover
       };
-      
+
     } else if (colorblindMode == 'tritanopia') {
       colors = {
         none: 0x00b050, // Green - no cover
@@ -926,7 +928,7 @@ class CoverVisualization {
         standard: 0xff6600, // Orange - standard cover
         greater: 0xdc143c, // Crimson - greater cover
       };
-      
+
     } else if (colorblindMode == 'achromatopsia') {
       colors = {
         none: 0x000000, // Black - no cover
@@ -934,7 +936,7 @@ class CoverVisualization {
         standard: 0x666666, // Medium gray - standard cover
         greater: 0x999999, // Light gray - greater cover
       };
-      
+
     } else {
       colors = {
         none: 0x4caf50, // Green - no cover

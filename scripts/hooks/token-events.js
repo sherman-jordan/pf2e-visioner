@@ -3,7 +3,7 @@
  */
 
 import { MODULE_ID } from '../constants.js';
-import { cleanupHoverTooltips, initializeHoverTooltips } from '../services/hover-tooltips.js';
+import { addTokenEventListener, cleanupHoverTooltips, initializeHoverTooltips } from '../services/hover-tooltips.js';
 import { updateTokenVisuals } from '../services/visual-effects.js';
 
 export async function onTokenCreated(scene, tokenDoc) {
@@ -38,9 +38,12 @@ export async function onTokenCreated(scene, tokenDoc) {
   } catch (_) {}
   setTimeout(async () => {
     await updateTokenVisuals();
+    // Add hover tooltip listeners to the new token
     if (game.settings.get('pf2e-visioner', 'enableHoverTooltips')) {
-      cleanupHoverTooltips();
-      initializeHoverTooltips();
+      const token = canvas.tokens.get(tokenDoc.id);
+      if (token) {
+        addTokenEventListener(token);
+      }
     }
   }, 100);
 }

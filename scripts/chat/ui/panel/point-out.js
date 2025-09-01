@@ -18,23 +18,23 @@ export function buildPointOutPanel(actionData, message) {
         <button type="button" 
                 class="visioner-btn ${buttonClass}" 
                 data-action="${actionName}"
-                title="${tooltip}">
+                data-tooltip="${tooltip}">
           <i class="${icon}"></i> ${label}
         </button>
-        ${game.user.isGM ? `<button type="button" class="visioner-btn ${buttonClass} apply-now" data-action="apply-now-point-out" title="Apply all calculated changes without opening the dialog"><i class="fas fa-check-double"></i> Apply Changes</button>` : ``}`;
+        ${game.user.isGM ? `<button type="button" class="visioner-btn ${buttonClass} apply-now" data-action="apply-now-point-out" data-tooltip="Apply all calculated changes without opening the dialog"><i class="fas fa-check-double"></i> Apply Changes</button>` : ``}`;
     }
   } else if (game.user.isGM) {
     actionButtonsHtml = `
       <button type="button" 
               class="visioner-btn ${buttonClass}" 
               data-action="${actionName}"
-              title="${tooltip}">
+              data-tooltip="${tooltip}">
         <i class="${icon}"></i> ${label}
       </button>
       <button type="button"
               class="visioner-btn ${buttonClass} apply-now"
               data-action="apply-now-point-out"
-              title="Apply all calculated changes without opening the dialog">
+              data-tooltip="Apply all calculated changes without opening the dialog">
         <i class="fas fa-check-double"></i> Apply Changes
       </button>`;
   }

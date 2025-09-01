@@ -34,26 +34,109 @@ export function registerUIHooks() {
   const refreshTokenTool = () => {
     try {
       const tokenTools = ui.controls.controls?.tokens?.tools;
-      const tool = getNamedTool(tokenTools, 'pf2e-visioner-toggle-token-provide');
+      const tool = getNamedTool(tokenTools, 'pf2e-visioner-cycle-token-cover');
       if (!tool) return;
       const selected = canvas?.tokens?.controlled ?? [];
-      const provideActive =
-        selected.length > 0 &&
-        selected.every((t) => t?.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover') !== true);
-      tool.active = provideActive;
-      tool.icon = provideActive ? 'fa-solid fa-shield' : 'fa-solid fa-shield-slash';
+      
+      if (!selected.length) {
+        tool.icon = 'fa-solid fa-bolt-auto';
+        tool.title = 'Cycle Token Cover (Selected Tokens)';
+        ui.controls.render();
+        return;
+      }
+      
+      // Update icon and title based on first selected token's cover override
+      const firstTokenOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+      const currentCoverState = firstTokenOverride || 'auto';
+      
+      switch (currentCoverState) {
+        case 'auto':
+          tool.icon = 'fa-solid fa-bolt-auto';
+          tool.title = 'Cycle Token Cover: Auto → No Cover';
+          break;
+        case 'none':
+          tool.icon = 'fa-solid fa-shield-slash';
+          tool.title = 'Cycle Token Cover: No Cover → Lesser Cover';
+          break;
+        case 'lesser':
+          tool.icon = 'fa-regular fa-shield';
+          tool.title = 'Cycle Token Cover: Lesser → Standard Cover';
+          break;
+        case 'standard':
+          tool.icon = 'fa-solid fa-shield-alt';
+          tool.title = 'Cycle Token Cover: Standard → Greater Cover';
+          break;
+        case 'greater':
+          tool.icon = 'fa-solid fa-shield';
+          tool.title = 'Cycle Token Cover: Greater → Auto';
+          break;
+      }
+      
       ui.controls.render();
     } catch (_) {}
   };
-  // Utility: label identifiers for selected walls on the canvas
-  const refreshWallIdentifierLabels = () => {
+  // Helper: get cover status info for a wall
+  const getWallCoverInfo = async (wallDocument) => {
+    try {
+      const { COVER_STATES } = await import('../constants.js');
+      const coverOverride = wallDocument?.getFlag?.(MODULE_ID, 'coverOverride');
+      
+      if (!coverOverride) {
+        // Auto mode - show auto icon
+        return {
+          icon: 'fas fa-bolt-auto',
+          color: 0x888888,
+          tooltip: 'Automatic Cover Detection'
+        };
+      }
+      
+      const coverState = COVER_STATES[coverOverride];
+      if (coverState) {
+        // Convert CSS color to hex number for PIXI
+        let color = 0x888888; // default gray
+        if (coverOverride === 'none') color = 0x4caf50; // green
+        else if (coverOverride === 'lesser') color = 0xffc107; // yellow
+        else if (coverOverride === 'standard') color = 0xff6600; // orange
+        else if (coverOverride === 'greater') color = 0xf44336; // red
+        
+        return {
+          icon: coverState.icon,
+          color: color,
+          tooltip: `Cover: ${coverOverride.charAt(0).toUpperCase() + coverOverride.slice(1)}`
+        };
+      }
+      
+      return 'auto';
+    } catch (_) {
+      return 'auto';
+    }
+  };
+
+  // Track Alt key state
+  let isAltPressed = false;
+
+  // Utility: label identifiers and cover status for walls when Alt is held
+  const refreshWallIdentifierLabels = async () => {
     try {
       const walls = canvas?.walls?.placeables || [];
       const layer = canvas?.controls || canvas?.hud || canvas?.stage;
+      
+      // Check if walls tool is active
+      const isWallTool = ui.controls?.activeControl === 'walls';
+      
       // Clean up labels that shouldn't exist anymore
       for (const w of walls) {
-        const shouldShow = !!w?.controlled && !!w?.document?.getFlag?.(MODULE_ID, 'wallIdentifier');
-        if (!shouldShow && w._pvIdLabel) {
+        const idf = w?.document?.getFlag?.(MODULE_ID, 'wallIdentifier');
+        const coverOverride = w?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+        
+        // Show identifier if wall is controlled AND walls tool is active AND has identifier
+        const shouldShowIdentifier = !!w?.controlled && isWallTool && !!idf;
+        
+        // Show cover status if Alt is pressed AND walls tool is active AND has cover override
+        const shouldShowCover = isAltPressed && isWallTool && coverOverride !== undefined;
+        
+        // Clean up identifier label if it shouldn't show
+        if (!shouldShowIdentifier && w._pvIdLabel) {
           try {
             w._pvIdLabel.parent?.removeChild?.(w._pvIdLabel);
           } catch (_) {}
@@ -62,37 +145,211 @@ export function registerUIHooks() {
           } catch (_) {}
           delete w._pvIdLabel;
         }
+        
+        // Clean up cover icon if it shouldn't show
+        if (!shouldShowCover && w._pvCoverIcon) {
+          try {
+            w._pvCoverIcon.parent?.removeChild?.(w._pvCoverIcon);
+          } catch (_) {}
+          try {
+            w._pvCoverIcon.destroy?.();
+          } catch (_) {}
+          delete w._pvCoverIcon;
+        }
       }
-      // Create/update labels for currently controlled walls
+      
+      // Create/update labels for walls
       for (const w of walls) {
-        if (!w?.controlled) continue;
         const idf = w?.document?.getFlag?.(MODULE_ID, 'wallIdentifier');
-        if (!idf) continue;
+        const coverInfo = await getWallCoverInfo(w.document);
+        
+        // Check conditions for showing each type of label
+        const shouldShowIdentifier = !!w?.controlled && isWallTool && !!idf;
+        const shouldShowCover = isAltPressed && isWallTool && coverInfo;
+        
+        // Skip if nothing to show
+        if (!shouldShowIdentifier && !shouldShowCover) continue;
+        
         try {
           const [x1, y1, x2, y2] = Array.isArray(w.document?.c)
             ? w.document.c
             : [w.document?.x, w.document?.y, w.document?.x2, w.document?.y2];
           const mx = (Number(x1) + Number(x2)) / 2;
           const my = (Number(y1) + Number(y2)) / 2;
-          if (!w._pvIdLabel) {
-            const style = new PIXI.TextStyle({
-              fill: 0xffffff,
-              fontSize: 12,
-              stroke: 0x000000,
-              strokeThickness: 3,
-            });
-            const text = new PIXI.Text(String(idf), style);
-            text.anchor.set(0.5, 1);
-            text.zIndex = 10000;
-            text.position.set(mx, my - 6);
-            // Prefer controls layer; fallback to wall container
-            if (layer?.addChild) layer.addChild(text);
-            else w.addChild?.(text);
-            w._pvIdLabel = text;
-          } else {
-            w._pvIdLabel.text = String(idf);
-            w._pvIdLabel.position.set(mx, my - 6);
+          
+          // Handle identifier text
+          if (shouldShowIdentifier) {
+            if (!w._pvIdLabel) {
+              const style = new PIXI.TextStyle({
+                fill: 0xffffff,
+                fontSize: 12,
+                stroke: 0x000000,
+                strokeThickness: 3,
+              });
+              const text = new PIXI.Text(String(idf), style);
+              text.anchor.set(0.5, 1);
+              text.zIndex = 10000;
+              text.position.set(mx, my - 6);
+              // Prefer controls layer; fallback to wall container
+              if (layer?.addChild) layer.addChild(text);
+              else w.addChild?.(text);
+              w._pvIdLabel = text;
+            } else {
+              w._pvIdLabel.text = String(idf);
+              w._pvIdLabel.position.set(mx, my - 6);
+            }
+          } else if (w._pvIdLabel) {
+            // Remove identifier label if no longer needed
+            try {
+              w._pvIdLabel.parent?.removeChild?.(w._pvIdLabel);
+            } catch (_) {}
+            try {
+              w._pvIdLabel.destroy?.();
+            } catch (_) {}
+            delete w._pvIdLabel;
           }
+          
+          // Handle cover status text
+          if (shouldShowCover) {
+            const textOffsetX = 0; // Keep text centered
+            const textY = shouldShowIdentifier ? my - 24 : my - 18; // Position text above identifier or wall center
+            
+            // Get cover text
+            let coverText = '';
+            if (coverInfo.tooltip.includes('Automatic')) {
+              coverText = 'AUTO';
+            } else if (coverInfo.tooltip.includes('None')) {
+              coverText = 'NONE';
+            } else if (coverInfo.tooltip.includes('Lesser')) {
+              coverText = 'LESSER';
+            } else if (coverInfo.tooltip.includes('Standard')) {
+              coverText = 'STANDARD';
+            } else if (coverInfo.tooltip.includes('Greater')) {
+              coverText = 'GREATER';
+            } else {
+              coverText = 'AUTO';
+            }
+            
+            if (!w._pvCoverIcon) {
+              // Create a container for the text
+              const container = new PIXI.Container();
+              container.zIndex = 10001; // Above identifier text
+              
+              // Calculate scale based on camera zoom
+              const cameraScale = canvas?.stage?.scale?.x || 1;
+              const baseScale = Math.max(0.8, Math.min(2.0, 1 / cameraScale)); // Scale inversely with zoom, clamped
+              
+              // Create background rectangle for better visibility
+              const bg = new PIXI.Graphics();
+              bg.beginFill(0x000000, 0.8);
+              bg.lineStyle(1, coverInfo.color, 1);
+              
+              // Calculate text dimensions for background sizing
+              const tempStyle = new PIXI.TextStyle({
+                fontFamily: 'Arial, sans-serif',
+                fontSize: Math.round(10 * baseScale),
+                fill: coverInfo.color,
+                fontWeight: 'bold',
+              });
+              const tempText = new PIXI.Text(coverText, tempStyle);
+              const textWidth = tempText.width;
+              const textHeight = tempText.height;
+              tempText.destroy();
+              
+              // Draw rounded rectangle background
+              const padding = 3 * baseScale;
+              bg.drawRoundedRect(
+                -textWidth / 2 - padding,
+                -textHeight / 2 - padding,
+                textWidth + padding * 2,
+                textHeight + padding * 2,
+                3 * baseScale
+              );
+              bg.endFill();
+              container.addChild(bg);
+              
+              // Create text label
+              const textStyle = new PIXI.TextStyle({
+                fontFamily: 'Arial, sans-serif',
+                fontSize: Math.round(10 * baseScale),
+                fill: coverInfo.color,
+                stroke: 0x000000,
+                strokeThickness: Math.max(1, Math.round(1 * baseScale)),
+                fontWeight: 'bold',
+              });
+              
+              const text = new PIXI.Text(coverText, textStyle);
+              text.anchor.set(0.5, 0.5);
+              container.addChild(text);
+              
+              container.position.set(mx + textOffsetX, textY);
+              container.scale.set(baseScale);
+              
+
+              
+              // Store tooltip and scale info
+              container._tooltip = coverInfo.tooltip;
+              container._baseScale = baseScale;
+              container._coverText = coverText;
+              
+              // Prefer controls layer; fallback to wall container
+              if (layer?.addChild) layer.addChild(container);
+              else w.addChild?.(container);
+              w._pvCoverIcon = container;
+            } else {
+              // Update existing text position, scale, and content
+              const cameraScale = canvas?.stage?.scale?.x || 1;
+              const baseScale = Math.max(0.8, Math.min(2.0, 1 / cameraScale));
+              
+              w._pvCoverIcon.position.set(mx + textOffsetX, textY);
+              w._pvCoverIcon.scale.set(baseScale);
+              
+
+              
+              // Update text content and color if changed
+              const text = w._pvCoverIcon.children[1]; // Text is second child after background
+              if (text && (text.text !== coverText || w._pvCoverIcon._coverText !== coverText)) {
+                text.text = coverText;
+                text.style.fill = coverInfo.color;
+                w._pvCoverIcon._coverText = coverText;
+                
+                // Update background size and color
+                const bg = w._pvCoverIcon.children[0];
+                if (bg) {
+                  bg.clear();
+                  bg.beginFill(0x000000, 0.8);
+                  bg.lineStyle(1, coverInfo.color, 1);
+                  
+                  const textWidth = text.width;
+                  const textHeight = text.height;
+                  const padding = 3;
+                  bg.drawRoundedRect(
+                    -textWidth / 2 - padding,
+                    -textHeight / 2 - padding,
+                    textWidth + padding * 2,
+                    textHeight + padding * 2,
+                    3
+                  );
+                  bg.endFill();
+                }
+              }
+              
+
+              
+              w._pvCoverIcon._tooltip = coverInfo.tooltip;
+              w._pvCoverIcon._baseScale = baseScale;
+            }
+          } else if (w._pvCoverIcon) {
+            // Remove cover text if no longer needed
+            try {
+              w._pvCoverIcon.parent?.removeChild?.(w._pvCoverIcon);
+            } catch (_) {}
+            try {
+              w._pvCoverIcon.destroy?.();
+            } catch (_) {}
+            delete w._pvCoverIcon;
+          }
+          
         } catch (_) {
           /* ignore label errors */
         }
@@ -105,14 +362,40 @@ export function registerUIHooks() {
       const wallTools = ui.controls.controls?.walls?.tools;
       const selected = canvas?.walls?.controlled ?? [];
 
-      // Provide Cover toggle state (active = provides cover)
-      const provideTool = getNamedTool(wallTools, 'pf2e-visioner-toggle-wall-provide');
-      if (provideTool) {
-        const provideActive =
-          selected.length > 0 &&
-          selected.every((w) => w?.document?.getFlag?.(MODULE_ID, 'provideCover') !== false);
-        provideTool.active = provideActive;
-        provideTool.icon = provideActive ? 'fa-solid fa-shield' : 'fa-solid fa-shield-slash';
+      // Cover cycling tool
+      const coverTool = getNamedTool(wallTools, 'pf2e-visioner-cycle-wall-cover');
+      if (coverTool) {
+        if (!selected.length) {
+          coverTool.icon = 'fa-solid fa-bolt-auto';
+          coverTool.title = 'Cycle Wall Cover (Selected Walls)';
+        } else {
+          // Update icon and title based on first selected wall's cover override
+          const firstWallOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          const currentCoverState = firstWallOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+              coverTool.icon = 'fa-solid fa-bolt-auto';
+              coverTool.title = 'Cycle Wall Cover: Auto → No Cover';
+              break;
+            case 'none':
+              coverTool.icon = 'fa-solid fa-shield-slash';
+              coverTool.title = 'Cycle Wall Cover: No Cover → Standard Cover';
+              break;
+            case 'lesser':
+              coverTool.icon = 'fa-regular fa-shield';
+              coverTool.title = 'Cycle Wall Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              coverTool.icon = 'fa-solid fa-shield-alt';
+              coverTool.title = 'Cycle Wall Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              coverTool.icon = 'fa-solid fa-shield';
+              coverTool.title = 'Cycle Wall Cover: Greater → Auto';
+              break;
+          }
+        }
       }
 
       // Hidden Wall toggle state
@@ -126,7 +409,7 @@ export function registerUIHooks() {
       }
 
       // Also refresh identifier labels on the canvas when selection changes
-      refreshWallIdentifierLabels();
+      refreshWallIdentifierLabels().catch(() => {});
       ui.controls.render();
     } catch (_) {}
   };
@@ -138,6 +421,31 @@ export function registerUIHooks() {
   Hooks.on('deleteWall', refreshWallTool);
   Hooks.on('createWall', refreshWallTool);
   Hooks.on('updateWall', refreshWallTool);
+  
+  // Refresh wall labels when camera zoom changes
+  Hooks.on('canvasPan', () => {
+    refreshWallIdentifierLabels().catch(() => {});
+  });
+  
+  // Refresh wall labels when active tool changes
+  Hooks.on('renderSceneControls', () => {
+    refreshWallIdentifierLabels().catch(() => {});
+  });
+  
+  // Add keyboard event listeners for Alt key
+  document.addEventListener('keydown', (event) => {
+    if (event.altKey && !isAltPressed) {
+      isAltPressed = true;
+      refreshWallIdentifierLabels().catch(() => {});
+    }
+  });
+  
+  document.addEventListener('keyup', (event) => {
+    if (!event.altKey && isAltPressed) {
+      isAltPressed = false;
+      refreshWallIdentifierLabels().catch(() => {});
+    }
+  });
   for (const hook of [
     'renderTokenConfig',
     'renderPrototypeTokenConfig',
@@ -182,30 +490,81 @@ export function registerUIHooks() {
 
         // Toggle Provide Auto-Cover (Selected Walls)
         const selectedWalls = canvas?.walls?.controlled ?? [];
+        
+        // Determine current cover state for icon display
+        let currentCoverState = 'auto';
+        let iconClass = 'fa-solid fa-bolt-auto';
+        let titleText = 'Cycle Wall Cover (Selected Walls)';
+        
+        if (selectedWalls.length > 0) {
+          // Get the cover override of the first selected wall to determine icon
+          const firstWallOverride = selectedWalls[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          currentCoverState = firstWallOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+              iconClass = 'fa-solid fa-bolt-auto';
+              titleText = 'Cycle Wall Cover: Auto → No Cover';
+              break;
+            case 'none':
+              iconClass = 'fa-solid fa-shield-slash';
+              titleText = 'Cycle Wall Cover: No Cover → Standard Cover';
+              break;
+            case 'lesser':
+              iconClass = 'fa-regular fa-shield';
+              titleText = 'Cycle Wall Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              iconClass = 'fa-solid fa-shield-alt';
+              titleText = 'Cycle Wall Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              iconClass = 'fa-solid fa-shield'
+              titleText = 'Cycle Wall Cover: Greater → Auto';
+              break;
+          }
+        }
+        
         addTool(walls.tools, {
-          name: 'pf2e-visioner-toggle-wall-provide',
-          title: 'Toggle Provide Auto-Cover (Selected Walls)',
-          icon:
-            selectedWalls.length > 0 &&
-            selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, 'provideCover') !== false)
-              ? 'fa-solid fa-shield'
-              : 'fa-solid fa-shield-slash',
-          toggle: true,
-          active:
-            selectedWalls.length > 0 &&
-            selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, 'provideCover') !== false),
-          onChange: async (_event, toggled) => {
+          name: 'pf2e-visioner-cycle-wall-cover',
+          title: titleText,
+          icon: iconClass,
+          toggle: false,
+          button: true,
+          onChange: async () => {
             try {
               const selected = canvas?.walls?.controlled ?? [];
-              if (!selected.length) return;
+              if (!selected.length) {
+                console.log('PF2E Visioner | No walls selected');
+                return;
+              }
 
-              // Active means walls should provide cover
-              const newValue = !!toggled;
+              // Cycle through cover states: auto → none → standard → greater → auto
+              const coverCycle = ['auto', 'none', 'standard', 'greater'];
+              
+              // Get current state of first wall to determine next state
+              const currentOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+              const currentIndex = coverCycle.indexOf(currentOverride);
+              const nextIndex = (currentIndex + 1) % coverCycle.length;
+              const nextCoverOverride = coverCycle[nextIndex];
+              
+              console.log(`PF2E Visioner | Cycling wall cover: ${currentOverride || 'auto'} → ${nextCoverOverride || 'auto'}`);
+              
               await Promise.all(
-                selected.map((w) => w?.document?.setFlag?.(MODULE_ID, 'provideCover', newValue)),
+                selected.map((w) => {
+                  const promises = [
+                    w?.document?.setFlag?.(MODULE_ID, 'coverOverride', nextCoverOverride),
+                    w?.document?.setFlag?.(MODULE_ID, 'provideCover', nextCoverOverride !== 'none')
+                  ];
+                  return Promise.all(promises.filter(Boolean));
+                })
               );
-              ui.controls.render();
-            } catch (_) {}
+              
+              // Force controls to re-render to update icon
+              ui.controls.render(true);
+            } catch (e) {
+              console.error('PF2E Visioner | Error cycling wall cover:', e);
+            }
           },
         });
 
@@ -266,44 +625,77 @@ export function registerUIHooks() {
         }
         // Toggle Provide Auto-Cover (Selected Tokens)
         const selectedTokens = canvas?.tokens?.controlled ?? [];
+        
+        // Determine current cover state for icon display
+        let currentCoverState = 'auto';
+        let iconClass = 'fa-solid fa-bolt-auto';
+        let titleText = 'Cycle Token Cover (Selected Tokens)';
+        
+        if (selectedTokens.length > 0) {
+          // Get the cover override of the first selected token to determine icon
+          const firstTokenOverride = selectedTokens[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          currentCoverState = firstTokenOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+              iconClass = 'fa-solid fa-bolt-auto';
+              titleText = 'Cycle Token Cover: Auto → No Cover';
+              break;
+            case 'none':
+              iconClass = 'fa-solid fa-shield-slash';
+              titleText = 'Cycle Token Cover: No Cover → Lesser Cover';
+              break;
+            case 'lesser':
+              iconClass = 'fa-regular fa-shield';
+              titleText = 'Cycle Token Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              iconClass = 'fa-solid fa-shield-alt';
+              titleText = 'Cycle Token Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              iconClass = 'fa-solid fa-shield';
+              titleText = 'Cycle Token Cover: Greater → Auto';
+              break;
+          }
+        }
+        
         addTool(tokens.tools, {
-          name: 'pf2e-visioner-toggle-token-provide',
-          title: 'Toggle Provide Auto-Cover (Selected Tokens)',
-          icon:
-            selectedTokens.length > 0 &&
-            selectedTokens.every(
-              (t) => t?.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover') !== true,
-            )
-              ? 'fa-solid fa-shield-slash'
-              : 'fa-solid fa-shield',
-          toggle: true,
-          active:
-            selectedTokens.length > 0 &&
-            selectedTokens.every(
-              (t) => t?.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover') !== true,
-            ),
-          onChange: async (_event, toggled) => {
+          name: 'pf2e-visioner-cycle-token-cover',
+          title: titleText,
+          icon: iconClass,
+          toggle: false,
+          button: true,
+          onChange: async () => {
             try {
               const selected = canvas?.tokens?.controlled ?? [];
-              if (!selected.length) return;
+              if (!selected.length) {
+                console.log('PF2E Visioner | No tokens selected');
+                return;
+              }
 
-              const ignoreValue = toggled ? false : true; // active = provide cover => ignore=false
+              // Cycle through cover states: auto → none → lesser → standard → greater → auto
+              const coverCycle = ['auto', 'none', 'lesser', 'standard', 'greater'];
+              
+              // Get current state of first token to determine next state
+              const currentOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+              const currentIndex = coverCycle.indexOf(currentOverride);
+              const nextIndex = (currentIndex + 1) % coverCycle.length;
+              const nextCoverOverride = coverCycle[nextIndex];
+              
+              console.log(`PF2E Visioner | Cycling cover: ${currentOverride || 'auto'} → ${nextCoverOverride || 'auto'}`);
+              
               await Promise.all(
                 selected.map((t) =>
-                  t?.document?.setFlag?.(MODULE_ID, 'ignoreAutoCover', ignoreValue),
+                  t?.document?.setFlag?.(MODULE_ID, 'coverOverride', nextCoverOverride),
                 ),
               );
-              ui.controls.render();
-              try {
-                const { updateTokenVisuals } = await import('../services/visual-effects.js');
-                const allPlaceables = canvas?.tokens?.placeables ?? [];
-                for (const t of allPlaceables) {
-                  try {
-                    await updateTokenVisuals(t);
-                  } catch (_) {}
-                }
-              } catch (_) {}
-            } catch (_) {}
+              
+              // Force controls to re-render to update icon
+              ui.controls.render(true);
+            } catch (e) {
+              console.error('PF2E Visioner | Error cycling token cover:', e);
+            }
           },
         });
 
@@ -443,9 +835,7 @@ function injectPF2eVisionerBox(app, root) {
   // Current values
   const stealthCurrent =
     tokenDoc.getFlag?.(MODULE_ID, 'stealthDC') ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? '';
-  const ignoreAutoCover = !!(
-    tokenDoc.getFlag?.(MODULE_ID, 'ignoreAutoCover') ?? tokenDoc.flags?.[MODULE_ID]?.ignoreAutoCover
-  );
+  const coverOverride = tokenDoc.getFlag?.(MODULE_ID, 'coverOverride') || 'auto';
   const minPerceptionRank = Number(
     tokenDoc.getFlag?.(MODULE_ID, 'minPerceptionRank') ??
       tokenDoc.flags?.[MODULE_ID]?.minPerceptionRank ??
@@ -456,8 +846,31 @@ function injectPF2eVisionerBox(app, root) {
   let inner = `
     <legend>PF2E Visioner</legend>
     <div class="form-group">
-      <label>Ignore as Auto-Cover Blocker</label>
-      <input type="checkbox" name="flags.${MODULE_ID}.ignoreAutoCover" ${ignoreAutoCover ? 'checked' : ''}>
+      <label>Cover</label>
+      <div class="cover-override-buttons" style="display: flex; gap: 4px; margin-top: 4px;">
+        <button type="button" class="visioner-icon-btn ${!coverOverride ? 'active' : ''}" 
+                data-cover-override="auto" data-tooltip="Automatic Detection - Token provides cover based on coverage thresholds">
+          <i class="fas fa-bolt-auto" style="color:#888"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'none' ? 'active' : ''}" 
+                data-cover-override="none" data-tooltip="No Cover - Token never provides cover regardless of thresholds">
+          <i class="fas fa-shield-slash" style="color:var(--cover-none)"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'lesser' ? 'active' : ''}" 
+                data-cover-override="lesser" data-tooltip="Lesser Cover - Token always provides lesser cover">
+          <i class="fa-regular fa-shield" style="color:var(--cover-lesser)"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'standard' ? 'active' : ''}" 
+                data-cover-override="standard" data-tooltip="Standard Cover - Token always provides standard cover">
+          <i class="fas fa-shield-alt" style="color:var(--cover-standard)"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'greater' ? 'active' : ''}" 
+                data-cover-override="greater" data-tooltip="Greater Cover - Token always provides greater cover">
+          <i class="fas fa-shield" style="color:var(--cover-greater)"></i>
+        </button>
+      </div>
+      <input type="hidden" name="flags.${MODULE_ID}.coverOverride" value="${coverOverride || ''}">
+      <p class="notes">Set how this token provides cover in combat.</p>
     </div>
   `;
   if (actor.type === 'loot') {
@@ -484,6 +897,33 @@ function injectPF2eVisionerBox(app, root) {
   }
   box.innerHTML = inner;
 
+  // Add event listeners for cover override buttons
+  try {
+    const coverButtons = box.querySelectorAll('.cover-override-buttons .visioner-icon-btn');
+    const hiddenInput = box.querySelector('input[name$=".coverOverride"]');
+    
+    coverButtons.forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const coverType = button.getAttribute('data-cover-override');
+        
+        // Remove active class from all cover override buttons
+        coverButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // Always make the clicked button active (no toggle behavior - one must always be selected)
+        button.classList.add('active');
+        
+        // Update the hidden input for the cover override
+        if (hiddenInput) {
+          // Set the value (empty string for auto, coverType for specific override)
+          hiddenInput.value = coverType === 'auto' ? '' : coverType;
+        }
+      });
+    });
+  } catch (_) {}
+
   if (detectionFS) detectionFS.insertAdjacentElement('afterend', box);
   else panel.appendChild(box);
 }
@@ -495,13 +935,18 @@ function onRenderWallConfig(app, html) {
     const form = root.querySelector('form') || root;
     // Avoid duplicate injection
     if (form.querySelector('.pf2e-visioner-wall-settings')) return;
-    // Build a single grouped fieldset with a quick settings button (no Provide Cover here)
+    
+    // Get current wall document
+    const wallDoc = app?.document;
+    
+    // Build a simple fieldset with just the advanced settings button
     const fs = document.createElement('fieldset');
     fs.className = 'pf2e-visioner-wall-settings';
     fs.innerHTML = `
       <legend>PF2E Visioner</legend>
       <div class="form-group">
-        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Visioner Wall Settings</button>
+        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Advanced Wall Settings</button>
+        <p class="notes">Configure cover settings, hidden walls, and other advanced options.</p>
       </div>
     `;
 
@@ -513,10 +958,11 @@ function onRenderWallConfig(app, html) {
       doorHeader.parentElement.insertAdjacentElement('beforebegin', fs);
     else form.appendChild(fs);
 
-    // Bind quick settings button
+    // Bind event handlers
     try {
+      // Quick settings button
       const btn = fs.querySelector('[data-action="open-visioner-wall-quick"]');
-      if (btn)
+      if (btn) {
         btn.addEventListener('click', async (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
@@ -525,6 +971,9 @@ function onRenderWallConfig(app, html) {
           );
           new VisionerWallQuickSettings(app.document).render(true);
         });
+      }
+
+
     } catch (_) {}
   } catch (_) {}
 }

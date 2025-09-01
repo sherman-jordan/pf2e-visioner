@@ -9,12 +9,17 @@ export function getCoverBonusByState(state) {
   return cfg ? cfg.bonusAC : 0;
 }
 
+export function getCoverStealthBonusByState(state) {
+  const cfg = COVER_STATES[state];
+  return cfg ? cfg.bonusStealth : 0;
+}
+
 export function getCoverLabel(state) {
   const entry = COVER_STATES[state];
   if (entry?.label) {
     try {
       return game.i18n.localize(entry.label);
-    } catch (_) {}
+    } catch (_) { }
   }
   return state ? state.charAt(0).toUpperCase() + state.slice(1) : 'No';
 }
@@ -48,7 +53,7 @@ export function predicateHasSignature(predicate, signature) {
         try {
           const arr = JSON.parse(predicate);
           if (Array.isArray(arr)) return arr.includes(needle);
-        } catch (_) {}
+        } catch (_) { }
       }
       return false;
     }
@@ -58,7 +63,7 @@ export function predicateHasSignature(predicate, signature) {
         if (Array.isArray(val) && val.includes(needle)) return true;
       }
     }
-  } catch (_) {}
+  } catch (_) { }
   return false;
 }
 
@@ -81,7 +86,7 @@ export function extractSignaturesFromPredicate(predicate) {
         try {
           const arr = JSON.parse(predicate);
           if (Array.isArray(arr)) pushFrom(arr);
-        } catch (_) {}
+        } catch (_) { }
       } else if (predicate.startsWith(ORIGIN_SIG_PREFIX)) {
         results.add(predicate.slice(ORIGIN_SIG_PREFIX.length));
       }
@@ -91,7 +96,7 @@ export function extractSignaturesFromPredicate(predicate) {
         if (Array.isArray(val)) pushFrom(val);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
   return [...results];
 }
 
@@ -115,7 +120,7 @@ export function extractCoverAgainstFromPredicate(predicate) {
         try {
           const arr = JSON.parse(predicate);
           if (Array.isArray(arr)) tryPushFrom(arr);
-        } catch (_) {}
+        } catch (_) { }
       } else if (predicate.startsWith('cover-against:')) {
         results.add(predicate.slice('cover-against:'.length));
       }
@@ -127,7 +132,7 @@ export function extractCoverAgainstFromPredicate(predicate) {
       if (Array.isArray(predicate.not)) allArrays.push(predicate.not);
       for (const arr of allArrays) tryPushFrom(arr);
     }
-  } catch (_) {}
+  } catch (_) { }
   return [...results];
 }
 

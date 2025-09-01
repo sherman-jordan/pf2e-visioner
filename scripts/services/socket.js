@@ -202,13 +202,13 @@ async function pointOutRequestHandler({ pointerTokenId, targetTokenId, messageId
               <button type="button" 
                       class="visioner-btn visioner-btn-point-out" 
                       data-action="open-point-out-results"
-                      title="Preview and apply Point Out visibility changes">
+                      data-tooltip="Preview and apply Point Out visibility changes">
                 <i class="fas fa-hand-point-right"></i> Open Point Out Results
               </button>
               <button type="button"
                       class="visioner-btn visioner-btn-point-out apply-now"
                       data-action="apply-now-point-out"
-                      title="Apply all calculated changes without opening the dialog">
+                      data-tooltip="Apply all calculated changes without opening the dialog">
                 <i class="fas fa-check-double"></i> Apply Changes
               </button>
             `;
@@ -357,7 +357,7 @@ async function seekTemplateHandler({
               <button type="button" 
                       class="visioner-btn visioner-btn-seek" 
                       data-action="open-seek-results"
-                      title="${tooltip}">
+                      data-tooltip="${tooltip}">
                 <i class="fas fa-search"></i> ${label}
               </button>
             `;

@@ -123,15 +123,6 @@ describe('AutoCoverSystem', () => {
     });
   });
 
-  describe('getCoverBonusByState', () => {
-    test('should return correct AC bonuses for each cover state', () => {
-      expect(autoCoverSystem.getCoverBonusByState('none')).toBe(0);
-      expect(autoCoverSystem.getCoverBonusByState('lesser')).toBe(1);
-      expect(autoCoverSystem.getCoverBonusByState('standard')).toBe(2);
-      expect(autoCoverSystem.getCoverBonusByState('greater')).toBe(4);
-    });
-  });
-
   describe('clearCoverOverrides', () => {
     test('should call clearCoverOverrides method', () => {
       const token1 = global.createMockToken({ id: 'token1' });

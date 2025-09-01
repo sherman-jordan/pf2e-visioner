@@ -1,6 +1,11 @@
 /**
  * Unit tests for Wall Direction Checking
- * Tests the directional wall logic in CoverDetector
+ * Tests the directional wall logic in CoverDetector using Foundry VTT constants
+ * 
+ * Foundry VTT Wall Direction Constants:
+ * BOTH: 0 - wall blocks from both directions
+ * LEFT: 1 - wall blocks only when a ray strikes its left side
+ * RIGHT: 2 - wall blocks only when a ray strikes its right side
  */
 
 import '../../setup.js';
@@ -31,13 +36,12 @@ describe('Wall Direction Checking', () => {
     test('should return false for walls with sight=0 (no sight blocking)', () => {
       const wallDoc = {
         sight: 0,
-        dir: 1.5,
+        dir: 1, // LEFT direction
         c: [0, 0, 100, 0]
       };
       const attackerPos = { x: 50, y: -50 };
-      const targetPos = { x: 50, y: 50 };
 
-      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
+      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
       expect(result).toBe(false);
     });
 
@@ -48,9 +52,8 @@ describe('Wall Direction Checking', () => {
         c: [0, 0, 100, 0]
       };
       const attackerPos = { x: 50, y: -50 };
-      const targetPos = { x: 50, y: 50 };
 
-      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
+      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
       expect(result).toBe(true);
     });
 
@@ -61,143 +64,178 @@ describe('Wall Direction Checking', () => {
         // no dir property
       };
       const attackerPos = { x: 50, y: -50 };
-      const targetPos = { x: 50, y: 50 };
 
-      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
+      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
       expect(result).toBe(true);
     });
 
-    describe('directional walls (dir is a number)', () => {
-      test('should block attacker with positive cross product', () => {
-        // Horizontal wall from (0,0) to (100,0)
-        const wallDoc = {
-          sight: 20,
-          dir: 1.5,
-          c: [0, 0, 100, 0]
-        };
-        // Attacker below the wall (positive Y) - this gives positive cross product
-        // wallDx = 100, wallDy = 0, attackerDx = 50, attackerDy = 50
-        // crossProduct = 100 * 50 - 0 * 50 = 5000 > 0
-        const attackerPos = { x: 50, y: 50 };
-        const targetPos = { x: 50, y: -50 };
+    describe('Foundry VTT directional walls with proper constants', () => {
+      describe('BOTH (dir = 0) - blocks from both directions', () => {
+        test('should block attacker from left side', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 0, // BOTH
+            c: [0, 0, 100, 0] // Horizontal wall
+          };
+          // Attacker above the wall (negative Y)
+          const attackerPos = { x: 50, y: -50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(true);
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(true);
+        });
+
+        test('should block attacker from right side', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 0, // BOTH
+            c: [0, 0, 100, 0] // Horizontal wall
+          };
+          // Attacker below the wall (positive Y)
+          const attackerPos = { x: 50, y: 50 };
+
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(true);
+        });
       });
 
-      test('should not block attacker with negative cross product', () => {
-        // Horizontal wall from (0,0) to (100,0)
-        const wallDoc = {
-          sight: 20,
-          dir: 1.5,
-          c: [0, 0, 100, 0]
-        };
-        // Attacker above the wall (negative Y) - this gives negative cross product
-        // wallDx = 100, wallDy = 0, attackerDx = 50, attackerDy = -50
-        // crossProduct = 100 * (-50) - 0 * 50 = -5000 < 0
-        const attackerPos = { x: 50, y: -50 };
-        const targetPos = { x: 50, y: 50 };
+      describe('LEFT (dir = 1) - blocks only when ray strikes left side', () => {
+        test('should block attacker from left side (positive cross product)', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 1, // LEFT
+            c: [0, 0, 100, 0] // Horizontal wall
+          };
+          // Attacker below the wall (positive Y) - positive cross product
+          // wallDx = 100, wallDy = 0, attackerDx = 50, attackerDy = 50
+          // crossProduct = 100 * 50 - 0 * 50 = 5000 > 0
+          const attackerPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(false);
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(true);
+        });
+
+        test('should NOT block attacker from right side (negative cross product)', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 1, // LEFT
+            c: [0, 0, 100, 0] // Horizontal wall
+          };
+          // Attacker above the wall (negative Y) - negative cross product
+          // wallDx = 100, wallDy = 0, attackerDx = 50, attackerDy = -50
+          // crossProduct = 100 * (-50) - 0 * 50 = -5000 < 0
+          const attackerPos = { x: 50, y: -50 };
+
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(false);
+        });
+
+        test('should handle vertical wall LEFT direction', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 1, // LEFT
+            c: [0, 0, 0, 100] // Vertical wall
+          };
+          // Attacker to the left of the wall (negative X) - positive cross product
+          // wallDx = 0, wallDy = 100, attackerDx = -50, attackerDy = 50
+          // crossProduct = 0 * 50 - 100 * (-50) = 5000 > 0
+          const attackerPos = { x: -50, y: 50 };
+
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(true);
+        });
       });
 
-      test('should handle vertical wall with positive cross product', () => {
-        // Vertical wall from (0,0) to (0,100)
-        const wallDoc = {
-          sight: 20,
-          dir: 3.14159, // 180 degrees
-          c: [0, 0, 0, 100]
-        };
-        // Attacker to the right of the wall (positive X) - positive cross product
-        // wallDx = 0, wallDy = 100, attackerDx = 50, attackerDy = 50
-        // crossProduct = 0 * 50 - 100 * 50 = -5000 < 0
-        const attackerPos = { x: 50, y: 50 };
-        const targetPos = { x: -50, y: 50 };
+      describe('RIGHT (dir = 2) - blocks only when ray strikes right side', () => {
+        test('should block attacker from right side (negative cross product)', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 2, // RIGHT
+            c: [0, 0, 100, 0] // Horizontal wall
+          };
+          // Attacker above the wall (negative Y) - negative cross product
+          // wallDx = 100, wallDy = 0, attackerDx = 50, attackerDy = -50
+          // crossProduct = 100 * (-50) - 0 * 50 = -5000 < 0
+          const attackerPos = { x: 50, y: -50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(false);
-      });
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(true);
+        });
 
-      test('should handle vertical wall with negative cross product', () => {
-        // Vertical wall from (0,0) to (0,100)
-        const wallDoc = {
-          sight: 20,
-          dir: 3.14159, // 180 degrees
-          c: [0, 0, 0, 100]
-        };
-        // Attacker to the left of the wall (negative X) - positive cross product
-        // wallDx = 0, wallDy = 100, attackerDx = -50, attackerDy = 50
-        // crossProduct = 0 * 50 - 100 * (-50) = 5000 > 0
-        const attackerPos = { x: -50, y: 50 };
-        const targetPos = { x: 50, y: 50 };
+        test('should NOT block attacker from left side (positive cross product)', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 2, // RIGHT
+            c: [0, 0, 100, 0] // Horizontal wall
+          };
+          // Attacker below the wall (positive Y) - positive cross product
+          // wallDx = 100, wallDy = 0, attackerDx = 50, attackerDy = 50
+          // crossProduct = 100 * 50 - 0 * 50 = 5000 > 0
+          const attackerPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(true);
-      });
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(false);
+        });
 
-      test('should handle diagonal walls with positive cross product', () => {
-        // Diagonal wall from (0,0) to (100,100)
-        const wallDoc = {
-          sight: 20,
-          dir: 0.785398, // 45 degrees
-          c: [0, 0, 100, 100]
-        };
-        // Attacker below the diagonal line - positive cross product
-        // wallDx = 100, wallDy = 100, attackerDx = 50, attackerDy = 25
-        // crossProduct = 100 * 25 - 100 * 50 = 2500 - 5000 = -2500 < 0
-        const attackerPos = { x: 50, y: 25 };
-        const targetPos = { x: 50, y: 75 };
+        test('should handle vertical wall RIGHT direction', () => {
+          const wallDoc = {
+            sight: 20,
+            dir: 2, // RIGHT
+            c: [0, 0, 0, 100] // Vertical wall
+          };
+          // Attacker to the right of the wall (positive X) - negative cross product
+          // wallDx = 0, wallDy = 100, attackerDx = 50, attackerDy = 50
+          // crossProduct = 0 * 50 - 100 * 50 = -5000 < 0
+          const attackerPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(false);
-      });
-
-      test('should handle diagonal walls with negative cross product', () => {
-        // Diagonal wall from (0,0) to (100,100)
-        const wallDoc = {
-          sight: 20,
-          dir: 0.785398, // 45 degrees
-          c: [0, 0, 100, 100]
-        };
-        // Attacker above the diagonal line - negative cross product
-        // wallDx = 100, wallDy = 100, attackerDx = 50, attackerDy = 75
-        // crossProduct = 100 * 75 - 100 * 50 = 7500 - 5000 = 2500 > 0
-        const attackerPos = { x: 50, y: 75 };
-        const targetPos = { x: 50, y: 25 };
-
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(true);
+          const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+          expect(result).toBe(true);
+        });
       });
 
       test('should handle walls with alternative coordinate format (x,y,x2,y2)', () => {
         const wallDoc = {
           sight: 20,
-          dir: 1.5,
+          dir: 2, // RIGHT
           x: 0,
           y: 0,
           x2: 100,
           y2: 0
         };
-        // Use negative Y for negative cross product
+        // Attacker above wall (negative Y) - should block for RIGHT direction
         const attackerPos = { x: 50, y: -50 };
-        const targetPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, targetPos);
-        expect(result).toBe(false);
+        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+        expect(result).toBe(true);
+      });
+
+      test('should handle diagonal walls correctly', () => {
+        // Diagonal wall from (0,0) to (100,100)
+        const wallDoc = {
+          sight: 20,
+          dir: 1, // LEFT
+          c: [0, 0, 100, 100]
+        };
+        // Attacker above the diagonal line - positive cross product
+        // wallDx = 100, wallDy = 100, attackerDx = 50, attackerDy = 25
+        // crossProduct = 100 * 25 - 100 * 50 = 2500 - 5000 = -2500 < 0
+        const attackerPos = { x: 50, y: 25 };
+
+        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+        expect(result).toBe(false); // LEFT wall should not block from right side
       });
     });
 
-    describe('cross product calculations', () => {
-      test('should calculate positive cross product for attacker on left side', () => {
-        // This test verifies the math directly
+    describe('cross product calculations verification', () => {
+      test('should calculate cross product correctly for LEFT walls', () => {
+        // This test verifies the math directly for LEFT direction walls
         const wallDoc = {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT - blocks when crossProduct > 0
           c: [0, 0, 100, 0] // horizontal wall
         };
-        const attackerPos = { x: 50, y: -25 }; // above wall
         
+        // Test case 1: Attacker above wall (negative Y) - negative cross product
+        const attackerAbove = { x: 50, y: -25 };
         // Expected calculation:
         // wallDx = 100 - 0 = 100
         // wallDy = 0 - 0 = 0
@@ -205,28 +243,45 @@ describe('Wall Direction Checking', () => {
         // attackerDy = -25 - 0 = -25
         // crossProduct = wallDx * attackerDy - wallDy * attackerDx
         //               = 100 * (-25) - 0 * 50 = -2500
-        // Since crossProduct < 0, this should return false
+        // Since crossProduct < 0 and dir = LEFT, this should return false
         
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, {});
-        expect(result).toBe(false);
-      });
+        const resultAbove = coverDetector._doesWallBlockFromDirection(wallDoc, attackerAbove);
+        expect(resultAbove).toBe(false);
 
-      test('should calculate negative cross product for attacker on right side', () => {
-        const wallDoc = {
-          sight: 20,
-          dir: 1.0,
-          c: [0, 0, 100, 0] // horizontal wall
-        };
-        const attackerPos = { x: 50, y: 25 }; // below wall
-        
+        // Test case 2: Attacker below wall (positive Y) - positive cross product
+        const attackerBelow = { x: 50, y: 25 };
         // Expected calculation:
         // wallDx = 100, wallDy = 0
         // attackerDx = 50, attackerDy = 25
         // crossProduct = 100 * 25 - 0 * 50 = 2500
-        // Since crossProduct > 0, this should return true
+        // Since crossProduct > 0 and dir = LEFT, this should return true
         
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, {});
-        expect(result).toBe(true);
+        const resultBelow = coverDetector._doesWallBlockFromDirection(wallDoc, attackerBelow);
+        expect(resultBelow).toBe(true);
+      });
+
+      test('should calculate cross product correctly for RIGHT walls', () => {
+        const wallDoc = {
+          sight: 20,
+          dir: 2, // RIGHT - blocks when crossProduct < 0
+          c: [0, 0, 100, 0] // horizontal wall
+        };
+        
+        // Test case 1: Attacker above wall (negative Y) - negative cross product
+        const attackerAbove = { x: 50, y: -25 };
+        // crossProduct = 100 * (-25) - 0 * 50 = -2500 < 0
+        // Since crossProduct < 0 and dir = RIGHT, this should return true
+        
+        const resultAbove = coverDetector._doesWallBlockFromDirection(wallDoc, attackerAbove);
+        expect(resultAbove).toBe(true);
+
+        // Test case 2: Attacker below wall (positive Y) - positive cross product  
+        const attackerBelow = { x: 50, y: 25 };
+        // crossProduct = 100 * 25 - 0 * 50 = 2500 > 0
+        // Since crossProduct > 0 and dir = RIGHT, this should return false
+        
+        const resultBelow = coverDetector._doesWallBlockFromDirection(wallDoc, attackerBelow);
+        expect(resultBelow).toBe(false);
       });
     });
 
@@ -234,13 +289,14 @@ describe('Wall Direction Checking', () => {
       test('should handle walls with invalid coordinates', () => {
         const wallDoc = {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT
           c: null // invalid coordinates
         };
         const attackerPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, {});
-        // The current implementation returns false when coordinates are missing/invalid
+        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+        // When coordinates are invalid (c: null), the function exits early or fails to reach the fallback
+        // Based on actual behavior, this returns false
         expect(result).toBe(false);
       });
 
@@ -248,32 +304,46 @@ describe('Wall Direction Checking', () => {
         const wallDoc = null;
         const attackerPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, {});
-        expect(result).toBe(true);
+        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+        expect(result).toBe(true); // Default to blocking on error
       });
 
       test('should handle missing coordinates gracefully', () => {
         const wallDoc = {
           sight: 20,
-          dir: 1.0
+          dir: 1 // LEFT
           // no coordinates
         };
         const attackerPos = { x: 50, y: 50 };
 
-        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos, {});
-        // The current implementation returns false when coordinates are missing
+        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+        // When coordinates are missing, the function fails before reaching the non-directional fallback
+        // Based on actual behavior, this returns false
         expect(result).toBe(false);
+      });
+
+      test('should handle unexpected dir values', () => {
+        const wallDoc = {
+          sight: 20,
+          dir: 999, // Invalid direction value
+          c: [0, 0, 100, 0]
+        };
+        const attackerPos = { x: 50, y: 50 };
+
+        const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerPos);
+        // Should default to true for unexpected dir values
+        expect(result).toBe(true);
       });
     });
   });
 
   describe('integration with cover detection', () => {
-    test('should respect directional wall blocking in cover override checks', () => {
-      // Create a directional wall with cover override
+    test('should respect LEFT directional wall blocking in cover override checks', () => {
+      // Create a LEFT directional wall with cover override
       const mockWall = {
         document: {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT - blocks when crossProduct > 0
           c: [0, 0, 100, 0],
           getFlag: jest.fn((moduleId, flagName) => {
             if (flagName === 'coverOverride') return 'standard';
@@ -291,16 +361,52 @@ describe('Wall Direction Checking', () => {
       // Mock line intersection to return true for both cases
       coverDetector._lineIntersectionPoint = jest.fn(() => ({ x: 50, y: 0 }));
 
-      // Test 1: Attack from blocking side (positive cross product)
+      // Test 1: Attack from left side (positive cross product) - should block
       const p1_blocking = { x: 50, y: 50 }; // attacker below wall (positive cross product)
       const p2_blocking = { x: 50, y: -50 }; // target above wall
 
       const result_blocking = coverDetector._checkWallCoverOverrides(p1_blocking, p2_blocking);
       expect(result_blocking).toBe('standard'); // Override should be applied
 
-      // Test 2: Attack from non-blocking side (negative cross product)
+      // Test 2: Attack from right side (negative cross product) - should not block
       const p1_nonblocking = { x: 50, y: -50 }; // attacker above wall (negative cross product)
       const p2_nonblocking = { x: 50, y: 50 }; // target below wall
+
+      const result_nonblocking = coverDetector._checkWallCoverOverrides(p1_nonblocking, p2_nonblocking);
+      expect(result_nonblocking).toBe(null); // No override should be applied
+    });
+
+    test('should respect RIGHT directional wall blocking in cover override checks', () => {
+      // Create a RIGHT directional wall with cover override
+      const mockWall = {
+        document: {
+          sight: 20,
+          dir: 2, // RIGHT - blocks when crossProduct < 0
+          c: [0, 0, 100, 0],
+          getFlag: jest.fn((moduleId, flagName) => {
+            if (flagName === 'coverOverride') return 'greater';
+            return null;
+          })
+        },
+        coords: [0, 0, 100, 0]
+      };
+
+      global.canvas.walls = {
+        objects: { children: [mockWall] }
+      };
+
+      coverDetector._lineIntersectionPoint = jest.fn(() => ({ x: 50, y: 0 }));
+
+      // Test 1: Attack from right side (negative cross product) - should block
+      const p1_blocking = { x: 50, y: -50 }; // attacker above wall (negative cross product)
+      const p2_blocking = { x: 50, y: 50 }; // target below wall
+
+      const result_blocking = coverDetector._checkWallCoverOverrides(p1_blocking, p2_blocking);
+      expect(result_blocking).toBe('greater'); // Override should be applied
+
+      // Test 2: Attack from left side (positive cross product) - should not block
+      const p1_nonblocking = { x: 50, y: 50 }; // attacker below wall (positive cross product)
+      const p2_nonblocking = { x: 50, y: -50 }; // target above wall
 
       const result_nonblocking = coverDetector._checkWallCoverOverrides(p1_nonblocking, p2_nonblocking);
       expect(result_nonblocking).toBe(null); // No override should be applied
@@ -308,11 +414,11 @@ describe('Wall Direction Checking', () => {
   });
 
   describe('_isRayBlockedByWalls with directional logic', () => {
-    test('should respect directional walls when checking ray blocking', () => {
+    test('should respect LEFT directional walls when checking ray blocking', () => {
       const mockWall = {
         document: {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT - blocks when crossProduct > 0
           c: [0, 0, 100, 0]
         },
         coords: [0, 0, 100, 0]
@@ -325,16 +431,47 @@ describe('Wall Direction Checking', () => {
       // Mock line intersection to return an intersection point
       coverDetector._lineIntersectionPoint = jest.fn(() => ({ x: 50, y: 0 }));
 
-      // Test 1: Attack from blocking side (should be blocked)
+      // Test 1: Attack from left side (positive cross product) - should be blocked
       const a_blocking = { x: 50, y: 50 }; // Below wall (positive cross product)
       const b_blocking = { x: 50, y: -50 }; // Above wall
 
       const result_blocking = coverDetector._isRayBlockedByWalls(a_blocking, b_blocking);
       expect(result_blocking).toBe(true);
 
-      // Test 2: Attack from non-blocking side (should pass through)
+      // Test 2: Attack from right side (negative cross product) - should pass through
       const a_nonblocking = { x: 50, y: -50 }; // Above wall (negative cross product)
       const b_nonblocking = { x: 50, y: 50 }; // Below wall
+
+      const result_nonblocking = coverDetector._isRayBlockedByWalls(a_nonblocking, b_nonblocking);
+      expect(result_nonblocking).toBe(false);
+    });
+
+    test('should respect RIGHT directional walls when checking ray blocking', () => {
+      const mockWall = {
+        document: {
+          sight: 20,
+          dir: 2, // RIGHT - blocks when crossProduct < 0
+          c: [0, 0, 100, 0]
+        },
+        coords: [0, 0, 100, 0]
+      };
+
+      global.canvas.walls = {
+        objects: { children: [mockWall] }
+      };
+
+      coverDetector._lineIntersectionPoint = jest.fn(() => ({ x: 50, y: 0 }));
+
+      // Test 1: Attack from right side (negative cross product) - should be blocked
+      const a_blocking = { x: 50, y: -50 }; // Above wall (negative cross product)
+      const b_blocking = { x: 50, y: 50 }; // Below wall
+
+      const result_blocking = coverDetector._isRayBlockedByWalls(a_blocking, b_blocking);
+      expect(result_blocking).toBe(true);
+
+      // Test 2: Attack from left side (positive cross product) - should pass through
+      const a_nonblocking = { x: 50, y: 50 }; // Below wall (positive cross product)
+      const b_nonblocking = { x: 50, y: -50 }; // Above wall
 
       const result_nonblocking = coverDetector._isRayBlockedByWalls(a_nonblocking, b_nonblocking);
       expect(result_nonblocking).toBe(false);
@@ -370,7 +507,7 @@ describe('Wall Direction Checking', () => {
       const mockWall = {
         document: {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT
           c: [0, 0, 100, 0]
         },
         coords: [0, 0, 100, 0]
@@ -404,11 +541,11 @@ describe('Wall Direction Checking', () => {
   });
 
   describe('_evaluateWallsCover with directional logic', () => {
-    test('should consider directional walls in cover evaluation', () => {
+    test('should consider LEFT directional walls in cover evaluation', () => {
       const mockWall = {
         document: {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT - blocks when crossProduct > 0
           c: [0, 0, 100, 0],
           getFlag: jest.fn(() => null) // No cover override
         },
@@ -424,16 +561,16 @@ describe('Wall Direction Checking', () => {
         .mockReturnValueOnce(true)  // First call: blocking side
         .mockReturnValueOnce(false); // Second call: non-blocking side
 
-      // Test 1: Attack from blocking side
-      const p1_blocking = { x: 50, y: 50 };
-      const p2_blocking = { x: 50, y: -50 };
+      // Test 1: Attack from left side (should be blocked by LEFT wall)
+      const p1_blocking = { x: 50, y: 50 }; // Below wall (positive cross product)
+      const p2_blocking = { x: 50, y: -50 }; // Above wall
 
       const result_blocking = coverDetector._evaluateWallsCover(p1_blocking, p2_blocking);
       expect(result_blocking).toBe('standard'); // Should provide cover
 
-      // Test 2: Attack from non-blocking side  
-      const p1_nonblocking = { x: 50, y: -50 };
-      const p2_nonblocking = { x: 50, y: 50 };
+      // Test 2: Attack from right side (should not be blocked by LEFT wall)
+      const p1_nonblocking = { x: 50, y: -50 }; // Above wall (negative cross product)
+      const p2_nonblocking = { x: 50, y: 50 }; // Below wall
 
       const result_nonblocking = coverDetector._evaluateWallsCover(p1_nonblocking, p2_nonblocking);
       expect(result_nonblocking).toBe('none'); // Should not provide cover
@@ -443,7 +580,7 @@ describe('Wall Direction Checking', () => {
       const mockWall = {
         document: {
           sight: 20,
-          dir: 1.0,
+          dir: 1, // LEFT
           c: [0, 0, 100, 0],
           getFlag: jest.fn((moduleId, flagName) => {
             if (flagName === 'coverOverride') return 'greater';
@@ -522,34 +659,57 @@ describe('Wall Direction Checking', () => {
   });
 
   describe('real-world directional wall scenarios', () => {
-    test('should handle "Left only" wall scenario from user testing', () => {
-      // Reproduce the user's test case: wall with "left only" direction
+    test('should handle LEFT wall scenario correctly', () => {
+      // Test with proper Foundry LEFT direction constant
       const wallDoc = {
         sight: 20,
-        dir: 4.71238898038469, // 270 degrees (pointing left)
+        dir: 1, // LEFT - blocks when crossProduct > 0
         c: [4163, 1075, 4163, 1263] // Vertical wall
       };
 
-      // Attack from left side (should be blocked)
+      // Attack from left side (negative X relative to wall) - positive cross product
+      // For vertical wall: wallDx=0, wallDy=188, attackerDx=-63, attackerDy=25
+      // crossProduct = 0 * 25 - 188 * (-63) = 11844 > 0 (should block)
       const attackerLeft = { x: 4100, y: 1100 }; // Left of wall
-      const targetRight = { x: 4300, y: 1100 }; // Right of wall
 
-      const resultLeft = coverDetector._doesWallBlockFromDirection(wallDoc, attackerLeft, targetRight);
+      const resultLeft = coverDetector._doesWallBlockFromDirection(wallDoc, attackerLeft);
       expect(resultLeft).toBe(true); // Should block
 
-      // Attack from right side (should not be blocked)
-      const attackerRight = { x: 4300, y: 1100 }; // Right of wall  
-      const targetLeft = { x: 4100, y: 1100 }; // Left of wall
+      // Attack from right side (positive X relative to wall) - negative cross product
+      // For vertical wall: wallDx=0, wallDy=188, attackerDx=137, attackerDy=25
+      // crossProduct = 0 * 25 - 188 * 137 = -25756 < 0 (should not block)
+      const attackerRight = { x: 4300, y: 1100 }; // Right of wall
 
-      const resultRight = coverDetector._doesWallBlockFromDirection(wallDoc, attackerRight, targetLeft);
+      const resultRight = coverDetector._doesWallBlockFromDirection(wallDoc, attackerRight);
       expect(resultRight).toBe(false); // Should not block
+    });
+
+    test('should handle RIGHT wall scenario correctly', () => {
+      // Test with proper Foundry RIGHT direction constant
+      const wallDoc = {
+        sight: 20,
+        dir: 2, // RIGHT - blocks when crossProduct < 0
+        c: [4163, 1075, 4163, 1263] // Vertical wall
+      };
+
+      // Attack from right side (positive X relative to wall) - negative cross product
+      const attackerRight = { x: 4300, y: 1100 }; // Right of wall
+
+      const resultRight = coverDetector._doesWallBlockFromDirection(wallDoc, attackerRight);
+      expect(resultRight).toBe(true); // Should block
+
+      // Attack from left side (negative X relative to wall) - positive cross product
+      const attackerLeft = { x: 4100, y: 1100 }; // Left of wall
+
+      const resultLeft = coverDetector._doesWallBlockFromDirection(wallDoc, attackerLeft);
+      expect(resultLeft).toBe(false); // Should not block
     });
 
     test('should handle multiple directional walls in sequence', () => {
       const wallLeft = {
         document: {
           sight: 20,
-          dir: 1.5, // Left-blocking
+          dir: 1, // LEFT
           c: [0, 0, 100, 0],
           getFlag: jest.fn(() => null)
         },
@@ -559,7 +719,7 @@ describe('Wall Direction Checking', () => {
       const wallRight = {
         document: {
           sight: 20,
-          dir: 4.7, // Right-blocking  
+          dir: 2, // RIGHT
           c: [200, 0, 300, 0],
           getFlag: jest.fn(() => null)
         },
@@ -575,9 +735,9 @@ describe('Wall Direction Checking', () => {
         .mockReturnValueOnce({ x: 50, y: 0 })   // First wall intersects
         .mockReturnValueOnce({ x: 250, y: 0 }); // Second wall intersects
 
-      // Attack that should be blocked by first wall but not second
-      const a = { x: 50, y: 50 }; // Below first wall
-      const b = { x: 250, y: -50 }; // Above second wall
+      // Attack that should be blocked by first wall (LEFT) but not second (RIGHT)
+      const a = { x: 50, y: 50 }; // Below first wall (positive cross product for LEFT wall)
+      const b = { x: 250, y: -50 }; // Above second wall (positive cross product for RIGHT wall)
 
       const result = coverDetector._isRayBlockedByWalls(a, b);
       expect(result).toBe(true); // Should be blocked by first wall
@@ -586,17 +746,34 @@ describe('Wall Direction Checking', () => {
     test('should handle edge case: attacker exactly on wall line', () => {
       const wallDoc = {
         sight: 20,
-        dir: 1.0,
+        dir: 1, // LEFT
         c: [0, 0, 100, 0] // Horizontal wall
       };
 
       // Attacker exactly on the wall line (cross product = 0)
       const attackerOnWall = { x: 50, y: 0 };
-      const target = { x: 50, y: 50 };
 
-      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerOnWall, target);
-      // Cross product = 0, so crossProduct > 0 is false
+      const result = coverDetector._doesWallBlockFromDirection(wallDoc, attackerOnWall);
+      // Cross product = 0, so crossProduct > 0 is false for LEFT walls
       expect(result).toBe(false);
+    });
+
+    test('should handle BOTH direction walls', () => {
+      const wallDoc = {
+        sight: 20,
+        dir: 0, // BOTH - always blocks
+        c: [0, 0, 100, 0] // Horizontal wall
+      };
+
+      // Test from both sides - should always block
+      const attackerAbove = { x: 50, y: -50 };
+      const attackerBelow = { x: 50, y: 50 };
+
+      const resultAbove = coverDetector._doesWallBlockFromDirection(wallDoc, attackerAbove);
+      const resultBelow = coverDetector._doesWallBlockFromDirection(wallDoc, attackerBelow);
+
+      expect(resultAbove).toBe(true); // Should block from above
+      expect(resultBelow).toBe(true); // Should block from below
     });
   });
 });

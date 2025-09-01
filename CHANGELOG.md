@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.0.1] - 2025-01-22
+
+### 🐛 Fixed
+
+#### Wall Coverage Calculation Improvements
+- **Directional Wall Logic**: Fixed critical bug where RIGHT directional walls weren't providing cover when attacked from the correct side
+- **Coverage Percentage Accuracy**: Improved wall coverage percentage calculation by removing arbitrary center weight reduction that could underestimate cover
+- **Foundry VTT Constants**: Updated directional wall logic to properly use Foundry's wall direction constants (BOTH: 0, LEFT: 1, RIGHT: 2)
+- **Sampling Density**: Increased sampling points around target perimeter from 3 to 4 per edge for more accurate coverage detection
+- **Corner Sampling**: Added explicit corner point sampling for better PF2e rule compliance
+- **Cross-Product Calculation**: Enhanced mathematical precision in directional wall blocking logic
+
+#### Point Out Action System Enhancements
+- **ApplicationV2 Warning Dialogs**: Converted Point Out target selection warnings to modern Foundry ApplicationV2 framework
+- **Player/GM Warning System**: Added comprehensive warning dialogs for when attempting Point Out without target selection
+
+
+
 ## [3.0.0] - 2025-01-21
 
 ### 🎉 Major Release - Advanced Visibility and Cover Toolkit

@@ -83,6 +83,9 @@ export class CoverDetector {
                 tokenCover = this._evaluateCreatureSizeCover(attacker, target, blockers);
             }
 
+            // Apply token cover overrides as ceilings
+            tokenCover = this._applyTokenCoverOverrides(attacker, target, blockers, tokenCover);
+
             // Combine wall and token cover (walls can now yield standard or greater)
             if (wallCover === 'greater') return 'greater';
             if (wallCover === 'standard') return tokenCover === 'greater' ? 'greater' : 'standard';
@@ -118,14 +121,12 @@ export class CoverDetector {
         const ignoreUndetected = !!game.settings?.get?.(MODULE_ID, 'autoCoverIgnoreUndetected');
         const ignoreDead = !!game.settings?.get?.(MODULE_ID, 'autoCoverIgnoreDead');
         const ignoreAllies = !!game.settings?.get?.(MODULE_ID, 'autoCoverIgnoreAllies');
-        const respectIgnoreFlag = !!game.settings?.get?.(MODULE_ID, 'autoCoverRespectIgnoreFlag');
         const allowProneBlockers = !!game.settings?.get?.(MODULE_ID, 'autoCoverAllowProneBlockers');
 
         return {
             ignoreUndetected,
             ignoreDead,
             ignoreAllies,
-            respectIgnoreFlag,
             allowProneBlockers,
             attackerAlliance: attacker?.actor?.alliance,
         };
@@ -141,10 +142,12 @@ export class CoverDetector {
     _evaluateWallsCover(p1, p2) {
         if (!canvas?.walls) return 'none';
 
-        // First check for manual wall cover overrides
+        // First check for manual wall cover overrides (these act as ceilings/limits)
         const wallOverride = this._checkWallCoverOverrides(p1, p2);
-        if (wallOverride !== null) {
-            return wallOverride;
+        
+        // If override is 'none', return 'none' immediately (no cover regardless of thresholds)
+        if (wallOverride === 'none') {
+            return 'none';
         }
 
         // Compute percent of target token blocked by walls along multiple sight rays and map to cover thresholds
@@ -178,13 +181,26 @@ export class CoverDetector {
 
             const pct = this._estimateWallCoveragePercent(p1, target);
             const allowGreater = !!game.settings.get('pf2e-visioner', 'wallCoverAllowGreater');
+            
+            // Determine cover based on thresholds
+            let calculatedCover = 'none';
             if (pct >= grtT) {
-                return allowGreater ? 'greater' : 'standard';
+                calculatedCover = allowGreater ? 'greater' : 'standard';
+            } else if (pct >= stdT) {
+                calculatedCover = 'standard';
             }
-            if (pct >= stdT) {
-                return 'standard';
+
+            // If there's a wall override, use it as a ceiling
+            if (wallOverride !== null) {
+                const coverOrder = ['none', 'lesser', 'standard', 'greater'];
+                const calculatedIndex = coverOrder.indexOf(calculatedCover);
+                const overrideIndex = coverOrder.indexOf(wallOverride);
+                
+                // Return the lower of the two (override acts as ceiling)
+                return calculatedIndex <= overrideIndex ? calculatedCover : wallOverride;
             }
-            return 'none';
+
+            return calculatedCover;
         } catch (error) {
             console.warn('PF2E Visioner | Error in wall coverage evaluation:', error);
             return 'none';
@@ -751,9 +767,8 @@ export class CoverDetector {
 
             const type = blocker.actor?.type;
             if (type === 'loot' || type === 'hazard') continue;
-            if (filters.respectIgnoreFlag && blocker.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover')) {
-                continue;
-            }
+            // Token cover overrides are handled later in _applyTokenCoverOverrides
+            // Don't filter out tokens here based on cover override
             // Always ignore Foundry hidden tokens
             if (blocker.document.hidden) {
                 continue;
@@ -1174,6 +1189,38 @@ export class CoverDetector {
 
         const result = meetsGrt ? 'greater' : meetsStd ? 'standard' : sawAny ? 'lesser' : 'none';
         return result;
+    }
+
+    /**
+     * Apply token cover overrides as direct replacements to the calculated cover
+     * @param {Object} attacker - Attacking token
+     * @param {Object} target - Target token
+     * @param {Array} blockers - Array of blocking tokens
+     * @param {string} calculatedCover - The cover calculated by normal rules
+     * @returns {string} Final cover after applying overrides
+     * @private
+     */
+    _applyTokenCoverOverrides(attacker, target, blockers, calculatedCover) {
+        try {
+            if (!blockers.length) {
+                return calculatedCover;
+            }
+
+            // Check each blocker for cover overrides
+            for (const blocker of blockers) {
+                const tokenCoverOverride = blocker.document?.getFlag?.(MODULE_ID, 'coverOverride');
+                
+                // If this token has an override, return it directly
+                if (tokenCoverOverride && tokenCoverOverride !== 'auto') {
+                    return tokenCoverOverride;
+                }
+            }
+
+            // No overrides found, use calculated cover
+            return calculatedCover;
+        } catch (_) {
+            return calculatedCover;
+        }
     }
 }
 

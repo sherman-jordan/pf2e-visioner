@@ -414,15 +414,7 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: false,
   },
-  autoCoverRespectIgnoreFlag: {
-    name: 'Auto-Cover: Respect Token Ignore Flag',
-    hint: "If enabled, tokens with the flag pf2e-visioner.ignoreAutoCover = true won't count for auto-cover.",
-    scope: 'world',
-    config: true,
-    restricted: true,
-    type: Boolean,
-    default: true,
-  },
+
   // Wall cover thresholds (percentage of the target token blocked by walls)
   wallCoverStandardThreshold: {
     name: 'Wall Cover: Standard Threshold (%)',

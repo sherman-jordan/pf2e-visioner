@@ -31,20 +31,20 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
 
   async _prepareContext() {
     const d = this.wall;
-    const provideCover = d?.getFlag?.(MODULE_ID, 'provideCover');
     const hiddenWall = d?.getFlag?.(MODULE_ID, 'hiddenWall');
     const identifier = d?.getFlag?.(MODULE_ID, 'wallIdentifier');
     const dc = d?.getFlag?.(MODULE_ID, 'stealthDC');
     const connected = d?.getFlag?.(MODULE_ID, 'connectedWalls') || [];
+    const coverOverride = d?.getFlag?.(MODULE_ID, 'coverOverride') || null;
     const hiddenWallsEnabled = !!game.settings.get(MODULE_ID, 'hiddenWallsEnabled');
     return {
       id: d?.id,
       hiddenWallsEnabled,
-      provideCover: provideCover !== false,
       hiddenWall: !!hiddenWall,
       identifier: identifier || '',
       dc: Number(dc) || '',
       connectedCsv: Array.isArray(connected) ? connected.join(', ') : '',
+      coverOverride: coverOverride,
     };
   }
 
@@ -76,6 +76,9 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
       });
     }
     
+    // Add event listeners for cover override functionality
+    this._bindCoverOverrideListeners(content);
+    
     return content;
   }
 
@@ -101,6 +104,40 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
           });
         });
       }
+      
+      // Bind cover override listeners
+      this._bindCoverOverrideListeners(root);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  _bindCoverOverrideListeners(root) {
+    try {
+      // Bind cover override buttons
+      const coverButtons = root.querySelectorAll('.cover-override-buttons .visioner-icon-btn');
+      const hiddenInput = root.querySelector('input[name="coverOverride"]');
+      
+      coverButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          
+          const coverType = button.getAttribute('data-cover-override');
+          
+          // Remove active class from all cover override buttons
+          coverButtons.forEach(btn => btn.classList.remove('active'));
+          
+          // Always make the clicked button active (no toggle behavior - one must always be selected)
+          button.classList.add('active');
+          
+          // Update the hidden input for the cover override
+          if (hiddenInput) {
+            // Set the value (empty string for auto, coverType for specific override)
+            hiddenInput.value = coverType === 'auto' ? '' : coverType;
+          }
+        });
+      });
     } catch (_) {
       /* ignore */
     }
@@ -113,9 +150,13 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
     const fd = new FormData(form);
     const entries = Object.fromEntries(fd.entries());
     const patch = { _id: app.wall.id };
-    const provideCover = entries['provideCover'];
-    patch[`flags.${MODULE_ID}.provideCover`] =
-      provideCover === 'on' || provideCover === 'true' || provideCover === true;
+    
+    // Handle cover override - this now determines if wall provides cover
+    const coverOverride = entries['coverOverride'];
+    patch[`flags.${MODULE_ID}.coverOverride`] = coverOverride || null;
+    
+    // Set provideCover based on cover override (false only if explicitly set to 'none')
+    patch[`flags.${MODULE_ID}.provideCover`] = coverOverride !== 'none';
     if (game.settings.get(MODULE_ID, 'hiddenWallsEnabled')) {
       const hiddenWall = entries['hiddenWall'];
       patch[`flags.${MODULE_ID}.hiddenWall`] =

@@ -21,8 +21,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       close: VisionerWallManager._onClose,
       bulkHiddenOn: VisionerWallManager._onBulkHiddenOn,
       bulkHiddenOff: VisionerWallManager._onBulkHiddenOff,
-      bulkProvideCoverOn: VisionerWallManager._onBulkProvideCoverOn,
-      bulkProvideCoverOff: VisionerWallManager._onBulkProvideCoverOff,
       setCoverOverride: VisionerWallManager._onSetCoverOverride,
     },
   };
@@ -87,13 +85,13 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       inputs.forEach((input) => {
         const name = input.getAttribute('name') || '';
         const m = name.match(
-          /^wall\.(?<id>[^.]+)\.(?<field>provideCover|hiddenWall|identifier|dc)$/,
+          /^wall\.(?<id>[^.]+)\.(?<field>hiddenWall|identifier|dc)$/,
         );
         if (m) {
           const { id, field } = m.groups;
           if (!byId.has(id)) byId.set(id, {});
           let value;
-          if (field === 'provideCover' || field === 'hiddenWall') {
+          if (field === 'hiddenWall') {
             value = !!input.checked;
           } else if (field === 'identifier') {
             value = String(input.value || '');
@@ -110,9 +108,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           const coverValue = input.getAttribute('data-cover-override');
           const isActive = input.classList.contains('active');
           
-          if (!byId.has(wallId)) byId.set(wallId, {});
-          // Set override: null for auto, coverValue for specific override
-          byId.get(wallId).coverOverride = isActive ? (coverValue === 'auto' ? null : coverValue) : null;
+          if (isActive) {
+            if (!byId.has(wallId)) byId.set(wallId, {});
+            const wallData = byId.get(wallId);
+            // Set override: null for auto, coverValue for specific override
+            wallData.coverOverride = coverValue === 'auto' ? null : coverValue;
+            // Set provideCover based on cover override (false only if explicitly set to 'none')
+            wallData.provideCover = coverValue !== 'none';
+          }
         }
       });
       for (const [id, data] of byId.entries()) {
@@ -199,14 +202,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     const form = this.element?.querySelector?.('form.pf2e-visioner-wall-manager');
     if (form) this.constructor._setAll(form, 'input[name$=".hiddenWall"]', false);
   }
-  static async _onBulkProvideCoverOn(event, _button) {
-    const form = this.element?.querySelector?.('form.pf2e-visioner-wall-manager');
-    if (form) this.constructor._setAll(form, 'input[name$=".provideCover"]', true);
-  }
-  static async _onBulkProvideCoverOff(event, _button) {
-    const form = this.element?.querySelector?.('form.pf2e-visioner-wall-manager');
-    if (form) this.constructor._setAll(form, 'input[name$=".provideCover"]', false);
-  }
+
 
   static async _onSetCoverOverride(event, button) {
     try {
@@ -287,26 +283,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
   }
 
   _bindCoverToggle(root) {
-    try {
-      // Add event listeners to "Provide Cover" checkboxes to show/hide override buttons
-      const coverCheckboxes = root.querySelectorAll('input[name$=".provideCover"]');
-      coverCheckboxes.forEach(checkbox => {
-        const wallId = checkbox.name.match(/wall\.([^.]+)\.provideCover/)?.[1];
-        if (!wallId) return;
-        
-        const toggleOverrideButtons = () => {
-          const overrideDiv = root.querySelector(`[data-wall-id="${wallId}"] .cover-override-buttons`);
-          if (overrideDiv) {
-            overrideDiv.style.display = checkbox.checked ? 'flex' : 'none';
-          }
-        };
-        
-        // Initial state
-        toggleOverrideButtons();
-        
-        // Listen for changes
-        checkbox.addEventListener('change', toggleOverrideButtons);
-      });
-    } catch (_) {}
+    // No longer needed - cover override buttons are always visible
+    // This method is kept for compatibility but does nothing
   }
 }

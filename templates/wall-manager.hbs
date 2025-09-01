@@ -3,8 +3,7 @@
     <button type="button" class="visioner-btn" data-action="bulkHiddenOn"><i class="fas fa-eye"></i> Hidden: ON</button>
     <button type="button" class="visioner-btn" data-action="bulkHiddenOff"><i class="fas fa-eye-slash"></i> Hidden: OFF</button>
     <span style="flex:1"></span>
-    <button type="button" class="visioner-btn" data-action="bulkProvideCoverOn"><i class="fas fa-shield-alt"></i> Provide Cover: ON</button>
-    <button type="button" class="visioner-btn" data-action="bulkProvideCoverOff"><i class="fas fa-shield-slash"></i> Provide Cover: OFF</button>
+
   </div>
 
   <table class="visibility-table" style="width:100%">
@@ -13,8 +12,7 @@
         <th>Type</th>
         <th style="width:18%">Identifier</th>
         <th style="width:12%">Hidden Wall</th>
-        <th style="width:12%">Provide Cover</th>
-        <th style="width:20%">Cover Override</th>
+        <th style="width:32%">Cover</th>
         <th style="width:12%">Stealth DC</th>
         <th style="width:26%">Wall Id</th>
       </tr>
@@ -32,29 +30,26 @@
             <input type="checkbox" name="wall.{{w.id}}.hiddenWall" {{#if w.hiddenWall}}checked{{/if}} data-tooltip="Mark this wall as hidden from players" />
           </td>
           <td style="text-align:center">
-            <input type="checkbox" name="wall.{{w.id}}.provideCover" {{#if w.provideCover}}checked{{/if}} data-tooltip="This wall provides cover in combat" />
-          </td>
-          <td style="text-align:center">
-            <div class="cover-override-buttons" style="display:{{#if w.provideCover}}flex{{else}}none{{/if}}; gap:2px; flex-wrap:wrap; justify-content:center;">
+            <div class="cover-override-buttons" style="display:flex; gap:2px; flex-wrap:wrap; justify-content:center;">
               <button type="button" class="visioner-icon-btn {{#unless w.coverOverride}}active{{/unless}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="auto" 
-                      data-tooltip="Automatic Detection" title="Automatic Detection">
-                <i class="fas fa-magic" style="color:#888"></i>
+                      data-tooltip="Automatic Detection - Wall provides cover based on coverage thresholds" title="Automatic Detection">
+                <i class="fas fa-bolt-auto" style="color:#888"></i>
               </button>
               <button type="button" class="visioner-icon-btn {{#if (eq w.coverOverride 'none')}}active{{/if}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="none" 
-                      data-tooltip="No Cover" title="No Cover">
-                <i class="fas fa-ban" style="color:var(--cover-none)"></i>
+                      data-tooltip="No Cover - Wall never provides cover regardless of thresholds" title="No Cover">
+                <i class="fas fa-shield-slash" style="color:var(--cover-none)"></i>
               </button>
               <button type="button" class="visioner-icon-btn {{#if (eq w.coverOverride 'standard')}}active{{/if}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="standard" 
-                      data-tooltip="Standard Cover" title="Standard Cover">
+                      data-tooltip="Standard Cover Maximum - Wall provides up to standard cover based on thresholds" title="Standard Cover">
                 <i class="fas fa-shield-alt" style="color:var(--cover-standard)"></i>
               </button>
               <button type="button" class="visioner-icon-btn {{#if (eq w.coverOverride 'greater')}}active{{/if}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="greater" 
-                      data-tooltip="Greater Cover" title="Greater Cover">
-                <i class="fas fa-shield-alt" style="color:var(--cover-greater)"></i>
+                      data-tooltip="Greater Cover Maximum - Wall provides up to greater cover based on thresholds" title="Greater Cover">
+                <i class="fas fa-shield" style="color:var(--cover-greater)"></i>
               </button>
             </div>
           </td>

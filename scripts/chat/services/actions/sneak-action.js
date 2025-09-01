@@ -130,19 +130,6 @@ export class SneakActionHandler extends ActionHandlerBase {
           if (originalDetectedState !== coverState) {
             isOverride = true;
             coverSource = storedModifier.source || 'dialog';
-            console.log(`PF2E Visioner DEBUG - Found meaningful override for ${subject.name} (Sneak):`, {
-              rollId,
-              originalDetectedState,
-              finalState: coverState,
-              isOverride,
-              source: coverSource
-            });
-          } else {
-            console.log(`PF2E Visioner DEBUG - Override found but same as detected for ${subject.name} (Sneak), treating as normal:`, {
-              rollId,
-              detectedState: originalDetectedState,
-              overrideState: coverState
-            });
           }
         } else {
           // Fallback to the old method (but don't consume yet)
@@ -195,8 +182,6 @@ export class SneakActionHandler extends ActionHandlerBase {
             }
           })
         };
-        
-        console.log(`PF2E Visioner DEBUG - Created autoCover for ${subject.name} (Sneak):`, result.autoCover);
       }
     } catch (e) {
       console.error(`PF2E Visioner | Error in cover calculation for Sneak action:`, e);

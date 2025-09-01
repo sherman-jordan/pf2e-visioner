@@ -34,14 +34,46 @@ export function registerUIHooks() {
   const refreshTokenTool = () => {
     try {
       const tokenTools = ui.controls.controls?.tokens?.tools;
-      const tool = getNamedTool(tokenTools, 'pf2e-visioner-toggle-token-provide');
+      const tool = getNamedTool(tokenTools, 'pf2e-visioner-cycle-token-cover');
       if (!tool) return;
       const selected = canvas?.tokens?.controlled ?? [];
-      const provideActive =
-        selected.length > 0 &&
-        selected.every((t) => t?.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover') !== true);
-      tool.active = provideActive;
-      tool.icon = provideActive ? 'fa-solid fa-shield' : 'fa-solid fa-shield-slash';
+      
+      if (!selected.length) {
+        tool.icon = 'fa-solid fa-bolt-auto';
+        tool.title = 'Cycle Token Cover (Selected Tokens)';
+        ui.controls.render();
+        return;
+      }
+      
+      // Update icon and title based on first selected token's cover override
+      const firstTokenOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+      const currentCoverState = firstTokenOverride || 'auto';
+      
+      switch (currentCoverState) {
+        case 'auto':
+        case null:
+        case undefined:
+          tool.icon = 'fa-solid fa-bolt-auto';
+          tool.title = 'Cycle Token Cover: Auto → No Cover';
+          break;
+        case 'none':
+          tool.icon = 'fa-solid fa-shield-slash';
+          tool.title = 'Cycle Token Cover: No Cover → Lesser Cover';
+          break;
+        case 'lesser':
+          tool.icon = 'fa-regular fa-shield';
+          tool.title = 'Cycle Token Cover: Lesser → Standard Cover';
+          break;
+        case 'standard':
+          tool.icon = 'fa-solid fa-shield-alt';
+          tool.title = 'Cycle Token Cover: Standard → Greater Cover';
+          break;
+        case 'greater':
+          tool.icon = 'fa-solid fa-shield';
+          tool.title = 'Cycle Token Cover: Greater → Auto';
+          break;
+      }
+      
       ui.controls.render();
     } catch (_) {}
   };
@@ -105,14 +137,40 @@ export function registerUIHooks() {
       const wallTools = ui.controls.controls?.walls?.tools;
       const selected = canvas?.walls?.controlled ?? [];
 
-      // Provide Cover toggle state (active = provides cover)
-      const provideTool = getNamedTool(wallTools, 'pf2e-visioner-toggle-wall-provide');
-      if (provideTool) {
-        const provideActive =
-          selected.length > 0 &&
-          selected.every((w) => w?.document?.getFlag?.(MODULE_ID, 'provideCover') !== false);
-        provideTool.active = provideActive;
-        provideTool.icon = provideActive ? 'fa-solid fa-shield' : 'fa-solid fa-shield-slash';
+      // Cover cycling tool
+      const coverTool = getNamedTool(wallTools, 'pf2e-visioner-cycle-wall-cover');
+      if (coverTool) {
+        if (!selected.length) {
+          coverTool.icon = 'fa-solid fa-bolt-auto';
+          coverTool.title = 'Cycle Wall Cover (Selected Walls)';
+        } else {
+          // Update icon and title based on first selected wall's cover override
+          const firstWallOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          const currentCoverState = firstWallOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+              coverTool.icon = 'fa-solid fa-bolt-auto';
+              coverTool.title = 'Cycle Wall Cover: Auto → No Cover';
+              break;
+            case 'none':
+              coverTool.icon = 'fa-solid fa-shield-slash';
+              coverTool.title = 'Cycle Wall Cover: No Cover → Standard Cover';
+              break;
+            case 'lesser':
+              coverTool.icon = 'fa-regular fa-shield';
+              coverTool.title = 'Cycle Wall Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              coverTool.icon = 'fa-solid fa-shield-alt';
+              coverTool.title = 'Cycle Wall Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              coverTool.icon = 'fa-solid fa-shield';
+              coverTool.title = 'Cycle Wall Cover: Greater → Auto';
+              break;
+          }
+        }
       }
 
       // Hidden Wall toggle state
@@ -182,30 +240,83 @@ export function registerUIHooks() {
 
         // Toggle Provide Auto-Cover (Selected Walls)
         const selectedWalls = canvas?.walls?.controlled ?? [];
+        
+        // Determine current cover state for icon display
+        let currentCoverState = 'auto';
+        let iconClass = 'fa-solid fa-bolt-auto';
+        let titleText = 'Cycle Wall Cover (Selected Walls)';
+        
+        if (selectedWalls.length > 0) {
+          // Get the cover override of the first selected wall to determine icon
+          const firstWallOverride = selectedWalls[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          currentCoverState = firstWallOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+            case null:
+            case undefined:
+              iconClass = 'fa-solid fa-bolt-auto';
+              titleText = 'Cycle Wall Cover: Auto → No Cover';
+              break;
+            case 'none':
+              iconClass = 'fa-solid fa-shield-slash';
+              titleText = 'Cycle Wall Cover: No Cover → Standard Cover';
+              break;
+            case 'lesser':
+              iconClass = 'fa-regular fa-shield';
+              titleText = 'Cycle Wall Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              iconClass = 'fa-solid fa-shield-alt';
+              titleText = 'Cycle Wall Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              iconClass = 'fa-solid fa-shield'
+              titleText = 'Cycle Wall Cover: Greater → Auto';
+              break;
+          }
+        }
+        
         addTool(walls.tools, {
-          name: 'pf2e-visioner-toggle-wall-provide',
-          title: 'Toggle Provide Auto-Cover (Selected Walls)',
-          icon:
-            selectedWalls.length > 0 &&
-            selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, 'provideCover') !== false)
-              ? 'fa-solid fa-shield'
-              : 'fa-solid fa-shield-slash',
-          toggle: true,
-          active:
-            selectedWalls.length > 0 &&
-            selectedWalls.every((w) => w?.document?.getFlag?.(MODULE_ID, 'provideCover') !== false),
-          onChange: async (_event, toggled) => {
+          name: 'pf2e-visioner-cycle-wall-cover',
+          title: titleText,
+          icon: iconClass,
+          toggle: false,
+          button: true,
+          onChange: async () => {
             try {
               const selected = canvas?.walls?.controlled ?? [];
-              if (!selected.length) return;
+              if (!selected.length) {
+                console.log('PF2E Visioner | No walls selected');
+                return;
+              }
 
-              // Active means walls should provide cover
-              const newValue = !!toggled;
+              // Cycle through cover states: auto → none → standard → greater → auto
+              const coverCycle = [null, 'none', 'standard', 'greater'];
+              
+              // Get current state of first wall to determine next state
+              const currentOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+              const currentIndex = coverCycle.indexOf(currentOverride);
+              const nextIndex = (currentIndex + 1) % coverCycle.length;
+              const nextCoverOverride = coverCycle[nextIndex];
+              
+              console.log(`PF2E Visioner | Cycling wall cover: ${currentOverride || 'auto'} → ${nextCoverOverride || 'auto'}`);
+              
               await Promise.all(
-                selected.map((w) => w?.document?.setFlag?.(MODULE_ID, 'provideCover', newValue)),
+                selected.map((w) => {
+                  const promises = [
+                    w?.document?.setFlag?.(MODULE_ID, 'coverOverride', nextCoverOverride),
+                    w?.document?.setFlag?.(MODULE_ID, 'provideCover', nextCoverOverride !== 'none')
+                  ];
+                  return Promise.all(promises.filter(Boolean));
+                })
               );
-              ui.controls.render();
-            } catch (_) {}
+              
+              // Force controls to re-render to update icon
+              ui.controls.render(true);
+            } catch (e) {
+              console.error('PF2E Visioner | Error cycling wall cover:', e);
+            }
           },
         });
 
@@ -266,44 +377,79 @@ export function registerUIHooks() {
         }
         // Toggle Provide Auto-Cover (Selected Tokens)
         const selectedTokens = canvas?.tokens?.controlled ?? [];
+        
+        // Determine current cover state for icon display
+        let currentCoverState = 'auto';
+        let iconClass = 'fa-solid fa-bolt-auto';
+        let titleText = 'Cycle Token Cover (Selected Tokens)';
+        
+        if (selectedTokens.length > 0) {
+          // Get the cover override of the first selected token to determine icon
+          const firstTokenOverride = selectedTokens[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          currentCoverState = firstTokenOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+            case null:
+            case undefined:
+              iconClass = 'fa-solid fa-bolt-auto';
+              titleText = 'Cycle Token Cover: Auto → No Cover';
+              break;
+            case 'none':
+              iconClass = 'fa-solid fa-shield-slash';
+              titleText = 'Cycle Token Cover: No Cover → Lesser Cover';
+              break;
+            case 'lesser':
+              iconClass = 'fa-regular fa-shield';
+              titleText = 'Cycle Token Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              iconClass = 'fa-solid fa-shield-alt';
+              titleText = 'Cycle Token Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              iconClass = 'fa-solid fa-shield';
+              titleText = 'Cycle Token Cover: Greater → Auto';
+              break;
+          }
+        }
+        
         addTool(tokens.tools, {
-          name: 'pf2e-visioner-toggle-token-provide',
-          title: 'Toggle Provide Auto-Cover (Selected Tokens)',
-          icon:
-            selectedTokens.length > 0 &&
-            selectedTokens.every(
-              (t) => t?.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover') !== true,
-            )
-              ? 'fa-solid fa-shield-slash'
-              : 'fa-solid fa-shield',
-          toggle: true,
-          active:
-            selectedTokens.length > 0 &&
-            selectedTokens.every(
-              (t) => t?.document?.getFlag?.(MODULE_ID, 'ignoreAutoCover') !== true,
-            ),
-          onChange: async (_event, toggled) => {
+          name: 'pf2e-visioner-cycle-token-cover',
+          title: titleText,
+          icon: iconClass,
+          toggle: false,
+          button: true,
+          onChange: async () => {
             try {
               const selected = canvas?.tokens?.controlled ?? [];
-              if (!selected.length) return;
+              if (!selected.length) {
+                console.log('PF2E Visioner | No tokens selected');
+                return;
+              }
 
-              const ignoreValue = toggled ? false : true; // active = provide cover => ignore=false
+              // Cycle through cover states: auto → none → lesser → standard → greater → auto
+              const coverCycle = [null, 'none', 'lesser', 'standard', 'greater'];
+              
+              // Get current state of first token to determine next state
+              const currentOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+              const currentIndex = coverCycle.indexOf(currentOverride);
+              const nextIndex = (currentIndex + 1) % coverCycle.length;
+              const nextCoverOverride = coverCycle[nextIndex];
+              
+              console.log(`PF2E Visioner | Cycling cover: ${currentOverride || 'auto'} → ${nextCoverOverride || 'auto'}`);
+              
               await Promise.all(
                 selected.map((t) =>
-                  t?.document?.setFlag?.(MODULE_ID, 'ignoreAutoCover', ignoreValue),
+                  t?.document?.setFlag?.(MODULE_ID, 'coverOverride', nextCoverOverride),
                 ),
               );
-              ui.controls.render();
-              try {
-                const { updateTokenVisuals } = await import('../services/visual-effects.js');
-                const allPlaceables = canvas?.tokens?.placeables ?? [];
-                for (const t of allPlaceables) {
-                  try {
-                    await updateTokenVisuals(t);
-                  } catch (_) {}
-                }
-              } catch (_) {}
-            } catch (_) {}
+              
+              // Force controls to re-render to update icon
+              ui.controls.render(true);
+            } catch (e) {
+              console.error('PF2E Visioner | Error cycling token cover:', e);
+            }
           },
         });
 
@@ -443,9 +589,7 @@ function injectPF2eVisionerBox(app, root) {
   // Current values
   const stealthCurrent =
     tokenDoc.getFlag?.(MODULE_ID, 'stealthDC') ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? '';
-  const ignoreAutoCover = !!(
-    tokenDoc.getFlag?.(MODULE_ID, 'ignoreAutoCover') ?? tokenDoc.flags?.[MODULE_ID]?.ignoreAutoCover
-  );
+  const coverOverride = tokenDoc.getFlag?.(MODULE_ID, 'coverOverride') || null;
   const minPerceptionRank = Number(
     tokenDoc.getFlag?.(MODULE_ID, 'minPerceptionRank') ??
       tokenDoc.flags?.[MODULE_ID]?.minPerceptionRank ??
@@ -456,8 +600,31 @@ function injectPF2eVisionerBox(app, root) {
   let inner = `
     <legend>PF2E Visioner</legend>
     <div class="form-group">
-      <label>Ignore as Auto-Cover Blocker</label>
-      <input type="checkbox" name="flags.${MODULE_ID}.ignoreAutoCover" ${ignoreAutoCover ? 'checked' : ''}>
+      <label>Cover</label>
+      <div class="cover-override-buttons" style="display: flex; gap: 4px; margin-top: 4px;">
+        <button type="button" class="visioner-icon-btn ${!coverOverride ? 'active' : ''}" 
+                data-cover-override="auto" data-tooltip="Automatic Detection - Token provides cover based on coverage thresholds">
+          <i class="fas fa-bolt-auto" style="color:#888"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'none' ? 'active' : ''}" 
+                data-cover-override="none" data-tooltip="No Cover - Token never provides cover regardless of thresholds">
+          <i class="fas fa-shield-slash" style="color:var(--cover-none)"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'lesser' ? 'active' : ''}" 
+                data-cover-override="lesser" data-tooltip="Lesser Cover - Token always provides lesser cover">
+          <i class="fa-regular fa-shield" style="color:var(--cover-lesser)"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'standard' ? 'active' : ''}" 
+                data-cover-override="standard" data-tooltip="Standard Cover - Token always provides standard cover">
+          <i class="fas fa-shield-alt" style="color:var(--cover-standard)"></i>
+        </button>
+        <button type="button" class="visioner-icon-btn ${coverOverride === 'greater' ? 'active' : ''}" 
+                data-cover-override="greater" data-tooltip="Greater Cover - Token always provides greater cover">
+          <i class="fas fa-shield" style="color:var(--cover-greater)"></i>
+        </button>
+      </div>
+      <input type="hidden" name="flags.${MODULE_ID}.coverOverride" value="${coverOverride || ''}">
+      <p class="notes">Set how this token provides cover in combat.</p>
     </div>
   `;
   if (actor.type === 'loot') {
@@ -484,6 +651,33 @@ function injectPF2eVisionerBox(app, root) {
   }
   box.innerHTML = inner;
 
+  // Add event listeners for cover override buttons
+  try {
+    const coverButtons = box.querySelectorAll('.cover-override-buttons .visioner-icon-btn');
+    const hiddenInput = box.querySelector('input[name$=".coverOverride"]');
+    
+    coverButtons.forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const coverType = button.getAttribute('data-cover-override');
+        
+        // Remove active class from all cover override buttons
+        coverButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // Always make the clicked button active (no toggle behavior - one must always be selected)
+        button.classList.add('active');
+        
+        // Update the hidden input for the cover override
+        if (hiddenInput) {
+          // Set the value (empty string for auto, coverType for specific override)
+          hiddenInput.value = coverType === 'auto' ? '' : coverType;
+        }
+      });
+    });
+  } catch (_) {}
+
   if (detectionFS) detectionFS.insertAdjacentElement('afterend', box);
   else panel.appendChild(box);
 }
@@ -496,45 +690,17 @@ function onRenderWallConfig(app, html) {
     // Avoid duplicate injection
     if (form.querySelector('.pf2e-visioner-wall-settings')) return;
     
-    // Get current wall document and flags
+    // Get current wall document
     const wallDoc = app?.document;
-    const provideCover = wallDoc?.getFlag?.(MODULE_ID, 'provideCover') !== false;
-    const coverOverride = wallDoc?.getFlag?.(MODULE_ID, 'coverOverride') || null;
     
-    // Build a fieldset with provide cover checkbox and cover override buttons
+    // Build a simple fieldset with just the advanced settings button
     const fs = document.createElement('fieldset');
     fs.className = 'pf2e-visioner-wall-settings';
     fs.innerHTML = `
       <legend>PF2E Visioner</legend>
       <div class="form-group">
-        <label>Provide Cover</label>
-        <input type="checkbox" name="flags.${MODULE_ID}.provideCover" ${provideCover ? 'checked' : ''}>
-      </div>
-      <div class="form-group cover-override-group" style="display: ${provideCover ? 'block' : 'none'};">
-        <label>Cover Override</label>
-        <div class="cover-override-buttons" style="display: flex; gap: 4px; margin-top: 4px;">
-          <button type="button" class="visioner-icon-btn ${!coverOverride ? 'active' : ''}" 
-                  data-cover-override="auto" title="Automatic Detection">
-            <i class="fas fa-magic" style="color:#888"></i>
-          </button>
-          <button type="button" class="visioner-icon-btn ${coverOverride === 'none' ? 'active' : ''}" 
-                  data-cover-override="none" title="No Cover">
-            <i class="fas fa-shield-slash" style="color:var(--cover-none)"></i>
-          </button>
-          <button type="button" class="visioner-icon-btn ${coverOverride === 'standard' ? 'active' : ''}" 
-                  data-cover-override="standard" title="Standard Cover">
-            <i class="fas fa-shield-alt" style="color:var(--cover-standard)"></i>
-          </button>
-          <button type="button" class="visioner-icon-btn ${coverOverride === 'greater' ? 'active' : ''}" 
-                  data-cover-override="greater" title="Greater Cover">
-            <i class="fas fa-shield-alt" style="color:var(--cover-greater)"></i>
-          </button>
-        </div>
-
-        <input type="hidden" name="flags.${MODULE_ID}.coverOverride" value="${coverOverride || ''}">
-      </div>
-      <div class="form-group">
         <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Advanced Wall Settings</button>
+        <p class="notes">Configure cover settings, hidden walls, and other advanced options.</p>
       </div>
     `;
 
@@ -561,38 +727,7 @@ function onRenderWallConfig(app, html) {
         });
       }
 
-      // Provide cover checkbox toggle
-      const provideCoverCheckbox = fs.querySelector('input[name$=".provideCover"]');
-      const coverOverrideGroup = fs.querySelector('.cover-override-group');
-      if (provideCoverCheckbox && coverOverrideGroup) {
-        provideCoverCheckbox.addEventListener('change', () => {
-          coverOverrideGroup.style.display = provideCoverCheckbox.checked ? 'block' : 'none';
-        });
-      }
 
-      // Cover override buttons
-      const coverButtons = fs.querySelectorAll('button[data-cover-override]');
-      coverButtons.forEach(button => {
-        button.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          
-          const coverType = button.getAttribute('data-cover-override');
-          
-          // Remove active class from all cover override buttons
-          coverButtons.forEach(btn => btn.classList.remove('active'));
-          
-          // Always make the clicked button active (no toggle behavior - one must always be selected)
-          button.classList.add('active');
-          
-          // Update the hidden input for the cover override
-          const hiddenInput = fs.querySelector('input[name$=".coverOverride"]');
-          if (hiddenInput) {
-            // Set the value (empty string for auto, coverType for specific override)
-            hiddenInput.value = coverType === 'auto' ? '' : coverType;
-          }
-        });
-      });
     } catch (_) {}
   } catch (_) {}
 }

@@ -41,7 +41,7 @@ function updateColorblindMode() {
     // Apply to any existing .pf2e-visioner containers
     const containers = document.querySelectorAll('.pf2e-visioner');
 
-    containers.forEach((container, index) => {
+    containers.forEach((container) => {
       container.classList.remove(
         'pf2e-visioner-colorblind-protanopia',
         'pf2e-visioner-colorblind-deuteranopia',
@@ -51,45 +51,8 @@ function updateColorblindMode() {
 
       if (colorblindMode !== 'none') {
         container.classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
-        console.log(
-          `PF2E Visioner: Applied colorblind mode "${colorblindMode}" to container ${index}`,
-        );
       }
     });
-
-    // Verify the application after a short delay
-    if (colorblindMode !== 'none') {
-      setTimeout(() => {
-        const bodyHasClass = document.body.classList.contains(
-          `pf2e-visioner-colorblind-${colorblindMode}`,
-        );
-        const containersHaveClass = Array.from(document.querySelectorAll('.pf2e-visioner')).some(
-          (container) => container.classList.contains(`pf2e-visioner-colorblind-${colorblindMode}`),
-        );
-        console.log(
-          `PF2E Visioner: Verification - Body has colorblind class: ${bodyHasClass}, Containers have colorblind class: ${containersHaveClass}`,
-        );
-
-        // Check if CSS custom properties are being applied
-        const computedStyle = getComputedStyle(document.body);
-        const visibilityColor = computedStyle.getPropertyValue('--visibility-observed-color');
-        console.log(
-          `PF2E Visioner: CSS Custom Property --visibility-observed-color: "${visibilityColor}"`,
-        );
-
-        // Check if any .pf2e-visioner container has the custom properties
-        const firstContainer = document.querySelector('.pf2e-visioner');
-        if (firstContainer) {
-          const containerStyle = getComputedStyle(firstContainer);
-          const containerVisibilityColor = containerStyle.getPropertyValue(
-            '--visibility-observed-color',
-          );
-          console.log(
-            `PF2E Visioner: Container CSS Custom Property --visibility-observed-color: "${containerVisibilityColor}"`,
-          );
-        }
-      }, 100);
-    }
   } catch (error) {
     console.error('PF2E Visioner: Failed to update colorblind mode:', error);
   }
@@ -191,10 +154,6 @@ Hooks.on('renderApplication', (app, html) => {
   if (html && html[0] && html[0].classList && html[0].classList.contains('pf2e-visioner')) {
     // Apply colorblind mode to this specific application
     const colorblindMode = game.settings.get('pf2e-visioner', 'colorblindMode');
-    console.log(
-      `PF2E Visioner: Applying colorblind mode "${colorblindMode}" to application`,
-      app.constructor.name,
-    );
 
     if (colorblindMode !== 'none') {
       html[0].classList.remove(
@@ -204,10 +163,6 @@ Hooks.on('renderApplication', (app, html) => {
         'pf2e-visioner-colorblind-achromatopsia',
       );
       html[0].classList.add(`pf2e-visioner-colorblind-${colorblindMode}`);
-      console.log(
-        `PF2E Visioner: Added class "pf2e-visioner-colorblind-${colorblindMode}" to`,
-        html[0],
-      );
     }
   }
 });

@@ -517,6 +517,21 @@ body.pf2e-visioner-colorblind-protanopia .icon-tab-navigation .icon-tab-button[d
   color: #cc79a7 !important;
 }
 
+/* Ensure icons remain visible when tab is active - use contrasting colors */
+body.pf2e-visioner-colorblind-protanopia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='visibility'].active
+  i {
+  color: #ffffff !important; /* White text on blue background */
+}
+
+body.pf2e-visioner-colorblind-protanopia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='cover'].active
+  i {
+  color: #ffffff !important; /* White text on pink background */
+}
+
 /* Legend icon colors for Protanopia */
 body.pf2e-visioner-colorblind-protanopia .visibility-observed {
   color: #0072b2 !important;
@@ -729,6 +744,21 @@ body.pf2e-visioner-colorblind-deuteranopia
   color: #ff8c00 !important;
 }
 
+/* Ensure icons remain visible when tab is active - use contrasting colors */
+body.pf2e-visioner-colorblind-deuteranopia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='visibility'].active
+  i {
+  color: #ffffff !important; /* White text on blue background */
+}
+
+body.pf2e-visioner-colorblind-deuteranopia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='cover'].active
+  i {
+  color: #ffffff !important; /* White text on orange background */
+}
+
 /* Legend icon colors for Deuteranopia */
 body.pf2e-visioner-colorblind-deuteranopia .visibility-observed {
   color: #0072b2 !important;
@@ -931,6 +961,21 @@ body.pf2e-visioner-colorblind-tritanopia
 
 body.pf2e-visioner-colorblind-tritanopia .icon-tab-navigation .icon-tab-button[data-tab='cover'] i {
   color: #ff6600 !important;
+}
+
+/* Ensure icons remain visible when tab is active - use contrasting colors */
+body.pf2e-visioner-colorblind-tritanopia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='visibility'].active
+  i {
+  color: #ffffff !important; /* White text on green background */
+}
+
+body.pf2e-visioner-colorblind-tritanopia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='cover'].active
+  i {
+  color: #ffffff !important; /* White text on orange background */
 }
 
 /* Legend icon colors for Tritanopia */
@@ -1138,6 +1183,21 @@ body.pf2e-visioner-colorblind-achromatopsia
   .icon-tab-button[data-tab='cover']
   i {
   color: #888888 !important;
+}
+
+/* Ensure icons remain visible when tab is active - use contrasting colors */
+body.pf2e-visioner-colorblind-achromatopsia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='visibility'].active
+  i {
+  color: #000000 !important; /* Black text on white background */
+}
+
+body.pf2e-visioner-colorblind-achromatopsia
+  .icon-tab-navigation
+  .icon-tab-button[data-tab='cover'].active
+  i {
+  color: #ffffff !important; /* White text on gray background */
 }
 
 /* Legend icon colors for Achromatopsia */

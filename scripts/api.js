@@ -1286,35 +1286,41 @@ export const autoVisibility = {
   // Test darkness source detection specifically
   testDarknessSources: () => {
     const lightSources = canvas.lighting?.placeables || [];
-    const darknessSources = lightSources.filter(light => 
-      light.isDarknessSource || light.document?.isDarknessSource
-    );
     
-    console.log(`=== Darkness Sources Debug (${darknessSources.length}/${lightSources.length} are darkness) ===`);
+    console.log(`=== All Light Sources Debug (${lightSources.length} total) ===`);
     
-    darknessSources.forEach((light, index) => {
+    lightSources.forEach((light, index) => {
       const brightRadius = light.document.config?.bright || light.document.bright || light.config?.bright || 0;
       const dimRadius = light.document.config?.dim || light.document.dim || light.config?.dim || 0;
       
-      console.log(`Darkness Source ${index + 1}:`, {
+      // Check multiple ways to detect darkness sources
+      const isDarknessSource = light.isDarknessSource || 
+                               light.document?.config?.negative ||
+                               false;
+      
+      console.log(`Light Source ${index + 1} ${isDarknessSource ? '(DARKNESS)' : '(NORMAL)'}:`, {
         id: light.id,
         brightRadius,
         dimRadius,
         x: light.document.x,
         y: light.document.y,
+        isDarknessSource,
         'light.isDarknessSource': light.isDarknessSource,
-        'light.document.isDarknessSource': light.document?.isDarknessSource
+        'light.document.isDarknessSource': light.document?.isDarknessSource,
+        'light.document.config.negative': light.document?.config?.negative,
+        'light.negative': light.negative,
+        'light.document.config.type': light.document?.config?.type,
+        'light.document.config': light.document?.config
       });
     });
     
-    if (darknessSources.length === 0) {
-      console.log('No darkness sources found. Regular light sources:');
-      lightSources.forEach((light, index) => {
-        console.log(`Light ${index + 1}: isDarknessSource=${light.isDarknessSource || light.document?.isDarknessSource || false}`);
-      });
-    }
+    const darknessCount = lightSources.filter(light => {
+      return light.isDarknessSource || 
+             light.document?.config?.negative;
+    }).length;
     
-    ui.notifications.info(`Found ${darknessSources.length} darkness sources out of ${lightSources.length} total lights`);
+    console.log(`Found ${darknessCount} darkness sources out of ${lightSources.length} total lights`);
+    ui.notifications.info(`Found ${darknessCount} darkness sources out of ${lightSources.length} total lights`);
   },
 
   // Emergency circuit breaker reset

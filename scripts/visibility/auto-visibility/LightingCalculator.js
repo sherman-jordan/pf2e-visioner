@@ -23,10 +23,6 @@ export class LightingCalculator {
   getLightLevelAt(position) {
     const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
     
-    if (debugMode) {
-      console.log(`${MODULE_ID} | Light level calculation at (${position.x}, ${position.y}):`, position);
-    }
-    
     const sceneDarkness = canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0;
     
     // Start with base illumination based on scene darkness
@@ -36,19 +32,51 @@ export class LightingCalculator {
     
     // Check if position is illuminated by any light sources OR light-emitting tokens
     const lightSources = canvas.lighting?.placeables || [];
+    
+    // Only log when darkness sources are found for debugging
+    const hasDarknessSources = lightSources.some(light => 
+      light.isDarknessSource || light.document?.config?.negative
+    );
+    if (debugMode && hasDarknessSources) {
+      console.log(`${MODULE_ID} | 🌑 DARKNESS SOURCES DETECTED at (${position.x}, ${position.y})`);
+    }
+    
     let maxLightIllumination = 0;
     let darknessReduction = 0; // Track darkness sources
 
     // Check dedicated light sources first (including darkness sources)
     for (const light of lightSources) {
-      if (!light.emitsLight || light.document.hidden) continue;
+      // Check if this is a darkness source first before filtering
+      const isDarknessSource = light.isDarknessSource || 
+                               light.document?.config?.negative ||
+                               false;
       
-      const distance = Math.sqrt(
-        Math.pow(position.x - light.center.x, 2) + 
-        Math.pow(position.y - light.center.y, 2)
-      );
+      // Debug filtering decision
+      if (debugMode && isDarknessSource) {
+        console.log(`${MODULE_ID} | 🔧 DARKNESS SOURCE FILTERING:`, {
+          'light.id': light.id,
+          'isDarknessSource': isDarknessSource,
+          'light.document.hidden': light.document.hidden,
+          'light.emitsLight': light.emitsLight,
+          'will be filtered?': (light.document.hidden && !isDarknessSource) || (!light.emitsLight && !isDarknessSource)
+        });
+      }
       
-      // Try multiple property paths for light radius
+      // Skip only if (hidden AND not a darkness source) OR (doesn't emit light AND isn't a darkness source)
+      if ((light.document.hidden && !isDarknessSource) || (!light.emitsLight && !isDarknessSource)) continue;
+      
+      // Debug light center coordinates
+      if (debugMode && isDarknessSource) {
+        console.log(`${MODULE_ID} | 🗺️ DARKNESS SOURCE COORDS:`, {
+          'light.center': light.center,
+          'light.x': light.x,
+          'light.y': light.y,
+          'light.document.x': light.document.x,
+          'light.document.y': light.document.y
+        });
+      }
+      
+      // Try multiple property paths for light radius FIRST
       const brightRadius = light.document.config?.bright || 
                           light.document.bright || 
                           light.config?.bright || 0;
@@ -56,19 +84,81 @@ export class LightingCalculator {
                        light.document.dim || 
                        light.config?.dim || 0;
       
-      // Check if this is a darkness source using the correct FoundryVTT property
-      const isDarknessSource = light.isDarknessSource || light.document?.isDarknessSource || false;
+      // Use the correct coordinate properties - light.x and light.y (not light.center)
+      const lightX = light.x || light.document.x;
+      const lightY = light.y || light.document.y;
+      
+      const distance = Math.sqrt(
+        Math.pow(position.x - lightX, 2) + 
+        Math.pow(position.y - lightY, 2)
+      );
+      
+      // Convert light radii from scene units (feet) to pixels for distance comparison
+      const pixelsPerGridSquare = canvas.grid?.size || 100;
+      const feetPerGridSquare = canvas.scene?.grid?.distance || 5;
+      const pixelsPerFoot = pixelsPerGridSquare / feetPerGridSquare;
+      
+      const brightRadiusPixels = Math.abs(brightRadius) * pixelsPerFoot;
+      const dimRadiusPixels = Math.abs(dimRadius) * pixelsPerFoot;
+      
+      // Debug coordinate calculation with unit conversion
+      if (debugMode) {
+        console.log(`${MODULE_ID} | 🔍 COORDINATE DEBUG:`, {
+          'lightX': lightX,
+          'lightY': lightY,
+          'token position': position,
+          'calculated distance (pixels)': distance.toFixed(1),
+          'brightRadius (feet)': Math.abs(brightRadius),
+          'dimRadius (feet)': Math.abs(dimRadius),
+          'brightRadius (pixels)': brightRadiusPixels.toFixed(1),
+          'dimRadius (pixels)': dimRadiusPixels.toFixed(1),
+          'should be in range?': distance <= dimRadiusPixels,
+          'pixelsPerFoot': pixelsPerFoot
+        });
+      }
+      
+      // isDarknessSource already detected above for filtering
+      
+      // Debug log all light properties to understand the structure
+      if (debugMode) {
+        console.log(`${MODULE_ID} | Light source properties:`, {
+          id: light.id,
+          lightPos: `(${light.document.x}, ${light.document.y})`,
+          tokenPos: `(${position.x}, ${position.y})`,
+          brightRadius,
+          dimRadius,
+          distance: distance.toFixed(1),
+          isDarknessSource,
+          inBrightRange: distance <= Math.abs(brightRadius),
+          inDimRange: distance <= Math.abs(dimRadius),
+          'light.isDarknessSource': light.isDarknessSource,
+          'light.document.config.negative': light.document?.config?.negative
+        });
+      }
       
       if (isDarknessSource) {
-        // Handle darkness sources (they reduce illumination)
-        if (distance <= Math.abs(brightRadius)) {
-          darknessReduction = Math.max(darknessReduction, 1); // Strong darkness
-        } else if (distance <= Math.abs(dimRadius)) {
-          darknessReduction = Math.max(darknessReduction, 0.5); // Weak darkness
+        if (debugMode) {
+          console.log(`${MODULE_ID} | DARKNESS SOURCE FOUND! ID: ${light.id}, Distance: ${distance.toFixed(1)}, Bright: ${brightRadius}, Dim: ${dimRadius}`);
         }
         
-        if (debugMode && (distance <= Math.abs(brightRadius) || distance <= Math.abs(dimRadius))) {
-          console.log(`${MODULE_ID} | Darkness source detected at distance ${distance.toFixed(1)} (bright: ${Math.abs(brightRadius)}, dim: ${Math.abs(dimRadius)})`);
+        // Handle darkness sources (they reduce illumination) - use pixel-converted radii
+        // For darkness sources, both bright and dim areas provide full darkness
+        if (distance <= brightRadiusPixels) {
+          darknessReduction = Math.max(darknessReduction, 1); // Full darkness
+          if (debugMode) {
+            console.log(`${MODULE_ID} | Token in BRIGHT DARKNESS area - applying full darkness reduction`);
+          }
+        } else if (distance <= dimRadiusPixels) {
+          darknessReduction = Math.max(darknessReduction, 1); // Full darkness (same as bright)
+          if (debugMode) {
+            console.log(`${MODULE_ID} | Token in DIM DARKNESS area - applying full darkness reduction`);
+          }
+        }
+        
+        if (debugMode && (distance <= brightRadiusPixels || distance <= dimRadiusPixels)) {
+          console.log(`${MODULE_ID} | 🌑 DARKNESS affecting token at distance ${distance.toFixed(1)} pixels`);
+        } else if (debugMode) {
+          console.log(`${MODULE_ID} | 🌑 Token OUTSIDE darkness range: distance ${distance.toFixed(1)} pixels > radius ${dimRadiusPixels.toFixed(1)} pixels`);
         }
       } else {
         // Handle normal light sources (they increase illumination)
@@ -82,20 +172,12 @@ export class LightingCalculator {
 
     // Check light-emitting tokens using cached results
     const lightEmittingTokens = this.#getLightEmittingTokens();
-    
-    if (debugMode && lightEmittingTokens.length > 0) {
-      console.log(`${MODULE_ID} | Checking ${lightEmittingTokens.length} light-emitting tokens`);
-    }
 
     for (const tokenInfo of lightEmittingTokens) {
       const distance = Math.sqrt(
         Math.pow(position.x - tokenInfo.x, 2) + 
         Math.pow(position.y - tokenInfo.y, 2)
       );
-      
-      if (debugMode) {
-        console.log(`${MODULE_ID} | Light-emitting token "${tokenInfo.name}" at (${tokenInfo.x}, ${tokenInfo.y}):`, tokenInfo);
-      }
       
       if (distance <= tokenInfo.brightRadius) {
         maxLightIllumination = Math.max(maxLightIllumination, 1); // Bright light
@@ -111,7 +193,7 @@ export class LightingCalculator {
     finalIllumination = Math.max(0, finalIllumination - darknessReduction);
     
     if (debugMode && darknessReduction > 0) {
-      console.log(`${MODULE_ID} | Applied darkness reduction: ${darknessReduction} (final illumination: ${finalIllumination})`);
+      console.log(`${MODULE_ID} | 🌑 DARKNESS applied: reduction ${darknessReduction} → final illumination ${finalIllumination}`);
     }
     
     // Determine light level category
@@ -132,8 +214,9 @@ export class LightingCalculator {
       lightIllumination: maxLightIllumination
     };
 
-    if (debugMode) {
-      console.log(`${MODULE_ID} | ${lightLevel.charAt(0).toUpperCase() + lightLevel.slice(1)} light detected`, result);
+    // Only log when darkness is detected for debugging  
+    if (debugMode && lightLevel === 'darkness') {
+      console.log(`${MODULE_ID} | 🌑 DARKNESS LEVEL detected at (${position.x}, ${position.y})`);
     }
 
     return result;

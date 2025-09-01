@@ -281,7 +281,12 @@ class AutoVisibilitySystem {
     
     const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
     if (debugMode) {
-      console.log(`${MODULE_ID} | Light source changed: ${lightDoc.id} - updating visibility`);
+      console.log(`${MODULE_ID} | Light source changed: ${lightDoc.id} - updating visibility`, {
+        changes,
+        'lightDoc.isDarknessSource': lightDoc.object?.isDarknessSource,
+        'lightDoc.config.negative': lightDoc.config?.negative,
+        'full_lightDoc': lightDoc
+      });
     }
     
     // Clear light cache since light sources changed
@@ -685,6 +690,12 @@ class AutoVisibilitySystem {
         const visibility1 = await this.calculateVisibility(token, otherToken);
         const visibility2 = await this.calculateVisibility(otherToken, token);
         
+        // Debug logging for Hidden state calculation
+        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+        if (debugMode && (visibility1 === 'hidden' || visibility2 === 'hidden')) {
+          console.log(`${MODULE_ID} | 👁️ HIDDEN CALCULATED: ${token.name} ↔ ${otherToken.name} (${visibility1}, ${visibility2})`);
+        }
+        
         // Check for manual overrides
         const respectManualActions = game.settings.get(MODULE_ID, 'autoVisibilityRespectManualActions');
         
@@ -708,14 +719,20 @@ class AutoVisibilitySystem {
       
       // Apply all updates in batch
       if (updates.length > 0) {
-        for (const update of updates) {
-          setVisibilityBetween(update.observer, update.target, update.visibility);
+        // Debug logging for Hidden state application
+        const debugMode2 = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+        if (debugMode2) {
+          const hiddenUpdates = updates.filter(u => u.visibility === 'hidden');
+          if (hiddenUpdates.length > 0) {
+            console.log(`${MODULE_ID} | 🔄 APPLYING HIDDEN UPDATES: ${hiddenUpdates.length} updates`);
+          }
         }
         
-        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-        if (debugMode) {
-          console.log(`${MODULE_ID} | Applied ${updates.length} visibility updates for ${token.name}`);
+        for (const update of updates) {
+          setVisibilityBetween(update.observer, update.target, update.visibility, { isAutomatic: true });
         }
+        
+
         
         // Trigger perception refresh to update visual representation
         this.#refreshPerception();

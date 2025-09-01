@@ -132,7 +132,7 @@ export class ManualOverrideDetector {
   async hasManualVisibilityOverride(observer, target) {
     try {
       // Check if there are any cached manual actions affecting this visibility relationship
-      // This includes Hide, Sneak actions (Point Out and Seek handled separately)
+      // This includes Hide, Sneak actions, and general manual visibility state changes
       
       const observerId = observer?.document?.id;
       const targetId = target?.document?.id;
@@ -142,6 +142,15 @@ export class ManualOverrideDetector {
       const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
       if (debugMode) {
         console.log(`${MODULE_ID} | Checking manual override for ${observer.name} → ${target.name} (${observerId} → ${targetId})`);
+      }
+
+      // First check for general manual override flags
+      const { hasManualOverride } = await import('../../stores/visibility-map.js');
+      if (hasManualOverride(observer, target)) {
+        if (debugMode) {
+          console.log(`${MODULE_ID} | Found general manual override flag`);
+        }
+        return true;
       }
 
       // Import the message cache maps to check for active manual overrides

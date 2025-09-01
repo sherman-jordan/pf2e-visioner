@@ -42,6 +42,49 @@ export function getVisibilityBetween(observer, target) {
 }
 
 /**
+ * Get manual override flags for a token
+ * @param {Token} token
+ * @returns {Record<string,boolean>}
+ */
+export function getManualOverrideFlags(token) {
+  const flags = token?.document.getFlag(MODULE_ID, 'manualOverrides') ?? {};
+  return flags;
+}
+
+/**
+ * Set manual override flag for a specific token relationship
+ * @param {Token} observer
+ * @param {Token} target  
+ * @param {boolean} isManual
+ */
+export async function setManualOverrideFlag(observer, target, isManual) {
+  if (!observer?.document || !target?.document) return;
+  // Only GMs can update token documents
+  if (!game.user.isGM) return;
+
+  const overrideFlags = getManualOverrideFlags(observer);
+  if (isManual) {
+    overrideFlags[target.document.id] = true;
+  } else {
+    delete overrideFlags[target.document.id];
+  }
+  
+  const path = `flags.${MODULE_ID}.manualOverrides`;
+  await observer.document.update({ [path]: overrideFlags }, { diff: false });
+}
+
+/**
+ * Check if a visibility relationship has been manually overridden
+ * @param {Token} observer
+ * @param {Token} target
+ * @returns {boolean}
+ */
+export function hasManualOverride(observer, target) {
+  const overrideFlags = getManualOverrideFlags(observer);
+  return !!overrideFlags[target?.document?.id];
+}
+
+/**
  * Write visibility state between two tokens and update ephemeral effects
  * @param {Token} observer
  * @param {Token} target
@@ -57,11 +100,27 @@ export async function setVisibilityBetween(
   if (!observer?.document?.id || !target?.document?.id) return;
 
   const visibilityMap = getVisibilityMap(observer);
-  visibilityMap[target.document.id] = state;
-  await setVisibilityMap(observer, visibilityMap);
+  const currentState = visibilityMap[target.document.id];
+  
+  // Only update if state has changed
+  if (currentState !== state) {
+    visibilityMap[target.document.id] = state;
+    await setVisibilityMap(observer, visibilityMap);
+    
+    // Track manual vs automatic changes
+    if (!options.isAutomatic) {
+      await setManualOverrideFlag(observer, target, true);
+    }
+  }
 
   if (options.skipEphemeralUpdate) return;
   try {
+    // Debug logging for Hidden effect application
+    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+    if (debugMode && state === 'hidden') {
+      console.log(`${MODULE_ID} | 🎭 HIDDEN EFFECT: ${observer.name} → ${target.name}`);
+    }
+    
     // Set flag to prevent auto-visibility system from reacting to its own effect changes
     if (autoVisibilitySystem) {
       autoVisibilitySystem._setUpdatingEffects(true);

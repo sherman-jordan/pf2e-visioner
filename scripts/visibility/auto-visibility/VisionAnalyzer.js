@@ -220,9 +220,6 @@ export class VisionAnalyzer {
     
     // Blinded: Can't see anything (handled by hasVision = false)
     if (!observerVision.hasVision) {
-      if (debugMode) {
-        console.log(`${MODULE_ID} | No vision (blinded or no sight) - hidden`);
-      }
       return 'hidden';
     }
     
@@ -232,41 +229,30 @@ export class VisionAnalyzer {
     if (observerVision.isDazzled) {
       // For simplicity, we assume vision is the only precise sense for most creatures
       // This could be enhanced later to check for other precise senses
-      if (debugMode) {
-        console.log(`${MODULE_ID} | Dazzled - everything concealed`);
-      }
       return 'concealed';
     }
 
     switch (lightLevel.level) {
       case 'bright':
-        if (debugMode) {
-          console.log(`${MODULE_ID} | Bright light detected - observed`);
-        }
         return 'observed';
         
       case 'dim':
         if (observerVision.hasLowLightVision) {
-          if (debugMode) {
-            console.log(`${MODULE_ID} | Dim light detected - observed (hasLowLight: ${observerVision.hasLowLightVision}, hasDarkvision: ${observerVision.hasDarkvision})`);
-          }
           return 'observed';
         } else {
-          if (debugMode) {
-            console.log(`${MODULE_ID} | Dim light detected - concealed (hasLowLight: ${observerVision.hasLowLightVision}, hasDarkvision: ${observerVision.hasDarkvision})`);
-          }
           return 'concealed';
         }
         
       case 'darkness':
         if (observerVision.hasDarkvision) {
           if (debugMode) {
-            console.log(`${MODULE_ID} | Darkness with darkvision - observed`);
+            console.log(`${MODULE_ID} | 🌑 DARKNESS → OBSERVED: Observer has darkvision (range: ${observerVision.darkvisionRange})`);
           }
           return 'observed';
         } else {
+          // ONLY log when darkness results in hidden state for debugging
           if (debugMode) {
-            console.log(`${MODULE_ID} | Darkness without darkvision - hidden`);
+            console.log(`${MODULE_ID} | 🌑 DARKNESS → HIDDEN: No darkvision in darkness area`);
           }
           return 'hidden';
         }

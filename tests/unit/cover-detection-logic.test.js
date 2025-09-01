@@ -7,9 +7,9 @@
  * PRINCIPLE: Test real cover detection scenarios, not UI or mocking
  */
 
-import '../setup.js';
 import { jest } from '@jest/globals';
 import autoCoverSystem from '../../scripts/cover/auto-cover/AutoCoverSystem.js';
+import '../setup.js';
 
 describe('Cover Detection Core Logic', () => {
   let originalGame, originalCanvas;
@@ -24,7 +24,6 @@ describe('Cover Detection Core Logic', () => {
       settings: {
         get: jest.fn().mockImplementation((module, setting) => {
           // Return realistic default settings
-          if (setting === 'autoCoverTokenIntersectionMode') return 'center';
           if (setting === 'autoCoverIgnoreUndetected') return false;
           if (setting === 'autoCoverIgnoreDead') return true;
           if (setting === 'autoCoverIgnoreAllies') return false;

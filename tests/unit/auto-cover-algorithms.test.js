@@ -46,37 +46,6 @@ describe('Auto-Cover Core Algorithms', () => {
     Object.assign(global.game, mockGame);
   });
 
-  // Helper function to create test tokens with specific properties
-  function createTestToken(id, x, y, size = 'med', options = {}) {
-    return {
-      id,
-      document: {
-        x,
-        y,
-        width:
-          size === 'tiny' ? 0.5 : size === 'sm' ? 1 : size === 'lg' ? 2 : size === 'huge' ? 3 : 1,
-        height:
-          size === 'tiny' ? 0.5 : size === 'sm' ? 1 : size === 'lg' ? 2 : size === 'huge' ? 3 : 1,
-        ...options.document,
-      },
-      actor: {
-        id: `actor-${id}`,
-        type: options.actorType || 'npc',
-        system: {
-          traits: { size: { value: size } },
-          attributes: {
-            hp: { value: options.hp || 10, max: 10 },
-          },
-        },
-        alliance: options.alliance || 'opposition',
-        ...options.actor,
-      },
-      center: { x: x + 50, y: y + 50 }, // Assume 100px grid
-      getCenter: () => ({ x: x + 50, y: y + 50 }),
-      ...options,
-    };
-  }
-
   describe('Coverage-Based Algorithm Logic', () => {
     test('validates coverage percentage thresholds (PF2e rules)', () => {
       // Test the coverage calculation logic directly
@@ -715,8 +684,6 @@ describe('Auto-Cover Core Algorithms', () => {
         switch (mode) {
           case 'any':
             return 'Size-based calculation with any intersection';
-          case 'center':
-            return 'Strict center-to-center ray intersection';
           case 'coverage':
             return 'Coverage percentage calculation (50%/70% thresholds)';
           case 'tactical':
@@ -727,7 +694,6 @@ describe('Auto-Cover Core Algorithms', () => {
       };
 
       expect(getIntersectionBehavior('any')).toContain('Size-based');
-      expect(getIntersectionBehavior('center')).toContain('center-to-center');
       expect(getIntersectionBehavior('coverage')).toContain('Coverage percentage');
       expect(getIntersectionBehavior('tactical')).toContain('Corner-to-corner');
       expect(getIntersectionBehavior('invalid')).toBe('Unknown mode');

@@ -740,11 +740,6 @@ describe('Simple Settings Functional Tests', () => {
       const modeAny = game.settings.get('pf2e-visioner', 'autoCoverTokenIntersectionMode');
       expect(modeAny).toBe('any');
 
-      // Test with autoCoverTokenIntersectionMode = 'center'
-      game.settings.set('pf2e-visioner', 'autoCoverTokenIntersectionMode', 'center');
-      const modeCenter = game.settings.get('pf2e-visioner', 'autoCoverTokenIntersectionMode');
-      expect(modeCenter).toBe('center');
-
       // Test with autoCoverTokenIntersectionMode = 'coverage'
       game.settings.set('pf2e-visioner', 'autoCoverTokenIntersectionMode', 'coverage');
       const modeCoverage = game.settings.get('pf2e-visioner', 'autoCoverTokenIntersectionMode');

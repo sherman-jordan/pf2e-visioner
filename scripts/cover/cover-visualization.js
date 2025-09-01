@@ -858,7 +858,8 @@ class CoverVisualization {
           },
         };
 
-        // Calculate what cover the selected token would have at this position from the hovered token
+        // Calculate what cover the hovered token would have when attacked from this grid position
+        // This shows the cover level that would apply if an attacker were standing at this grid square
         // For visualization, always ignore undetected/hidden tokens regardless of settings
         // Use the selected token's perspective for visibility checks
 
@@ -876,7 +877,9 @@ class CoverVisualization {
         }
 
         if (shouldShowCover) {
-          const coverLevel = autoCoverSystem.detectCoverBetweenTokens(hoveredToken, tempAttacker, {
+          // Calculate cover FROM this grid position TO the hovered token
+          // (i.e., what cover does the target have when attacked from this position)
+          const coverLevel = autoCoverSystem.detectCoverBetweenTokens(tempAttacker, hoveredToken, {
             filterOverrides: {
               ignoreUndetected: true,
               visibilityPerspective: selectedToken,

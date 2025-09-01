@@ -133,6 +133,52 @@ export class CoverDetector {
     }
 
     /**
+     * Check if a wall blocks sight from a given direction based on its sight settings
+     * @param {Object} wallDoc - Wall document
+     * @param {Object} attackerPos - Attacker position {x, y}
+     * @param {Object} _targetPos - Target position {x, y} (unused but kept for API consistency)
+     * @returns {boolean} True if wall blocks sight from attacker to target
+     * @private
+     */
+    _doesWallBlockFromDirection(wallDoc, attackerPos, _targetPos) {
+        try {
+            // If wall doesn't block sight at all, it doesn't provide cover
+            if (wallDoc.sight === 0) return false; // NONE
+            
+            // Check if wall has a direction (directional wall)
+            if (wallDoc.direction != null && typeof wallDoc.direction === 'number') {
+                // Get wall coordinates
+                const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
+                
+                // Calculate wall direction vector
+                const wallDx = x2 - x1;
+                const wallDy = y2 - y1;
+                
+                // Calculate vector from wall start to attacker
+                const attackerDx = attackerPos.x - x1;
+                const attackerDy = attackerPos.y - y1;
+                
+                // Use cross product to determine which side of the wall the attacker is on
+                // Positive cross product means attacker is on the "left" side of the wall (as drawn)
+                // Negative cross product means attacker is on the "right" side of the wall
+                const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
+                
+                // For directional walls, they block from one direction only
+                // The wall's direction property determines which side blocks
+                // We'll use the cross product to determine if attacker is on the blocking side
+                return crossProduct > 0;
+            }
+            
+            // For non-directional walls, they block from both sides
+            return true;
+            
+        } catch (error) {
+            console.warn('PF2E Visioner | Error checking wall direction:', error);
+            return true; // Default to blocking if we can't determine
+        }
+    }
+
+    /**
      * Evaluate walls cover
      * @param {Object} p1 
      * @param {Object} p2 
@@ -229,6 +275,9 @@ export class CoverDetector {
                 // Skip walls without cover override
                 if (!coverOverride) continue;
                 
+                // Check if this wall blocks from the attacker's direction
+                if (!this._doesWallBlockFromDirection(wallDoc, p1, p2)) continue;
+                
                 // Check if this wall intersects the ray
                 const coords = wall?.coords;
                 if (!coords) continue;
@@ -259,6 +308,9 @@ export class CoverDetector {
                 const wallDoc = wall.document || wall;
                 const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
                 if (coverOverride) {
+                    // Check if this wall blocks from the attacker's direction
+                    if (!this._doesWallBlockFromDirection(wallDoc, p1, p2)) continue;
+                    
                     const coords = wall?.coords;
                     if (coords) {
                         const intersection = this._lineIntersectionPoint(
@@ -392,12 +444,11 @@ export class CoverDetector {
                     const c = wall?.coords;
                     if (!c) continue;
                     
-                    // Check wall type - walls that block sight should provide cover
+                    // Check wall type and direction - walls that block sight should provide cover
                     const wallDoc = wall.document || wall;
-                    const blocksSight = wallDoc?.sight !== 0; // 0 = NONE/NORMAL sight
                     
-                    // Skip walls that don't block sight
-                    if (!blocksSight) continue;
+                    // Skip walls that don't block sight from this direction
+                    if (!this._doesWallBlockFromDirection(wallDoc, a, b)) continue;
             
             // Check if the ray intersects this wall
             const intersection = this._lineIntersectionPoint(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3]);

@@ -136,11 +136,10 @@ export class CoverDetector {
      * Check if a wall blocks sight from a given direction based on its sight settings
      * @param {Object} wallDoc - Wall document
      * @param {Object} attackerPos - Attacker position {x, y}
-     * @param {Object} _targetPos - Target position {x, y} (unused but kept for API consistency)
-     * @returns {boolean} True if wall blocks sight from attacker to target
+     * @returns {boolean} True if wall blocks sight from attacker position
      * @private
      */
-    _doesWallBlockFromDirection(wallDoc, attackerPos, _targetPos) {
+    _doesWallBlockFromDirection(wallDoc, attackerPos) {
         try {
             // If wall doesn't block sight at all, it doesn't provide cover
             if (wallDoc.sight === 0) return false; // NONE
@@ -148,6 +147,14 @@ export class CoverDetector {
             // Check if wall has a direction (directional wall)
             // Foundry stores directional restrictions in the 'dir' property
             if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
+                // Foundry wall direction constants:
+                // BOTH: 0 - wall blocks from both directions
+                // LEFT: 1 - wall blocks only when a ray strikes its left side
+                // RIGHT: 2 - wall blocks only when a ray strikes its right side
+                
+                // If wall blocks from both directions, always return true
+                if (wallDoc.dir === 0) return true; // BOTH
+                
                 // Get wall coordinates
                 const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
                 
@@ -164,13 +171,18 @@ export class CoverDetector {
                 // Negative cross product means attacker is on the "right" side of the wall
                 const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
                 
-                // For directional walls, they block from one direction only
-                // The wall's dir property determines which side blocks
-                // We'll use the cross product to determine if attacker is on the blocking side
-                return crossProduct > 0;
+                // Apply the actual wall direction logic
+                if (wallDoc.dir === 1) { // LEFT - wall blocks only when ray strikes left side
+                    return crossProduct > 0; // Attacker on left side = wall blocks
+                } else if (wallDoc.dir === 2) { // RIGHT - wall blocks only when ray strikes right side  
+                    return crossProduct < 0; // Attacker on right side = wall blocks
+                }
+                
+                // Fallback for unexpected dir values
+                return true;
             }
             
-            // For non-directional walls, they block from both sides
+            // For non-directional walls (dir is null/undefined), they block from both sides
             return true;
             
         } catch (error) {
@@ -262,7 +274,7 @@ export class CoverDetector {
                 if (!coverOverride) continue;
                 
                 // Check if this wall blocks from the attacker's direction
-                if (!this._doesWallBlockFromDirection(wallDoc, p1, p2)) continue;
+                if (!this._doesWallBlockFromDirection(wallDoc, p1)) continue;
                 
                 // Check if this wall intersects the ray
                 const coords = wall?.coords;
@@ -295,7 +307,7 @@ export class CoverDetector {
                 const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
                 if (coverOverride) {
                     // Check if this wall blocks from the attacker's direction
-                    if (!this._doesWallBlockFromDirection(wallDoc, p1, p2)) continue;
+                    if (!this._doesWallBlockFromDirection(wallDoc, p1)) continue;
                     
                     const coords = wall?.coords;
                     if (coords) {
@@ -339,42 +351,52 @@ export class CoverDetector {
     /**
      * Estimate percent of the target token's edge directions that are blocked by walls from origin p1.
      * Samples multiple points along the target perimeter and casts rays to each, counting wall collisions.
+     * Uses a more accurate D&D/PF2e style approach based on corner-to-corner line blocking.
      */
     _estimateWallCoveragePercent(p1, target) {
         try {
             const rect = getTokenRect(target);
             
-            // First, check if there's a clear line to the target center
-            // If there is, then walls adjacent to the target shouldn't provide significant cover
-            const targetCenter = { x: (rect.x1 + rect.x2) / 2, y: (rect.y1 + rect.y2) / 2 };
-            const centerBlocked = this._isRayBlockedByWalls(p1, targetCenter);
-            
-            // If center is not blocked, reduce the impact of edge blocking
-            const centerWeight = centerBlocked ? 1.0 : 0.3;
-            
+            // Sample points around the target's perimeter more densely for accuracy
             const points = [];
-            const samplePerEdge = 3; // Reduced sampling for better performance
+            const samplePerEdge = 5; // Increased sampling for better accuracy
+            
+            // Helper to interpolate points along an edge
             const pushLerp = (ax, ay, bx, by) => {
                 for (let i = 0; i <= samplePerEdge; i++) {
                     const t = i / samplePerEdge;
                     points.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
                 }
             };
-            // Edges: top, right, bottom, left
-            pushLerp(rect.x1, rect.y1, rect.x2, rect.y1);
-            pushLerp(rect.x2, rect.y1, rect.x2, rect.y2);
-            pushLerp(rect.x2, rect.y2, rect.x1, rect.y2);
-            pushLerp(rect.x1, rect.y2, rect.x1, rect.y1);
+            
+            // Add the four corners explicitly (most important for D&D/PF2e rules)
+            points.push({ x: rect.x1, y: rect.y1 }); // Top-left corner
+            points.push({ x: rect.x2, y: rect.y1 }); // Top-right corner  
+            points.push({ x: rect.x2, y: rect.y2 }); // Bottom-right corner
+            points.push({ x: rect.x1, y: rect.y2 }); // Bottom-left corner
+            
+            // Add center point for additional context
+            const targetCenter = { x: (rect.x1 + rect.x2) / 2, y: (rect.y1 + rect.y2) / 2 };
+            points.push(targetCenter);
+            
+            // Sample edges: top, right, bottom, left
+            pushLerp(rect.x1, rect.y1, rect.x2, rect.y1); // Top edge
+            pushLerp(rect.x2, rect.y1, rect.x2, rect.y2); // Right edge
+            pushLerp(rect.x2, rect.y2, rect.x1, rect.y2); // Bottom edge
+            pushLerp(rect.x1, rect.y2, rect.x1, rect.y1); // Left edge
 
+            // Count blocked sight lines
             let blocked = 0;
             for (const pt of points) {
                 if (this._isRayBlockedByWalls(p1, pt)) blocked++;
             }
 
+            // Calculate raw percentage
             const rawPct = (blocked / Math.max(1, points.length)) * 100;
-            const adjustedPct = rawPct * centerWeight;
             
-            return adjustedPct;
+            // Remove the arbitrary center weight reduction - let the actual blockage speak for itself
+            // This provides more intuitive and predictable cover calculations
+            return rawPct;
         } catch (_) { return 0; }
     }
     
@@ -406,7 +428,7 @@ export class CoverDetector {
             const wallDoc = wall.document || wall;
             
             // Skip walls that don't block sight from this direction
-            if (!this._doesWallBlockFromDirection(wallDoc, a, b)) continue;
+            if (!this._doesWallBlockFromDirection(wallDoc, a)) continue;
             
             // Check if the ray intersects this wall
             const intersection = this._lineIntersectionPoint(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3]);

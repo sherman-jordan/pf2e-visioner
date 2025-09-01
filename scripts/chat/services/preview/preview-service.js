@@ -74,6 +74,12 @@ export async function previewActionResults(actionData) {
         const { PointOutPreviewDialog } = await import('../../dialogs/point-out-preview-dialog.js');
         const handler = new PointOutActionHandler();
         const subjects = await handler.discoverSubjects(actionData);
+        
+        // If no subjects found (e.g., no target selected), don't open the dialog
+        if (!subjects || subjects.length === 0) {
+          return;
+        }
+        
         const outcomes = await Promise.all(
           subjects.map((s) => handler.analyzeOutcome(actionData, s)),
         );

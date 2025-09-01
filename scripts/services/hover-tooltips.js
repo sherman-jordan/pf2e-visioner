@@ -145,11 +145,56 @@ export function setTooltipMode(mode) {
 }
 
 /**
+ * Add event listeners to all current tokens
+ */
+function addTokenEventListeners() {
+  canvas.tokens.placeables.forEach((token) => {
+    addTokenEventListener(token);
+  });
+}
+
+/**
+ * Add event listener to a specific token
+ * @param {Token} token - The token to add listeners to
+ */
+export function addTokenEventListener(token) {
+  // Skip if already has listeners
+  if (HoverTooltips.tokenEventHandlers.has(token.id)) {
+    return;
+  }
+
+  const overHandler = () => onTokenHover(token);
+  const outHandler = () => onTokenHoverEnd(token);
+
+  // Store handlers for later cleanup
+  HoverTooltips.tokenEventHandlers.set(token.id, { overHandler, outHandler });
+
+  token.on('pointerover', overHandler);
+  token.on('pointerout', outHandler);
+}
+
+/**
+ * Clean up token event listeners
+ */
+function cleanupTokenEventListeners() {
+  HoverTooltips.tokenEventHandlers.forEach((handlers, tokenId) => {
+    const token = canvas.tokens.get(tokenId);
+    if (token) {
+      token.off('pointerover', handlers.overHandler);
+      token.off('pointerout', handlers.outHandler);
+    }
+  });
+  HoverTooltips.tokenEventHandlers.clear();
+}
+
+/**
  * Initialize hover tooltip system
  */
 export function initializeHoverTooltips() {
   if (HoverTooltips._initialized || _initialized) {
-    // Defensive: avoid duplicate listeners; refresh sizes and return
+    // Scene change: clean up old listeners and reinitialize for new tokens
+    cleanupTokenEventListeners();
+    addTokenEventListeners();
     HoverTooltips.refreshSizes?.();
     return;
   }
@@ -178,16 +223,7 @@ export function initializeHoverTooltips() {
   }
 
   // Add event listeners to canvas for token hover
-  canvas.tokens.placeables.forEach((token) => {
-    const overHandler = () => onTokenHover(token);
-    const outHandler = () => onTokenHoverEnd(token);
-
-    // Store handlers for later cleanup
-    HoverTooltips.tokenEventHandlers.set(token.id, { overHandler, outHandler });
-
-    token.on('pointerover', overHandler);
-    token.on('pointerout', outHandler);
-  });
+  addTokenEventListeners();
 
   // Note: Alt key handled via highlightObjects hook registered in main hooks
   // O key event listeners added globally in registerHooks
@@ -506,58 +542,7 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   }
 }
 
-/**
- * Show cover indicators for a specific token (without clearing existing ones)
- * Mirrors visibility behavior
- * @param {Token} observerToken
- * @param {string} forceMode
- */
-function showCoverIndicatorsForToken(observerToken, forceMode = null) {
-  const effectiveMode = forceMode || HoverTooltips.tooltipMode;
 
-  // For keyboard scenarios (when forceMode is provided), this is a keyboard tooltip
-  const isKeyboardTooltip = !!forceMode;
-  if (!canShowTooltips(effectiveMode, null, isKeyboardTooltip)) {
-    return;
-  }
-  if (!game.user.isGM && !observerToken.isOwner) return;
-
-  const otherTokens = canvas.tokens.placeables.filter((t) => t !== observerToken && t.isVisible);
-  if (otherTokens.length === 0) return;
-
-  if (effectiveMode === 'observer') {
-    otherTokens.forEach((targetToken) => {
-      const coverMap = getCoverMap(observerToken);
-      const coverState = coverMap[targetToken.document.id] || 'none';
-
-      if (coverState !== 'none') {
-        addCoverIndicator(targetToken, observerToken, coverState, 'observer');
-      }
-    });
-  } else {
-    if (!game.user.isGM) {
-      const otherTokensForPlayer = canvas.tokens.placeables.filter(
-        (t) => t !== observerToken && t.isVisible,
-      );
-      otherTokensForPlayer.forEach((otherToken) => {
-        const coverMap = getCoverMap(otherToken);
-        const coverState = coverMap[observerToken.document.id] || 'none';
-        if (coverState !== 'none') {
-          addCoverIndicator(otherToken, otherToken, coverState, 'target');
-        }
-      });
-    } else {
-      otherTokens.forEach((otherToken) => {
-        const coverMap = getCoverMap(otherToken);
-        const coverState = coverMap[observerToken.document.id] || 'none';
-
-        if (coverState !== 'none') {
-          addCoverIndicator(otherToken, otherToken, coverState, 'target');
-        }
-      });
-    }
-  }
-}
 
 /**
  * Compute auto-cover fresh (ignoring stored maps) and render cover-only badges above targets.
@@ -947,7 +932,7 @@ function hideAllVisibilityIndicators() {
   }
 
   // Clean up all indicators
-  HoverTooltips.visibilityIndicators.forEach((indicator, tokenId) => {
+  HoverTooltips.visibilityIndicators.forEach((indicator) => {
     try {
       // Remove DOM badges if present
       if (indicator._visBadgeEl && indicator._visBadgeEl.parentNode) {
@@ -1063,16 +1048,7 @@ export function cleanupHoverTooltips() {
   setTooltipMode('target');
 
   // Remove only our specific event listeners from tokens
-  HoverTooltips.tokenEventHandlers.forEach((handlers, tokenId) => {
-    const token = canvas.tokens.get(tokenId);
-    if (token) {
-      token.off('pointerover', handlers.overHandler);
-      token.off('pointerout', handlers.outHandler);
-    }
-  });
-
-  // Clear the handlers map
-  HoverTooltips.tokenEventHandlers.clear();
+  cleanupTokenEventListeners();
 
   _initialized = false;
 

@@ -141,6 +141,12 @@ export class CoverDetector {
     _evaluateWallsCover(p1, p2) {
         if (!canvas?.walls) return 'none';
 
+        // First check for manual wall cover overrides
+        const wallOverride = this._checkWallCoverOverrides(p1, p2);
+        if (wallOverride !== null) {
+            return wallOverride;
+        }
+
         // Compute percent of target token blocked by walls along multiple sight rays and map to cover thresholds
         try {
             const stdT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverStandardThreshold') ?? 50));
@@ -153,21 +159,107 @@ export class CoverDetector {
                 const ray = this._createRay(p1, p2);
                 let blocked = false;
                 try {
-                    if (CONFIG?.Canvas?.polygonBackends?.sight) blocked = CONFIG.Canvas.polygonBackends.sight.testCollision(p1, p2, { type: 'sight', mode: 'any' });
-                    else if (typeof canvas.walls.raycast === 'function') blocked = !!canvas.walls.raycast(ray.A, ray.B);
-                    else if (typeof canvas.walls.checkCollision === 'function') blocked = canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
+                    // First try the most reliable method - canvas.walls.checkCollision with proper wall filtering
+                    if (typeof canvas.walls.checkCollision === 'function') {
+                        // Check for walls that block sight (which should include full walls)
+                        blocked = canvas.walls.checkCollision(ray, { type: 'sight', mode: 'any' });
+                    }
+                    // Fallback to raycast
+                    else if (typeof canvas.walls.raycast === 'function') {
+                        blocked = !!canvas.walls.raycast(ray.A, ray.B);
+                    }
+                    // Modern polygon backends as last resort (may not work as expected)
+                    else if (CONFIG?.Canvas?.polygonBackends?.sight) {
+                        blocked = CONFIG.Canvas.polygonBackends.sight.testCollision(p1, p2, { type: 'sight', mode: 'any' });
+                    }
                 } catch (_) { }
                 return blocked ? 'standard' : 'none';
             }
 
             const pct = this._estimateWallCoveragePercent(p1, target);
             const allowGreater = !!game.settings.get('pf2e-visioner', 'wallCoverAllowGreater');
-            if (pct >= grtT) return allowGreater ? 'greater' : 'standard';
-            if (pct >= stdT) return 'standard';
+            if (pct >= grtT) {
+                return allowGreater ? 'greater' : 'standard';
+            }
+            if (pct >= stdT) {
+                return 'standard';
+            }
             return 'none';
         } catch (error) {
             console.warn('PF2E Visioner | Error in wall coverage evaluation:', error);
             return 'none';
+        }
+    }
+
+    /**
+     * Check for manual wall cover overrides along the line of sight
+     * @param {Object} p1 - Start point
+     * @param {Object} p2 - End point  
+     * @returns {string|null} Cover override ('none', 'lesser', 'standard', 'greater') or null if no override
+     * @private
+     */
+    _checkWallCoverOverrides(p1, p2) {
+        try {
+            const ray = this._createRay(p1, p2);
+            const walls = canvas.walls.objects?.children || [];
+            
+            let highestCover = 'none';
+            const coverOrder = ['none', 'lesser', 'standard', 'greater'];
+            
+            for (const wall of walls) {
+                const wallDoc = wall.document || wall;
+                const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
+                
+                // Skip walls without cover override
+                if (!coverOverride) continue;
+                
+                // Check if this wall intersects the ray
+                const coords = wall?.coords;
+                if (!coords) continue;
+                
+                const intersection = this._lineIntersectionPoint(
+                    ray.A.x, ray.A.y, ray.B.x, ray.B.y,
+                    coords[0], coords[1], coords[2], coords[3]
+                );
+                
+                if (intersection) {
+                    // This wall intersects the line of sight and has a cover override
+                    const coverIndex = coverOrder.indexOf(coverOverride);
+                    const currentIndex = coverOrder.indexOf(highestCover);
+                    
+                    if (coverIndex > currentIndex) {
+                        highestCover = coverOverride;
+                    }
+                }
+            }
+            
+            // Return the highest cover found, or null if no overrides were found
+            // If highestCover is still 'none' (initial value), no overrides were found -> return null (auto-detection)
+            // If highestCover is 'none' from an actual override -> return 'none' (force no cover)
+            // Otherwise return the override value
+            
+            let foundAnyOverride = false;
+            for (const wall of walls) {
+                const wallDoc = wall.document || wall;
+                const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
+                if (coverOverride) {
+                    const coords = wall?.coords;
+                    if (coords) {
+                        const intersection = this._lineIntersectionPoint(
+                            ray.A.x, ray.A.y, ray.B.x, ray.B.y,
+                            coords[0], coords[1], coords[2], coords[3]
+                        );
+                        if (intersection) {
+                            foundAnyOverride = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            return foundAnyOverride ? highestCover : null;
+        } catch (_) {
+            return null;
         }
     }
 
@@ -243,40 +335,64 @@ export class CoverDetector {
     _isRayBlockedByWalls(a, b) {
                 const ray = this._createRay(a, b);
         const rayLength = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+        // Ray collision check
+        
+        // Check if there are any walls at all
+        const totalWalls = canvas?.walls?.objects?.children?.length || 0;
+        if (totalWalls === 0) {
+            return false;
+        }
         
         try {
-            // Try modern Foundry collision detection first
-            if (CONFIG?.Canvas?.polygonBackends?.sight) {
-                return !!CONFIG.Canvas.polygonBackends.sight.testCollision(a, b, { type: 'sight', mode: 'any' });
+            // Try the most reliable method first - canvas.walls.checkCollision
+            if (typeof canvas.walls.checkCollision === 'function') {
+                const sightBlocked = canvas.walls.checkCollision(ray, { type: 'sight', mode: 'any' });
+                if (sightBlocked) {
+                    return true;
+                }
             }
+            // Fallback to raycast
             if (typeof canvas.walls.raycast === 'function') {
                 const collision = canvas.walls.raycast(ray.A, ray.B);
-                return !!collision;
+                if (collision) {
+                    return true;
+                }
             }
-            if (typeof canvas.walls.checkCollision === 'function') {
-                return !!canvas.walls.checkCollision(ray, { type: 'light', mode: 'any' });
+            // Modern polygon backends as last resort
+            if (CONFIG?.Canvas?.polygonBackends?.sight) {
+                const polygonBlocked = CONFIG.Canvas.polygonBackends.sight.testCollision(a, b, { type: 'sight', mode: 'any' });
+                if (polygonBlocked) {
+                    return true;
+                }
             }
-                } catch (_) { }
+        } catch (e) {
+            // Wall collision check failed, continue to manual checking
+        }
         
         // Fallback: manual wall intersection checking with distance validation
                 const walls = canvas.walls.objects?.children || [];
+                // Manual wall intersection checking
                 for (const wall of walls) {
                     const c = wall?.coords;
                     if (!c) continue;
+                    
+                    // Check wall type - walls that block sight should provide cover
+                    const wallDoc = wall.document || wall;
+                    const blocksSight = wallDoc?.sight !== 0; // 0 = NONE/NORMAL sight
+                    
+                    // Skip walls that don't block sight
+                    if (!blocksSight) continue;
             
             // Check if the ray intersects this wall
             const intersection = this._lineIntersectionPoint(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3]);
             if (intersection) {
-                // Calculate distance from start to intersection point
                 const intersectionDist = Math.sqrt((intersection.x - a.x) ** 2 + (intersection.y - a.y) ** 2);
-                
-                // Only count as blocked if the wall intersection occurs before reaching the target
-                // Use a small tolerance to account for floating point precision
                 if (intersectionDist < rayLength - 1) { // 1 pixel tolerance
                     return true;
                 }
             }
                 }
+        // No walls blocked this ray
                 return false;
     }
 

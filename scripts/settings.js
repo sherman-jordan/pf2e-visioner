@@ -350,7 +350,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       if (autoCoverToggle) autoCoverToggle.addEventListener('change', applyAutoCoverVisibility);
       if (wallsGreaterCoverToggle) wallsGreaterCoverToggle.addEventListener('change', applyWallCoverVisibility);
       applyAutoCoverVisibility();
-      applyWallCoverVisibility()
+      applyWallCoverVisibility();
     } catch (_) { }
     return content;
   }

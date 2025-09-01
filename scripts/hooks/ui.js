@@ -51,8 +51,6 @@ export function registerUIHooks() {
       
       switch (currentCoverState) {
         case 'auto':
-        case null:
-        case undefined:
           tool.icon = 'fa-solid fa-bolt-auto';
           tool.title = 'Cycle Token Cover: Auto → No Cover';
           break;
@@ -108,9 +106,9 @@ export function registerUIHooks() {
         };
       }
       
-      return null;
+      return 'auto';
     } catch (_) {
-      return null;
+      return 'auto';
     }
   };
 
@@ -505,8 +503,6 @@ export function registerUIHooks() {
           
           switch (currentCoverState) {
             case 'auto':
-            case null:
-            case undefined:
               iconClass = 'fa-solid fa-bolt-auto';
               titleText = 'Cycle Wall Cover: Auto → No Cover';
               break;
@@ -544,7 +540,7 @@ export function registerUIHooks() {
               }
 
               // Cycle through cover states: auto → none → standard → greater → auto
-              const coverCycle = [null, 'none', 'standard', 'greater'];
+              const coverCycle = ['auto', 'none', 'standard', 'greater'];
               
               // Get current state of first wall to determine next state
               const currentOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
@@ -642,8 +638,6 @@ export function registerUIHooks() {
           
           switch (currentCoverState) {
             case 'auto':
-            case null:
-            case undefined:
               iconClass = 'fa-solid fa-bolt-auto';
               titleText = 'Cycle Token Cover: Auto → No Cover';
               break;
@@ -681,7 +675,7 @@ export function registerUIHooks() {
               }
 
               // Cycle through cover states: auto → none → lesser → standard → greater → auto
-              const coverCycle = [null, 'none', 'lesser', 'standard', 'greater'];
+              const coverCycle = ['auto', 'none', 'lesser', 'standard', 'greater'];
               
               // Get current state of first token to determine next state
               const currentOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
@@ -841,7 +835,7 @@ function injectPF2eVisionerBox(app, root) {
   // Current values
   const stealthCurrent =
     tokenDoc.getFlag?.(MODULE_ID, 'stealthDC') ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? '';
-  const coverOverride = tokenDoc.getFlag?.(MODULE_ID, 'coverOverride') || null;
+  const coverOverride = tokenDoc.getFlag?.(MODULE_ID, 'coverOverride') || 'auto';
   const minPerceptionRank = Number(
     tokenDoc.getFlag?.(MODULE_ID, 'minPerceptionRank') ??
       tokenDoc.flags?.[MODULE_ID]?.minPerceptionRank ??

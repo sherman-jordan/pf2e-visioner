@@ -18,8 +18,9 @@ function doesWallBlockFromDirection(wallDoc, attackerPos, targetPos) {
     // If wall doesn't block sight at all, it doesn't provide cover
     if (wallDoc.sight === 0) return false; // NONE
     
-    // Check if wall has a direction (directional wall)
-    if (wallDoc.direction != null && typeof wallDoc.direction === 'number') {
+      // Check if wall has a direction (directional wall)
+  // Foundry stores directional restrictions in the 'dir' property
+  if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
       // Get wall coordinates
       const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
       

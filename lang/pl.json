@@ -260,6 +260,10 @@
         "name": "Domyślne ST Ukrycia dla ścian",
         "hint": "ST używane przy traktowaniu ukrytych ścian jako celów wyszukiwania (gdy ściana nie ma wyraźnie ustawionego ST)."
       },
+      "HIDE_QUICK_EDIT_TOOL": {
+        "name": "Ukryj narzędzie szybkiej edycji",
+        "hint": "Jeśli opcja jest włączona, narzędzie Szybka edycja zostanie ukryte na pasku narzędzi elementów sterujących tokenów."
+      },
       "INCLUDE_LOOT_ACTORS": {
         "name": "Dodaj aktorów łupów do menedżera widoczności",
         "hint": "Umożliwia konfigurację stanów widoczności przedmiotów łupów (skrzyń, pojemników) dla poszczególnych obserwatorów. Tylko wizualnie; nie są stosowane żadne stany PF2E."

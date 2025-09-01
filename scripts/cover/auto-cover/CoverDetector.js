@@ -146,7 +146,8 @@ export class CoverDetector {
             if (wallDoc.sight === 0) return false; // NONE
             
             // Check if wall has a direction (directional wall)
-            if (wallDoc.direction != null && typeof wallDoc.direction === 'number') {
+            // Foundry stores directional restrictions in the 'dir' property
+            if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
                 // Get wall coordinates
                 const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
                 
@@ -164,7 +165,7 @@ export class CoverDetector {
                 const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
                 
                 // For directional walls, they block from one direction only
-                // The wall's direction property determines which side blocks
+                // The wall's dir property determines which side blocks
                 // We'll use the cross product to determine if attacker is on the blocking side
                 return crossProduct > 0;
             }
@@ -205,23 +206,8 @@ export class CoverDetector {
             const target = this._findNearestTokenToPoint(p2);
             if (!target) {
                 // Fallback: single-ray quick test if we cannot resolve the token geometry
-                const ray = this._createRay(p1, p2);
-                let blocked = false;
-                try {
-                    // First try the most reliable method - canvas.walls.checkCollision with proper wall filtering
-                    if (typeof canvas.walls.checkCollision === 'function') {
-                        // Check for walls that block sight (which should include full walls)
-                        blocked = canvas.walls.checkCollision(ray, { type: 'sight', mode: 'any' });
-                    }
-                    // Fallback to raycast
-                    else if (typeof canvas.walls.raycast === 'function') {
-                        blocked = !!canvas.walls.raycast(ray.A, ray.B);
-                    }
-                    // Modern polygon backends as last resort (may not work as expected)
-                    else if (CONFIG?.Canvas?.polygonBackends?.sight) {
-                        blocked = CONFIG.Canvas.polygonBackends.sight.testCollision(p1, p2, { type: 'sight', mode: 'any' });
-                    }
-                } catch (_) { }
+                // Use our directional wall logic instead of Foundry's built-in collision detection
+                const blocked = this._isRayBlockedByWalls(p1, p2);
                 return blocked ? 'standard' : 'none';
             }
 
@@ -401,9 +387,8 @@ export class CoverDetector {
      * @private
      */
     _isRayBlockedByWalls(a, b) {
-                const ray = this._createRay(a, b);
+        const ray = this._createRay(a, b);
         const rayLength = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
-        // Ray collision check
         
         // Check if there are any walls at all
         const totalWalls = canvas?.walls?.objects?.children?.length || 0;
@@ -411,44 +396,17 @@ export class CoverDetector {
             return false;
         }
         
-        try {
-            // Try the most reliable method first - canvas.walls.checkCollision
-            if (typeof canvas.walls.checkCollision === 'function') {
-                const sightBlocked = canvas.walls.checkCollision(ray, { type: 'sight', mode: 'any' });
-                if (sightBlocked) {
-                    return true;
-                }
-            }
-            // Fallback to raycast
-            if (typeof canvas.walls.raycast === 'function') {
-                const collision = canvas.walls.raycast(ray.A, ray.B);
-                if (collision) {
-                    return true;
-                }
-            }
-            // Modern polygon backends as last resort
-            if (CONFIG?.Canvas?.polygonBackends?.sight) {
-                const polygonBlocked = CONFIG.Canvas.polygonBackends.sight.testCollision(a, b, { type: 'sight', mode: 'any' });
-                if (polygonBlocked) {
-                    return true;
-                }
-            }
-        } catch (e) {
-            // Wall collision check failed, continue to manual checking
-        }
-        
-        // Fallback: manual wall intersection checking with distance validation
-                const walls = canvas.walls.objects?.children || [];
-                // Manual wall intersection checking
-                for (const wall of walls) {
-                    const c = wall?.coords;
-                    if (!c) continue;
-                    
-                    // Check wall type and direction - walls that block sight should provide cover
-                    const wallDoc = wall.document || wall;
-                    
-                    // Skip walls that don't block sight from this direction
-                    if (!this._doesWallBlockFromDirection(wallDoc, a, b)) continue;
+        // Use our custom directional wall logic for accurate results
+        const walls = canvas.walls.objects?.children || [];
+        for (const wall of walls) {
+            const c = wall?.coords;
+            if (!c) continue;
+            
+            // Check wall type and direction - walls that block sight should provide cover
+            const wallDoc = wall.document || wall;
+            
+            // Skip walls that don't block sight from this direction
+            if (!this._doesWallBlockFromDirection(wallDoc, a, b)) continue;
             
             // Check if the ray intersects this wall
             const intersection = this._lineIntersectionPoint(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3]);
@@ -458,9 +416,10 @@ export class CoverDetector {
                     return true;
                 }
             }
-                }
+        }
+        
         // No walls blocked this ray
-                return false;
+        return false;
     }
 
     /**

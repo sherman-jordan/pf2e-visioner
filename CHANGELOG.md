@@ -10,22 +10,11 @@ This major release represents a complete architectural overhaul, transforming PF
 
 #### 🛡️ Auto-Cover System (Complete Architectural Rewrite)
 - **Modular Architecture**: Brand new auto-cover system with specialized components:
-  - `AutoCoverSystem` - Central coordination and workflow management
-  - `CoverDetector` - Advanced cover detection algorithms with multiple intersection modes
-  - `CoverStateManager` - Persistent state management and flag handling
-  - `CoverUIManager` - Dynamic UI injection and dialog management
-  - `CoverOverrideManager` - Override tracking, consumption, and cleanup
-  - `TemplateManager` - Area effect and template integration
-- **Use Case Pattern**: Specialized handlers for different roll types:
-  - `AttackRollUseCase` - Strike attacks with cover application
-  - `SavingThrowUseCase` - Reflex saves and area effects
-  - `StealthCheckUseCase` - Hide/Sneak actions with cover integration
-- **Roll-Time Cover Application**: Just-in-time cover application during attacks with automatic cleanup
 - **Enhanced Detection Modes**: Multiple intersection algorithms for precise cover calculation:
   - **Any Mode**: Ray intersects any part of blocker token
-  - **10% Mode**: Grid-square-based intersection 10% threshold
+  - **10% Mode**: Grid-square-based intersection 10% threshold (default mode)
   - **Coverage Mode**: Percentage-based side coverage
-  - **Tactical Mode**: Corner-to-corner line-of-sight using "best attacker corner" rule (default)
+  - **Tactical Mode**: Corner-to-corner line-of-sight using "best attacker corner" rule 
 - **Template Integration**: Full support for area effects and templates with proper cover bonuses
 - **Elevation Integration**: Automatic height and elevation consideration across all modes
 - **Directional Wall Support**: Walls with direction properties properly block cover only from intended sides using cross-product calculations
@@ -36,16 +25,6 @@ This major release represents a complete architectural overhaul, transforming PF
 - **Enhanced Dialogs**: Hide and Sneak dialogs now show cover information by default
 - **Token Quick Panel**: Streamlined interface for rapid visibility state changes
 - **Wall Management**: Enhanced wall tools with type indicators and quick toggles
-
-#### 📊 Testing & Quality Assurance
-- **Comprehensive Test Suite**: Added 800+ tests across 25+ test suites
-- **Real Canvas Testing**: HTML5 canvas integration with actual drawing operations
-- **Performance Testing**: Large token set and wall operation testing
-- **Regression Prevention**: Complete coverage of all major action types and UI interactions
-
-#### 🔧 Developer Experience
-- **API Enhancements**: Expanded API with cover state functions and bulk operations
-- **Modular Architecture**: Clean separation of concerns for better maintainability
 
 ### 🚀 Enhanced Features
 
@@ -63,24 +42,7 @@ This major release represents a complete architectural overhaul, transforming PF
 - **Cover Calculation**: Resolved edge cases in cover detection algorithms
 - **UI Responsiveness**: Fixed dialog sizing and scrolling behavior
 - **Socket Communication**: Improved reliability of multiplayer operations
-
-### 🛠️ Technical Improvements
-
-#### Performance Enhancements
 - **Memory Optimization**: Reduced heap usage through efficient data structures
-
-#### Code Quality
-- **Modular Design**: Clean separation of concerns with specialized components
-- **Error Resilience**: Comprehensive error handling and graceful degradation
-- **Test Coverage**: Extensive unit and integration testing
-- **Documentation**: Improved inline documentation and examples
-
-### 🗑️ Removed
-
-- **Legacy Code**: Removed deprecated auto-cover system and related files
-- **Redundant Settings**: Consolidated overlapping configuration options
-- **Unused Dependencies**: Cleaned up unnecessary imports and dependencies
-- **Deprecated APIs**: Removed legacy API functions and patterns
 
 ### 📋 Migration Notes
 

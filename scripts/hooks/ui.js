@@ -122,7 +122,7 @@ export function registerUIHooks() {
       const layer = canvas?.controls || canvas?.hud || canvas?.stage;
       
       // Check if walls tool is active
-      const isWallTool = ui.controls?.activeControl === 'walls';
+      const isWallTool = ui.controls?.control?.name === 'walls';
       
       // Clean up labels that shouldn't exist anymore
       for (const w of walls) {
@@ -535,7 +535,6 @@ export function registerUIHooks() {
             try {
               const selected = canvas?.walls?.controlled ?? [];
               if (!selected.length) {
-                console.log('PF2E Visioner | No walls selected');
                 return;
               }
 
@@ -547,9 +546,7 @@ export function registerUIHooks() {
               const currentIndex = coverCycle.indexOf(currentOverride);
               const nextIndex = (currentIndex + 1) % coverCycle.length;
               const nextCoverOverride = coverCycle[nextIndex];
-              
-              console.log(`PF2E Visioner | Cycling wall cover: ${currentOverride || 'auto'} → ${nextCoverOverride || 'auto'}`);
-              
+                            
               await Promise.all(
                 selected.map((w) => {
                   const promises = [
@@ -670,7 +667,6 @@ export function registerUIHooks() {
             try {
               const selected = canvas?.tokens?.controlled ?? [];
               if (!selected.length) {
-                console.log('PF2E Visioner | No tokens selected');
                 return;
               }
 
@@ -682,9 +678,7 @@ export function registerUIHooks() {
               const currentIndex = coverCycle.indexOf(currentOverride);
               const nextIndex = (currentIndex + 1) % coverCycle.length;
               const nextCoverOverride = coverCycle[nextIndex];
-              
-              console.log(`PF2E Visioner | Cycling cover: ${currentOverride || 'auto'} → ${nextCoverOverride || 'auto'}`);
-              
+                            
               await Promise.all(
                 selected.map((t) =>
                   t?.document?.setFlag?.(MODULE_ID, 'coverOverride', nextCoverOverride),

@@ -1067,6 +1067,55 @@ function getChatAutomationCSS() {
             transform: scale(1.1) !important;
         }
         
+        /* State-specific selected overrides - ensures proper colors for each visibility state */
+        .state-icon[data-state='observed'].selected,
+        .seek-preview-dialog .state-icon[data-state='observed'].selected,
+        .hide-preview-dialog .state-icon[data-state='observed'].selected,
+        .sneak-preview-dialog .state-icon[data-state='observed'].selected,
+        .visibility-table .state-icon[data-state='observed'].selected,
+        .override-icons .state-icon[data-state='observed'].selected {
+            background: var(--visibility-observed-bg-strong) !important;
+            color: var(--visibility-observed) !important;
+            border-color: var(--visibility-observed) !important;
+            box-shadow: 0 0 12px var(--visibility-observed) !important;
+        }
+        
+        .state-icon[data-state='concealed'].selected,
+        .seek-preview-dialog .state-icon[data-state='concealed'].selected,
+        .hide-preview-dialog .state-icon[data-state='concealed'].selected,
+        .sneak-preview-dialog .state-icon[data-state='concealed'].selected,
+        .visibility-table .state-icon[data-state='concealed'].selected,
+        .override-icons .state-icon[data-state='concealed'].selected {
+            background: var(--visibility-concealed-bg-strong) !important;
+            color: var(--visibility-concealed) !important;
+            border-color: var(--visibility-concealed) !important;
+            box-shadow: 0 0 12px var(--visibility-concealed) !important;
+        }
+        
+        .state-icon[data-state='hidden'].selected,
+        .seek-preview-dialog .state-icon[data-state='hidden'].selected,
+        .hide-preview-dialog .state-icon[data-state='hidden'].selected,
+        .sneak-preview-dialog .state-icon[data-state='hidden'].selected,
+        .visibility-table .state-icon[data-state='hidden'].selected,
+        .override-icons .state-icon[data-state='hidden'].selected {
+            background: var(--visibility-hidden-bg-strong) !important;
+            color: var(--visibility-hidden) !important;
+            border-color: var(--visibility-hidden) !important;
+            box-shadow: 0 0 12px var(--visibility-hidden) !important;
+        }
+        
+        .state-icon[data-state='undetected'].selected,
+        .seek-preview-dialog .state-icon[data-state='undetected'].selected,
+        .hide-preview-dialog .state-icon[data-state='undetected'].selected,
+        .sneak-preview-dialog .state-icon[data-state='undetected'].selected,
+        .visibility-table .state-icon[data-state='undetected'].selected,
+        .override-icons .state-icon[data-state='undetected'].selected {
+            background: var(--visibility-undetected-bg-strong) !important;
+            color: var(--visibility-undetected) !important;
+            border-color: var(--visibility-undetected) !important;
+            box-shadow: 0 0 12px var(--visibility-undetected) !important;
+        }
+        
         /* Enhanced Point Out Dialog Selected State Glow */
         .point-out-preview-dialog .override-icons .state-icon.selected,
         .point-out-preview-dialog .visibility-change .state-icon.selected {
@@ -2140,9 +2189,9 @@ function getChatAutomationCSS() {
         .sneak-preview-dialog .state-icon {
             width: 24px;
             height: 24px;
-            border: 1px solid var(--pf2e-visioner-gray);
+            border: 1px solid var(--color-border-light-primary, #555);
             border-radius: 4px;
-            background: rgba(108, 117, 125, 0.1);
+            background: transparent;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
@@ -2152,22 +2201,40 @@ function getChatAutomationCSS() {
         }
         
         .sneak-preview-dialog .state-icon:hover {
-            background: rgba(108, 117, 125, 0.3);
-            border-color: var(--pf2e-visioner-gray);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: currentColor;
             transform: scale(1.1);
         }
         
         .sneak-preview-dialog .state-icon.selected {
-            background: var(--pf2e-visioner-gray);
-            border-color: var(--pf2e-visioner-gray);
-            color: white;
-            box-shadow: 0 0 8px rgba(108, 117, 125, 0.5);
+            background: rgba(255, 255, 255, 0.2) !important;
+            border-color: currentColor !important;
+            color: currentColor !important;
+            box-shadow: 0 0 8px currentColor !important;
+            transform: scale(1.1) !important;
         }
         
         .sneak-preview-dialog .state-icon.calculated-outcome {
             background: rgba(108, 117, 125, 0.3);
             border: 2px solid var(--pf2e-visioner-gray);
             animation: pulse-gray 2s infinite;
+        }
+        
+        /* State-specific colors for sneak dialog icons */
+        .sneak-preview-dialog .state-icon[data-state='observed'] {
+            color: var(--visibility-observed) !important;
+        }
+        
+        .sneak-preview-dialog .state-icon[data-state='concealed'] {
+            color: var(--visibility-concealed) !important;
+        }
+        
+        .sneak-preview-dialog .state-icon[data-state='hidden'] {
+            color: var(--visibility-hidden) !important;
+        }
+        
+        .sneak-preview-dialog .state-icon[data-state='undetected'] {
+            color: var(--visibility-undetected) !important;
         }
         
         .sneak-preview-dialog .sneak-preview-dialog-bulk-actions-header {

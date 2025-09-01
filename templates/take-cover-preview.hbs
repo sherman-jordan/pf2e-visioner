@@ -12,7 +12,7 @@
   {{#if showEncounterFilter}}
   <div class="encounter-filter-section">
     <label class="encounter-filter-checkbox">
-      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
       <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
     </label>
   </div>
@@ -32,14 +32,14 @@
         {{#each outcomes as |o|}}
         <tr class="token-row" data-token-id="{{o.target.id}}">
           <td class="token-image"><img src="{{o.tokenImage}}" alt="{{o.target.name}}" width="28" height="28" /></td>
-          <td class="token-name"><strong title="{{o.target.name}}">{{o.target.name}}</strong></td>
+          <td class="token-name"><strong data-tooltip="{{o.target.name}}">{{o.target.name}}</strong></td>
           <td class="visibility-change" style="text-align:center;">
             <div class="visibility-change-inline">
-              <span class="state-icon {{o.oldCoverCfg.cssClass}}" title="{{o.oldCoverCfg.label}}"><i class="{{o.oldCoverCfg.icon}}"></i></span>
+              <span class="state-icon {{o.oldCoverCfg.cssClass}}" data-tooltip="{{o.oldCoverCfg.label}}"><i class="{{o.oldCoverCfg.icon}}"></i></span>
               <i class="fas fa-arrow-right visibility-arrow"></i>
               <div class="override-icons">
                 {{#each o.availableStates as |s|}}
-                  <span class="state-icon {{#if s.selected}}selected{{/if}} {{#if s.calculatedOutcome}}calculated-outcome{{/if}} {{s.cssClass}}" data-state="{{s.value}}" data-token-id="{{../o.target.id}}" title="{{s.label}}">
+                  <span class="state-icon {{#if s.selected}}selected{{/if}} {{#if s.calculatedOutcome}}calculated-outcome{{/if}} {{s.cssClass}}" data-state="{{s.value}}" data-token-id="{{../o.target.id}}" data-tooltip="{{s.label}}">
                     <i class="{{s.icon}}"></i>
                   </span>
                 {{/each}}
@@ -48,10 +48,10 @@
           </td>
           <td class="actions">
             {{#if o.hasActionableChange}}
-              <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{o.target.id}}" title="Apply this cover change">
+              <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{o.target.id}}" data-tooltip="Apply this cover change">
                 <i class="fas fa-check"></i>
               </button>
-              <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{o.target.id}}" title="Revert to original cover">
+              <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{o.target.id}}" data-tooltip="Revert to original cover">
                 <i class="fas fa-undo"></i>
               </button>
             {{else}}
@@ -69,10 +69,10 @@
       <span class="take-cover-preview-dialog-changes-count">{{changesCount}}</span> of <span class="take-cover-preview-dialog-total-count">{{totalCount}}</span> observers will receive cover updates.
     </div>
     <div class="take-cover-preview-dialog-bulk-actions-buttons">
-      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" title="Apply all cover changes">
+      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" data-tooltip="Apply all cover changes">
         <i class="fas fa-check-circle"></i> Apply All
       </button>
-      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes" disabled>
+      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes" disabled>
         <i class="fas fa-undo"></i> Revert All
       </button>
     </div>

@@ -1,12 +1,17 @@
 import { COVER_STATES, MODULE_ID } from '../../../constants.js';
-import { detectCoverStateForAttack } from '../../../cover/auto-cover.js';
+import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
+import stealthCheckUseCase from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
 import { appliedHideChangesByMessage } from '../data/message-cache.js';
-import { shouldFilterAlly } from '../infra/shared-utils.js';
+import { calculateStealthRollTotals, shouldFilterAlly } from '../infra/shared-utils.js';
 import { ActionHandlerBase } from './base-action.js';
 
 export class HideActionHandler extends ActionHandlerBase {
   constructor() {
     super('hide');
+    // Use the singleton instance to share state with StealthCheckUseCase
+    this.autoCoverSystem = autoCoverSystem;
+    this.stealthCheckUseCase = stealthCheckUseCase; // Use singleton
+    // Use the global singleton override manager directly
   }
   getCacheMap() {
     return appliedHideChangesByMessage;
@@ -47,7 +52,6 @@ export class HideActionHandler extends ActionHandlerBase {
 
     // RAW filter: only observers that currently see the actor as Concealed
     // OR (Observed AND actor has Standard or Greater cover) are relevant.
-    const autoCover = game.settings.get(MODULE_ID, 'autoCover');
     const { getVisibilityBetween, getCoverBetween } = await import('../../../utils.js');
     return base.filter((observer) => {
       try {
@@ -56,11 +60,11 @@ export class HideActionHandler extends ActionHandlerBase {
         if (vis === 'observed') {
           // Prefer live auto-cover for relevance (do not mutate state), then fall back to stored map
           let cover = 'none';
-          if (autoCover) {
+          if (this.autoCoverSystem.isEnabled()) {
             try {
               cover =
-                detectCoverStateForAttack(actorToken, observer, { rawPrereq: true }) || 'none';
-            } catch (_) {}
+                this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
+            } catch (_) { }
           }
           if (cover === 'none') {
             try {
@@ -71,7 +75,7 @@ export class HideActionHandler extends ActionHandlerBase {
           }
           return cover === 'standard' || cover === 'greater';
         }
-      } catch (_) {}
+      } catch (_) { }
       return false;
     });
   }
@@ -86,90 +90,170 @@ export class HideActionHandler extends ActionHandlerBase {
     // Initialize result object for auto-cover data
     const result = {};
 
-    const enableCoverHideAction = game.settings.get(MODULE_ID, 'autoCoverHideAction');
 
-    if (enableCoverHideAction) {
+    try {
+      const hidingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
+
+      let coverState = null;
+      let isOverride = false;
+      let coverSource = 'none';
+
+      // Compute base cover (manual first, then auto-cover fallback)
       try {
-        // Check for stealth roll dialog override first
-        const stealthDialog = Object.values(ui.windows).find(
-          (w) => w.constructor.name === 'CheckModifiersDialog',
-        );
-
-        let coverState = null;
-        let isOverride = false;
-        let coverSource = 'none';
-
-        if (stealthDialog?._pvStealthCoverOverride) {
-          coverState = stealthDialog._pvStealthCoverOverride;
-          isOverride = true;
-          coverSource = 'override';
-        } else {
-          // Try auto-cover first (if enabled)
-          if (game.settings.get(MODULE_ID, 'autoCover')) {
-            try {
-              // For hide action: subject is the observer, actionData.actor is the hiding actor
-              const hidingToken =
-                actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
-              coverState = detectCoverStateForAttack(hidingToken, subject);
-              if (coverState && coverState !== 'none') {
-                coverSource = 'automatic';
-              }
-            } catch (e) {
-              console.warn(`PF2E Visioner | Auto-cover calculation failed for Hide action:`, e);
-            }
+        // First check for manual cover
+        const manualDetected = this.autoCoverSystem.getCoverBetween(subject, hidingToken);
+        if (manualDetected && manualDetected !== 'none') {
+          coverState = manualDetected;
+          coverSource = 'manual';
+        } else if (this.autoCoverSystem.isEnabled()) {
+          // Fallback to auto-cover detection if no manual cover
+          // For cover detection: observer is "attacking" (perceiving) the hiding token
+          // So observer is attacker, hiding token is target
+          const autoDetected = this.stealthCheckUseCase._detectCover(subject, hidingToken);
+          if (autoDetected && autoDetected !== 'none') {
+            coverState = autoDetected;
+            coverSource = 'automatic';
           }
-
-          // Fall back to manual cover if no auto-cover found
-          if (!coverState || coverState === 'none') {
-            try {
-              const { getCoverBetween } = await import('../../../utils.js');
-              // For hide action: hidingToken has cover FROM observer (observer to hidingToken direction)
-              const hidingToken =
-                actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
-              coverState = getCoverBetween(hidingToken, subject);
-              if (coverState && coverState !== 'none') {
-                coverSource = 'manual';
-              }
-            } catch (e) {
-              console.warn(`PF2E Visioner | Manual cover lookup failed for Hide action:`, e);
-            }
-          }
-        }
-
-        if (coverState && coverState !== 'none') {
-          const coverConfig = COVER_STATES[coverState];
-
-          result.autoCover = {
-            state: coverState,
-            label: game.i18n.localize(coverConfig.label),
-            icon: coverConfig.icon,
-            color: coverConfig.color,
-            cssClass: coverConfig.cssClass,
-            bonus: coverConfig.bonusStealth,
-            isOverride,
-            source: coverSource, // Track whether this came from auto, manual, or override
-          };
-
-          // Apply DC reduction
-          adjustedDC -= result.autoCover.bonus;
         }
       } catch (e) {
-        console.error(`PF2E Visioner | Error in cover calculation for Hide action:`, e);
+        console.warn(`PF2E Visioner | Cover calculation failed for Hide action:`, e);
       }
+
+      // Apply overrides last (take precedence over base)
+      // Prefer roll-specific override if a rollId exists in the action or message context.
+      // Don't delete on consume yet - we need it for all observers
+      let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
+      try {
+        const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
+        
+        // First check if there's a stored modifier for this roll (from StealthCheckUseCase)
+        let storedModifier = null;
+        if (rollId) {
+          storedModifier = this.stealthCheckUseCase?.getOriginalCoverModifier?.(rollId);
+        }
+        
+
+        
+        if (storedModifier && storedModifier.isOverride) {
+          // Use the stored modifier data to determine override
+          // Keep the actually detected state for this observer as the original
+          originalDetectedState = coverState || 'none';
+          // Apply the override final state
+          coverState = storedModifier.finalState;
+          
+          // Mark as override since we have a stored override modifier
+          isOverride = true;
+          coverSource = storedModifier.source || 'dialog';
+
+        } else {
+          // Fallback to the old method (but don't consume yet)
+          // NOTE: Override parameter order is DIFFERENT from cover detection!
+          // Stealth check stores overrides as (hiding token -> observer)  
+          // Cover detection uses (observer -> hiding token)
+          const overrideData = this.autoCoverSystem.consumeCoverOverride(hidingToken, subject, rollId, false);
+          if (overrideData) {
+            // Store the original detected state before applying override
+            originalDetectedState = coverState || 'none';
+            // Apply the override
+            coverState = overrideData.state;
+
+            // Only mark as override if there's actually a difference from what we detected
+            if (originalDetectedState !== coverState) {
+              isOverride = true;
+              coverSource = overrideData.source;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('PF2E Visioner | Error checking for cover override:', e);
+      }
+
+      // Create autoCover object if we have a cover state OR if there's an override
+      if (coverState || isOverride) {
+        const coverConfig = COVER_STATES[coverState || 'none'];
+        const actualStealthBonus = coverConfig?.bonusStealth || 0;
+        result.autoCover = {
+          state: coverState || 'none',
+          label: game.i18n.localize(coverConfig?.label || 'None'),
+          icon: coverConfig?.icon || 'fas fa-shield',
+          color: coverConfig?.color || '#999',
+          cssClass: coverConfig?.cssClass || '',
+          bonus: actualStealthBonus,
+          isOverride,
+          source: coverSource,
+          // Add override details for template display (only if actually overridden)
+          ...(isOverride && {
+            overrideDetails: {
+              originalState: originalDetectedState,
+              originalLabel: game.i18n.localize(COVER_STATES[originalDetectedState]?.label || 'None'),
+              originalIcon: COVER_STATES[originalDetectedState]?.icon || 'fas fa-shield',
+              originalColor: COVER_STATES[originalDetectedState]?.color || '#999',
+              finalState: coverState || 'none',
+              finalLabel: game.i18n.localize(coverConfig?.label || 'None'),
+              finalIcon: coverConfig?.icon || 'fas fa-shield',
+              finalColor: coverConfig?.color || '#999',
+              source: coverSource
+            }
+          })
+        };
+        
+
+      }
+    } catch (e) {
+      console.error(`PF2E Visioner | Error in cover calculation for Hide action:`, e);
     }
 
+
     // Calculate roll information (stealth vs observer's perception DC)
-    const total = Number(actionData?.roll?.total ?? 0);
+    const baseTotal = Number(actionData?.roll?.total ?? 0);
+
+    // Use shared utility to calculate stealth roll totals with cover adjustments
+    const { total, originalTotal, baseRollTotal } = calculateStealthRollTotals(
+      baseTotal,
+      result?.autoCover,
+      actionData
+    );
+
     const die = Number(
       actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const margin = total - adjustedDC;
+    const originalMargin = originalTotal ? originalTotal - adjustedDC : margin;
+    const baseMargin = baseRollTotal ? baseRollTotal - adjustedDC : margin;
     const outcome = determineOutcome(total, die, adjustedDC);
+    const originalOutcome = originalTotal ? determineOutcome(originalTotal, die, adjustedDC) : outcome;
+    
+    // Generate outcome labels
+    const getOutcomeLabel = (outcomeValue) => {
+      switch (outcomeValue) {
+        case 'critical-success': return 'Critical Success';
+        case 'success': return 'Success';
+        case 'failure': return 'Failure';
+        case 'critical-failure': return 'Critical Failure';
+        default: return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
+      }
+    };
+    const originalOutcomeLabel = originalTotal ? getOutcomeLabel(originalOutcome) : null;
+
+
 
     // Maintain previous behavior for visibility change while enriching display fields
     // Use centralized mapping for defaults
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
+    
+    // Calculate what the visibility change would have been with original outcome
+    const originalNewVisibility = originalTotal ? 
+      getDefaultNewStateFor('hide', current, originalOutcome) || current : 
+      newVisibility;
+    
+    // Check if we should show override displays (only if there's a meaningful difference)
+    const shouldShowOverride = result.autoCover?.isOverride && (
+      total !== originalTotal || 
+      margin !== originalMargin || 
+      outcome !== originalOutcome ||
+      newVisibility !== originalNewVisibility
+    );
 
     return {
       target: subject,
@@ -177,12 +261,22 @@ export class HideActionHandler extends ActionHandlerBase {
       rollTotal: total,
       dieResult: die,
       margin,
+      originalMargin,
+      baseMargin,
       outcome,
+      originalOutcome,
+      originalOutcomeLabel,
+      originalNewVisibility,
+      shouldShowOverride,
       currentVisibility: current,
       oldVisibility: current,
       newVisibility,
       changed: newVisibility !== current,
       autoCover: result.autoCover, // Add auto-cover information
+      // Add original total for override display
+      originalRollTotal: originalTotal,
+      // Add base roll total for triple-bracket display
+      baseRollTotal: baseRollTotal,
     };
   }
   outcomeToChange(actionData, outcome) {

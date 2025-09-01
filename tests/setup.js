@@ -105,6 +105,41 @@ global.canvas = {
     get: jest.fn(),
     addChild: jest.fn(),
     removeChild: jest.fn(),
+    raycast: jest.fn((p1, p2) => {
+      // Mock raycast that checks if any wall intersects the line
+      const walls = global.canvas?.walls?.placeables || [];
+      for (const wall of walls) {
+        try {
+          const d = wall.document;
+          if (!d || d.sight === 0) continue;
+
+          // Skip open doors
+          const isDoor = Number(d.door) > 0;
+          const doorState = Number(d.ds ?? 0);
+          if (isDoor && doorState === 1) continue;
+
+          const [x1, y1, x2, y2] = Array.isArray(d.c) ? d.c : [d.x, d.y, d.x2, d.y2];
+          if ([x1, y1, x2, y2].some((n) => typeof n !== 'number')) continue;
+
+          // Simple line intersection check
+          const denom = (x2 - x1) * (p2.y - p1.y) - (y2 - y1) * (p2.x - p1.x);
+          if (Math.abs(denom) < 1e-10) continue; // parallel lines
+
+          const t = ((p1.x - x1) * (p2.y - p1.y) - (p1.y - y1) * (p2.x - p1.x)) / denom;
+          const u = -((x1 - p1.x) * (y2 - y1) - (y1 - p1.y) * (x2 - x1)) / denom;
+
+          if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+            return { t, wall };  // intersection found
+          }
+        } catch (_) { }
+      }
+      return null; // no intersection
+    }),
+    checkCollision: jest.fn((ray) => {
+      // Mock checkCollision that uses raycast
+      const result = global.canvas.walls.raycast(ray.A, ray.B);
+      return !!result;
+    }),
   },
   lighting: {
     placeables: [],
@@ -242,19 +277,19 @@ global.console = {
       textBaseline: 'alphabetic',
 
       // path ops
-      beginPath: jest.fn(() => {}),
-      moveTo: jest.fn(() => {}),
+      beginPath: jest.fn(() => { }),
+      moveTo: jest.fn(() => { }),
       lineTo: jest.fn(() => { anyDrawn = true; }),
       arc: jest.fn(() => { anyDrawn = true; }),
       stroke: jest.fn(() => { anyDrawn = true; }),
       fill: jest.fn(() => { anyDrawn = true; }),
       strokeRect: jest.fn(() => { anyDrawn = true; }),
       fillRect: jest.fn(() => { anyDrawn = true; }),
-      clearRect: jest.fn(() => {}),
+      clearRect: jest.fn(() => { }),
 
       // gradients
       createLinearGradient: jest.fn(() => ({
-        addColorStop: jest.fn(() => {}),
+        addColorStop: jest.fn(() => { }),
       })),
 
       // text
@@ -369,7 +404,7 @@ jest.mock(
   () => ({
     runTasksWithProgress: global.runTasksWithProgress,
   }),
-  { virtual: true },
+  { virtual: true }
 );
 
 jest.mock(
@@ -377,7 +412,7 @@ jest.mock(
   () => ({
     batchUpdateVisibilityEffects: jest.fn(),
   }),
-  { virtual: true },
+  { virtual: true }
 );
 
 jest.mock(
@@ -386,7 +421,7 @@ jest.mock(
     batchUpdateCoverEffects: jest.fn(),
     reconcileCoverEffectsForTarget: jest.fn(),
   }),
-  { virtual: true },
+  { virtual: true }
 );
 
 jest.mock(
@@ -394,7 +429,226 @@ jest.mock(
   () => ({
     updateWallVisuals: jest.fn(),
   }),
-  { virtual: true },
+  { virtual: true }
+);
+
+// Mock the core auto-cover dependencies to avoid circular dependency during imports
+// These need to cover all possible import paths from different test directories
+const mockAutoCoverSystem = {
+  detectCoverBetweenTokens: jest.fn((attacker, target) => {
+    // Basic logic for testing purposes
+    if (!attacker || !target) return 'none';
+    if (attacker === target || attacker.id === target?.id) return 'none';
+    
+    // For 3D sampling and cover tests, check for blocking tokens on the canvas
+    const canvas = global.canvas;
+    if (canvas?.tokens?.placeables?.length > 2) {
+      // Check if there are live blocking tokens (not dead)
+      const otherTokens = canvas.tokens.placeables.filter(token => 
+        token !== attacker && token !== target
+      );
+      
+      // Check if any blocking tokens are alive (hp > 0)
+      const liveBlockers = otherTokens.filter(token => {
+        const hp = token.actor?.system?.attributes?.hp;
+        return !hp || hp.value > 0; // Assume alive if no HP data or HP > 0
+      });
+      
+      // If there are live blockers, return cover
+      if (liveBlockers.length > 0) {
+        return 'standard';
+      }
+    }
+    
+    return 'none';
+  }),
+  getCoverBonusByState: jest.fn((state) => {
+    const bonuses = { none: 0, lesser: 1, standard: 2, greater: 4 };
+    return bonuses[state] || 0;
+  }),
+  setCoverBetween: jest.fn(),
+  recordPair: jest.fn(),
+  cleanupCover: jest.fn(),
+  clearCoverOverrides: jest.fn(),
+  isEnabled: jest.fn(() => {
+    // Check global.game.settings for auto-cover enabled state
+    const setting = global.game?.settings?.get?.('pf2e-visioner', 'autoCoverEnabled');
+    return setting !== false; // Default to true unless explicitly disabled
+  }),
+  detectCoverFromPoint: jest.fn().mockReturnValue('none'),
+  getCoverBetween: jest.fn(),
+  consumePairs: jest.fn().mockReturnValue([]),
+  getActivePairsInvolving: jest.fn().mockReturnValue([]),
+  getOverrideManager: jest.fn().mockReturnValue({
+    setPopupOverride: jest.fn(),
+    setDialogOverride: jest.fn(),
+    setRollOverride: jest.fn(),
+    consumeOverride: jest.fn(),
+    getPopupOverride: jest.fn(),
+    getDialogOverride: jest.fn(),
+    consumePopupOverride: jest.fn(),
+    consumeDialogOverride: jest.fn(),
+    hasOverride: jest.fn().mockReturnValue(false),
+    clearOverrides: jest.fn(),
+  }),
+  setPopupOverride: jest.fn(),
+  setDialogOverride: jest.fn(),
+  setRollOverride: jest.fn(),
+  consumeCoverOverride: jest.fn(),
+  getPopupOverride: jest.fn(),
+  getDialogOverride: jest.fn(),
+  consumePopupOverride: jest.fn(),
+  consumeDialogOverride: jest.fn(),
+  hasCoverOverride: jest.fn().mockReturnValue(false),
+  removeAllCoverInvolving: jest.fn(),
+  onUpdateDocument: jest.fn(),
+  onDeleteDocument: jest.fn(),
+};
+
+const mockCoverUIManager = {
+  injectDialogCoverUI: jest.fn(),
+};
+
+const mockTemplateManager = {
+  _templatesData: new Map(),
+  _activeReflexSaves: new Map(), 
+  _templatesOrigins: new Map(),
+  
+  getTemplatesData: jest.fn().mockReturnValue(new Map()),
+  
+  getTemplateData: jest.fn().mockImplementation(function(templateId) {
+    return this._templatesData.get(templateId) || null;
+  }),
+  
+  removeTemplateData: jest.fn().mockImplementation(function(templateId) {
+    this._templatesData.delete(templateId);
+  }),
+  
+  getTemplateOrigin: jest.fn((tokenId) => {
+    // For the test that expects template origin operations to work
+    if (tokenId === 'token1') {
+      return { x: 100, y: 100, ts: Date.now() };
+    }
+    return null;
+  }),
+  
+  setTemplateOrigin: jest.fn(),
+  
+  registerTemplate: jest.fn().mockImplementation(function(templateDoc, userId) {
+    if (templateDoc && templateDoc.id) {
+      this._templatesData.set(templateDoc.id, {
+        id: templateDoc.id,
+        userId: userId,
+        ...templateDoc
+      });
+    }
+  }),
+  
+  unregisterTemplate: jest.fn().mockImplementation(function(templateId) {
+    this._templatesData.delete(templateId);
+  }),
+  
+  clearTemplates: jest.fn().mockImplementation(function() {
+    this._templatesData.clear();
+  }),
+  
+  addActiveReflexSaveTemplate: jest.fn().mockImplementation(function(templateId) {
+    if (templateId) {
+      this._activeReflexSaves.set(templateId, { ts: Date.now() });
+    }
+  }),
+  
+  getActiveReflexSaveTemplate: jest.fn().mockImplementation(function(templateId) {
+    return this._activeReflexSaves.get(templateId) || undefined;
+  }),
+  
+  removeActiveReflexSaveTemplate: jest.fn().mockImplementation(function(templateId) {
+    this._activeReflexSaves.delete(templateId);
+  }),
+  
+  cleanupOldTemplates: jest.fn(),
+  clearActiveReflexSaves: jest.fn().mockImplementation(function() {
+    this._activeReflexSaves.clear();
+  }),
+};
+
+// Intentionally DO NOT mock AutoCoverSystem globally.
+// Some tests import and validate the real singleton; mocking it here breaks them.
+
+// Intentionally DO NOT mock TemplateManager globally so tests can exercise real behavior.
+
+// Mock AutoCoverSystem dependencies
+jest.mock('../../scripts/constants.js', () => ({ MODULE_ID: 'pf2e-visioner' }), { virtual: true });
+jest.mock('../../scripts/cover/CoverOverrideManager.js', () => ({
+  default: {
+    setPopupOverride: jest.fn(),
+    setDialogOverride: jest.fn(),
+    setRollOverride: jest.fn(),
+    consumeOverride: jest.fn(),
+    getPopupOverride: jest.fn(),
+    getDialogOverride: jest.fn(),
+    consumePopupOverride: jest.fn(),
+    consumeDialogOverride: jest.fn(),
+    hasOverride: jest.fn().mockReturnValue(false),
+    clearOverrides: jest.fn(),
+  }
+}), { virtual: true });
+jest.mock('../../scripts/helpers/cover-helpers.js', () => ({
+  getCoverBonusByState: jest.fn((state) => {
+    const bonuses = { none: 0, lesser: 1, standard: 2, greater: 4 };
+    return bonuses[state] || 0;
+  })
+}), { virtual: true });
+// These mocks are already handled by the main AutoCoverSystem mock above, 
+// but needed for tests that use dynamic import with different paths
+
+// Mock all possible import paths for CoverUIManager  
+jest.mock('../../scripts/cover/auto-cover/CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true });
+jest.mock('../scripts/cover/auto-cover/CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true });
+jest.mock('../CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true }); // From usecases dir
+
+// Mock the dependencies of BaseUseCase.js that cause the circular import
+// These paths are relative to the usecases directory where BaseUseCase.js is located
+jest.mock('../AutoCoverSystem.js', () => ({ default: mockAutoCoverSystem }), { virtual: true });
+jest.mock('../TemplateManager.js', () => ({ default: mockTemplateManager }), { virtual: true });
+jest.mock('../CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true });
+
+// TemplateManager mocks are handled above with direct export pattern
+
+// Comprehensive fix for circular dependency by mocking the entire chain
+// This prevents the StealthCheckUseCase instantiation that causes the circular import
+
+// First, prevent BaseUseCase from being instantiated by providing all its dependencies
+beforeEach(() => {
+  // Ensure mock objects are available globally if needed
+  if (!global.mockAutoCoverSystem) {
+    global.mockAutoCoverSystem = mockAutoCoverSystem;
+    global.mockCoverUIManager = mockCoverUIManager;
+    global.mockTemplateManager = mockTemplateManager;
+  }
+});
+
+// Mock StealthCheckUseCase module completely to prevent any instantiation
+jest.mock(
+  '../../../cover/auto-cover/usecases/StealthCheckUseCase.js',
+  () => {
+    const mockInstance = {
+      getOriginalCoverModifier: jest.fn().mockReturnValue(null),
+      handleCheckDialog: jest.fn(),
+      handlePreCreateChatMessage: jest.fn(),
+      onRenderChatMessage: jest.fn(),
+    };
+    
+    // Also mock the class constructor to prevent instantiation
+    const MockStealthCheckUseCase = jest.fn().mockImplementation(() => mockInstance);
+    MockStealthCheckUseCase.prototype = mockInstance;
+    
+    return {
+      default: mockInstance,
+      StealthCheckUseCase: MockStealthCheckUseCase,
+    };
+  },
+  { virtual: true }
 );
 
 // ✅ REMOVED DANGEROUS UTILS.JS MOCK
@@ -582,6 +836,18 @@ beforeEach(() => {
   // Reset canvas state
   global.canvas.tokens.controlled = [];
   global.canvas.tokens.placeables = [];
+
+  // Ensure these properties exist before trying to set them
+  if (!global.canvas.walls) {
+    global.canvas.walls = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+  }
+  if (!global.canvas.lighting) {
+    global.canvas.lighting = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+  }
+  if (!global.canvas.terrain) {
+    global.canvas.terrain = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+  }
+
   global.canvas.walls.placeables = [];
   global.canvas.lighting.placeables = [];
   global.canvas.terrain.placeables = [];

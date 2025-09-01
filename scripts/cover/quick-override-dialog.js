@@ -1,5 +1,5 @@
 import { COVER_STATES, MODULE_ID } from '../constants.js';
-import { getCoverBonusByState, getCoverLabel } from '../helpers/cover-helpers.js';
+import { getCoverBonusByState, getCoverLabel, getCoverStealthBonusByState } from '../helpers/cover-helpers.js';
 
 let currentCoverQuickDialog = null;
 
@@ -24,6 +24,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
     super(options);
     this.selected = initialState;
     this._resolver = null;
+    this.isStealthContext = options.isStealthContext || false;
     currentCoverQuickDialog = this;
   }
 
@@ -42,10 +43,12 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
       const icon = cfg.icon || 'fas fa-shield-alt';
       const color = cfg.color || 'inherit';
       const label = getCoverLabel(s);
-      const bonus = getCoverBonusByState(s) || 0;
+      const bonus = this.isStealthContext ? 
+        (getCoverStealthBonusByState(s) || 0) : 
+        (getCoverBonusByState(s) || 0);
       const tooltip = `${label}${bonus > 0 ? ` (+${bonus})` : ''}`;
       const active = s === this.selected;
-      return `<button type="button" class="pv-qo-btn${active ? ' active' : ''}" data-state="${s}" title="${tooltip}" data-tooltip="${tooltip}" aria-label="${tooltip}">
+      return `<button type="button" class="pv-qo-btn${active ? ' active' : ''}" data-state="${s}" data-tooltip="${tooltip}" aria-label="${tooltip}">
           <i class="${icon}" style="color:${color}"></i>
       </button>`;
     };
@@ -126,10 +129,10 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
 /**
  * Opens the ApplicationV2-based dialog and resolves with selection or null.
  */
-export function openCoverQuickOverrideDialog(initialState = 'none') {
+export function openCoverQuickOverrideDialog(initialState = 'none', isStealthContext = false) {
   return new Promise((resolve) => {
     try {
-      const app = new CoverQuickOverrideDialog(initialState);
+      const app = new CoverQuickOverrideDialog(initialState, { isStealthContext });
       app.setResolver(resolve);
       app.render(true);
     } catch (e) {

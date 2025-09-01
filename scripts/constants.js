@@ -355,7 +355,7 @@ export const DEFAULT_SETTINGS = {
   // Auto-Cover behavior tuning
   autoCoverTokenIntersectionMode: {
     name: 'Auto-Cover: Token Intersection Mode',
-    hint: "Choose how token blockers are evaluated: 'Center' (strict center-to-center ray intersects blocker), 'Any' (size rule: any entry → Lesser; Standard if blocker is ≥2 sizes larger than both attacker and target), 'Coverage' (side coverage with fixed thresholds: Standard at 50%, Greater at 70%), or 'Tactical' (corner-to-corner line calculations for precise cover determination).",
+    hint: "Choose how token blockers are evaluated: 'Any' (size rule: any entry → Lesser; Standard if blocker is ≥2 sizes larger than both attacker and target), '10%' (ray inside ≥10% of blocker side), 'Coverage' (side coverage with fixed thresholds: Standard at 50%, Greater at 70%), or 'Tactical' (corner-to-corner line calculations for precise cover determination).",
     scope: 'world',
     config: true,
     restricted: true,
@@ -363,10 +363,8 @@ export const DEFAULT_SETTINGS = {
     choices: {
       any: 'Any (ray entering blocker)',
       length10: '10% (ray inside ≥10% of blocker side)',
-      center: 'Center (ray passing through center of blocker)',
       coverage: 'Side Coverage (fixed 50%(Standard)/70%(Greater))',
       tactical: 'Tactical (corner-to-corner calculations)',
-      sampling3d: '3D Sampling (multi-height multi-ray approximation)',
     },
     default: 'length10',
   },
@@ -416,9 +414,29 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: false,
   },
-  autoCoverRespectIgnoreFlag: {
-    name: 'Auto-Cover: Respect Token Ignore Flag',
-    hint: "If enabled, tokens with the flag pf2e-visioner.ignoreAutoCover = true won't count for auto-cover.",
+
+  // Wall cover thresholds (percentage of the target token blocked by walls)
+  wallCoverStandardThreshold: {
+    name: 'Wall Cover: Standard Threshold (%)',
+    hint: 'Percent of the target token that must be blocked by walls to grant Standard cover.',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Number,
+    default: 50,
+  },
+  wallCoverGreaterThreshold: {
+    name: 'Wall Cover: Greater Threshold (%)',
+    hint: 'Percent of the target token that must be blocked by walls to grant Greater cover.',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Number,
+    default: 70,
+  },
+  wallCoverAllowGreater: {
+    name: 'Wall Cover: Allow Greater',
+    hint: 'If disabled, walls will never grant Greater cover; coverage above the greater threshold is treated as Standard cover.',
     scope: 'world',
     config: true,
     restricted: true,
@@ -433,15 +451,6 @@ export const DEFAULT_SETTINGS = {
     restricted: true,
     type: Boolean,
     default: true,
-  },
-  autoCoverHideAction: {
-    name: 'Show Cover in Hide Results',
-    hint: 'If enabled, Hide action results will show cover information (both automatic and manual) and apply DC reductions based on cover.',
-    scope: 'world',
-    config: true,
-    restricted: true,
-    type: Boolean,
-    default: false,
   },
   keybindingOpensTMInTargetMode: {
     name: 'Keybinding Opens Token Manager in Target Mode',

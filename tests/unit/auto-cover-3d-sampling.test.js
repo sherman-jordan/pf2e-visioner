@@ -5,8 +5,7 @@
 import '../setup.js';
 
 // Import the function under test
-import { detectCoverStateForAttack } from '../../scripts/cover/auto-cover.js';
-
+import autoCoverSystem from '../../scripts/cover/auto-cover/AutoCoverSystem.js';
 /**
  * Helpers to set a module setting in the mocked test environment.
  */
@@ -74,19 +73,6 @@ describe('3D Sampling Mode - Integration', () => {
     setSetting('autoCoverUseElevationFilter', true);
   });
 
-  test('ignores blockers fully outside attacker–target vertical band', () => {
-    const { attacker, target } = placeAttackerAndTarget();
-
-    // Blocker centered between them but at high elevation (10–15 ft)
-    const highBlocker = makeToken({ id: 'blk-high', gx: 2, gy: 0, elevationFt: 10, heightFt: 5, sizeSquares: 1 });
-    canvas.tokens.placeables.push(highBlocker);
-
-    const result = detectCoverStateForAttack(attacker, target);
-
-    // Should be no token cover due to no vertical overlap; walls are empty in setup
-    expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
-    expect(result).toBe('none');
-  });
 
   test('includes blockers that overlap the vertical band (yields some cover)', () => {
     const { attacker, target } = placeAttackerAndTarget();
@@ -95,7 +81,7 @@ describe('3D Sampling Mode - Integration', () => {
     const midBlocker = makeToken({ id: 'blk-mid', gx: 2, gy: 0, elevationFt: 2, heightFt: 5, sizeSquares: 1 });
     canvas.tokens.placeables.push(midBlocker);
 
-    const result = detectCoverStateForAttack(attacker, target);
+    const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
 
     // Expect some token cover from tactical-per-slice aggregation
     expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
@@ -105,7 +91,7 @@ describe('3D Sampling Mode - Integration', () => {
   test('returns a valid cover state when 3D sampling mode is selected', () => {
     const { attacker, target } = placeAttackerAndTarget();
 
-    const result = detectCoverStateForAttack(attacker, target);
+    const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);
     expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
   });
 });

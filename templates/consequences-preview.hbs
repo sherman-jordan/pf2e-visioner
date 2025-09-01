@@ -25,12 +25,12 @@
   <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
     {{#if showEncounterFilter}}
     <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" />
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
       <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
     </label>
     {{/if}}
     <label class="ignore-allies-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
-      <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" />
+      <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
       <span class="encounter-filter-label">Ignore allies</span>
     </label>
   </div>
@@ -53,7 +53,7 @@
               <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
             </td>
             <td class="token-name">
-              <strong title="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              <strong data-tooltip="{{outcome.target.name}}">{{outcome.target.name}}</strong>
             </td>
             <td class="visibility-change">
               <div class="visibility-change-with-override">
@@ -65,7 +65,7 @@
                             data-action="overrideState"
                             data-token-id="{{../outcome.target.id}}"
                             data-state="{{state.value}}"
-                            title="{{state.label}}">
+                            data-tooltip="{{state.label}}">
                       {{{visibilityIcon state.value}}}
                     </button>
                   {{/each}}
@@ -75,10 +75,10 @@
             </td>
             <td class="actions">
               {{#if outcome.hasActionableChange}}
-                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" title="Apply this visibility change">
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{outcome.target.id}}" data-tooltip="Apply this visibility change">
                   <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" title="Revert to original visibility">
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{outcome.target.id}}" data-tooltip="Revert to original visibility">
                   <i class="fas fa-undo"></i>
                 </button>
               {{else}}
@@ -97,10 +97,10 @@
       <span class="consequences-preview-dialog-changes-count">{{changesCount}}</span> of <span class="consequences-preview-dialog-total-count">{{totalCount}}</span> targets will have visibility changes.
     </div>
     <div class="consequences-preview-dialog-bulk-actions-buttons">
-      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" title="Apply all visibility changes">
+      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" data-tooltip="Apply all visibility changes">
         <i class="fas fa-check-circle"></i> Apply All
       </button>
-      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" title="Revert all changes to original state" disabled>
+      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes to original state" disabled>
         <i class="fas fa-undo"></i> Revert All
       </button>
     </div>

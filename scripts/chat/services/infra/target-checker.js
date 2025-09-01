@@ -1,5 +1,5 @@
 import { MODULE_ID } from '../../../constants.js';
-import { detectCoverStateForAttack } from '../../../cover/auto-cover.js';
+import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import { getCoverBetween, getVisibilityBetween } from '../../../utils.js';
 // Debug logger removed
 import { shouldFilterAlly } from './shared-utils.js';
@@ -58,7 +58,7 @@ function checkConsequencesTargets(actionData, potentialTargets) {
         itemTypeConditions.some((c) => c?.slug === 'concealed') ||
         legacyConditions.some((c) => c?.slug === 'concealed');
       if (visibility === 'observed' && actorIsConcealed) visibility = 'concealed';
-    } catch (_) {}
+    } catch (_) { }
     if (visibility === 'hidden' || visibility === 'undetected') return true;
   }
   return false;
@@ -105,7 +105,7 @@ function checkSeekTargets(actionData, potentialTargets) {
         }
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   for (const target of potentialTargets) {
     // Check if target is a hazard/loot with a minimum perception rank
@@ -147,7 +147,7 @@ function checkSeekTargets(actionData, potentialTargets) {
           return true;
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     const visibility = getVisibilityBetween(actionData.actor, target);
     if (['concealed', 'hidden', 'undetected'].includes(visibility)) return true;
@@ -206,8 +206,8 @@ function checkHideTargets(actionData, potentialTargets) {
       if (autoCover) {
         try {
           cover =
-            detectCoverStateForAttack(observer, actionData.actor, { rawPrereq: true }) || 'none';
-        } catch (_) {}
+            autoCoverSystem.detectCoverBetweenTokens(observer, actionData.actor, { rawPrereq: true }) || 'none';
+        } catch (_) { }
       }
       if (cover === 'none') {
         try {
@@ -220,7 +220,7 @@ function checkHideTargets(actionData, potentialTargets) {
         return true;
       }
     }
-  } catch (_) {}
+  } catch (_) { }
   return false;
 }
 
@@ -248,7 +248,7 @@ function checkDiversionTargets(actionData, potentialTargets) {
       const observers = discoverDiversionObservers(actionData.actor);
       return observers.length > 0;
     }
-  } catch (_) {}
+  } catch (_) { }
   // Fallback to simple heuristic if dynamic import not cached
   return potentialTargets.length > 0;
 }

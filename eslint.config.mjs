@@ -2,6 +2,13 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
+  // Ignore vendored/minified libraries and generated artifacts
+  {
+    ignores: [
+      'pf2e/static/lib/**',
+      'coverage/**',
+    ],
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,mjs,cjs}'],

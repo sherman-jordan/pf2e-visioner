@@ -5,6 +5,7 @@
 import { ChatAutomationService } from '../chat/automation-service.js';
 
 export function registerChatHooks() {
+  
   // Foundry v13+: use renderChatMessageHTML (HTMLElement instead of jQuery)
   Hooks.on('renderChatMessageHTML', (message, element, ...rest) => {
     try {

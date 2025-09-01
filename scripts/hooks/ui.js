@@ -495,13 +495,46 @@ function onRenderWallConfig(app, html) {
     const form = root.querySelector('form') || root;
     // Avoid duplicate injection
     if (form.querySelector('.pf2e-visioner-wall-settings')) return;
-    // Build a single grouped fieldset with a quick settings button (no Provide Cover here)
+    
+    // Get current wall document and flags
+    const wallDoc = app?.document;
+    const provideCover = wallDoc?.getFlag?.(MODULE_ID, 'provideCover') !== false;
+    const coverOverride = wallDoc?.getFlag?.(MODULE_ID, 'coverOverride') || null;
+    
+    // Build a fieldset with provide cover checkbox and cover override buttons
     const fs = document.createElement('fieldset');
     fs.className = 'pf2e-visioner-wall-settings';
     fs.innerHTML = `
       <legend>PF2E Visioner</legend>
       <div class="form-group">
-        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Visioner Wall Settings</button>
+        <label>Provide Cover</label>
+        <input type="checkbox" name="flags.${MODULE_ID}.provideCover" ${provideCover ? 'checked' : ''}>
+      </div>
+      <div class="form-group cover-override-group" style="display: ${provideCover ? 'block' : 'none'};">
+        <label>Cover Override</label>
+        <div class="cover-override-buttons" style="display: flex; gap: 4px; margin-top: 4px;">
+          <button type="button" class="visioner-icon-btn ${!coverOverride ? 'active' : ''}" 
+                  data-cover-override="auto" title="Automatic Detection">
+            <i class="fas fa-magic" style="color:#888"></i>
+          </button>
+          <button type="button" class="visioner-icon-btn ${coverOverride === 'none' ? 'active' : ''}" 
+                  data-cover-override="none" title="No Cover">
+            <i class="fas fa-shield-slash" style="color:var(--cover-none)"></i>
+          </button>
+          <button type="button" class="visioner-icon-btn ${coverOverride === 'standard' ? 'active' : ''}" 
+                  data-cover-override="standard" title="Standard Cover">
+            <i class="fas fa-shield-alt" style="color:var(--cover-standard)"></i>
+          </button>
+          <button type="button" class="visioner-icon-btn ${coverOverride === 'greater' ? 'active' : ''}" 
+                  data-cover-override="greater" title="Greater Cover">
+            <i class="fas fa-shield-alt" style="color:var(--cover-greater)"></i>
+          </button>
+        </div>
+
+        <input type="hidden" name="flags.${MODULE_ID}.coverOverride" value="${coverOverride || ''}">
+      </div>
+      <div class="form-group">
+        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Advanced Wall Settings</button>
       </div>
     `;
 
@@ -513,10 +546,11 @@ function onRenderWallConfig(app, html) {
       doorHeader.parentElement.insertAdjacentElement('beforebegin', fs);
     else form.appendChild(fs);
 
-    // Bind quick settings button
+    // Bind event handlers
     try {
+      // Quick settings button
       const btn = fs.querySelector('[data-action="open-visioner-wall-quick"]');
-      if (btn)
+      if (btn) {
         btn.addEventListener('click', async (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
@@ -525,6 +559,40 @@ function onRenderWallConfig(app, html) {
           );
           new VisionerWallQuickSettings(app.document).render(true);
         });
+      }
+
+      // Provide cover checkbox toggle
+      const provideCoverCheckbox = fs.querySelector('input[name$=".provideCover"]');
+      const coverOverrideGroup = fs.querySelector('.cover-override-group');
+      if (provideCoverCheckbox && coverOverrideGroup) {
+        provideCoverCheckbox.addEventListener('change', () => {
+          coverOverrideGroup.style.display = provideCoverCheckbox.checked ? 'block' : 'none';
+        });
+      }
+
+      // Cover override buttons
+      const coverButtons = fs.querySelectorAll('button[data-cover-override]');
+      coverButtons.forEach(button => {
+        button.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          
+          const coverType = button.getAttribute('data-cover-override');
+          
+          // Remove active class from all cover override buttons
+          coverButtons.forEach(btn => btn.classList.remove('active'));
+          
+          // Always make the clicked button active (no toggle behavior - one must always be selected)
+          button.classList.add('active');
+          
+          // Update the hidden input for the cover override
+          const hiddenInput = fs.querySelector('input[name$=".coverOverride"]');
+          if (hiddenInput) {
+            // Set the value (empty string for auto, coverType for specific override)
+            hiddenInput.value = coverType === 'auto' ? '' : coverType;
+          }
+        });
+      });
     } catch (_) {}
   } catch (_) {}
 }

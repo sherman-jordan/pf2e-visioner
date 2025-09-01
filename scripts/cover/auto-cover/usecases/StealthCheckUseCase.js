@@ -119,7 +119,18 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
             } catch (_) { }
 
             if (!state) {
-                state = this._detectCover(hider, target);
+                // First check for manual cover between tokens
+                try {
+                    const manualCover = this.autoCoverSystem.getCoverBetween(hider, target);
+                    if (manualCover && manualCover !== 'none') {
+                        state = manualCover;
+                    }
+                } catch (_) {}
+                
+                // Fallback to auto-detection if no manual cover
+                if (!state) {
+                    state = this._detectCover(hider, target);
+                }
             }
 
             const originalDetectedState = state;
@@ -204,7 +215,20 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                 const observers = (canvas?.tokens?.placeables || [])
                     .filter((t) => t && t.actor && t.id !== hider.id);
                 for (const obs of observers) {
-                    const s = this._detectCover(hider, obs);
+                    // First check for manual cover between tokens
+                    let s = null;
+                    try {
+                        const manualCover = this.autoCoverSystem.getCoverBetween(hider, obs);
+                        if (manualCover && manualCover !== 'none') {
+                            s = manualCover;
+                        }
+                    } catch (_) {}
+                    
+                    // Fallback to auto-detection if no manual cover
+                    if (!s) {
+                        s = this._detectCover(hider, obs);
+                    }
+                    
                     if (s && s !== 'none') {
                         target = obs;
                         detectedState = s;
@@ -350,7 +374,20 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                             try {
                                 for (const obs of observers) {
                                     try {
-                                        const s = this._detectCover(hider, obs);
+                                        // First check for manual cover between tokens
+                                        let s = null;
+                                        try {
+                                            const manualCover = this.autoCoverSystem.getCoverBetween(hider, obs);
+                                            if (manualCover && manualCover !== 'none') {
+                                                s = manualCover;
+                                            }
+                                        } catch (_) {}
+                                        
+                                        // Fallback to auto-detection if no manual cover
+                                        if (!s) {
+                                            s = this._detectCover(hider, obs);
+                                        }
+                                        
                                         if (s) {
                                             candidateStates.push(s)
                                             break;

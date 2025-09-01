@@ -29,8 +29,21 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
 
         const target = tokens.get(targetTokenId);
 
-        // Determine base cover state (template origin preferred)
-        let state = this._detectCover(attacker, target);
+        // Determine base cover state (manual token cover first, then auto-detection)
+        let state = null;
+        
+        // First check for manual cover between tokens
+        try {
+            const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+            if (manualCover && manualCover !== 'none') {
+                state = manualCover;
+            }
+        } catch (_) {}
+        
+        // Fallback to auto-detection if no manual cover
+        if (!state) {
+            state = this._detectCover(attacker, target);
+        }
 
         // Preserve original detected state for override comparison
         const originalDetectedState = state;

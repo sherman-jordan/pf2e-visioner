@@ -23,6 +23,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       bulkHiddenOff: VisionerWallManager._onBulkHiddenOff,
       bulkProvideCoverOn: VisionerWallManager._onBulkProvideCoverOn,
       bulkProvideCoverOff: VisionerWallManager._onBulkProvideCoverOff,
+      setCoverOverride: VisionerWallManager._onSetCoverOverride,
     },
   };
 
@@ -43,6 +44,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       const hiddenWall = d.getFlag?.(MODULE_ID, 'hiddenWall');
       const identifier = d.getFlag?.(MODULE_ID, 'wallIdentifier');
       const dc = d.getFlag?.(MODULE_ID, 'stealthDC');
+      const coverOverride = d.getFlag?.(MODULE_ID, 'coverOverride'); // 'none', 'lesser', 'standard', 'greater', or null/undefined for auto
       return {
         id: d.id,
         doorType,
@@ -50,6 +52,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         hiddenWall: !!hiddenWall,
         identifier: identifier || '',
         dc: Number(dc) || '',
+        coverOverride: coverOverride || null,
         img: getWallImage(doorType),
       };
     });
@@ -67,6 +70,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     content.innerHTML = result;
     try {
       this._bindSelectionSync(content);
+      this._bindCoverToggle(content);
     } catch (_) {}
     return content;
   }
@@ -79,25 +83,37 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       const updates = [];
       const byId = new Map();
       // Read inputs directly so unchecked checkboxes are captured as false
-      const inputs = form.querySelectorAll('input[name^="wall."]');
+      const inputs = form.querySelectorAll('input[name^="wall."], button[data-wall-id][data-cover-override]');
       inputs.forEach((input) => {
         const name = input.getAttribute('name') || '';
         const m = name.match(
           /^wall\.(?<id>[^.]+)\.(?<field>provideCover|hiddenWall|identifier|dc)$/,
         );
-        if (!m) return;
-        const { id, field } = m.groups;
-        if (!byId.has(id)) byId.set(id, {});
-        let value;
-        if (field === 'provideCover' || field === 'hiddenWall') {
-          value = !!input.checked;
-        } else if (field === 'identifier') {
-          value = String(input.value || '');
-        } else if (field === 'dc') {
-          const n = Number(input.value);
-          value = Number.isFinite(n) && n > 0 ? n : null;
+        if (m) {
+          const { id, field } = m.groups;
+          if (!byId.has(id)) byId.set(id, {});
+          let value;
+          if (field === 'provideCover' || field === 'hiddenWall') {
+            value = !!input.checked;
+          } else if (field === 'identifier') {
+            value = String(input.value || '');
+          } else if (field === 'dc') {
+            const n = Number(input.value);
+            value = Number.isFinite(n) && n > 0 ? n : null;
+          }
+          byId.get(id)[field] = value;
         }
-        byId.get(id)[field] = value;
+        
+        // Handle cover override buttons
+        if (input.hasAttribute('data-wall-id') && input.hasAttribute('data-cover-override')) {
+          const wallId = input.getAttribute('data-wall-id');
+          const coverValue = input.getAttribute('data-cover-override');
+          const isActive = input.classList.contains('active');
+          
+          if (!byId.has(wallId)) byId.set(wallId, {});
+          // Set override: null for auto, coverValue for specific override
+          byId.get(wallId).coverOverride = isActive ? (coverValue === 'auto' ? null : coverValue) : null;
+        }
       });
       for (const [id, data] of byId.entries()) {
         const patch = { _id: id };
@@ -112,6 +128,9 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         }
         if (data.dc !== undefined) {
           patch[`flags.${MODULE_ID}.stealthDC`] = data.dc;
+        }
+        if (data.coverOverride !== undefined) {
+          patch[`flags.${MODULE_ID}.coverOverride`] = data.coverOverride;
         }
         updates.push(patch);
       }
@@ -189,6 +208,27 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     if (form) this.constructor._setAll(form, 'input[name$=".provideCover"]', false);
   }
 
+  static async _onSetCoverOverride(event, button) {
+    try {
+      const wallId = button?.dataset?.wallId;
+      const coverType = button?.dataset?.coverOverride;
+      if (!wallId || !coverType) return;
+
+      // Remove active class from all cover override buttons for this wall
+      const form = this.element?.querySelector?.('form.pf2e-visioner-wall-manager');
+      if (form) {
+        const wallButtons = form.querySelectorAll(`button[data-wall-id="${wallId}"][data-cover-override]`);
+        wallButtons.forEach(btn => btn.classList.remove('active'));
+      }
+      
+      // Always make the clicked button active (no toggle behavior - one must always be selected)
+      button.classList.add('active');
+      
+    } catch (e) {
+      console.warn(`[${MODULE_ID}] Set cover override failed`, e);
+    }
+  }
+
   _bindSelectionSync(root) {
     try {
       // Clear any old binding
@@ -242,6 +282,30 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         try {
           this._unbindSelectionSync?.();
         } catch (_) {}
+      });
+    } catch (_) {}
+  }
+
+  _bindCoverToggle(root) {
+    try {
+      // Add event listeners to "Provide Cover" checkboxes to show/hide override buttons
+      const coverCheckboxes = root.querySelectorAll('input[name$=".provideCover"]');
+      coverCheckboxes.forEach(checkbox => {
+        const wallId = checkbox.name.match(/wall\.([^.]+)\.provideCover/)?.[1];
+        if (!wallId) return;
+        
+        const toggleOverrideButtons = () => {
+          const overrideDiv = root.querySelector(`[data-wall-id="${wallId}"] .cover-override-buttons`);
+          if (overrideDiv) {
+            overrideDiv.style.display = checkbox.checked ? 'flex' : 'none';
+          }
+        };
+        
+        // Initial state
+        toggleOverrideButtons();
+        
+        // Listen for changes
+        checkbox.addEventListener('change', toggleOverrideButtons);
       });
     } catch (_) {}
   }

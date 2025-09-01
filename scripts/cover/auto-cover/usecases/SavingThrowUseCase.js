@@ -91,7 +91,18 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
 
     // Fallback to direct token calculation if no template data
     if (!state) {
-      state = this._detectCover(attacker, target);
+      // First check for manual cover between tokens
+      try {
+        const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+        if (manualCover && manualCover !== 'none') {
+          state = manualCover;
+        }
+      } catch (_) {}
+      
+      // Fallback to auto-detection if no manual cover
+      if (!state) {
+        state = this._detectCover(attacker, target);
+      }
     }
 
     try {
@@ -274,8 +285,18 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       }
       // If we have an attacker token, use standard calculation
       else if (attacker) {
-        // Fallback to normal calculation
-        state = this.autoCoverSystem.detectCoverBetweenTokens(attacker, target);
+        // First check for manual cover between tokens
+        try {
+          const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+          if (manualCover && manualCover !== 'none') {
+            state = manualCover;
+          }
+        } catch (_) {}
+        
+        // Fallback to auto-detection if no manual cover
+        if (!state) {
+          state = this.autoCoverSystem.detectCoverBetweenTokens(attacker, target);
+        }
       }
 
       if (!state) {

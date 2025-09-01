@@ -3,7 +3,6 @@
  *
  * Tests the different intersection mode algorithms that determine how tokens block cover:
  * - 'any' mode: Size-based calculation with any intersection
- * - 'center' mode: Strict center-to-center ray intersection
  * - 'coverage' mode: Coverage percentage calculation (50%/70% thresholds)
  * - 'tactical' mode: Corner-to-corner tactical calculation
  * - 'length10' mode: Grid-square-based 10% threshold approach
@@ -51,10 +50,6 @@ describe('Auto-Cover Intersection Mode Behaviors', () => {
       mockGame.settings.get.mockReturnValue(undefined);
       expect(getIntersectionMode()).toBe('any');
 
-      // Test explicit modes
-      mockGame.settings.get.mockReturnValue('center');
-      expect(getIntersectionMode()).toBe('center');
-
       mockGame.settings.get.mockReturnValue('coverage');
       expect(getIntersectionMode()).toBe('coverage');
 
@@ -76,7 +71,6 @@ describe('Auto-Cover Intersection Mode Behaviors', () => {
       };
 
       expect(selectAlgorithm('any')).toBe('evaluateCoverBySize');
-      expect(selectAlgorithm('center')).toBe('evaluateCoverBySize');
       expect(selectAlgorithm('length10')).toBe('evaluateCoverBySize');
       expect(selectAlgorithm('coverage')).toBe('evaluateCoverByCoverage');
       expect(selectAlgorithm('tactical')).toBe('evaluateCoverByTactical');
@@ -166,126 +160,6 @@ describe('Auto-Cover Intersection Mode Behaviors', () => {
       expect(calculateSizeCover('med', 'med', 'med')).toBe('lesser');
       expect(calculateSizeCover('med', 'med', 'huge')).toBe('standard');
       expect(calculateSizeCover('tiny', 'sm', 'lg')).toBe('standard');
-    });
-  });
-
-  describe('Center Mode Intersection Logic', () => {
-    test('validates center-to-center ray intersection', () => {
-      // 'center' mode: only tokens whose center is very close to the line count
-      const centerModeIntersection = (line, rect) => {
-        const centerX = (rect.x1 + rect.x2) / 2;
-        const centerY = (rect.y1 + rect.y2) / 2;
-
-        // Calculate distance from center to line segment
-        const distance = distancePointToSegment({ x: centerX, y: centerY }, line.start, line.end);
-
-        // Check if center is within 1px of the line AND between the endpoints
-        const withinTolerance = distance <= 1;
-        const betweenEndpoints = pointBetweenOnSegment(
-          { x: centerX, y: centerY },
-          line.start,
-          line.end,
-        );
-
-        return withinTolerance && betweenEndpoints;
-      };
-
-      const distancePointToSegment = (point, segStart, segEnd) => {
-        const A = point.x - segStart.x;
-        const B = point.y - segStart.y;
-        const C = segEnd.x - segStart.x;
-        const D = segEnd.y - segStart.y;
-
-        const dot = A * C + B * D;
-        const lenSq = C * C + D * D;
-
-        if (lenSq === 0) return Math.sqrt(A * A + B * B);
-
-        let param = dot / lenSq;
-        param = Math.max(0, Math.min(1, param));
-
-        const xx = segStart.x + param * C;
-        const yy = segStart.y + param * D;
-
-        const dx = point.x - xx;
-        const dy = point.y - yy;
-        return Math.sqrt(dx * dx + dy * dy);
-      };
-
-      const pointBetweenOnSegment = (point, segStart, segEnd) => {
-        const crossProduct =
-          (point.y - segStart.y) * (segEnd.x - segStart.x) -
-          (point.x - segStart.x) * (segEnd.y - segStart.y);
-        if (Math.abs(crossProduct) > 1) return false; // Not on line
-
-        const dotProduct =
-          (point.x - segStart.x) * (segEnd.x - segStart.x) +
-          (point.y - segStart.y) * (segEnd.y - segStart.y);
-        const squaredLength = (segEnd.x - segStart.x) ** 2 + (segEnd.y - segStart.y) ** 2;
-
-        return dotProduct >= 0 && dotProduct <= squaredLength;
-      };
-
-      const line = { start: { x: 0, y: 50 }, end: { x: 200, y: 50 } };
-      const rectOnLine = { x1: 75, y1: 25, x2: 125, y2: 75 }; // Center at (100, 50) - on line
-      const rectOffLine = { x1: 75, y1: 30, x2: 125, y2: 80 }; // Center at (100, 55) - off line
-
-      expect(centerModeIntersection(line, rectOnLine)).toBe(true);
-      expect(centerModeIntersection(line, rectOffLine)).toBe(false);
-    });
-
-    test('validates center mode blocker selection', () => {
-      // Center mode selects the closest blocker to the line when multiple intersect
-      const selectClosestBlocker = (line, blockers) => {
-        const candidates = [];
-
-        for (const blocker of blockers) {
-          const centerX = (blocker.rect.x1 + blocker.rect.x2) / 2;
-          const centerY = (blocker.rect.y1 + blocker.rect.y2) / 2;
-
-          const distance = distancePointToSegment({ x: centerX, y: centerY }, line.start, line.end);
-
-          if (distance <= 1) {
-            candidates.push({ blocker, distance });
-          }
-        }
-
-        if (candidates.length === 0) return [];
-
-        candidates.sort((a, b) => a.distance - b.distance);
-        return [candidates[0].blocker];
-      };
-
-      const distancePointToSegment = (point, segStart, segEnd) => {
-        const A = point.x - segStart.x;
-        const B = point.y - segStart.y;
-        const C = segEnd.x - segStart.x;
-        const D = segEnd.y - segStart.y;
-
-        const dot = A * C + B * D;
-        const lenSq = C * C + D * D;
-
-        if (lenSq === 0) return Math.sqrt(A * A + B * B);
-
-        let param = dot / lenSq;
-        param = Math.max(0, Math.min(1, param));
-
-        const xx = segStart.x + param * C;
-        const yy = segStart.y + param * D;
-
-        const dx = point.x - xx;
-        const dy = point.y - yy;
-        return Math.sqrt(dx * dx + dy * dy);
-      };
-
-      const line = { start: { x: 0, y: 50 }, end: { x: 200, y: 50 } };
-      const blocker1 = { id: 'far', rect: { x1: 75, y1: 25, x2: 125, y2: 75 } }; // Center at (100, 50), distance = 0
-      const blocker2 = { id: 'close', rect: { x1: 149, y1: 25, x2: 151, y2: 75 } }; // Center at (150, 50), distance = 0
-      const blocker3 = { id: 'off', rect: { x1: 75, y1: 55, x2: 125, y2: 105 } }; // Center at (100, 80), distance > 1
-
-      const selected = selectClosestBlocker(line, [blocker1, blocker2, blocker3]);
-      expect(selected).toHaveLength(1);
-      expect(['far', 'close'].includes(selected[0].id)).toBe(true); // Either could be closest
     });
   });
 
@@ -635,7 +509,6 @@ describe('Auto-Cover Intersection Mode Behaviors', () => {
       };
 
       expect(getModeCharacteristics('any').precision).toBe('low');
-      expect(getModeCharacteristics('center').precision).toBe('high');
       expect(getModeCharacteristics('coverage').realism).toBe('high');
       expect(getModeCharacteristics('tactical').realism).toBe('very-high');
       expect(getModeCharacteristics('tactical').performance).toBe('low');

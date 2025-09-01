@@ -4,8 +4,6 @@
  */
 
 import {
-  distancePointToSegment,
-  pointBetweenOnSegment,
   segmentsIntersect
 } from './geometry-utils.js';
 
@@ -14,7 +12,7 @@ import {
  * @param {Object} p1 - Start point with x, y properties
  * @param {Object} p2 - End point with x, y properties
  * @param {Object} rect - Rectangle with x1, y1, x2, y2 properties
- * @param {string} mode - Intersection mode ('any', 'center', 'length10')
+ * @param {string} mode - Intersection mode ('any', 'length10')
  * @returns {boolean} True if line intersects rectangle according to mode
  */
 export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
@@ -33,14 +31,6 @@ export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
   if (segmentsIntersect(p1, p2, edges.bottom[0], edges.bottom[1])) hits.add('bottom');
   if (segmentsIntersect(p1, p2, edges.left[0], edges.left[1])) hits.add('left');
   if (segmentsIntersect(p1, p2, edges.right[0], edges.right[1])) hits.add('right');
-
-  if (mode === 'center') {
-    const cx = (rect.x1 + rect.x2) / 2;
-    const cy = (rect.y1 + rect.y2) / 2;
-    const dist = distancePointToSegment({ x: cx, y: cy }, p1, p2);
-    // Treat as pass-through if the center lies near the line segment (within 1px)
-    return dist <= 1 && pointBetweenOnSegment({ x: cx, y: cy }, p1, p2);
-  }
 
   if (mode === 'any' || mode === 'length10') {
     const len = segmentRectIntersectionLength(p1, p2, rect);

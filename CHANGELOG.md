@@ -6,8 +6,9 @@
 
 #### Cover Detection
 - **Door State Awareness**: Fixed cover calculation to properly respect door states
-  - **Open doors\secret doors** no longer provide cover (consistent with Foundry's vision system)
-  - **Closed/locked doors\secret doors** continue to provide cover as normal walls
+  - **Open doors/secret doors** no longer provide cover (consistent with Foundry's vision system)
+  - **Closed/locked doors/secret doors** continue to provide cover as normal walls
+- **Cover Override Precedence**: Cover overrides now take precedence over door states
 - **Action Dialogs**: Use portraits instead of token images
 
 ### 🔧 Technical

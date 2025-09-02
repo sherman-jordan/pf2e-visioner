@@ -137,7 +137,7 @@ export class CoverDetector {
 
     /**
      * Check if a wall blocks sight from a given direction based on its sight settings
-     * Respects door states: open doors do not provide cover
+     * Respects directional walls and door states, then applies cover overrides only when wall would naturally block
      * @param {Object} wallDoc - Wall document
      * @param {Object} attackerPos - Attacker position {x, y}
      * @returns {boolean} True if wall blocks sight from attacker position
@@ -152,49 +152,65 @@ export class CoverDetector {
             const isDoor = Number(wallDoc.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
             const doorState = Number(wallDoc.ds ?? wallDoc.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
             
-            // Open doors don't provide cover (they don't block sight or movement)
-            if (isDoor && doorState === 1) return false; // open door → no blocking
+            // Determine if this wall would naturally block from this direction
+            let wouldNaturallyBlock = true;
             
-            // Check if wall has a direction (directional wall)
-            // Foundry stores directional restrictions in the 'dir' property
-            if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
-                // Foundry wall direction constants:
-                // BOTH: 0 - wall blocks from both directions
-                // LEFT: 1 - wall blocks only when a ray strikes its left side
-                // RIGHT: 2 - wall blocks only when a ray strikes its right side
-                
-                // If wall blocks from both directions, always return true
-                if (wallDoc.dir === 0) return true; // BOTH
-                
-                // Get wall coordinates
-                const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
-                
-                // Calculate wall direction vector
-                const wallDx = x2 - x1;
-                const wallDy = y2 - y1;
-                
-                // Calculate vector from wall start to attacker
-                const attackerDx = attackerPos.x - x1;
-                const attackerDy = attackerPos.y - y1;
-                
-                // Use cross product to determine which side of the wall the attacker is on
-                // Positive cross product means attacker is on the "left" side of the wall (as drawn)
-                // Negative cross product means attacker is on the "right" side of the wall
-                const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
-                
-                // Apply the actual wall direction logic
-                if (wallDoc.dir === 1) { // LEFT - wall blocks only when ray strikes left side
-                    return crossProduct < 0; // Attacker on left side = wall blocks
-                } else if (wallDoc.dir === 2) { // RIGHT - wall blocks only when ray strikes right side  
-                    return crossProduct > 0; // Attacker on right side = wall blocks
-                }
-                
-                // Fallback for unexpected dir values
-                return true;
+            // Check door state first
+            if (isDoor && doorState === 1) {
+                wouldNaturallyBlock = false; // Open doors don't naturally block
             }
             
-            // For non-directional walls (dir is null/undefined), they block from both sides
-            return true;
+            // Check directional wall logic
+            if (wouldNaturallyBlock && wallDoc.dir != null && typeof wallDoc.dir === 'number') {
+                // Foundry wall direction constants:
+                // BOTH: 0 - wall blocks from both directions
+                // LEFT: 1 - wall blocks only when ray strikes its left side
+                // RIGHT: 2 - wall blocks only when a ray strikes its right side
+                
+                if (wallDoc.dir === 0) {
+                    wouldNaturallyBlock = true; // BOTH - blocks from both directions
+                } else {
+                    // Get wall coordinates
+                    const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
+                    
+                    // Calculate wall direction vector
+                    const wallDx = x2 - x1;
+                    const wallDy = y2 - y1;
+                    
+                    // Calculate vector from wall start to attacker
+                    const attackerDx = attackerPos.x - x1;
+                    const attackerDy = attackerPos.y - y1;
+                    
+                    // Use cross product to determine which side of the wall the attacker is on
+                    // Positive cross product means attacker is on the "left" side of the wall (as drawn)
+                    // Negative cross product means attacker is on the "right" side of the wall
+                    const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
+                    
+                    // Apply the actual wall direction logic
+                    if (wallDoc.dir === 1) { // LEFT - wall blocks only when ray strikes left side
+                        wouldNaturallyBlock = crossProduct < 0; // Attacker on left side = wall blocks
+                    } else if (wallDoc.dir === 2) { // RIGHT - wall blocks only when ray strikes right side  
+                        wouldNaturallyBlock = crossProduct > 0; // Attacker on right side = wall blocks
+                    }
+                }
+            }
+            
+            // Now check for manual cover override - but only apply it if the wall would naturally block from this direction
+            const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
+            if (coverOverride && coverOverride !== 'auto') {
+                // Only apply override if the wall would naturally block from this direction
+                if (wouldNaturallyBlock) {
+                    // If override is 'none', don't block despite natural blocking
+                    if (coverOverride === 'none') return false;
+                    // For any other override (lesser, standard, greater), the wall blocks
+                    return true;
+                }
+                // If wall wouldn't naturally block, ignore the override
+                return false;
+            }
+            
+            // Return the natural blocking behavior
+            return wouldNaturallyBlock;
             
         } catch (error) {
             console.warn('PF2E Visioner | Error checking wall direction:', error);
@@ -212,15 +228,15 @@ export class CoverDetector {
     _evaluateWallsCover(p1, p2) {
         if (!canvas?.walls) return 'none';
 
-        // First check for manual wall cover overrides (these act as ceilings/limits)
+        // First check for manual wall cover overrides
         const wallOverride = this._checkWallCoverOverrides(p1, p2);
         
-        // If override is 'none', return 'none' immediately (no cover regardless of thresholds)
-        if (wallOverride === 'none') {
-            return 'none';
+        // If there's a specific override (not 'auto'), return it immediately - skip coverage calculation
+        if (wallOverride !== null) {
+            return wallOverride;
         }
 
-        // Compute percent of target token blocked by walls along multiple sight rays and map to cover thresholds
+        // No override found, proceed with automatic coverage calculation
         try {
             const stdT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverStandardThreshold') ?? 50));
             const grtT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverGreaterThreshold') ?? 70));
@@ -238,24 +254,13 @@ export class CoverDetector {
             const allowGreater = !!game.settings.get('pf2e-visioner', 'wallCoverAllowGreater');
             
             // Determine cover based on thresholds
-            let calculatedCover = 'none';
             if (pct >= grtT) {
-                calculatedCover = allowGreater ? 'greater' : 'standard';
+                return allowGreater ? 'greater' : 'standard';
             } else if (pct >= stdT) {
-                calculatedCover = 'standard';
+                return 'standard';
+            } else {
+                return 'none';
             }
-
-            // If there's a wall override, use it as a ceiling
-            if (wallOverride !== null) {
-                const coverOrder = ['none', 'lesser', 'standard', 'greater'];
-                const calculatedIndex = coverOrder.indexOf(calculatedCover);
-                const overrideIndex = coverOrder.indexOf(wallOverride);
-                
-                // Return the lower of the two (override acts as ceiling)
-                return calculatedIndex <= overrideIndex ? calculatedCover : wallOverride;
-            }
-
-            return calculatedCover;
         } catch (error) {
             console.warn('PF2E Visioner | Error in wall coverage evaluation:', error);
             return 'none';
@@ -1162,17 +1167,6 @@ export class CoverDetector {
             console.error('PF2E Visioner | Error in evaluateCoverByCoverage:', error);
             return 'none';
         }
-    }
-
-    /**
-     * Basic 2D line segment intersection test.
-     */
-    _lineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
-        const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        if (d === 0) return false;
-        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
-        const u = -(((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d);
-        return t >= 0 && t <= 1 && u >= 0 && u <= 1;
     }
 
     /**

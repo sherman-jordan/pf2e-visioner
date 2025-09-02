@@ -14,7 +14,7 @@ function setupCommonMocks({
     },
     eligibleBlockers = null,
     elevationBlockers = null,
-    tokenCoverOverride = 'lesser'
+    tokenCoverOverride = null
 } = {}) {
     const coverDetector = new CoverDetector();
     const mockAttacker = {
@@ -43,11 +43,13 @@ function setupCommonMocks({
     const elevationFilteredBlockers = elevationBlockers || mockBlockers;
     jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue(wallCover);
     jest.spyOn(coverDetector, '_evaluateCreatureSizeCover').mockReturnValue(tokenCover);
+    jest.spyOn(coverDetector, '_evaluateCoverByTactical').mockReturnValue(tokenCover);
+    jest.spyOn(coverDetector, '_evaluateCoverByCoverage').mockReturnValue(tokenCover);
     jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue(intersectionMode);
     jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue(autoCoverFilterSettings);
     jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(blockers);
     jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(elevationFilteredBlockers);
-    jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue(tokenCoverOverride);
+    jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue(tokenCoverOverride || tokenCover);
     return { coverDetector, mockAttacker, mockTarget, mockBlockers };
 }
 
@@ -57,16 +59,7 @@ describe('Cover Priority Logic', () => {
         it('should prioritize wall cover when walls provide any cover', () => {
             const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
                 wallCover: 'standard',
-                tokenCover: 'lesser',
-                intersectionMode: 'any',
-                autoCoverFilterSettings: {
-                    ignoreUndetected: false,
-                    ignoreDead: false,
-                    ignoreAllies: false,
-                    allowProneBlockers: true,
-                    attackerAlliance: 'party'
-                },
-                tokenCoverOverride: 'lesser'
+                tokenCover: 'lesser'
             });
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
             expect(result).toBe('standard');
@@ -75,156 +68,76 @@ describe('Cover Priority Logic', () => {
         it('should prioritize wall cover when walls provide greater cover', () => {
             const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
                 wallCover: 'greater',
-                tokenCover: 'standard',
-                intersectionMode: 'any',
-                autoCoverFilterSettings: {
-                    ignoreUndetected: false,
-                    ignoreDead: false,
-                    ignoreAllies: false,
-                    allowProneBlockers: true,
-                    attackerAlliance: 'party'
-                },
-                tokenCoverOverride: 'standard'
+                tokenCover: 'standard'
             });
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
             expect(result).toBe('greater');
         });
 
         it('should prioritize wall cover when walls provide lesser cover', () => {
-            // Mock wall cover evaluation to return 'lesser'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('lesser');
-            
-            // Mock token cover evaluation to return 'standard'
-            jest.spyOn(coverDetector, '_evaluateCreatureSizeCover').mockReturnValue('standard');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('any');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'lesser',
+                tokenCover: 'standard'
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('standard');
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('lesser');
         });
 
         it('should prioritize token cover when walls provide no cover', () => {
-            // Mock wall cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('none');
-            
-            // Mock token cover evaluation to return 'standard'
-            jest.spyOn(coverDetector, '_evaluateCreatureSizeCover').mockReturnValue('standard');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('any');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'none',
+                tokenCover: 'standard'
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('standard');
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('standard');
         });
 
         it('should prioritize token cover when walls provide no cover and tokens provide greater cover', () => {
-            // Mock wall cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('none');
-            
-            // Mock token cover evaluation to return 'greater'
-            jest.spyOn(coverDetector, '_evaluateCreatureSizeCover').mockReturnValue('greater');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('any');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'none',
+                tokenCover: 'greater'
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('greater');
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('greater');
         });
 
         it('should return none when both walls and tokens provide no cover', () => {
-            // Mock wall cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('none');
-            
-            // Mock token cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateCreatureSizeCover').mockReturnValue('none');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('any');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'none',
+                tokenCover: 'none',
+                eligibleBlockers: [],
+                elevationBlockers: []
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue([]);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue([]);
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('none');
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('none');
         });
     });
 
     describe('Edge Cases', () => {
         it('should handle same token as attacker and target', () => {
+            const { coverDetector, mockAttacker } = setupCommonMocks();
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockAttacker);
             expect(result).toBe('none');
         });
 
         it('should handle null attacker', () => {
+            const { coverDetector, mockTarget } = setupCommonMocks();
             const result = coverDetector.detectBetweenTokens(null, mockTarget);
             expect(result).toBe('none');
         });
 
         it('should handle null target', () => {
+            const { coverDetector, mockAttacker } = setupCommonMocks();
             const result = coverDetector.detectBetweenTokens(mockAttacker, null);
             expect(result).toBe('none');
         });
 
         it('should handle error in cover evaluation gracefully', () => {
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks();
             // Mock wall cover evaluation to throw an error
             jest.spyOn(coverDetector, '_evaluateWallsCover').mockImplementation(() => {
                 throw new Error('Wall evaluation error');
             });
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('any');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
-            });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
             expect(result).toBe('none');
         });
@@ -232,81 +145,34 @@ describe('Cover Priority Logic', () => {
 
     describe('Different Intersection Modes', () => {
         it('should work with tactical mode', () => {
-            // Mock wall cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('none');
-            
-            // Mock tactical cover evaluation to return 'standard'
-            jest.spyOn(coverDetector, '_evaluateCoverByTactical').mockReturnValue('standard');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('tactical');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'none',
+                tokenCover: 'standard',
+                intersectionMode: 'tactical'
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('standard');
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('standard');
         });
 
         it('should work with coverage mode', () => {
-            // Mock wall cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('none');
-            
-            // Mock coverage cover evaluation to return 'greater'
-            jest.spyOn(coverDetector, '_evaluateCoverByCoverage').mockReturnValue('greater');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('coverage');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'none',
+                tokenCover: 'greater',
+                intersectionMode: 'coverage'
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('greater');
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('greater');
         });
     });
 
     describe('Token Cover Overrides', () => {
         it('should apply token cover overrides correctly', () => {
-            // Mock wall cover evaluation to return 'none'
-            jest.spyOn(coverDetector, '_evaluateWallsCover').mockReturnValue('none');
-            
-            // Mock token cover evaluation to return 'lesser'
-            jest.spyOn(coverDetector, '_evaluateCreatureSizeCover').mockReturnValue('lesser');
-            
-            // Mock token cover overrides to return 'standard'
-            jest.spyOn(coverDetector, '_applyTokenCoverOverrides').mockReturnValue('standard');
-            
-            // Mock other required methods
-            jest.spyOn(coverDetector, '_getIntersectionMode').mockReturnValue('any');
-            jest.spyOn(coverDetector, '_getAutoCoverFilterSettings').mockReturnValue({
-                ignoreUndetected: false,
-                ignoreDead: false,
-                ignoreAllies: false,
-                allowProneBlockers: true,
-                attackerAlliance: 'party'
+            const { coverDetector, mockAttacker, mockTarget } = setupCommonMocks({
+                wallCover: 'none',
+                tokenCover: 'lesser',
+                tokenCoverOverride: 'standard'
             });
-            jest.spyOn(coverDetector, '_getEligibleBlockingTokens').mockReturnValue(mockBlockers);
-            jest.spyOn(coverDetector, '_filterBlockersByElevation').mockReturnValue(mockBlockers);
-
             const result = coverDetector.detectBetweenTokens(mockAttacker, mockTarget);
-            
             expect(result).toBe('standard');
         });
     });

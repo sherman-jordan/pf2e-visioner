@@ -7,7 +7,7 @@ import { MODULE_ID } from '../../constants.js';
 // Removed unused imports that were only used by the removed center intersection mode
 import { intersectsBetweenTokens, segmentRectIntersectionLength } from '../../helpers/line-intersection.js';
 import { getSizeRank, getTokenCorners, getTokenRect, getTokenVerticalSpanFt } from '../../helpers/size-elevation-utils.js';
-import { segmentIntersectsAnyBlockingWall } from '../../helpers/wall-detection.js';
+
 import { getVisibilityBetween } from '../../utils.js';
 
 export class CoverDetector {
@@ -173,9 +173,9 @@ export class CoverDetector {
                 
                 // Apply the actual wall direction logic
                 if (wallDoc.dir === 1) { // LEFT - wall blocks only when ray strikes left side
-                    return crossProduct > 0; // Attacker on left side = wall blocks
+                    return crossProduct < 0; // Attacker on left side = wall blocks
                 } else if (wallDoc.dir === 2) { // RIGHT - wall blocks only when ray strikes right side  
-                    return crossProduct < 0; // Attacker on right side = wall blocks
+                    return crossProduct > 0; // Attacker on right side = wall blocks
                 }
                 
                 // Fallback for unexpected dir values
@@ -1068,7 +1068,7 @@ export class CoverDetector {
                 let lineBlocked = false;
 
                 // Check if this line is blocked by walls
-                if (segmentIntersectsAnyBlockingWall(targetCorner, attackerCorner)) {
+                if (this._isRayBlockedByWalls(targetCorner, attackerCorner)) {
                     lineBlocked = true;
                 }
 

@@ -512,18 +512,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       hiddenInput.value = newType.toString();
       
       // Update image
-      import('../../utils.js').then(({ getWallImage }) => {
-        const newSrc = getWallImage(newType);
-        img.src = newSrc;
-        
-        // Update alt text
-        let altText = 'Wall';
-        if (newType === 1) altText = 'Door';
-        else if (newType === 2) altText = 'Secret Door';
-        img.setAttribute('alt', altText);
-      }).catch(e => {
-        console.warn(`[${MODULE_ID}] Failed to update wall image`, e);
-      });
+      const newSrc = getWallImage(newType);
+      img.src = newSrc;
+      
+      // Update alt text
+      let altText = 'Wall';
+      if (newType === 1) altText = 'Door';
+      else if (newType === 2) altText = 'Secret Door';
+      img.setAttribute('alt', altText);
       
     } catch (e) {
       console.warn(`[${MODULE_ID}] Wall type cycling failed`, e);

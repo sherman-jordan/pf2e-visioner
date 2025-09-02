@@ -7,6 +7,7 @@
 
 #### Dialogs
 - **Click on token image to go to current row token**: will select and pan to the token
+- Name column word wrap
 
 
 ## [3.0.3] - 2025-09-02

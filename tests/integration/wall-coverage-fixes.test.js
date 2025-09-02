@@ -513,8 +513,8 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Mock the coverage percentage to return a value that would normally trigger greater cover
       coverDetector._estimateWallCoveragePercent = jest.fn(() => 80); // Above greater threshold (70%)
 
-      // Attack from right side (should be blocked by RIGHT wall and use override as ceiling)
-      const result = coverDetector._evaluateWallsCover({ x: 600, y: 350 }, { x: 350, y: 350 });
+      // Attack from left side (should be blocked by RIGHT wall and use override as ceiling)
+      const result = coverDetector._evaluateWallsCover({ x: 300, y: 350 }, { x: 500, y: 350 });
       expect(result).toBe('standard'); // Should use override as ceiling, limiting greater cover to standard
     });
   });

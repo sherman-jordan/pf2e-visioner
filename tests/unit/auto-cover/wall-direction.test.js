@@ -596,7 +596,7 @@ describe('Wall Direction Checking', () => {
 
       coverDetector._lineIntersectionPoint = jest.fn(() => ({ x: 50, y: 0 }));
       
-      // Mock settings to control the fallback calculation
+      // Mock settings (not used when override is present, but needed for fallback tests)
       global.game.settings.get = jest.fn((module, setting) => {
         if (setting === 'wallCoverStandardThreshold') return 30;
         if (setting === 'wallCoverGreaterThreshold') return 55;
@@ -605,20 +605,21 @@ describe('Wall Direction Checking', () => {
       });
 
       // Test 1: Attack from blocking side (negative cross product for LEFT)
-      // The wall override check will return 'greater', and the fallback will return 'standard'
-      // Since override acts as a ceiling, _evaluateWallsCover returns the LOWER of the two
+      // Wall would naturally block from this direction, so override applies
+      // With override present, coverage calculation is skipped and override is returned directly
       const p1_blocking = { x: 50, y: -50 };
       const p2_blocking = { x: 50, y: 50 };
 
       const result_blocking = coverDetector._evaluateWallsCover(p1_blocking, p2_blocking);
-      expect(result_blocking).toBe('greater'); // Returns calculated cover
+      expect(result_blocking).toBe('greater'); // Returns override directly (no coverage calculation)
 
       // Test 2: Attack from non-blocking side (positive cross product for LEFT)
+      // Wall would not naturally block from this direction, so override is ignored
       const p1_nonblocking = { x: 50, y: 50 };
       const p2_nonblocking = { x: 50, y: -50 };
 
       const result_nonblocking = coverDetector._evaluateWallsCover(p1_nonblocking, p2_nonblocking);
-      expect(result_nonblocking).toBe('none'); // Should ignore override and return 'none'
+      expect(result_nonblocking).toBe('none'); // Override ignored, no natural blocking = no cover
     });
 
     test('should handle wall override ceiling behavior correctly', () => {

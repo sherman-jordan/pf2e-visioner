@@ -4,6 +4,9 @@
  * All styles scoped to .pf2e-visioner to avoid conflicts
  */
 
+/* Import shared UI component styles */
+@import url('shared-ui-components.css');
+
 .pf2e-visioner {
   /* Responsive Window Sizing */
   .token-visibility-manager {
@@ -420,6 +423,8 @@
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   .observer-main .hint {
@@ -906,8 +911,17 @@
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: help;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  /* Token image clickable styling */
+  .token-image img {
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    border-radius: 4px;
   }
 
   .visibility-table .visibility-state {

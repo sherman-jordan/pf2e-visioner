@@ -3,6 +3,7 @@
  */
 
 import { MODULE_ID } from '../../../constants.js';
+import { addTokenImageClickHandlers, panToAndSelectToken, panToWall } from '../../../ui/shared-ui-utils.js';
 import { getSceneTargets, showNotification } from '../../../utils.js';
 
 export async function toggleMode(event, button) {
@@ -411,4 +412,14 @@ export function bindDomIconHandlers(TokenManagerClass) {
       });
     });
   };
+
+  TokenManagerClass.prototype.addTokenImageClickHandlers = function addTokenImageClickHandlersMethod() {
+    const element = this.element;
+    if (!element) return;
+    addTokenImageClickHandlers(element, this);
+  };
+
+  // Pan methods moved to shared utility (scripts/ui/shared-ui-utils.js)
+  TokenManagerClass.prototype.panToWall = panToWall;
+  TokenManagerClass.prototype.panToAndSelectToken = panToAndSelectToken;
 }

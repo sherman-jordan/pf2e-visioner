@@ -1,4 +1,5 @@
 import { MODULE_TITLE } from '../../constants.js';
+import { addTokenImageClickHandlers, panToAndSelectToken, panToWall } from '../../ui/shared-ui-utils.js';
 import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
 import '../services/hbs-helpers.js';
 import { notify } from '../services/infra/notifications.js';
@@ -331,4 +332,12 @@ export class BaseActionDialog extends BasePreviewDialog {
       });
     });
   }
+
+  addTokenImageClickHandlers() {
+    addTokenImageClickHandlers(this.element, this);
+  }
+
+  // Pan methods moved to shared utility (scripts/ui/shared-ui-utils.js)
+  panToWall = panToWall;
+  panToAndSelectToken = panToAndSelectToken;
 }

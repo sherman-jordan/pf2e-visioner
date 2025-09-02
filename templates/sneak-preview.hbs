@@ -7,7 +7,7 @@
   {{!-- Sneaking Token Information Panel --}}
   <div class="sneaker-info">
     <div class="sneaker-image">
-      <img src="{{sneaker.image}}" data-tooltip="{{sneaker.name}}" />
+      <img src="{{sneaker.image}}" />
     </div>
     <div class="sneaker-details">
       <h3 class="sneaker-name">{{sneaker.name}}</h3>
@@ -50,7 +50,7 @@
               <img src="{{outcome.tokenImage}}" width="28" height="28" />
             </td>
             <td class="token-name">
-              <strong data-tooltip="{{outcome.token.name}}">{{outcome.token.name}}</strong>
+              <strong>{{outcome.token.name}}</strong>
             </td>
             <td class="auto-cover">
               {{#if outcome.autoCover}}

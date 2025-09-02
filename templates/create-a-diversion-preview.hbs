@@ -7,7 +7,7 @@
   {{!-- Diverting Token Information Panel --}}
   <div class="diverter-info">
     <div class="diverter-image">
-      <img src="{{divertingToken.image}}" data-tooltip="{{divertingToken.name}}" />
+      <img src="{{divertingToken.image}}" />
     </div>
     <div class="diverter-details">
       <h3 class="diverter-name">{{divertingToken.name}}</h3>
@@ -46,10 +46,10 @@
         {{#each outcomes as |outcome|}}
           <tr class="token-row" data-token-id="{{outcome.observer.id}}">
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.observer.name}}" width="28" height="28" />
+              <img src="{{outcome.tokenImage}}" width="28" height="28" />
             </td>
             <td class="token-name">
-              <strong data-tooltip="{{outcome.observer.name}}">{{outcome.observer.name}}</strong>
+              <strong>{{outcome.observer.name}}</strong>
             </td>
             <td class="roll-result">
               <div class="roll-vs-dc">

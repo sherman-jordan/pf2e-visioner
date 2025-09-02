@@ -929,17 +929,14 @@ function onRenderWallConfig(app, html) {
     const form = root.querySelector('form') || root;
     // Avoid duplicate injection
     if (form.querySelector('.pf2e-visioner-wall-settings')) return;
-    
-    // Get current wall document
-    const wallDoc = app?.document;
-    
+        
     // Build a simple fieldset with just the advanced settings button
     const fs = document.createElement('fieldset');
     fs.className = 'pf2e-visioner-wall-settings';
     fs.innerHTML = `
       <legend>PF2E Visioner</legend>
       <div class="form-group">
-        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick">Open Advanced Wall Settings</button>
+        <button type="button" class="visioner-btn" data-action="open-visioner-wall-quick" style="border:1px solid var(--pf2e-visioner-primary)">Open Advanced Wall Settings</button>
         <p class="notes">Configure cover settings, hidden walls, and other advanced options.</p>
       </div>
     `;

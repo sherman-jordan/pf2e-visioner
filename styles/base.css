@@ -155,8 +155,8 @@
   --color-bg-header: var(--color-bg-option);
   --color-text-header: var(--color-text-primary);
   --color-border-dark: var(--color-border-light-primary);
-  --color-bg-btn-primary: var(--color-bg-btn-primary-color, #ff6400);
-  --color-bg-btn-primary-active: var(--color-bg-btn-primary-active-color, #e55a00);
+  --color-bg-btn-primary: var(--color-bg-btn-primary-color, #28a745);
+  --color-bg-btn-primary-active: var(--color-bg-btn-primary-active-color, #218838);
   --color-text-light-primary: var(--color-text-light-primary-color, #ffffff);
   --color-bg-btn-secondary: var(--color-bg-btn-secondary-color, #6c757d);
   --color-bg-btn-danger: var(--color-bg-btn-danger-color, #dc3545);
@@ -198,8 +198,8 @@
   --color-text-dark-primary-color: #333;
   --color-text-dark-secondary-color: #999;
   --color-text-light-primary-color: #ffffff;
-  --color-bg-btn-primary-color: #ff6400;
-  --color-bg-btn-primary-active-color: #e55a00;
+  --color-bg-btn-primary-color: #28a745;
+  --color-bg-btn-primary-active-color: #218838;
   --color-bg-btn-secondary-color: #6c757d;
   --color-bg-btn-danger-color: #dc3545;
   --color-border-danger-color: #dc3545;

@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.5] - 2025-09-02
+
+### 🐛 Fixed
+
+#### Cover Detection
+- **Door State Awareness**: Fixed cover calculation to properly respect door states
+  - **Open doors\secret doors** no longer provide cover (consistent with Foundry's vision system)
+  - **Closed/locked doors\secret doors** continue to provide cover as normal walls
+- **Action Dialogs**: Use portraits instead of token images
+
+### 🔧 Technical
 
 ## [3.0.4] - 2025-09-02
 

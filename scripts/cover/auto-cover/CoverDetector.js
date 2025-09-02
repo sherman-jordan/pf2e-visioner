@@ -137,6 +137,7 @@ export class CoverDetector {
 
     /**
      * Check if a wall blocks sight from a given direction based on its sight settings
+     * Respects door states: open doors do not provide cover
      * @param {Object} wallDoc - Wall document
      * @param {Object} attackerPos - Attacker position {x, y}
      * @returns {boolean} True if wall blocks sight from attacker position
@@ -146,6 +147,13 @@ export class CoverDetector {
         try {
             // If wall doesn't block sight at all, it doesn't provide cover
             if (wallDoc.sight === 0) return false; // NONE
+            
+            // Check if this is a door and if it's open
+            const isDoor = Number(wallDoc.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
+            const doorState = Number(wallDoc.ds ?? wallDoc.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
+            
+            // Open doors don't provide cover (they don't block sight or movement)
+            if (isDoor && doorState === 1) return false; // open door → no blocking
             
             // Check if wall has a direction (directional wall)
             // Foundry stores directional restrictions in the 'dir' property

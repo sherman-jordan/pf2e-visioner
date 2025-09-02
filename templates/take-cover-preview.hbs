@@ -32,7 +32,7 @@
         {{#each outcomes as |o|}}
         <tr class="token-row" data-token-id="{{o.target.id}}">
           <td class="token-image"><img src="{{o.tokenImage}}" alt="{{o.target.name}}" width="28" height="28" /></td>
-          <td class="token-name"><strong data-tooltip="{{o.target.name}}">{{o.target.name}}</strong></td>
+                      <td class="token-name"><strong>{{o.target.name}}</strong></td>
           <td class="visibility-change" style="text-align:center;">
             <div class="visibility-change-inline">
               <span class="state-icon {{o.oldCoverCfg.cssClass}}" data-tooltip="{{o.oldCoverCfg.label}}"><i class="{{o.oldCoverCfg.icon}}"></i></span>

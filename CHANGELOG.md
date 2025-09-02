@@ -1,6 +1,16 @@
 # Changelog
 
-## [3.0.3] - 2025-01-21
+
+## [3.0.4] - 2025-09-02
+
+### ✨ Enhanced
+
+#### Dialogs
+- **Click on token image to go to current row token**: will select and pan to the token
+- Name column word wrap
+
+
+## [3.0.3] - 2025-09-02
 
 ### ✨ Enhanced
 
@@ -28,14 +38,14 @@
 - **Performance**: Debounced search input for better performance with large datasets
 - **Cover Priority Logic**: Simplified cover detection to prioritize walls when any wall provides cover, otherwise prioritize token blockers
 
-## [3.0.2] - 2025-01-21
+## [3.0.2] - 2025-09-02
 
 ### 🔧 Fixed
 
 #### Cover System Architecture Improvements
 - **Wall Side Detection**: The algorithm was backwards, this is fixed
 
-## [3.0.1] - 2025-01-22
+## [3.0.1] - 2025-09-01
 
 ### 🐛 Fixed
 
@@ -53,7 +63,7 @@
 
 
 
-## [3.0.0] - 2025-01-21
+## [3.0.0] - 2025-09-01
 
 ### 🎉 Major Release - Advanced Visibility and Cover Toolkit
 

@@ -7,7 +7,7 @@
   {{!-- Seeker Information Panel --}}
   <div class="seeker-info">
     <div class="seeker-image">
-      <img src="{{seeker.image}}" data-tooltip="{{seeker.name}}" />
+      <img src="{{seeker.image}}" />
     </div>
     <div class="seeker-details">
       <h3 class="seeker-name">{{seeker.name}}</h3>
@@ -51,16 +51,16 @@
           <tr class="token-row" {{#unless outcome._isWall}}data-token-id="{{outcome.target.id}}"{{/unless}} {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{/if}}>
             <td class="token-image">
               {{#if outcome._isWall}}
-                <img src="{{outcome.wallImg}}" data-tooltip="{{outcome.wallIdentifier}}" width="28" height="28" />
+                <img src="{{outcome.wallImg}}" width="28" height="28" />
               {{else}}
-                <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+                <img src="{{outcome.tokenImage}}" width="28" height="28" />
               {{/if}}
             </td>
             <td class="token-name">
               {{#if outcome._isWall}}
-                <strong data-tooltip="{{outcome.wallIdentifier}}">{{outcome.wallIdentifier}}</strong>
+                <strong>{{outcome.wallIdentifier}}</strong>
               {{else}}
-                <strong data-tooltip="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+                <strong>{{outcome.target.name}}</strong>
               {{/if}}
             </td>
             <td class="roll-result">

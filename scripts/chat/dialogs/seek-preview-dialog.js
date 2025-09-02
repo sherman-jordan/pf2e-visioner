@@ -104,13 +104,15 @@ export class SeekPreviewDialog extends BaseActionDialog {
     );
     // Apply ally filtering for display purposes
     try {
-      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
-      filteredOutcomes = filterOutcomesByAllies(
-        filteredOutcomes,
-        this.actorToken,
-        this.ignoreAllies,
-        'target',
-      );
+      if (this.actorToken) {
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filteredOutcomes = filterOutcomesByAllies(
+          filteredOutcomes,
+          this.actorToken,
+          this.ignoreAllies,
+          'target',
+        );
+      }
     } catch (_) {}
     // Optional walls exclusion for UI convenience
     if (this.ignoreWalls === true) {
@@ -126,7 +128,9 @@ export class SeekPreviewDialog extends BaseActionDialog {
         'target',
       );
     }
-    filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, 'target');
+    if (this.actorToken) {
+      filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, 'target');
+    }
 
     // Prepare visibility states using centralized config
     const cfg = (s) => this.visibilityConfig(s);
@@ -138,60 +142,63 @@ export class SeekPreviewDialog extends BaseActionDialog {
         let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
         if (!outcome._isWall) {
           try {
-            const live = getVisibilityBetween(this.actorToken, outcome.target);
-            currentVisibility = live || currentVisibility;
-            // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
-            if ((!live || live === 'observed') && game.user?.isGM) {
-              const actor = outcome.target?.actor;
-              const hasHidden =
-                !!actor?.conditions?.get?.('hidden') ||
-                !!actor?.itemTypes?.condition?.some?.((c) => c?.slug === 'hidden');
-              const hasUndetected = !!actor?.itemTypes?.condition?.some?.(
-                (c) => c?.slug === 'undetected',
-              );
-              if (hasUndetected || hasHidden) {
-                const { setVisibilityBetween } = await import('../../utils.js');
-                const inferred = hasUndetected ? 'undetected' : 'hidden';
+            if (this.actorToken) {
+              const live = getVisibilityBetween(this.actorToken, outcome.target);
+              currentVisibility = live || currentVisibility;
+            
+              // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
+              if ((!live || live === 'observed') && game.user?.isGM) {
+                const actor = outcome.target?.actor;
+                const hasHidden =
+                  !!actor?.conditions?.get?.('hidden') ||
+                  !!actor?.itemTypes?.condition?.some?.((c) => c?.slug === 'hidden');
+                const hasUndetected = !!actor?.itemTypes?.condition?.some?.(
+                  (c) => c?.slug === 'undetected',
+                );
+                if (hasUndetected || hasHidden) {
+                  const { setVisibilityBetween } = await import('../../utils.js');
+                  const inferred = hasUndetected ? 'undetected' : 'hidden';
 
-                // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
-                const allPCTokens =
-                  canvas.tokens?.placeables?.filter(
-                    (t) => t.actor?.type === 'character' && t.actor?.hasPlayerOwner,
-                  ) || [];
+                  // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
+                  const allPCTokens =
+                    canvas.tokens?.placeables?.filter(
+                      (t) => t.actor?.type === 'character' && t.actor?.hasPlayerOwner,
+                    ) || [];
 
-                for (const pcToken of allPCTokens) {
-                  // Skip if this PC already has a Visioner visibility mapping to the target
-                  const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
-                  if (!existingVisibility || existingVisibility === 'observed') {
-                    try {
-                      await setVisibilityBetween(pcToken, outcome.target, inferred, {
-                        direction: 'observer_to_target',
-                      });
-                    } catch (_) {}
+                  for (const pcToken of allPCTokens) {
+                    // Skip if this PC already has a Visioner visibility mapping to the target
+                    const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
+                    if (!existingVisibility || existingVisibility === 'observed') {
+                      try {
+                        await setVisibilityBetween(pcToken, outcome.target, inferred, {
+                          direction: 'observer_to_target',
+                        });
+                      } catch (_) {}
+                    }
                   }
+
+                  // Also set the current seeker's visibility
+                  try {
+                    await setVisibilityBetween(this.actorToken, outcome.target, inferred, {
+                      direction: 'observer_to_target',
+                    });
+                  } catch (_) {}
+
+                  // Remove PF2e system condition to avoid double-state after Visioner owns it
+                  try {
+                    const slug = hasUndetected ? 'undetected' : 'hidden';
+                    // Prefer the PF2e pf2e.condition automation API if present
+                    const toRemove = actor?.itemTypes?.condition?.find?.((c) => c?.slug === slug);
+                    if (toRemove?.delete) await toRemove.delete();
+                    else if (actor?.toggleCondition)
+                      await actor.toggleCondition(slug, { active: false });
+                    else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
+                  } catch (_) {}
+                  currentVisibility = inferred;
+                  // Ensure in-memory outcomes reflect the actual new mapping right away
+                  outcome.oldVisibility = currentVisibility;
+                  outcome.newVisibility = currentVisibility;
                 }
-
-                // Also set the current seeker's visibility
-                try {
-                  await setVisibilityBetween(this.actorToken, outcome.target, inferred, {
-                    direction: 'observer_to_target',
-                  });
-                } catch (_) {}
-
-                // Remove PF2e system condition to avoid double-state after Visioner owns it
-                try {
-                  const slug = hasUndetected ? 'undetected' : 'hidden';
-                  // Prefer the PF2e pf2e.condition automation API if present
-                  const toRemove = actor?.itemTypes?.condition?.find?.((c) => c?.slug === slug);
-                  if (toRemove?.delete) await toRemove.delete();
-                  else if (actor?.toggleCondition)
-                    await actor.toggleCondition(slug, { active: false });
-                  else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
-                } catch (_) {}
-                currentVisibility = inferred;
-                // Ensure in-memory outcomes reflect the actual new mapping right away
-                outcome.oldVisibility = currentVisibility;
-                outcome.newVisibility = currentVisibility;
               }
             }
           } catch (_) {}
@@ -235,7 +242,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Set actor context for seeker
     context.seeker = {
-      name: this.actorToken.name,
+      name: this.actorToken?.name || 'Unknown Actor',
       image: this.resolveTokenImage(this.actorToken),
       actionType: 'seek',
       actionLabel: 'Seek action results analysis',
@@ -324,8 +331,10 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       // Ally filter via live checkbox
       try {
-        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
-        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
+        if (this.actorToken) {
+          const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+          filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
+        }
       } catch (_) {}
 
       // Optional walls exclusion for UI convenience
@@ -350,8 +359,10 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       // Seek distance limits
       try {
-        const { filterOutcomesBySeekDistance } = await import('../services/infra/shared-utils.js');
-        filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, 'target');
+        if (this.actorToken) {
+          const { filterOutcomesBySeekDistance } = await import('../services/infra/shared-utils.js');
+          filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, 'target');
+        }
       } catch (_) {}
       // Compute actionability and carry over any existing overrides from the currently displayed outcomes
       if (!Array.isArray(filtered)) return [];
@@ -370,8 +381,10 @@ export class SeekPreviewDialog extends BaseActionDialog {
           let currentVisibility = o.oldVisibility || o.currentVisibility || null;
           if (!o?._isWall) {
             try {
-              currentVisibility =
-                getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
+              if (this.actorToken) {
+                currentVisibility =
+                  getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
+              }
             } catch (_) {}
           }
           const effectiveNewState = overrideState || o.newVisibility || currentVisibility;

@@ -82,9 +82,11 @@
               {{outcome.outcomeLabel}}
             </td>
             <td class="visibility-change">
-              <div class="visibility-change-with-override">
-                {{{visibilityIcon outcome.oldVisibility}}}
-                →
+              <div class="visibility-change-inline">
+                <span class="state-icon" data-state="{{outcome.oldVisibility}}" data-tooltip="{{outcome.oldVisibilityLabel}}">
+                  {{{visibilityIcon outcome.oldVisibility}}}
+                </span>
+                <i class="fas fa-arrow-right visibility-arrow"></i>
                 <div class="override-icons" data-target="{{#unless outcome._isWall}}{{outcome.target.id}}{{/unless}}" data-wall-id="{{#if outcome._isWall}}{{outcome.wallId}}{{/if}}">
                   {{#each outcome.availableStates as |state|}}
                     <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}} {{state.cssClass}}" 

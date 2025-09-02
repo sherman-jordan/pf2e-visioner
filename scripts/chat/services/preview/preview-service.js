@@ -58,6 +58,14 @@ export async function previewActionResults(actionData) {
             subjects.map((s) => handler.analyzeOutcome(actionData, s)),
           );
           const changes = outcomes.filter((o) => o && o.changed);
+          
+          // Validate actor before creating dialog
+          if (!actionData.actor) {
+            const { notify } = await import('../infra/notifications.js');
+            notify.error('Cannot perform Seek action: No valid actor found');
+            return;
+          }
+          
           // Pass the current desired per-dialog ignoreAllies default
           new SeekPreviewDialog(actionData.actor, outcomes, changes, {
             ...actionData,

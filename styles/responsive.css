@@ -98,6 +98,8 @@
     .token-image img {
       width: 24px;
       height: 24px;
+      object-fit: cover;
+      object-position: top;
     }
 
     .token-name {
@@ -233,6 +235,8 @@
     .token-image img {
       width: 20px;
       height: 20px;
+      object-fit: cover;
+      object-position: top;
     }
 
     .token-name {
@@ -299,6 +303,8 @@
     .token-image img {
       width: 40px;
       height: 40px;
+      object-fit: cover;
+      object-position: top;
     }
 
     .token-name {
@@ -346,6 +352,8 @@
 
     .token-image img {
       border: 1px solid #000;
+      object-fit: cover;
+      object-position: top;
     }
   }
 

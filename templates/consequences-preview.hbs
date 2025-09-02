@@ -56,8 +56,10 @@
               <strong>{{outcome.target.name}}</strong>
             </td>
             <td class="visibility-change">
-              <div class="visibility-change-with-override">
-                {{{visibilityIcon outcome.currentVisibility}}}
+              <div class="visibility-change-inline">
+                <span class="state-icon" data-state="{{outcome.oldVisibility}}" data-tooltip="{{outcome.oldVisibilityLabel}}">
+                  {{{visibilityIcon outcome.oldVisibility}}}
+                </span>
                 <i class="fas fa-arrow-right visibility-arrow"></i>
                 <div class="override-icons" data-token-id="{{outcome.target.id}}">
                   {{#each outcome.availableStates as |state|}}

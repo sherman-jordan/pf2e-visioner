@@ -682,7 +682,7 @@ function getChatAutomationCSS() {
             border-radius: 4px;
             border: 1px solid var(--color-border-light-primary, #555);
             object-fit: cover;
-            object-position: center;
+            object-position: top;
             display: block;
             margin: 0 auto;
         }

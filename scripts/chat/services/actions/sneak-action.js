@@ -1,4 +1,4 @@
-import { COVER_STATES } from '../../../constants.js';
+import { COVER_STATES, VISIBILITY_STATES } from '../../../constants.js';
 import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import stealthCheckUseCase from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
 import { appliedSneakChangesByMessage } from '../data/message-cache.js';
@@ -252,6 +252,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       shouldShowOverride,
       currentVisibility: current,
       oldVisibility: current,
+      oldVisibilityLabel: VISIBILITY_STATES[current]?.label || current,
       newVisibility,
       changed: newVisibility !== current,
       autoCover: result.autoCover, // Add auto-cover information

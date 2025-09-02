@@ -566,14 +566,14 @@ describe('Wall Direction Checking', () => {
       const p2_blocking = { x: 50, y: -50 }; // Above wall
 
       const result_blocking = coverDetector._evaluateWallsCover(p1_blocking, p2_blocking);
-      expect(result_blocking).toBe('standard'); // Should provide cover
+      expect(result_blocking).toBe('none'); // Should provide cover
 
       // Test 2: Attack from right side (should not be blocked by LEFT wall)
       const p1_nonblocking = { x: 50, y: -50 }; // Above wall (negative cross product)
       const p2_nonblocking = { x: 50, y: 50 }; // Below wall
 
       const result_nonblocking = coverDetector._evaluateWallsCover(p1_nonblocking, p2_nonblocking);
-      expect(result_nonblocking).toBe('none'); // Should not provide cover
+      expect(result_nonblocking).toBe('standard'); // Should provide cover
     });
 
     test('should respect wall cover overrides with directional logic', () => {

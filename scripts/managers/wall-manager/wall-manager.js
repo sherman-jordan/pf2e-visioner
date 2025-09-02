@@ -26,6 +26,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       bulkCoverStandard: VisionerWallManager._onBulkCoverStandard,
       bulkCoverGreater: VisionerWallManager._onBulkCoverGreater,
       setCoverOverride: VisionerWallManager._onSetCoverOverride,
+      selectWall: VisionerWallManager._onSelectWall,
     },
   };
 
@@ -168,29 +169,50 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     try {
       const wallId = button?.dataset?.wallId;
       if (!wallId) return;
+      
+      // Find the wall on canvas
       const wall =
         canvas?.walls?.get?.(wallId) ||
         (canvas?.walls?.placeables || []).find(
           (w) => w?.id === wallId || w?.document?.id === wallId,
         );
-      if (!wall) return;
+      
+      if (!wall) {
+        ui.notifications?.warn?.(`Wall with ID ${wallId} not found on canvas`);
+        return;
+      }
+
       try {
+        // Release all currently selected walls
         wall.layer?.releaseAll?.();
       } catch (_) {}
+      
       try {
+        // Select the target wall
         wall.control?.({ releaseOthers: true });
       } catch (_) {
         try {
           wall.control?.();
         } catch (_) {}
       }
+      
       try {
+        // Calculate wall center and pan to it
         const d = wall.document;
         const coords = Array.isArray(d?.c) ? d.c : [d?.x, d?.y, d?.x2, d?.y2];
         const [x1, y1, x2, y2] = coords.map((n) => Number(n) || 0);
-        const mx = (x1 + x2) / 2;
-        const my = (y1 + y2) / 2;
-        canvas?.animatePan?.({ x: mx, y: my, duration: 350 });
+        const centerX = (x1 + x2) / 2;
+        const centerY = (y1 + y2) / 2;
+        
+        // Animate pan to wall center
+        canvas?.animatePan?.({ x: centerX, y: centerY, duration: 350 });
+        
+        // Visual feedback
+        button.style.color = 'var(--color-text-hyperlink)';
+        setTimeout(() => {
+          button.style.color = '';
+        }, 1000);
+        
       } catch (_) {}
     } catch (e) {
       console.warn(`[${MODULE_ID}] Select wall failed`, e);

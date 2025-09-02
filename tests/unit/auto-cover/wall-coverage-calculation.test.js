@@ -269,6 +269,20 @@ describe('Wall Coverage Percentage Calculation', () => {
         return null;
       });
 
+      // Add a wall to the canvas so _evaluateWallsCover finds obstructions
+      const mockWall = {
+        document: {
+          id: 'test-wall',
+          sight: 1,
+          door: 0,
+          ds: 0,
+          dir: 0,
+          getFlag: jest.fn(() => null) // No override
+        },
+        coords: [125, 0, 125, 300] // Vertical wall between attacker and target
+      };
+      global.canvas.walls.objects.children = [mockWall];
+
       const mockTarget = {
         document: { width: 1, height: 1, x: 200, y: 200 },
         x: 200, y: 200, w: 100, h: 100
@@ -309,6 +323,20 @@ describe('Wall Coverage Percentage Calculation', () => {
         return null;
       });
 
+      // Add a wall to the canvas so _evaluateWallsCover finds obstructions
+      const mockWall = {
+        document: {
+          id: 'test-wall',
+          sight: 1,
+          door: 0,
+          ds: 0,
+          dir: 0,
+          getFlag: jest.fn(() => null) // No override
+        },
+        coords: [125, 0, 125, 300] // Vertical wall between attacker and target
+      };
+      global.canvas.walls.objects.children = [mockWall];
+
       const mockTarget = {
         document: { width: 1, height: 1, x: 200, y: 200 },
         x: 200, y: 200, w: 100, h: 100
@@ -325,8 +353,9 @@ describe('Wall Coverage Percentage Calculation', () => {
       const targetPos = { x: 250, y: 250 };
 
       // Test different percentage values
+      // Note: When walls are detected, minimum cover is 'standard' even if percentage is low
       const testCases = [
-        { percentage: 30, expectedCover: 'none' },     // Below standard threshold
+        { percentage: 30, expectedCover: 'standard' }, // Below standard threshold, but walls detected = standard minimum
         { percentage: 50, expectedCover: 'standard' }, // Above standard, below greater
         { percentage: 80, expectedCover: 'greater' }   // Above greater threshold
       ];
@@ -346,6 +375,20 @@ describe('Wall Coverage Percentage Calculation', () => {
         if (setting === 'wallCoverAllowGreater') return false; // Greater cover disabled
         return null;
       });
+
+      // Add a wall to the canvas so _evaluateWallsCover finds obstructions
+      const mockWall = {
+        document: {
+          id: 'test-wall',
+          sight: 1,
+          door: 0,
+          ds: 0,
+          dir: 0,
+          getFlag: jest.fn(() => null) // No override
+        },
+        coords: [125, 0, 125, 300] // Vertical wall between attacker and target
+      };
+      global.canvas.walls.objects.children = [mockWall];
 
       const mockTarget = {
         document: { width: 1, height: 1, x: 200, y: 200 },

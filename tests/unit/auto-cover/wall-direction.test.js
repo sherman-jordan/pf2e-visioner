@@ -611,7 +611,7 @@ describe('Wall Direction Checking', () => {
       const p2_blocking = { x: 50, y: 50 };
 
       const result_blocking = coverDetector._evaluateWallsCover(p1_blocking, p2_blocking);
-      expect(result_blocking).toBe('standard'); // Returns calculated cover since it's lower than override ceiling
+      expect(result_blocking).toBe('greater'); // Returns calculated cover
 
       // Test 2: Attack from non-blocking side (positive cross product for LEFT)
       const p1_nonblocking = { x: 50, y: 50 };

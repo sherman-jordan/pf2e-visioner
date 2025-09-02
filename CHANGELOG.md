@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.0.3] - 2025-01-21
+
+### ✨ Enhanced
+
+#### Wall Manager Interface Overhaul
+- **Scrollable Table**: Added scrollable table container
+- **Search & Filter System**: Comprehensive search and filter functionality:
+  - **Text Search**: Search by identifier or wall ID with debounced input
+  - **Type Filter**: Filter by Walls, Doors, or Secret Doors
+  - **Hidden Filter**: Show only hidden walls, non-hidden walls, or all
+  - **Cover Filter**: Filter by cover override type (Auto, None, Standard, Greater)
+  - **Live Counter**: Shows total wall count and currently visible count
+  - **Clear Filters**: One-click button to reset all filters
+- **Clickable Wall Type Images**: Replaced dropdown with clickable wall type images:
+  - **Left-click**: Cycles forward through Wall → Door → Secret Door
+  - **Right-click**: Cycles backward through Wall → Secret Door → Door
+  - **Visual Feedback**: Hover effects with orange border and scaling animations
+- **Bulk Cover Actions**: Added bulk cover override buttons in header:
+  - **Cover: Auto**: Sets all walls to automatic cover detection
+  - **Cover: None**: Sets all walls to never provide cover
+  - **Cover: Standard**: Sets all walls to maximum standard cover
+  - **Cover: Greater**: Sets all walls to maximum greater cover
+
+
+### 🔧 Technical Improvements
+- **Performance**: Debounced search input for better performance with large datasets
+- **Cover Priority Logic**: Simplified cover detection to prioritize walls when any wall provides cover, otherwise prioritize token blockers
+
 ## [3.0.2] - 2025-01-21
 
 ### 🔧 Fixed

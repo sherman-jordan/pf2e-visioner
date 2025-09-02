@@ -83,16 +83,16 @@ export class CoverDetector {
                 tokenCover = this._evaluateCreatureSizeCover(attacker, target, blockers);
             }
 
-                            // Apply token cover overrides as ceilings
-                tokenCover = this._applyTokenCoverOverrides(attacker, target, blockers, tokenCover);
+            // Apply token cover overrides as ceilings
+            tokenCover = this._applyTokenCoverOverrides(attacker, target, blockers, tokenCover);
 
-                // Simple priority rule: if walls provide any cover, prioritize walls
-                // If only tokens provide cover, prioritize tokens
-                if (wallCover !== 'none') {
-                    return wallCover;
-                } else {
-                    return tokenCover;
-                }
+            // Simple priority rule: if walls provide any cover, prioritize walls
+            // If only tokens provide cover, prioritize tokens
+            if (wallCover !== 'none') {
+                return wallCover;
+            } else {
+                return tokenCover;
+            }
         } catch (error) {
             console.error('PF2E Visioner | CoverDetector.detectForAttack error:', error);
             return 'none';

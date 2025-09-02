@@ -96,6 +96,33 @@
     z-index: 10;
   }
 
+  /* Name column word wrapping */
+  .token-name strong,
+  .hider-name,
+  .seeker-name,
+  .attacker-name,
+  .diverter-name,
+  .sneaker-name,
+  .actor-name,
+  .observer-name {
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  /* Token image clickable styling */
+  .token-image img {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 4px;
+  }
+
+  .token-image img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+
+
   /* Row styling */
   .results-table-container tr:nth-child(even) {
     background-color: rgba(0, 0, 0, 0.1);

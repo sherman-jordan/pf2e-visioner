@@ -420,6 +420,8 @@
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   .observer-main .hint {
@@ -906,8 +908,20 @@
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: help;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  /* Token image clickable styling */
+  .token-image img {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 4px;
+  }
+
+  .token-image img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .visibility-table .visibility-state {

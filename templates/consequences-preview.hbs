@@ -7,7 +7,7 @@
   {{!-- Attacking Token Information Panel --}}
   <div class="attacker-info">
     <div class="attacker-image">
-      <img src="{{attackingToken.image}}" data-tooltip="{{attackingToken.name}}" />
+      <img src="{{attackingToken.image}}" />
     </div>
     <div class="attacker-details">
       <h3 class="attacker-name">{{attackingToken.name}}</h3>
@@ -50,10 +50,10 @@
         {{#each outcomes as |outcome|}}
           <tr class="token-row" data-token-id="{{outcome.target.id}}">
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+              <img src="{{outcome.tokenImage}}" width="28" height="28" />
             </td>
             <td class="token-name">
-              <strong data-tooltip="{{outcome.target.name}}">{{outcome.target.name}}</strong>
+              <strong>{{outcome.target.name}}</strong>
             </td>
             <td class="visibility-change">
               <div class="visibility-change-with-override">

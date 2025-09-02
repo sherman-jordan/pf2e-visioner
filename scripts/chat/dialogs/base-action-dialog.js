@@ -331,4 +331,75 @@ export class BaseActionDialog extends BasePreviewDialog {
       });
     });
   }
+
+  addTokenImageClickHandlers() {
+    const tokenImages = this.element.querySelectorAll('.token-image img');
+    tokenImages.forEach((img) => {
+      img.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Get the token ID from the closest row
+        const row = img.closest('tr[data-token-id]');
+        const wallRow = img.closest('tr[data-wall-id]');
+        
+        if (row) {
+          // Handle token images
+          const tokenId = row.dataset.tokenId;
+          if (!tokenId) return;
+          
+          // Find the token on the canvas
+          const token = canvas.tokens.get(tokenId);
+          if (!token) return;
+          
+          // Pan to the token and select it
+          this.panToAndSelectToken(token);
+        } else if (wallRow) {
+          // Handle wall images (for seek dialog)
+          const wallId = wallRow.dataset.wallId;
+          if (!wallId) return;
+          
+          // Find the wall on the canvas
+          const wall = canvas.walls.get(wallId);
+          if (!wall) return;
+          
+          // Pan to the wall center
+          this.panToWall(wall);
+        }
+      });
+    });
+  }
+
+  panToWall(wall) {
+    try {
+      // Calculate wall center
+      const center = wall.center;
+      
+      // Pan to the wall
+      canvas.animatePan({ x: center.x, y: center.y }, { duration: 500 });
+      
+      // Highlight the wall briefly
+      wall.highlight();
+      setTimeout(() => wall.unhighlight(), 1000);
+    } catch (error) {
+      console.warn('Error panning to wall:', error);
+    }
+  }
+
+  panToAndSelectToken(token) {
+    try {
+      // Pan to the token
+      canvas.animatePan({ x: token.center.x, y: token.center.y }, { duration: 500 });
+      
+      // Select the token (deselect others first)
+      canvas.tokens.releaseAll();
+      token.control({ releaseOthers: true });
+      
+      // Optional: Add a brief highlight effect
+      token.highlight();
+      setTimeout(() => token.unhighlight(), 1000);
+    } catch (error) {
+      console.warn('Error panning to token:', error);
+    }
+  }
 }

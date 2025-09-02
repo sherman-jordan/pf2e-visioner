@@ -8,16 +8,16 @@ import { getCoverMap, getVisibilityMap } from '../../utils.js';
 import { MODULE_ID } from '../../constants.js';
 import { bindTokenManagerActions } from './actions/index.js';
 import {
-  addTokenBorder as addBorderUtil,
-  removeTokenBorder as removeBorderUtil,
+    addTokenBorder as addBorderUtil,
+    removeTokenBorder as removeBorderUtil,
 } from './borders.js';
 import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from './config.js';
 import {
-  applySelectionHighlight,
-  attachCanvasHoverHandlers,
-  attachSelectionHandlers,
-  detachCanvasHoverHandlers,
-  detachSelectionHandlers,
+    applySelectionHighlight,
+    attachCanvasHoverHandlers,
+    attachSelectionHandlers,
+    detachCanvasHoverHandlers,
+    detachSelectionHandlers,
 } from './highlighting.js';
 
 export class VisionerTokenManager extends foundry.applications.api.ApplicationV2 {
@@ -271,6 +271,10 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     try {
       // Bind per-row icon click handlers (visibility/cover selection)
       this.addIconClickHandlers?.();
+    } catch (_) {}
+    try {
+      // Bind token image click handlers for panning and selection
+      this.addTokenImageClickHandlers?.();
     } catch (_) {}
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);

@@ -4,6 +4,9 @@
  * All styles scoped to .pf2e-visioner to avoid conflicts
  */
 
+/* Import shared UI component styles */
+@import url('shared-ui-components.css');
+
 .pf2e-visioner {
   /* Responsive Window Sizing */
   .token-visibility-manager {
@@ -915,13 +918,10 @@
   /* Token image clickable styling */
   .token-image img {
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
     border-radius: 4px;
-  }
-
-  .token-image img:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .visibility-table .visibility-state {

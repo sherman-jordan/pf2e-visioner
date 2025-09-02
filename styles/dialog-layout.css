@@ -3,6 +3,9 @@
  * All styles scoped to .pf2e-visioner to avoid conflicts
  */
 
+/* Import shared UI component styles */
+@import url('shared-ui-components.css');
+
 .pf2e-visioner {
   /* Force dialog to have a fixed height */
   .point-out-preview-dialog,
@@ -112,16 +115,11 @@
   /* Token image clickable styling */
   .token-image img {
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
     border-radius: 4px;
   }
-
-  .token-image img:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-
-
 
   /* Row styling */
   .results-table-container tr:nth-child(even) {
@@ -603,7 +601,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    
+
     .search-filter-container {
       flex-wrap: wrap;
       gap: 8px;
@@ -768,40 +766,40 @@
     }
 
     /* Bulk cover button styling */
-    .header-actions .visioner-btn[data-action="bulkCoverAuto"] {
+    .header-actions .visioner-btn[data-action='bulkCoverAuto'] {
       background: var(--color-bg-btn-secondary, #6c757d);
       border-color: var(--color-border-light-primary);
     }
 
-    .header-actions .visioner-btn[data-action="bulkCoverNone"] {
+    .header-actions .visioner-btn[data-action='bulkCoverNone'] {
       background: var(--cover-none-bg, #dc3545);
       border-color: var(--cover-none-border, #dc3545);
       color: var(--cover-none-text, #ffffff);
     }
 
-    .header-actions .visioner-btn[data-action="bulkCoverStandard"] {
+    .header-actions .visioner-btn[data-action='bulkCoverStandard'] {
       background: var(--cover-standard-bg, #fd7e14);
       border-color: var(--cover-standard-border, #fd7e14);
       color: var(--cover-standard-text, #ffffff);
     }
 
-    .header-actions .visioner-btn[data-action="bulkCoverGreater"] {
+    .header-actions .visioner-btn[data-action='bulkCoverGreater'] {
       background: var(--cover-greater-bg, #e83e8c);
       border-color: var(--cover-greater-border, #e83e8c);
       color: var(--cover-greater-text, #ffffff);
     }
 
-    .header-actions .visioner-btn[data-action="bulkCoverNone"]:hover {
+    .header-actions .visioner-btn[data-action='bulkCoverNone']:hover {
       background: var(--cover-none-bg-hover, #c82333);
       border-color: var(--cover-none-border-hover, #c82333);
     }
 
-    .header-actions .visioner-btn[data-action="bulkCoverStandard"]:hover {
+    .header-actions .visioner-btn[data-action='bulkCoverStandard']:hover {
       background: var(--cover-standard-bg-hover, #e8690b);
       border-color: var(--cover-standard-border-hover, #e8690b);
     }
 
-    .header-actions .visioner-btn[data-action="bulkCoverGreater"]:hover {
+    .header-actions .visioner-btn[data-action='bulkCoverGreater']:hover {
       background: var(--cover-greater-bg-hover, #d63384);
       border-color: var(--cover-greater-border-hover, #d63384);
     }

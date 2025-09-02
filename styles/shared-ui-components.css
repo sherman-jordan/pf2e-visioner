@@ -14,4 +14,6 @@
     transform 0.2s ease,
     box-shadow 0.2s ease;
   cursor: pointer;
+  object-fit: cover;
+  object-position: top;
 }

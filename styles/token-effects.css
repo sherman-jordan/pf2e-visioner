@@ -64,6 +64,8 @@
       box-shadow var(--transition-fast);
     width: 32px;
     height: 32px;
+    object-fit: cover;
+    object-position: top;
   }
 
   .token-name {

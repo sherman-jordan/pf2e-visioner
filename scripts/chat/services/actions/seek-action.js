@@ -1,4 +1,4 @@
-import { MODULE_ID } from '../../../constants.js';
+import { MODULE_ID, VISIBILITY_STATES } from '../../../constants.js';
 import { appliedSeekChangesByMessage } from '../data/message-cache.js';
 import { ActionHandlerBase } from './base-action.js';
 
@@ -242,6 +242,7 @@ export class SeekActionHandler extends ActionHandlerBase {
       outcome,
       currentVisibility: current,
       oldVisibility: current,
+      oldVisibilityLabel: VISIBILITY_STATES[current]?.label || current,
       newVisibility,
       changed: newVisibility !== current,
       ...wallMeta,

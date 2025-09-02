@@ -104,13 +104,15 @@ export class SeekPreviewDialog extends BaseActionDialog {
     );
     // Apply ally filtering for display purposes
     try {
-      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
-      filteredOutcomes = filterOutcomesByAllies(
-        filteredOutcomes,
-        this.actorToken,
-        this.ignoreAllies,
-        'target',
-      );
+      if (this.actorToken) {
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filteredOutcomes = filterOutcomesByAllies(
+          filteredOutcomes,
+          this.actorToken,
+          this.ignoreAllies,
+          'target',
+        );
+      }
     } catch (_) {}
     // Optional walls exclusion for UI convenience
     if (this.ignoreWalls === true) {
@@ -126,7 +128,9 @@ export class SeekPreviewDialog extends BaseActionDialog {
         'target',
       );
     }
-    filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, 'target');
+    if (this.actorToken) {
+      filteredOutcomes = filterOutcomesBySeekDistance(filteredOutcomes, this.actorToken, 'target');
+    }
 
     // Prepare visibility states using centralized config
     const cfg = (s) => this.visibilityConfig(s);
@@ -136,10 +140,13 @@ export class SeekPreviewDialog extends BaseActionDialog {
       filteredOutcomes.map(async (outcome) => {
         // Get current visibility state; walls use their stored state instead of token-vs-token
         let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+        let live = null;
         if (!outcome._isWall) {
           try {
-            const live = getVisibilityBetween(this.actorToken, outcome.target);
-            currentVisibility = live || currentVisibility;
+            if (this.actorToken) {
+              live = getVisibilityBetween(this.actorToken, outcome.target);
+              currentVisibility = live || currentVisibility;
+            }
             // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
             if ((!live || live === 'observed') && game.user?.isGM) {
               const actor = outcome.target?.actor;
@@ -235,7 +242,7 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
     // Set actor context for seeker
     context.seeker = {
-      name: this.actorToken.name,
+      name: this.actorToken?.name || 'Unknown Actor',
       image: this.resolveTokenImage(this.actorToken),
       actionType: 'seek',
       actionLabel: 'Seek action results analysis',
@@ -324,8 +331,10 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       // Ally filter via live checkbox
       try {
-        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
-        filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
+        if (this.actorToken) {
+          const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+          filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
+        }
       } catch (_) {}
 
       // Optional walls exclusion for UI convenience
@@ -350,8 +359,12 @@ export class SeekPreviewDialog extends BaseActionDialog {
 
       // Seek distance limits
       try {
-        const { filterOutcomesBySeekDistance } = await import('../services/infra/shared-utils.js');
-        filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, 'target');
+        if (this.actorToken) {
+          const { filterOutcomesBySeekDistance } = await import(
+            '../services/infra/shared-utils.js'
+          );
+          filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, 'target');
+        }
       } catch (_) {}
       // Compute actionability and carry over any existing overrides from the currently displayed outcomes
       if (!Array.isArray(filtered)) return [];
@@ -370,8 +383,10 @@ export class SeekPreviewDialog extends BaseActionDialog {
           let currentVisibility = o.oldVisibility || o.currentVisibility || null;
           if (!o?._isWall) {
             try {
-              currentVisibility =
-                getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
+              if (this.actorToken) {
+                currentVisibility =
+                  getVisibilityBetween(this.actorToken, o.target) || currentVisibility;
+              }
             } catch (_) {}
           }
           const effectiveNewState = overrideState || o.newVisibility || currentVisibility;

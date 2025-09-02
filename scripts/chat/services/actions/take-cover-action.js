@@ -1,3 +1,4 @@
+import { COVER_STATES } from '../../../constants.js';
 import { appliedTakeCoverChangesByMessage } from '../data/message-cache.js';
 import { shouldFilterAlly } from '../infra/shared-utils.js';
 import { ActionHandlerBase } from './base-action.js';
@@ -106,6 +107,7 @@ export class TakeCoverActionHandler extends ActionHandlerBase {
       // Visibility-aligned aliases so shared UI helpers work
       currentVisibility: current,
       oldVisibility: current,
+      oldVisibilityLabel: COVER_STATES[current]?.label || current,
       newVisibility: newCover,
       changed,
     };

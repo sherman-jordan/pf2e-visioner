@@ -119,6 +119,8 @@
       transform 0.2s ease,
       box-shadow 0.2s ease;
     border-radius: 4px;
+    object-fit: cover;
+    object-position: top;
   }
 
   /* Row styling */

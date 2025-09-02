@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.0.6] - 2025-09-02
+
+### ✨ Enhanced
+- **Wall Manager**: Added select and go to wall
+- **Auto cover from walls**: Another grooming to the algorithm
+
 ## [3.0.5] - 2025-09-02
 
 ### 🐛 Fixed

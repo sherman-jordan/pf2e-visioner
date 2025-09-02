@@ -67,10 +67,11 @@
     <thead class="sticky-header">
       <tr class="sticky-row">
         <th>Type</th>
-        <th style="width:18%">Identifier</th>
-        <th style="width:12%">Hidden</th>
-        <th style="width:32%">Cover</th>
-        <th style="width:12%">Stealth DC</th>
+        <th style="width:16%">Identifier</th>
+        <th style="width:10%">Hidden</th>
+        <th style="width:30%">Cover</th>
+        <th style="width:10%">Stealth DC</th>
+        <th style="width:8%">Select</th>
         <th style="width:26%">Wall Id</th>
       </tr>
     </thead>
@@ -117,6 +118,11 @@
           </td>
           <td style="text-align:center">
             <input type="number" min="0" step="1" name="wall.{{w.id}}.dc" value="{{w.dc}}" class="wall-dc-input" placeholder="DC" />
+          </td>
+          <td style="text-align:center">
+            <button type="button" class="visioner-icon-btn" data-action="selectWall" data-wall-id="{{w.id}}" data-tooltip="Select wall and pan to it">
+              <i class="fas fa-crosshairs" style="color:var(--color-text-primary)"></i>
+            </button>
           </td>
           <td><code>{{w.id}}</code></td>
         </tr>

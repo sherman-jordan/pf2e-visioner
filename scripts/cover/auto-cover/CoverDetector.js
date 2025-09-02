@@ -137,7 +137,7 @@ export class CoverDetector {
 
     /**
      * Check if a wall blocks sight from a given direction based on its sight settings
-     * Respects directional walls and door states, then applies cover overrides only when wall would naturally block
+     * A wall blocks only if BOTH door state AND direction allow blocking, then applies cover overrides only when wall would naturally block
      * @param {Object} wallDoc - Wall document
      * @param {Object} attackerPos - Attacker position {x, y}
      * @returns {boolean} True if wall blocks sight from attacker position
@@ -152,23 +152,22 @@ export class CoverDetector {
             const isDoor = Number(wallDoc.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
             const doorState = Number(wallDoc.ds ?? wallDoc.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
             
-            // Determine if this wall would naturally block from this direction
-            let wouldNaturallyBlock = true;
-            
-            // Check door state first
+            // First check: Does the door state allow blocking?
+            let doorAllowsBlocking = true;
             if (isDoor && doorState === 1) {
-                wouldNaturallyBlock = false; // Open doors don't naturally block
+                doorAllowsBlocking = false; // Open doors don't block
             }
             
-            // Check directional wall logic
-            if (wouldNaturallyBlock && wallDoc.dir != null && typeof wallDoc.dir === 'number') {
+            // Second check: Does the directional logic allow blocking from this direction?
+            let directionAllowsBlocking = true;
+            if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
                 // Foundry wall direction constants:
                 // BOTH: 0 - wall blocks from both directions
                 // LEFT: 1 - wall blocks only when ray strikes its left side
                 // RIGHT: 2 - wall blocks only when a ray strikes its right side
                 
                 if (wallDoc.dir === 0) {
-                    wouldNaturallyBlock = true; // BOTH - blocks from both directions
+                    directionAllowsBlocking = true; // BOTH - blocks from both directions
                 } else {
                     // Get wall coordinates
                     const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
@@ -188,12 +187,15 @@ export class CoverDetector {
                     
                     // Apply the actual wall direction logic
                     if (wallDoc.dir === 1) { // LEFT - wall blocks only when ray strikes left side
-                        wouldNaturallyBlock = crossProduct < 0; // Attacker on left side = wall blocks
+                        directionAllowsBlocking = crossProduct < 0; // Attacker on left side = wall blocks
                     } else if (wallDoc.dir === 2) { // RIGHT - wall blocks only when ray strikes right side  
-                        wouldNaturallyBlock = crossProduct > 0; // Attacker on right side = wall blocks
+                        directionAllowsBlocking = crossProduct > 0; // Attacker on right side = wall blocks
                     }
                 }
             }
+            
+            // Wall blocks only if BOTH door state and direction allow it
+            const wouldNaturallyBlock = doorAllowsBlocking && directionAllowsBlocking;
             
             // Now check for manual cover override - but only apply it if the wall would naturally block from this direction
             const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');

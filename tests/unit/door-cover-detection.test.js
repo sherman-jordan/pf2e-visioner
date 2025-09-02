@@ -473,9 +473,119 @@ describe('Door Cover Detection', () => {
       };
 
       // Attacker at x=150 is to the right of wall at x=100
-      // For LEFT wall (dir=1), this means crossProduct > 0, so wall doesn't block
+      // Wall from (100,90) to (100,110), attacker at (150,100):
+      // crossProduct = 0*10 - 20*50 = -1000 (negative)
+      // For LEFT wall (dir=1), crossProduct < 0 means it SHOULD block
+      // So the wall would naturally block, and override applies as ceiling
       const result = coverDetector._doesWallBlockFromDirection(directionalClosedDoorWithOverride, attackerOnRight);
-      expect(result).toBe(true); // Should block
+      expect(result).toBe(true); // Should block (wall naturally blocks from this direction, override applies)
+    });
+  });
+
+  describe('Directional Doors - Door State + Direction Logic', () => {
+    const attackerPos = { x: 50, y: 100 };
+
+    test('should handle open door with LEFT direction - no blocking regardless of direction', () => {
+      const openLeftDoor = {
+        sight: 20,
+        door: 1,
+        ds: 1, // open door
+        dir: 1, // LEFT - would block from left if closed
+        c: [100, 90, 100, 110],
+        getFlag: jest.fn().mockReturnValue(null)
+      };
+
+      // Even though attacker is on the left side (would block if closed), open door doesn't block
+      const result = coverDetector._doesWallBlockFromDirection(openLeftDoor, attackerPos);
+      expect(result).toBe(false); // Open door doesn't block regardless of direction
+    });
+
+    test('should handle closed door with LEFT direction - blocks only from correct side', () => {
+      const closedLeftDoor = {
+        sight: 20,
+        door: 1,
+        ds: 0, // closed door
+        dir: 1, // LEFT - blocks from left side only
+        c: [100, 90, 100, 110],
+        getFlag: jest.fn().mockReturnValue(null)
+      };
+
+      // For LEFT wall (dir=1): crossProduct < 0 means it blocks
+      // Wall from (100,90) to (100,110), attacker at (50,100):
+      // crossProduct = 0*10 - 20*(-50) = 1000 (positive) → doesn't block from this side
+      const resultFromLeft = coverDetector._doesWallBlockFromDirection(closedLeftDoor, attackerPos);
+      expect(resultFromLeft).toBe(false); // LEFT door doesn't block from this side (positive cross product)
+
+      // Test from a position that would give negative cross product
+      const attackerForNegativeCross = { x: 100, y: 50 }; // Below the wall
+      // crossProduct = 0*(-40) - 20*0 = 0 (edge case, but let's test another position)
+      const attackerForNegativeCross2 = { x: 110, y: 80 }; // Different position
+      // crossProduct = 0*(-10) - 20*10 = -200 (negative) → should block
+      const resultFromBlockingSide = coverDetector._doesWallBlockFromDirection(closedLeftDoor, attackerForNegativeCross2);
+      expect(resultFromBlockingSide).toBe(true); // LEFT door blocks when crossProduct < 0
+    });
+
+    test('should handle open door with RIGHT direction - no blocking regardless of direction', () => {
+      const openRightDoor = {
+        sight: 20,
+        door: 1,
+        ds: 1, // open door
+        dir: 2, // RIGHT - would block from right if closed
+        c: [100, 90, 100, 110],
+        getFlag: jest.fn().mockReturnValue(null)
+      };
+
+      // Test from left side
+      const resultFromLeft = coverDetector._doesWallBlockFromDirection(openRightDoor, attackerPos);
+      expect(resultFromLeft).toBe(false); // Open door doesn't block
+
+      // Test from right side
+      const attackerOnRight = { x: 150, y: 100 };
+      const resultFromRight = coverDetector._doesWallBlockFromDirection(openRightDoor, attackerOnRight);
+      expect(resultFromRight).toBe(false); // Open door doesn't block
+    });
+
+    test('should handle closed door with RIGHT direction - blocks only from correct side', () => {
+      const closedRightDoor = {
+        sight: 20,
+        door: 1,
+        ds: 0, // closed door
+        dir: 2, // RIGHT - blocks from right side only
+        c: [100, 90, 100, 110],
+        getFlag: jest.fn().mockReturnValue(null)
+      };
+
+      // For RIGHT wall (dir=2): crossProduct > 0 means it blocks
+      // Wall from (100,90) to (100,110), attacker at (50,100):
+      // crossProduct = 0*10 - 20*(-50) = 1000 (positive) → should block for RIGHT door
+      const resultFromLeft = coverDetector._doesWallBlockFromDirection(closedRightDoor, attackerPos);
+      expect(resultFromLeft).toBe(true); // Closed RIGHT door blocks from this side (positive cross product)
+
+      // Test from a position that would give negative cross product (shouldn't block for RIGHT door)
+      const attackerForNegativeCross = { x: 110, y: 80 }; // Different position
+      // crossProduct = 0*(-10) - 20*10 = -200 (negative) → shouldn't block for RIGHT door
+      const resultFromNonBlockingSide = coverDetector._doesWallBlockFromDirection(closedRightDoor, attackerForNegativeCross);
+      expect(resultFromNonBlockingSide).toBe(false); // RIGHT door doesn't block when crossProduct < 0
+    });
+
+    test('should handle directional door with cover override - override only applies when door would naturally block', () => {
+      const directionalDoorWithOverride = {
+        sight: 20,
+        door: 1,
+        ds: 0, // closed door
+        dir: 1, // LEFT
+        c: [100, 90, 100, 110],
+        getFlag: jest.fn().mockReturnValue('none') // override to remove cover
+      };
+
+      // From left side: door would naturally block, so override applies
+      const resultFromLeft = coverDetector._doesWallBlockFromDirection(directionalDoorWithOverride, attackerPos);
+      expect(resultFromLeft).toBe(false); // Override removes cover
+
+      // From right side: door wouldn't naturally block, so override is ignored
+      const attackerOnRight = { x: 150, y: 100 };
+      const resultFromRight = coverDetector._doesWallBlockFromDirection(directionalDoorWithOverride, attackerOnRight);
+      expect(resultFromRight).toBe(false); // No natural blocking, override ignored
     });
   });
 

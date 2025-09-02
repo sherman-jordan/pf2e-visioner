@@ -228,15 +228,15 @@ export class CoverDetector {
     _evaluateWallsCover(p1, p2) {
         if (!canvas?.walls) return 'none';
 
-        // First check for manual wall cover overrides
+        // First check for manual wall cover overrides (these act as ceilings/limits)
         const wallOverride = this._checkWallCoverOverrides(p1, p2);
         
-        // If there's a specific override (not 'auto'), return it immediately - skip coverage calculation
-        if (wallOverride !== null) {
-            return wallOverride;
+        // If override is 'none', return 'none' immediately (no cover regardless of thresholds)
+        if (wallOverride === 'none') {
+            return 'none';
         }
 
-        // No override found, proceed with automatic coverage calculation
+        // Compute percent of target token blocked by walls along multiple sight rays and map to cover thresholds
         try {
             const stdT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverStandardThreshold') ?? 50));
             const grtT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverGreaterThreshold') ?? 70));
@@ -254,13 +254,24 @@ export class CoverDetector {
             const allowGreater = !!game.settings.get('pf2e-visioner', 'wallCoverAllowGreater');
             
             // Determine cover based on thresholds
+            let calculatedCover = 'none';
             if (pct >= grtT) {
-                return allowGreater ? 'greater' : 'standard';
+                calculatedCover = allowGreater ? 'greater' : 'standard';
             } else if (pct >= stdT) {
-                return 'standard';
-            } else {
-                return 'none';
+                calculatedCover = 'standard';
             }
+
+            // If there's a wall override, use it as a ceiling
+            if (wallOverride !== null) {
+                const coverOrder = ['none', 'lesser', 'standard', 'greater'];
+                const calculatedIndex = coverOrder.indexOf(calculatedCover);
+                const overrideIndex = coverOrder.indexOf(wallOverride);
+                
+                // Return the lower of the two (override acts as ceiling)
+                return calculatedIndex <= overrideIndex ? calculatedCover : wallOverride;
+            }
+
+            return calculatedCover;
         } catch (error) {
             console.warn('PF2E Visioner | Error in wall coverage evaluation:', error);
             return 'none';

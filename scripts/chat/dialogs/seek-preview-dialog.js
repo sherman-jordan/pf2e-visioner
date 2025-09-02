@@ -140,65 +140,65 @@ export class SeekPreviewDialog extends BaseActionDialog {
       filteredOutcomes.map(async (outcome) => {
         // Get current visibility state; walls use their stored state instead of token-vs-token
         let currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+        let live = null;
         if (!outcome._isWall) {
           try {
             if (this.actorToken) {
-              const live = getVisibilityBetween(this.actorToken, outcome.target);
+              live = getVisibilityBetween(this.actorToken, outcome.target);
               currentVisibility = live || currentVisibility;
-            
-              // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
-              if ((!live || live === 'observed') && game.user?.isGM) {
-                const actor = outcome.target?.actor;
-                const hasHidden =
-                  !!actor?.conditions?.get?.('hidden') ||
-                  !!actor?.itemTypes?.condition?.some?.((c) => c?.slug === 'hidden');
-                const hasUndetected = !!actor?.itemTypes?.condition?.some?.(
-                  (c) => c?.slug === 'undetected',
-                );
-                if (hasUndetected || hasHidden) {
-                  const { setVisibilityBetween } = await import('../../utils.js');
-                  const inferred = hasUndetected ? 'undetected' : 'hidden';
+            }
+            // If no explicit mapping exists and GM requested system-conditions sync, infer from PF2e conditions
+            if ((!live || live === 'observed') && game.user?.isGM) {
+              const actor = outcome.target?.actor;
+              const hasHidden =
+                !!actor?.conditions?.get?.('hidden') ||
+                !!actor?.itemTypes?.condition?.some?.((c) => c?.slug === 'hidden');
+              const hasUndetected = !!actor?.itemTypes?.condition?.some?.(
+                (c) => c?.slug === 'undetected',
+              );
+              if (hasUndetected || hasHidden) {
+                const { setVisibilityBetween } = await import('../../utils.js');
+                const inferred = hasUndetected ? 'undetected' : 'hidden';
 
-                  // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
-                  const allPCTokens =
-                    canvas.tokens?.placeables?.filter(
-                      (t) => t.actor?.type === 'character' && t.actor?.hasPlayerOwner,
-                    ) || [];
+                // Sync visibility for ALL PC tokens that don't already have a Visioner visibility mapping
+                const allPCTokens =
+                  canvas.tokens?.placeables?.filter(
+                    (t) => t.actor?.type === 'character' && t.actor?.hasPlayerOwner,
+                  ) || [];
 
-                  for (const pcToken of allPCTokens) {
-                    // Skip if this PC already has a Visioner visibility mapping to the target
-                    const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
-                    if (!existingVisibility || existingVisibility === 'observed') {
-                      try {
-                        await setVisibilityBetween(pcToken, outcome.target, inferred, {
-                          direction: 'observer_to_target',
-                        });
-                      } catch (_) {}
-                    }
+                for (const pcToken of allPCTokens) {
+                  // Skip if this PC already has a Visioner visibility mapping to the target
+                  const existingVisibility = getVisibilityBetween(pcToken, outcome.target);
+                  if (!existingVisibility || existingVisibility === 'observed') {
+                    try {
+                      await setVisibilityBetween(pcToken, outcome.target, inferred, {
+                        direction: 'observer_to_target',
+                      });
+                    } catch (_) {}
                   }
-
-                  // Also set the current seeker's visibility
-                  try {
-                    await setVisibilityBetween(this.actorToken, outcome.target, inferred, {
-                      direction: 'observer_to_target',
-                    });
-                  } catch (_) {}
-
-                  // Remove PF2e system condition to avoid double-state after Visioner owns it
-                  try {
-                    const slug = hasUndetected ? 'undetected' : 'hidden';
-                    // Prefer the PF2e pf2e.condition automation API if present
-                    const toRemove = actor?.itemTypes?.condition?.find?.((c) => c?.slug === slug);
-                    if (toRemove?.delete) await toRemove.delete();
-                    else if (actor?.toggleCondition)
-                      await actor.toggleCondition(slug, { active: false });
-                    else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
-                  } catch (_) {}
-                  currentVisibility = inferred;
-                  // Ensure in-memory outcomes reflect the actual new mapping right away
-                  outcome.oldVisibility = currentVisibility;
-                  outcome.newVisibility = currentVisibility;
                 }
+
+                // Also set the current seeker's visibility
+                try {
+                  await setVisibilityBetween(this.actorToken, outcome.target, inferred, {
+                    direction: 'observer_to_target',
+                  });
+                } catch (_) {}
+
+                // Remove PF2e system condition to avoid double-state after Visioner owns it
+                try {
+                  const slug = hasUndetected ? 'undetected' : 'hidden';
+                  // Prefer the PF2e pf2e.condition automation API if present
+                  const toRemove = actor?.itemTypes?.condition?.find?.((c) => c?.slug === slug);
+                  if (toRemove?.delete) await toRemove.delete();
+                  else if (actor?.toggleCondition)
+                    await actor.toggleCondition(slug, { active: false });
+                  else if (actor?.decreaseCondition) await actor.decreaseCondition(slug);
+                } catch (_) {}
+                currentVisibility = inferred;
+                // Ensure in-memory outcomes reflect the actual new mapping right away
+                outcome.oldVisibility = currentVisibility;
+                outcome.newVisibility = currentVisibility;
               }
             }
           } catch (_) {}
@@ -360,7 +360,9 @@ export class SeekPreviewDialog extends BaseActionDialog {
       // Seek distance limits
       try {
         if (this.actorToken) {
-          const { filterOutcomesBySeekDistance } = await import('../services/infra/shared-utils.js');
+          const { filterOutcomesBySeekDistance } = await import(
+            '../services/infra/shared-utils.js'
+          );
           filtered = filterOutcomesBySeekDistance(filtered, this.actorToken, 'target');
         }
       } catch (_) {}

@@ -37,7 +37,7 @@
             </thead>
             <tbody>
                 {{#each outcomes}}
-                <tr data-token-id="{{target.id}}" class="{{#if hasActionableChange}}actionable{{else}}no-change{{/if}}">
+                <tr data-token-id="{{target.id}}" class="token-row {{#if hasActionableChange}}actionable{{else}}no-change{{/if}}">
                     <td class="token-image">
                         {{#if tokenImage}}
                         <img src="{{tokenImage}}" alt="{{target.name}}" />

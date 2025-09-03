@@ -661,6 +661,14 @@ function getChatAutomationCSS() {
             text-align: center;
             vertical-align: middle;
         }
+
+        /* Point Out Dialog Row Hover - Orange Theme */
+        .point-out-preview-dialog .results-table-container tr.row-hover,
+        .point-out-preview-dialog .results-table-container tr[data-token-id].row-hover {
+            outline-color: var(--pf2e-visioner-warning);
+            box-shadow: inset 0 0 0 2px rgba(255, 102, 0, 0.35);
+            background: rgba(255, 102, 0, 0.1) !important;
+        }
         
         /* ===== UNIFIED TOKEN IMAGE STYLING ===== */
         

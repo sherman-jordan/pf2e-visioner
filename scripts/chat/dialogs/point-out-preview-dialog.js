@@ -136,6 +136,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     super._onRender(context, options);
     this.updateBulkActionButtons();
     this.addIconClickHandlers();
+    this.addTokenImageClickHandlers();
     this.markInitialSelections();
 
     // Ping the exact token pointed at in the chat message (speaker's target), if available

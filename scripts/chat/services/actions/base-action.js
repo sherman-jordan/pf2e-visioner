@@ -1,5 +1,6 @@
 // Base class for action logic. Subclasses must implement abstract hooks.
 
+import { emitAwarenessHook } from '../../../hooks/awareness-hooks.js';
 import { log, notify } from '../infra/notifications.js';
 
 export class ActionHandlerBase {
@@ -173,6 +174,10 @@ export class ActionHandlerBase {
       await this.applyChangesInternal(changes);
       this.cacheAfterApply(actionData, changes);
       this.updateButtonToRevert(button);
+      
+      // Emit awareness propagation hook
+      this.emitAwarenessHook(actionData, outcomes, changes);
+      
       return changes.length;
     } catch (e) {
       log.error(e);
@@ -220,6 +225,77 @@ export class ActionHandlerBase {
         .html('<i class="fas fa-check-double"></i> Apply Changes')
         .attr('data-action', this.getApplyActionName());
     } catch (_) {}
+  }
+
+  /**
+   * Emit awareness propagation hook for this action
+   * @param {Object} actionData - The action data
+   * @param {Array} outcomes - The action outcomes
+   * @param {Array} changes - The applied changes
+   */
+  emitAwarenessHook(actionData, outcomes, changes) {
+    try {
+      console.log('PF2E Visioner | Attempting to emit awareness hook for:', this.actionType);
+      
+      // Only emit for actions that support awareness propagation
+      const supportedActions = ['hide', 'sneak', 'create-a-diversion', 'seek'];
+      if (!supportedActions.includes(this.actionType)) {
+        console.log('PF2E Visioner | Action type not supported for awareness:', this.actionType);
+        return;
+      }
+
+      // Extract relevant data based on action type
+      let hookData = {
+        actor: actionData.actor,
+        targets: outcomes.map(o => o.target).filter(Boolean),
+        outcomes: outcomes,
+        changes: changes
+      };
+
+      // Add action-specific data
+      switch (this.actionType) {
+        case 'hide':
+        case 'sneak':
+          hookData.stealthResult = actionData.roll;
+          hookData.outcome = this.determineOverallOutcome(outcomes);
+          break;
+        case 'create-a-diversion':
+          hookData.deceptionResult = actionData.roll;
+          hookData.outcome = this.determineOverallOutcome(outcomes);
+          break;
+        case 'seek':
+          hookData.perceptionResult = actionData.roll;
+          hookData.foundTargets = outcomes.filter(o => o.changed && o.newVisibility !== 'undetected').map(o => o.target);
+          hookData.outcome = this.determineOverallOutcome(outcomes);
+          break;
+      }
+
+      console.log('PF2E Visioner | Emitting awareness hook:', this.actionType, hookData);
+      emitAwarenessHook(this.actionType, hookData);
+    } catch (error) {
+      console.warn('PF2E Visioner | Failed to emit awareness hook:', error);
+    }
+  }
+
+  /**
+   * Determine overall outcome from individual outcomes
+   * @param {Array} outcomes - Individual outcomes
+   * @returns {string} Overall outcome
+   */
+  determineOverallOutcome(outcomes) {
+    if (!outcomes || outcomes.length === 0) return 'failure';
+    
+    const changedOutcomes = outcomes.filter(o => o.changed);
+    if (changedOutcomes.length === 0) return 'failure';
+    
+    // If any outcomes succeeded, consider it a success
+    const hasSuccess = changedOutcomes.some(o => 
+      o.newVisibility === 'hidden' || 
+      o.newVisibility === 'undetected' ||
+      (o.oldVisibility === 'undetected' && o.newVisibility !== 'undetected')
+    );
+    
+    return hasSuccess ? 'success' : 'failure';
   }
 
   // Revert logic

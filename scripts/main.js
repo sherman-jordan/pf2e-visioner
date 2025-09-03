@@ -14,6 +14,12 @@ import { initializeRuleElements } from './rule-elements/index.js';
 // Import cover visualization
 import { initCoverVisualization } from './cover/cover-visualization.js';
 
+// Import awareness propagation service
+import { awarenessService } from './services/awareness-propagation.js';
+
+// Initialize awareness service
+console.log('PF2E Visioner | Awareness service loaded:', !!awarenessService);
+
 // Function to update colorblind mode
 function updateColorblindMode() {
   try {

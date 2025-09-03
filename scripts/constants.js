@@ -44,6 +44,144 @@ export const VISIBILITY_STATES = {
 };
 
 /**
+ * Awareness states for ally propagation system
+ */
+export const AWARENESS_STATES = {
+  none: {
+    label: 'PF2E_VISIONER.AWARENESS_STATES.none',
+    icon: 'fas fa-question',
+    color: 'var(--color-text-secondary, #666)',
+    cssClass: 'awareness-none',
+    description: 'PF2E_VISIONER.AWARENESS_STATES.none_desc'
+  },
+  suspicious: {
+    label: 'PF2E_VISIONER.AWARENESS_STATES.suspicious',
+    icon: 'fas fa-exclamation-triangle',
+    color: 'var(--color-warning, #ffc107)',
+    cssClass: 'awareness-suspicious',
+    description: 'PF2E_VISIONER.AWARENESS_STATES.suspicious_desc'
+  },
+  lastKnownArea: {
+    label: 'PF2E_VISIONER.AWARENESS_STATES.lastKnownArea',
+    icon: 'fas fa-map-marker-alt',
+    color: 'var(--color-info, #2196f3)',
+    cssClass: 'awareness-last-known',
+    description: 'PF2E_VISIONER.AWARENESS_STATES.lastKnownArea_desc'
+  },
+  observed: {
+    label: 'PF2E_VISIONER.AWARENESS_STATES.observed',
+    icon: 'fas fa-eye',
+    color: 'var(--visibility-observed, #4caf50)',
+    cssClass: 'awareness-observed',
+    description: 'PF2E_VISIONER.AWARENESS_STATES.observed_desc'
+  }
+};
+
+/**
+ * Awareness propagation configuration
+ */
+export const AWARENESS_CONFIG = {
+  // Default ranges in feet
+  DEFAULT_NOISE_RADIUS: 20,
+  DEFAULT_COMMUNICATION_RADIUS: 30,
+  DEFAULT_MAX_PROPAGATION_RANGE: 60,
+  
+  // Actions that trigger awareness propagation
+  TRIGGERING_ACTIONS: [
+    'hide',
+    'sneak', 
+    'create-a-diversion',
+    'seek'
+  ],
+  
+  // PF2e Sense Acuity Levels and Detection Rules
+  SENSE_ACUITY: {
+    // Precise senses - allow targeting without penalty, detect creatures reliably
+    PRECISE: {
+      detectionState: 'observed',
+      canTarget: true,
+      flatCheckDC: 0,
+      description: 'Can target normally and avoid Seek in most cases'
+    },
+    // Imprecise senses - detect presence but target is hidden, need Seek to improve
+    IMPRECISE: {
+      detectionState: 'lastKnownArea', 
+      canTarget: true,
+      flatCheckDC: 11, // 50-50 chance to target
+      description: 'Detection only hides location; Seek needed to observe'
+    },
+    // Vague senses - only know something is "there somewhere", undetected at best
+    VAGUE: {
+      detectionState: 'suspicious', // Using suspicious as "undetected but aware of presence"
+      canTarget: false,
+      flatCheckDC: null, // Cannot target at all
+      description: 'Only alerts presence; cannot track; Seek/other senses needed'
+    }
+  },
+  
+  // PF2e Senses mapped to acuity levels
+  SENSES: {
+    // Precise senses
+    vision: { acuity: 'PRECISE', range: 'sight', requiresLight: true },
+    darkvision: { acuity: 'PRECISE', range: 60, requiresLight: false },
+    lowLightVision: { acuity: 'PRECISE', range: 'sight', requiresLight: 'dim' },
+    echolocation: { acuity: 'PRECISE', range: 60, requiresLight: false },
+    lifesense: { acuity: 'PRECISE', range: 60, requiresLight: false },
+    
+    // Imprecise senses  
+    hearing: { acuity: 'IMPRECISE', range: 60, requiresLight: false },
+    scent: { acuity: 'IMPRECISE', range: 30, requiresLight: false },
+    tremorsense: { acuity: 'IMPRECISE', range: 60, requiresLight: false },
+    
+    // Vague senses
+    smell: { acuity: 'VAGUE', range: 15, requiresLight: false }
+  },
+  
+  // Seek action detection upgrades
+  SEEK_UPGRADES: {
+    // Success: Hidden → Observed, Undetected → Hidden
+    success: {
+      'hidden': 'observed',
+      'suspicious': 'lastKnownArea', // Vague → Imprecise equivalent
+      'lastKnownArea': 'observed',
+      'observed': 'observed' // No change
+    },
+    // Critical Success: Undetected → Observed directly
+    criticalSuccess: {
+      'hidden': 'observed', 
+      'suspicious': 'observed', // Direct upgrade
+      'lastKnownArea': 'observed',
+      'observed': 'observed'
+    }
+  },
+  
+  // Privacy levels
+  PRIVACY_LEVELS: {
+    conservative: {
+      label: 'PF2E_VISIONER.AWARENESS_PRIVACY.conservative',
+      description: 'PF2E_VISIONER.AWARENESS_PRIVACY.conservative_desc',
+      revealExact: false,
+      allowFuzzy: true,
+      requireAction: true
+    },
+    moderate: {
+      label: 'PF2E_VISIONER.AWARENESS_PRIVACY.moderate', 
+      description: 'PF2E_VISIONER.AWARENESS_PRIVACY.moderate_desc',
+      revealExact: false,
+      allowFuzzy: true,
+      requireAction: false
+    },
+    permissive: {
+      label: 'PF2E_VISIONER.AWARENESS_PRIVACY.permissive',
+      description: 'PF2E_VISIONER.AWARENESS_PRIVACY.permissive_desc', 
+      revealExact: true,
+      allowFuzzy: true,
+      requireAction: false
+    }
+  }
+};
+
+/**
  * Cover states supported by the module - aligned with PF2E cover rules
  */
 export const COVER_STATES = {
@@ -340,6 +478,106 @@ export const DEFAULT_SETTINGS = {
     restricted: true,
     type: Boolean,
     default: false,
+  },
+
+  // Awareness Propagation settings
+  awarenessEnabled: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessEnabled.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessEnabled.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+  awarenessPrivacyLevel: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessPrivacyLevel.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessPrivacyLevel.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: String,
+    choices: {
+      conservative: 'PF2E_VISIONER.AWARENESS_PRIVACY.conservative',
+      moderate: 'PF2E_VISIONER.AWARENESS_PRIVACY.moderate',
+      permissive: 'PF2E_VISIONER.AWARENESS_PRIVACY.permissive'
+    },
+    default: 'conservative',
+  },
+  awarenessNoiseRadius: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessNoiseRadius.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessNoiseRadius.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: Number,
+    range: { min: 5, max: 100, step: 5 },
+    default: 20,
+  },
+  awarenessCommunicationRadius: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessCommunicationRadius.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessCommunicationRadius.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: Number,
+    range: { min: 10, max: 150, step: 5 },
+    default: 30,
+  },
+  awarenessMaxRange: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessMaxRange.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessMaxRange.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: Number,
+    range: { min: 20, max: 200, step: 10 },
+    default: 60,
+  },
+  awarenessRequireLoS: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessRequireLoS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessRequireLoS.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+  awarenessAllowSenses: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessAllowSenses.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessAllowSenses.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+  awarenessLogToGM: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessLogToGM.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessLogToGM.hint',
+    scope: 'world',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
+  awarenessShowFuzzyMarkers: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessShowFuzzyMarkers.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessShowFuzzyMarkers.hint',
+    scope: 'client',
+    config: true,
+    restricted: false,
+    type: Boolean,
+    default: true,
+  },
+  awarenessAutoWhisper: {
+    name: 'PF2E_VISIONER.SETTINGS.awarenessAutoWhisper.name',
+    hint: 'PF2E_VISIONER.SETTINGS.awarenessAutoWhisper.hint',
+    scope: 'world',
+    config: false,
+    restricted: true,
+    type: Boolean,
+    default: true,
   },
 
   autoCover: {

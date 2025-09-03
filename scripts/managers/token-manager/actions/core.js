@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID } from '../../../constants.js';
+import { awarenessService } from '../../../services/awareness-propagation.js';
 import { refreshEveryonesPerception } from '../../../services/socket.js';
 import { getCoverMap, getVisibilityMap, setCoverMap, setVisibilityMap } from '../../../utils.js';
 
@@ -14,6 +15,7 @@ export async function formHandler(event, form, formData) {
   const app = this;
   const visibilityChanges = {};
   const coverChanges = {};
+  const awarenessChanges = {};
   const wallVisibilityChanges = {};
 
   const formDataObj = formData.object || formData;
@@ -24,6 +26,9 @@ export async function formHandler(event, form, formData) {
     } else if (key.startsWith('cover.')) {
       const tokenId = key.replace('cover.', '');
       coverChanges[tokenId] = value;
+    } else if (key.startsWith('awareness.')) {
+      const tokenId = key.replace('awareness.', '');
+      awarenessChanges[tokenId] = value;
     } else if (key.startsWith('walls.')) {
       const wallId = key.replace('walls.', '');
       wallVisibilityChanges[wallId] = value;
@@ -89,6 +94,28 @@ export async function formHandler(event, form, formData) {
         }
       } catch (error) {
         console.warn('Token Manager: batch cover update failed', error);
+      }
+    }
+
+    if (Object.keys(awarenessChanges).length > 0) {
+      try {
+        for (const [tokenId, newState] of Object.entries(awarenessChanges)) {
+          const targetToken = canvas.tokens.get(tokenId);
+          if (!targetToken) continue;
+          
+          // Update awareness data in token flags
+          const currentAwareness = awarenessService.getAwarenessData(targetToken);
+          const updatedAwareness = { ...currentAwareness };
+          updatedAwareness[app.observer.id] = {
+            state: newState,
+            timestamp: new Date().toISOString(),
+            source: 'manual'
+          };
+          
+          await targetToken.document.setFlag(MODULE_ID, 'awareness', updatedAwareness);
+        }
+      } catch (error) {
+        console.warn('Token Manager: batch awareness update failed', error);
       }
     }
 

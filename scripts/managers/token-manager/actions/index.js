@@ -1,23 +1,25 @@
 import * as core from './core.js';
 import {
-  bindDomIconHandlers,
-  bulkSetCoverState,
-  bulkSetVisibilityState,
-  toggleEncounterFilter,
-  toggleIgnoreAllies,
-  toggleMode,
-  toggleTab,
+    bindDomIconHandlers,
+    bulkSetAwarenessState,
+    bulkSetCoverState,
+    bulkSetVisibilityState,
+    toggleEncounterFilter,
+    toggleIgnoreAllies,
+    toggleMode,
+    toggleTab,
 } from './ui.js';
 
 export * from './core.js';
 export {
-  bindDomIconHandlers,
-  bulkSetCoverState,
-  bulkSetVisibilityState,
-  toggleEncounterFilter,
-  toggleIgnoreAllies,
-  toggleMode,
-  toggleTab,
+    bindDomIconHandlers,
+    bulkSetAwarenessState,
+    bulkSetCoverState,
+    bulkSetVisibilityState,
+    toggleEncounterFilter,
+    toggleIgnoreAllies,
+    toggleMode,
+    toggleTab
 };
 
 export function bindTokenManagerActions(TokenManagerClass) {

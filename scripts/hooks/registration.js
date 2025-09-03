@@ -5,6 +5,7 @@
 import { MODULE_ID } from '../constants.js';
 import { onHighlightObjects } from '../services/hover-tooltips.js';
 import { registerAutoCoverHooks } from './auto-cover-new.js';
+import { registerAwarenessHooks } from './awareness-hooks.js';
 import { registerChatHooks } from './chat.js';
 import { registerCombatHooks } from './combat.js';
 import { onCanvasReady, onReady } from './lifecycle.js';
@@ -27,6 +28,7 @@ export function registerHooks() {
   registerUIHooks();
   registerCombatHooks();
   registerAutoCoverHooks();
+  registerAwarenessHooks();
 
   // Wall lifecycle: refresh indicators and see-through state when walls change
   Hooks.on('createWall', async () => {

@@ -14,7 +14,12 @@
       "RESET": "Reset Mode",
       "BULK_ACTIONS": "Bulk Actions",
       "VISIBILITY_TAB": "Visibility",
-      "COVER_TAB": "Cover"
+      "COVER_TAB": "Cover",
+      "AWARENESS_TAB": "Awareness",
+      "AWARENESS": "Awareness",
+      "PLAYER_CHARACTERS": "Player Characters",
+      "NPCS": "NPCs",
+      "TOKEN": "Token"
     },
     "VISIBILITY_STATES": {
       "observed": "Observed",
@@ -27,6 +32,24 @@
       "lesser": "Lesser Cover",
       "standard": "Standard Cover",
       "greater": "Greater Cover"
+    },
+    "AWARENESS_STATES": {
+      "none": "No Awareness",
+      "none_desc": "No awareness of the target's presence or location",
+      "suspicious": "Undetected (Vague)",
+      "suspicious_desc": "Vague sense - know something is there but cannot track or target",
+      "lastKnownArea": "Hidden (Imprecise)",
+      "lastKnownArea_desc": "Imprecise sense - know general area but need DC 11 flat check to target",
+      "observed": "Observed (Precise)",
+      "observed_desc": "Precise sense - can target normally without penalty"
+    },
+    "AWARENESS_PRIVACY": {
+      "conservative": "Conservative",
+      "conservative_desc": "Never reveal exact positions, always use fuzzy markers, require actions to localize",
+      "moderate": "Moderate", 
+      "moderate_desc": "Use fuzzy markers but allow some automatic awareness sharing",
+      "permissive": "Permissive",
+      "permissive_desc": "Allow exact position sharing with line of sight or special senses"
     },
     "COVER_OVERRIDE": {
       "POPUP_OVERRIDE": "Cover overridden via keybind popup: {original} → {final}",
@@ -198,6 +221,46 @@
       "ENABLE_ALL_TOKENS_VISION": {
         "name": "Enable Vision for All Tokens",
         "hint": "When enabled, all tokens will have vision enabled by default."
+      },
+      "awarenessEnabled": {
+        "name": "Enable Awareness Propagation",
+        "hint": "Allow allies to gain approximate awareness of hidden/sneaking characters through realistic means (sound, communication, etc.)"
+      },
+      "awarenessPrivacyLevel": {
+        "name": "Awareness Privacy Level",
+        "hint": "Controls how much information is shared between allies. Conservative never reveals exact positions."
+      },
+      "awarenessNoiseRadius": {
+        "name": "Noise Awareness Radius",
+        "hint": "Distance in feet within which allies can hear movement and become suspicious (default: 20ft)"
+      },
+      "awarenessCommunicationRadius": {
+        "name": "Communication Radius", 
+        "hint": "Distance in feet within which allies can share general awareness through subtle communication (default: 30ft)"
+      },
+      "awarenessMaxRange": {
+        "name": "Maximum Awareness Range",
+        "hint": "Maximum distance in feet for any awareness propagation to occur (default: 60ft)"
+      },
+      "awarenessRequireLoS": {
+        "name": "Require Line of Sight",
+        "hint": "When enabled, direct observation requires unobstructed line of sight (walls block awareness)"
+      },
+      "awarenessAllowSenses": {
+        "name": "Allow Special Senses",
+        "hint": "When enabled, special senses like darkvision, tremorsense, etc. can provide awareness beyond normal sight"
+      },
+      "awarenessLogToGM": {
+        "name": "Log Awareness to GM",
+        "hint": "When enabled, awareness propagation events are logged to the GM for review and debugging"
+      },
+      "awarenessShowFuzzyMarkers": {
+        "name": "Show Fuzzy Markers",
+        "hint": "When enabled, approximate awareness areas are shown as translucent overlays on the map"
+      },
+      "awarenessAutoWhisper": {
+        "name": "Auto-Whisper Awareness",
+        "hint": "When enabled, awareness updates are automatically whispered to affected players"
       },
       "DEFAULT_ENCOUNTER_FILTER": {
         "name": "Default Encounter Filter State",

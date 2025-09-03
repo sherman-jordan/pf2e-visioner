@@ -42,6 +42,8 @@ export function registerSocket() {
   visionerSocket = _socketService.register();
 }
 
+export { _socketService };
+
 /*
  * Refresh perception on the local canvas
  */
@@ -381,3 +383,5 @@ async function seekTemplateHandler({
     console.error(`[${MODULE_ID}] Failed to handle GM Seek template from player:`, e);
   }
 }
+
+

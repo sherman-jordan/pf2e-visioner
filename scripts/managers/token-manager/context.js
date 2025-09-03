@@ -3,13 +3,14 @@
  */
 
 import { extractPerceptionDC, extractStealthDC } from '../../chat/services/infra/shared-utils.js';
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../../constants.js';
+import { AWARENESS_STATES, COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../../constants.js';
+import { awarenessService } from '../../services/awareness-propagation.js';
 import {
-  getCoverMap,
-  getLastRollTotalForActor,
-  getSceneTargets,
-  getVisibilityMap,
-  hasActiveEncounter,
+    getCoverMap,
+    getLastRollTotalForActor,
+    getSceneTargets,
+    getVisibilityMap,
+    hasActiveEncounter,
 } from '../../utils.js';
 
 function getTokenImage(token) {
@@ -49,6 +50,30 @@ function getWallImage(doorType = 0) {
   return svgDataUri(svg);
 }
 
+function getAwarenessMap(observer) {
+  if (!observer || !game.settings.get('pf2e-visioner', 'awarenessEnabled')) {
+    return {};
+  }
+  
+  const awarenessMap = {};
+  const sceneTokens = canvas.tokens.placeables;
+  
+  for (const token of sceneTokens) {
+    if (token.id === observer.id) continue;
+    
+    const awarenessData = awarenessService.getAwarenessData(token);
+    const observerAwareness = awarenessData[observer.id];
+    
+    if (observerAwareness) {
+      awarenessMap[token.id] = observerAwareness.state || 'none';
+    } else {
+      awarenessMap[token.id] = 'none';
+    }
+  }
+  
+  return awarenessMap;
+}
+
 export async function buildContext(app, options) {
   // IMPORTANT: Call the base ApplicationV2 implementation, not our own override,
   // otherwise we recurse forever and nothing renders.
@@ -63,6 +88,7 @@ export async function buildContext(app, options) {
   try {
     app.visibilityData = getVisibilityMap(app.observer) || {};
     app.coverData = getCoverMap(app.observer) || {};
+    app.awarenessData = getAwarenessMap(app.observer) || {};
   } catch (_) {}
 
   const isLootObserver = app.observer?.actor?.type === 'loot';
@@ -76,8 +102,10 @@ export async function buildContext(app, options) {
   context.isTargetMode = app.mode === 'target';
   context.isVisibilityTab = app.activeTab === 'visibility';
   context.isCoverTab = app.activeTab === 'cover';
+  context.isAwarenessTab = app.activeTab === 'awareness';
   context.lootObserver = !!isLootObserver;
   context.hideCoverTab = !!isLootObserver;
+  context.hideAwarenessTab = !!isLootObserver || !game.settings.get('pf2e-visioner', 'awarenessEnabled');
 
   context.showEncounterFilter = hasActiveEncounter();
   context.encounterOnly = app.encounterOnly;
@@ -97,6 +125,7 @@ export async function buildContext(app, options) {
     allTargets = sceneTokens.map((token) => {
       const currentVisibilityState = app.visibilityData[token.document.id] || 'observed';
       const currentCoverState = app.coverData[token.document.id] || 'none';
+      const currentAwarenessState = app.awarenessData[token.document.id] || 'none';
 
       const disposition = token.document.disposition || 0;
 
@@ -147,6 +176,7 @@ export async function buildContext(app, options) {
           ? currentVisibilityState
           : 'observed',
         currentCoverState,
+        currentAwarenessState,
         isPC: token.actor?.hasPlayerOwner || token.actor?.type === 'character',
         disposition: disposition,
         dispositionClass:
@@ -164,6 +194,14 @@ export async function buildContext(app, options) {
           bonusStealth: config.bonusStealth,
           canHide: config.canHide,
         })),
+        awarenessStates: Object.entries(AWARENESS_STATES).map(([key, config]) => ({
+          value: key,
+          label: game.i18n.localize(config.label),
+          selected: currentAwarenessState === key,
+          icon: config.icon,
+          color: config.color,
+          cssClass: config.cssClass,
+        })),
         perceptionDC,
         stealthDC,
         showOutcome,
@@ -175,8 +213,10 @@ export async function buildContext(app, options) {
     allTargets = sceneTokens.map((observerToken) => {
       const observerVisibilityData = getVisibilityMap(observerToken);
       const observerCoverData = getCoverMap(observerToken);
+      const observerAwarenessData = getAwarenessMap(observerToken);
       const currentVisibilityState = observerVisibilityData[app.observer.document.id] || 'observed';
       const currentCoverState = observerCoverData[app.observer.document.id] || 'none';
+      const currentAwarenessState = observerAwarenessData[app.observer.document.id] || 'none';
 
       const disposition = observerToken.document.disposition || 0;
 
@@ -226,6 +266,7 @@ export async function buildContext(app, options) {
           ? currentVisibilityState
           : 'observed',
         currentCoverState,
+        currentAwarenessState,
         isPC: observerToken.actor?.hasPlayerOwner || observerToken.actor?.type === 'character',
         disposition: disposition,
         dispositionClass:
@@ -242,6 +283,14 @@ export async function buildContext(app, options) {
           bonusReflex: config.bonusReflex,
           bonusStealth: config.bonusStealth,
           canHide: config.canHide,
+        })),
+        awarenessStates: Object.entries(AWARENESS_STATES).map(([key, config]) => ({
+          value: key,
+          label: game.i18n.localize(config.label),
+          selected: currentAwarenessState === key,
+          icon: config.icon,
+          color: config.color,
+          cssClass: config.cssClass,
         })),
         perceptionDC,
         stealthDC,
@@ -367,6 +416,15 @@ export async function buildContext(app, options) {
     bonusReflex: config.bonusReflex,
     bonusStealth: config.bonusStealth,
     canHide: config.canHide,
+  }));
+
+  context.awarenessStates = Object.entries(AWARENESS_STATES).map(([key, config]) => ({
+    key,
+    label: game.i18n.localize(config.label),
+    icon: config.icon,
+    color: config.color,
+    cssClass: config.cssClass,
+    description: game.i18n.localize(config.description),
   }));
 
   context.hasTargets = allTargets.length > 0;

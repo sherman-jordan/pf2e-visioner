@@ -39,6 +39,18 @@ const SETTINGS_GROUPS = {
     'customSeekDistance',
     'customSeekDistanceOutOfCombat',
   ],
+  'Awareness Propagation': [
+    'awarenessEnabled',
+    'awarenessPrivacyLevel',
+    'awarenessNoiseRadius',
+    'awarenessCommunicationRadius',
+    'awarenessMaxRange',
+    'awarenessRequireLoS',
+    'awarenessAllowSenses',
+    'awarenessLogToGM',
+    'awarenessShowFuzzyMarkers',
+    'awarenessAutoWhisper',
+  ],
   'Auto-cover': [
     'autoCover',
     'autoCoverTokenIntersectionMode',

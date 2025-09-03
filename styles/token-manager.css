@@ -146,11 +146,19 @@
     border-color: var(--cover-standard);
     color: var(--color-text-light-primary);
   }
+  .icon-tab-navigation .icon-tab-button[data-tab='awareness'].active {
+    background: linear-gradient(135deg, var(--color-info, #2196f3), var(--color-info, #2196f3));
+    border-color: var(--color-info, #2196f3);
+    color: var(--color-text-light-primary);
+  }
   .icon-tab-navigation .icon-tab-button[data-tab='visibility'] i {
     color: var(--visibility-observed);
   }
   .icon-tab-navigation .icon-tab-button[data-tab='cover'] i {
     color: var(--cover-standard);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='awareness'] i {
+    color: var(--color-info, #2196f3);
   }
   .icon-tab-navigation .icon-tab-button.active i {
     color: var(--color-text-light-primary);
@@ -158,7 +166,8 @@
 
   /* 2x2 legend grid */
   .observer-tools .visibility-legend,
-  .observer-tools .cover-legend {
+  .observer-tools .cover-legend,
+  .observer-tools .awareness-legend {
     display: grid;
     grid-template-columns: repeat(2, auto);
     gap: 2px 6px;
@@ -1556,5 +1565,112 @@
     background: rgba(255, 255, 0, 0.1) !important;
     border-left: 3px solid var(--visibility-concealed);
     cursor: pointer;
+  }
+
+  /* Awareness Tab Styling */
+  .awareness-section {
+    display: none;
+  }
+
+  .awareness-section.active {
+    display: block;
+  }
+
+  .awareness-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+  }
+
+  .awareness-table th,
+  .awareness-table td {
+    padding: 4px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-light-primary);
+  }
+
+  .awareness-table th {
+    background-color: var(--color-bg-option);
+    font-weight: bold;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .awareness-table .token-column {
+    width: 50%;
+  }
+
+  .awareness-table .awareness-column {
+    width: 50%;
+    text-align: center;
+  }
+
+  /* Compact table sections for awareness */
+  .awareness-section .table-section {
+    margin-bottom: 8px;
+  }
+
+  .awareness-section .table-section-header {
+    padding: 4px 0;
+    margin-bottom: 4px;
+  }
+
+  .awareness-section .table-section-header h3 {
+    margin: 0;
+    font-size: 1em;
+  }
+
+  .awareness-state {
+    text-align: center;
+  }
+
+  /* Awareness state colors */
+  .awareness-none i {
+    color: var(--color-text-secondary, #666);
+  }
+
+  .awareness-suspicious i {
+    color: var(--color-warning, #ffc107);
+  }
+
+  .awareness-last-known i {
+    color: var(--color-info, #2196f3);
+  }
+
+  .awareness-observed i {
+    color: var(--visibility-observed, #4caf50);
+  }
+
+  /* Awareness bulk actions styling */
+  .awareness-section .bulk-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .awareness-section .bulk-action-button {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    background: var(--color-bg-btn);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .awareness-section .bulk-action-button:hover {
+    background: var(--color-bg-btn-hover);
+    border-color: var(--color-border-light-highlight);
+    transform: translateY(-1px);
+  }
+
+  .awareness-section .bulk-action-button i {
+    font-size: 12px;
   }
 } /* End .pf2e-visioner scope */

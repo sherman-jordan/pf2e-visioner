@@ -57,6 +57,14 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       bulkNPCLesserCover: VisionerTokenManager.bulkSetCoverState,
       bulkNPCStandardCover: VisionerTokenManager.bulkSetCoverState,
       bulkNPCGreaterCover: VisionerTokenManager.bulkSetCoverState,
+      bulkPCAwarenessNone: VisionerTokenManager.bulkSetAwarenessState,
+      bulkPCAwerenessSuspicious: VisionerTokenManager.bulkSetAwarenessState,
+      bulkPCAwarenessLastKnown: VisionerTokenManager.bulkSetAwarenessState,
+      bulkPCAwarenessObserved: VisionerTokenManager.bulkSetAwarenessState,
+      bulkNPCAwarenessNone: VisionerTokenManager.bulkSetAwarenessState,
+      bulkNPCAwerenessSuspicious: VisionerTokenManager.bulkSetAwarenessState,
+      bulkNPCAwarenessLastKnown: VisionerTokenManager.bulkSetAwarenessState,
+      bulkNPCAwarenessObserved: VisionerTokenManager.bulkSetAwarenessState,
     };
     return cfg;
   })();
@@ -247,6 +255,14 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   static async bulkSetCoverState(event, button) {
     const { bulkSetCoverState } = await import('./actions/index.js');
     return bulkSetCoverState.call(this, event, button);
+  }
+
+  /**
+   * Bulk set awareness state for tokens
+   */
+  static async bulkSetAwarenessState(event, button) {
+    const { bulkSetAwarenessState } = await import('./actions/index.js');
+    return bulkSetAwarenessState.call(this, event, button);
   }
 
   /**

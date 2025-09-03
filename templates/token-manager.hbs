@@ -86,6 +86,11 @@
             <i class="fas fa-shield-alt"></i>
           </button>
         {{/unless}}
+        {{#unless hideAwarenessTab}}
+          <button type="button" class="icon-tab-button {{#if isAwarenessTab}}active{{/if}}" data-action="toggleTab" data-tab="awareness" data-tooltip="{{localize "PF2E_VISIONER.TOKEN_MANAGER.AWARENESS_TAB"}}">
+            <i class="fas fa-brain"></i>
+          </button>
+        {{/unless}}
       </div>
       <div class="legend-panel">
         {{#if isVisibilityTab}}
@@ -97,10 +102,19 @@
               </div>
             {{/each}}
           </div>
-        {{else}}
+        {{else if isCoverTab}}
           <div class="cover-legend">
             {{#each coverStates as |state|}}
               <div class="legend-item" data-tooltip="{{state.label}}{{#if (gt state.bonusAC 0)}} (+{{state.bonusAC}} AC{{#if (gt state.bonusReflex 0)}}, +{{state.bonusReflex}} Reflex{{/if}}{{#if (gt state.bonusStealth 0)}}, +{{state.bonusStealth}} Stealth{{/if}}){{/if}}">
+                <i class="{{state.icon}} {{state.cssClass}}"></i>
+                <span>{{state.label}}</span>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="awareness-legend">
+            {{#each awarenessStates as |state|}}
+              <div class="legend-item" data-tooltip="{{state.description}}">
                 <i class="{{state.icon}} {{state.cssClass}}"></i>
                 <span>{{state.label}}</span>
               </div>
@@ -702,6 +716,134 @@
             </div>
           {{/if}}
           
+        {{else}}
+          <div class="no-targets">
+            <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+    {{/unless}}
+
+    {{!-- Awareness Tab --}}
+    {{#unless hideAwarenessTab}}
+    <div class="tab-panel awareness-section {{#if isAwarenessTab}}active{{/if}}">
+      {{!-- Legend moved to top-right observer-tools --}}
+
+      {{!-- Scrollable tables area for awareness --}}
+      <div class="tables-content">
+        {{#if hasTargets}}
+          
+          {{!-- Player Characters Table --}}
+          {{#if hasPCs}}
+            <div class="table-section">
+              <div class="table-section-header">
+                <h3>{{localize "PF2E_VISIONER.TOKEN_MANAGER.PLAYER_CHARACTERS"}}</h3>
+                <div class="bulk-actions">
+                  <button type="button" class="bulk-action-button" data-action="bulkPCAwarenessNone" data-tooltip="Set all PCs to No Awareness">
+                    <i class="fas fa-question awareness-none"></i>
+                  </button>
+                  <button type="button" class="bulk-action-button" data-action="bulkPCAwerenessSuspicious" data-tooltip="Set all PCs to Suspicious">
+                    <i class="fas fa-exclamation-triangle awareness-suspicious"></i>
+                  </button>
+                  <button type="button" class="bulk-action-button" data-action="bulkPCAwarenessLastKnown" data-tooltip="Set all PCs to Last Known Area">
+                    <i class="fas fa-map-marker-alt awareness-last-known"></i>
+                  </button>
+                  <button type="button" class="bulk-action-button" data-action="bulkPCAwarenessObserved" data-tooltip="Set all PCs to Observed">
+                    <i class="fas fa-eye awareness-observed"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="awareness-table">
+                  <thead>
+                    <tr>
+                      <th class="token-column">{{localize "PF2E_VISIONER.TOKEN_MANAGER.TOKEN"}}</th>
+                      <th class="awareness-column">{{localize "PF2E_VISIONER.TOKEN_MANAGER.AWARENESS"}}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each pcTargets as |target|}}
+                      <tr class="token-row {{target.dispositionClass}}">
+                        <td class="token-info">
+                          <img src="{{target.img}}" class="token-image" data-token-id="{{target.id}}" />
+                          <span class="token-name">{{target.name}}</span>
+                        </td>
+                        <td class="awareness-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.awarenessStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      data-tooltip="{{state.label}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="awareness.{{target.id}}" value="{{target.currentAwarenessState}}" />
+                          </div>
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+
+          {{!-- NPCs Table --}}
+          {{#if hasNPCs}}
+            <div class="table-section">
+              <div class="table-section-header">
+                <h3>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NPCS"}}</h3>
+                <div class="bulk-actions">
+                  <button type="button" class="bulk-action-button" data-action="bulkNPCAwarenessNone" data-tooltip="Set all NPCs to No Awareness">
+                    <i class="fas fa-question awareness-none"></i>
+                  </button>
+                  <button type="button" class="bulk-action-button" data-action="bulkNPCAwerenessSuspicious" data-tooltip="Set all NPCs to Suspicious">
+                    <i class="fas fa-exclamation-triangle awareness-suspicious"></i>
+                  </button>
+                  <button type="button" class="bulk-action-button" data-action="bulkNPCAwarenessLastKnown" data-tooltip="Set all NPCs to Last Known Area">
+                    <i class="fas fa-map-marker-alt awareness-last-known"></i>
+                  </button>
+                  <button type="button" class="bulk-action-button" data-action="bulkNPCAwarenessObserved" data-tooltip="Set all NPCs to Observed">
+                    <i class="fas fa-eye awareness-observed"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="awareness-table">
+                  <thead>
+                    <tr>
+                      <th class="token-column">{{localize "PF2E_VISIONER.TOKEN_MANAGER.TOKEN"}}</th>
+                      <th class="awareness-column">{{localize "PF2E_VISIONER.TOKEN_MANAGER.AWARENESS"}}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each npcTargets as |target|}}
+                      <tr class="token-row {{target.dispositionClass}}">
+                        <td class="token-info">
+                          <img src="{{target.img}}" class="token-image" data-token-id="{{target.id}}" />
+                          <span class="token-name">{{target.name}}</span>
+                        </td>
+                        <td class="awareness-state">
+                          <div class="icon-selection" data-target="{{target.id}}">
+                            {{#each target.awarenessStates as |state|}}
+                              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
+                                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                                      data-tooltip="{{state.label}}">
+                                <i class="{{state.icon}}"></i>
+                              </button>
+                            {{/each}}
+                            <input type="hidden" name="awareness.{{target.id}}" value="{{target.currentAwarenessState}}" />
+                          </div>
+                        </td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{/if}}
+
         {{else}}
           <div class="no-targets">
             <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>

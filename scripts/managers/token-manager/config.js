@@ -49,6 +49,16 @@ export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
     bulkNPCLesserCover: null,
     bulkNPCStandardCover: null,
     bulkNPCGreaterCover: null,
+    // PC-specific bulk actions for awareness
+    bulkPCAwarenessNone: null,
+    bulkPCAwerenessSuspicious: null,
+    bulkPCAwarenessLastKnown: null,
+    bulkPCAwarenessObserved: null,
+    // NPC-specific bulk actions for awareness
+    bulkNPCAwarenessNone: null,
+    bulkNPCAwerenessSuspicious: null,
+    bulkNPCAwarenessLastKnown: null,
+    bulkNPCAwarenessObserved: null,
   },
 };
 

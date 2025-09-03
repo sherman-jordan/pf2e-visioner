@@ -390,6 +390,135 @@ export async function bulkSetCoverState(event, button) {
   }
 }
 
+export async function bulkSetAwarenessState(event, button) {
+  try {
+    // Parse the action to get state and target type
+    const action = button.dataset.action;
+    if (!action) return;
+    
+    let state, targetType;
+    if (action.includes('PC')) {
+      targetType = 'pc';
+    } else if (action.includes('NPC')) {
+      targetType = 'npc';
+    }
+    
+    if (action.includes('None')) {
+      state = 'none';
+    } else if (action.includes('Suspicious')) {
+      state = 'suspicious';
+    } else if (action.includes('LastKnown')) {
+      state = 'lastKnownArea';
+    } else if (action.includes('Observed')) {
+      state = 'observed';
+    }
+    
+    if (!state) return;
+
+    // Add loading state to the button
+    button.classList.add('loading');
+    button.disabled = true;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    const targetEl = button || event?.currentTarget || event?.target || null;
+    const form =
+      (targetEl && typeof targetEl.closest === 'function' ? targetEl.closest('form') : null) ||
+      this?.element?.querySelector?.('form') ||
+      this?.element ||
+      null;
+
+    if (!form) {
+      // Restore button state on error
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+      return;
+    }
+
+    // Build selector for awareness section
+    let selector = '.awareness-section .icon-selection';
+
+    // Cache DOM queries to avoid repeated lookups
+    const iconSelections = form.querySelectorAll(selector);
+    if (!iconSelections.length) {
+      // Restore button state if no elements found
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+      return;
+    }
+
+    // Filter by target type (PC vs NPC) based on table section
+    const filteredSelections = Array.from(iconSelections).filter(iconSelection => {
+      const tableSection = iconSelection.closest('.table-section');
+      if (!tableSection) return false;
+      
+      const header = tableSection.querySelector('h3');
+      if (!header) return false;
+      
+      const headerText = header.textContent.toLowerCase();
+      if (targetType === 'pc') {
+        return headerText.includes('player') || headerText.includes('characters');
+      } else if (targetType === 'npc') {
+        return headerText.includes('npc');
+      }
+      return true;
+    });
+
+    // Pre-cache all elements that need updates
+    const updates = [];
+
+    filteredSelections.forEach((iconSelection) => {
+      const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
+      const current = hiddenInput?.value;
+
+      // Skip if already in target state
+      if (current === state) return;
+
+      const currentSelected = iconSelection.querySelector('.state-icon.selected');
+      const targetIcon = iconSelection.querySelector(`[data-state="${state}"]`);
+
+      if (hiddenInput && targetIcon) {
+        updates.push({
+          hiddenInput,
+          currentSelected,
+          targetIcon,
+        });
+      }
+    });
+
+    // Batch all DOM updates in a single animation frame
+    if (updates.length > 0) {
+      requestAnimationFrame(() => {
+        updates.forEach((update) => {
+          if (update.currentSelected) {
+            update.currentSelected.classList.remove('selected');
+          }
+          update.targetIcon.classList.add('selected');
+          update.hiddenInput.value = state;
+        });
+      });
+    }
+
+    // Restore button state after operation completes
+    setTimeout(() => {
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = originalText;
+    }, 100);
+  } catch (error) {
+    console.error('Error in bulk set awareness state:', error);
+    showNotification('An error occurred while setting bulk awareness state', 'error');
+    // Restore button state on error
+    if (button) {
+      button.classList.remove('loading');
+      button.disabled = false;
+      button.innerHTML = button.dataset.originalText || 'Error';
+    }
+  }
+}
+
 export function bindDomIconHandlers(TokenManagerClass) {
   TokenManagerClass.prototype.addIconClickHandlers = function addIconClickHandlers() {
     const element = this.element;

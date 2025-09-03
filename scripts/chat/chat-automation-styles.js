@@ -631,7 +631,6 @@ function getChatAutomationCSS() {
         
         .seek-results-table td,
         .hide-results-table td,
-        .point-out-results-table td,
         .create-a-diversion-preview-dialog .results-table td,
         .sneak-results-table td,
         .consequences-results-table td {
@@ -645,11 +644,22 @@ function getChatAutomationCSS() {
         
         .seek-results-table tbody tr:nth-child(even) td,
         .hide-results-table tbody tr:nth-child(even) td,
-        .point-out-results-table tbody tr:nth-child(even) td,
         .create-a-diversion-preview-dialog .results-table tbody tr:nth-child(even) td,
         .sneak-results-table tbody tr:nth-child(even) td,
         .consequences-results-table tbody tr:nth-child(even) td {
             background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
+        }
+
+        .point-out-results-table td {
+            padding: 8px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .point-out-results-table tbody tr:nth-child(even) td {
+            padding: 8px 6px;
+            text-align: center;
+            vertical-align: middle;
         }
         
         /* ===== UNIFIED TOKEN IMAGE STYLING ===== */

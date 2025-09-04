@@ -13,8 +13,8 @@ PF2E Visioner is a comprehensive visibility and cover toolkit for Foundry VTT's 
 ## ✅ Requirements
 
 - Foundry VTT v13.341+
-- PF2e System v6.0.0+
-- libwrapper
+- PF2e System v7.0.0+
+- lib-wrapper
 - Recommended: socketlib (for cross-client perception refresh)
 
 ---
@@ -79,6 +79,7 @@ Visioner enhances PF2E chat cards with buttons that open result dialogs and appl
 - Encounter filtering toggle
 - Outcome/margin display
 - Per‑row apply/revert and bulk actions
+- Resizable windows with responsive content
 
 ### Chat Automation Behavior (GM‑first, player‑safe)
 
@@ -164,6 +165,18 @@ When enabled, Visioner evaluates cover between the acting token and its current 
 - Player-configurable keybindings via FoundryVTT's native Controls settings.
 - Optional encounter-only restriction setting.
 - Smart occupation filtering - excludes squares occupied by other tokens (except tiny creatures sharing space).
+
+---
+
+## 🗺️ Regions Automation (optional)
+
+Visioner includes a Foundry Regions behavior that can automatically apply visibility states when a token enters or exits a designated region.
+
+- Behavior: sets observer→target visibility when tokens enter/leave regions you configure.
+- Smarter event handling: debounced move/animate/turn/round events, skipping redundant writes.
+- Exclusions: ignores tokens with actor types loot and hazard.
+
+Enable via a Region behavior of type Pf2eVisionerVisibility and configure states per region.
 
 ---
 
@@ -269,7 +282,7 @@ Visioner ships a `PF2eVisionerVisibility` rule element for item‑driven visibil
 - Player tooltip restrictions and pattern indicators.
 - Attack Consequences dialog.
 - Seek Template flow with GM gate, player template handoff, and "no targets → no button".
-- Point Out flow rework with robust target resolution and single‑ping rule.
+- Point Out flow rework with robust target resolution, single‑ping rule, and resizable dialog.
 - UI polish: scrollbars, scaling, initiative‑aware ephemeral durations.
 - Auto‑Cover with roll‑time application and instant cleanup.
 - Modifiers dialog cover override row with icon buttons.
@@ -281,6 +294,8 @@ Visioner ships a `PF2eVisionerVisibility` rule element for item‑driven visibil
 - 3D Sampling mode for more accurate cover calculations considering elevation and size.
 - Enhanced cover visualization performance with viewport limiting.
 - Fog of war awareness for cover visualization.
+- Regions behavior: auto-apply visibility on region enter/exit, redundant-write avoidance, and combat-turn safeguards.
+- PF2e v7+ compatibility and updated minimum system requirement.
 
 ---
 
@@ -288,4 +303,5 @@ Visioner ships a `PF2eVisionerVisibility` rule element for item‑driven visibil
 
 - GPL-3.0 license. See `LICENSE`.
 - PF2e system: community‑maintained; see their repository for credits.
+- Special thanks to contributors and testers.
 - Special thanks to contributors and testers.

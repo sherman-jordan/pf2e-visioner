@@ -610,83 +610,103 @@ export function registerKeybindings() {
     const keybindingConfig = { ...config };
 
     // Add appropriate handler
-    if (key === 'openTokenManager') {
-      keybindingConfig.onDown = async () => {
-        const mode = game.settings.get(MODULE_ID, 'keybindingOpensTMInTargetMode')
-          ? 'target'
-          : 'observer';
-        const { api } = await import('./api.js');
-        await api.openTokenManager(null, { mode });
-      };
-    } else if (key === 'openQuickPanel') {
-      keybindingConfig.onDown = async () => {
-        try {
-          const { VisionerQuickPanel } = await import('./managers/quick-panel.js');
-          const existing =
-            VisionerQuickPanel.current ||
-            Object.values(ui.windows || {}).find((w) => w instanceof VisionerQuickPanel) ||
-            null;
-          // Toggle: if open, close it
-          if (existing) {
-            try {
-              await existing.close();
-            } catch (_) { }
-            return;
-          }
+    switch (key) {
+      case 'openTokenManager':
+        keybindingConfig.onDown = async () => {
+          const mode = game.settings.get(MODULE_ID, 'keybindingOpensTMInTargetMode')
+            ? 'target'
+            : 'observer';
+          const { api } = await import('./api.js');
+          await api.openTokenManager(null, { mode });
+        };
+        break;
+      case 'openQuickPanel':
+        keybindingConfig.onDown = async () => {
+          try {
+            const { VisionerQuickPanel } = await import('./managers/quick-panel.js');
+            const existing =
+              VisionerQuickPanel.current ||
+              Object.values(ui.windows || {}).find((w) => w instanceof VisionerQuickPanel) ||
+              null;
+            // Toggle: if open, close it
+            if (existing) {
+              try {
+                await existing.close();
+              } catch (_) { }
+              return;
+            }
 
-          // If minimized floater exists, restore at its position
-          const floater = document.getElementById('pf2e-visioner-floating-qp');
-          if (floater) {
-            const left = parseInt(floater.style.left || '0', 10) || 120;
-            const top = parseInt(floater.style.top || '0', 10) || 120;
+            // If minimized floater exists, restore at its position
+            const floater = document.getElementById('pf2e-visioner-floating-qp');
+            if (floater) {
+              const left = parseInt(floater.style.left || '0', 10) || 120;
+              const top = parseInt(floater.style.top || '0', 10) || 120;
+              const qp = new VisionerQuickPanel();
+              qp.position = { ...(qp.position || {}), left, top };
+              qp.render(true);
+              try {
+                qp._removeFloatingButton();
+              } catch (_) { }
+              return;
+            }
+
+            // Otherwise open a new one
             const qp = new VisionerQuickPanel();
-            qp.position = { ...(qp.position || {}), left, top };
             qp.render(true);
-            try {
-              qp._removeFloatingButton();
-            } catch (_) { }
-            return;
+          } catch (_) { }
+        };
+        break;
+      case 'openVisibilityManager':
+        keybindingConfig.onDown = async () => {
+          const { api } = await import('./api.js');
+          await api.openVisibilityManager();
+        };
+        break;
+      case 'toggleObserverMode':
+        keybindingConfig.onDown = async () => {
+          const { setTooltipMode } = await import('./services/hover-tooltips.js');
+          setTooltipMode('observer');
+        };
+        keybindingConfig.onUp = async () => {
+          const { setTooltipMode } = await import('./services/hover-tooltips.js');
+          setTooltipMode('target');
+        };
+        break;
+      case 'showAutoCoverOverlay':
+        keybindingConfig.onDown = async () => {
+          try {
+            const { HoverTooltips, showAutoCoverComputedOverlay, hideAutoCoverComputedOverlay } =
+              await import('./services/hover-tooltips.js');
+            // Decide source token: hovered or first controlled
+            let token = HoverTooltips.currentHoveredToken;
+            if (!token) token = canvas.tokens.controlled?.[0] || null;
+            if (!token) return;
+            // Render fresh auto-cover computation overlay (cover-only)
+            hideAutoCoverComputedOverlay();
+            showAutoCoverComputedOverlay(token);
+          } catch (_) { }
+        };
+        keybindingConfig.onUp = async () => {
+          try {
+            const { hideAutoCoverComputedOverlay } = await import('./services/hover-tooltips.js');
+            hideAutoCoverComputedOverlay();
+          } catch (_) { }
+        };
+        break;
+      case 'openWallManager':
+        keybindingConfig.onDown = async () => {
+          const { VisionerWallManager } = await import('./managers/wall-manager/wall-manager.js');
+          // If already open, bring to front; else open new
+          const existing = Object.values(ui.windows || {}).find((w) => w instanceof VisionerWallManager) || null;
+          if (existing) {
+            existing.bringToFront();
+          } else {
+            const wm = new VisionerWallManager();
+            wm.render(true);
           }
-
-          // Otherwise open a new one
-          const qp = new VisionerQuickPanel();
-          qp.render(true);
-        } catch (_) { }
-      };
-    } else if (key === 'openVisibilityManager') {
-      keybindingConfig.onDown = async () => {
-        const { api } = await import('./api.js');
-        await api.openVisibilityManager();
-      };
-    } else if (key === 'toggleObserverMode') {
-      keybindingConfig.onDown = async () => {
-        const { setTooltipMode } = await import('./services/hover-tooltips.js');
-        setTooltipMode('observer');
-      };
-      keybindingConfig.onUp = async () => {
-        const { setTooltipMode } = await import('./services/hover-tooltips.js');
-        setTooltipMode('target');
-      };
-    } else if (key === 'showAutoCoverOverlay') {
-      keybindingConfig.onDown = async () => {
-        try {
-          const { HoverTooltips, showAutoCoverComputedOverlay, hideAutoCoverComputedOverlay } =
-            await import('./services/hover-tooltips.js');
-          // Decide source token: hovered or first controlled
-          let token = HoverTooltips.currentHoveredToken;
-          if (!token) token = canvas.tokens.controlled?.[0] || null;
-          if (!token) return;
-          // Render fresh auto-cover computation overlay (cover-only)
-          hideAutoCoverComputedOverlay();
-          showAutoCoverComputedOverlay(token);
-        } catch (_) { }
-      };
-      keybindingConfig.onUp = async () => {
-        try {
-          const { hideAutoCoverComputedOverlay } = await import('./services/hover-tooltips.js');
-          hideAutoCoverComputedOverlay();
-        } catch (_) { }
-      };
+        };
+        break;
+      // Add other keybindings as needed
     }
 
     game.keybindings.register(MODULE_ID, key, keybindingConfig);

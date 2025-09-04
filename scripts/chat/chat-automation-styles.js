@@ -1173,13 +1173,7 @@ function getChatAutomationCSS() {
             font-size: 12px !important;
             pointer-events: none !important;
         }
-        
-        /* Point Out Preview Dialog Styles */
-        .point-out-preview-dialog {
-            min-width: 350px;
-            max-width: 450px;
-            width: auto;
-        }
+
         
         .point-out-preview-dialog .window-header {
             background: linear-gradient(135deg, var(--visibility-hidden) 0%, var(--visibility-hidden) 100%);

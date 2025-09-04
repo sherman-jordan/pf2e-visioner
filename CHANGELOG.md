@@ -17,7 +17,7 @@
 
 ### 🐛 Fixed
 
-- **Point out dialog**: Weird rectabgle is now gone
+- **Point out dialog**: Weird rectangle is now gone
 - **All Dialogs**: Names will be wrapped on word breaks
 
 ## [3.0.6] - 2025-09-02

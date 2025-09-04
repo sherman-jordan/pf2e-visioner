@@ -4,12 +4,12 @@
 
 import { MODULE_ID } from '../constants.js';
 import { onHighlightObjects } from '../services/hover-tooltips.js';
-import { registerAutoCoverHooks } from './auto-cover-new.js';
 import { registerChatHooks } from './chat.js';
 import { registerCombatHooks } from './combat.js';
 import { onCanvasReady, onReady } from './lifecycle.js';
 import { registerTokenHooks } from './token-events.js';
 import { registerUIHooks } from './ui.js';
+import { AutoCoverHooks } from '../cover/auto-cover/AutoCoverHooks.js';
 
 export function registerHooks() {
   
@@ -26,7 +26,7 @@ export function registerHooks() {
   // UI hues
   registerUIHooks();
   registerCombatHooks();
-  registerAutoCoverHooks();
+  AutoCoverHooks.registerHooks();
 
   // Wall lifecycle: refresh indicators and see-through state when walls change
   Hooks.on('createWall', async () => {

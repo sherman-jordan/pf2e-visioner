@@ -813,28 +813,84 @@ function injectPF2eVisionerBox(app, root) {
     }
   } catch (_) {}
 
-  const tokenDoc = app?.document;
-  const actor = tokenDoc?.actor ?? tokenDoc?.parent;
-  if (!actor) return;
-  const panel = root.querySelector(`div.tab[data-group="sheet"][data-tab="vision"]`);
+  // The incoming "app" can represent several shapes depending on which sheet
+  // is being rendered: a TokenConfig, PrototypeTokenConfig, or the PF2e
+  // specialized PrototypeTokenConfigPF2e which may expose the Actor in
+  // different places or provide a `prototypeToken` payload on the actor.
+  const tokenDoc = app?.document || app?.token || app?.object?.document || null;
+
+  // Resolve an Actor document robustly across these shapes. Try multiple
+  // locations to account for PF2e's PrototypeTokenConfigPF2e variants.
+  let actor = null;
+  // Token document may directly reference its actor
+  if (tokenDoc?.actor) actor = tokenDoc.actor;
+  // Some token-like documents expose a parent (Actor)
+  else if (tokenDoc?.parent) actor = tokenDoc.parent;
+  // PF2e PrototypeTokenConfigPF2e sometimes exposes the actor via app.object.actor
+  else if (app?.object?.actor) actor = app.object.actor;
+  // Some PF2e sheets expose the actor itself as app.object
+  else if (app?.object && (app.object.documentName === 'Actor' || app.object?.type)) actor = app.object;
+  // As a last-ditch, check app?.actor or app.options?.actor or app.options?.document
+  else if (app?.actor) actor = app.actor;
+  else if (app?.options?.actor) actor = app.options.actor;
+  else if (app?.options?.document) actor = app.options.document;
+
+  // Diagnostic logging to help debug PrototypeTokenConfigPF2e injection issues.
+  // Include additional probe points so the runtime shape can be understood
+  // when sheets don't expose objects in the typical places.
+  try {
+    console.debug('[pf2e-visioner] injectPF2eVisionerBox called', {
+      appConstructor: app?.constructor?.name,
+      appObjectPresent: !!app?.object,
+      appActorPresent: !!app?.actor,
+      appOptionsActorPresent: !!app?.options?.actor,
+      appOptionsDocumentPresent: !!app?.options?.document,
+      documentName: app?.document?.documentName,
+      tokenDocPresent: !!tokenDoc,
+      tokenDocDocumentName: tokenDoc?.documentName,
+      tokenDocHasFlags: !!tokenDoc?.flags,
+      actorId: actor?.id,
+      actorType: actor?.type,
+      actorHasPrototypeToken: !!actor?.prototypeToken,
+      prototypeFlagsPresent: !!actor?.prototypeToken?.flags?.[MODULE_ID],
+      prototypeRaw: actor?.prototypeToken || null,
+    });
+  } catch (_) {}
+
+  if (!actor) {
+    // If there's no actor, attempt to still read flags off the tokenDoc-like
+    // shapes or app options that may include prototypeToken data.
+    try {
+      console.debug('[pf2e-visioner] injectPF2eVisionerBox: no actor resolved', { app, tokenDoc });
+    } catch (_) {}
+    // We can't render actor-sensitive fields without an actor, so bail out.
+    return;
+  }
+
+  const panel = root.querySelector('div.tab[data-group="sheet"][data-tab="vision"]');
   if (!panel || panel.querySelector('.pf2e-visioner-box')) return;
-  const detectionFS = [...panel.querySelectorAll('fieldset')].find(
-    (fs) =>
-      fs.querySelector('header.detection-mode') ||
-      (fs.querySelector('legend')?.textContent || '').trim().toLowerCase().startsWith('detection'),
+
+  // Find the detection fieldset (used as an anchor) if present
+  const detectionFS = [...panel.querySelectorAll('fieldset')].find((fs) =>
+    fs.querySelector('header.detection-mode') ||
+    (fs.querySelector('legend')?.textContent || '').trim().toLowerCase().startsWith('detection'),
   );
   const box = document.createElement('fieldset');
   box.className = 'pf2e-visioner-box';
 
-  // Current values
-  const stealthCurrent =
-    tokenDoc.getFlag?.(MODULE_ID, 'stealthDC') ?? tokenDoc.flags?.[MODULE_ID]?.stealthDC ?? '';
-  const coverOverride = tokenDoc.getFlag?.(MODULE_ID, 'coverOverride') || 'auto';
-  const minPerceptionRank = Number(
-    tokenDoc.getFlag?.(MODULE_ID, 'minPerceptionRank') ??
-      tokenDoc.flags?.[MODULE_ID]?.minPerceptionRank ??
-      0,
-  );
+  // Current values: token flags may live on a Token document or inside an Actor's
+  // `prototypeToken.flags` for prototype token configuration forms (PF2e).
+  const readFlag = (key) => {
+    return (
+      tokenDoc?.getFlag?.(MODULE_ID, key) ??
+      tokenDoc?.flags?.[MODULE_ID]?.[key] ??
+      actor?.prototypeToken?.flags?.[MODULE_ID]?.[key]
+    );
+  };
+
+  const stealthCurrent = readFlag('stealthDC') ?? '';
+  const coverOverride = readFlag('coverOverride') || 'auto';
+  const minPerceptionRank = Number(readFlag('minPerceptionRank') ?? 0);
 
   // Build content
   let inner = `

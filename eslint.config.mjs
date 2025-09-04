@@ -48,6 +48,7 @@ export default [
         createMockToken: 'readonly',
         createMockActor: 'readonly',
         createMockWall: 'readonly',
+        CONST: 'readonly',
       },
     },
     rules: {

@@ -316,6 +316,23 @@
         "name": "Toggle Observer Mode for Hover Tooltips",
         "hint": "Hold this key to switch hover tooltips to observer mode (how hovered token sees others)"
       }
+    },
+    "REGION_BEHAVIOR": {
+      "TYPE_LABEL": "PF2e Visioner Visibility",
+      "VISIBILITY_STATE": {
+        "label": "Visibility State",
+        "hint": "The visibility state to apply between tokens inside and outside the region"
+      },
+      "APPLY_TO_INSIDE_TOKENS": {
+        "label": "Apply to Inside Tokens",
+        "hint": "If enabled, tokens inside the region will have the visibility state applied to other tokens inside the region as well"
+      },
+      "TWO_WAY_REGION": {
+        "label": "Two-Way Region",
+        "hint": "If enabled, tokens outside the region will also have the visibility state applied to tokens inside the region"
+      },
+      "VISIBILITY_UPDATED": "Region visibility updated for {count} token relationships",
+      "UPDATE_ERROR": "Failed to update region visibility relationships"
     }
   }
 }

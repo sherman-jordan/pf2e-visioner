@@ -835,35 +835,7 @@ function injectPF2eVisionerBox(app, root) {
   else if (app?.options?.actor) actor = app.options.actor;
   else if (app?.options?.document) actor = app.options.document;
 
-  // Diagnostic logging to help debug PrototypeTokenConfigPF2e injection issues.
-  // Include additional probe points so the runtime shape can be understood
-  // when sheets don't expose objects in the typical places.
-  try {
-    console.debug('[pf2e-visioner] injectPF2eVisionerBox called', {
-      appConstructor: app?.constructor?.name,
-      appObjectPresent: !!app?.object,
-      appActorPresent: !!app?.actor,
-      appOptionsActorPresent: !!app?.options?.actor,
-      appOptionsDocumentPresent: !!app?.options?.document,
-      documentName: app?.document?.documentName,
-      tokenDocPresent: !!tokenDoc,
-      tokenDocDocumentName: tokenDoc?.documentName,
-      tokenDocHasFlags: !!tokenDoc?.flags,
-      actorId: actor?.id,
-      actorType: actor?.type,
-      actorHasPrototypeToken: !!actor?.prototypeToken,
-      prototypeFlagsPresent: !!actor?.prototypeToken?.flags?.[MODULE_ID],
-      prototypeRaw: actor?.prototypeToken || null,
-    });
-  } catch (_) {}
-
   if (!actor) {
-    // If there's no actor, attempt to still read flags off the tokenDoc-like
-    // shapes or app options that may include prototypeToken data.
-    try {
-      console.debug('[pf2e-visioner] injectPF2eVisionerBox: no actor resolved', { app, tokenDoc });
-    } catch (_) {}
-    // We can't render actor-sensitive fields without an actor, so bail out.
     return;
   }
 

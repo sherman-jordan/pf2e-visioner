@@ -47,7 +47,7 @@ global.CONST = {
 
 // Import after setting up mocks
 import { VISIBILITY_STATES } from '../../scripts/constants.js';
-import { PF2eVisionerRegionBehavior } from '../../scripts/regions/pf2e-visioner-region-behavior.js';
+import { VisibilityRegionBehavior } from '../../scripts/regions/VisibilityRegionBehavior.js';
 
 global.foundry.data.fields = {
   StringField: class StringField {
@@ -84,7 +84,7 @@ global.canvas = {
   }
 };
 
-describe('PF2eVisionerRegionBehavior', () => {
+describe('VisibilityRegionBehavior', () => {
   let regionBehavior;
   let mockRegion;
   let mockToken1, mockToken2, mockToken3;
@@ -130,7 +130,7 @@ describe('PF2eVisionerRegionBehavior', () => {
     });
 
     // Create region behavior instance
-    regionBehavior = new PF2eVisionerRegionBehavior();
+    regionBehavior = new VisibilityRegionBehavior();
     regionBehavior.region = mockRegion;
     regionBehavior.visibilityState = 'hidden';
     regionBehavior.applyToInsideTokens = false;
@@ -139,11 +139,11 @@ describe('PF2eVisionerRegionBehavior', () => {
 
   describe('Schema Definition', () => {
     test('should have defineSchema method', () => {
-      expect(typeof PF2eVisionerRegionBehavior.defineSchema).toBe('function');
+      expect(typeof VisibilityRegionBehavior.defineSchema).toBe('function');
     });
 
     test('should have correct localization prefixes', () => {
-      expect(PF2eVisionerRegionBehavior.LOCALIZATION_PREFIXES).toContain('PF2E_VISIONER.REGION_BEHAVIOR');
+      expect(VisibilityRegionBehavior.LOCALIZATION_PREFIXES).toContain('PF2E_VISIONER.REGION_BEHAVIOR');
     });
   });
 

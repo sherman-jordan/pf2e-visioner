@@ -275,20 +275,13 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
             }
             if (modified) {
               const canonical = canonicalizeObserverRules(rules);
-              if (canonical.length !== rules.length) {
-                console.debug(`PF2E Visioner: Canonicalized rules for ${target.name} (${coverState}): ${rules.length} -> ${canonical.length}`);
-              }
-              console.warn(`PF2E Visioner DEBUG: Adding ${coverState} cover for ${target.name} with ${canonical.length} rules:`, canonical.map(r => `${r.key}:${r.value || r.option}`));
               if (targetAggregate)
                 effectsToUpdate.push({ _id: targetAggregate.id, 'system.rules': canonical });
               else effectsToCreate.push(createAggregate(target, coverState, canonical, options));
-              console.warn(`PF2E Visioner DEBUG: Starting cross-state cleanup for ${target.name}, checking ${rulesByState.size} states, ${observers.length} observers`);
               for (const [state, stateRules] of rulesByState.entries()) {
                 if (state === coverState) continue;
                 const aggregate = aggregatesByState.get(state);
                 if (!aggregate) continue;
-                console.warn(`PF2E Visioner DEBUG: Cross-state cleanup: processing ${state} state with ${stateRules.length} rules`);
-                console.warn(`PF2E Visioner DEBUG: Rules in ${state} state:`, stateRules.map(r => `${r.key}:${r.value || r.option} predicate:${JSON.stringify(r.predicate)}`));
                 let stateModified = false;
                 let filteredRules = [...stateRules];
                 for (const observer of observers) {
@@ -298,42 +291,33 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
                   const signature = observer.actor?.signature || observer.actor?.id || observer.id;
                   const tokenId = observer.id;
 
-                  console.warn(`PF2E Visioner DEBUG: Cross-state cleanup observer - signature: "${signature}", tokenId: "${tokenId}"`);
 
                   // Filter out rules for this specific observer
-                  console.warn(`PF2E Visioner DEBUG: About to filter ${filteredRules.length} rules`);
                   const newRules = filteredRules.filter((r) => {
-                    console.warn(`PF2E Visioner DEBUG: Processing rule: ${JSON.stringify(r)}`);
                     if (r?.key === 'FlatModifier' && (r.selector === 'ac' ||
                       (Array.isArray(r.selector) && r.selector.length === 1 && r.selector[0] === 'ac'))) {
                       const signatures = extractSignaturesFromPredicate(r.predicate);
                       const coverAgainst = extractCoverAgainstFromPredicate(r.predicate);
-                      console.warn(`PF2E Visioner DEBUG: AC rule - signatures: ${JSON.stringify(signatures)}, coverAgainst: ${JSON.stringify(coverAgainst)}`);
                       const hasSig = signatures.includes(signature);
                       const hasAgainst = coverAgainst.includes(tokenId);
-                      console.warn(`PF2E Visioner DEBUG: AC rule check - predicate: ${JSON.stringify(r.predicate)}, hasSig: ${hasSig}, hasAgainst: ${hasAgainst}`);
                       if (hasSig || hasAgainst) {
-                        console.warn(`PF2E Visioner DEBUG: → REMOVING AC rule`);
                         stateModified = true;
                         return false;
                       }
                     }
                     if (r?.key === 'RollOption' && r.option === `cover-against:${tokenId}`) {
-                      console.warn(`PF2E Visioner DEBUG: → REMOVING RollOption: ${r.option}`);
                       stateModified = true;
                       return false;
                     }
                     return true;
                   });
 
-                  console.warn(`PF2E Visioner DEBUG: Filter result: ${filteredRules.length} → ${newRules.length} rules`);
 
                   // Always update filteredRules to the new filtered result
                   // This ensures that multiple observer removals are cumulative
                   filteredRules = newRules;
                 }
                 if (stateModified) {
-                  console.warn(`PF2E Visioner DEBUG: Cross-state cleanup for ${target.name}, removing from ${state} cover, ${filteredRules.length} rules remaining:`, filteredRules.map(r => `${r.key}:${r.value || r.option}`));
                   if (filteredRules.length === 0) effectsToDelete.push(aggregate.id);
                   else effectsToUpdate.push({ _id: aggregate.id, 'system.rules': filteredRules });
                 }
@@ -341,7 +325,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
             }
           }
         }
-        console.warn(`PF2E Visioner DEBUG: Batch operations for ${target.name} - DELETE: ${effectsToDelete.length}, UPDATE: ${effectsToUpdate.length}, CREATE: ${effectsToCreate.length}`);
         if (effectsToDelete.length > 0)
           await target.actor.deleteEmbeddedDocuments('Item', effectsToDelete);
         if (effectsToUpdate.length > 0)
@@ -389,7 +372,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
               JSON.stringify(rules) !== JSON.stringify(originalRules)) {
               // Rules were deduplicated or changed, update the effect
               toUpdate.push({ _id: agg.id, 'system.rules': rules });
-              console.debug(`PF2E Visioner: Final cleanup for ${target.name} ${agg.flags?.[MODULE_ID]?.coverState}: ${originalRules.length} -> ${rules.length} rules`);
             }
           }
 

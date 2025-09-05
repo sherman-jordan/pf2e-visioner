@@ -216,7 +216,7 @@ export class CoverUIManager {
                     }
                 }
             } catch (manualCheckError) {
-                console.debug('PF2E Visioner | Could not check manual cover for message:', manualCheckError);
+                console.error('PF2E Visioner | Could not check manual cover for message:', manualCheckError);
             }
 
             // If no override info and no manual cover, nothing to show
@@ -439,7 +439,7 @@ export class CoverUIManager {
                     }
                 }
             } catch (manualCheckError) {
-                console.debug('PF2E Visioner | Could not check manual cover for shouldShow:', manualCheckError);
+                console.error('PF2E Visioner | Could not check manual cover for shouldShow:', manualCheckError);
             }
 
             return hasOverride || hasManualCover;

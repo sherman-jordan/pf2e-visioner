@@ -4,9 +4,9 @@
  */
 
 import { getCoverBonusByState, getCoverImageForState, getCoverLabel } from '../../../helpers/cover-helpers.js';
+import { getCoverBetween } from '../../../utils.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
-
 class AttackRollUseCase extends BaseAutoCoverUseCase {
     constructor() {
         super();
@@ -31,15 +31,15 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
 
         // Determine base cover state (manual token cover first, then auto-detection)
         let state = null;
-        
+
         // First check for manual cover between tokens
         try {
-            const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+            const manualCover = getCoverBetween(attacker, target);
             if (manualCover && manualCover !== 'none') {
                 state = manualCover;
             }
-        } catch (_) {}
-        
+        } catch (_) { }
+
         // Fallback to auto-detection if no manual cover
         if (!state) {
             state = this._detectCover(attacker, target);
@@ -54,21 +54,21 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
 
         try {
             const overrideManager = this.autoCoverSystem.getOverrideManager();
-            
+
             // Check for any override for this token pair
             const override = overrideManager.consumeOverride(attacker, target);
-            
+
             if (override) {
                 state = override.state;
                 overrideSource = override.source;
                 wasOverridden = (state !== originalDetectedState);
-                
+
                 // Store override information in chat message flags for the indicator
                 if (wasOverridden) {
                     try {
                         if (!data.flags) data.flags = {};
                         if (!data.flags['pf2e-visioner']) data.flags['pf2e-visioner'] = {};
-                        
+
                         const overrideData = {
                             originalDetected: originalDetectedState,
                             finalState: state,
@@ -76,9 +76,9 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                             attackerName: attacker.name,
                             targetName: target.name,
                         };
-                        
+
                         data.flags['pf2e-visioner'].coverOverride = overrideData;
-                        
+
                         // Also try to update the document source if available
                         if (doc && doc.updateSource) {
                             try {
@@ -112,7 +112,7 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
         let target = this._resolveTargetFromCtx(ctx);
         if (!attacker || !target) return;
         let state = this._detectCover(attacker, target);
-        
+
         // Delegate dialog UI injection to CoverUIManager
         try {
             await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
@@ -176,25 +176,25 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
         }
     }
 
-    async handleRenderChatMessage(message, html) {   
+    async handleRenderChatMessage(message, html) {
         const data = message?.toObject?.() || {};
         const attackerIdRaw =
             data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
         const attackerId = this.normalizeTokenRef(attackerIdRaw);
         const targetId = this._resolveTargetTokenIdFromData(data);
-        
+
         // Always call parent method first to handle cover override indicators
         await super.handleRenderChatMessage(message, html);
-        
+
         if (!attackerId) {
             return;
         }
-        
+
         const tokens = canvas?.tokens;
         if (!tokens?.get) {
             return;
         }
-        
+
         const attacker = tokens.get(attackerId);
         if (!attacker) {
             return;
@@ -358,24 +358,24 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                 // This is already a token object
                 return tokenObj;
             }
-            
+
             if (ctx?.token?.isEmbedded && ctx?.token?.object?.id) {
                 return ctx.token.object;
             }
-            
+
             // Try a variety of sources to get a token ID
             const tokenIdRaw =
                 ctx?.token?.id ||
                 ctx?.tokenId ||
                 ctx?.origin?.tokenId ||
                 ctx?.origin?.token;
-            
+
             const tokenId = this.normalizeTokenRef(tokenIdRaw);
             if (tokenId) {
                 const token = canvas?.tokens?.get?.(tokenId);
                 if (token) return token;
             }
-            
+
             // Last resort: if we have an actor, find its active token
             if (ctx?.actor?.getActiveTokens) {
                 const activeTokens = ctx.actor.getActiveTokens();
@@ -383,7 +383,7 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                     return activeTokens[0];
                 }
             }
-            
+
             return null;
         } catch (_) {
             return null;

@@ -236,7 +236,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             const start = batchIndex * batchSize + 1;
             const end = Math.min((batchIndex + 1) * batchSize, updates.length);
 
-            console.log(`[${MODULE_ID}] Updating walls ${start}-${end} of ${updates.length}...`);
 
             // Update progress only at batch boundaries
             progressBar.setProgress(batchIndex, wallBatches.length + 1);
@@ -244,7 +243,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             // Process the entire batch at once
             await canvas.scene?.updateEmbeddedDocuments?.('Wall', batch, { diff: false });
 
-            console.log(`[${MODULE_ID}] Walls ${start}-${end} updated successfully`);
           }
 
           // Visual effects update - skip for large updates to improve performance
@@ -252,16 +250,13 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
           if (updates.length <= 50) {
             // Only update visuals for smaller batches to maintain performance
-            console.log(`[${MODULE_ID}] Starting visual effects update...`);
             try {
               const { updateWallVisuals } = await import('../../services/visual-effects.js');
               await updateWallVisuals();
-              console.log(`[${MODULE_ID}] Visual effects update completed`);
             } catch (visualError) {
               console.warn(`[${MODULE_ID}] Visual effects update failed (non-critical):`, visualError);
             }
           } else {
-            console.log(`[${MODULE_ID}] Skipping visual effects update for large batch (${updates.length} walls) - refresh manually if needed`);
             ui.notifications?.info?.(`Applied changes to ${updates.length} walls. Refresh the scene if visual effects need updating.`);
           }
 
@@ -271,8 +266,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             ui.notifications?.info?.(`Applied changes to ${updates.length} walls successfully!`);
           }
           // Note: notification for large batches is already shown above
-
-          console.log(`[${MODULE_ID}] All operations completed successfully`);
 
         } catch (error) {
           progressBar.close();

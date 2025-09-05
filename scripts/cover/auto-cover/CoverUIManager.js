@@ -31,7 +31,7 @@ export class CoverUIManager {
                   <div class="pv-cover-override" style="margin: 6px 0 8px 0;">
                     <div class="pv-cover-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                       <div class="pv-cover-title" style="font-weight:600;">${game.i18n?.localize?.('PF2E_VISIONER.UI.COVER_OVERRIDE') ?? 'Cover'}</div>
-                      ${!manualCover ? '<div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>' : '<div class="pv-cover-manual" style="display:flex;">Manual Cover Detected, Override unavailable</div>'}
+                      ${!manualCover ? '<div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>' : '<div class="pv-cover-manual" style="display:flex;">Manual cover detected, override unavailable</div>'}
                     </div>
                   </div>
                 `);

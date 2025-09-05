@@ -69,7 +69,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
         .pv-qo-footer .roll { background: var(--color-primary-2, #2c5aa0); color: #fff; }
       </style>
       <div class="pv-qo-wrap">
-        ${!this.isManualCover ? `<div class="pv-qo-row">${states.map(makeButton).join('')}</div>` : '<div class="pv-cover-manual" style="display:flex;">Manual Cover Detected, Override unavailable</div>'}
+        ${!this.isManualCover ? `<div class="pv-qo-row">${states.map(makeButton).join('')}</div>` : '<div class="pv-cover-manual" style="display:flex;">Manual cover detected, override unavailable</div>'}
         <div class="pv-qo-footer">
           <button type="button" class="roll" data-action="roll"><i class="fas fa-dice-d20"></i> ${rollLabel}</button>
           <button type="button" data-action="cancel">${cancelLabel}</button>

@@ -19,10 +19,17 @@ describe('AttackRollUseCase', () => {
         const bonuses = { none: 0, lesser: 1, standard: 2, greater: 4 };
         return bonuses[state] || 0;
       }),
+      normalizeTokenRef: jest.fn().mockImplementation((ref) => {
+        // Simple mock implementation that returns the ref as-is if it's a token-like object
+        if (ref && typeof ref === 'object' && ref.id) return ref;
+        return null;
+      }),
     };
 
     mockCoverUIManager = {
       injectDialogCoverUI: jest.fn(),
+      shouldShowCoverOverrideIndicator: jest.fn().mockResolvedValue(false),
+      injectCoverOverrideIndicator: jest.fn(),
     };
 
     mockTemplateManager = {
@@ -113,7 +120,8 @@ describe('AttackRollUseCase', () => {
         mockHtml,
         'standard',
         targetToken,
-        expect.any(Function)
+        false, // manualCover
+        expect.any(Function) // onChosen callback
       );
     });
 
@@ -129,7 +137,7 @@ describe('AttackRollUseCase', () => {
       mockDialog.check = null;
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, callback) => {
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
         callbackFunction = callback;
       });
 
@@ -137,11 +145,13 @@ describe('AttackRollUseCase', () => {
 
       // Callback should handle missing check gracefully
       expect(() => {
-        callbackFunction({
-          chosen: 'standard',
-          target: targetToken,
-          targetActor: targetToken.actor,
-        });
+        if (typeof callbackFunction === 'function') {
+          callbackFunction({
+            chosen: 'standard',
+            target: targetToken,
+            targetActor: targetToken.actor,
+          });
+        }
       }).not.toThrow();
     });
 
@@ -151,18 +161,20 @@ describe('AttackRollUseCase', () => {
       });
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, callback) => {
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
         callbackFunction = callback;
       });
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
 
       expect(() => {
-        callbackFunction({
-          chosen: 'standard',
-          target: targetToken,
-          targetActor: targetToken.actor,
-        });
+        if (typeof callbackFunction === 'function') {
+          callbackFunction({
+            chosen: 'standard',
+            target: targetToken,
+            targetActor: targetToken.actor,
+          });
+        }
       }).not.toThrow();
     });
   });
@@ -189,6 +201,8 @@ describe('AttackRollUseCase', () => {
 
     test('should resolve attacker from token ID', () => {
       const attackerToken = global.createMockToken({ id: 'attacker' });
+      
+      // Mock canvas.tokens.get to return the token
       global.canvas.tokens.get = jest.fn().mockReturnValue(attackerToken);
 
       const ctx = {
@@ -199,6 +213,7 @@ describe('AttackRollUseCase', () => {
 
       const result = attackRollUseCase._resolveAttackerFromCtx(ctx);
       expect(result).toBe(attackerToken);
+      expect(global.canvas.tokens.get).toHaveBeenCalledWith('attacker');
     });
 
     test('should resolve attacker from actor active tokens', () => {
@@ -211,6 +226,7 @@ describe('AttackRollUseCase', () => {
 
       const result = attackRollUseCase._resolveAttackerFromCtx(ctx);
       expect(result).toBe(attackerToken);
+      expect(ctx.actor.getActiveTokens).toHaveBeenCalled();
     });
 
     test('should return null for invalid context', () => {

@@ -4,6 +4,7 @@
  */
 import { COVER_STATES, MODULE_ID } from '../../constants.js';
 import { getCoverBonusByState, getCoverLabel } from '../../helpers/cover-helpers.js';
+import { getCoverBetween } from '../../utils.js';
 import { CoverQuickOverrideDialog } from '../quick-override-dialog.js';
 import autoCoverSystem from './AutoCoverSystem.js';
 
@@ -22,7 +23,7 @@ export class CoverUIManager {
      * @param {(args: { chosen: string, dialog: any, dctx: any, subject: Token|null, target: Token|null, targetActor: Actor|null, originalState: string }) => void} [onChosen]
      *        Optional callback to handle chosen state on roll. If omitted, a default AC effect + override store is applied.
      */
-    async injectDialogCoverUI(dialog, html, state, target, onChosen) {
+    async injectDialogCoverUI(dialog, html, state, target, manualCover, onChosen) {
         try {
             if (html?.find?.('.pv-cover-override').length === 0) {
                 const current = dialog?._pvCoverOverride ?? state ?? 'none';
@@ -30,7 +31,7 @@ export class CoverUIManager {
                   <div class="pv-cover-override" style="margin: 6px 0 8px 0;">
                     <div class="pv-cover-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                       <div class="pv-cover-title" style="font-weight:600;">${game.i18n?.localize?.('PF2E_VISIONER.UI.COVER_OVERRIDE') ?? 'Cover'}</div>
-                      <div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>
+                      ${!manualCover ? '<div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>' : '<div class="pv-cover-manual" style="display:flex;">Manual cover detected, override unavailable</div>'}
                     </div>
                   </div>
                 `);
@@ -89,7 +90,7 @@ export class CoverUIManager {
                             const tgt = dctx?.target || target;
                             const tgtActor = tgt?.actor;
                             if (!tgtActor) return;
-                            const chosen = dialog?._pvCoverOverride ?? state ?? 'none';
+                            const chosen = manualCover ?? dialog?._pvCoverOverride ?? state ?? 'none';
                             const subjectToken = dctx?.actor?.token;
                             const subjectActor = dctx?.actor || null;
 
@@ -132,10 +133,10 @@ export class CoverUIManager {
         }
     }
 
-    async openCoverQuickOverrideDialog(initialState = 'none', isStealthContext = false) {
+    async openCoverQuickOverrideDialog(initialState = 'none', isManualCover = false, isStealthContext = false) {
         return new Promise((resolve) => {
             try {
-                const app = new CoverQuickOverrideDialog(initialState, { isStealthContext });
+                const app = new CoverQuickOverrideDialog(initialState, isManualCover, { isStealthContext });
                 app.setResolver(resolve);
                 app.render(true);
             } catch (e) {
@@ -144,11 +145,11 @@ export class CoverUIManager {
         });
     }
 
-    async getCoverPopupChosenState(state) {
+    async getCoverPopupChosenState(state, isManualCover = false) {
         const isHoldingOverrideKey = await this.isHoldingCoverOverrideKey();
         if (!isHoldingOverrideKey) return null;
         try {
-            const chosen = await this.openCoverQuickOverrideDialog(state);
+            const chosen = await this.openCoverQuickOverrideDialog(state, isManualCover);
             return chosen;
         } catch (e) {
             console.warn('PF2E Visioner | Failed to open cover override dialog:', e);
@@ -160,12 +161,12 @@ export class CoverUIManager {
      * Show popup and return the chosen cover state (or null if cancelled/no override).
      * No effect/stat/actor logic here; only UI.
      */
-    async showPopupAndApply(detectedState) {
+    async showPopupAndApply(detectedState, isManualCover = false) {
         try {
             if (game.user.flags?.pf2e?.settings?.showCheckDialogs) {
                 return
             }
-            const chosen = await this.getCoverPopupChosenState(detectedState);
+            const chosen = await this.getCoverPopupChosenState(detectedState, isManualCover);
             return { chosen, rollId: foundry?.utils?.randomID?.() };
         } catch (e) {
             console.warn('PF2E Visioner | Popup error in CoverUIManager:', e);
@@ -178,19 +179,48 @@ export class CoverUIManager {
      * @param {ChatMessage} message - The chat message
      * @param {HTMLElement|jQuery} html - The message HTML element
      */
-    async injectCoverOverrideIndicator(message, html) {
+    async injectCoverOverrideIndicator(message, html, shouldShow = true) {
         try {
             // Only show override indicators to GMs
-            if (!game.user.isGM) {
+            if (!game.user.isGM || !shouldShow) {
                 return;
             }
 
             // Check if this message has cover override information
             let overrideInfo = message?.flags?.['pf2e-visioner']?.coverOverride;
 
-            // If no override info in message flags, we could try checking the manager
-            // but we need token information which isn't available here
-            if (!overrideInfo) {
+            // Also check for manual cover by examining the message for token references
+            let manualCoverInfo = null;
+            try {
+                // Try to extract token information from the message to check manual cover
+                const messageFlags = message?.flags || {};
+
+                // Look for target token information in message flags or content
+                let targetTokenId = this.autoCoverSystem.normalizeTokenRef(messageFlags?.pf2e?.context?.target?.token);
+                let actorTokenId = messageFlags?.pf2e?.context?.token;
+
+                if (targetTokenId && actorTokenId) {
+                    const targetToken = canvas?.tokens?.get?.(targetTokenId);
+                    const actorToken = canvas?.tokens?.get?.(actorTokenId);
+
+                    if (targetToken && actorToken) {
+                        // Import and use getCoverBetween to check for manual cover
+                        const manualCover = getCoverBetween(actorToken, targetToken);
+
+                        if (manualCover && manualCover !== 'none') {
+                            manualCoverInfo = {
+                                state: manualCover,
+                                source: 'manual'
+                            };
+                        }
+                    }
+                }
+            } catch (manualCheckError) {
+                console.error('PF2E Visioner | Could not check manual cover for message:', manualCheckError);
+            }
+
+            // If no override info and no manual cover, nothing to show
+            if (!overrideInfo && !manualCoverInfo) {
                 return;
             }
 
@@ -199,71 +229,123 @@ export class CoverUIManager {
             if (!$html) return;
 
             // Check if indicator already exists to avoid duplicates
-            if ($html.find('.pf2e-visioner-cover-override-indicator').length > 0) {
+            if ($html.find('.pf2e-visioner-cover-override-indicator, .pf2e-visioner-cover-manual-indicator').length > 0) {
                 return;
             }
 
-            const { originalDetected, finalState, overrideSource } = overrideInfo;
+            let indicatorHtml = '';
 
-            // Get human-readable labels
-            const originalLabel = getCoverLabel(originalDetected);
-            const finalLabel = getCoverLabel(finalState);
+            // Handle override indicator
+            if (overrideInfo) {
+                const { originalDetected, finalState, overrideSource } = overrideInfo;
 
-            // Create compact override indicator with crossed-out original and hover tooltip
-            const tooltipText =
-                overrideSource === 'popup'
-                    ? `Cover overridden via keybind popup`
-                    : overrideSource === 'dialog'
-                        ? `Cover overridden in roll dialog`
-                        : `Cover overridden`;
+                // Get human-readable labels
+                const originalLabel = getCoverLabel(originalDetected);
+                const finalLabel = getCoverLabel(finalState);
 
-            // Get cover state colors and icons
-            const originalColor =
-                COVER_STATES?.[originalDetected]?.color || 'var(--color-text-secondary, #666)';
-            const finalColor = COVER_STATES?.[finalState]?.color || 'var(--color-warning, #f39c12)';
-            const originalIcon = COVER_STATES?.[originalDetected]?.icon || 'fas fa-shield';
-            const finalIcon = COVER_STATES?.[finalState]?.icon || 'fas fa-shield';
+                // Create compact override indicator with crossed-out original and hover tooltip
+                const tooltipText =
+                    overrideSource === 'popup'
+                        ? `Cover overridden via keybind popup`
+                        : overrideSource === 'dialog'
+                            ? `Cover overridden in roll dialog`
+                            : `Cover overridden`;
 
-            const indicatorHtml = `
-         <span class="pf2e-visioner-cover-override-indicator" style="
-           margin-left: 4px;
-           padding: 2px 4px;
-           background: rgba(0, 0, 0, 0.15);
-           border-radius: 3px;
-           font-size: 1em;
-           display: inline-flex;
-           align-items: center;
-           gap: 3px;
-           vertical-align: middle;
-         ">
-           <span style="
-             color: ${originalColor};
-             opacity: 0.8;
-             display: inline-flex;
-             align-items: center;
-             filter: brightness(0.7);
-           ">
-             <i class="${originalIcon}" style="font-size: 0.9em;"></i>
-           </span>
-           <i class="fas fa-arrow-right" style="
-             color: var(--color-text-secondary, #999);
-             font-size: 0.6em;
-           "></i>
-           <span 
-             data-tooltip="${tooltipText}: ${originalLabel} → ${finalLabel}"
-             data-tooltip-direction="UP"
-             style="
-               color: ${finalColor};
-               cursor: help;
-               display: inline-flex;
-               align-items: center;
-               filter: brightness(0.8);
-             "
-           >
-             <i class="${finalIcon}" style="font-size: 0.9em;"></i>
-           </span>
-         </span>
-       `;
+                // Get cover state colors and icons
+                const originalColor =
+                    COVER_STATES?.[originalDetected]?.color || 'var(--color-text-secondary, #666)';
+                const finalColor = COVER_STATES?.[finalState]?.color || 'var(--color-warning, #f39c12)';
+                const originalIcon = COVER_STATES?.[originalDetected]?.icon || 'fas fa-shield';
+                const finalIcon = COVER_STATES?.[finalState]?.icon || 'fas fa-shield';
+
+                indicatorHtml += `
+                 <span class="pf2e-visioner-cover-override-indicator" style="
+                   margin-left: 4px;
+                   padding: 2px 4px;
+                   background: rgba(0, 0, 0, 0.15);
+                   border-radius: 3px;
+                   font-size: 1em;
+                   display: inline-flex;
+                   align-items: center;
+                   gap: 3px;
+                   vertical-align: middle;
+                 ">
+                   <span style="
+                     color: ${originalColor};
+                     opacity: 0.8;
+                     display: inline-flex;
+                     align-items: center;
+                     filter: brightness(0.7);
+                   ">
+                     <i class="${originalIcon}" style="font-size: 0.9em;"></i>
+                   </span>
+                   <i class="fas fa-arrow-right" style="
+                     color: var(--color-text-secondary, #999);
+                     font-size: 0.6em;
+                   "></i>
+                   <span 
+                     data-tooltip="${tooltipText}: ${originalLabel} → ${finalLabel}"
+                     data-tooltip-direction="UP"
+                     style="
+                       color: ${finalColor};
+                       cursor: help;
+                       display: inline-flex;
+                       align-items: center;
+                       filter: brightness(0.8);
+                     "
+                   >
+                     <i class="${finalIcon}" style="font-size: 0.9em;"></i>
+                   </span>
+                 </span>`;
+            }
+
+            // Handle manual cover indicator
+            if (manualCoverInfo) {
+                const { state } = manualCoverInfo;
+                const coverLabel = getCoverLabel(state);
+                const coverBonus = getCoverBonusByState(state);
+
+                // Get cover state colors and icons
+                const coverColor = COVER_STATES?.[state]?.color || 'var(--color-text-dark-primary, #191813)';
+                const coverIcon = COVER_STATES?.[state]?.icon || 'fas fa-shield';
+
+                const tooltipText = `Manual cover applied: ${coverLabel}${coverBonus > 0 ? ` (+${coverBonus})` : ''}`;
+
+                indicatorHtml += `
+                 <span class="pf2e-visioner-cover-manual-indicator" style="
+                   margin-left: 4px;
+                   padding: 2px 4px;
+                   background: rgba(25, 24, 19, 0.15);
+                   border-radius: 3px;
+                   font-size: 1em;
+                   display: inline-flex;
+                   align-items: center;
+                   gap: 3px;
+                   vertical-align: middle;
+                   border: 1px solid rgba(25, 24, 19, 0.3);
+                 ">
+                   <i class="fas fa-hand-paper" style="
+                     color: var(--color-text-dark-primary, #191813);
+                     font-size: 0.7em;
+                     opacity: 0.8;
+                   "></i>
+                   <span 
+                     data-tooltip="${tooltipText}"
+                     data-tooltip-direction="UP"
+                     style="
+                       color: ${coverColor};
+                       cursor: help;
+                       display: inline-flex;
+                       align-items: center;
+                       filter: brightness(0.9);
+                     "
+                   >
+                     <i class="${coverIcon}" style="font-size: 0.9em;"></i>
+                   </span>
+                 </span>`;
+            }
+
+            if (!indicatorHtml) return;
 
             // Find the specific AC span element (the adjusted AC value)
             let acSpan = $html.find('.target-dc .adjusted').first();
@@ -330,17 +412,37 @@ export class CoverUIManager {
     /**
      * Checks if a chat message should have a cover override indicator
      * @param {ChatMessage} message - The chat message to check
-     * @returns {Promise<boolean>} True if the message has override information
+     * @returns {Promise<boolean>} True if the message has override information or manual cover
      */
-    async shouldShowCoverOverrideIndicator(message) {
+    async shouldShowCoverOverrideIndicator(message, shouldShow = true) {
         try {
-            if (!game.user.isGM) {
+            if (!game.user.isGM || !shouldShow) {
                 return false;
             }
 
             const hasOverride = !!message?.flags?.['pf2e-visioner']?.coverOverride;
 
-            return hasOverride;
+            // Also check for manual cover
+            let hasManualCover = false;
+            try {
+                const messageFlags = message?.flags || {};
+                let targetTokenId = this.autoCoverSystem.normalizeTokenRef(messageFlags?.pf2e?.context?.target?.token);
+                let actorTokenId = messageFlags?.pf2e?.context?.token;
+
+                if (targetTokenId && actorTokenId) {
+                    const targetToken = canvas?.tokens?.get?.(targetTokenId);
+                    const actorToken = canvas?.tokens?.get?.(actorTokenId);
+
+                    if (targetToken && actorToken) {
+                        const manualCover = getCoverBetween(actorToken, targetToken);
+                        hasManualCover = manualCover && manualCover !== 'none';
+                    }
+                }
+            } catch (manualCheckError) {
+                console.error('PF2E Visioner | Could not check manual cover for shouldShow:', manualCheckError);
+            }
+
+            return hasOverride || hasManualCover;
         } catch (e) {
             console.warn('PF2E Visioner | Error in shouldShowCoverOverrideIndicator:', e);
             return false;

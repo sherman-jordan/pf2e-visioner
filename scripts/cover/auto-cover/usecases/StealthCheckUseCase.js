@@ -13,9 +13,9 @@ import { BaseAutoCoverUseCase } from './BaseUseCase.js';
 
 const coverPrecedence = {
     none: 0,
-    standard: 1,
-    greater: 2,
-    total: 3,
+    lesser: 1,
+    standard: 2,
+    greater: 4,
 };
 
 class StealthCheckUseCase extends BaseAutoCoverUseCase {
@@ -248,7 +248,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
 
             // Inject cover override UI, using a callback to apply stealth-specific behavior on chosen state
             try {
-                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, async ({ chosen, subject: hider, target: tgt, rollId }) => {
+                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, null, async ({ chosen, subject: hider, target: tgt, rollId }) => {
                     try {
                         // Determine if this will be an override
                         const wasChanged = chosen !== detectedState;
@@ -315,7 +315,8 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
     }
 
 
-    async onRenderChatMessage(message) {
+    async onRenderChatMessage(message, html) {
+        super.handleRenderChatMessage(message, html, false);
         const data = message?.toObject?.() || {};
         const attackerIdRaw =
             data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;

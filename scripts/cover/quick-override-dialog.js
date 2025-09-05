@@ -20,11 +20,12 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
     },
   };
 
-  constructor(initialState = 'none', options = {}) {
+  constructor(initialState = 'none', isManualCover = false, options = {}) {
     super(options);
     this.selected = initialState;
     this._resolver = null;
     this.isStealthContext = options.isStealthContext || false;
+    this.isManualCover = isManualCover;
     currentCoverQuickDialog = this;
   }
 
@@ -43,8 +44,8 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
       const icon = cfg.icon || 'fas fa-shield-alt';
       const color = cfg.color || 'inherit';
       const label = getCoverLabel(s);
-      const bonus = this.isStealthContext ? 
-        (getCoverStealthBonusByState(s) || 0) : 
+      const bonus = this.isStealthContext ?
+        (getCoverStealthBonusByState(s) || 0) :
         (getCoverBonusByState(s) || 0);
       const tooltip = `${label}${bonus > 0 ? ` (+${bonus})` : ''}`;
       const active = s === this.selected;
@@ -68,7 +69,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
         .pv-qo-footer .roll { background: var(--color-primary-2, #2c5aa0); color: #fff; }
       </style>
       <div class="pv-qo-wrap">
-        <div class="pv-qo-row">${states.map(makeButton).join('')}</div>
+        ${!this.isManualCover ? `<div class="pv-qo-row">${states.map(makeButton).join('')}</div>` : '<div class="pv-cover-manual" style="display:flex;">Manual Cover Detected, Override unavailable</div>'}
         <div class="pv-qo-footer">
           <button type="button" class="roll" data-action="roll"><i class="fas fa-dice-d20"></i> ${rollLabel}</button>
           <button type="button" data-action="cancel">${cancelLabel}</button>
@@ -107,7 +108,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
     if (!app) return;
     try {
       app._resolver?.(app.selected);
-    } catch (_) {}
+    } catch (_) { }
     app.close();
   }
 
@@ -116,7 +117,7 @@ export class CoverQuickOverrideDialog extends foundry.applications.api.Applicati
     if (!app) return;
     try {
       app._resolver?.(null);
-    } catch (_) {}
+    } catch (_) { }
     app.close();
   }
 

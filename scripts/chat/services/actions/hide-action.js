@@ -67,9 +67,9 @@ export class HideActionHandler extends ActionHandlerBase {
                 this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
             } catch (_) { }
           }
-          if (cover === 'none') {
+          if (cover === 'none' || cover === 'lesser') {
             try {
-              cover = getCoverBetween(actorToken, observer);
+              cover = getCoverBetween(observer, actorToken);
             } catch (_) {
               cover = 'none';
             }

@@ -160,7 +160,7 @@ export async function buildMultiTokenContext(app, options) {
 
   // Sort and categorize targets
   const visibilityPrecedence = { observed: 0, concealed: 1, hidden: 2, undetected: 3 };
-  const coverPrecedence = { none: 0, lesser: 1, standard: 2, greater: 3 };
+  const coverPrecedence = { none: 0, lesser: 1, standard: 2, greater: 4 };
 
   const sortByStatusAndName = (a, b) => {
     if (app.activeTab === 'visibility') {

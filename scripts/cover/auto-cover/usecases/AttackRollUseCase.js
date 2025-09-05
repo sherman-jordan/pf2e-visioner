@@ -32,16 +32,9 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
         // Determine base cover state (manual token cover first, then auto-detection)
         let state = null;
 
-        // First check for manual cover between tokens
-        try {
-            const manualCover = getCoverBetween(attacker, target);
-            if (manualCover && manualCover !== 'none') {
-                state = manualCover;
-            }
-        } catch (_) { }
-
         // Fallback to auto-detection if no manual cover
-        if (!state) {
+        const manualCover = getCoverBetween(attacker, target);
+        if (!state && !manualCover) {
             state = this._detectCover(attacker, target);
         }
 
@@ -58,6 +51,7 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
             // Check for any override for this token pair
             const override = overrideManager.consumeOverride(attacker, target);
 
+            debugger;
             if (override) {
                 state = override.state;
                 overrideSource = override.source;
@@ -111,13 +105,14 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
         let attacker = this._resolveAttackerFromCtx(ctx);
         let target = this._resolveTargetFromCtx(ctx);
         if (!attacker || !target) return;
+        const manualCover = getCoverBetween(attacker, target);
         let state = this._detectCover(attacker, target);
 
         // Delegate dialog UI injection to CoverUIManager
         try {
-            await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
+            await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, manualCover, true, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
                 try {
-                    if (attacker && target) {
+                    if (attacker && target && !manualCover) {
                         // Use the correctly resolved token objects from outer scope
                         this.autoCoverSystem.setDialogOverride(attacker, target, chosen, state);
                     } else {
@@ -131,6 +126,7 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                 }
 
                 try {
+                    debugger;
                     const bonus = getCoverBonusByState(chosen) || 0;
                     let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
                     items = items.filter(
@@ -244,26 +240,28 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                     });
                 } catch (_) { }
 
+                const manualCover = getCoverBetween(attacker, target);
                 const detected = this._detectCover(attacker, target);
                 let chosen = null;
                 try {
                     // Only show popup if keybind is held
-                    const popupResult = await this.coverUIManager.showPopupAndApply(detected);
-                    chosen = popupResult.chosen;
+                    const popupResult = await this.coverUIManager.showPopupAndApply(detected, manualCover);
+                    chosen = manualCover ?? popupResult?.chosen;
                 } catch (e) {
                     console.warn('PF2E Visioner | Popup error (delegated):', e);
                 }
 
                 // If popup was used and a choice was made, use it; otherwise, use detected state
-                const finalState = chosen !== null ? chosen : detected;
+                const finalState = chosen !== null ? chosen : manualCover ?? detected;
 
                 // Store the override for onPreCreateChatMessage if popup was used
-                if (chosen !== null) {
+                if (chosen !== null && !manualCover) {
                     this.autoCoverSystem.setPopupOverride(attacker, target, chosen, detected);
                 }
 
                 // Apply effect/clone/stat logic for the final state
-                await this._applyCoverEphemeralEffect(target, attacker, finalState, context);
+                debugger;
+                await this._applyCoverEphemeralEffect(target, attacker, finalState, context, manualCover);
             }
 
             return {
@@ -279,7 +277,7 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
      * Apply ephemeral cover effect and update DC/stat if needed.
      * @private
      */
-    async _applyCoverEphemeralEffect(target, attacker, state, context) {
+    async _applyCoverEphemeralEffect(target, attacker, state, context, isManualCover = false) {
         if (!state || state === 'none') return;
         const bonus = getCoverBonusByState(state) || 0;
         if (bonus <= 0) return;
@@ -336,8 +334,9 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
         const clonedActor = tgtActor.clone({ items }, { keepId: true });
         const dcObj = context.dc;
         if (dcObj?.slug) {
+            debugger;
             const clonedStat = clonedActor.getStatistic?.(dcObj.slug)?.dc;
-            if (clonedStat) {
+            if (clonedStat && !isManualCover) {
                 dcObj.value = clonedStat.value;
                 dcObj.statistic = clonedStat;
             }

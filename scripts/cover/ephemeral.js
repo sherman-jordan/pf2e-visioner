@@ -103,17 +103,17 @@ export async function createEphemeralCoverEffect(
       duration:
         options.durationRounds >= 0
           ? {
-              value: options.durationRounds,
-              unit: 'rounds',
-              expiry: 'turn-start',
-              sustained: false,
-            }
+            value: options.durationRounds,
+            unit: 'rounds',
+            expiry: 'turn-start',
+            sustained: false,
+          }
           : {
-              value: -1,
-              unit: 'unlimited',
-              expiry: null,
-              sustained: false,
-            },
+            value: -1,
+            unit: 'unlimited',
+            expiry: null,
+            sustained: false,
+          },
       tokenIcon: {
         show: options.forThisRoll ? true : false,
       },
@@ -139,26 +139,6 @@ export async function createEphemeralCoverEffect(
     },
   };
 
-  // Add reflex and stealth bonuses for standard and greater cover
-  if (coverState === 'standard' || coverState === 'greater') {
-    ephemeralEffect.system.rules.push(
-      {
-        key: 'FlatModifier',
-        selector: 'reflex',
-        type: 'circumstance',
-        value: stateConfig.bonusReflex,
-        predicate: ['area-effect'],
-      },
-      {
-        key: 'FlatModifier',
-        predicate: ['action:hide', 'action:sneak', 'avoid-detection'],
-        selector: 'stealth',
-        type: 'circumstance',
-        value: stateConfig.bonusStealth,
-      },
-    );
-  }
-
   try {
     await effectReceiverToken.actor.createEmbeddedDocuments('Item', [ephemeralEffect]);
   } catch (error) {
@@ -166,29 +146,6 @@ export async function createEphemeralCoverEffect(
   }
 }
 
-// upsertReflexStealthForMaxCoverOnThisAggregate now in cover/aggregates
-
-// updateReflexStealthAcrossCoverAggregates imported
-
-// moved: dedupeCoverAggregates is imported from ./cover/batch.js
-
-// moved helpers to scripts/helpers/cover-helpers.js
-
-// moved: updateAggregateCoverMetaForState is imported from ./cover/aggregates.js
-
-// moved: removeObserverFromCoverAggregate now lives in cover/aggregates.js
-
-// moved: pruneEmptyCoverAggregates is in cover/cleanup.js or batch logic
-
-/**
- * Reconcile cover aggregates of a target token against current observer→target cover maps.
- * - Removes AC and RollOption rules whose observer no longer grants this state's cover
- * - Collapses duplicate AC rules for the same observer signature
- */
-// moved: reconcileCoverAggregatesAgainstMaps imported from ./cover/batch.js
-/**
- * Clean up all ephemeral cover effects from all actors
- */
 export { cleanupAllCoverEffects } from './cleanup.js';
 
 // covered by export above; keep wrapper for API compatibility

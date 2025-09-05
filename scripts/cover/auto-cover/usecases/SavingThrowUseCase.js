@@ -49,7 +49,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
    * @returns {Promise<Object>} Result with tokens and cover state
    */
   async handleRenderChatMessage(message, html) {
-    await super.handleRenderChatMessage(message, html);
+    await super.handleRenderChatMessage(message, html, false);
   }
 
   /**
@@ -107,7 +107,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
     }
 
     try {
-      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen }) => {
+      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, null,({ chosen }) => {
         if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
         const mods = dialog.check.modifiers;
         const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');

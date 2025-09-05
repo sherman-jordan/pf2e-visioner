@@ -12,6 +12,11 @@ describe('AttackRollUseCase', () => {
   beforeEach(async () => {
     jest.resetModules();
 
+    // Mock getCoverBetween function from utils
+    jest.doMock('../../../../scripts/utils.js', () => ({
+      getCoverBetween: jest.fn().mockReturnValue(false), // Return false (no manual cover) by default
+    }));
+
     // Mock dependencies
     mockAutoCoverSystem = {
       detectCoverBetweenTokens: jest.fn().mockReturnValue('standard'),
@@ -20,8 +25,9 @@ describe('AttackRollUseCase', () => {
         return bonuses[state] || 0;
       }),
       normalizeTokenRef: jest.fn().mockImplementation((ref) => {
-        // Simple mock implementation that returns the ref as-is if it's a token-like object
-        if (ref && typeof ref === 'object' && ref.id) return ref;
+        // Simple mock implementation that returns the ref if it's a string ID, or extracts ID if it's an object
+        if (typeof ref === 'string') return ref;
+        if (ref && typeof ref === 'object' && ref.id) return ref.id;
         return null;
       }),
     };
@@ -201,7 +207,7 @@ describe('AttackRollUseCase', () => {
 
     test('should resolve attacker from token ID', () => {
       const attackerToken = global.createMockToken({ id: 'attacker' });
-      
+
       // Mock canvas.tokens.get to return the token
       global.canvas.tokens.get = jest.fn().mockReturnValue(attackerToken);
 

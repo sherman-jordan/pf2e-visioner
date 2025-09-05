@@ -109,7 +109,7 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
 
         // Delegate dialog UI injection to CoverUIManager
         try {
-            await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, manualCover, true, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
+            await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, manualCover, ({ chosen, dctx, target: tgt, targetActor: tgtActor }) => {
                 try {
                     if (attacker && target && !manualCover) {
                         // Use the correctly resolved token objects from outer scope

@@ -316,6 +316,23 @@
         "name": "Włącz/wyłącz tryb obserwatora dla podpowiedzi po najechaniu kursorem",
         "hint": "Przytrzymaj ten klawisz, aby przełączyć podpowiedzi po najechaniu kursorem do trybu obserwatora (jak token po najechaniu kursorem widzi inne)."
       }
+    },
+    "REGION_BEHAVIOR": {
+      "TYPE_LABEL": "Widoczność PF2e Visioner",
+      "VISIBILITY_STATE": {
+        "label": "Stan widoczności",
+        "hint": "Stan widoczności, który ma być stosowany między tokenami wewnątrz i na zewnątrz regionu"
+      },
+      "APPLY_TO_INSIDE_TOKENS": {
+        "label": "Zastosuj do tokenów wewnątrz",
+        "hint": "Jeśli opcja jest włączona, tokeny w regionie będą miały stan widoczności zastosowany również do innych tokenów w regionie."
+      },
+      "TWO_WAY_REGION": {
+        "label": "Region dwukierunkowy",
+        "hint": "Jeśli opcja jest włączona, tokeny spoza regionu również będą miały stan widoczności zastosowany do tokenów w regionie."
+      },
+      "VISIBILITY_UPDATED": "Widoczność regionu zaktualizowana dla {count} relacji tokenów",
+      "UPDATE_ERROR": "Nie udało się zaktualizować relacji widoczności regionu."
     }
   }
 }

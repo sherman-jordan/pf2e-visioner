@@ -51,7 +51,6 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
             // Check for any override for this token pair
             const override = overrideManager.consumeOverride(attacker, target);
 
-            debugger;
             if (override) {
                 state = override.state;
                 overrideSource = override.source;
@@ -126,7 +125,6 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                 }
 
                 try {
-                    debugger;
                     const bonus = getCoverBonusByState(chosen) || 0;
                     let items = foundry.utils.deepClone(tgtActor._source?.items ?? []);
                     items = items.filter(
@@ -260,7 +258,6 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
                 }
 
                 // Apply effect/clone/stat logic for the final state
-                debugger;
                 await this._applyCoverEphemeralEffect(target, attacker, finalState, context, manualCover);
             }
 
@@ -334,7 +331,6 @@ class AttackRollUseCase extends BaseAutoCoverUseCase {
         const clonedActor = tgtActor.clone({ items }, { keepId: true });
         const dcObj = context.dc;
         if (dcObj?.slug) {
-            debugger;
             const clonedStat = clonedActor.getStatistic?.(dcObj.slug)?.dc;
             if (clonedStat && !isManualCover) {
                 dcObj.value = clonedStat.value;

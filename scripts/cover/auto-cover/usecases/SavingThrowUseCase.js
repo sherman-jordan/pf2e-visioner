@@ -7,6 +7,7 @@ import {
   getCoverImageForState,
   getCoverLabel
 } from '../../../helpers/cover-helpers.js';
+import { getCoverBetween } from '../../../utils.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import coverUIManager from '../CoverUIManager.js';
 import templateManager from '../TemplateManager.js';
@@ -93,12 +94,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
     if (!state) {
       // First check for manual cover between tokens
       try {
-        const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+        const manualCover = getCoverBetween(attacker, target);
         if (manualCover && manualCover !== 'none') {
           state = manualCover;
         }
-      } catch (_) {}
-      
+      } catch (_) { }
+
       // Fallback to auto-detection if no manual cover
       if (!state) {
         state = this._detectCover(attacker, target);
@@ -287,12 +288,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       else if (attacker) {
         // First check for manual cover between tokens
         try {
-          const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+          const manualCover = getCoverBetween(attacker, target);
           if (manualCover && manualCover !== 'none') {
             state = manualCover;
           }
-        } catch (_) {}
-        
+        } catch (_) { }
+
         // Fallback to auto-detection if no manual cover
         if (!state) {
           state = this.autoCoverSystem.detectCoverBetweenTokens(attacker, target);

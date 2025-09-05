@@ -11,7 +11,7 @@ const behaviorKey = `${MODULE_ID}.Pf2eVisionerVisibility`;
 function registerBehavior() {
   if (typeof CONFIG !== 'undefined' && CONFIG.RegionBehavior) {
     CONFIG.RegionBehavior.dataModels[behaviorKey] = VisibilityRegionBehavior;
-    CONFIG.RegionBehavior.typeLabels[behaviorKey] = 'PF2e Visioner Visibility';  
+    CONFIG.RegionBehavior.typeLabels[behaviorKey] = 'PF2e Visioner Visibility';
     CONFIG.RegionBehavior.typeIcons[behaviorKey] = 'fa-solid fa-eye';
   }
 }

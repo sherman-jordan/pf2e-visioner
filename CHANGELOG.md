@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.1.1] - 2025-09-05
+
+### 🐛 Fixed
+
+- **Manual Cover Fixes**: Fixed issues with manual cover detection and application when it needs to take precedence over auto cover situations
+
+- **Behavior Activation/Deactivation**: Fixed region behavior state management
+  - **Activation**: Region behaviors now properly run activate when behavior is activated
+  - **Deactivation**: Region behaviors now properly run when behavior is deactivated
+
 ## [3.1.0] - 2025-01-20
 
 ### ✨ New Features

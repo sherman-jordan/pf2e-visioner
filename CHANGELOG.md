@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.1.2] - 2024-12-31
+
+### ✨ New Features
+
+- **Manual Cover Indicators For Attack rolls**: Added visual indicators in chat messages of attack rolls to show when manual cover is applied, blocked override when manual cover is detected
+
+- **Wall manager**:
+  - Added progress bar and enhanced performance of updates
+  - Added keybind to open wall manager
+
+### 🐛 Fixed
+
+- **Enforce RAW with Manual Cover**: Fixed manual cover doesnt qualify for enforce raw
+
+- Fixed ephemeral effects duplication bug where rules were being added repeatedly on page refresh
+- Improved rule deduplication in cover aggregates to prevent multiple identical rules
+- Enhanced canonicalization process to prioritize higher cover bonuses when rules conflict
+- Added defensive GM-only checks to prevent effect creation/deletion race conditions
+- Improved error handling and logging for ephemeral effect management
+
 ## [3.1.1] - 2025-09-05
 
 ### 🐛 Fixed

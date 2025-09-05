@@ -75,7 +75,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       this._bindSelectionSync(content);
       this._bindCoverToggle(content);
       this._bindSearchAndFilter(content);
-    } catch (_) {}
+    } catch (_) { }
     return content;
   }
 
@@ -84,6 +84,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     try {
       const form = app.element?.querySelector?.('form.pf2e-visioner-wall-manager');
       if (!form) return app.close();
+
+      // Close dialog early to show progress
+      try {
+        await app.close();
+      } catch (error) {
+        console.warn('Wall Manager: Error closing dialog:', error);
+      }
+
       const updates = [];
       const byId = new Map();
       // Read inputs directly so unchecked checkboxes are captured as false
@@ -109,13 +117,13 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           }
           byId.get(id)[field] = value;
         }
-        
+
         // Handle cover override buttons
         if (input.hasAttribute('data-wall-id') && input.hasAttribute('data-cover-override')) {
           const wallId = input.getAttribute('data-wall-id');
           const coverValue = input.getAttribute('data-cover-override');
           const isActive = input.classList.contains('active');
-          
+
           if (isActive) {
             if (!byId.has(wallId)) byId.set(wallId, {});
             const wallData = byId.get(wallId);
@@ -126,57 +134,181 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           }
         }
       });
+
+      // Prepare update patches - only include walls that actually have changes
+      const walls = (canvas?.walls?.placeables || []).map((w) => w.document);
+      const wallsById = new Map(walls.map(w => [w.id, w]));
+
       for (const [id, data] of byId.entries()) {
+        const wallDoc = wallsById.get(id);
+        if (!wallDoc) continue; // Skip if wall doesn't exist
+
         const patch = { _id: id };
+        let hasChanges = false;
+
+        // Check provideCover changes
         if (data.provideCover !== undefined) {
-          patch[`flags.${MODULE_ID}.provideCover`] = !!data.provideCover;
+          const currentProvideCover = wallDoc.getFlag?.(MODULE_ID, 'provideCover') !== false;
+          const newProvideCover = !!data.provideCover;
+          if (currentProvideCover !== newProvideCover) {
+            patch[`flags.${MODULE_ID}.provideCover`] = newProvideCover;
+            hasChanges = true;
+          }
         }
+
+        // Check hiddenWall changes
         if (data.hiddenWall !== undefined) {
-          patch[`flags.${MODULE_ID}.hiddenWall`] = !!data.hiddenWall;
+          const currentHiddenWall = !!wallDoc.getFlag?.(MODULE_ID, 'hiddenWall');
+          const newHiddenWall = !!data.hiddenWall;
+          if (currentHiddenWall !== newHiddenWall) {
+            patch[`flags.${MODULE_ID}.hiddenWall`] = newHiddenWall;
+            hasChanges = true;
+          }
         }
+
+        // Check identifier changes
         if (data.identifier !== undefined) {
-          patch[`flags.${MODULE_ID}.wallIdentifier`] = String(data.identifier || '');
+          const currentIdentifier = wallDoc.getFlag?.(MODULE_ID, 'wallIdentifier') || '';
+          const newIdentifier = String(data.identifier || '');
+          if (currentIdentifier !== newIdentifier) {
+            patch[`flags.${MODULE_ID}.wallIdentifier`] = newIdentifier;
+            hasChanges = true;
+          }
         }
+
+        // Check stealth DC changes
         if (data.dc !== undefined) {
-          patch[`flags.${MODULE_ID}.stealthDC`] = data.dc;
+          const currentDC = wallDoc.getFlag?.(MODULE_ID, 'stealthDC');
+          const newDC = data.dc;
+          if (currentDC !== newDC) {
+            patch[`flags.${MODULE_ID}.stealthDC`] = newDC;
+            hasChanges = true;
+          }
         }
+
+        // Check cover override changes
         if (data.coverOverride !== undefined) {
-          patch[`flags.${MODULE_ID}.coverOverride`] = data.coverOverride;
+          const currentCoverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
+          const newCoverOverride = data.coverOverride;
+          if (currentCoverOverride !== newCoverOverride) {
+            patch[`flags.${MODULE_ID}.coverOverride`] = newCoverOverride;
+            hasChanges = true;
+          }
         }
+
+        // Check door type changes
         if (data.doorType !== undefined) {
-          patch.door = data.doorType;
+          const currentDoorType = Number(wallDoc.door) || 0;
+          const newDoorType = Number(data.doorType);
+          if (currentDoorType !== newDoorType) {
+            patch.door = newDoorType;
+            hasChanges = true;
+          }
         }
-        updates.push(patch);
+
+        // Only add to updates if there are actual changes
+        if (hasChanges) {
+          updates.push(patch);
+        }
       }
-      if (updates.length)
-        await canvas.scene?.updateEmbeddedDocuments?.('Wall', updates, { diff: false });
-      await app.close();
+
+      // Apply updates with progress (only if there are changes)
+      if (updates.length > 0) {
+        // Import progress system after we know we have work to do
+        const { VisionerProgress } = await import('../progress.js');
+
+        // Use larger batches for better performance
+        const batchSize = Math.max(50, Math.min(100, Math.ceil(updates.length / 10))); // Adaptive batch size
+        const wallBatches = [];
+        for (let i = 0; i < updates.length; i += batchSize) {
+          wallBatches.push(updates.slice(i, i + batchSize));
+        }
+
+        // Create progress bar with batch count instead of individual walls
+        const progressBar = new VisionerProgress(`Applying Changes to ${updates.length} Walls`, wallBatches.length + 1);
+
+        try {
+          progressBar.render(true);
+
+          // Process each batch with minimal progress updates
+          for (let batchIndex = 0; batchIndex < wallBatches.length; batchIndex++) {
+            const batch = wallBatches[batchIndex];
+            const start = batchIndex * batchSize + 1;
+            const end = Math.min((batchIndex + 1) * batchSize, updates.length);
+
+            console.log(`[${MODULE_ID}] Updating walls ${start}-${end} of ${updates.length}...`);
+
+            // Update progress only at batch boundaries
+            progressBar.setProgress(batchIndex, wallBatches.length + 1);
+
+            // Process the entire batch at once
+            await canvas.scene?.updateEmbeddedDocuments?.('Wall', batch, { diff: false });
+
+            console.log(`[${MODULE_ID}] Walls ${start}-${end} updated successfully`);
+          }
+
+          // Visual effects update - skip for large updates to improve performance
+          progressBar.setProgress(wallBatches.length, wallBatches.length + 1);
+
+          if (updates.length <= 50) {
+            // Only update visuals for smaller batches to maintain performance
+            console.log(`[${MODULE_ID}] Starting visual effects update...`);
+            try {
+              const { updateWallVisuals } = await import('../../services/visual-effects.js');
+              await updateWallVisuals();
+              console.log(`[${MODULE_ID}] Visual effects update completed`);
+            } catch (visualError) {
+              console.warn(`[${MODULE_ID}] Visual effects update failed (non-critical):`, visualError);
+            }
+          } else {
+            console.log(`[${MODULE_ID}] Skipping visual effects update for large batch (${updates.length} walls) - refresh manually if needed`);
+            ui.notifications?.info?.(`Applied changes to ${updates.length} walls. Refresh the scene if visual effects need updating.`);
+          }
+
+          progressBar.close();
+
+          if (updates.length <= 50) {
+            ui.notifications?.info?.(`Applied changes to ${updates.length} walls successfully!`);
+          }
+          // Note: notification for large batches is already shown above
+
+          console.log(`[${MODULE_ID}] All operations completed successfully`);
+
+        } catch (error) {
+          progressBar.close();
+          ui.notifications?.error?.(`Failed to apply wall changes: ${error.message}`);
+          throw error;
+        }
+      } else {
+        // No changes to apply
+        ui.notifications?.info?.('No wall changes to apply');
+      }
     } catch (e) {
       console.error(`[${MODULE_ID}] Wall Manager apply failed`, e);
       try {
         await app.close();
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
   static async _onClose(_event, _button) {
     try {
       await this.close();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   static async _onSelectWall(event, button) {
     try {
       const wallId = button?.dataset?.wallId;
       if (!wallId) return;
-      
+
       // Find the wall on canvas
       const wall =
         canvas?.walls?.get?.(wallId) ||
         (canvas?.walls?.placeables || []).find(
           (w) => w?.id === wallId || w?.document?.id === wallId,
         );
-      
+
       if (!wall) {
         ui.notifications?.warn?.(`Wall with ID ${wallId} not found on canvas`);
         return;
@@ -185,17 +317,17 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       try {
         // Release all currently selected walls
         wall.layer?.releaseAll?.();
-      } catch (_) {}
-      
+      } catch (_) { }
+
       try {
         // Select the target wall
         wall.control?.({ releaseOthers: true });
       } catch (_) {
         try {
           wall.control?.();
-        } catch (_) {}
+        } catch (_) { }
       }
-      
+
       try {
         // Calculate wall center and pan to it
         const d = wall.document;
@@ -203,17 +335,17 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         const [x1, y1, x2, y2] = coords.map((n) => Number(n) || 0);
         const centerX = (x1 + x2) / 2;
         const centerY = (y1 + y2) / 2;
-        
+
         // Animate pan to wall center
         canvas?.animatePan?.({ x: centerX, y: centerY, duration: 350 });
-        
+
         // Visual feedback
         button.style.color = 'var(--color-text-hyperlink)';
         setTimeout(() => {
           button.style.color = '';
         }, 1000);
-        
-      } catch (_) {}
+
+      } catch (_) { }
     } catch (e) {
       console.warn(`[${MODULE_ID}] Select wall failed`, e);
     }
@@ -230,7 +362,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     // Remove active class from all cover override buttons
     const allButtons = form.querySelectorAll('button[data-cover-override]');
     allButtons.forEach(btn => btn.classList.remove('active'));
-    
+
     // Add active class to buttons matching the cover type
     const targetButtons = form.querySelectorAll(`button[data-cover-override="${coverType}"]`);
     targetButtons.forEach(btn => btn.classList.add('active'));
@@ -275,10 +407,10 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         const wallButtons = form.querySelectorAll(`button[data-wall-id="${wallId}"][data-cover-override]`);
         wallButtons.forEach(btn => btn.classList.remove('active'));
       }
-      
+
       // Always make the clicked button active (no toggle behavior - one must always be selected)
       button.classList.add('active');
-      
+
     } catch (e) {
       console.warn(`[${MODULE_ID}] Set cover override failed`, e);
     }
@@ -302,7 +434,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             tr.style.outline = on ? '2px solid var(--color-text-hyperlink, #ff9800)' : '';
             tr.style.background = on ? 'rgba(255, 152, 0, 0.12)' : '';
           });
-        } catch (_) {}
+        } catch (_) { }
       };
       const onControl = () => highlight();
       const onDelete = async (wallDocument) => {
@@ -310,7 +442,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           // Clean up visual effects for deleted wall first
           const { cleanupDeletedWallVisuals } = await import('../../services/visual-effects.js');
           await cleanupDeletedWallVisuals(wallDocument);
-        } catch (_) {}
+        } catch (_) { }
         highlight();
       };
       Hooks.on('controlWall', onControl);
@@ -321,24 +453,24 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       this._unbindSelectionSync = () => {
         try {
           Hooks.off('controlWall', onControl);
-        } catch (_) {}
+        } catch (_) { }
         try {
           Hooks.off('deleteWall', onDelete);
-        } catch (_) {}
+        } catch (_) { }
         try {
           Hooks.off('createWall', onControl);
-        } catch (_) {}
+        } catch (_) { }
         try {
           Hooks.off('updateWall', onControl);
-        } catch (_) {}
+        } catch (_) { }
         this._unbindSelectionSync = null;
       };
       this.once?.('close', () => {
         try {
           this._unbindSelectionSync?.();
-        } catch (_) {}
+        } catch (_) { }
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   _bindCoverToggle(root) {
@@ -380,7 +512,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             const identifier = (identifierInput?.value || '').toLowerCase();
             const hiddenCheckbox = row.querySelector('input[name$=".hiddenWall"]');
             const isHidden = hiddenCheckbox?.checked || false;
-            
+
             // Get wall type from the hidden input
             const typeInput = row.querySelector('input[name$=".doorType"]');
             const wallType = typeInput?.value || '0';
@@ -467,7 +599,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           this._cycleWallType(button, event.button === 2); // true for right-click
           applyFilters();
         });
-        
+
         // Prevent context menu on right-click
         button.addEventListener('contextmenu', (event) => {
           event.preventDefault();
@@ -489,14 +621,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       const doorType = Number(select.value);
       const container = select.closest('.wall-type-container');
       const img = container?.querySelector('img');
-      
+
       if (!img) return;
 
       // Import the getWallImage utility
       import('../../utils.js').then(({ getWallImage }) => {
         const newSrc = getWallImage(doorType);
         img.src = newSrc;
-        
+
         // Update tooltip
         let tooltipText = 'Wall';
         if (doorType === 1) tooltipText = 'Door';
@@ -513,10 +645,9 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
   _cycleWallType(button, backwards = false) {
     try {
       const currentType = Number(button.getAttribute('data-current-type') || 0);
-      const wallId = button.getAttribute('data-wall-id');
       const img = button.querySelector('img');
       const hiddenInput = button.parentElement.querySelector('input[name$=".doorType"]');
-      
+
       if (!img || !hiddenInput) return;
 
       // Cycle through types: 0 -> 1 -> 2 -> 0 (forward) or 0 -> 2 -> 1 -> 0 (backward)
@@ -526,23 +657,23 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       } else {
         newType = (currentType + 1) % 3;
       }
-      
+
       // Update button data attribute
       button.setAttribute('data-current-type', newType.toString());
-      
+
       // Update hidden input value
       hiddenInput.value = newType.toString();
-      
+
       // Update image
       const newSrc = getWallImage(newType);
       img.src = newSrc;
-      
+
       // Update alt text
       let altText = 'Wall';
       if (newType === 1) altText = 'Door';
       else if (newType === 2) altText = 'Secret Door';
       img.setAttribute('alt', altText);
-      
+
     } catch (e) {
       console.warn(`[${MODULE_ID}] Wall type cycling failed`, e);
     }

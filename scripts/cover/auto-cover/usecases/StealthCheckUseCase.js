@@ -6,8 +6,17 @@
 import { COVER_STATES } from '../../../constants.js';
 import { getCoverLabel, getCoverStealthBonusByState } from '../../../helpers/cover-helpers.js';
 import { CoverModifierService } from '../../../services/CoverModifierService.js';
+import { getCoverBetween } from '../../../utils.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
+
+
+const coverPrecedence = {
+    none: 0,
+    lesser: 1,
+    standard: 2,
+    greater: 4,
+};
 
 class StealthCheckUseCase extends BaseAutoCoverUseCase {
     constructor() {
@@ -121,12 +130,12 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
             if (!state) {
                 // First check for manual cover between tokens
                 try {
-                    const manualCover = this.autoCoverSystem.getCoverBetween(hider, target);
+                    const manualCover = getCoverBetween(hider, target);
                     if (manualCover && manualCover !== 'none') {
                         state = manualCover;
                     }
-                } catch (_) {}
-                
+                } catch (_) { }
+
                 // Fallback to auto-detection if no manual cover
                 if (!state) {
                     state = this._detectCover(hider, target);
@@ -218,21 +227,20 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                     // First check for manual cover between tokens
                     let s = null;
                     try {
-                        const manualCover = this.autoCoverSystem.getCoverBetween(hider, obs);
+                        const manualCover = getCoverBetween(obs, hider);
                         if (manualCover && manualCover !== 'none') {
                             s = manualCover;
                         }
-                    } catch (_) {}
-                    
+                    } catch (_) { }
+
                     // Fallback to auto-detection if no manual cover
                     if (!s) {
                         s = this._detectCover(hider, obs);
                     }
-                    
+
                     if (s && s !== 'none') {
                         target = obs;
-                        detectedState = s;
-                        break; // first observer with cover
+                        detectedState = coverPrecedence[detectedState] < coverPrecedence[s] ? s : detectedState;
                     }
                 }
             } catch (_) { }
@@ -240,15 +248,15 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
 
             // Inject cover override UI, using a callback to apply stealth-specific behavior on chosen state
             try {
-                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, async ({ chosen, subject: hider, target: tgt, rollId }) => {
+                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, null, async ({ chosen, subject: hider, target: tgt, rollId }) => {
                     try {
                         // Determine if this will be an override
                         const wasChanged = chosen !== detectedState;
                         const originalBonus = Number(COVER_STATES?.[detectedState]?.bonusStealth ?? 0);
                         const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
-                        
 
-                        
+
+
                         if (rollId) {
                             const modifierData = {
                                 originalState: detectedState,
@@ -259,13 +267,13 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                 source: wasChanged ? 'dialog-override' : 'automatic',
                                 timestamp: Date.now()
                             };
-                            
+
                             this.coverModifierService.setOriginalCoverModifier(rollId, modifierData);
 
-                            
+
                             // Note: Clean up of old entries removed - could be moved to the service if needed
                         }
-                        
+
                         if (wasChanged) {
                             // Store roll-specific override for this specific hider->observer pair
                             if (hider && tgt) {
@@ -307,7 +315,8 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
     }
 
 
-    async onRenderChatMessage(message) {
+    async onRenderChatMessage(message, html) {
+        super.handleRenderChatMessage(message, html, false);
         const data = message?.toObject?.() || {};
         const attackerIdRaw =
             data?.speaker?.token || data?.flags?.pf2e?.context?.token?.id || data?.flags?.pf2e?.token?.id;
@@ -367,52 +376,51 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
 
 
                         // If not overridden, evaluate cover against all other tokens and pick the best (highest stealth bonus)
-                        let candidateStates = [];
                         const observers = (canvas?.tokens?.placeables || [])
                             .filter((t) => t && t.actor && t.id !== hider.id);
                         if (!state) {
+                            let detectedState;
                             try {
                                 for (const obs of observers) {
                                     try {
                                         // First check for manual cover between tokens
                                         let s = null;
                                         try {
-                                            const manualCover = this.autoCoverSystem.getCoverBetween(hider, obs);
+                                            const manualCover = getCoverBetween(hider, obs);
                                             if (manualCover && manualCover !== 'none') {
                                                 s = manualCover;
                                             }
-                                        } catch (_) {}
-                                        
+                                        } catch (_) { }
+
                                         // Fallback to auto-detection if no manual cover
                                         if (!s) {
                                             s = this._detectCover(hider, obs);
                                         }
-                                        
+
                                         if (s) {
-                                            candidateStates.push(s)
-                                            break;
+                                            detectedState = coverPrecedence[detectedState] < coverPrecedence[s] ? s : detectedState;
                                         };
                                     } catch (_) { }
                                 }
                             } catch (_) { }
-                            state = candidateStates[0];
+                            state = detectedState;
                         }
 
                         // Store the original state before any popup changes
                         const originalDetectedState = state;
                         const originalBonus = Number(COVER_STATES?.[originalDetectedState]?.bonusStealth ?? 0);
-                        
+
                         try {
                             const { chosen, rollId } = await this.coverUIManager.showPopupAndApply(state);
                             if (chosen) {
                                 context._visionerRollId = rollId;
-                                
+
                                 // Determine if this was an override
                                 const wasOverridden = chosen !== originalDetectedState;
                                 const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
-                                
 
-                                
+
+
                                 if (rollId) {
                                     const modifierData = {
                                         originalState: originalDetectedState,
@@ -423,15 +431,13 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                         source: wasOverridden ? 'popup-override' : 'automatic',
                                         timestamp: Date.now()
                                     };
-                                    
+
                                     this.coverModifierService.setOriginalCoverModifier(rollId, modifierData);
 
-                                    
-                                    // Note: Clean up of old entries removed - could be moved to the service if needed
-                                } else {
 
+                                    // Note: Clean up of old entries removed - could be moved to the service if needed
                                 }
-                                
+
                                 // Now update the state to the chosen value
                                 state = chosen;
                                 // Only store as override if it actually changed
@@ -444,9 +450,9 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         } catch (e) {
                             console.warn('PF2E Visioner | Popup error (delegated):', e);
                         }
-                        
+
                         const bonus = Number(COVER_STATES?.[state]?.bonusStealth ?? 0);
-                        
+
                         try { context._visionerStealth = { state, bonus, isOverride, rollId: context?._visionerRollId, source: isOverride ? 'override' : 'automatic' }; } catch (_) { }
                     } catch (e) {
                         console.warn('PF2E Visioner | ⚠️ Stealth cover handling failed', e);

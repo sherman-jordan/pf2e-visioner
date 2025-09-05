@@ -631,7 +631,6 @@ function getChatAutomationCSS() {
         
         .seek-results-table td,
         .hide-results-table td,
-        .point-out-results-table td,
         .create-a-diversion-preview-dialog .results-table td,
         .sneak-results-table td,
         .consequences-results-table td {
@@ -645,11 +644,30 @@ function getChatAutomationCSS() {
         
         .seek-results-table tbody tr:nth-child(even) td,
         .hide-results-table tbody tr:nth-child(even) td,
-        .point-out-results-table tbody tr:nth-child(even) td,
         .create-a-diversion-preview-dialog .results-table tbody tr:nth-child(even) td,
         .sneak-results-table tbody tr:nth-child(even) td,
         .consequences-results-table tbody tr:nth-child(even) td {
             background: var(--color-bg-option, rgba(255, 255, 255, 0.05));
+        }
+
+        .point-out-results-table td {
+            padding: 8px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .point-out-results-table tbody tr:nth-child(even) td {
+            padding: 8px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Point Out Dialog Row Hover - Orange Theme */
+        .point-out-preview-dialog .results-table-container tr.row-hover,
+        .point-out-preview-dialog .results-table-container tr[data-token-id].row-hover {
+            outline-color: var(--pf2e-visioner-warning);
+            box-shadow: inset 0 0 0 2px rgba(255, 102, 0, 0.35);
+            background: rgba(255, 102, 0, 0.1) !important;
         }
         
         /* ===== UNIFIED TOKEN IMAGE STYLING ===== */
@@ -682,7 +700,7 @@ function getChatAutomationCSS() {
             border-radius: 4px;
             border: 1px solid var(--color-border-light-primary, #555);
             object-fit: cover;
-            object-position: center;
+            object-position: top;
             display: block;
             margin: 0 auto;
         }
@@ -1155,13 +1173,7 @@ function getChatAutomationCSS() {
             font-size: 12px !important;
             pointer-events: none !important;
         }
-        
-        /* Point Out Preview Dialog Styles */
-        .point-out-preview-dialog {
-            min-width: 350px;
-            max-width: 450px;
-            width: auto;
-        }
+
         
         .point-out-preview-dialog .window-header {
             background: linear-gradient(135deg, var(--visibility-hidden) 0%, var(--visibility-hidden) 100%);

@@ -304,6 +304,32 @@ export class AutoCoverSystem {
     getCoverBonusByState(state) {
         return getCoverBonusByState(state);
     }
+
+    normalizeTokenRef(ref) {
+        try {
+            if (!ref) return null;
+
+            // Handle object types with _id or id properties
+            if (typeof ref === 'object' && ref !== null) {
+                if (ref._id) return ref._id;
+                if (ref.id) return ref.id;
+                // If it's a complex object, try to convert to string and process
+                ref = String(ref);
+            }
+
+            let s = typeof ref === 'string' ? ref.trim() : String(ref);
+            // Strip surrounding quotes
+            if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))
+                s = s.slice(1, -1);
+            // If it's a UUID, extract the final Token.<id> segment
+            const m = s.match(/Token\.([^.\s]+)$/);
+            if (m && m[1]) return m[1];
+            // Otherwise assume it's already the token id
+            return s;
+        } catch (_) {
+            return ref;
+        }
+    }
 }
 
 // Singleton instance

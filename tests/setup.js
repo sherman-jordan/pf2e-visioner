@@ -667,14 +667,21 @@ global.createMockToken = (data = {}) => {
   // Create a proper flags structure that mimics Foundry VTT
   const flags = data.flags || {};
 
-  return {
+  // Calculate grid-based coordinates
+  const x = data.x || 0;
+  const y = data.y || 0;
+  const width = data.width || 1;
+  const height = data.height || 1;
+  const gridSize = 50; // Standard grid size
+
+  const token = {
     id: data.id || 'mock-token-' + Math.random().toString(36).substr(2, 9),
     document: {
       id: data.id || 'mock-token-' + Math.random().toString(36).substr(2, 9),
-      x: data.x || 0,
-      y: data.y || 0,
-      width: data.width || 1,
-      height: data.height || 1,
+      x: x,
+      y: y,
+      width: width,
+      height: height,
       elevation: data.elevation || 0,
       rotation: data.rotation || 0,
       hidden: data.hidden || false,
@@ -727,13 +734,15 @@ global.createMockToken = (data = {}) => {
       hasPlayerOwner: data.hasPlayerOwner || false,
       isOwner: data.isOwner || false,
     },
-    center: data.center || { x: 25, y: 25 },
-    getCenter: jest.fn(() => ({ x: 25, y: 25 })),
+    center: data.center || { x: x * gridSize + (width * gridSize) / 2, y: y * gridSize + (height * gridSize) / 2 },
+    getCenter: jest.fn(() => data.center || { x: x * gridSize + (width * gridSize) / 2, y: y * gridSize + (height * gridSize) / 2 }),
     isOwner: data.isOwner || false,
     visible: data.visible !== false,
     inCombat: data.inCombat !== undefined ? data.inCombat : false, // For encounter tests
     ...data,
   };
+
+  return token;
 };
 
 global.createMockActor = (data = {}) => ({
@@ -833,13 +842,33 @@ beforeEach(() => {
   // global.game.settings.set?.mockClear?.();
   // global.game.settings.register?.mockClear?.();
 
-  // Reset canvas state
-  global.canvas.tokens.controlled = [];
-  global.canvas.tokens.placeables = [];
+  // Reset canvas state - ensure tokens object exists first
+  if (!global.canvas.tokens) {
+    global.canvas.tokens = {
+      controlled: [],
+      placeables: [],
+      get: jest.fn(),
+      addChild: jest.fn(),
+      removeChild: jest.fn()
+    };
+  } else {
+    global.canvas.tokens.controlled = [];
+    global.canvas.tokens.placeables = [];
+  }
 
   // Ensure these properties exist before trying to set them
   if (!global.canvas.walls) {
-    global.canvas.walls = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+    global.canvas.walls = { 
+      placeables: [], 
+      objects: { children: [] },
+      get: jest.fn(), 
+      addChild: jest.fn(), 
+      removeChild: jest.fn() 
+    };
+  } else if (!global.canvas.walls.objects) {
+    global.canvas.walls.objects = { children: [] };
+  } else {
+    global.canvas.walls.objects.children = [];
   }
   if (!global.canvas.lighting) {
     global.canvas.lighting = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };

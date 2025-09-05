@@ -13,6 +13,8 @@ import { initializeDialogScrollFix } from './services/dialog-scroll-fix.js';
 import { initializeRuleElements } from './rule-elements/index.js';
 // Import cover visualization
 import { initCoverVisualization } from './cover/cover-visualization.js';
+// Import region behavior registration (executes immediately)
+import './regions/register.js';
 
 // Function to update colorblind mode
 function updateColorblindMode() {
@@ -143,6 +145,7 @@ Hooks.once('ready', async () => {
     } catch (error) {
       console.error('PF2E Visioner: Failed to initialize cover visualization:', error);
     }
+
   } catch (error) {
     console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);
   }

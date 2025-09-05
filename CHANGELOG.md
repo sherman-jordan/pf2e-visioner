@@ -1,6 +1,141 @@
 # Changelog
 
-## [3.0.0] - 2025-01-21
+## [3.1.2] - 2024-12-31
+
+### ✨ New Features
+
+- **Manual Cover Indicators For Attack rolls**: Added visual indicators in chat messages of attack rolls to show when manual cover is applied, blocked override when manual cover is detected
+
+- **Wall manager**:
+  - Added progress bar and enhanced performance of updates
+  - Added keybind to open wall manager
+
+### 🐛 Fixed
+
+- **Enforce RAW with Manual Cover**: Fixed manual cover doesnt qualify for enforce raw
+
+- Fixed ephemeral effects duplication bug where rules were being added repeatedly on page refresh
+- Improved rule deduplication in cover aggregates to prevent multiple identical rules
+- Enhanced canonicalization process to prioritize higher cover bonuses when rules conflict
+- Added defensive GM-only checks to prevent effect creation/deletion race conditions
+- Improved error handling and logging for ephemeral effect management
+
+## [3.1.1] - 2025-09-05
+
+### 🐛 Fixed
+
+- **Manual Cover Fixes**: Fixed issues with manual cover detection and application when it needs to take precedence over auto cover situations
+
+- **Behavior Activation/Deactivation**: Fixed region behavior state management
+  - **Activation**: Region behaviors now properly run activate when behavior is activated
+  - **Deactivation**: Region behaviors now properly run when behavior is deactivated
+
+## [3.1.0] - 2025-01-20
+
+### ✨ New Features
+
+#### Region Behavior System
+
+- **PF2e Visioner Region Behavior**: Added custom region behavior for automatic visibility management
+  - **Visibility State Control**: Set visibility state (observed, concealed, hidden, undetected) for tokens
+  - **Inside Token Control**: Optional checkbox to apply visibility state between tokens inside the region
+  - **Two-Way Region**: Optional checkbox to make tokens outside the region have the same visibility state to tokens inside
+  - **Clean Exit**: Visibility relationships are reset to 'observed' when tokens exit regions
+  - **Integration**: Fully integrated with existing PF2e Visioner visibility system and effects
+
+- **Token config**: Add configs to protoype tokens config
+
+### 🐛 Fixed
+
+- **Point out dialog**: Weird rectangle is now gone
+- **All Dialogs**: Names will be wrapped on word breaks
+
+## [3.0.6] - 2025-09-02
+
+### ✨ Enhanced
+
+- **Wall Manager**: Added select and go to wall
+- **Auto cover from walls**: Another grooming to the algorithm
+
+## [3.0.5] - 2025-09-02
+
+### 🐛 Fixed
+
+#### Cover Detection
+
+- **Door State Awareness**: Fixed cover calculation to properly respect door states
+  - **Open doors/secret doors** no longer provide cover (consistent with Foundry's vision system)
+  - **Closed/locked doors/secret doors** continue to provide cover as normal walls
+- **Cover Override Precedence**: Cover overrides now take precedence over door states
+- **Action Dialogs**: Use portraits instead of token images
+
+### 🔧 Technical
+
+## [3.0.4] - 2025-09-02
+
+### ✨ Enhanced
+
+#### Dialogs
+
+- **Click on token image to go to current row token**: will select and pan to the token
+- Name column word wrap
+
+## [3.0.3] - 2025-09-02
+
+### ✨ Enhanced
+
+#### Wall Manager Interface Overhaul
+
+- **Scrollable Table**: Added scrollable table container
+- **Search & Filter System**: Comprehensive search and filter functionality:
+  - **Text Search**: Search by identifier or wall ID with debounced input
+  - **Type Filter**: Filter by Walls, Doors, or Secret Doors
+  - **Hidden Filter**: Show only hidden walls, non-hidden walls, or all
+  - **Cover Filter**: Filter by cover override type (Auto, None, Standard, Greater)
+  - **Live Counter**: Shows total wall count and currently visible count
+  - **Clear Filters**: One-click button to reset all filters
+- **Clickable Wall Type Images**: Replaced dropdown with clickable wall type images:
+  - **Left-click**: Cycles forward through Wall → Door → Secret Door
+  - **Right-click**: Cycles backward through Wall → Secret Door → Door
+  - **Visual Feedback**: Hover effects with orange border and scaling animations
+- **Bulk Cover Actions**: Added bulk cover override buttons in header:
+  - **Cover: Auto**: Sets all walls to automatic cover detection
+  - **Cover: None**: Sets all walls to never provide cover
+  - **Cover: Standard**: Sets all walls to maximum standard cover
+  - **Cover: Greater**: Sets all walls to maximum greater cover
+
+### 🔧 Technical Improvements
+
+- **Performance**: Debounced search input for better performance with large datasets
+- **Cover Priority Logic**: Simplified cover detection to prioritize walls when any wall provides cover, otherwise prioritize token blockers
+
+## [3.0.2] - 2025-09-02
+
+### 🔧 Fixed
+
+#### Cover System Architecture Improvements
+
+- **Wall Side Detection**: The algorithm was backwards, this is fixed
+
+## [3.0.1] - 2025-09-01
+
+### 🐛 Fixed
+
+#### Wall Coverage Calculation Improvements
+
+- **Directional Wall Logic**: Fixed critical bug where RIGHT directional walls weren't providing cover when attacked from the correct side
+- **Coverage Percentage Accuracy**: Improved wall coverage percentage calculation by removing arbitrary center weight reduction that could underestimate cover
+- **Foundry VTT Constants**: Updated directional wall logic to properly use Foundry's wall direction constants (BOTH: 0, LEFT: 1, RIGHT: 2)
+- **Sampling Density**: Increased sampling points around target perimeter from 3 to 4 per edge for more accurate coverage detection
+- **Corner Sampling**: Added explicit corner point sampling for better PF2e rule compliance
+- **Cross-Product Calculation**: Enhanced mathematical precision in directional wall blocking logic
+
+#### Point Out Action System Enhancements
+
+- **ApplicationV2 Warning Dialogs**: Converted Point Out target selection warnings to modern Foundry ApplicationV2 framework
+- **Player/GM Warning System**: Added comprehensive warning dialogs for when attempting Point Out without target selection
+
+## [3.0.0] - 2025-09-01
 
 ### 🎉 Major Release - Advanced Visibility and Cover Toolkit
 
@@ -9,18 +144,20 @@ This major release represents a complete architectural overhaul, transforming PF
 ### ✨ New Features
 
 #### 🛡️ Auto-Cover System (Complete Architectural Rewrite)
+
 - **Modular Architecture**: Brand new auto-cover system with specialized components:
 - **Enhanced Detection Modes**: Multiple intersection algorithms for precise cover calculation:
   - **Any Mode**: Ray intersects any part of blocker token
   - **10% Mode**: Grid-square-based intersection 10% threshold (default mode)
   - **Coverage Mode**: Percentage-based side coverage
-  - **Tactical Mode**: Corner-to-corner line-of-sight using "best attacker corner" rule 
+  - **Tactical Mode**: Corner-to-corner line-of-sight using "best attacker corner" rule
 - **Template Integration**: Full support for area effects and templates with proper cover bonuses
 - **Elevation Integration**: Automatic height and elevation consideration across all modes
 - **Directional Wall Support**: Walls with direction properties properly block cover only from intended sides using cross-product calculations
 - **Wall Cover Status Display**: Alt+hover displays cover status labels
 
 #### 🎯 Enhanced UI Components
+
 - **Cover Override Management**: Comprehensive override system with ceiling behavior
 - **Enhanced Dialogs**: Hide and Sneak dialogs now show cover information by default
 - **Token Quick Panel**: Streamlined interface for rapid visibility state changes
@@ -29,6 +166,7 @@ This major release represents a complete architectural overhaul, transforming PF
 ### 🚀 Enhanced Features
 
 #### Chat Automation Enhancements
+
 - **Cover Integration**: Actions now consider cover prerequisites and bonuses
 
 ### 🐛 Fixed
@@ -47,6 +185,7 @@ This major release represents a complete architectural overhaul, transforming PF
 ### 📋 Migration Notes
 
 Users upgrading from 2.x should be aware that:
+
 - Settings may need to be reconfigured due to reorganization
 - Custom macros using the old API may need updates
 - Some visual effects behavior may differ due to the new system
@@ -57,9 +196,11 @@ This release represents the most significant update to PF2E Visioner since its i
 ## [2.7.1] - 2025-08-28
 
 ### Added
+
 - Ability to hide quick edit button @camrun91
 
 ### Fixed
+
 - Attack consequences displaying on non attack @camrun91
 - Hide results showing on various checks @camrun91
 - Sneak results could show on other checks @camrun91
@@ -77,7 +218,6 @@ This release represents the most significant update to PF2E Visioner since its i
 - Colorblind support for tooltips
 - Take cover showing for current conditions message
 - Allow players to change client settings
-
 
 ## [2.6.9] - 2025-08-23
 
@@ -241,7 +381,6 @@ This release represents the most significant update to PF2E Visioner since its i
   - **Any Mode**: Attack ray passes through blocker with any %
   - **10% Mode**: Grid-square-based intersection threshold - default mode
 
-
 ### Changed
 
 - Token and Wall toggles semantics unified to “Provide Auto‑Cover” (ON = provides cover):
@@ -346,7 +485,7 @@ This release represents the most significant update to PF2E Visioner since its i
 - Settings menu: saving now preserves values from unvisited tabs. Only submitted or previously edited fields are persisted; untouched settings are no longer reset.
 - Added opt in for enable all tokens vision
 
-### Fixed:
+### Fixed
 
 - Dialogs: fixed apply changes missing for sneak.
 

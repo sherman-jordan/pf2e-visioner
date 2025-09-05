@@ -9,10 +9,10 @@
       "flags": {}
     }
   ],
-  "version": "3.0.0",
+  "version": "3.1.2",
   "compatibility": {
     "minimum": "13.341",
-    "verified": "13.346"
+    "verified": "13.348"
   },
   "esmodules": ["scripts/main.js"],
   "styles": [
@@ -71,6 +71,11 @@
       }
     }
   ],
+  "documentTypes": {
+    "RegionBehavior": {
+      "Pf2eVisionerVisibility": {}
+    }
+  },
   "socket": true,
   "flags": {
     "hotReload": {
@@ -84,14 +89,7 @@
         "id": "pf2e",
         "type": "system",
         "compatibility": {
-          "minimum": "6.0.0"
-        }
-      },
-      {
-        "id": "pf2e",
-        "type": "system",
-        "compatibility": {
-          "minimum": "6.0.0"
+          "minimum": "7.0.0"
         }
       }
     ],

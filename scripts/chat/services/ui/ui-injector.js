@@ -3,10 +3,13 @@ import { processedMessages } from '../data/message-cache.js';
 export async function injectAutomationUI(message, html, actionData) {
   try {
     const { shouldInjectPanel } = await import('../infra/panel-visibility.js');
-    if (!shouldInjectPanel(message, actionData)) {
+    const shouldInject = shouldInjectPanel(message, actionData);
+    
+    if (!shouldInject) {
       processedMessages.add(message.id);
       return;
     }
+    
     const { buildAutomationPanel } = await import('../../ui/panel-builder.js');
     const panelHtml = buildAutomationPanel(actionData, message);
     const panel = $(panelHtml);

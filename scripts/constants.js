@@ -597,4 +597,10 @@ export const KEYBINDINGS = {
     editable: [{ key: 'KeyY', modifiers: [] }],
     restricted: false,
   },
+    openWallManager: {
+      name: 'Open Wall Manager',
+      hint: 'Open the Visioner Wall Manager dialog to bulk edit wall settings.',
+      editable: [],
+      restricted: true,
+    },
 };

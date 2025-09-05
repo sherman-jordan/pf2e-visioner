@@ -7,7 +7,7 @@ import { MODULE_ID } from '../../constants.js';
 // Removed unused imports that were only used by the removed center intersection mode
 import { intersectsBetweenTokens, segmentRectIntersectionLength } from '../../helpers/line-intersection.js';
 import { getSizeRank, getTokenCorners, getTokenRect, getTokenVerticalSpanFt } from '../../helpers/size-elevation-utils.js';
-import { segmentIntersectsAnyBlockingWall } from '../../helpers/wall-detection.js';
+
 import { getVisibilityBetween } from '../../utils.js';
 
 export class CoverDetector {
@@ -62,34 +62,39 @@ export class CoverDetector {
             const p1 = attacker.center ?? attacker.getCenter();
             const p2 = target.center ?? target.getCenter();
 
-            // Walls
-            const wallCover = this._evaluateWallsCover(p1, p2);
+            // Check if there's any blocking terrain (walls) in the way
+            const segmentAnalysis = this._analyzeSegmentObstructions(p1, p2);
+            const hasWallsInTheWay = segmentAnalysis.hasBlockingTerrain;
 
-            // Token blockers
-            const intersectionMode = this._getIntersectionMode();
-            const filters = { ...this._getAutoCoverFilterSettings(attacker) };
-            let blockers = this._getEligibleBlockingTokens(attacker, target, filters);
+            // NEW LOGIC: Priority based on wall presence
+            if (!hasWallsInTheWay) {
+                // Case 1: No walls in the way - use token cover
+                const intersectionMode = this._getIntersectionMode();
+                const filters = { ...this._getAutoCoverFilterSettings(attacker) };
+                let blockers = this._getEligibleBlockingTokens(attacker, target, filters);
 
-            // Apply elevation filtering (mode-aware)
-            blockers = this._filterBlockersByElevation(attacker, target, blockers, intersectionMode);
+                // Apply elevation filtering (mode-aware)
+                blockers = this._filterBlockersByElevation(attacker, target, blockers, intersectionMode);
 
-            // Determine token cover based on intersection mode
-            let tokenCover;
-            if (intersectionMode === 'tactical') {
-                tokenCover = this._evaluateCoverByTactical(attacker, target, blockers);
-            } else if (intersectionMode === 'coverage') {
-                tokenCover = this._evaluateCoverByCoverage(attacker, target, blockers);
+                // Determine token cover based on intersection mode
+                let tokenCover;
+                if (intersectionMode === 'tactical') {
+                    tokenCover = this._evaluateCoverByTactical(attacker, target, blockers);
+                } else if (intersectionMode === 'coverage') {
+                    tokenCover = this._evaluateCoverByCoverage(attacker, target, blockers);
+                } else {
+                    tokenCover = this._evaluateCreatureSizeCover(attacker, target, blockers);
+                }
+
+                // Apply token cover overrides
+                tokenCover = this._applyTokenCoverOverrides(attacker, target, blockers, tokenCover);
+
+                return tokenCover;
             } else {
-                tokenCover = this._evaluateCreatureSizeCover(attacker, target, blockers);
+                // Case 2: There IS a wall in the way - use new wall cover rules
+                const wallCover = this._evaluateWallsCover(p1, p2);
+                return wallCover;
             }
-
-            // Apply token cover overrides as ceilings
-            tokenCover = this._applyTokenCoverOverrides(attacker, target, blockers, tokenCover);
-
-            // Combine wall and token cover (walls can now yield standard or greater)
-            if (wallCover === 'greater') return 'greater';
-            if (wallCover === 'standard') return tokenCover === 'greater' ? 'greater' : 'standard';
-            return tokenCover;
         } catch (error) {
             console.error('PF2E Visioner | CoverDetector.detectForAttack error:', error);
             return 'none';
@@ -134,44 +139,82 @@ export class CoverDetector {
 
     /**
      * Check if a wall blocks sight from a given direction based on its sight settings
+     * A wall blocks only if BOTH door state AND direction allow blocking, then applies cover overrides only when wall would naturally block
      * @param {Object} wallDoc - Wall document
      * @param {Object} attackerPos - Attacker position {x, y}
-     * @param {Object} _targetPos - Target position {x, y} (unused but kept for API consistency)
-     * @returns {boolean} True if wall blocks sight from attacker to target
+     * @returns {boolean} True if wall blocks sight from attacker position
      * @private
      */
-    _doesWallBlockFromDirection(wallDoc, attackerPos, _targetPos) {
+    _doesWallBlockFromDirection(wallDoc, attackerPos) {
         try {
             // If wall doesn't block sight at all, it doesn't provide cover
             if (wallDoc.sight === 0) return false; // NONE
             
-            // Check if wall has a direction (directional wall)
-            // Foundry stores directional restrictions in the 'dir' property
-            if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
-                // Get wall coordinates
-                const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
-                
-                // Calculate wall direction vector
-                const wallDx = x2 - x1;
-                const wallDy = y2 - y1;
-                
-                // Calculate vector from wall start to attacker
-                const attackerDx = attackerPos.x - x1;
-                const attackerDy = attackerPos.y - y1;
-                
-                // Use cross product to determine which side of the wall the attacker is on
-                // Positive cross product means attacker is on the "left" side of the wall (as drawn)
-                // Negative cross product means attacker is on the "right" side of the wall
-                const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
-                
-                // For directional walls, they block from one direction only
-                // The wall's dir property determines which side blocks
-                // We'll use the cross product to determine if attacker is on the blocking side
-                return crossProduct > 0;
+            // Check if this is a door and if it's open
+            const isDoor = Number(wallDoc.door) > 0; // 0 none, 1 door, 2 secret (treat as door-like)
+            const doorState = Number(wallDoc.ds ?? wallDoc.doorState ?? 0); // 0 closed/secret, 1 open, 2 locked
+            
+            // First check: Does the door state allow blocking?
+            let doorAllowsBlocking = true;
+            if (isDoor && doorState === 1) {
+                doorAllowsBlocking = false; // Open doors don't block
             }
             
-            // For non-directional walls, they block from both sides
-            return true;
+            // Second check: Does the directional logic allow blocking from this direction?
+            let directionAllowsBlocking = true;
+            if (wallDoc.dir != null && typeof wallDoc.dir === 'number') {
+                // Foundry wall direction constants:
+                // BOTH: 0 - wall blocks from both directions
+                // LEFT: 1 - wall blocks only when ray strikes its left side
+                // RIGHT: 2 - wall blocks only when a ray strikes its right side
+                
+                if (wallDoc.dir === 0) {
+                    directionAllowsBlocking = true; // BOTH - blocks from both directions
+                } else {
+                    // Get wall coordinates
+                    const [x1, y1, x2, y2] = Array.isArray(wallDoc.c) ? wallDoc.c : [wallDoc.x, wallDoc.y, wallDoc.x2, wallDoc.y2];
+                    
+                    // Calculate wall direction vector
+                    const wallDx = x2 - x1;
+                    const wallDy = y2 - y1;
+                    
+                    // Calculate vector from wall start to attacker
+                    const attackerDx = attackerPos.x - x1;
+                    const attackerDy = attackerPos.y - y1;
+                    
+                    // Use cross product to determine which side of the wall the attacker is on
+                    // Positive cross product means attacker is on the "left" side of the wall (as drawn)
+                    // Negative cross product means attacker is on the "right" side of the wall
+                    const crossProduct = wallDx * attackerDy - wallDy * attackerDx;
+                    
+                    // Apply the actual wall direction logic
+                    if (wallDoc.dir === 1) { // LEFT - wall blocks only when ray strikes left side
+                        directionAllowsBlocking = crossProduct < 0; // Attacker on left side = wall blocks
+                    } else if (wallDoc.dir === 2) { // RIGHT - wall blocks only when ray strikes right side  
+                        directionAllowsBlocking = crossProduct > 0; // Attacker on right side = wall blocks
+                    }
+                }
+            }
+            
+            // Wall blocks only if BOTH door state and direction allow it
+            const wouldNaturallyBlock = doorAllowsBlocking && directionAllowsBlocking;
+            
+            // Now check for manual cover override - but only apply it if the wall would naturally block from this direction
+            const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
+            if (coverOverride && coverOverride !== 'auto') {
+                // Only apply override if the wall would naturally block from this direction
+                if (wouldNaturallyBlock) {
+                    // If override is 'none', don't block despite natural blocking
+                    if (coverOverride === 'none') return false;
+                    // For any other override (lesser, standard, greater), the wall blocks
+                    return true;
+                }
+                // If wall wouldn't naturally block, ignore the override
+                return false;
+            }
+            
+            // Return the natural blocking behavior
+            return wouldNaturallyBlock;
             
         } catch (error) {
             console.warn('PF2E Visioner | Error checking wall direction:', error);
@@ -180,62 +223,166 @@ export class CoverDetector {
     }
 
     /**
-     * Evaluate walls cover
-     * @param {Object} p1 
-     * @param {Object} p2 
-     * @returns {string}
+     * Evaluate walls cover using center-to-center segment analysis
+     * @param {Object} p1 - Attacker center point
+     * @param {Object} p2 - Target center point
+     * @returns {string} Cover category ('none', 'lesser', 'standard', 'greater')
      * @private
      */
     _evaluateWallsCover(p1, p2) {
         if (!canvas?.walls) return 'none';
 
-        // First check for manual wall cover overrides (these act as ceilings/limits)
+        // First check for manual wall cover overrides
         const wallOverride = this._checkWallCoverOverrides(p1, p2);
-        
-        // If override is 'none', return 'none' immediately (no cover regardless of thresholds)
         if (wallOverride === 'none') {
             return 'none';
         }
 
-        // Compute percent of target token blocked by walls along multiple sight rays and map to cover thresholds
-        try {
-            const stdT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverStandardThreshold') ?? 50));
-            const grtT = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverGreaterThreshold') ?? 70));
+        // Analyze the center-to-center segment
+        const segmentAnalysis = this._analyzeSegmentObstructions(p1, p2);
+        
+        // Determine cover category based on new rules
+        let coverCategory = 'none';
 
-            // Resolve a lightweight target token from p2 (best-effort)
+        // Rule 1: No obstructions
+        if (!segmentAnalysis.hasBlockingTerrain && !segmentAnalysis.hasCreatures) {
+            coverCategory = 'none';
+        }
+        // Rule 2: Creature space only, no blocking terrain
+        else if (!segmentAnalysis.hasBlockingTerrain && segmentAnalysis.hasCreatures) {
+            coverCategory = 'lesser';
+        }
+        // Rule 3: Any blocking terrain
+        else if (segmentAnalysis.hasBlockingTerrain) {
+            // Calculate wall coverage percentage using existing method
             const target = this._findNearestTokenToPoint(p2);
-            if (!target) {
-                // Fallback: single-ray quick test if we cannot resolve the token geometry
-                // Use our directional wall logic instead of Foundry's built-in collision detection
-                const blocked = this._isRayBlockedByWalls(p1, p2);
-                return blocked ? 'standard' : 'none';
+            let wallCoveragePercent = 0;
+            
+            if (target) {
+                wallCoveragePercent = this._estimateWallCoveragePercent(p1, target);
             }
-
-            const pct = this._estimateWallCoveragePercent(p1, target);
+            
+            // Get threshold settings
+            const stdThreshold = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverStandardThreshold') ?? 50));
+            const grtThreshold = Math.max(0, Number(game.settings.get('pf2e-visioner', 'wallCoverGreaterThreshold') ?? 70));
             const allowGreater = !!game.settings.get('pf2e-visioner', 'wallCoverAllowGreater');
             
-            // Determine cover based on thresholds
-            let calculatedCover = 'none';
-            if (pct >= grtT) {
-                calculatedCover = allowGreater ? 'greater' : 'standard';
-            } else if (pct >= stdT) {
-                calculatedCover = 'standard';
+            // Determine cover level based on coverage percentage
+            if (allowGreater && wallCoveragePercent >= grtThreshold) {
+                coverCategory = 'greater';
+            } else if (wallCoveragePercent >= stdThreshold) {
+                coverCategory = 'standard';
+            } else {
+                // Fallback for cases where coverage calculation fails but walls are detected
+                coverCategory = 'standard';
             }
+        }
 
-            // If there's a wall override, use it as a ceiling
-            if (wallOverride !== null) {
-                const coverOrder = ['none', 'lesser', 'standard', 'greater'];
-                const calculatedIndex = coverOrder.indexOf(calculatedCover);
-                const overrideIndex = coverOrder.indexOf(wallOverride);
-                
-                // Return the lower of the two (override acts as ceiling)
-                return calculatedIndex <= overrideIndex ? calculatedCover : wallOverride;
+        // Apply wall override as ceiling if present
+        if (wallOverride !== null) {
+            const coverOrder = ['none', 'lesser', 'standard', 'greater'];
+            const calculatedIndex = coverOrder.indexOf(coverCategory);
+            const overrideIndex = coverOrder.indexOf(wallOverride);
+            
+            // Return the lower of the two (override acts as ceiling)
+            return calculatedIndex <= overrideIndex ? coverCategory : wallOverride;
+        }
+
+        return coverCategory;
+    }
+
+    /**
+     * Analyze what obstructions the center-to-center segment passes through
+     * @param {Object} p1 - Start point (attacker center)
+     * @param {Object} p2 - End point (target center)
+     * @returns {Object} Analysis object with obstruction details
+     * @private
+     */
+    _analyzeSegmentObstructions(p1, p2) {
+        const segmentLength = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+        
+        const analysis = {
+            hasBlockingTerrain: false,
+            hasCreatures: false,
+            blockingWalls: [],
+            intersectingCreatures: [],
+            totalBlockedLength: 0,
+            segmentLength: segmentLength
+        };
+
+        // Check for blocking walls/terrain
+        const walls = canvas?.walls?.objects?.children || [];
+        for (const wall of walls) {
+            const wallDoc = wall.document || wall;
+            
+            // Skip walls that don't block from the attacker's direction
+            if (!this._doesWallBlockFromDirection(wallDoc, p1)) continue;
+            
+            const coords = wall?.coords;
+            if (!coords) continue;
+            
+            // Check if segment intersects this wall
+            const intersection = this._lineIntersectionPoint(
+                p1.x, p1.y, p2.x, p2.y,
+                coords[0], coords[1], coords[2], coords[3]
+            );
+            
+            if (intersection) {
+                analysis.hasBlockingTerrain = true;
+                analysis.blockingWalls.push({
+                    wall: wallDoc,
+                    intersection: intersection,
+                    coords: coords
+                });
             }
+        }
 
-            return calculatedCover;
-        } catch (error) {
-            console.warn('PF2E Visioner | Error in wall coverage evaluation:', error);
-            return 'none';
+        // Check for creatures along the segment
+        const tokens = canvas?.tokens?.placeables || [];
+        for (const token of tokens) {
+            if (!token?.actor) continue;
+            
+            // Skip the attacker and target themselves
+            if (this._isPointNearToken(p1, token) || this._isPointNearToken(p2, token)) continue;
+            
+            const tokenRect = getTokenRect(token);
+            const intersectionLength = segmentRectIntersectionLength(p1, p2, tokenRect);
+            
+            if (intersectionLength > 0) {
+                analysis.hasCreatures = true;
+                analysis.intersectingCreatures.push({
+                    token: token,
+                    intersectionLength: intersectionLength
+                });
+                analysis.totalBlockedLength += intersectionLength;
+            }
+        }
+
+        // Calculate total blocked length from walls
+        // For walls crossing the segment, estimate the blocked portion based on wall pattern density
+        if (analysis.blockingWalls.length > 0) {
+            // If there are multiple walls or walls seem to form a substantial barrier,
+            // we'll let the substantial obstruction logic handle this
+            // For now, just track that walls exist
+        }
+
+        return analysis;
+    }
+
+    /**
+     * Check if a point is near a token's center (within token bounds)
+     * @param {Object} point - Point to check
+     * @param {Object} token - Token to check against
+     * @returns {boolean} True if point is within token bounds
+     * @private
+     */
+    _isPointNearToken(point, token) {
+        try {
+            const tokenRect = getTokenRect(token);
+            return point.x >= tokenRect.x1 && point.x <= tokenRect.x2 &&
+                   point.y >= tokenRect.y1 && point.y <= tokenRect.y2;
+        } catch (_) {
+            return false;
         }
     }
 
@@ -262,7 +409,7 @@ export class CoverDetector {
                 if (!coverOverride) continue;
                 
                 // Check if this wall blocks from the attacker's direction
-                if (!this._doesWallBlockFromDirection(wallDoc, p1, p2)) continue;
+                if (!this._doesWallBlockFromDirection(wallDoc, p1)) continue;
                 
                 // Check if this wall intersects the ray
                 const coords = wall?.coords;
@@ -295,7 +442,7 @@ export class CoverDetector {
                 const coverOverride = wallDoc.getFlag?.(MODULE_ID, 'coverOverride');
                 if (coverOverride) {
                     // Check if this wall blocks from the attacker's direction
-                    if (!this._doesWallBlockFromDirection(wallDoc, p1, p2)) continue;
+                    if (!this._doesWallBlockFromDirection(wallDoc, p1)) continue;
                     
                     const coords = wall?.coords;
                     if (coords) {
@@ -316,6 +463,7 @@ export class CoverDetector {
             return null;
         }
     }
+
 
     /**
      * Find nearest token to a point (screen coords). Best-effort helper for wall coverage.
@@ -339,42 +487,52 @@ export class CoverDetector {
     /**
      * Estimate percent of the target token's edge directions that are blocked by walls from origin p1.
      * Samples multiple points along the target perimeter and casts rays to each, counting wall collisions.
+     * Uses a more accurate D&D/PF2e style approach based on corner-to-corner line blocking.
      */
     _estimateWallCoveragePercent(p1, target) {
         try {
             const rect = getTokenRect(target);
             
-            // First, check if there's a clear line to the target center
-            // If there is, then walls adjacent to the target shouldn't provide significant cover
-            const targetCenter = { x: (rect.x1 + rect.x2) / 2, y: (rect.y1 + rect.y2) / 2 };
-            const centerBlocked = this._isRayBlockedByWalls(p1, targetCenter);
-            
-            // If center is not blocked, reduce the impact of edge blocking
-            const centerWeight = centerBlocked ? 1.0 : 0.3;
-            
+            // Sample points around the target's perimeter more densely for accuracy
             const points = [];
-            const samplePerEdge = 3; // Reduced sampling for better performance
+            const samplePerEdge = 5; // Increased sampling for better accuracy
+            
+            // Helper to interpolate points along an edge
             const pushLerp = (ax, ay, bx, by) => {
                 for (let i = 0; i <= samplePerEdge; i++) {
                     const t = i / samplePerEdge;
                     points.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
                 }
             };
-            // Edges: top, right, bottom, left
-            pushLerp(rect.x1, rect.y1, rect.x2, rect.y1);
-            pushLerp(rect.x2, rect.y1, rect.x2, rect.y2);
-            pushLerp(rect.x2, rect.y2, rect.x1, rect.y2);
-            pushLerp(rect.x1, rect.y2, rect.x1, rect.y1);
+            
+            // Add the four corners explicitly (most important for D&D/PF2e rules)
+            points.push({ x: rect.x1, y: rect.y1 }); // Top-left corner
+            points.push({ x: rect.x2, y: rect.y1 }); // Top-right corner  
+            points.push({ x: rect.x2, y: rect.y2 }); // Bottom-right corner
+            points.push({ x: rect.x1, y: rect.y2 }); // Bottom-left corner
+            
+            // Add center point for additional context
+            const targetCenter = { x: (rect.x1 + rect.x2) / 2, y: (rect.y1 + rect.y2) / 2 };
+            points.push(targetCenter);
+            
+            // Sample edges: top, right, bottom, left
+            pushLerp(rect.x1, rect.y1, rect.x2, rect.y1); // Top edge
+            pushLerp(rect.x2, rect.y1, rect.x2, rect.y2); // Right edge
+            pushLerp(rect.x2, rect.y2, rect.x1, rect.y2); // Bottom edge
+            pushLerp(rect.x1, rect.y2, rect.x1, rect.y1); // Left edge
 
+            // Count blocked sight lines
             let blocked = 0;
             for (const pt of points) {
                 if (this._isRayBlockedByWalls(p1, pt)) blocked++;
             }
 
+            // Calculate raw percentage
             const rawPct = (blocked / Math.max(1, points.length)) * 100;
-            const adjustedPct = rawPct * centerWeight;
             
-            return adjustedPct;
+            // Remove the arbitrary center weight reduction - let the actual blockage speak for itself
+            // This provides more intuitive and predictable cover calculations
+            return rawPct;
         } catch (_) { return 0; }
     }
     
@@ -406,7 +564,7 @@ export class CoverDetector {
             const wallDoc = wall.document || wall;
             
             // Skip walls that don't block sight from this direction
-            if (!this._doesWallBlockFromDirection(wallDoc, a, b)) continue;
+            if (!this._doesWallBlockFromDirection(wallDoc, a)) continue;
             
             // Check if the ray intersects this wall
             const intersection = this._lineIntersectionPoint(ray.A.x, ray.A.y, ray.B.x, ray.B.y, c[0], c[1], c[2], c[3]);
@@ -925,6 +1083,8 @@ export class CoverDetector {
         }
     }
 
+    
+
     /**
      * Helper method to create a ray object
      * @param {Object} p1 - Start point {x, y}
@@ -1046,7 +1206,7 @@ export class CoverDetector {
                 let lineBlocked = false;
 
                 // Check if this line is blocked by walls
-                if (segmentIntersectsAnyBlockingWall(targetCorner, attackerCorner)) {
+                if (this._isRayBlockedByWalls(targetCorner, attackerCorner)) {
                     lineBlocked = true;
                 }
 
@@ -1127,17 +1287,6 @@ export class CoverDetector {
             console.error('PF2E Visioner | Error in evaluateCoverByCoverage:', error);
             return 'none';
         }
-    }
-
-    /**
-     * Basic 2D line segment intersection test.
-     */
-    _lineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
-        const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        if (d === 0) return false;
-        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
-        const u = -(((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d);
-        return t >= 0 && t <= 1 && u >= 0 && u <= 1;
     }
 
     /**

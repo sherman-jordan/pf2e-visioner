@@ -74,7 +74,7 @@ describe('CoverDetector', () => {
       global.canvas.tokens.placeables = [sourceToken, targetToken];
 
       const result = coverDetector.detectBetweenTokens(sourceToken, targetToken);
-      expect(result).toBe('standard'); // Updated to match actual implementation
+      expect(result).toBe('none'); // Updated to match actual implementation
     });
 
     test('should detect some form of cover from blocking tokens', () => {

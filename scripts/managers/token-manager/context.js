@@ -63,7 +63,7 @@ export async function buildContext(app, options) {
   try {
     app.visibilityData = getVisibilityMap(app.observer) || {};
     app.coverData = getCoverMap(app.observer) || {};
-  } catch (_) {}
+  } catch (_) { }
 
   const isLootObserver = app.observer?.actor?.type === 'loot';
   if (isLootObserver) {
@@ -253,7 +253,7 @@ export async function buildContext(app, options) {
   }
 
   const visibilityPrecedence = { observed: 0, concealed: 1, hidden: 2, undetected: 3 };
-  const coverPrecedence = { none: 0, lesser: 1, standard: 2, greater: 3 };
+  const coverPrecedence = { none: 0, lesser: 1, standard: 2, greater: 4 };
 
   const sortByStatusAndName = (a, b) => {
     if (app.activeTab === 'visibility') {
@@ -331,7 +331,7 @@ export async function buildContext(app, options) {
               showOutcome = true;
             }
           }
-        } catch (_) {}
+        } catch (_) { }
         return {
           id: d.id,
           identifier: idf && String(idf).trim() ? String(idf) : fallback,
@@ -347,7 +347,7 @@ export async function buildContext(app, options) {
       });
       context.includeWalls = context.wallTargets.length > 0;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,

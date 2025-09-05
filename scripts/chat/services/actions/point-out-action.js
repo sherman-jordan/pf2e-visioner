@@ -1,3 +1,4 @@
+import { VISIBILITY_STATES } from '../../../constants.js';
 import { appliedPointOutChangesByMessage } from '../data/message-cache.js';
 import { ActionHandlerBase } from './base-action.js';
 
@@ -53,23 +54,7 @@ export class PointOutActionHandler extends ActionHandlerBase {
       if (pf2eFlag) target = canvas.tokens.get(pf2eFlag) || null;
     }
     if (!target) {
-      const all = canvas?.tokens?.placeables || [];
-      target =
-        all.find(
-          (t) =>
-            t &&
-            t.actor &&
-            (!pointer || t.id !== pointer.id) &&
-            (!pointer || t.document?.disposition !== pointer.document?.disposition),
-        ) || null;
-    }
-    if (!target) {
-      // Enforce: Point Out requires an explicit target selection
-      try {
-        (await import('../infra/notifications.js')).notify?.warn?.(
-          'Point Out requires a selected target token.',
-        );
-      } catch (_) {}
+      // Target validation now handled at entry-service level
       return [];
     }
     // Exclude loot targets from Point Out
@@ -105,6 +90,7 @@ export class PointOutActionHandler extends ActionHandlerBase {
       targetToken: subject.target,
       currentVisibility: current,
       oldVisibility: current,
+      oldVisibilityLabel: VISIBILITY_STATES[current]?.label || current,
       newVisibility,
       changed: newVisibility !== current,
     };

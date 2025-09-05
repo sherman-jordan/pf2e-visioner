@@ -25,6 +25,11 @@ export async function createEphemeralCoverEffect(
   coverState,
   options = {},
 ) {
+  // Only GMs can create ephemeral cover effects to prevent duplication
+  if (!game.user.isGM) {
+    return;
+  }
+
   // Skip if no cover or invalid state
   if (!coverState || coverState === 'none' || !COVER_STATES[coverState]) {
     return;
@@ -48,10 +53,15 @@ export async function createEphemeralCoverEffect(
         // Only GMs can delete effects
         if (game.user.isGM) {
           await effectReceiverToken.actor.deleteEmbeddedDocuments('Item', [existingEffect.id]);
+        } else {
+          console.warn('PF2E Visioner: Non-GM user cannot delete ephemeral cover effect');
+          return; // Exit early if we can't delete the existing effect
         }
       }
-    } catch (_) {
-      // Ignore if it was already removed
+    } catch (error) {
+      console.warn('PF2E Visioner: Failed to delete existing ephemeral cover effect:', error);
+      // Exit early to prevent potential duplication
+      return;
     }
   }
 
@@ -103,17 +113,17 @@ export async function createEphemeralCoverEffect(
       duration:
         options.durationRounds >= 0
           ? {
-              value: options.durationRounds,
-              unit: 'rounds',
-              expiry: 'turn-start',
-              sustained: false,
-            }
+            value: options.durationRounds,
+            unit: 'rounds',
+            expiry: 'turn-start',
+            sustained: false,
+          }
           : {
-              value: -1,
-              unit: 'unlimited',
-              expiry: null,
-              sustained: false,
-            },
+            value: -1,
+            unit: 'unlimited',
+            expiry: null,
+            sustained: false,
+          },
       tokenIcon: {
         show: options.forThisRoll ? true : false,
       },
@@ -139,26 +149,6 @@ export async function createEphemeralCoverEffect(
     },
   };
 
-  // Add reflex and stealth bonuses for standard and greater cover
-  if (coverState === 'standard' || coverState === 'greater') {
-    ephemeralEffect.system.rules.push(
-      {
-        key: 'FlatModifier',
-        selector: 'reflex',
-        type: 'circumstance',
-        value: stateConfig.bonusReflex,
-        predicate: ['area-effect'],
-      },
-      {
-        key: 'FlatModifier',
-        predicate: ['action:hide', 'action:sneak', 'avoid-detection'],
-        selector: 'stealth',
-        type: 'circumstance',
-        value: stateConfig.bonusStealth,
-      },
-    );
-  }
-
   try {
     await effectReceiverToken.actor.createEmbeddedDocuments('Item', [ephemeralEffect]);
   } catch (error) {
@@ -166,29 +156,6 @@ export async function createEphemeralCoverEffect(
   }
 }
 
-// upsertReflexStealthForMaxCoverOnThisAggregate now in cover/aggregates
-
-// updateReflexStealthAcrossCoverAggregates imported
-
-// moved: dedupeCoverAggregates is imported from ./cover/batch.js
-
-// moved helpers to scripts/helpers/cover-helpers.js
-
-// moved: updateAggregateCoverMetaForState is imported from ./cover/aggregates.js
-
-// moved: removeObserverFromCoverAggregate now lives in cover/aggregates.js
-
-// moved: pruneEmptyCoverAggregates is in cover/cleanup.js or batch logic
-
-/**
- * Reconcile cover aggregates of a target token against current observer→target cover maps.
- * - Removes AC and RollOption rules whose observer no longer grants this state's cover
- * - Collapses duplicate AC rules for the same observer signature
- */
-// moved: reconcileCoverAggregatesAgainstMaps imported from ./cover/batch.js
-/**
- * Clean up all ephemeral cover effects from all actors
- */
 export { cleanupAllCoverEffects } from './cleanup.js';
 
 // covered by export above; keep wrapper for API compatibility
@@ -252,4 +219,29 @@ export async function reconcileCoverEffectsForTarget(targetToken) {
       console.warn(`[${MODULE_ID}] reconcileCoverEffectsForTarget error`, e);
     }
   });
+}
+
+/**
+ * Utility function to clean up duplicate rules for all tokens
+ * Call this from the console to fix existing duplications
+ */
+export async function cleanupAllDuplicateRules() {
+  if (!game.user.isGM) {
+    ui.notifications.warn("Only GMs can perform this cleanup operation.");
+    return;
+  }
+
+  const tokens = canvas?.tokens?.placeables || [];
+  ui.notifications.info(`Cleaning up duplicate cover rules for ${tokens.length} tokens...`);
+
+  for (const token of tokens) {
+    if (!token?.actor) continue;
+    try {
+      await reconcileCoverEffectsForTarget(token);
+    } catch (e) {
+      console.warn(`Failed to clean up rules for ${token.name}:`, e);
+    }
+  }
+
+  ui.notifications.info("Duplicate cover rule cleanup completed!");
 }

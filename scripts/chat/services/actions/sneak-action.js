@@ -1,10 +1,10 @@
-import { COVER_STATES } from '../../../constants.js';
+import { COVER_STATES, VISIBILITY_STATES } from '../../../constants.js';
 import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import stealthCheckUseCase from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
+import { getCoverBetween } from '../../../utils.js';
 import { appliedSneakChangesByMessage } from '../data/message-cache.js';
 import { calculateStealthRollTotals, shouldFilterAlly } from '../infra/shared-utils.js';
 import { ActionHandlerBase } from './base-action.js';
-
 export class SneakActionHandler extends ActionHandlerBase {
   constructor() {
     super('sneak');
@@ -90,7 +90,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       // Compute base cover (manual first, then auto-cover fallback)
       try {
         // First check for manual cover
-        const manualDetected = this.autoCoverSystem.getCoverBetween(subject, sneakingToken);
+        const manualDetected = getCoverBetween(subject, sneakingToken);
         if (manualDetected && manualDetected !== 'none') {
           coverState = manualDetected;
           coverSource = 'manual';
@@ -114,18 +114,18 @@ export class SneakActionHandler extends ActionHandlerBase {
       let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
       try {
         const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
-        
+
         // First check if there's a stored modifier for this roll (from StealthCheckUseCase)
         let storedModifier = null;
         if (rollId) {
           storedModifier = this.stealthCheckUseCase?.getOriginalCoverModifier?.(rollId);
         }
-        
+
         if (storedModifier && storedModifier.isOverride) {
           // Use the stored modifier data to determine override
           originalDetectedState = coverState || 'none';
           coverState = storedModifier.finalState;
-          
+
           // Only mark as override if the final state is different from what we detected
           if (originalDetectedState !== coverState) {
             isOverride = true;
@@ -207,7 +207,7 @@ export class SneakActionHandler extends ActionHandlerBase {
     const baseMargin = baseRollTotal ? baseRollTotal - dc : margin;
     const outcome = determineOutcome(total, die, dc);
     const originalOutcome = originalTotal ? determineOutcome(originalTotal, die, dc) : outcome;
-    
+
     // Generate outcome labels
     const getOutcomeLabel = (outcomeValue) => {
       switch (outcomeValue) {
@@ -223,16 +223,16 @@ export class SneakActionHandler extends ActionHandlerBase {
     // Determine default new visibility using centralized mapping
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     const newVisibility = getDefaultNewStateFor('sneak', current, outcome) || current;
-    
+
     // Calculate what the visibility change would have been with original outcome
-    const originalNewVisibility = originalTotal ? 
-      getDefaultNewStateFor('sneak', current, originalOutcome) || current : 
+    const originalNewVisibility = originalTotal ?
+      getDefaultNewStateFor('sneak', current, originalOutcome) || current :
       newVisibility;
-    
+
     // Check if we should show override displays (only if there's a meaningful difference)
     const shouldShowOverride = result.autoCover?.isOverride && (
-      total !== originalTotal || 
-      margin !== originalMargin || 
+      total !== originalTotal ||
+      margin !== originalMargin ||
       outcome !== originalOutcome ||
       newVisibility !== originalNewVisibility
     );
@@ -252,6 +252,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       shouldShowOverride,
       currentVisibility: current,
       oldVisibility: current,
+      oldVisibilityLabel: VISIBILITY_STATES[current]?.label || current,
       newVisibility,
       changed: newVisibility !== current,
       autoCover: result.autoCover, // Add auto-cover information

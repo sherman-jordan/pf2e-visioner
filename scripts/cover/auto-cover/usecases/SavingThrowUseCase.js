@@ -7,6 +7,7 @@ import {
   getCoverImageForState,
   getCoverLabel
 } from '../../../helpers/cover-helpers.js';
+import { getCoverBetween } from '../../../utils.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import coverUIManager from '../CoverUIManager.js';
 import templateManager from '../TemplateManager.js';
@@ -48,7 +49,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
    * @returns {Promise<Object>} Result with tokens and cover state
    */
   async handleRenderChatMessage(message, html) {
-    await super.handleRenderChatMessage(message, html);
+    await super.handleRenderChatMessage(message, html, false);
   }
 
   /**
@@ -93,12 +94,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
     if (!state) {
       // First check for manual cover between tokens
       try {
-        const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+        const manualCover = getCoverBetween(attacker, target);
         if (manualCover && manualCover !== 'none') {
           state = manualCover;
         }
-      } catch (_) {}
-      
+      } catch (_) { }
+
       // Fallback to auto-detection if no manual cover
       if (!state) {
         state = this._detectCover(attacker, target);
@@ -106,7 +107,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
     }
 
     try {
-      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, ({ chosen }) => {
+      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, null,({ chosen }) => {
         if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
         const mods = dialog.check.modifiers;
         const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');
@@ -287,12 +288,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       else if (attacker) {
         // First check for manual cover between tokens
         try {
-          const manualCover = this.autoCoverSystem.getCoverBetween(attacker, target);
+          const manualCover = getCoverBetween(attacker, target);
           if (manualCover && manualCover !== 'none') {
             state = manualCover;
           }
-        } catch (_) {}
-        
+        } catch (_) { }
+
         // Fallback to auto-detection if no manual cover
         if (!state) {
           state = this.autoCoverSystem.detectCoverBetweenTokens(attacker, target);

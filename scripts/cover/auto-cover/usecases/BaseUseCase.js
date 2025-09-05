@@ -44,13 +44,13 @@ export class BaseAutoCoverUseCase {
     }
 
 
-    async handleRenderChatMessage(message, html) {
+    async handleRenderChatMessage(message, html, shouldShow = true) {
         try {
             // Always check for cover override indicators first, regardless of action data
-            const shouldShow = await this.coverUIManager.shouldShowCoverOverrideIndicator(message);
+            shouldShow = await this.coverUIManager.shouldShowCoverOverrideIndicator(message);
 
             if (shouldShow) {
-                await this.coverUIManager.injectCoverOverrideIndicator(message, html);
+                await this.coverUIManager.injectCoverOverrideIndicator(message, html, shouldShow);
             }
 
         } catch (error) {
@@ -156,13 +156,6 @@ export class BaseAutoCoverUseCase {
                 }
             }
         }
-    }    /**
-     * Check if the use case can handle the given context type
-     * @param {string} ctxType - Context type
-     * @returns {boolean} Whether this use case can handle the context type
-     */
-    canHandle(ctxType) {
-        throw new Error("Method 'canHandle' must be implemented by subclasses");
     }
 
     /**
@@ -222,126 +215,8 @@ export class BaseAutoCoverUseCase {
         return coverState;
     }
 
-    /**
-     * Normalize token reference
-     * @param {string|Object} ref - Token reference
-     * @returns {string|null} Normalized token ID
-     * @protected
-     */
-    _normalizeTokenRef(ref) {
-        if (!ref) return null;
-        if (typeof ref === 'string') return ref;
-        return ref.id || null;
-    }
-
-    /**
-     * Get a token by ID
-     * @param {string} tokenId - Token ID
-     * @returns {Object|null} Token object
-     * @protected
-     */
-    _getToken(tokenId) {
-        if (!tokenId || !canvas?.tokens?.get) return null;
-        return canvas.tokens.get(tokenId);
-    }
-
     normalizeTokenRef(ref) {
-        try {
-            if (!ref) return null;
-
-            // Handle object types with _id or id properties
-            if (typeof ref === 'object' && ref !== null) {
-                if (ref._id) return ref._id;
-                if (ref.id) return ref.id;
-                // If it's a complex object, try to convert to string and process
-                ref = String(ref);
-            }
-
-            let s = typeof ref === 'string' ? ref.trim() : String(ref);
-            // Strip surrounding quotes
-            if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))
-                s = s.slice(1, -1);
-            // If it's a UUID, extract the final Token.<id> segment
-            const m = s.match(/Token\.([^.\s]+)$/);
-            if (m && m[1]) return m[1];
-            // Otherwise assume it's already the token id
-            return s;
-        } catch (_) {
-            return ref;
-        }
-    }
-
-
-    async _extractAndApplyOverrides(doc, attacker, target, originalDetectedState) {
-        let state = originalDetectedState;
-        let wasOverridden = false;
-        let overrideSource = null;
-
-        try {
-            const overrideKey = `${attacker.id}-${target.id}`;
-            const popupOverride = this.autoCoverSystem.consumePopupOverride(overrideKey);
-            if (popupOverride !== null) {
-                const overrideState = popupOverride.state;
-                if (overrideState !== originalDetectedState) {
-                    wasOverridden = true;
-                    overrideSource = 'popup';
-                }
-                state = overrideState;
-            }
-        } catch (e) {
-            console.warn('PF2E Visioner | Failed to check popup override:', e);
-        }
-
-        try {
-            const possibleKeys = [
-                `${attacker.actor?.id}-${target.id}`,
-                `${attacker.id}-${target.id}`,
-                `${attacker.actor?.id}-${target.actor?.id}`,
-                `${attacker.actor?.uuid}-${target.id}`,
-            ];
-            let dialogOverride = null;
-            for (const key of possibleKeys) {
-                dialogOverride = this.autoCoverSystem.consumeDialogOverride(key);
-                if (dialogOverride !== null) {
-                    break;
-                }
-            }
-            if (dialogOverride !== null) {
-                const overrideState = dialogOverride.state;
-                if (overrideState !== originalDetectedState) {
-                    wasOverridden = true;
-                    overrideSource = 'dialog';
-                }
-                state = overrideState;
-            }
-        } catch (e) {
-            console.warn('PF2E Visioner | Failed to check dialog override:', e);
-        }
-
-        if (wasOverridden) {
-            try {
-
-                const overrideData = {
-                    originalDetected: originalDetectedState,
-                    finalState: state,
-                    overrideSource,
-                    attackerName: attacker.name,
-                    targetName: target.name,
-                };
-
-                if (doc && doc.updateSource) {
-                    try {
-                        doc.updateSource({ 'flags.pf2e-visioner.coverOverride': overrideData });
-                    } catch (e) {
-                        console.warn('PF2E Visioner | Failed to update document source:', e);
-                    }
-                }
-            } catch (e) {
-                console.warn('PF2E Visioner | Failed to store override info in message flags:', e);
-            }
-        }
-
-        return { state, wasOverridden, overrideSource };
+        return this.autoCoverSystem.normalizeTokenRef(ref);
     }
 
 

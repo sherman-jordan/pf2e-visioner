@@ -1,6 +1,7 @@
-import { COVER_STATES, MODULE_ID } from '../../../constants.js';
+import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../../../constants.js';
 import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import stealthCheckUseCase from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
+import { getCoverBetween } from '../../../utils.js';
 import { appliedHideChangesByMessage } from '../data/message-cache.js';
 import { calculateStealthRollTotals, shouldFilterAlly } from '../infra/shared-utils.js';
 import { ActionHandlerBase } from './base-action.js';
@@ -66,9 +67,9 @@ export class HideActionHandler extends ActionHandlerBase {
                 this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
             } catch (_) { }
           }
-          if (cover === 'none') {
+          if (cover === 'none' || cover === 'lesser') {
             try {
-              cover = getCoverBetween(actorToken, observer);
+              cover = getCoverBetween(observer, actorToken);
             } catch (_) {
               cover = 'none';
             }
@@ -101,7 +102,7 @@ export class HideActionHandler extends ActionHandlerBase {
       // Compute base cover (manual first, then auto-cover fallback)
       try {
         // First check for manual cover
-        const manualDetected = this.autoCoverSystem.getCoverBetween(subject, hidingToken);
+        const manualDetected = getCoverBetween(subject, hidingToken);
         if (manualDetected && manualDetected !== 'none') {
           coverState = manualDetected;
           coverSource = 'manual';
@@ -125,22 +126,22 @@ export class HideActionHandler extends ActionHandlerBase {
       let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
       try {
         const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
-        
+
         // First check if there's a stored modifier for this roll (from StealthCheckUseCase)
         let storedModifier = null;
         if (rollId) {
           storedModifier = this.stealthCheckUseCase?.getOriginalCoverModifier?.(rollId);
         }
-        
 
-        
+
+
         if (storedModifier && storedModifier.isOverride) {
           // Use the stored modifier data to determine override
           // Keep the actually detected state for this observer as the original
           originalDetectedState = coverState || 'none';
           // Apply the override final state
           coverState = storedModifier.finalState;
-          
+
           // Mark as override since we have a stored override modifier
           isOverride = true;
           coverSource = storedModifier.source || 'dialog';
@@ -196,7 +197,7 @@ export class HideActionHandler extends ActionHandlerBase {
             }
           })
         };
-        
+
 
       }
     } catch (e) {
@@ -222,7 +223,7 @@ export class HideActionHandler extends ActionHandlerBase {
     const baseMargin = baseRollTotal ? baseRollTotal - adjustedDC : margin;
     const outcome = determineOutcome(total, die, adjustedDC);
     const originalOutcome = originalTotal ? determineOutcome(originalTotal, die, adjustedDC) : outcome;
-    
+
     // Generate outcome labels
     const getOutcomeLabel = (outcomeValue) => {
       switch (outcomeValue) {
@@ -241,16 +242,16 @@ export class HideActionHandler extends ActionHandlerBase {
     // Use centralized mapping for defaults
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
-    
+
     // Calculate what the visibility change would have been with original outcome
-    const originalNewVisibility = originalTotal ? 
-      getDefaultNewStateFor('hide', current, originalOutcome) || current : 
+    const originalNewVisibility = originalTotal ?
+      getDefaultNewStateFor('hide', current, originalOutcome) || current :
       newVisibility;
-    
+
     // Check if we should show override displays (only if there's a meaningful difference)
     const shouldShowOverride = result.autoCover?.isOverride && (
-      total !== originalTotal || 
-      margin !== originalMargin || 
+      total !== originalTotal ||
+      margin !== originalMargin ||
       outcome !== originalOutcome ||
       newVisibility !== originalNewVisibility
     );
@@ -270,6 +271,7 @@ export class HideActionHandler extends ActionHandlerBase {
       shouldShowOverride,
       currentVisibility: current,
       oldVisibility: current,
+      oldVisibilityLabel: VISIBILITY_STATES[current]?.label || current,
       newVisibility,
       changed: newVisibility !== current,
       autoCover: result.autoCover, // Add auto-cover information

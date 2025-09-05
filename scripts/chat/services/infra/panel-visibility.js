@@ -9,6 +9,12 @@ export function shouldInjectPanel(message, actionData) {
     const isGM = !!game.user?.isGM;
     const hasValidTargets = checkForValidTargets(actionData);
 
+
+    // Always show Point Out panels for GM (target detection can be flaky)
+    if (actionData.actionType === 'point-out' && isGM) {
+      return true;
+    }
+
     // Always show for GM even if targets cannot be computed yet (e.g., canvas not ready)
     if (!hasValidTargets) {
       if (isGM) return true;

@@ -165,7 +165,7 @@ export class SneakActionHandler extends ActionHandlerBase {
           color: coverConfig?.color || '#999',
           cssClass: coverConfig?.cssClass || '',
           bonus: actualStealthBonus,
-          isOverride,
+          isOverride: isOverride && originalDetectedState !== coverState,
           source: coverSource,
           // Add override details for template display (only if actually overridden)
           ...(isOverride && {

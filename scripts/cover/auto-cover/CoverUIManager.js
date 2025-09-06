@@ -31,7 +31,7 @@ export class CoverUIManager {
                   <div class="pv-cover-override" style="margin: 6px 0 8px 0;">
                     <div class="pv-cover-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                       <div class="pv-cover-title" style="font-weight:600;">${game.i18n?.localize?.('PF2E_VISIONER.UI.COVER_OVERRIDE') ?? 'Cover'}</div>
-                      ${!manualCover ? '<div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>' : '<div class="pv-cover-manual" style="display:flex;">Manual cover detected, override unavailable</div>'}
+                      ${manualCover === 'none' ? '<div class="pv-cover-buttons" style="display:flex; gap:6px;"></div>' : '<div class="pv-cover-manual" style="display:flex;">Manual cover detected, override unavailable</div>'}
                     </div>
                   </div>
                 `);
@@ -90,7 +90,7 @@ export class CoverUIManager {
                             const tgt = dctx?.target || target;
                             const tgtActor = tgt?.actor;
                             if (!tgtActor) return;
-                            const chosen = manualCover ?? dialog?._pvCoverOverride ?? state ?? 'none';
+                            const chosen = manualCover !== 'none' ? manualCover : dialog?._pvCoverOverride ?? state ?? 'none';
                             const subjectToken = dctx?.actor?.token;
                             const subjectActor = dctx?.actor || null;
 
@@ -133,10 +133,10 @@ export class CoverUIManager {
         }
     }
 
-    async openCoverQuickOverrideDialog(initialState = 'none', isManualCover = false, isStealthContext = false) {
+    async openCoverQuickOverrideDialog(initialState = 'none', manualCover, isStealthContext = false) {
         return new Promise((resolve) => {
             try {
-                const app = new CoverQuickOverrideDialog(initialState, isManualCover, { isStealthContext });
+                const app = new CoverQuickOverrideDialog(initialState, manualCover, { isStealthContext });
                 app.setResolver(resolve);
                 app.render(true);
             } catch (e) {
@@ -145,11 +145,11 @@ export class CoverUIManager {
         });
     }
 
-    async getCoverPopupChosenState(state, isManualCover = false) {
+    async getCoverPopupChosenState(state, manualCover) {
         const isHoldingOverrideKey = await this.isHoldingCoverOverrideKey();
         if (!isHoldingOverrideKey) return null;
         try {
-            const chosen = await this.openCoverQuickOverrideDialog(state, isManualCover);
+            const chosen = await this.openCoverQuickOverrideDialog(state, manualCover);
             return chosen;
         } catch (e) {
             console.warn('PF2E Visioner | Failed to open cover override dialog:', e);
@@ -161,12 +161,12 @@ export class CoverUIManager {
      * Show popup and return the chosen cover state (or null if cancelled/no override).
      * No effect/stat/actor logic here; only UI.
      */
-    async showPopupAndApply(detectedState, isManualCover = false) {
+    async showPopupAndApply(detectedState, manualCover) {
         try {
             if (game.user.flags?.pf2e?.settings?.showCheckDialogs) {
                 return
             }
-            const chosen = await this.getCoverPopupChosenState(detectedState, isManualCover);
+            const chosen = await this.getCoverPopupChosenState(detectedState, manualCover);
             return { chosen, rollId: foundry?.utils?.randomID?.() };
         } catch (e) {
             console.warn('PF2E Visioner | Popup error in CoverUIManager:', e);

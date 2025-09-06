@@ -266,6 +266,7 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
                   selector: 'ac',
                   type: 'circumstance',
                   value: getBonus(coverState),
+                  label: `${getCoverLabel(coverState)} vs ${signature} (${observer.name})`,
                   predicate: [`origin:signature:${signature}`],
                 };
                 nextRules.push(newACRule);

@@ -1,6 +1,13 @@
 # Changelog
 
-## [3.1.2] - 2024-12-31
+## [3.1.3] - 2025-09-06
+
+### 🐛 Fixed
+
+- **Manual Cover**: Had an issue that only the first token gets the bonus, this is now fixed
+  - Auto cover will trigger automatically if manual cover is set to 'none' if you really need no cover, use override methods
+
+## [3.1.2] - 2025-09-05
 
 ### ✨ New Features
 

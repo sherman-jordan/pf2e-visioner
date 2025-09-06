@@ -55,15 +55,23 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                 label,
                                 modifier: bonus,
                                 type: 'circumstance',
+                                enabled: true  // Explicitly set enabled to true
                             });
                         } else {
-                            coverModifier = { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance' };
+                            coverModifier = {
+                                slug: 'pf2e-visioner-cover',
+                                label,
+                                modifier: bonus,
+                                type: 'circumstance',
+                                enabled: true  // Explicitly set enabled to true
+                            };
                         }
                         if (typeof dialog.check.push === 'function') {
                             dialog.check.push(coverModifier);
                         } else {
                             mods.push(coverModifier);
                         }
+                        console.log('PF2E Visioner | Added cover modifier with enabled=true:', coverModifier);
                     } catch (e) {
                         console.warn('PF2E Visioner | Failed to create cover modifier:', e);
                     }
@@ -219,7 +227,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
             }
 
             let detectedState = 'none';
-
+            let highestFoundManualCover = 'none'
             try {
                 const observers = (canvas?.tokens?.placeables || [])
                     .filter((t) => t && t.actor && t.id !== hider.id);
@@ -230,6 +238,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         const manualCover = getCoverBetween(obs, hider);
                         if (manualCover && manualCover !== 'none') {
                             s = manualCover;
+                            highestFoundManualCover = coverPrecedence[manualCover] > coverPrecedence[highestFoundManualCover] ? manualCover : highestFoundManualCover;
                         }
                     } catch (_) { }
 
@@ -248,9 +257,12 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
 
             // Inject cover override UI, using a callback to apply stealth-specific behavior on chosen state
             try {
-                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, null, async ({ chosen, subject: hider, target: tgt, rollId }) => {
+                await this.coverUIManager.injectDialogCoverUI(dialog, html, detectedState, target, highestFoundManualCover, async ({ chosen, subject: hider, target: tgt, rollId }) => {
                     try {
                         // Determine if this will be an override
+                        if (highestFoundManualCover !== 'none') {
+                            chosen = highestFoundManualCover;
+                        }
                         const wasChanged = chosen !== detectedState;
                         const originalBonus = Number(COVER_STATES?.[detectedState]?.bonusStealth ?? 0);
                         const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
@@ -310,6 +322,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         console.error('PF2E Visioner | Stealth onChosen callback error:', cbErr);
                     }
                 });
+                dialog.check.calculateTotal()
             } catch (e) { }
         } catch (_) { }
     }
@@ -378,6 +391,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         // If not overridden, evaluate cover against all other tokens and pick the best (highest stealth bonus)
                         const observers = (canvas?.tokens?.placeables || [])
                             .filter((t) => t && t.actor && t.id !== hider.id);
+                        let highestFoundManualCover = 'none'
                         if (!state) {
                             let detectedState;
                             try {
@@ -389,6 +403,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                             const manualCover = getCoverBetween(hider, obs);
                                             if (manualCover && manualCover !== 'none') {
                                                 s = manualCover;
+                                                highestFoundManualCover = coverPrecedence[manualCover] > coverPrecedence[highestFoundManualCover] ? manualCover : highestFoundManualCover;
                                             }
                                         } catch (_) { }
 
@@ -414,10 +429,11 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                             const { chosen, rollId } = await this.coverUIManager.showPopupAndApply(state);
                             if (chosen) {
                                 context._visionerRollId = rollId;
+                                const finalState = highestFoundManualCover !== 'none' ? highestFoundManualCover : chosen;
 
                                 // Determine if this was an override
-                                const wasOverridden = chosen !== originalDetectedState;
-                                const finalBonus = Number(COVER_STATES?.[chosen]?.bonusStealth ?? 0);
+                                const wasOverridden = finalState !== originalDetectedState;
+                                const finalBonus = Number(COVER_STATES?.[finalState]?.bonusStealth ?? 0);
 
 
 
@@ -439,7 +455,7 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                                 }
 
                                 // Now update the state to the chosen value
-                                state = chosen;
+                                state = highestFoundManualCover !== 'none' ? highestFoundManualCover : chosen;
                                 // Only store as override if it actually changed
                                 if (state !== originalDetectedState) {
                                     // Store a roll-specific override so it won't leak into later dialogs
@@ -479,10 +495,23 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         label,
                         modifier: bonus,
                         type: 'circumstance',
-                    }) : { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance', enabled: true };
+                        enabled: true  // Explicitly set enabled to true
+                    }) : {
+                        slug: 'pf2e-visioner-cover',
+                        label,
+                        modifier: bonus,
+                        type: 'circumstance',
+                        enabled: true  // Explicitly set enabled to true
+                    };
 
                 } catch (_) {
-                    pf2eMod = { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance', enabled: true };
+                    pf2eMod = {
+                        slug: 'pf2e-visioner-cover',
+                        label,
+                        modifier: bonus,
+                        type: 'circumstance',
+                        enabled: true  // Explicitly set enabled to true
+                    };
                 }
 
                 const already = !!(check?.modifiers && typeof check.modifiers.some === 'function' && check.modifiers.some(m => m?.slug === 'pf2e-visioner-cover'));

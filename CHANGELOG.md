@@ -1,5 +1,13 @@
 # Changelog
 
+
+## [3.1.4] - 2025-09-06
+
+### 🐛 Fixed
+
+- **Manual Cover**: Fixed Stealth and Saving Throw rolls handling of manual cover
+
+
 ## [3.1.3] - 2025-09-06
 
 ### 🐛 Fixed

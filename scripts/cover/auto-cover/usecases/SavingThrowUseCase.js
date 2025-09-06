@@ -235,7 +235,6 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
           this.templateManager.addActiveReflexSaveTemplate(id);
 
           // Try to get the attacker token if creator ID is available
-          debugger;
           if (data.creatorId && !data.creatorId.startsWith('actor:')) {
             attacker = canvas.tokens.get(data.creatorId) || null;
           }

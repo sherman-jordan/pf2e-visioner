@@ -94,8 +94,8 @@ Hooks.once('init', async () => {
     // Initialize rule elements
     initializeRuleElements();
 
-    // Initialize Auto-Visibility System (Refactored)
-    const { autoVisibilitySystem } = await import('./visibility/auto-visibility/AutoVisibilitySystem.js');
+    // Initialize Auto-Visibility System (OPTIMIZED - Zero Delays)
+    const { autoVisibilitySystem } = await import('./visibility/auto-visibility/index.js');
     await autoVisibilitySystem.initialize();
 
     // Apply colorblind mode after settings are registered

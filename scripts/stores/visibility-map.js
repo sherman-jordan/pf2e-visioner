@@ -3,7 +3,7 @@
  */
 
 import { MODULE_ID } from '../constants.js';
-import { autoVisibilitySystem } from '../visibility/auto-visibility/AutoVisibilitySystem.js';
+import { autoVisibilitySystem } from '../visibility/auto-visibility/index.js';
 import { updateEphemeralEffectsForVisibility } from '../visibility/ephemeral.js';
 
 /**
@@ -68,7 +68,7 @@ export async function setManualOverrideFlag(observer, target, isManual) {
   } else {
     delete overrideFlags[target.document.id];
   }
-  
+
   const path = `flags.${MODULE_ID}.manualOverrides`;
   await observer.document.update({ [path]: overrideFlags }, { diff: false });
 }
@@ -101,12 +101,12 @@ export async function setVisibilityBetween(
 
   const visibilityMap = getVisibilityMap(observer);
   const currentState = visibilityMap[target.document.id];
-  
+
   // Only update if state has changed
   if (currentState !== state) {
     visibilityMap[target.document.id] = state;
     await setVisibilityMap(observer, visibilityMap);
-    
+
     // Track manual vs automatic changes
     if (!options.isAutomatic) {
       await setManualOverrideFlag(observer, target, true);
@@ -120,12 +120,12 @@ export async function setVisibilityBetween(
     if (debugMode && state === 'hidden') {
       console.log(`${MODULE_ID} | 🎭 HIDDEN EFFECT: ${observer.name} → ${target.name}`);
     }
-    
+
     // Set flag to prevent auto-visibility system from reacting to its own effect changes
     if (autoVisibilitySystem) {
       autoVisibilitySystem._setUpdatingEffects(true);
     }
-    
+
     await updateEphemeralEffectsForVisibility(observer, target, state, options);
   } catch (error) {
     console.error('PF2E Visioner: Error updating off-guard effects:', error);

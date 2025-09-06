@@ -1,18 +1,39 @@
 /**
  * Handles all vision-related analysis for the auto-visibility system
  * Manages vision capabilities, senses, line of sight, and caching
+ * SINGLETON PATTERN
  */
 
 import { MODULE_ID } from '../../constants.js';
 
 export class VisionAnalyzer {
+  /** @type {VisionAnalyzer} */
+  static #instance = null;
+
   #visionCapabilitiesCache = new Map();
   #visionCacheTimestamp = new Map();
   #visionCacheTimeout = 5000; // 5 second cache
 
   constructor() {
+    if (VisionAnalyzer.#instance) {
+      return VisionAnalyzer.#instance;
+    }
+
     this.#visionCapabilitiesCache = new Map();
     this.#visionCacheTimestamp = new Map();
+
+    VisionAnalyzer.#instance = this;
+  }
+
+  /**
+   * Get the singleton instance
+   * @returns {VisionAnalyzer}
+   */
+  static getInstance() {
+    if (!VisionAnalyzer.#instance) {
+      VisionAnalyzer.#instance = new VisionAnalyzer();
+    }
+    return VisionAnalyzer.#instance;
   }
 
   /**
@@ -27,7 +48,7 @@ export class VisionAnalyzer {
 
     const tokenId = token.document.id;
     const now = Date.now();
-    
+
     // Check cache first
     if (this.#visionCapabilitiesCache.has(tokenId)) {
       const cacheTime = this.#visionCacheTimestamp.get(tokenId) || 0;
@@ -38,11 +59,11 @@ export class VisionAnalyzer {
 
     // Calculate vision capabilities
     const capabilities = this.#calculateVisionCapabilities(token);
-    
+
     // Cache the result
     this.#visionCapabilitiesCache.set(tokenId, capabilities);
     this.#visionCacheTimestamp.set(tokenId, now);
-    
+
     return capabilities;
   }
 
@@ -58,7 +79,7 @@ export class VisionAnalyzer {
     }
 
     const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    
+
     let hasVision = true;
     let hasDarkvision = false;
     let hasLowLightVision = false;
@@ -71,7 +92,7 @@ export class VisionAnalyzer {
       // Check for blinded and dazzled conditions first (these override other vision capabilities)
       isBlinded = this.#hasCondition(actor, 'blinded');
       isDazzled = this.#hasCondition(actor, 'dazzled');
-      
+
       // Blinded overrides dazzled and disables all vision
       if (isBlinded) {
         hasVision = false;
@@ -79,7 +100,7 @@ export class VisionAnalyzer {
           console.log(`${MODULE_ID} | ${actor.name} is blinded - no vision`);
         }
       }
-      
+
       // Check if actor has vision at all
       if (actor.system?.perception?.vision === false) {
         hasVision = false;
@@ -87,7 +108,7 @@ export class VisionAnalyzer {
 
       // Multiple paths to check for senses
       let senses = null;
-      
+
       // Try different property paths for senses
       if (actor.system?.perception?.senses) {
         senses = actor.system.perception.senses;
@@ -126,7 +147,7 @@ export class VisionAnalyzer {
         hasDarkvision = true;
         darkvisionRange = actor.darkvision || actor.system?.darkvision || Infinity;
       }
-      
+
       if (!hasLowLightVision && (actor['low-light-vision'] || actor.system?.['low-light-vision'])) {
         hasLowLightVision = true;
         lowLightRange = actor['low-light-vision'] || actor.system?.['low-light-vision'] || Infinity;
@@ -174,7 +195,7 @@ export class VisionAnalyzer {
    */
   hasLineOfSight(observer, target) {
     if (!observer || !target) return false;
-    
+
     try {
       // Use FoundryVTT's built-in visibility testing
       return canvas.visibility.testVisibility(target.center, {
@@ -199,11 +220,11 @@ export class VisionAnalyzer {
     // Blinded creatures might still have special senses
     // Check for special senses that work without vision
     // This could be expanded for tremorsense, echolocation, etc.
-    
+
     // TODO: Implement special senses detection
     // const observerCapabilities = this.getVisionCapabilities(observer);
     // Check observerCapabilities for tremorsense, echolocation, scent, etc.
-    
+
     // For now, return false - most creatures rely on vision
     // Future enhancement: check for tremorsense, echolocation, scent, etc.
     return false;
@@ -217,12 +238,12 @@ export class VisionAnalyzer {
    */
   determineVisibilityFromLighting(lightLevel, observerVision) {
     const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    
+
     // Blinded: Can't see anything (handled by hasVision = false)
     if (!observerVision.hasVision) {
       return 'hidden';
     }
-    
+
     // Dazzled: If vision is only precise sense, everything is concealed
     // Note: In PF2E, most creatures only have vision as their precise sense
     // unless they have special senses like tremorsense, echolocation, etc.
@@ -235,14 +256,14 @@ export class VisionAnalyzer {
     switch (lightLevel.level) {
       case 'bright':
         return 'observed';
-        
+
       case 'dim':
         if (observerVision.hasLowLightVision) {
           return 'observed';
         } else {
           return 'concealed';
         }
-        
+
       case 'darkness':
         if (observerVision.hasDarkvision) {
           if (debugMode) {
@@ -256,7 +277,7 @@ export class VisionAnalyzer {
           }
           return 'hidden';
         }
-        
+
       default:
         return 'observed';
     }
@@ -301,33 +322,33 @@ export class VisionAnalyzer {
   #hasCondition(actor, conditionSlug) {
     try {
       // Try multiple methods to detect conditions in PF2E
-      
+
       // Method 1: hasCondition function (most reliable)
       if (actor.hasCondition && typeof actor.hasCondition === 'function') {
         return actor.hasCondition(conditionSlug);
       }
-      
+
       // Method 2: Check system conditions
       if (actor.system?.conditions?.[conditionSlug]?.active) {
         return true;
       }
-      
+
       // Method 3: Check conditions collection
       if (actor.conditions?.has?.(conditionSlug)) {
         return true;
       }
-      
+
       // Method 4: Iterate through conditions collection
       if (actor.conditions) {
         try {
-          return actor.conditions.some(condition => 
+          return actor.conditions.some(condition =>
             condition.slug === conditionSlug || condition.key === conditionSlug
           );
         } catch (e) {
           // Ignore iteration errors
         }
       }
-      
+
       return false;
     } catch (error) {
       console.warn(`${MODULE_ID} | Error checking condition ${conditionSlug} for ${actor.name}:`, error);
@@ -349,7 +370,7 @@ export class VisionAnalyzer {
     const cacheInfo = {
       cached: this.#visionCapabilitiesCache.has(token.document.id),
       cacheTime: this.#visionCacheTimestamp.get(token.document.id),
-      cacheAge: this.#visionCacheTimestamp.has(token.document.id) ? 
+      cacheAge: this.#visionCacheTimestamp.has(token.document.id) ?
         Date.now() - this.#visionCacheTimestamp.get(token.document.id) : null
     };
 

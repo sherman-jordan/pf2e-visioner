@@ -1,13 +1,33 @@
 /**
  * Handles detection of manual action overrides for the auto-visibility system
  * Manages Point Out, Seek, Hide, and Sneak action detection and state management
+ * SINGLETON PATTERN
  */
 
 import { MODULE_ID } from '../../constants.js';
 
 export class ManualOverrideDetector {
+  /** @type {ManualOverrideDetector} */
+  static #instance = null;
+
   constructor() {
+    if (ManualOverrideDetector.#instance) {
+      return ManualOverrideDetector.#instance;
+    }
+
     // No initialization needed for now
+    ManualOverrideDetector.#instance = this;
+  }
+
+  /**
+   * Get the singleton instance
+   * @returns {ManualOverrideDetector}
+   */
+  static getInstance() {
+    if (!ManualOverrideDetector.#instance) {
+      ManualOverrideDetector.#instance = new ManualOverrideDetector();
+    }
+    return ManualOverrideDetector.#instance;
   }
 
   /**
@@ -20,12 +40,12 @@ export class ManualOverrideDetector {
     try {
       const observerId = observer?.document?.id;
       const targetId = target?.document?.id;
-      
+
       if (!observerId || !targetId) return false;
 
       // Import the Point Out message cache
       const { appliedPointOutChangesByMessage } = await import('../../chat/services/data/message-cache.js');
-      
+
       // Check for active Point Out actions (affecting observer's view of target)
       for (const [, changes] of appliedPointOutChangesByMessage.entries()) {
         if (Array.isArray(changes)) {
@@ -36,7 +56,7 @@ export class ManualOverrideDetector {
           }
         }
       }
-      
+
       return false;
     } catch (error) {
       console.error(`${MODULE_ID} | Error checking Point Out override:`, error);
@@ -54,12 +74,12 @@ export class ManualOverrideDetector {
     try {
       const observerId = observer?.document?.id;
       const targetId = target?.document?.id;
-      
+
       if (!observerId || !targetId) return null;
 
       // Import the Seek message cache
       const { appliedSeekChangesByMessage } = await import('../../chat/services/data/message-cache.js');
-      
+
       // Check for active Seek actions (observer seeking target)
       for (const [messageId, changes] of appliedSeekChangesByMessage.entries()) {
         if (Array.isArray(changes)) {
@@ -68,7 +88,7 @@ export class ManualOverrideDetector {
               // For Seek, we need to check if this observer was the seeker
               const message = game.messages.get(messageId);
               const seekerId = message?.speaker?.token;
-              
+
               if (seekerId === observerId) {
                 // Return the visibility state based on Seek result
                 // This should be stored in the change object
@@ -78,7 +98,7 @@ export class ManualOverrideDetector {
           }
         }
       }
-      
+
       return null;
     } catch (error) {
       console.error(`${MODULE_ID} | Error checking Seek override:`, error);
@@ -96,12 +116,12 @@ export class ManualOverrideDetector {
     try {
       const observerId = observer?.document?.id;
       const targetId = target?.document?.id;
-      
+
       if (!observerId || !targetId) return false;
 
       // Import the Sneak message cache
       const { appliedSneakChangesByMessage } = await import('../../chat/services/data/message-cache.js');
-      
+
       // Check for active Sneak actions (target sneaking from observer)
       for (const [, changes] of appliedSneakChangesByMessage.entries()) {
         if (Array.isArray(changes)) {
@@ -114,7 +134,7 @@ export class ManualOverrideDetector {
           }
         }
       }
-      
+
       return false;
     } catch (error) {
       console.error(`${MODULE_ID} | Error checking Sneak override:`, error);
@@ -133,10 +153,10 @@ export class ManualOverrideDetector {
     try {
       // Check if there are any cached manual actions affecting this visibility relationship
       // This includes Hide, Sneak actions, and general manual visibility state changes
-      
+
       const observerId = observer?.document?.id;
       const targetId = target?.document?.id;
-      
+
       if (!observerId || !targetId) return false;
 
       const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
@@ -154,7 +174,7 @@ export class ManualOverrideDetector {
       }
 
       // Import the message cache maps to check for active manual overrides
-      const { 
+      const {
         appliedHideChangesByMessage,
         appliedSneakChangesByMessage
       } = await import('../../chat/services/data/message-cache.js');
@@ -189,7 +209,7 @@ export class ManualOverrideDetector {
           }
         }
       }
-      
+
       return false;
     } catch (error) {
       console.error(`${MODULE_ID} | Error checking manual visibility override:`, error);
@@ -243,7 +263,7 @@ export class ManualOverrideDetector {
    */
   async checkAllOverrides(observer, target) {
     const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    
+
     try {
       // Check Point Out override
       const hasPointOut = await this.hasPointOutOverride(observer, target);

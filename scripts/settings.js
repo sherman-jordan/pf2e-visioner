@@ -607,8 +607,12 @@ export function registerSettings() {
         // Handle auto-visibility system enable/disable
         settingConfig.onChange = async (value) => {
           try {
-            const AutoVisibilitySystem = (await import('./visibility/auto-visibility/AutoVisibilitySystem.js')).default;
-            AutoVisibilitySystem.setEnabled(value);
+            const { autoVisibilitySystem } = await import('./visibility/auto-visibility/index.js');
+            if (value) {
+              autoVisibilitySystem.enable();
+            } else {
+              autoVisibilitySystem.disable();
+            }
           } catch (error) {
             console.error('PF2E Visioner: Error toggling auto-visibility system:', error);
           }

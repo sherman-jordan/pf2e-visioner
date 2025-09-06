@@ -3,19 +3,20 @@
  */
 
 import { MODULE_ID } from '../constants.js';
+import { AutoCoverHooks } from '../cover/auto-cover/AutoCoverHooks.js';
 import { onHighlightObjects } from '../services/hover-tooltips.js';
 import { registerChatHooks } from './chat.js';
 import { registerCombatHooks } from './combat.js';
 import { onCanvasReady, onReady } from './lifecycle.js';
 import { registerTokenHooks } from './token-events.js';
 import { registerUIHooks } from './ui.js';
-import { AutoCoverHooks } from '../cover/auto-cover/AutoCoverHooks.js';
 
-export function registerHooks() {
+export async function registerHooks() {
 
   Hooks.on('ready', onReady);
   Hooks.on('canvasReady', onCanvasReady);
-
+  const { registerHooks: registerOptimized } = await import('../hooks/optimized-registration.js');
+  registerOptimized();
   registerChatHooks();
 
   Hooks.on('highlightObjects', onHighlightObjects);
@@ -146,7 +147,7 @@ export function registerHooks() {
       if (controlTokenTimeout) {
         clearTimeout(controlTokenTimeout);
       }
-      
+
       // Debounce the visual update to prevent jittering
       controlTokenTimeout = setTimeout(async () => {
         try {

@@ -24,7 +24,7 @@ import {
   setVisibilityBetween,
   showNotification
 } from './utils.js';
-import { autoVisibilitySystem } from './visibility/auto-visibility/AutoVisibilitySystem.js';
+import { autoVisibilitySystem } from './visibility/auto-visibility/index.js';
 
 /**
  * Main API class for the module
@@ -921,7 +921,7 @@ export const autoVisibility = {
   updateTokens: (tokens) => autoVisibilitySystem.updateVisibilityForTokens?.(tokens) || console.warn("updateTokens method not available in refactored system"),
   calculateVisibility: (observer, target) => autoVisibilitySystem.calculateVisibility(observer, target),
   getDebugInfo: (observer, target) => autoVisibilitySystem.getVisibilityDebugInfo(observer, target),
-  
+
   // Debug helpers
   testLighting: () => {
     const selected = canvas.tokens.controlled;
@@ -929,62 +929,62 @@ export const autoVisibility = {
       ui.notifications.warn("Select a token to test lighting at its position");
       return;
     }
-    
+
     const token = selected[0];
     const sceneDarkness = canvas.scene?.environment?.darknessLevel ?? 'undefined';
     console.log(`Testing lighting at ${token.name}'s position:`, token.center);
     console.log(`Scene darkness: ${sceneDarkness} (0=daylight, 1=complete darkness)`);
     console.log(`Light sources: ${canvas.lighting?.placeables?.length ?? 0}`);
-    
+
     // Access the private method via the global reference
     if (globalThis.pf2eVisionerAutoVisibility?._getLightLevelAt) {
       const lightLevel = globalThis.pf2eVisionerAutoVisibility._getLightLevelAt(token.center);
-      const interpretation = lightLevel >= 1 ? 'BRIGHT LIGHT' : 
-                           lightLevel >= 0.5 ? 'DIM LIGHT' : 'DARKNESS';
+      const interpretation = lightLevel >= 1 ? 'BRIGHT LIGHT' :
+        lightLevel >= 0.5 ? 'DIM LIGHT' : 'DARKNESS';
       console.log(`Light level: ${lightLevel} (${interpretation})`);
       ui.notifications.info(`${token.name}: ${interpretation} (level ${lightLevel}) - see console for details`);
     } else {
       ui.notifications.error("Cannot access light level calculation method");
     }
   },
-  
+
   debugSelected: async () => {
     const selected = canvas.tokens.controlled;
     if (selected.length < 2) {
       ui.notifications.warn("Select at least 2 tokens to debug visibility between them");
       return;
     }
-    
+
     const observer = selected[0];
     const target = selected[1];
-    
+
     console.log(`=== Debugging visibility: ${observer.name} → ${target.name} ===`);
-    
+
     try {
       const debugInfo = await autoVisibilitySystem.getVisibilityDebugInfo(observer, target);
       console.log("Debug info:", debugInfo);
-      
+
       const visibility = await autoVisibilitySystem.calculateVisibility(observer, target);
       console.log("Calculated visibility:", visibility);
-      
+
       ui.notifications.info(`${observer.name} → ${target.name}: ${visibility} (see console for details)`);
     } catch (error) {
       console.error("Error debugging visibility:", error);
       ui.notifications.error("Error debugging visibility - check console");
     }
   },
-  
+
   // Quick performance helpers
   disableMovementUpdates: () => {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnMovement', false);
     ui.notifications.info("Auto-visibility movement updates disabled - no more lag during token movement");
   },
-  
+
   enableMovementUpdates: () => {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnMovement', true);
     ui.notifications.info("Auto-visibility movement updates enabled");
   },
-  
+
   setThrottleDelay: (ms) => {
     if (ms < 100 || ms > 5000) {
       ui.notifications.error("Throttle delay must be between 100ms and 5000ms");
@@ -993,29 +993,29 @@ export const autoVisibility = {
     game.settings.set('pf2e-visioner', 'autoVisibilityThrottleDelay', ms);
     ui.notifications.info(`Auto-visibility throttle delay set to ${ms}ms`);
   },
-  
+
   // Emergency disable for scene configuration issues
   disableLightingUpdates: () => {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnLighting', false);
     ui.notifications.info("Auto-visibility lighting updates disabled - scene configuration should work normally now");
   },
-  
+
   enableLightingUpdates: () => {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnLighting', true);
     ui.notifications.info("Auto-visibility lighting updates enabled");
   },
-  
+
   // Complete system disable/enable for troubleshooting
   emergencyDisable: () => {
     autoVisibilitySystem.disable();
     ui.notifications.warn("Auto-visibility system completely disabled - use emergencyEnable() to re-enable");
   },
-  
+
   emergencyEnable: () => {
     autoVisibilitySystem.enable();
     ui.notifications.info("Auto-visibility system re-enabled");
   },
-  
+
   // Debug vision capabilities for selected token
   debugVision: () => {
     const selected = canvas.tokens.controlled[0];
@@ -1023,14 +1023,14 @@ export const autoVisibility = {
       ui.notifications.error("Please select a token first");
       return;
     }
-    
+
     const vision = autoVisibilitySystem.getVisionCapabilities?.(selected) || "Vision method not available";
     console.log(`${selected.name} Vision Capabilities:`, vision);
     console.log(`Actor System Data:`, selected.actor?.system?.perception);
     console.log(`Actor Perception:`, selected.actor?.perception);
     ui.notifications.info(`Vision data logged to console for ${selected.name}`);
   },
-  
+
   // EMERGENCY: Disable all automatic updates (if still needed)
   disableAllUpdates: () => {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnMovement', false);
@@ -1038,7 +1038,7 @@ export const autoVisibility = {
     ui.notifications.warn("All auto-visibility updates disabled");
     console.log("Auto-visibility: All automatic updates disabled. Use enableAllUpdates() to re-enable.");
   },
-  
+
   // Re-enable all automatic updates
   enableAllUpdates: () => {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnMovement', true);
@@ -1046,11 +1046,11 @@ export const autoVisibility = {
     ui.notifications.info("All auto-visibility updates re-enabled");
     console.log("Auto-visibility: All automatic updates re-enabled.");
   },
-  
+
   // Check if scene config dialog is currently open
   isSceneConfigOpen: () => {
-    const hasOpenSceneConfig = Object.values(ui.windows).some(app => 
-      app.constructor.name === 'SceneConfig' || 
+    const hasOpenSceneConfig = Object.values(ui.windows).some(app =>
+      app.constructor.name === 'SceneConfig' ||
       app.id?.includes('scene-config') ||
       app.title?.includes('Scene Configuration') ||
       app.options?.id === 'scene-config'
@@ -1058,13 +1058,13 @@ export const autoVisibility = {
     console.log(`Scene Config Dialog Open: ${hasOpenSceneConfig}`);
     return hasOpenSceneConfig;
   },
-  
+
   // Debug light sources and light-emitting tokens in the scene
   debugLights: () => {
     const lightSources = canvas.lighting?.placeables || [];
     const tokens = canvas.tokens?.placeables || [];
     const lightEmittingTokens = tokens.filter(t => t.emitsLight);
-    
+
     console.log(`=== LIGHT SOURCES (${lightSources.length}) ===`);
     lightSources.forEach((light, index) => {
       console.log(`Light Source ${index + 1}:`, {
@@ -1081,7 +1081,7 @@ export const autoVisibility = {
         fullDocument: light.document
       });
     });
-    
+
     console.log(`=== LIGHT-EMITTING TOKENS (${lightEmittingTokens.length}) ===`);
     lightEmittingTokens.forEach((token, index) => {
       console.log(`Light Token ${index + 1} - "${token.name}":`, {
@@ -1097,11 +1097,11 @@ export const autoVisibility = {
         fullToken: token
       });
     });
-    
+
     const totalLights = lightSources.length + lightEmittingTokens.length;
     ui.notifications.info(`Light data logged: ${lightSources.length} sources + ${lightEmittingTokens.length} light tokens = ${totalLights} total`);
   },
-  
+
   // Clear light cache (for performance troubleshooting)
   clearLightCache: () => {
     if (autoVisibilitySystem.clearLightCache) {
@@ -1122,7 +1122,7 @@ export const autoVisibility = {
       ui.notifications.warn("Vision cache clearing not available");
     }
   },
-  
+
   // Force recalculation with cache clear (for troubleshooting scene changes)
   forceRecalculate: () => {
     if (autoVisibilitySystem.clearLightCache) {
@@ -1134,7 +1134,7 @@ export const autoVisibility = {
     autoVisibilitySystem.recalculateAllVisibility();
     ui.notifications.info("All caches cleared and visibility recalculated");
   },
-  
+
   // Test invisibility detection for selected tokens
   testInvisibility: () => {
     const controlled = canvas.tokens.controlled;
@@ -1142,16 +1142,16 @@ export const autoVisibility = {
       ui.notifications.warn("Select exactly 2 tokens: observer and target");
       return;
     }
-    
+
     const [observer, target] = controlled;
     const isInvisible = autoVisibilitySystem.testInvisibility?.(observer, target);
-    
+
     console.log(`Invisibility test: ${observer.name} → ${target.name}:`, {
       isInvisible,
       targetConditions: target.actor?.conditions,
       targetSystemConditions: target.actor?.system?.conditions
     });
-    
+
     ui.notifications.info(`${target.name} is ${isInvisible ? 'invisible' : 'visible'} to ${observer.name}`);
   },
 
@@ -1207,16 +1207,16 @@ export const autoVisibility = {
     }
 
     const capabilities = visionAnalyzer.getVisionCapabilities(token);
-    
+
     console.log(`Vision capabilities for ${token.name}:`, capabilities);
-    
+
     const statusText = [];
     if (capabilities.isBlinded) statusText.push("BLINDED");
     if (capabilities.isDazzled) statusText.push("DAZZLED");
     if (capabilities.hasDarkvision) statusText.push("Darkvision");
     if (capabilities.hasLowLightVision) statusText.push("Low-Light Vision");
     if (!capabilities.hasVision) statusText.push("No Vision");
-    
+
     const status = statusText.length > 0 ? statusText.join(", ") : "Normal Vision";
     ui.notifications.info(`${token.name}: ${status}`);
   },
@@ -1228,23 +1228,23 @@ export const autoVisibility = {
       ui.notifications.warn("Select exactly 1 token to test condition overrides");
       return;
     }
-    
+
     const token = controlled[0];
     const actor = token.actor;
     if (!actor) {
       ui.notifications.warn("Selected token has no actor");
       return;
     }
-    
+
     // Test both conditions
     const isBlinded = actor.hasCondition?.('blinded') || false;
     const isDazzled = actor.hasCondition?.('dazzled') || false;
-    
+
     console.log(`Condition test for ${actor.name}:`);
     console.log(`- Blinded: ${isBlinded}`);
     console.log(`- Dazzled: ${isDazzled}`);
     console.log(`- Expected: If blinded=true, then dazzled should=false (PF2E override)`);
-    
+
     // Also show all active conditions
     if (actor.conditions) {
       const activeConditions = Array.from(actor.conditions)
@@ -1253,7 +1253,7 @@ export const autoVisibility = {
         .join(', ');
       console.log(`- Active conditions: ${activeConditions || 'none'}`);
     }
-    
+
     ui.notifications.info(`Check console for ${actor.name}'s condition details`);
   },
 
@@ -1261,14 +1261,14 @@ export const autoVisibility = {
   testLightSources: () => {
     const lightSources = canvas.lighting?.placeables || [];
     console.log(`=== Light Sources Debug (${lightSources.length} total) ===`);
-    
+
     lightSources.forEach((light, index) => {
       const isDarknessSource = light.isDarknessSource || light.document?.isDarknessSource || false;
       const brightRadius = light.document.config?.bright || light.document.bright || light.config?.bright || 0;
       const dimRadius = light.document.config?.dim || light.document.dim || light.config?.dim || 0;
       const hidden = light.document.hidden;
       const emitsLight = light.emitsLight;
-      
+
       console.log(`Light ${index + 1}:`, {
         id: light.id,
         isDarknessSource,
@@ -1279,25 +1279,25 @@ export const autoVisibility = {
         center: light.center
       });
     });
-    
+
     ui.notifications.info(`Found ${lightSources.length} light sources - check console for details`);
   },
 
   // Test darkness source detection specifically
   testDarknessSources: () => {
     const lightSources = canvas.lighting?.placeables || [];
-    
+
     console.log(`=== All Light Sources Debug (${lightSources.length} total) ===`);
-    
+
     lightSources.forEach((light, index) => {
       const brightRadius = light.document.config?.bright || light.document.bright || light.config?.bright || 0;
       const dimRadius = light.document.config?.dim || light.document.dim || light.config?.dim || 0;
-      
+
       // Check multiple ways to detect darkness sources
-      const isDarknessSource = light.isDarknessSource || 
-                               light.document?.config?.negative ||
-                               false;
-      
+      const isDarknessSource = light.isDarknessSource ||
+        light.document?.config?.negative ||
+        false;
+
       console.log(`Light Source ${index + 1} ${isDarknessSource ? '(DARKNESS)' : '(NORMAL)'}:`, {
         id: light.id,
         brightRadius,
@@ -1313,12 +1313,12 @@ export const autoVisibility = {
         'light.document.config': light.document?.config
       });
     });
-    
+
     const darknessCount = lightSources.filter(light => {
-      return light.isDarknessSource || 
-             light.document?.config?.negative;
+      return light.isDarknessSource ||
+        light.document?.config?.negative;
     }).length;
-    
+
     console.log(`Found ${darknessCount} darkness sources out of ${lightSources.length} total lights`);
     ui.notifications.info(`Found ${darknessCount} darkness sources out of ${lightSources.length} total lights`);
   },
@@ -1340,35 +1340,35 @@ export const autoVisibility = {
   testFeedbackLoops: () => {
     let recalcCount = 0;
     const startTime = Date.now();
-    
+
     console.log(`${MODULE_ID} | Starting feedback loop test - monitoring for 10 seconds...`);
-    
+
     // Hook into recalculations to count them
     const originalRecalc = game.modules.get(MODULE_ID)?.api?.autoVisibilitySystem?.recalculateAllVisibility;
     if (!originalRecalc) {
       ui.notifications.error("Auto-visibility system not found");
       return;
     }
-    
+
     // Wrap the recalculation function to count calls
-    const testWrapper = function(...args) {
+    const testWrapper = function (...args) {
       recalcCount++;
       console.log(`${MODULE_ID} | Recalculation #${recalcCount} at ${Date.now() - startTime}ms`);
       return originalRecalc.apply(this, args);
     };
-    
+
     // Replace temporarily
     const autoVis = game.modules.get(MODULE_ID).api.autoVisibilitySystem;
     autoVis.recalculateAllVisibility = testWrapper;
-    
+
     // Restore after 10 seconds and report results
     setTimeout(() => {
       autoVis.recalculateAllVisibility = originalRecalc;
       const elapsed = Date.now() - startTime;
       const rate = (recalcCount / elapsed * 1000).toFixed(2);
-      
+
       console.log(`${MODULE_ID} | Feedback test complete: ${recalcCount} recalculations in ${elapsed}ms (${rate} per second)`);
-      
+
       if (recalcCount > 20) {
         ui.notifications.error(`Feedback loop detected! ${recalcCount} recalculations in 10 seconds (${rate}/sec)`);
       } else if (recalcCount > 10) {
@@ -1377,7 +1377,7 @@ export const autoVisibility = {
         ui.notifications.info(`Feedback loops appear fixed: only ${recalcCount} recalculations in 10 seconds (${rate}/sec)`);
       }
     }, 10000);
-    
+
     ui.notifications.info("Monitoring recalculation frequency for 10 seconds...");
   }
 };

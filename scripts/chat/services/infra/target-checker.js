@@ -64,7 +64,7 @@ function checkConsequencesTargets(actionData, potentialTargets) {
         visibility = 'concealed';
       }
     } catch (error) {
-      // Error checking concealment, continue with original visibility
+      console.error("Error checking concealment in checkConsequencesTargets:", error);
     }
     
     if (visibility === 'hidden' || visibility === 'undetected') {

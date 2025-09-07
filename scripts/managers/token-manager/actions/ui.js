@@ -472,7 +472,10 @@ export function bindDomIconHandlers(TokenManagerClass) {
     const newState = icon.dataset.state;
     const app = this;
     
-    if (!targetId || !action || !newState || !app?.observer) return;
+    if (!targetId || !action || !newState || !app?.observer) {
+      showNotification('Missing required data for override action. Please try again or contact support.', 'warning');
+      return;
+    }
     
     try {
       const overridesManager = OverridesManager.getInstance();

@@ -44,22 +44,32 @@ export function checkForValidTargets(actionData) {
 
 function checkConsequencesTargets(actionData, potentialTargets) {
   const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
+  
   for (const target of potentialTargets) {
     if (
       enforceRAW &&
       shouldFilterAlly(actionData.actor, target, 'enemies', actionData?.ignoreAllies)
-    )
+    ) {
       continue;
+    }
     let visibility = getVisibilityBetween(target, actionData.actor);
+    
     try {
       const itemTypeConditions = actionData.actor?.actor?.itemTypes?.condition || [];
       const legacyConditions = actionData.actor?.actor?.conditions?.conditions || [];
       const actorIsConcealed =
         itemTypeConditions.some((c) => c?.slug === 'concealed') ||
         legacyConditions.some((c) => c?.slug === 'concealed');
-      if (visibility === 'observed' && actorIsConcealed) visibility = 'concealed';
-    } catch (_) { }
-    if (visibility === 'hidden' || visibility === 'undetected') return true;
+      if (visibility === 'observed' && actorIsConcealed) {
+        visibility = 'concealed';
+      }
+    } catch (error) {
+      // Error checking concealment, continue with original visibility
+    }
+    
+    if (visibility === 'hidden' || visibility === 'undetected') {
+      return true;
+    }
   }
   return false;
 }

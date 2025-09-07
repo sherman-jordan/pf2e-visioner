@@ -195,7 +195,7 @@ export async function extractActionData(message) {
       }
     }
   } catch (error) {
-    console.warn('Error adding overrides to actionData:', error);
+    console.warn('[PF2E Visioner] Error adding overrides to actionData:', error);
   }
 
   // Add attack roll data for consequences

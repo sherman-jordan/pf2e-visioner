@@ -21,11 +21,14 @@ export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
   },
   actions: {
     applyCurrent: null,
-    applyBoth: null,
+    applyAll: null,
     reset: null,
     toggleMode: null,
     toggleEncounterFilter: null,
+    toggleIgnoreAllies: null,
+    toggleIgnoreWalls: null,
     toggleTab: null,
+    toggleStateSelector: null,
     // PC-specific bulk actions for visibility
     bulkPCHidden: null,
     bulkPCUndetected: null,
@@ -49,11 +52,16 @@ export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
     bulkNPCLesserCover: null,
     bulkNPCStandardCover: null,
     bulkNPCGreaterCover: null,
+    // Override management actions
+    clearAllOverrides: null,
+    clearPCOverrides: null,
+    clearNPCOverrides: null,
+    bulkSetOverride: null,
   },
 };
 
 export const TOKEN_MANAGER_PARTS = {
   form: {
-    template: 'modules/pf2e-visioner/templates/token-manager.hbs',
+    template: 'modules/pf2e-visioner/templates/token-manager-new.hbs',
   },
 };

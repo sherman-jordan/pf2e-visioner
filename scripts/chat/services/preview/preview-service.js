@@ -230,6 +230,10 @@ export async function previewActionResults(actionData) {
         const outcomes = await Promise.all(
           subjects.map((s) => handler.analyzeOutcome(actionData, s)),
         );
+        
+        // Apply overrides from OverridesManager before showing preview
+        handler.applyOverrides(actionData, outcomes);
+        
         const changes = outcomes.filter((o) => o && o.changed);
         new ConsequencesPreviewDialog(
           actionData.actor,

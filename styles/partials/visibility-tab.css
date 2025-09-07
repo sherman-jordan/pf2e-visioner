@@ -1,0 +1,114 @@
+/*
+ * Visibility Tab Partial Styles
+ * Styles for the visibility tab content and bulk actions
+ */
+
+.pf2e-visioner {
+  /* Visibility Tab Panel */
+  .tab-panel.visibility-section {
+    display: none;
+  }
+
+  .tab-panel.visibility-section.active {
+    display: block;
+  }
+
+  /* Bulk Actions Header */
+  .bulk-actions-header {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .bulk-state-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .bulk-state-header:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .bulk-state-header i {
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  /* Visibility State Colors */
+  .bulk-state-header.visibility-observed,
+  .bulk-state-header.visibility-observed i {
+    color: var(--visibility-observed, #4caf50) !important;
+    border-color: var(--visibility-observed, #4caf50) !important;
+  }
+
+  .bulk-state-header.visibility-observed:hover,
+  .bulk-state-header.visibility-observed:hover i {
+    background: var(--visibility-observed, #4caf50) !important;
+    color: white !important;
+  }
+
+  .bulk-state-header.visibility-concealed,
+  .bulk-state-header.visibility-concealed i {
+    color: var(--visibility-concealed, #ffc107) !important;
+    border-color: var(--visibility-concealed, #ffc107) !important;
+  }
+
+  .bulk-state-header.visibility-concealed:hover,
+  .bulk-state-header.visibility-concealed:hover i {
+    background: var(--visibility-concealed, #ffc107) !important;
+    color: white !important;
+  }
+
+  .bulk-state-header.visibility-hidden,
+  .bulk-state-header.visibility-hidden i {
+    color: var(--visibility-hidden, #ff6600) !important;
+    border-color: var(--visibility-hidden, #ff6600) !important;
+  }
+
+  .bulk-state-header.visibility-hidden:hover,
+  .bulk-state-header.visibility-hidden:hover i {
+    background: var(--visibility-hidden, #ff6600) !important;
+    color: white !important;
+  }
+
+  .bulk-state-header.visibility-undetected,
+  .bulk-state-header.visibility-undetected i {
+    color: var(--visibility-undetected, #f44336) !important;
+    border-color: var(--visibility-undetected, #f44336) !important;
+  }
+
+  .bulk-state-header.visibility-undetected:hover,
+  .bulk-state-header.visibility-undetected:hover i {
+    background: var(--visibility-undetected, #f44336) !important;
+    color: white !important;
+  }
+
+  /* Loading State */
+  .bulk-state-header.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .bulk-state-header.loading i {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

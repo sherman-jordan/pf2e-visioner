@@ -1,0 +1,279 @@
+/*
+ * Overrides Tab Partial Styles
+ * Styles for the overrides tab content, state selection, and bulk actions
+ */
+
+.pf2e-visioner {
+  /* Overrides Tab Styles */
+  .overrides-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .overrides-header {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    padding: 12px;
+    background: var(--color-bg-secondary, #2a2a2a);
+    border-radius: 6px;
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+
+  .bulk-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .bulk-actions label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary, #ffffff);
+    margin-bottom: 4px;
+  }
+
+  .bulk-state-buttons,
+  .bulk-action-buttons {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+
+  .bulk-action-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    min-width: 60px;
+  }
+
+  .bulk-state-selector {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .bulk-apply-button {
+    background: var(--color-bg-btn-primary);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    min-width: 32px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bulk-apply-button:hover {
+    background: var(--color-bg-btn-primary-hover);
+    border-color: var(--color-border-primary-hover);
+  }
+
+  .state-selector-button {
+    background: var(--color-bg-btn-secondary);
+    border: 1px solid var(--color-border-secondary);
+    border-radius: 4px;
+    padding: 2px 4px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 10px;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .state-selector-button:hover {
+    background: var(--color-bg-btn-secondary-hover);
+    border-color: var(--color-border-secondary-hover);
+  }
+
+  .state-selector-button.selected {
+    background: var(--color-bg-btn-primary);
+    border-color: var(--color-border-primary);
+    box-shadow: 0 0 0 1px var(--color-border-primary);
+  }
+
+  .clear-all-overrides {
+    background: var(--color-bg-btn-secondary);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .clear-all-overrides:hover {
+    background: var(--color-bg-btn-secondary-active);
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .overrides-table-container {
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-top: none;
+    background: var(--color-bg);
+    overflow-x: auto;
+    overflow-y: visible;
+    margin: 0;
+  }
+
+  /* Override table-section overflow for overrides */
+  .table-section.overrides-section {
+    overflow: visible;
+  }
+
+  /* Custom scrollbar styling for overrides table */
+  .overrides-table-container::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .overrides-table-container::-webkit-scrollbar-track {
+    background: var(--color-bg-tertiary, #3a3a3a);
+    border-radius: 4px;
+  }
+
+  .overrides-table-container::-webkit-scrollbar-thumb {
+    background: var(--color-border-light-primary, #4a4a4a);
+    border-radius: 4px;
+  }
+
+  .overrides-table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary, #4a9eff);
+  }
+
+  .overrides-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .overrides-table th,
+  .overrides-table td {
+    padding: 6px 4px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border-light-tertiary);
+  }
+
+  .overrides-table th {
+    background: var(--color-bg-tertiary);
+    font-weight: 600;
+    color: var(--color-text-dark-primary);
+    font-size: 11px;
+  }
+
+  .overrides-table .action-column {
+    width: 14%;
+    min-width: 90px;
+  }
+
+  /* Override Selection Icons */
+  .override-selection {
+    display: flex;
+    gap: 1px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+
+  .override-icon {
+    background: transparent;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    position: relative;
+  }
+
+  .override-icon:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: currentColor;
+    transform: translateY(-1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  .override-icon.selected {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: currentColor;
+    border-width: 2px;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.3), inset 0 0 2px rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+
+  .override-icon.selected::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 5px;
+    height: 5px;
+    background: currentColor;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Override State Colors */
+  .override-icon[data-state='observed'] {
+    color: var(--visibility-observed);
+  }
+
+  .override-icon[data-state='concealed'] {
+    color: var(--visibility-concealed);
+  }
+
+  .override-icon[data-state='hidden'] {
+    color: var(--visibility-hidden);
+  }
+
+  .override-icon[data-state='undetected'] {
+    color: var(--visibility-undetected);
+  }
+
+  .override-icon[data-state='no-override'] {
+    color: var(--color-text-secondary);
+  }
+
+  .override-icon.override-none {
+    color: var(--color-text-secondary);
+  }
+
+  .override-icon[data-state='no-override'].selected {
+    background: rgba(128, 128, 128, 0.2);
+    color: var(--color-text-secondary);
+  }
+}

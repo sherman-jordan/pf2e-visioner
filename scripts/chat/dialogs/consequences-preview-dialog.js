@@ -92,13 +92,13 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
 
     // Prepare outcomes with additional UI data (and normalize shape)
     processedOutcomes = processedOutcomes.map((outcome) => {
-      const effectiveNewState = outcome.overrideState || 'observed'; // Default to observed
+      const effectiveNewState = outcome.newVisibility || outcome.overrideState || 'observed'; // Use newVisibility from applyOverrides first
       const baseOldState = outcome.currentVisibility;
       // For consequences, actionable change means:
       // 1. Token sees attacker as hidden/undetected AND will change to different state, OR
       // 2. GM has selected an override state that differs from current state
       const isHiddenOrUndetected = baseOldState === 'hidden' || baseOldState === 'undetected';
-      const hasOverrideChange = outcome.overrideState && outcome.overrideState !== baseOldState;
+      const hasOverrideChange = effectiveNewState !== baseOldState;
       const hasActionableChange = isHiddenOrUndetected || hasOverrideChange;
 
       // Build override icon states for the row
@@ -179,8 +179,11 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     // 2. GM has selected an override state that differs from current state
     const isHiddenOrUndetected =
       outcome.currentVisibility === 'hidden' || outcome.currentVisibility === 'undetected';
-    const hasOverrideChange =
-      outcome.overrideState && outcome.overrideState !== outcome.currentVisibility;
+    
+    // Use the effective new state (which includes overrides) to determine if there's a change
+    const effectiveNewState = outcome.newVisibility || outcome.overrideState || 'observed';
+    const hasOverrideChange = effectiveNewState !== outcome.currentVisibility;
+    
     return isHiddenOrUndetected || hasOverrideChange;
   }
 
@@ -236,7 +239,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     const outcome = app.outcomes.find((o) => o.target.id === tokenId);
     if (!outcome) return;
 
-    const effectiveNewState = outcome.overrideState || 'observed';
+    const effectiveNewState = outcome.newVisibility || outcome.overrideState || 'observed';
     try {
       const { applyNowConsequences } = await import('../services/index.js');
       const overrides = { [outcome.target.id]: effectiveNewState };
@@ -323,7 +326,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     const overrides = {};
     for (const o of changedOutcomes) {
       const id = o?.target?.id;
-      const state = o?.overrideState || 'observed';
+      const state = o?.newVisibility || o?.overrideState || 'observed';
       if (id && state) overrides[id] = state;
     }
     const { applyNowConsequences } = await import('../services/index.js');

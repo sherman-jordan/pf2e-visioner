@@ -31,12 +31,14 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     cfg.form.handler = VisionerTokenManager.formHandler;
     cfg.actions = {
       applyCurrent: VisionerTokenManager.applyCurrent,
-      applyBoth: VisionerTokenManager.applyBoth,
+      applyAll: VisionerTokenManager.applyAll,
       reset: VisionerTokenManager.resetAll,
       toggleMode: VisionerTokenManager.toggleMode,
       toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
       toggleIgnoreAllies: VisionerTokenManager.toggleIgnoreAllies,
+      toggleIgnoreWalls: VisionerTokenManager.toggleIgnoreWalls,
       toggleTab: VisionerTokenManager.toggleTab,
+      toggleStateSelector: VisionerTokenManager.toggleStateSelector,
       bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCConcealed: VisionerTokenManager.bulkSetVisibilityState,
@@ -57,6 +59,10 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       bulkNPCLesserCover: VisionerTokenManager.bulkSetCoverState,
       bulkNPCStandardCover: VisionerTokenManager.bulkSetCoverState,
       bulkNPCGreaterCover: VisionerTokenManager.bulkSetCoverState,
+      clearAllOverrides: VisionerTokenManager.clearAllOverrides,
+      clearPCOverrides: VisionerTokenManager.clearTargetTypeOverrides,
+      clearNPCOverrides: VisionerTokenManager.clearTargetTypeOverrides,
+      bulkSetOverride: VisionerTokenManager.bulkSetOverride,
     };
     return cfg;
   })();
@@ -78,7 +84,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       ? 'target'
       : options.mode || (isControlledByUser ? 'target' : 'observer');
 
-    // Initialize active tab (visibility or cover)
+    // Initialize active tab (visibility, cover, or overrides)
     this.activeTab = options.activeTab || 'visibility';
 
     // Initialize filters based on settings (defaults only)
@@ -186,11 +192,11 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   }
 
   /**
-   * Apply both Visibility and Cover changes for the current mode
+   * Apply all Visibility, Cover, and Override changes for the current mode
    */
-  static async applyBoth(event, button) {
-    const { applyBoth } = await import('./actions/index.js');
-    return applyBoth.call(this, event, button);
+  static async applyAll(event, button) {
+    const { applyAll } = await import('./actions/index.js');
+    return applyAll.call(this, event, button);
   }
 
   /**
@@ -218,11 +224,27 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   }
 
   /**
+   * Toggle state selector for overrides
+   */
+  static async toggleStateSelector(event, button) {
+    const { toggleStateSelector } = await import('./actions/index.js');
+    return toggleStateSelector.call(this, event, button);
+  }
+
+  /**
    * Toggle ignore allies filter
    */
   static async toggleIgnoreAllies(event, button) {
     const { toggleIgnoreAllies } = await import('./actions/index.js');
     return toggleIgnoreAllies.call(this, event, button);
+  }
+
+  /**
+   * Toggle ignore walls filter
+   */
+  static async toggleIgnoreWalls(event, button) {
+    const { toggleIgnoreWalls } = await import('./actions/index.js');
+    return toggleIgnoreWalls.call(this, event, button);
   }
 
   /**
@@ -275,6 +297,10 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     try {
       // Bind token image click handlers for panning and selection
       this.addTokenImageClickHandlers?.();
+    } catch (_) {}
+    try {
+      // Bind override icon click handlers
+      this.addOverrideIconClickHandlers?.();
     } catch (_) {}
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
@@ -371,5 +397,29 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    */
   removeTokenBorder(token) {
     removeBorderUtil(token);
+  }
+
+  /**
+   * Clear all overrides
+   */
+  static async clearAllOverrides(event, button) {
+    const { clearAllOverrides } = await import('./actions/index.js');
+    return clearAllOverrides.call(this, event, button);
+  }
+
+  /**
+   * Clear overrides for a specific target type (PC/NPC)
+   */
+  static async clearTargetTypeOverrides(event, button) {
+    const { clearTargetTypeOverrides } = await import('./actions/index.js');
+    return clearTargetTypeOverrides.call(this, event, button);
+  }
+
+  /**
+   * Bulk set overrides for a specific action and target type
+   */
+  static async bulkSetOverride(event, button) {
+    const { bulkSetOverride } = await import('./actions/index.js');
+    return bulkSetOverride.call(this, event, button);
   }
 }

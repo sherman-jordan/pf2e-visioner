@@ -1,0 +1,219 @@
+{{!--
+  Visibility Tab Content - Complete visibility management interface
+--}}
+<div class="tab-panel visibility-section {{#if isVisibilityTab}}active{{/if}}">
+  <div class="tables-content">
+    {{#if hasTargets}}
+      
+      {{!-- Player Characters Table --}}
+      {{#if hasPCs}}
+        <div class="table-section">
+          <div class="table-section-header">
+            <div class="header-left">
+              <i class="fas fa-users"></i>
+              <span>Player Characters</span>
+            </div>
+            <div class="bulk-actions-header">
+              {{#each visibilityStates as |state|}}
+                <button type="button" class="bulk-state-header {{state.cssClass}}" data-action="bulkPC{{capitalize state.key}}" data-state="{{state.value}}" data-target-type="pc" data-tooltip="Set all PCs as {{state.label}}">
+                  <i class="{{state.icon}}"></i>
+                </button>
+              {{/each}}
+            </div>
+          </div>
+          {{> "pf2e-visioner.visibility-table" tokens=pcTargets sectionType="pc"}}
+        </div>
+      {{/if}}
+
+      {{!-- NPCs Table --}}
+      {{#if hasNPCs}}
+        <div class="table-section">
+          <div class="table-section-header">
+            <div class="header-left">
+              <i class="fas fa-dragon"></i>
+              <span>NPCs</span>
+            </div>
+            <div class="bulk-actions-header">
+              {{#each visibilityStates as |state|}}
+                <button type="button" class="bulk-state-header {{state.cssClass}}" data-action="bulkNPC{{capitalize state.key}}" data-state="{{state.value}}" data-target-type="npc" data-tooltip="Set all NPCs as {{state.label}}">
+                  <i class="{{state.icon}}"></i>
+                </button>
+              {{/each}}
+            </div>
+          </div>
+          {{> "pf2e-visioner.visibility-table" tokens=npcTargets sectionType="npc"}}
+        </div>
+      {{/if}}
+
+      {{!-- Loot Table --}}
+      {{#if hasLoots}}
+        <div class="table-section loot-section">
+          <div class="table-section-header">
+            <div class="header-left">
+              <i class="fas fa-box"></i>
+              <span>Loot</span>
+            </div>
+            <div class="bulk-actions-header">
+              <button type="button" class="bulk-state-header visibility-observed" data-action="bulkLootObserved" data-state="observed" data-target-type="loot" data-tooltip="Set all Loot as Observed">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button type="button" class="bulk-state-header visibility-hidden" data-action="bulkLootHidden" data-state="hidden" data-target-type="loot" data-tooltip="Set all Loot as Hidden">
+                <i class="fas fa-eye-slash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="visibility-table-container">
+            <table class="visibility-table">
+              {{#if showOutcomeColumn}}
+              <colgroup>
+                <col style="width:10%" />
+                <col style="width:15%" />
+                <col style="width:26%" />
+                <col style="width:18%" />
+                <col style="width:12%" />
+                <col style="width:19%" />
+              </colgroup>
+              {{else}}
+              <colgroup>
+                <col style="width:10%" />
+                <col style="width:20%" />
+                <col style="width:32%" />
+                <col style="width:22%" />
+                <col style="width:16%" />
+              </colgroup>
+              {{/if}}
+              <thead>
+                <tr>
+                  <th class="token-image">Token</th>
+                  <th class="token-name">Name</th>
+                  <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+                  <th class="current-state">Current State</th>
+                  <th class="dc-column">{{#if isTargetMode}}Perception DC{{else}}Stealth DC{{/if}}</th>
+                  {{#if showOutcomeColumn}}
+                    <th class="outcome-column">Outcome</th>
+                  {{/if}}
+                </tr>
+              </thead>
+              <tbody>
+                {{#each lootTargets as |target|}}
+                  <tr class="token-row npc-row" data-token-id="{{target.id}}">
+                    <td class="token-image">
+                      <img src="{{target.img}}" width="28" height="28" />
+                    </td>
+                    <td class="token-name">
+                      <strong>{{target.name}}</strong>
+                    </td>
+                    <td class="visibility-state">
+                      <div class="icon-selection" data-target="{{target.id}}">
+                        {{#each target.visibilityStates as |state|}}
+                          <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
+                                  data-state="{{state.value}}" data-target="{{target.id}}" 
+                                  data-tooltip="{{state.label}}">
+                            <i class="{{state.icon}}"></i>
+                          </button>
+                        {{/each}}
+                        <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentVisibilityState}}" />
+                      </div>
+                    </td>
+                    <td class="current-state">
+                      {{#each target.visibilityStates as |state|}}
+                        {{#if state.selected}}
+                          <span class="state-indicator {{state.cssClass}}">
+                            <i class="{{state.icon}}"></i>
+                            {{state.label}}
+                          </span>
+                        {{/if}}
+                      {{/each}}
+                    </td>
+                    <td class="dc-column">
+                      {{#if ../isTargetMode}}
+                        <span class="dc-value">{{target.perceptionDC}}</span>
+                      {{else}}
+                        <span class="dc-value">{{target.stealthDC}}</span>
+                      {{/if}}
+                    </td>
+                    {{#if ../showOutcomeColumn}}
+                      <td class="outcome-column">
+                        {{#if target.showOutcome}}
+                          <span class="dc-outcome {{target.outcomeClass}}" data-tooltip="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+                        {{/if}}
+                      </td>
+                    {{/if}}
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {{/if}}
+
+      {{!-- Hidden Walls Table --}}
+      {{#if includeWalls}}
+        <div class="table-section walls-section">
+          <div class="table-section-header">
+            <div class="header-left">
+              <i class="fas fa-grip-lines-vertical"></i>
+              <span>Hidden Walls</span>
+            </div>
+            <div class="bulk-actions-header">
+              <button type="button" class="bulk-state-header visibility-observed" data-action="bulkWallsObserved" data-state="observed" data-target-type="walls" data-tooltip="Set all listed walls as Observed">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button type="button" class="bulk-state-header visibility-hidden" data-action="bulkWallsHidden" data-state="hidden" data-target-type="walls" data-tooltip="Set all listed walls as Hidden">
+                <i class="fas fa-eye-slash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="visibility-table-container">
+            <table class="visibility-table">
+              <colgroup>
+                <col style="width:10%" />
+                <col style="width:30%" />
+                <col style="width:20%" />
+                <col style="width:30%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="token-image">Wall</th>
+                  <th class="token-name">Identifier</th>
+                  <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+                  <th class="dc-column">DC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each wallTargets as |w|}}
+                  <tr class="token-row wall-row" data-wall-id="{{w.id}}">
+                    <td class="token-image">
+                      <img src="{{w.img}}" data-tooltip="{{#if (eq w.doorType 2)}}Secret Door{{else if (eq w.doorType 1)}}Door{{else}}Wall{{/if}}" width="28" height="28" />
+                    </td>
+                    <td class="token-name">
+                      <strong>{{w.identifier}}</strong>
+                    </td>
+                    <td class="visibility-state">
+                      <div class="icon-selection" data-target="{{w.id}}">
+                        {{#each w.visibilityStates as |state|}}
+                          <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
+                                  data-state="{{state.value}}" data-target="{{w.id}}" 
+                                  data-tooltip="{{state.label}}">
+                            <i class="{{state.icon}}"></i>
+                          </button>
+                        {{/each}}
+                        <input type="hidden" name="walls.{{w.id}}" value="{{w.currentVisibilityState}}" />
+                      </div>
+                    </td>
+                    <td class="dc-column"><span class="dc-value">{{w.dc}}</span></td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {{/if}}
+      
+    {{else}}
+      <div class="no-targets">
+        <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>
+      </div>
+    {{/if}}
+  </div>
+</div>

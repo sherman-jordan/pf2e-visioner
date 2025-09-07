@@ -9,12 +9,13 @@
       "COVER_STATE": "Cover State",
       "NO_TOKENS": "No tokens available in this scene",
       "APPLY": "Apply Current",
-      "APPLY_BOTH": "Apply Both",
+      "APPLY_ALL": "Apply All",
       "CANCEL": "Cancel",
       "RESET": "Reset Mode",
       "BULK_ACTIONS": "Bulk Actions",
       "VISIBILITY_TAB": "Visibility",
-      "COVER_TAB": "Cover"
+      "COVER_TAB": "Cover",
+      "OVERRIDES_TAB": "Overrides"
     },
     "VISIBILITY_STATES": {
       "observed": "Observed",
@@ -27,6 +28,13 @@
       "lesser": "Lesser Cover",
       "standard": "Standard Cover",
       "greater": "Greater Cover"
+    },
+    "OVERRIDE_STATES": {
+      "no_override": "No Override",
+      "observed": "Override: Observed",
+      "hidden": "Override: Hidden",
+      "undetected": "Override: Undetected",
+      "concealed": "Override: Concealed"
     },
     "COVER_OVERRIDE": {
       "POPUP_OVERRIDE": "Cover overridden via keybind popup: {original} → {final}",

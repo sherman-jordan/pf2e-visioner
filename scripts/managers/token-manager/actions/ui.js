@@ -5,6 +5,19 @@
 import { MODULE_ID } from '../../../constants.js';
 import { addTokenImageClickHandlers, panToAndSelectToken, panToWall } from '../../../ui/shared-ui-utils.js';
 import { getSceneTargets, showNotification } from '../../../utils.js';
+import { OverridesManager } from '../../overrides-manager.js';
+
+export async function toggleStateSelector(event, button) {
+  // Remove selected class from all state selector buttons in the same container
+  const container = button.closest('.bulk-state-buttons');
+  if (container) {
+    const allButtons = container.querySelectorAll('.state-selector-button');
+    allButtons.forEach(btn => btn.classList.remove('selected'));
+  }
+  
+  // Add selected class to clicked button
+  button.classList.add('selected');
+}
 
 export async function toggleMode(event, button) {
   const app = this;
@@ -193,26 +206,18 @@ export async function bulkSetVisibilityState(event, button) {
       return;
     }
 
-    // Build selector based on target type
-    let selector = '.visibility-section .icon-selection';
-    if (targetType === 'pc')
-      selector = '.visibility-section .table-section:has(.header-left .fa-users) .icon-selection';
-    else if (targetType === 'npc')
-      selector = '.visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection';
-    else if (targetType === 'loot')
-      selector = '.visibility-section .table-section.loot-section .icon-selection';
-    else if (targetType === 'walls')
-      selector = '.visibility-section .table-section.walls-section .icon-selection';
-
-    // Cache DOM queries to avoid repeated lookups
-    const iconSelections = form.querySelectorAll(selector);
-    if (!iconSelections.length) {
-      // Restore button state if no elements found
+    // Find the section that contains this bulk action button
+    const section = button.closest('.table-section');
+    if (!section) {
+      // Restore button state if no section found
       button.classList.remove('loading');
       button.disabled = false;
       button.innerHTML = originalText;
       return;
     }
+    
+    // Use the section to find icon selections
+    const iconSelections = section.querySelectorAll('.icon-selection');
 
     // Pre-cache all elements that need updates
     const updates = [];
@@ -307,22 +312,18 @@ export async function bulkSetCoverState(event, button) {
       return;
     }
 
-    // Build selector based on target type
-    let selector = '.cover-section .icon-selection';
-    if (targetType === 'pc')
-      selector = '.cover-section .table-section:has(.header-left .fa-users) .icon-selection';
-    else if (targetType === 'npc')
-      selector = '.cover-section .table-section:has(.header-left .fa-dragon) .icon-selection';
-
-    // Cache DOM queries to avoid repeated lookups
-    const iconSelections = form.querySelectorAll(selector);
-    if (!iconSelections.length) {
-      // Restore button state if no elements found
+    // Find the section that contains this bulk action button
+    const section = button.closest('.table-section');
+    if (!section) {
+      // Restore button state if no section found
       button.classList.remove('loading');
       button.disabled = false;
       button.innerHTML = originalText;
       return;
     }
+    
+    // Use the section to find icon selections
+    const iconSelections = section.querySelectorAll('.icon-selection');
 
     // Pre-cache all elements that need updates
     const updates = [];
@@ -422,4 +423,243 @@ export function bindDomIconHandlers(TokenManagerClass) {
   // Pan methods moved to shared utility (scripts/ui/shared-ui-utils.js)
   TokenManagerClass.prototype.panToWall = panToWall;
   TokenManagerClass.prototype.panToAndSelectToken = panToAndSelectToken;
+
+  // Add override icon click handlers
+  TokenManagerClass.prototype.addOverrideIconClickHandlers = function addOverrideIconClickHandlersMethod() {
+    const element = this.element;
+    if (!element) return;
+    const app = this;
+    
+    const overrideIcons = element.querySelectorAll('.override-icon');
+    overrideIcons.forEach((icon) => {
+      icon.removeEventListener('click', icon._overrideClickHandler);
+      icon._overrideClickHandler = (event) => handleOverrideIconClick.call(app, event);
+      icon.addEventListener('click', icon._overrideClickHandler);
+    });
+    
+    // Add bulk state selection handlers (only for overrides tab state selection)
+    const bulkStateButtons = element.querySelectorAll('.overrides-section .bulk-state-buttons .bulk-state-header:not([data-action])');
+    bulkStateButtons.forEach((button) => {
+      button.removeEventListener('click', button._bulkStateHandler);
+      button._bulkStateHandler = (event) => selectBulkState.call(app, event, button);
+      button.addEventListener('click', button._bulkStateHandler);
+    });
+    
+    // Add bulk action handlers (only for overrides tab action buttons)  
+    const bulkActionButtons = element.querySelectorAll('.overrides-section .bulk-action-buttons .bulk-state-header[data-action="bulkOverrideAction"]');
+    bulkActionButtons.forEach((button) => {
+      button.removeEventListener('click', button._bulkActionHandler);
+      button._bulkActionHandler = (event) => bulkOverrideAction.call(app, event, button);
+      button.addEventListener('click', button._bulkActionHandler);
+    });
+  };
+
+  async function handleOverrideIconClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const icon = event.currentTarget;
+    const targetId = icon.dataset.target;
+    const action = icon.dataset.action;
+    const newState = icon.dataset.state;
+    const app = this;
+    
+    if (!targetId || !action || !newState || !app?.observer) return;
+    
+    try {
+      const overridesManager = OverridesManager.getInstance();
+      await overridesManager.setOverride(targetId, action, app.observer.document.id, newState);
+      
+      // Update UI
+      const overrideSelection = icon.closest('.override-selection');
+      if (overrideSelection) {
+        const allIcons = overrideSelection.querySelectorAll('.override-icon');
+        allIcons.forEach((i) => i.classList.remove('selected'));
+        icon.classList.add('selected');
+      }
+      
+      showNotification('Override set successfully', 'info');
+    } catch (error) {
+      console.error('Error setting override:', error);
+      showNotification('Failed to set override', 'error');
+    }
+  }
+}
+
+/**
+ * Clear all overrides action handler
+ */
+export async function clearAllOverrides(event, button) {
+  const app = this;
+  if (!app?.observer) return;
+  
+  try {
+    const overridesManager = OverridesManager.getInstance();
+    const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
+    const actions = overridesManager.getAvailableActions();
+    
+    // Set all overrides to "no-override" state for all tokens and actions
+    for (const token of sceneTokens) {
+      for (const action of actions) {
+        await overridesManager.setOverride(token.document.id, action, app.observer.document.id, 'no-override');
+      }
+    }
+    
+    // Refresh the UI
+    await app.render({ force: true });
+    showNotification('All overrides set to no-override', 'info');
+  } catch (error) {
+    console.error('Error clearing overrides:', error);
+    showNotification('Failed to clear overrides', 'error');
+  }
+}
+
+/**
+ * Clear overrides for a specific target type (PC/NPC)
+ */
+export async function clearTargetTypeOverrides(event, button) {
+  const app = this;
+  if (!app?.observer) return;
+  
+  const targetType = button.dataset.targetType;
+  if (!targetType) return;
+  
+  try {
+    const overridesManager = OverridesManager.getInstance();
+    const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
+    
+    // Filter tokens by type
+    const targetTokens = sceneTokens.filter(token => {
+      const isPC = token.actor?.hasPlayerOwner || token.actor?.type === 'character';
+      return targetType === 'pc' ? isPC : !isPC && token.actor?.type !== 'loot';
+    });
+    
+    const actions = overridesManager.getAvailableActions();
+    
+    // Set all overrides to "no-override" state for these tokens
+    for (const token of targetTokens) {
+      for (const action of actions) {
+        await overridesManager.setOverride(token.document.id, action, app.observer.document.id, 'no-override');
+      }
+    }
+    
+    // Refresh the UI
+    await app.render({ force: true });
+    showNotification(`${targetType.toUpperCase()} overrides set to no-override`, 'info');
+  } catch (error) {
+    console.error('Error clearing target type overrides:', error);
+    showNotification('Failed to clear overrides', 'error');
+  }
+}
+
+/**
+ * Handle bulk state selection (like visibility/cover tabs)
+ */
+export async function selectBulkState(event, button) {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  const container = button.closest('.bulk-state-buttons');
+  if (!container) return;
+  
+  // Remove selection from all state buttons
+  const allButtons = container.querySelectorAll('.bulk-state-header');
+  allButtons.forEach(btn => btn.classList.remove('selected'));
+  
+  // Mark this button as selected
+  button.classList.add('selected');
+}
+
+/**
+ * Apply bulk override action with selected state
+ */
+export async function bulkOverrideAction(event, button) {
+  const app = this;
+  if (!app?.observer) return;
+  
+  const overrideAction = button.dataset.overrideAction;
+  if (!overrideAction) return;
+  
+  // Find selected state
+  const stateContainer = app.element.querySelector('.bulk-state-buttons');
+  const selectedStateButton = stateContainer?.querySelector('.bulk-state-header.selected');
+  const state = selectedStateButton?.dataset?.state;
+  
+  if (!state) {
+    ui.notifications.warn('Please select a state first');
+    return;
+  }
+  
+  try {
+    const overridesManager = OverridesManager.getInstance();
+    const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
+    
+    // Apply to ALL tokens (both PC and NPC)
+    for (const token of sceneTokens) {
+      await overridesManager.setOverride(token.document.id, overrideAction, app.observer.document.id, state);
+    }
+    
+    // Refresh the UI
+    await app.render({ force: true });
+    
+    const actionLabel = overrideAction === 'createDiversion' ? 'Create Diversion' : 
+                       overrideAction === 'attackConsequences' ? 'Attack Consequences' : 
+                       overrideAction.charAt(0).toUpperCase() + overrideAction.slice(1);
+    const stateLabel = state === 'no-override' ? 'cleared' : `set to ${state}`;
+    ui.notifications.info(`All ${actionLabel} overrides ${stateLabel}`);
+  } catch (error) {
+    console.error('Error setting bulk overrides:', error);
+    ui.notifications.error('Failed to set bulk overrides');
+  }
+}
+
+/**
+ * Bulk set overrides for a specific action and target type using selected state
+ */
+export async function bulkSetOverride(event, button) {
+  const app = this;
+  if (!app?.observer) return;
+  
+  const targetType = button.dataset.targetType;
+  const overrideAction = button.dataset.overrideAction;
+  
+  if (!targetType || !overrideAction) return;
+  
+  // Find the selected state from the state selector buttons
+  const overridesHeader = button.closest('.overrides-header');
+  const selectedStateButton = overridesHeader?.querySelector('.state-selector-button.selected');
+  const state = selectedStateButton?.dataset?.state;
+  
+  if (!state) {
+    ui.notifications.warn('Please select a state first');
+    return;
+  }
+  
+  try {
+    const overridesManager = OverridesManager.getInstance();
+    const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
+    
+    // Filter tokens by type
+    const targetTokens = sceneTokens.filter(token => {
+      const isPC = token.actor?.hasPlayerOwner || token.actor?.type === 'character';
+      return targetType === 'pc' ? isPC : !isPC && token.actor?.type !== 'loot';
+    });
+    
+    // Set overrides for these tokens
+    for (const token of targetTokens) {
+      await overridesManager.setOverride(token.document.id, overrideAction, app.observer.document.id, state);
+    }
+    
+    // Refresh the UI
+    await app.render({ force: true });
+    
+    const actionLabel = overrideAction === 'createDiversion' ? 'Create Diversion' : 
+                       overrideAction === 'attackConsequences' ? 'Attack Consequences' : 
+                       overrideAction.charAt(0).toUpperCase() + overrideAction.slice(1);
+    const stateLabel = state === 'no-override' ? 'cleared' : `set to ${state}`;
+    showNotification(`${targetType.toUpperCase()} ${actionLabel} overrides ${stateLabel}`, 'info');
+  } catch (error) {
+    console.error('Error setting bulk overrides:', error);
+    ui.notifications.error('Failed to set bulk overrides');
+  }
 }

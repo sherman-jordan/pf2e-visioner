@@ -122,7 +122,7 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
     }));
   }
 
-  // Ensure chat "Apply Changes" matches dialog "Apply All"
+  // Override apply to handle encounter filtering and special visibility persistence
   async apply(actionData, button) {
     try {
       await this.ensurePrerequisites(actionData);
@@ -130,7 +130,8 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
       const subjects = await this.discoverSubjects(actionData);
       const outcomes = [];
       for (const subject of subjects) outcomes.push(await this.analyzeOutcome(actionData, subject));
-      // Apply overrides from chat (if any)
+      
+      // Apply overrides from OverridesManager or actionData
       this.applyOverrides(actionData, outcomes);
 
       // Start with changed outcomes

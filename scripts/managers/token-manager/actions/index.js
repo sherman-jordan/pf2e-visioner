@@ -1,29 +1,34 @@
 import * as core from './core.js';
 import {
-  bindDomIconHandlers,
-  bulkSetCoverState,
-  bulkSetVisibilityState,
-  toggleEncounterFilter,
-  toggleIgnoreAllies,
-  toggleMode,
-  toggleTab,
+    bindDomIconHandlers,
+    bulkSetCoverState,
+    bulkSetOverride,
+    bulkSetVisibilityState,
+    clearAllOverrides,
+    clearTargetTypeOverrides,
+    toggleEncounterFilter,
+    toggleIgnoreAllies,
+    toggleMode,
+    toggleStateSelector,
+    toggleTab,
 } from './ui.js';
 
 export * from './core.js';
 export {
-  bindDomIconHandlers,
-  bulkSetCoverState,
-  bulkSetVisibilityState,
-  toggleEncounterFilter,
-  toggleIgnoreAllies,
-  toggleMode,
-  toggleTab,
+    bindDomIconHandlers,
+    bulkSetCoverState, bulkSetOverride, bulkSetVisibilityState, clearAllOverrides,
+    clearTargetTypeOverrides,
+    toggleEncounterFilter,
+    toggleIgnoreAllies,
+    toggleMode,
+    toggleStateSelector,
+    toggleTab
 };
 
 export function bindTokenManagerActions(TokenManagerClass) {
   TokenManagerClass.formHandler = core.formHandler;
   TokenManagerClass.applyCurrent = core.applyCurrent;
-  TokenManagerClass.applyBoth = core.applyBoth;
+  TokenManagerClass.applyAll = core.applyAll;
   TokenManagerClass.resetAll = core.resetAll;
 
   TokenManagerClass.toggleMode = toggleMode;

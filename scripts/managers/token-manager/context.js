@@ -5,12 +5,13 @@
 import { extractPerceptionDC, extractStealthDC } from '../../chat/services/infra/shared-utils.js';
 import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../../constants.js';
 import {
-  getCoverMap,
-  getLastRollTotalForActor,
-  getSceneTargets,
-  getVisibilityMap,
-  hasActiveEncounter,
+    getCoverMap,
+    getLastRollTotalForActor,
+    getSceneTargets,
+    getVisibilityMap,
+    hasActiveEncounter,
 } from '../../utils.js';
+import { OverridesManager } from '../overrides-manager.js';
 
 function getTokenImage(token) {
   if (token.actor?.img) return token.actor.img;
@@ -76,6 +77,7 @@ export async function buildContext(app, options) {
   context.isTargetMode = app.mode === 'target';
   context.isVisibilityTab = app.activeTab === 'visibility';
   context.isCoverTab = app.activeTab === 'cover';
+  context.isOverridesTab = app.activeTab === 'overrides';
   context.lootObserver = !!isLootObserver;
   context.hideCoverTab = !!isLootObserver;
 
@@ -138,6 +140,9 @@ export async function buildContext(app, options) {
         cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
+      // Add override states data (not used in observer mode, but we'll add empty for consistency)
+      const overrideStates = [];
+
       return {
         id: token.document.id,
         name: token.document.name,
@@ -152,6 +157,7 @@ export async function buildContext(app, options) {
         dispositionClass:
           disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
         visibilityStates,
+        overrideStates,
         coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
           value: key,
           label: game.i18n.localize(config.label),
@@ -217,6 +223,33 @@ export async function buildContext(app, options) {
         cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
+      // Add override states data for target mode
+      const overridesManager = OverridesManager.getInstance();
+      const overrideStates = [];
+      const actions = overridesManager.getAvailableActions();
+      
+      // Add all visibility states plus no-override option
+      const allOverrideStates = overridesManager.getOverrideStates();
+      Object.keys(allOverrideStates).forEach(key => {
+        const state = allOverrideStates[key];
+        const stateData = {
+          value: key,
+          label: game.i18n.localize(state.label || `PF2E_VISIONER.OVERRIDE_STATES.${key}`),
+          icon: state.icon,
+          color: state.color,
+          cssClass: state.cssClass,
+        };
+        
+        // Add selected flags for each action
+        actions.forEach(action => {
+          const override = overridesManager.getOverride(observerToken.document.id, action, app.observer.document.id);
+          const propName = `selected${action.charAt(0).toUpperCase() + action.slice(1)}`;
+          stateData[propName] = override === key;
+        });
+        
+        overrideStates.push(stateData);
+      });
+
       return {
         id: observerToken.document.id,
         name: observerToken.document.name,
@@ -231,6 +264,7 @@ export async function buildContext(app, options) {
         dispositionClass:
           disposition === -1 ? 'hostile' : disposition === 1 ? 'friendly' : 'neutral',
         visibilityStates,
+        overrideStates,
         coverStates: Object.entries(COVER_STATES).map(([key, config]) => ({
           value: key,
           label: game.i18n.localize(config.label),
@@ -351,6 +385,7 @@ export async function buildContext(app, options) {
 
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,
+    value: key,
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,
@@ -359,6 +394,7 @@ export async function buildContext(app, options) {
 
   context.coverStates = Object.entries(COVER_STATES).map(([key, config]) => ({
     key,
+    value: key,
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,

@@ -6,6 +6,35 @@
 import { MODULE_ID } from '../../../constants.js';
 import { refreshEveryonesPerception } from '../../../services/socket.js';
 import { getCoverMap, getVisibilityMap, setCoverMap, setVisibilityMap } from '../../../utils.js';
+import { OverridesManager } from '../../overrides-manager.js';
+
+/**
+ * Apply overrides to visibility changes if they exist
+ * @param {Object} changes - Map of tokenId -> visibility state
+ * @param {string} action - The action being performed
+ * @param {Token} observerToken - The observer token
+ * @returns {Object} Modified changes with overrides applied
+ */
+function applyVisibilityOverrides(changes, action, observerToken) {
+  if (!observerToken || !changes || !action) return changes;
+  
+  try {
+    const overridesManager = OverridesManager.getInstance();
+    const modifiedChanges = { ...changes };
+    
+    for (const [tokenId, originalState] of Object.entries(changes)) {
+      const override = overridesManager.getOverride(tokenId, action, observerToken.document.id);
+      if (override && override !== 'no-override') {
+        modifiedChanges[tokenId] = override;
+      }
+    }
+    
+    return modifiedChanges;
+  } catch (error) {
+    console.error('Error applying visibility overrides:', error);
+    return changes;
+  }
+}
 
 /**
  * ApplicationV2 form handler
@@ -32,9 +61,12 @@ export async function formHandler(event, form, formData) {
 
   if (app.mode === 'observer') {
     if (Object.keys(visibilityChanges).length > 0) {
+      // Apply overrides to visibility changes
+      const overriddenChanges = applyVisibilityOverrides(visibilityChanges, 'visibility', app.observer);
+      
       const currentMap = getVisibilityMap(app.observer) || {};
       const merged = { ...currentMap };
-      for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
+      for (const [tokenId, newState] of Object.entries(overriddenChanges)) {
         if (merged[tokenId] !== newState) merged[tokenId] = newState;
       }
       await setVisibilityMap(app.observer, merged);
@@ -42,7 +74,7 @@ export async function formHandler(event, form, formData) {
       try {
         const { batchUpdateVisibilityEffects } = await import('../../../visibility/ephemeral.js');
         const targetUpdates = [];
-        for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
+        for (const [tokenId, newState] of Object.entries(overriddenChanges)) {
           const targetToken = canvas.tokens.get(tokenId);
           if (!targetToken) continue;
           const currentState = currentMap?.[tokenId];
@@ -104,8 +136,11 @@ export async function formHandler(event, form, formData) {
       }
     }
   } else {
+    // Apply overrides to visibility changes in target mode
+    const overriddenChanges = applyVisibilityOverrides(visibilityChanges, 'visibility', app.observer);
+    
     const perObserverChanges = new Map();
-    for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
+    for (const [observerTokenId, newVisibilityState] of Object.entries(overriddenChanges)) {
       const observerToken = canvas.tokens.get(observerTokenId);
       if (!observerToken) continue;
       try {
@@ -124,7 +159,7 @@ export async function formHandler(event, form, formData) {
     try {
       const { batchUpdateVisibilityEffects } = await import('../../../visibility/ephemeral.js');
       const observerUpdates = [];
-      for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
+      for (const [observerTokenId, newVisibilityState] of Object.entries(overriddenChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
         try {
@@ -290,10 +325,13 @@ export async function applyCurrent(event, button) {
     if (isVisibility) {
       const obsVis = app._savedModeData.observer?.visibility || {};
       if (Object.keys(obsVis).length > 0) {
+        // Apply overrides to visibility changes
+        const overriddenObsVis = applyVisibilityOverrides(obsVis, 'visibility', app.observer);
+        
         const currentMap = getVisibilityMap(app.observer) || {};
-        await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
+        await setVisibilityMap(app.observer, { ...currentMap, ...overriddenObsVis });
         const targetUpdates = [];
-        for (const [tokenId, newState] of Object.entries(obsVis)) {
+        for (const [tokenId, newState] of Object.entries(overriddenObsVis)) {
           const targetToken = canvas.tokens.get(tokenId);
           if (targetToken) targetUpdates.push({ target: targetToken, state: newState });
         }
@@ -315,8 +353,11 @@ export async function applyCurrent(event, button) {
 
       const tgtVis = app._savedModeData.target?.visibility || {};
       if (Object.keys(tgtVis).length > 0) {
+        // Apply overrides to target visibility changes
+        const overriddenTgtVis = applyVisibilityOverrides(tgtVis, 'visibility', app.observer);
+        
         const updatesByObserver = new Map();
-        for (const [observerTokenId, newState] of Object.entries(tgtVis)) {
+        for (const [observerTokenId, newState] of Object.entries(overriddenTgtVis)) {
           if (
             typeof newState !== 'string' ||
             !['observed', 'concealed', 'hidden', 'undetected'].includes(newState)
@@ -470,7 +511,7 @@ export async function applyCurrent(event, button) {
   })();
 }
 
-export async function applyBoth(event, button) {
+export async function applyAll(event, button) {
   const app = this;
   const { runTasksWithProgress } = await import('../../progress.js');
 
@@ -511,9 +552,12 @@ export async function applyBoth(event, button) {
 
     const vis = app._savedModeData.observer?.visibility || {};
     if (Object.keys(vis).length > 0) {
+      // Apply overrides to visibility changes
+      const overriddenVis = applyVisibilityOverrides(vis, 'visibility', app.observer);
+      
       const currentMap = getVisibilityMap(app.observer) || {};
-      await setVisibilityMap(app.observer, { ...currentMap, ...vis });
-      for (const [tokenId, newState] of Object.entries(vis)) {
+      await setVisibilityMap(app.observer, { ...currentMap, ...overriddenVis });
+      for (const [tokenId, newState] of Object.entries(overriddenVis)) {
         const targetToken = canvas.tokens.get(tokenId);
         if (targetToken) {
           observerVisUpdates.push({ target: targetToken, state: newState });
@@ -547,7 +591,10 @@ export async function applyBoth(event, button) {
     const targetCovUpdates = new Map();
 
     const targetVis = app._savedModeData.target?.visibility || {};
-    for (const [observerTokenId, newState] of Object.entries(targetVis)) {
+    // Apply overrides to target visibility changes  
+    const overriddenTargetVis = applyVisibilityOverrides(targetVis, 'visibility', app.observer);
+    
+    for (const [observerTokenId, newState] of Object.entries(overriddenTargetVis)) {
       const observerToken = canvas.tokens.get(observerTokenId);
       if (observerToken) {
         const observerVisibilityData = getVisibilityMap(observerToken) || {};

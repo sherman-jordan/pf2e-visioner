@@ -111,8 +111,16 @@ export class EventDrivenVisibilitySystem {
         Hooks.on('updateItem', this.#onItemUpdate.bind(this));
         Hooks.on('deleteItem', this.#onItemDelete.bind(this));
 
+        // Additional equipment/feature changes that might affect vision
+        Hooks.on('updateItem', this.#onEquipmentChange.bind(this));
+
         // Scene darkness changes
         Hooks.on('updateScene', this.#onSceneUpdate.bind(this));
+
+        // Template changes (can affect lighting and vision)
+        Hooks.on('createMeasuredTemplate', this.#onTemplateCreate.bind(this));
+        Hooks.on('updateMeasuredTemplate', this.#onTemplateUpdate.bind(this));
+        Hooks.on('deleteMeasuredTemplate', this.#onTemplateDelete.bind(this));
     }
 
     /**
@@ -208,17 +216,25 @@ export class EventDrivenVisibilitySystem {
     /**
      * Light source changed - affects visibility for all tokens
      */
-    #onLightUpdate() {
+    #onLightUpdate(lightDoc, changes) {
         if (!this.#enabled || !game.user.isGM) return;
         if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
         const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-        if (debugMode) {
-            console.log(`${MODULE_ID} | OPTIMIZED: Light updated - IMMEDIATE update for all tokens`);
-        }
 
-        // Light changes affect all tokens
-        this.#markAllTokensChangedImmediate();
+        // Check what changed about the light
+        const significantChange = changes.config !== undefined ||
+            changes.x !== undefined ||
+            changes.y !== undefined ||
+            changes.disabled !== undefined ||
+            changes.hidden !== undefined;
+
+        if (significantChange) {
+            if (debugMode) {
+                console.log(`${MODULE_ID} | OPTIMIZED: Light updated (${Object.keys(changes).join(', ')}) - IMMEDIATE update for all tokens`);
+            }
+            this.#markAllTokensChangedImmediate();
+        }
     }
 
     #onLightCreate() {
@@ -376,6 +392,12 @@ export class EventDrivenVisibilitySystem {
      */
     #onEffectDelete(effect) {
         if (!this.#enabled || !game.user.isGM) return;
+
+        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+        if (debugMode) {
+            console.log(`${MODULE_ID} | 🗑️ EFFECT DELETED: "${effect.name || effect.label}" from ${effect.parent?.name || 'unknown'}`);
+        }
+
         this.#handleEffectChange(effect, 'deleted');
     }
 
@@ -400,6 +422,12 @@ export class EventDrivenVisibilitySystem {
      */
     #onItemDelete(item) {
         if (!this.#enabled || !game.user.isGM) return;
+
+        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+        if (debugMode) {
+            console.log(`${MODULE_ID} | 🗑️ ITEM DELETED: "${item.name}" (type: ${item.type}) from ${item.parent?.name || 'unknown'}`);
+        }
+
         this.#handleItemChange(item, 'deleted');
     }
 
@@ -407,6 +435,13 @@ export class EventDrivenVisibilitySystem {
      * Handle effect changes that might affect visibility
      */
     #handleEffectChange(effect, action) {
+        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+
+        // Debug: Always log effect changes to see what we're missing
+        if (debugMode) {
+            console.log(`${MODULE_ID} | EFFECT ${action.toUpperCase()}: "${effect.name || effect.label}" on ${effect.parent?.name || 'unknown'}`);
+        }
+
         // Check if this effect is related to invisibility, vision, or conditions that affect sight
         const effectName = effect.name?.toLowerCase() || effect.label?.toLowerCase() || '';
         const isVisibilityRelated = effectName.includes('invisible') ||
@@ -416,16 +451,25 @@ export class EventDrivenVisibilitySystem {
             effectName.includes('dazzled') ||
             effectName.includes('vision') ||
             effectName.includes('darkvision') ||
-            effectName.includes('see');
+            effectName.includes('low-light') ||
+            effectName.includes('see') ||
+            effectName.includes('sight') ||
+            effectName.includes('detect') ||
+            effectName.includes('blind') ||
+            effectName.includes('deaf') ||
+            effectName.includes('light') ||
+            effectName.includes('darkness') ||
+            effectName.includes('continual flame') ||
+            effectName.includes('dancing lights') ||
+            effectName.includes('true seeing');
 
         if (isVisibilityRelated && effect.parent?.documentName === 'Actor') {
             const actor = effect.parent;
             const tokens = canvas.tokens?.placeables.filter(t => t.actor?.id === actor.id) || [];
 
             if (tokens.length > 0) {
-                const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
                 if (debugMode) {
-                    console.log(`${MODULE_ID} | EFFECT ${action.toUpperCase()}: ${effectName} on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`);
+                    console.log(`${MODULE_ID} | VISIBILITY TRIGGER: EFFECT ${action.toUpperCase()} "${effectName}" on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`);
                 }
 
                 tokens.forEach(token => this.#markTokenChangedImmediate(token.document.id));
@@ -437,30 +481,51 @@ export class EventDrivenVisibilitySystem {
      * Handle item changes that might affect visibility (PF2e conditions)
      */
     #handleItemChange(item, action) {
-        // In PF2e, conditions might be items
+        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+
+        // Debug: Always log item changes to see what we're missing
+        if (debugMode) {
+            console.log(`${MODULE_ID} | ITEM ${action.toUpperCase()}: "${item.name}" (type: ${item.type}) on ${item.parent?.name || 'unknown'}`);
+        }
+
+        // In PF2e, conditions might be items, but also spells and effects
         const itemName = item.name?.toLowerCase() || '';
         const itemType = item.type?.toLowerCase() || '';
 
-        const isCondition = itemType === 'condition' || itemType === 'effect';
+        // Expand the types that might affect visibility
+        const isRelevantType = itemType === 'condition' ||
+            itemType === 'effect' ||
+            itemType === 'spell' ||
+            itemType === 'feat' ||
+            itemType === 'action';
+
         const isVisibilityRelated = itemName.includes('invisible') ||
             itemName.includes('hidden') ||
             itemName.includes('concealed') ||
             itemName.includes('blinded') ||
             itemName.includes('dazzled') ||
             itemName.includes('vision') ||
-            itemName.includes('darkvision'); if (isCondition && isVisibilityRelated && item.parent?.documentName === 'Actor') {
-                const actor = item.parent;
-                const tokens = canvas.tokens?.placeables.filter(t => t.actor?.id === actor.id) || [];
+            itemName.includes('darkvision') ||
+            itemName.includes('low-light') ||
+            itemName.includes('light') ||
+            itemName.includes('darkness') ||
+            itemName.includes('see invisibility') ||
+            itemName.includes('true seeing') ||
+            itemName.includes('dancing lights') ||
+            itemName.includes('continual flame');
 
-                if (tokens.length > 0) {
-                    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-                    if (debugMode) {
-                        console.log(`${MODULE_ID} | CONDITION ${action.toUpperCase()}: ${itemName} on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`);
-                    }
+        if (isRelevantType && isVisibilityRelated && item.parent?.documentName === 'Actor') {
+            const actor = item.parent;
+            const tokens = canvas.tokens?.placeables.filter(t => t.actor?.id === actor.id) || [];
 
-                    tokens.forEach(token => this.#markTokenChangedImmediate(token.document.id));
+            if (tokens.length > 0) {
+                if (debugMode) {
+                    console.log(`${MODULE_ID} | VISIBILITY TRIGGER: ${action.toUpperCase()} "${itemName}" (${itemType}) on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`);
                 }
+
+                tokens.forEach(token => this.#markTokenChangedImmediate(token.document.id));
             }
+        }
     }
 
     /**
@@ -737,6 +802,113 @@ export class EventDrivenVisibilitySystem {
      */
     async getVisibilityDebugInfo(observer, target) {
         return await optimizedVisibilityCalculator.getDebugInfo(observer, target);
+    }
+
+    /**
+     * Handle equipment changes that might affect vision capabilities
+     */
+    #onEquipmentChange(item, changes) {
+        if (!this.#enabled || !game.user.isGM) return;
+
+        // Check if this is equipment that might affect vision
+        const itemName = item.name?.toLowerCase() || '';
+        const itemType = item.type?.toLowerCase() || '';
+
+        const isVisionEquipment = itemType === 'equipment' && (
+            itemName.includes('goggles') ||
+            itemName.includes('glasses') ||
+            itemName.includes('lens') ||
+            itemName.includes('vision') ||
+            itemName.includes('sight') ||
+            itemName.includes('eye') ||
+            changes.system?.equipped !== undefined // Equipment state changed
+        );
+
+        if (isVisionEquipment && item.parent?.documentName === 'Actor') {
+            const actor = item.parent;
+            const tokens = canvas.tokens?.placeables.filter(t => t.actor?.id === actor.id) || [];
+
+            if (tokens.length > 0) {
+                const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+                if (debugMode) {
+                    console.log(`${MODULE_ID} | EQUIPMENT CHANGE: ${itemName} on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`);
+                }
+
+                tokens.forEach(token => this.#markTokenChangedImmediate(token.document.id));
+            }
+        }
+    }
+
+    /**
+     * Handle template creation (might affect lighting)
+     */
+    #onTemplateCreate(template) {
+        if (!this.#enabled || !game.user.isGM) return;
+        if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
+
+        // Check if this template might affect visibility (light spells, darkness, etc.)
+        const templateName = template.flags?.pf2e?.item?.name?.toLowerCase() || '';
+        const isLightTemplate = templateName.includes('light') ||
+            templateName.includes('darkness') ||
+            templateName.includes('shadow');
+
+        if (isLightTemplate) {
+            const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+            if (debugMode) {
+                console.log(`${MODULE_ID} | TEMPLATE CREATED: ${templateName} - IMMEDIATE update for all tokens`);
+            }
+            this.#markAllTokensChangedImmediate();
+        }
+    }
+
+    /**
+     * Handle template updates (might affect lighting)
+     */
+    #onTemplateUpdate(template, changes) {
+        if (!this.#enabled || !game.user.isGM) return;
+        if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
+
+        // Check if position or configuration changed
+        const significantChange = changes.x !== undefined ||
+            changes.y !== undefined ||
+            changes.config !== undefined ||
+            changes.hidden !== undefined;
+
+        if (significantChange) {
+            const templateName = template.flags?.pf2e?.item?.name?.toLowerCase() || '';
+            const isLightTemplate = templateName.includes('light') ||
+                templateName.includes('darkness') ||
+                templateName.includes('shadow');
+
+            if (isLightTemplate) {
+                const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+                if (debugMode) {
+                    console.log(`${MODULE_ID} | TEMPLATE UPDATED: ${templateName} - IMMEDIATE update for all tokens`);
+                }
+                this.#markAllTokensChangedImmediate();
+            }
+        }
+    }
+
+    /**
+     * Handle template deletion (might affect lighting)
+     */
+    #onTemplateDelete(template) {
+        if (!this.#enabled || !game.user.isGM) return;
+        if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
+
+        const templateName = template.flags?.pf2e?.item?.name?.toLowerCase() || '';
+        const isLightTemplate = templateName.includes('light') ||
+            templateName.includes('darkness') ||
+            templateName.includes('shadow');
+
+        if (isLightTemplate) {
+            const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+            if (debugMode) {
+                console.log(`${MODULE_ID} | TEMPLATE DELETED: ${templateName} - IMMEDIATE update for all tokens`);
+            }
+            this.#markAllTokensChangedImmediate();
+        }
     }
 }
 

@@ -258,9 +258,15 @@ export class VisionAnalyzer {
         return 'observed';
 
       case 'dim':
-        if (observerVision.hasLowLightVision) {
+        if (observerVision.hasLowLightVision || observerVision.hasDarkvision) {
+          if (debugMode) {
+            console.log(`${MODULE_ID} | 🌒 DIM LIGHT → OBSERVED: Observer has ${observerVision.hasDarkvision ? 'darkvision' : 'low-light vision'}`);
+          }
           return 'observed';
         } else {
+          if (debugMode) {
+            console.log(`${MODULE_ID} | 🌒 DIM LIGHT → CONCEALED: No special vision in dim light`);
+          }
           return 'concealed';
         }
 

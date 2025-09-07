@@ -112,7 +112,8 @@
     min-width: 36px;
     max-width: 60px;
     text-align: center;
-    padding: 4px;
+    padding: 8px 4px;
+    vertical-align: middle;
   }
 
   .visibility-table .token-name,
@@ -127,7 +128,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: normal;
-    word-wrap: break-word;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 
   /* Token image clickable styling */
@@ -139,6 +142,8 @@
     border-radius: 4px;
     object-fit: cover;
     object-position: top;
+    display: block;
+    margin: 0 auto;
   }
 
   .visibility-table .visibility-state {

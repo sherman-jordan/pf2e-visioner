@@ -144,7 +144,9 @@
     font-weight: 600;
     line-height: 1.2;
     white-space: normal;
-    word-wrap: break-word;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 
   .observer-main .hint {

@@ -320,8 +320,9 @@
     text-align: center;
     padding-left: 8px;
     overflow: hidden;
-    word-break: break-word;
-    word-wrap: break-word;
+    word-break: normal;
+    word-wrap: normal;
+    overflow-wrap: break-word;
     white-space: nowrap;
   }
 

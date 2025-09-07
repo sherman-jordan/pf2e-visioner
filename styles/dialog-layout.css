@@ -109,14 +109,15 @@
   .actor-name,
   .observer-name {
     white-space: normal;
-    word-wrap: break-word;
-    word-break: normal; /* Changed from break-word to normal */
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
     hyphens: auto; /* Allows hyphenation for very long words */
   }
 
   .results-table-container td.token-name {
     white-space: normal;
-    word-wrap: break-word;
+    word-wrap: normal;
     overflow-wrap: break-word;
     word-break: normal;
     max-width: 150px; /* Forces wrapping when needed */
@@ -131,6 +132,8 @@
     border-radius: 4px;
     object-fit: cover;
     object-position: top;
+    display: block;
+    margin: 0 auto;
   }
 
   /* Row styling */

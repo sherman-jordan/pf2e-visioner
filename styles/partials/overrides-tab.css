@@ -24,12 +24,108 @@
     align-items: flex-start;
   }
 
-  .bulk-actions {
+  .bulk-state-header {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    flex: 1;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    position: relative;
+  }
+
+  .bulk-state-header:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .bulk-state-header i {
+    font-size: 14px;
+    transition: color 0.15s ease;
+  }
+
+  /* Override State Colors for bulk state buttons */
+  .bulk-state-header.observed,
+  .bulk-state-header.observed i {
+    color: var(--visibility-observed, #4caf50) !important;
+    border-color: var(--visibility-observed, #4caf50) !important;
+  }
+
+  .bulk-state-header.observed:hover,
+  .bulk-state-header.observed:hover i {
+    background: var(--visibility-observed-bg-strong, rgba(76, 175, 80, 0.3)) !important;
+    color: var(--visibility-observed, #4caf50) !important;
+  }
+
+  .bulk-state-header.concealed,
+  .bulk-state-header.concealed i {
+    color: var(--visibility-concealed, #ffc107) !important;
+    border-color: var(--visibility-concealed, #ffc107) !important;
+  }
+
+  .bulk-state-header.concealed:hover,
+  .bulk-state-header.concealed:hover i {
+    background: var(--visibility-concealed-bg-strong, rgba(255, 193, 7, 0.3)) !important;
+    color: var(--visibility-concealed, #ffc107) !important;
+  }
+
+  .bulk-state-header.hidden,
+  .bulk-state-header.hidden i {
+    color: var(--visibility-hidden, #ff6600) !important;
+    border-color: var(--visibility-hidden, #ff6600) !important;
+  }
+
+  .bulk-state-header.hidden:hover,
+  .bulk-state-header.hidden:hover i {
+    background: var(--visibility-hidden-bg-strong, rgba(255, 102, 0, 0.3)) !important;
+    color: var(--visibility-hidden, #ff6600) !important;
+  }
+
+  .bulk-state-header.undetected,
+  .bulk-state-header.undetected i {
+    color: var(--visibility-undetected, #f44336) !important;
+    border-color: var(--visibility-undetected, #f44336) !important;
+  }
+
+  .bulk-state-header.undetected:hover,
+  .bulk-state-header.undetected:hover i {
+    background: var(--visibility-undetected-bg-strong, rgba(244, 67, 54, 0.3)) !important;
+    color: var(--visibility-undetected, #f44336) !important;
+  }
+
+  .bulk-state-header.no-override,
+  .bulk-state-header.no-override i {
+    color: var(--color-text-secondary, #888) !important;
+    border-color: var(--color-text-secondary, #888) !important;
+  }
+
+  .bulk-state-header.no-override:hover,
+  .bulk-state-header.no-override:hover i {
+    background: var(--color-bg-btn-secondary-hover, rgba(136, 136, 136, 0.3)) !important;
+    color: var(--color-text-secondary, #888) !important;
+  }
+
+  /* Loading State */
+  .bulk-state-header.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .bulk-state-header.loading i {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .bulk-actions label {
@@ -104,7 +200,7 @@
   }
 
   .state-selector-button.selected {
-    background: var(--color-bg-btn-primary);
+    background: rgba(128, 128, 128, 0.448);
     border-color: var(--color-border-primary);
     box-shadow: 0 0 0 1px var(--color-border-primary);
   }
@@ -125,6 +221,31 @@
   }
 
   .clear-all-overrides:hover {
+    background: var(--color-bg-btn-secondary-active);
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .clear-target-overrides {
+    background: var(--color-bg-btn-secondary);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    height: 32px;
+    justify-content: center;
+  }
+
+  .clear-target-overrides:hover {
     background: var(--color-bg-btn-secondary-active);
     border-color: var(--color-border-highlight);
     transform: translateY(-1px);
@@ -190,6 +311,36 @@
   .overrides-table .action-column {
     width: 14%;
     min-width: 90px;
+  }
+
+  .overrides-table .token-name {
+    width: 12%;
+    min-width: 80px;
+    max-width: 120px;
+    text-align: center;
+    padding-left: 8px;
+    overflow: hidden;
+    word-break: break-word;
+    word-wrap: break-word;
+    white-space: nowrap;
+  }
+
+  .overrides-table .token-image {
+    width: 8%;
+    min-width: 40px;
+  }
+
+  .overrides-table .token-image img {
+    border-radius: var(--radius-md, 4px);
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    transition:
+      transform var(--transition-fast, 0.2s ease),
+      box-shadow var(--transition-fast, 0.2s ease);
+    width: 28px;
+    height: 28px;
+    object-fit: cover;
+    object-position: top;
+    cursor: pointer;
   }
 
   /* Override Selection Icons */

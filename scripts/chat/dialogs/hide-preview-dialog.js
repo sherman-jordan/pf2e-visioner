@@ -19,7 +19,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     classes: ['pf2e-visioner', 'hide-preview-dialog'],
     window: {
       title: 'Hide Results',
-      icon: 'fas fa-eye-slash',
+      icon: 'fas fa-mask',
       resizable: true,
     },
     position: {
@@ -48,7 +48,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     options.window = {
       ...options.window,
       title: `Hide Results`,
-      icon: 'fas fa-eye-slash',
+      icon: 'fas fa-mask',
     };
 
     super(options);

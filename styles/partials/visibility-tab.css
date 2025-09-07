@@ -53,8 +53,8 @@
 
   .bulk-state-header.visibility-observed:hover,
   .bulk-state-header.visibility-observed:hover i {
-    background: var(--visibility-observed, #4caf50) !important;
-    color: white !important;
+    background: var(--visibility-observed-bg-strong, rgba(76, 175, 80, 0.3)) !important;
+    color: var(--visibility-observed, #4caf50) !important;
   }
 
   .bulk-state-header.visibility-concealed,
@@ -65,8 +65,8 @@
 
   .bulk-state-header.visibility-concealed:hover,
   .bulk-state-header.visibility-concealed:hover i {
-    background: var(--visibility-concealed, #ffc107) !important;
-    color: white !important;
+    background: var(--visibility-concealed-bg-strong, rgba(255, 193, 7, 0.3)) !important;
+    color: var(--visibility-concealed, #ffc107) !important;
   }
 
   .bulk-state-header.visibility-hidden,
@@ -77,8 +77,8 @@
 
   .bulk-state-header.visibility-hidden:hover,
   .bulk-state-header.visibility-hidden:hover i {
-    background: var(--visibility-hidden, #ff6600) !important;
-    color: white !important;
+    background: var(--visibility-hidden-bg-strong, rgba(255, 102, 0, 0.3)) !important;
+    color: var(--visibility-hidden, #ff6600) !important;
   }
 
   .bulk-state-header.visibility-undetected,
@@ -89,8 +89,8 @@
 
   .bulk-state-header.visibility-undetected:hover,
   .bulk-state-header.visibility-undetected:hover i {
-    background: var(--visibility-undetected, #f44336) !important;
-    color: white !important;
+    background: var(--visibility-undetected-bg-strong, rgba(244, 67, 54, 0.3)) !important;
+    color: var(--visibility-undetected, #f44336) !important;
   }
 
   /* Loading State */

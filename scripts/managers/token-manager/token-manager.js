@@ -8,16 +8,16 @@ import { getCoverMap, getVisibilityMap } from '../../utils.js';
 import { MODULE_ID } from '../../constants.js';
 import { bindTokenManagerActions } from './actions/index.js';
 import {
-    addTokenBorder as addBorderUtil,
-    removeTokenBorder as removeBorderUtil,
+  addTokenBorder as addBorderUtil,
+  removeTokenBorder as removeBorderUtil,
 } from './borders.js';
 import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from './config.js';
 import {
-    applySelectionHighlight,
-    attachCanvasHoverHandlers,
-    attachSelectionHandlers,
-    detachCanvasHoverHandlers,
-    detachSelectionHandlers,
+  applySelectionHighlight,
+  attachCanvasHoverHandlers,
+  attachSelectionHandlers,
+  detachCanvasHoverHandlers,
+  detachSelectionHandlers,
 } from './highlighting.js';
 
 export class VisionerTokenManager extends foundry.applications.api.ApplicationV2 {
@@ -38,7 +38,6 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       toggleIgnoreAllies: VisionerTokenManager.toggleIgnoreAllies,
       toggleIgnoreWalls: VisionerTokenManager.toggleIgnoreWalls,
       toggleTab: VisionerTokenManager.toggleTab,
-      toggleStateSelector: VisionerTokenManager.toggleStateSelector,
       bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCConcealed: VisionerTokenManager.bulkSetVisibilityState,
@@ -60,6 +59,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       bulkNPCStandardCover: VisionerTokenManager.bulkSetCoverState,
       bulkNPCGreaterCover: VisionerTokenManager.bulkSetCoverState,
       clearAllOverrides: VisionerTokenManager.clearAllOverrides,
+      clearTargetTypeOverrides: VisionerTokenManager.clearTargetTypeOverrides,
       clearPCOverrides: VisionerTokenManager.clearTargetTypeOverrides,
       clearNPCOverrides: VisionerTokenManager.clearTargetTypeOverrides,
       bulkSetOverride: VisionerTokenManager.bulkSetOverride,
@@ -221,14 +221,6 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   static async toggleTab(event, button) {
     const { toggleTab } = await import('./actions/index.js');
     return toggleTab.call(this, event, button);
-  }
-
-  /**
-   * Toggle state selector for overrides
-   */
-  static async toggleStateSelector(event, button) {
-    const { toggleStateSelector } = await import('./actions/index.js');
-    return toggleStateSelector.call(this, event, button);
   }
 
   /**

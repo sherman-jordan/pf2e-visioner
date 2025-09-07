@@ -445,6 +445,14 @@ export function bindDomIconHandlers(TokenManagerClass) {
       button.addEventListener('click', button._bulkStateHandler);
     });
     
+    // Add state selector button handlers (for toggleStateSelector data-action)
+    const stateSelectorButtons = element.querySelectorAll('.overrides-section .bulk-state-buttons .bulk-state-header[data-action="toggleStateSelector"]');
+    stateSelectorButtons.forEach((button) => {
+      button.removeEventListener('click', button._stateSelectorHandler);
+      button._stateSelectorHandler = (event) => toggleStateSelector.call(app, event, button);
+      button.addEventListener('click', button._stateSelectorHandler);
+    });
+    
     // Add bulk action handlers (only for overrides tab action buttons)  
     const bulkActionButtons = element.querySelectorAll('.overrides-section .bulk-action-buttons .bulk-state-header[data-action="bulkOverrideAction"]');
     bulkActionButtons.forEach((button) => {
@@ -602,6 +610,9 @@ export async function bulkOverrideAction(event, button) {
     // Refresh the UI
     await app.render({ force: true });
     
+    // Deselect the bulk state after applying the action
+    deselectBulkState(app);
+    
     const actionLabel = overrideAction === 'createDiversion' ? 'Create Diversion' : 
                        overrideAction === 'attackConsequences' ? 'Attack Consequences' : 
                        overrideAction.charAt(0).toUpperCase() + overrideAction.slice(1);
@@ -614,8 +625,54 @@ export async function bulkOverrideAction(event, button) {
 }
 
 /**
- * Bulk set overrides for a specific action and target type using selected state
+ * Update only the specific UI elements that changed for override actions
+ * This avoids a full UI refresh that might lose other UI state
  */
+async function updateOverrideUIElements(app, targetTokens, overrideAction, state) {
+  if (!app?.element) return;
+  
+  // Find all override icons for the specific action that was changed
+  const overrideIcons = app.element.querySelectorAll(`.override-icon[data-action="${overrideAction}"]`);
+  
+  for (const icon of overrideIcons) {
+    const targetId = icon.dataset.target;
+    
+    // Check if this token was affected by the bulk operation
+    const wasAffected = targetTokens.some(token => token.document.id === targetId);
+    
+    if (wasAffected) {
+      // Update the icon selection for this token/action combination
+      const overrideSelection = icon.closest('.override-selection');
+      if (overrideSelection) {
+        // Remove selection from all icons in this selection
+        const allIcons = overrideSelection.querySelectorAll('.override-icon');
+        allIcons.forEach(i => i.classList.remove('selected'));
+        
+        // Add selection to the icon with the new state
+        const targetIcon = overrideSelection.querySelector(`[data-state="${state}"]`);
+        if (targetIcon) {
+          targetIcon.classList.add('selected');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Deselect the bulk state after applying a bulk action
+ * This prevents accidental re-application of the same bulk change
+ */
+function deselectBulkState(app) {
+  if (!app?.element) return;
+  
+  // Find all bulk state selector buttons and remove their selected class
+  const bulkStateButtons = app.element.querySelectorAll('.bulk-state-buttons .bulk-state-header.selected');
+  bulkStateButtons.forEach(button => button.classList.remove('selected'));
+  
+  // Also deselect any state selector buttons in the overrides section
+  const stateSelectorButtons = app.element.querySelectorAll('.overrides-section .state-selector-button.selected');
+  stateSelectorButtons.forEach(button => button.classList.remove('selected'));
+}
 export async function bulkSetOverride(event, button) {
   const app = this;
   if (!app?.observer) return;
@@ -645,19 +702,27 @@ export async function bulkSetOverride(event, button) {
       return targetType === 'pc' ? isPC : !isPC && token.actor?.type !== 'loot';
     });
     
-    // Set overrides for these tokens
+    let appliedCount = 0;
+    
+    // Set overrides for all tokens of the target type
+    // Bulk changes should apply to all tokens, overwriting any existing overrides for this specific action
     for (const token of targetTokens) {
       await overridesManager.setOverride(token.document.id, overrideAction, app.observer.document.id, state);
+      appliedCount++;
     }
     
-    // Refresh the UI
-    await app.render({ force: true });
+    // Update only the specific UI elements that changed instead of full refresh
+    await updateOverrideUIElements(app, targetTokens, overrideAction, state);
+    
+    // Deselect the bulk state after applying the action
+    deselectBulkState(app);
     
     const actionLabel = overrideAction === 'createDiversion' ? 'Create Diversion' : 
                        overrideAction === 'attackConsequences' ? 'Attack Consequences' : 
                        overrideAction.charAt(0).toUpperCase() + overrideAction.slice(1);
     const stateLabel = state === 'no-override' ? 'cleared' : `set to ${state}`;
-    showNotification(`${targetType.toUpperCase()} ${actionLabel} overrides ${stateLabel}`, 'info');
+    
+    showNotification(`${targetType.toUpperCase()} ${actionLabel} overrides ${stateLabel} for ${appliedCount} tokens`, 'info');
   } catch (error) {
     console.error('Error setting bulk overrides:', error);
     ui.notifications.error('Failed to set bulk overrides');

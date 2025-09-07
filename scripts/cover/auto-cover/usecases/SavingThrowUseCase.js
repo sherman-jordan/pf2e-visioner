@@ -12,6 +12,14 @@ import autoCoverSystem from '../AutoCoverSystem.js';
 import coverUIManager from '../CoverUIManager.js';
 import templateManager from '../TemplateManager.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
+
+const coverPredecende = {
+  'greater': 4,
+  'standard': 2,
+  'none': 0
+}
+
+
 class SavingThrowUseCase extends BaseAutoCoverUseCase {
   constructor() {
     super();
@@ -90,6 +98,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       }
     }
 
+    let highestFoundManualCover = 'none';
     // Fallback to direct token calculation if no template data
     if (!state) {
       // First check for manual cover between tokens
@@ -97,6 +106,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         const manualCover = getCoverBetween(attacker, target);
         if (manualCover && manualCover !== 'none') {
           state = manualCover;
+          highestFoundManualCover = coverPredecende[manualCover] > coverPredecende[highestFoundManualCover] ? manualCover : highestFoundManualCover;
         }
       } catch (_) { }
 
@@ -107,7 +117,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
     }
 
     try {
-      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, null,({ chosen }) => {
+      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, highestFoundManualCover, ({ chosen }) => {
         if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
         const mods = dialog.check.modifiers;
         const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');
@@ -265,32 +275,73 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         const area = this._isAreaEffect(context);
         if (area) {
           if (!attacker) {
-            const controlled = canvas.tokens.controlled?.[0];
-            const targeted = Array.from(game.user.targets || [])?.[0]?.document?.object;
+            // Prefer the spell's caster when available (template creator or context origin),
+            // falling back to controlled/targeted token.
+            let caster = null;
+            try {
+              // 1) Try template creator ID (may be a UUID like Scene.X.Token.Y or Actor.X)
+              if (templateData?.creatorId) {
+                try {
+                  const resolved = templateData.creatorId;
+                  caster = resolved?.document?.object ?? resolved ?? null;
+                } catch (_) {
+                  // fallback: try normalizing to a token id
+                  const norm = this.normalizeTokenRef(templateData.creatorId);
+                  caster = norm ? canvas.tokens.get(norm) : null;
+                }
+              }
 
-            attacker = controlled || targeted;
+              // 2) Try context origin (often a UUID for the originating item/actor/token)
+              if (!caster && context?.origin) {
+                const resolved = context?.origin?.token;
+                caster = resolved?.document?.object ?? resolved ?? null;
+              }
+
+              // 3) Try context.token (embedded token object) or actor's active token
+              if (!caster) {
+                caster = context?.token?.object ?? canvas.tokens.get(context?.token?.id) ?? null;
+              }
+              if (!caster && context?.actor?.getActiveTokens) {
+                caster = context.actor.getActiveTokens()?.[0] ?? null;
+              }
+
+              // 4) Final fallbacks: controlled token or first targeted token
+              if (!caster) {
+                caster = canvas.tokens.controlled?.[0] || targeted;
+              }
+            } catch (e) {
+              // Ensure we at least fall back if something goes wrong resolving UUIDs
+              caster = canvas.tokens.controlled?.[0] || targeted;
+            }
+
+            attacker = caster;
+            const targeted = Array.from(game.user.targets || [])?.[0]?.document?.object;
           }
           isTargetInTemplate = true;
-        } else {
-          return;
         }
       }
 
 
-      // For AOE reflex saves, use the precalculated cover from template data
       let state;
+      let highestFoundManualCover = 'none';
 
       // If we found a template and it has precalculated cover for this target, use it
       if (templateData && templateData.targets && templateData.targets[target.id]) {
         state = templateData.targets[target.id].state;
+        const manualCover = getCoverBetween(target, attacker);
+        if (manualCover && manualCover !== 'none') {
+          state = manualCover;
+          highestFoundManualCover = coverPredecende[manualCover] > coverPredecende[highestFoundManualCover] ? manualCover : highestFoundManualCover;
+        }
       }
       // If we have an attacker token, use standard calculation
       else if (attacker) {
         // First check for manual cover between tokens
         try {
-          const manualCover = getCoverBetween(attacker, target);
+          const manualCover = getCoverBetween(target, attacker);
           if (manualCover && manualCover !== 'none') {
             state = manualCover;
+            highestFoundManualCover = coverPredecende[manualCover] > coverPredecende[highestFoundManualCover] ? manualCover : highestFoundManualCover;
           }
         } catch (_) { }
 
@@ -315,9 +366,10 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
 
       let chosen = null;
       try {
+        const selectedState = highestFoundManualCover !== 'none' ? highestFoundManualCover : state;
         // Only show popup if keybind is held
-        const popupResult = await this.coverUIManager.showPopupAndApply(state);
-        chosen = popupResult.chosen;
+        const popupResult = await this.coverUIManager.showPopupAndApply(selectedState, highestFoundManualCover);
+        chosen = highestFoundManualCover !== 'none' ? highestFoundManualCover : popupResult.chosen;
       } catch (e) {
         console.warn('PF2E Visioner | Popup error (delegated):', e);
       }

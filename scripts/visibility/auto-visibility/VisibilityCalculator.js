@@ -16,7 +16,7 @@ export class VisibilityCalculator {
     #visionAnalyzer;
 
     /** @type {ConditionManager} */
-    #invisibilityManager;
+    #conditionManager;
 
     /** @type {ManualOverrideDetector} */
     #manualOverrideDetector;
@@ -49,7 +49,7 @@ export class VisibilityCalculator {
     initialize(lightingCalculator, visionAnalyzer, ConditionManager, manualOverrideDetector) {
         this.#lightingCalculator = lightingCalculator;
         this.#visionAnalyzer = visionAnalyzer;
-        this.#invisibilityManager = ConditionManager;
+        this.#conditionManager = ConditionManager;
         this.#manualOverrideDetector = manualOverrideDetector;
     }
 
@@ -99,7 +99,7 @@ export class VisibilityCalculator {
                     console.log(`${MODULE_ID} | POINT OUT CHECK: ${observer.name} → ${target.name} = ${hasPointOutOverride}`);
                     if (hasPointOutOverride) {
                         // Point Out makes invisible creatures "hidden" instead of "undetected"
-                        if (this.#invisibilityManager.isInvisibleTo(observer, target)) {
+                        if (this.#conditionManager.isInvisibleTo(observer, target)) {
                             console.log(`${MODULE_ID} | EARLY RETURN: Point Out + Invisible = hidden`);
                             return 'hidden';
                         }
@@ -134,7 +134,7 @@ export class VisibilityCalculator {
             }
 
             // Step 2: Check if observer is blinded (cannot see anything)
-            const isBlinded = this.#invisibilityManager.isBlinded(observer);
+            const isBlinded = this.#conditionManager.isBlinded(observer);
             console.log(`${MODULE_ID} | BLINDED CHECK: ${observer.name} = ${isBlinded}`);
             if (isBlinded) {
                 console.log(`${MODULE_ID} | BLINDED PATH: Observer cannot see anything - returning hidden`);
@@ -142,7 +142,7 @@ export class VisibilityCalculator {
             }
 
             // Step 3: Check if target is completely invisible to observer
-            const isInvisible = this.#invisibilityManager.isInvisibleTo(observer, target);
+            const isInvisible = this.#conditionManager.isInvisibleTo(observer, target);
             console.log(`${MODULE_ID} | INVISIBILITY CHECK: ${observer.name} → ${target.name} = ${isInvisible}`);
             if (isInvisible) {
                 console.log(`${MODULE_ID} | INVISIBLE PATH: Target is invisible - returning undetected`);
@@ -153,7 +153,7 @@ export class VisibilityCalculator {
             }
 
             // Step 4: Check if observer is dazzled (everything appears concealed)
-            const isDazzled = this.#invisibilityManager.isDazzled(observer);
+            const isDazzled = this.#conditionManager.isDazzled(observer);
             console.log(`${MODULE_ID} | DAZZLED CHECK: ${observer.name} = ${isDazzled}`);
             if (isDazzled) {
                 console.log(`${MODULE_ID} | DAZZLED PATH: Observer is dazzled - everything appears concealed`);
@@ -272,7 +272,7 @@ export class VisibilityCalculator {
         const vision = this.#visionAnalyzer.getVisionCapabilities(observer);
         const hasLineOfSight = this.#visionAnalyzer.hasLineOfSight(observer, target);
         const canDetectWithoutSight = this.#visionAnalyzer.canDetectWithoutSight(observer, target);
-        const isInvisible = this.#invisibilityManager.isInvisibleTo(observer, target);
+        const isInvisible = this.#conditionManager.isInvisibleTo(observer, target);
         const calculatedVisibility = await this.calculateVisibility(observer, target);
         const hasManualOverride = await this.hasManualOverride(observer, target);
 
@@ -291,7 +291,7 @@ export class VisibilityCalculator {
             components: {
                 lighting: this.#lightingCalculator.getDebugInfo(targetPosition),
                 vision: this.#visionAnalyzer.getDebugInfo(observer),
-                invisibility: this.#invisibilityManager.getDebugInfo(observer, target)
+                invisibility: this.#conditionManager.getDebugInfo(observer, target)
             }
         };
     }
@@ -304,7 +304,7 @@ export class VisibilityCalculator {
         return {
             lightingCalculator: this.#lightingCalculator,
             visionAnalyzer: this.#visionAnalyzer,
-            ConditionManager: this.#invisibilityManager,
+            ConditionManager: this.#conditionManager,
             manualOverrideDetector: this.#manualOverrideDetector
         };
     }
@@ -316,7 +316,7 @@ export class VisibilityCalculator {
     getStatus() {
         return {
             initialized: !!(this.#lightingCalculator && this.#visionAnalyzer &&
-                this.#invisibilityManager && this.#manualOverrideDetector),
+                this.#conditionManager && this.#manualOverrideDetector),
             optimized: true,
             throttling: false,
             circuitBreaker: false,
@@ -324,7 +324,7 @@ export class VisibilityCalculator {
             components: {
                 lightingCalculator: !!this.#lightingCalculator,
                 visionAnalyzer: !!this.#visionAnalyzer,
-                ConditionManager: !!this.#invisibilityManager,
+                ConditionManager: !!this.#conditionManager,
                 manualOverrideDetector: !!this.#manualOverrideDetector
             }
         };

@@ -7,6 +7,7 @@ import { getCoverMap, getVisibilityMap } from '../../utils.js';
 
 import { MODULE_ID } from '../../constants.js';
 import { bindTokenManagerActions } from './actions/index.js';
+import { toggleIgnoreAllies, toggleIgnoreWalls } from './actions/ui.js';
 import {
   addTokenBorder as addBorderUtil,
   removeTokenBorder as removeBorderUtil,
@@ -35,8 +36,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       reset: VisionerTokenManager.resetAll,
       toggleMode: VisionerTokenManager.toggleMode,
       toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
-      toggleIgnoreAllies: VisionerTokenManager.toggleIgnoreAllies,
-      toggleIgnoreWalls: VisionerTokenManager.toggleIgnoreWalls,
+      toggleIgnoreAllies: toggleIgnoreAllies,
+      toggleIgnoreWalls: toggleIgnoreWalls,
       toggleTab: VisionerTokenManager.toggleTab,
       bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
@@ -222,7 +223,6 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    * Toggle ignore allies filter
    */
   static async toggleIgnoreAllies(event, button) {
-    const { toggleIgnoreAllies } = await import('./actions/index.js');
     return toggleIgnoreAllies.call(this, event, button);
   }
 
@@ -230,7 +230,6 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    * Toggle ignore walls filter
    */
   static async toggleIgnoreWalls(event, button) {
-    const { toggleIgnoreWalls } = await import('./actions/index.js');
     return toggleIgnoreWalls.call(this, event, button);
   }
 

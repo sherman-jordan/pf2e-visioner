@@ -747,10 +747,10 @@ describe('VisionerTokenManager', () => {
           '../../scripts/managers/token-manager/token-manager.js'
         );
 
-        // Test applyAll method exists and can be called
-        expect(typeof VisionerTokenManager.applyAll).toBe('function');
+        // Test applyBoth method exists and can be called
+        expect(typeof VisionerTokenManager.applyBoth).toBe('function');
 
-        await expect(VisionerTokenManager.applyAll.call(manager, {}, {})).resolves.not.toThrow();
+        await expect(VisionerTokenManager.applyBoth.call(manager, {}, {})).resolves.not.toThrow();
       });
 
       test('should simulate bulk cover state button press', async () => {

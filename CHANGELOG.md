@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.5] - 2025-09-06
+
+### 🐛 Fixed
+
+- **Token Manager**: Target mode will show perception dc correctly again
+  - Changed to partials usage instead of monoith template
+
+
 
 ## [3.1.4] - 2025-09-06
 

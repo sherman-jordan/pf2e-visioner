@@ -100,7 +100,7 @@ export async function buildContext(app, options) {
 
       const disposition = token.document.disposition || 0;
 
-      const perceptionDC = extractPerceptionDC(app.observer);
+      const perceptionDC = extractPerceptionDC(token);
       const stealthDC = extractStealthDC(token);
       const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       let showOutcome = false;
@@ -181,7 +181,7 @@ export async function buildContext(app, options) {
       const disposition = observerToken.document.disposition || 0;
 
       const perceptionDC = extractPerceptionDC(observerToken);
-      const stealthDC = extractStealthDC(app.observer);
+      const stealthDC = extractPerceptionDC(observerToken);
       const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       let showOutcome = false;
       let outcomeLabel = '';

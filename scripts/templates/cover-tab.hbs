@@ -1,0 +1,66 @@
+{{!--
+  Cover Tab Content
+--}}
+<div class="tab-panel cover-section {{#if isCoverTab}}active{{/if}}">
+  <div class="tables-content">
+    {{#if hasTargets}}
+      
+      {{!-- Player Characters Table --}}
+      {{#if hasPCs}}
+        <div class="table-section">
+          <div class="table-section-header">
+            <div class="header-left">
+              <i class="fas fa-users"></i>
+              <span>Player Characters</span>
+            </div>
+            <div class="bulk-actions-header">
+              {{#each coverStates as |state|}}
+                <button
+                  type="button"
+                  class="bulk-state-header {{state.cssClass}}"
+                  data-action="bulkPC{{#if (eq state.key "none")}}No{{else}}{{capitalize state.key}}{{/if}}Cover"
+                  data-state="{{state.value}}"
+                  data-target-type="pc"
+                  data-tooltip="Set all PCs as {{state.label}}">
+                  <i class="{{state.icon}}"></i>
+                </button>
+              {{/each}}
+            </div>
+          </div>
+          {{> "pf2e-visioner.cover-table" tokens=pcTargets sectionType="pc"}}
+        </div>
+      {{/if}}
+
+      {{!-- NPCs Table --}}
+      {{#if hasNPCs}}
+        <div class="table-section">
+          <div class="table-section-header">
+            <div class="header-left">
+              <i class="fas fa-dragon"></i>
+              <span>NPCs</span>
+            </div>
+            <div class="bulk-actions-header">
+              {{#each coverStates as |state|}}
+                <button
+                  type="button"
+                  class="bulk-state-header {{state.cssClass}}"
+                  data-action="bulkNPC{{#if (eq state.key "none")}}No{{else}}{{capitalize state.key}}{{/if}}Cover"
+                  data-state="{{state.value}}"
+                  data-target-type="npc"
+                  data-tooltip="Set all NPCs as {{state.label}}">
+                  <i class="{{state.icon}}"></i>
+                </button>
+              {{/each}}
+            </div>
+          </div>
+          {{> "pf2e-visioner.cover-table" tokens=npcTargets sectionType="npc"}}
+        </div>
+      {{/if}}
+      
+    {{else}}
+      <div class="no-targets">
+        <p>{{localize "PF2E_VISIONER.TOKEN_MANAGER.NO_TOKENS"}}</p>
+      </div>
+    {{/if}}
+  </div>
+</div>

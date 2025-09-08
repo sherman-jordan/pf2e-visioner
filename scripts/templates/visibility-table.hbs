@@ -1,0 +1,87 @@
+{{!--
+  Visibility Table Component
+--}}
+<table class="visibility-table">
+  {{#if showOutcomeColumn}}
+  <colgroup>
+    <col style="width:10%" />
+    <col style="width:15%" />
+    <col style="width:26%" />
+    <col style="width:18%" />
+    <col style="width:12%" />
+    <col style="width:19%" />
+  </colgroup>
+  {{else}}
+  <colgroup>
+    <col style="width:10%" />
+    <col style="width:20%" />
+    <col style="width:32%" />
+    <col style="width:22%" />
+    <col style="width:16%" />
+  </colgroup>
+  {{/if}}
+  <thead>
+    <tr>
+      <th class="token-image">Token</th>
+      <th class="token-name">Name</th>
+      <th class="visibility-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.VISIBILITY_STATE"}}</th>
+      <th class="current-state">Current State</th>
+      <th class="dc-column">{{#if isTargetMode}}Perception DC{{else}}Stealth DC{{/if}}</th>
+      {{#if showOutcomeColumn}}
+        <th class="outcome-column">Outcome</th>
+      {{/if}}
+    </tr>
+  </thead>
+  <tbody>
+    {{#each tokens as |target|}}
+      <tr class="token-row {{sectionType}}-row {{#if target.dispositionClass}}{{target.dispositionClass}}-npc{{/if}}" data-token-id="{{target.id}}">
+        <td class="token-image">
+          <img src="{{target.img}}" width="28" height="28" />
+        </td>
+        <td class="token-name">
+          <strong>{{target.name}}</strong>
+        </td>
+        <td class="visibility-state">
+          <div class="icon-selection" data-target="{{target.id}}">
+            {{#each target.visibilityStates as |state|}}
+              <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
+                      data-state="{{state.value}}" data-target="{{target.id}}" 
+                      data-tooltip="{{state.label}}">
+                <i class="{{state.icon}}"></i>
+              </button>
+            {{/each}}
+            <input type="hidden" name="visibility.{{target.id}}" value="{{target.currentVisibilityState}}" />
+          </div>
+        </td>
+        <td class="current-state">
+          {{#each target.visibilityStates as |state|}}
+            {{#if state.selected}}
+              <span class="state-indicator {{state.cssClass}}"
+                    {{#if (eq state.value "hidden")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.HIDDEN_TOOLTIP'}}"{{/if}}
+                    {{#if (eq state.value "concealed")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.CONCEALED_TOOLTIP'}}"{{/if}}
+                    {{#if (eq state.value "undetected")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.UNDETECTED_TOOLTIP'}}"{{/if}}
+                    {{#if (eq state.value "observed")}}data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.VISIBLE_TOOLTIP'}}"{{/if}}>
+                <i class="{{state.icon}}"></i>
+                {{state.label}}
+              </span>
+            {{/if}}
+          {{/each}}
+        </td>
+        <td class="dc-column">
+          {{#if ../isTargetMode}}
+            <span class="dc-value">{{target.perceptionDC}}</span>
+          {{else}}
+            <span class="dc-value">{{target.stealthDC}}</span>
+          {{/if}}
+        </td>
+        {{#if ../showOutcomeColumn}}
+          <td class="outcome-column">
+            {{#if target.showOutcome}}
+              <span class="dc-outcome {{target.outcomeClass}}" data-tooltip="{{target.outcomeLabel}}">{{target.outcomeLabel}}</span>
+            {{/if}}
+          </td>
+        {{/if}}
+      </tr>
+    {{/each}}
+  </tbody>
+</table>

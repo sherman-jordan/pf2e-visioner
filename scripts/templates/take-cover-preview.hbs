@@ -1,0 +1,82 @@
+<div class="take-cover-preview-content">
+  <div class="actor-info">
+    <div class="hider-image">
+      <img src="{{actorToken.document.texture.src}}" alt="{{actorToken.name}}" />
+    </div>
+    <div class="hider-details">
+      <h3 class="hider-name">{{actorToken.name}}</h3>
+      <p class="hint">Taking cover against observers</p>
+    </div>
+  </div>
+
+  {{#if showEncounterFilter}}
+  <div class="encounter-filter-section">
+    <label class="encounter-filter-checkbox">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+    </label>
+  </div>
+  {{/if}}
+
+  <div class="results-table-container">
+    <table class="visibility-table take-cover-results-table">
+      <thead>
+        <tr>
+          <th class="token-image">Token</th>
+          <th class="token-name">Name</th>
+          <th class="visibility-change">Cover Change</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each outcomes as |o|}}
+        <tr class="token-row" data-token-id="{{o.target.id}}">
+          <td class="token-image"><img src="{{o.tokenImage}}" alt="{{o.target.name}}" width="28" height="28" /></td>
+                      <td class="token-name"><strong>{{o.target.name}}</strong></td>
+          <td class="visibility-change" style="text-align:center;">
+            <div class="visibility-change-inline">
+              <span class="state-icon {{o.oldCoverCfg.cssClass}}" data-tooltip="{{o.oldCoverCfg.label}}"><i class="{{o.oldCoverCfg.icon}}"></i></span>
+              <i class="fas fa-arrow-right visibility-arrow"></i>
+              <div class="override-icons">
+                {{#each o.availableStates as |s|}}
+                  <span class="state-icon {{#if s.selected}}selected{{/if}} {{#if s.calculatedOutcome}}calculated-outcome{{/if}} {{s.cssClass}}" data-state="{{s.value}}" data-token-id="{{../o.target.id}}" data-tooltip="{{s.label}}">
+                    <i class="{{s.icon}}"></i>
+                  </span>
+                {{/each}}
+              </div>
+            </div>
+          </td>
+          <td class="actions">
+            {{#if o.hasActionableChange}}
+              <button type="button" class="row-action-btn apply-change" data-action="applyChange" data-token-id="{{o.target.id}}" data-tooltip="Apply this cover change">
+                <i class="fas fa-check"></i>
+              </button>
+              <button type="button" class="row-action-btn revert-change" data-action="revertChange" data-token-id="{{o.target.id}}" data-tooltip="Revert to original cover">
+                <i class="fas fa-undo"></i>
+              </button>
+            {{else}}
+              <span class="no-action">No Change</span>
+            {{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="take-cover-preview-dialog-bulk-actions-header">
+    <div class="take-cover-preview-dialog-bulk-actions-info">
+      <span class="take-cover-preview-dialog-changes-count">{{changesCount}}</span> of <span class="take-cover-preview-dialog-total-count">{{totalCount}}</span> observers will receive cover updates.
+    </div>
+    <div class="take-cover-preview-dialog-bulk-actions-buttons">
+      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" data-tooltip="Apply all cover changes">
+        <i class="fas fa-check-circle"></i> Apply All
+      </button>
+      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes" disabled>
+        <i class="fas fa-undo"></i> Revert All
+      </button>
+    </div>
+  </div>
+</div>
+
+

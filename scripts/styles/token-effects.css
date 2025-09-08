@@ -1,0 +1,342 @@
+/*
+ * Token Effects and Styling
+ * Token-specific visual effects and row styling
+ * All styles scoped to .pf2e-visioner to avoid conflicts
+ */
+
+.pf2e-visioner {
+  /* PC and NPC Row Styling */
+  .pc-row {
+    border-left: 3px solid var(--pf2e-visioner-success); /* Green accent for PCs */
+  }
+
+  /* NPC Row Styling by Disposition */
+  .npc-row.hostile-npc {
+    border-left: 3px solid var(--pf2e-visioner-danger); /* Red accent for opposition/hostile NPCs */
+  }
+
+  .npc-row.neutral-npc {
+    border-left: 3px solid var(--pf2e-visioner-warning); /* Orange accent for neutral NPCs */
+  }
+
+  .npc-row.friendly-npc {
+    border-left: 3px solid var(--pf2e-visioner-info); /* Blue accent for friendly NPCs */
+  }
+
+  /* Default NPC styling for unknown disposition */
+  .npc-row:not(.hostile-npc):not(.neutral-npc):not(.friendly-npc) {
+    border-left: 3px solid var(--pf2e-visioner-warning); /* Default orange accent */
+  }
+
+  /* Enhanced backgrounds for better visual distinction */
+  .pc-row:nth-child(even) {
+    background: var(--visibility-observed-bg-light); /* Light green background for PC rows */
+  }
+
+  .npc-row.hostile-npc:nth-child(even) {
+    background: var(--visibility-undetected-bg-light); /* Light red background */
+  }
+
+  .npc-row.neutral-npc:nth-child(even) {
+    background: var(--visibility-hidden-bg-light); /* Light orange background */
+  }
+
+  .npc-row.friendly-npc:nth-child(even) {
+    background: rgba(33, 150, 243, 0.05); /* Light blue background */
+  }
+
+  .npc-row:not(.hostile-npc):not(.neutral-npc):not(.friendly-npc):nth-child(even) {
+    background: var(--visibility-hidden-bg-light); /* Default orange background */
+  }
+
+  /* Optimized Table Columns */
+  .token-image {
+    width: 40px;
+    text-align: center;
+    padding: 8px 4px;
+    vertical-align: middle;
+  }
+
+  .token-image img {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-light-primary);
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .token-name {
+    text-align: center;
+    width: 20%;
+  }
+
+  .token-name strong {
+    color: var(--color-text-primary);
+    font-size: 13px;
+  }
+
+  .token-name .actor-type {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    font-weight: normal;
+    margin-left: var(--spacing-xs);
+  }
+
+  .token-name .disposition {
+    font-size: 9px;
+    padding: 1px 3px;
+    border-radius: var(--radius-sm);
+    margin-left: var(--spacing-xs);
+    font-weight: 500;
+  }
+
+  .token-name .disposition.hostile {
+    background: var(--visibility-undetected-bg-strong);
+    color: var(--pf2e-visioner-danger);
+  }
+
+  .token-name .disposition.neutral {
+    background: var(--visibility-hidden-bg-strong);
+    color: var(--pf2e-visioner-warning);
+  }
+
+  .token-name .disposition.friendly {
+    background: rgba(33, 150, 243, 0.2);
+    color: var(--pf2e-visioner-info);
+  }
+
+  .current-state {
+    min-width: 90px;
+    width: 20%;
+    font-weight: 500;
+  }
+
+  .current-state .state-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .current-state .state-badge.observed {
+    background: var(--visibility-observed-bg-strong);
+    color: var(--visibility-observed);
+  }
+
+  .current-state .state-badge.concealed {
+    background: var(--visibility-concealed-bg-strong);
+    color: var(--visibility-concealed);
+  }
+
+  .current-state .state-badge.hidden {
+    background: var(--visibility-hidden-bg-strong);
+    color: var(--visibility-hidden);
+  }
+
+  .current-state .state-badge.undetected {
+    background: var(--visibility-undetected-bg-strong);
+    color: var(--visibility-undetected);
+  }
+
+  .new-state {
+    min-width: 110px;
+    width: 25%;
+  }
+
+  .mechanical-effects {
+    min-width: 130px;
+    width: 37%;
+    font-size: 0.85em;
+  }
+
+  .effect-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .flat-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--visibility-hidden);
+    font-weight: 500;
+    padding: 2px 6px;
+    background: rgba(255, 102, 0, 0.1);
+    border: 1px solid rgba(255, 102, 0, 0.3);
+    border-radius: var(--radius-sm);
+    cursor: help;
+    transition: background var(--transition-fast);
+  }
+
+  .flat-check:hover {
+    background: rgba(255, 102, 0, 0.2);
+  }
+
+  .concealed-effect {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--visibility-concealed);
+    font-weight: 500;
+    padding: 2px 6px;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: var(--radius-sm);
+    cursor: help;
+    transition: background var(--transition-fast);
+  }
+
+  .concealed-effect:hover {
+    background: rgba(255, 193, 7, 0.2);
+  }
+
+  .undetected-effect {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--pf2e-visioner-danger);
+    font-weight: 500;
+    padding: 2px 6px;
+    background: rgba(139, 38, 53, 0.1);
+    border: 1px solid rgba(139, 38, 53, 0.3);
+    border-radius: var(--radius-sm);
+    cursor: help;
+    transition: background var(--transition-fast);
+  }
+
+  .undetected-effect:hover {
+    background: rgba(139, 38, 53, 0.2);
+  }
+
+  .no-effect {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--pf2e-visioner-success);
+    font-weight: 500;
+    padding: 2px 6px;
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    border-radius: var(--radius-sm);
+    cursor: help;
+    transition: background var(--transition-fast);
+  }
+
+  .no-effect:hover {
+    background: rgba(40, 167, 69, 0.2);
+  }
+
+  /* Enhanced Table Styling for PF2E Aesthetic */
+  .visibility-table thead th {
+    background: var(--color-bg-header);
+    color: var(--color-text-header);
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-border-dark);
+    text-align: left;
+    padding: 8px 12px;
+  }
+
+  /* State Indicator Enhancements */
+  .state-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--state-indicator-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid currentColor;
+  }
+
+  /* Visibility Indicators on Canvas */
+  .visibility-indicator {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    animation: visibilityPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes visibilityPulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Hover visibility indicators */
+  @keyframes visibilityIndicatorPulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+  }
+
+  .hover-visibility-indicator {
+    animation: visibilityIndicatorPulse 1.5s ease-in-out infinite;
+  }
+
+  .visibility-indicator.observed {
+    background: var(--visibility-observed-bg-solid);
+    border-color: var(--visibility-observed);
+  }
+
+  .visibility-indicator.concealed {
+    background: var(--visibility-concealed-bg-solid);
+    border-color: var(--visibility-concealed);
+    color: var(--color-text-dark-primary);
+  }
+
+  .visibility-indicator.hidden {
+    background: var(--visibility-hidden-bg-solid);
+    border-color: var(--visibility-hidden);
+  }
+
+  .visibility-indicator.undetected {
+    background: var(--visibility-undetected-bg-solid);
+    border-color: var(--visibility-undetected);
+  }
+
+  /* Token row transitions */
+  .token-row {
+    transition: background-color var(--transition-fast);
+  }
+
+  /* Token highlighting effects */
+  .token-image img {
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    transition: border-color var(--transition-fast);
+  }
+} /* End .pf2e-visioner scope */

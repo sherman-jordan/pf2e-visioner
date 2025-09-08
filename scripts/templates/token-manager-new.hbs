@@ -1,0 +1,38 @@
+{{!--
+  Modern ApplicationV2 template for Visioner Token Manager
+  Provides comprehensive interface for managing token visibility and cover relationships
+  
+  This template is split into smaller, maintainable partials:
+  - observer-info: Observer information, mode toggle, tabs, and legend
+  - visibility-tab: Complete visibility tab content
+  - cover-tab: Complete cover tab content
+  - overrides-tab: Complete overrides tab content
+  - action-buttons: Footer action buttons
+--}}
+
+{{#if error}}
+  <div class="notification error">
+    <p>{{error}}</p>
+  </div>
+{{else}}
+  <div class="visioner-token-manager">
+
+    {{!-- Observer Information, Mode Toggle, Tabs, and Legend --}}
+    {{> "pf2e-visioner.observer-info"}}
+
+    {{!-- Tab Content Areas --}}
+    <div class="visioner-tab-content">
+      {{!-- Visibility Tab --}}
+      {{> "pf2e-visioner.visibility-tab"}}
+
+      {{!-- Cover Tab --}}
+      {{#unless hideCoverTab}}
+        {{> "pf2e-visioner.cover-tab"}}
+      {{/unless}}
+    </div>
+
+    {{!-- Footer Action Buttons --}}
+    {{> "pf2e-visioner.action-buttons"}}
+
+  </div>
+{{/if}}

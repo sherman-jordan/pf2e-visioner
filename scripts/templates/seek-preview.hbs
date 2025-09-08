@@ -1,0 +1,134 @@
+{{!--
+  ApplicationV2 template for Seek Results Preview Dialog
+  Matches the visibility manager's design and styling
+--}}
+
+<div class="seek-preview-content">
+  {{!-- Seeker Information Panel --}}
+  <div class="seeker-info">
+    <div class="seeker-image">
+      <img src="{{seeker.image}}" />
+    </div>
+    <div class="seeker-details">
+      <h3 class="seeker-name">{{seeker.name}}</h3>
+      <p class="hint">{{seeker.actionLabel}}</p>
+    </div>
+  </div>
+
+  {{!-- Encounter Filter + Ignore Allies (Encounter-only shown when relevant; Ignore allies always shown) --}}
+  <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
+    {{#if showEncounterFilter}}
+    <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
+      <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
+    </label>
+    {{/if}}
+    <label class="ignore-allies-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
+      <span class="encounter-filter-label">Ignore allies</span>
+    </label>
+    <label class="ignore-walls-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if ignoreWalls}}checked{{/if}} data-action="toggleIgnoreWalls" data-tooltip="Hide walls from the results list" />
+      <span class="encounter-filter-label">Ignore walls</span>
+    </label>
+  </div>
+
+  {{!-- Results Table --}}
+  <div class="results-table-container">
+    <table class="visibility-table seek-results-table">
+      <thead>
+        <tr>
+          <th class="token-image">Token</th>
+          <th class="token-name">Name</th>
+          <th class="roll-result">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ROLL_VS_DC"}}</th>
+          <th class="outcome">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.OUTCOME"}}</th>
+          <th class="visibility-change">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.VISIBILITY_CHANGE"}}</th>
+          <th class="actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each outcomes as |outcome|}}
+          <tr class="token-row" {{#unless outcome._isWall}}data-token-id="{{outcome.target.id}}"{{/unless}} {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{/if}}>
+            <td class="token-image">
+              {{#if outcome._isWall}}
+                <img src="{{outcome.wallImg}}" width="28" height="28" />
+              {{else}}
+                <img src="{{outcome.tokenImage}}" width="28" height="28" />
+              {{/if}}
+            </td>
+            <td class="token-name">
+              {{#if outcome._isWall}}
+                <strong>{{outcome.wallIdentifier}}</strong>
+              {{else}}
+                <strong>{{outcome.target.name}}</strong>
+              {{/if}}
+            </td>
+            <td class="roll-result">
+              {{#if outcome.isPointOut}}
+                <span class="point-out-indicator">Point Out</span>
+                <br><small class="stealth-dc">Target DC {{outcome.dc}}</small>
+              {{else}}
+                <div class="roll-vs-dc">
+                  <div class="roll-dc-line">
+                    <span class="roll-total">{{outcome.rollTotal}}</span>
+                    <span class="vs-text">vs DC</span>
+                    <span class="dc-value">{{outcome.dc}}</span>
+                  </div>
+                  <div class="margin-display">({{outcome.marginText}})</div>
+                </div>
+              {{/if}}
+            </td>
+            <td class="outcome {{outcome.outcomeClass}}">
+              {{outcome.outcomeLabel}}
+            </td>
+            <td class="visibility-change">
+              <div class="visibility-change-inline">
+                <span class="state-icon" data-state="{{outcome.oldVisibility}}" data-tooltip="{{outcome.oldVisibilityLabel}}">
+                  {{{visibilityIcon outcome.oldVisibility}}}
+                </span>
+                <i class="fas fa-arrow-right visibility-arrow"></i>
+                <div class="override-icons" data-target="{{#unless outcome._isWall}}{{outcome.target.id}}{{/unless}}" data-wall-id="{{#if outcome._isWall}}{{outcome.wallId}}{{/if}}">
+                  {{#each outcome.availableStates as |state|}}
+                    <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}} {{state.cssClass}}" 
+                            data-state="{{state.value}}" data-target="{{outcome.target.id}}" 
+                            data-tooltip="Override to {{state.label}}">
+                      <i class="{{state.icon}}"></i>
+                    </button>
+                  {{/each}}
+                  <input type="hidden" name="override.{{outcome.target.id}}" value="{{outcome.overrideState}}" />
+                </div>
+              </div>
+            </td>
+            <td class="actions">
+              {{#if outcome.hasActionableChange}}
+                <button type="button" class="row-action-btn apply-change" data-action="applyChange" {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{else}}data-token-id="{{outcome.target.id}}"{{/if}} data-tooltip="Apply this visibility change">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change" data-action="revertChange" {{#if outcome._isWall}}data-wall-id="{{outcome.wallId}}"{{else}}data-token-id="{{outcome.target.id}}"{{/if}} data-tooltip="Revert to original visibility">
+                  <i class="fas fa-undo"></i>
+                </button>
+              {{else}}
+                <span class="no-action">No Change</span>
+              {{/if}}
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- Bulk Actions --}}
+  <div class="seek-preview-dialog-bulk-actions-header">
+    <div class="seek-preview-dialog-bulk-actions-info">
+      <span class="seek-preview-dialog-changes-count">{{changesCount}}</span> of <span class="seek-preview-dialog-total-count">{{totalCount}}</span> targets will have visibility changes.
+    </div>
+    <div class="seek-preview-dialog-bulk-actions-buttons">
+      <button type="button" class="bulk-action-btn apply-all" data-action="applyAll" data-tooltip="Apply all visibility changes">
+        <i class="fas fa-check-circle"></i> Apply All
+      </button>
+      <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes to original state" disabled>
+        <i class="fas fa-undo"></i> Revert All
+      </button>
+    </div>
+  </div>
+</div>

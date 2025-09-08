@@ -1,0 +1,213 @@
+/*
+ * Cover Tab Partial Styles
+ * Styles for the cover tab content and bulk actions
+ */
+
+.pf2e-visioner {
+  /* Cover Legend */
+  .cover-legend {
+    flex-shrink: 0;
+    background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-lg);
+    padding: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end; /* Move to the right like visibility legend */
+  }
+
+  .cover-legend .legend-title {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--color-text-dark-primary);
+    margin-right: 8px;
+  }
+
+  .cover-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--color-text-dark-secondary);
+  }
+
+  .cover-legend .legend-item i {
+    font-size: 10px;
+  }
+
+  .cover-legend .legend-item .bonus-info {
+    font-size: 10px;
+    color: var(--color-text-dark-tertiary);
+    font-style: italic;
+  }
+
+  /* Cover Table */
+  .cover-table-container {
+    /* Let the outer tables-content handle scrolling; avoid nested scrollbars */
+    flex: initial;
+    overflow: visible;
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary, rgba(0, 0, 0, 0.05));
+  }
+
+  .cover-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 0px;
+  }
+
+  .cover-table th,
+  .cover-table td {
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+  }
+
+  .cover-table th {
+    background: var(--color-bg-tertiary, rgba(0, 0, 0, 0.1));
+    font-weight: 600;
+    color: var(--color-text-dark-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: inherit; /* match visibility header size */
+  }
+
+  /* Normalize table typography and alignment across both tabs */
+  .visibility-table,
+  .cover-table {
+    font-size: 11px;
+  }
+  .visibility-table th,
+  .cover-table th {
+    font-size: 13px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .visibility-table td,
+  .cover-table td {
+    text-align: center;
+  }
+  .visibility-table .token-name,
+  .cover-table .token-name {
+    text-align: center;
+  }
+
+  /* Column widths for cover tables to improve alignment */
+  .cover-table .cover-state {
+    width: 28%;
+    min-width: 130px;
+  }
+  .cover-table .current-state {
+    width: 26%;
+    min-width: 100px;
+  }
+  .cover-table .mechanical-effects {
+    width: 28%;
+    min-width: 140px;
+  }
+
+  /* Cover Effects */
+  .cover-effect,
+  .no-effect.cover-none,
+  .cover-lesser,
+  .cover-standard,
+  .cover-greater {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--color-text-dark-secondary);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 1px 4px;
+    display: inline-flex;
+  }
+
+  .cover-effect i {
+    color: inherit; /* inherit traffic-light color from parent */
+  }
+
+  /* Colored cover effect badges matching traffic-light scheme */
+  .cover-none {
+    color: var(--cover-none) !important;
+  }
+  .cover-lesser {
+    color: var(--cover-lesser) !important;
+  }
+  .cover-standard {
+    color: var(--cover-standard) !important;
+  }
+  .cover-greater {
+    color: var(--cover-greater) !important;
+  }
+
+  /* Ensure icons also follow traffic-light colors (extra specificity) */
+  .cover-none i {
+    color: var(--cover-none) !important;
+  }
+  .cover-lesser i {
+    color: var(--cover-lesser) !important;
+  }
+  .cover-standard i {
+    color: var(--cover-standard) !important;
+  }
+  .cover-greater i {
+    color: var(--cover-greater) !important;
+  }
+
+  /* Cover State Colors */
+  .bulk-state-header.cover-none,
+  .bulk-state-header.cover-none i {
+    color: var(--cover-none, #4caf50) !important;
+    border-color: var(--cover-none, #4caf50) !important;
+  }
+
+  .bulk-state-header.cover-none:hover,
+  .bulk-state-header.cover-none:hover i {
+    background: var(--cover-none-bg-strong, rgba(76, 175, 80, 0.3)) !important;
+    color: var(--cover-none, #4caf50) !important;
+  }
+
+  .bulk-state-header.cover-lesser,
+  .bulk-state-header.cover-lesser i {
+    color: var(--cover-lesser, #ffc107) !important;
+    border-color: var(--cover-lesser, #ffc107) !important;
+  }
+
+  .bulk-state-header.cover-lesser:hover,
+  .bulk-state-header.cover-lesser:hover i {
+    background: var(--cover-lesser-bg-strong, rgba(255, 193, 7, 0.3)) !important;
+    color: var(--cover-lesser, #ffc107) !important;
+  }
+
+  .bulk-state-header.cover-standard,
+  .bulk-state-header.cover-standard i {
+    color: var(--cover-standard, #ff6600) !important;
+    border-color: var(--cover-standard, #ff6600) !important;
+  }
+
+  .bulk-state-header.cover-standard:hover,
+  .bulk-state-header.cover-standard:hover i {
+    background: var(--cover-standard-bg-strong, rgba(255, 102, 0, 0.3)) !important;
+    color: var(--cover-standard, #ff6600) !important;
+  }
+
+  .bulk-state-header.cover-greater,
+  .bulk-state-header.cover-greater i {
+    color: var(--cover-greater, #f44336) !important;
+    border-color: var(--cover-greater, #f44336) !important;
+  }
+
+  .bulk-state-header.cover-greater:hover,
+  .bulk-state-header.cover-greater:hover i {
+    background: var(--cover-greater-bg-strong, rgba(244, 67, 54, 0.3)) !important;
+    color: var(--cover-greater, #f44336) !important;
+  }
+}

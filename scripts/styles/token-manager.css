@@ -1,0 +1,206 @@
+/*
+ * Visibility Manager UI Components
+ * Main interface styling for the token visibility manager
+ * All styles scoped to .pf2e-visioner to avoid conflicts
+ */
+
+/* Import shared UI component styles */
+@import url('shared-ui-components.css');
+@import url('base.css');
+@import url('token-manager-partials.css');
+
+.pf2e-visioner {
+  /* Responsive Window Sizing */
+  .token-visibility-manager {
+    width: auto;
+    min-width: 480px;
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .token-visibility-manager .window-content {
+    width: auto;
+    min-width: 480px;
+    max-width: 760px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Tables content area that can scroll */
+  .tables-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
+    margin-bottom: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-light-primary) transparent;
+  }
+
+  /* Webkit scrollbar styling for tables content */
+  .tables-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .tables-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tables-content::-webkit-scrollbar-thumb {
+    background: var(--color-border-light-primary);
+    border-radius: 4px;
+  }
+
+  .tables-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-highlight);
+  }
+
+  /* Tab Navigation */
+  .tab-navigation {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  .tab-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--color-bg-secondary, rgba(0, 0, 0, 0.1));
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-md);
+    color: var(--color-text-dark-primary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-button:hover {
+    background: var(--color-bg-highlight, rgba(0, 0, 0, 0.15));
+    border-color: var(--color-border-highlight, rgba(0, 0, 0, 0.2));
+  }
+
+  .tab-button.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-text-light-highlight);
+  }
+
+  .tab-button i {
+    font-size: 11px;
+  }
+
+  .tab-button span {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Tab Content */
+  .visioner-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* allow inner scroll containers to size */
+    overflow: hidden;
+  }
+
+  .tab-panel {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .tab-panel.active {
+    display: flex;
+    animation: visionerFadeSlide 250ms ease;
+  }
+
+  @keyframes visionerFadeSlide {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+
+
+
+  /* Footer Actions */
+  .sheet-footer {
+    display: flex;
+    padding: 8px 0 8px 0;
+    border-top: 1px solid var(--color-border-light-primary);
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 0;
+    flex-shrink: 0;
+    background: var(--color-bg);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .vm-action-button {
+    padding: 6px 12px;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    background: var(--color-bg-option);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .vm-action-button:hover {
+    background: var(--color-bg-option-active);
+    border-color: var(--color-border-highlight);
+    border-width: 2px;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .vm-action-button.apply {
+    background: var(--color-bg-btn-primary);
+    border-color: var(--color-border-highlight-alt);
+    color: var(--color-text-light-primary);
+  }
+
+  .vm-action-button.apply:hover {
+    background: var(--color-bg-btn-primary-active);
+    border-color: var(--color-border-highlight);
+    border-width: 2px;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .vm-action-button.reset {
+    background: var(--color-bg-btn-secondary);
+    border-color: var(--color-border-light-primary);
+  }
+
+  .vm-action-button.cancel {
+    background: transparent;
+    border-color: var(--color-border-light-primary);
+  }
+
+
+} /* End .pf2e-visioner scope */

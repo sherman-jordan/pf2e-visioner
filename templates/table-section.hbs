@@ -3,7 +3,7 @@
   Parameters:
   - sectionType: 'pc', 'npc', 'loot', 'walls'
   - tokens: Array of token data
-  - tableType: 'visibility', 'cover', 'overrides'
+  - tableType: 'visibility', 'cover'
   - bulkActions: Optional bulk action buttons
 --}}
 <div class="table-section {{#if cssClass}}{{cssClass}}{{/if}}">
@@ -35,8 +35,6 @@
       {{> "pf2e-visioner.visibility-table" tokens=tokens sectionType=sectionType}}
     {{else if (eq tableType 'cover')}}
       {{> "pf2e-visioner.cover-table" tokens=tokens sectionType=sectionType}}
-    {{else if (eq tableType 'overrides')}}
-      {{> "pf2e-visioner.overrides-table" tokens=tokens sectionType=sectionType}}
     {{/if}}
   </div>
 </div>

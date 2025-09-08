@@ -98,14 +98,7 @@
   .icon-tab-navigation .icon-tab-button[data-tab='cover'] i {
     color: var(--cover-standard);
   }
-  .icon-tab-navigation .icon-tab-button[data-tab='overrides'].active {
-    background: linear-gradient(135deg, var(--color-text-secondary), var(--color-text-secondary));
-    border-color: var(--color-text-secondary);
-    color: var(--color-text-light-primary);
-  }
-  .icon-tab-navigation .icon-tab-button[data-tab='overrides'] i {
-    color: var(--color-text-secondary);
-  }
+
   .icon-tab-navigation .icon-tab-button.active i {
     color: var(--color-text-light-primary);
   }

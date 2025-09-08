@@ -1,0 +1,505 @@
+/*
+ * Table Section Partial Styles
+ * Styles for the reusable table section component used across all tabs
+ */
+
+.pf2e-visioner {
+  /* Table Sections */
+  .table-section {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .table-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 3px 0;
+    padding: 5px 8px 4px 8px; /* extra top padding so button borders aren't clipped */
+    background: var(--color-bg-option);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 13px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .bulk-actions-header {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding-top: 1px; /* breathing room for top border glow */
+  }
+
+  .bulk-state-header {
+    background: transparent;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-primary);
+  }
+
+  .bulk-state-header:hover {
+    background: var(--color-bg-btn);
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 2px rgba(255, 125, 0, 0.2); /* ensure glow not clipped visually */
+  }
+
+  .table-section-header i {
+    color: var(--color-border-highlight-alt);
+    font-size: 16px;
+  }
+
+  .table-section-header .count {
+    background: var(--color-border-highlight-alt);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: auto;
+  }
+
+  /* Visibility Table Container */
+  .visibility-table-container {
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-top: none;
+    background: var(--color-bg);
+    /* Let the outer tables-content handle scrolling; avoid nested scrollbars */
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Visibility Table */
+  .visibility-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    table-layout: auto;
+  }
+
+  /* Visibility Table */
+  .visibility-table .visibility-state {
+    text-align: center;
+  }
+
+  .visibility-table .current-state {
+    text-align: center;
+  }
+
+  .visibility-table .mechanical-effects {
+    text-align: center;
+  }
+
+  /* Specific column width controls */
+  .visibility-table .token-image {
+    width: 10%;
+    min-width: 36px;
+    max-width: 60px;
+    text-align: center;
+    padding: 8px 4px;
+    vertical-align: middle;
+  }
+
+  .visibility-table .token-name,
+  .cover-table .token-name {
+    width: 15%;
+    min-width: 72px;
+    max-width: 110px;
+  }
+
+  .token-name strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  /* Token image clickable styling */
+  .token-image img {
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    border-radius: 4px;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .visibility-table .visibility-state {
+    width: 26%;
+    min-width: 160px;
+  }
+
+  .visibility-table .current-state {
+    width: 18%;
+    min-width: 120px;
+  }
+
+  /* New DC and Outcome columns */
+  .visibility-table .dc-column {
+    width: 12%;
+    min-width: 90px;
+  }
+  .visibility-table .outcome-column {
+    width: 19%;
+    min-width: 140px;
+  }
+
+  /* Ensure Effects column header has consistent font size */
+  .visibility-table th.mechanical-effects,
+  .cover-table th.mechanical-effects {
+    font-size: 14px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .visibility-table th,
+  .visibility-table td {
+    padding: 3px 6px;
+    text-align: center;
+    border-bottom: 1px solid var(--color-border-light-tertiary);
+    vertical-align: middle;
+  }
+
+  /* Alternating row backgrounds for both PC and NPC tables */
+  .token-visibility-manager .visibility-table tbody tr:nth-child(even) {
+    background: var(--color-bg-alt, rgba(255, 255, 255, 0.05)) !important;
+  }
+
+  .token-visibility-manager .visibility-table tbody tr:nth-child(odd) {
+    background: transparent !important;
+  }
+
+  /* Row highlight when hovering the corresponding token on canvas */
+  tr.token-row.row-hover {
+    outline: 2px solid var(--pf2e-visioner-primary);
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 2px var(--visibility-hidden-bg-strong);
+    background: var(--visibility-hidden-bg) !important;
+  }
+
+  /* Form Controls */
+  .visibility-table select {
+    background: var(--color-bg-option) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-light-primary) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    font-family: inherit !important;
+    width: 100% !important;
+    max-width: 130px !important;
+    cursor: pointer !important;
+  }
+
+  .visibility-table select:hover {
+    border-color: var(--pf2e-visioner-primary) !important;
+    background: var(--color-bg-btn) !important;
+  }
+
+  .visibility-table select:focus {
+    outline: none !important;
+    border-color: var(--pf2e-visioner-primary) !important;
+    box-shadow: 0 0 0 2px rgba(255, 100, 0, 0.3) !important;
+  }
+
+  /* Select Options Styling */
+  .visibility-table select option {
+    background: var(--color-bg-option) !important;
+    color: var(--color-text-primary) !important;
+    padding: var(--spacing-xs) var(--spacing-sm) !important;
+    border: none !important;
+  }
+
+  .visibility-table select option:hover {
+    background: var(--color-bg-btn) !important;
+  }
+
+  /* Enhanced visibility for different states */
+  .visibility-table select option[value='observed'] {
+    color: var(--visibility-observed) !important;
+  }
+
+  .visibility-table select option[value='concealed'] {
+    color: var(--visibility-concealed) !important;
+  }
+
+  .visibility-table select option[value='hidden'] {
+    color: var(--visibility-hidden) !important;
+  }
+
+  .visibility-table select option[value='undetected'] {
+    color: var(--visibility-undetected) !important;
+  }
+
+  .current-state {
+    width: 120px;
+  }
+
+  .mechanical-effects {
+    min-width: 150px;
+    width: auto;
+  }
+
+  .state-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .state-indicator i {
+    font-size: 10px;
+  }
+
+  /* Visibility state indicator colors */
+  .state-indicator.visibility-observed {
+    --state-indicator-bg: var(--visibility-observed-bg-strong) !important;
+    background: var(--visibility-observed-bg-strong) !important;
+    color: var(--visibility-observed) !important;
+  }
+
+  .state-indicator.visibility-concealed {
+    --state-indicator-bg: var(--visibility-concealed-bg-strong) !important;
+    background: var(--visibility-concealed-bg-strong) !important;
+    color: var(--visibility-concealed) !important;
+  }
+
+  .state-indicator.visibility-hidden {
+    --state-indicator-bg: var(--visibility-hidden-bg-strong) !important;
+    background: var(--visibility-hidden-bg-strong) !important;
+    color: var(--visibility-hidden) !important;
+  }
+
+  .state-indicator.visibility-undetected {
+    --state-indicator-bg: var(--visibility-undetected-bg-strong) !important;
+    background: var(--visibility-undetected-bg-strong) !important;
+    color: var(--visibility-undetected) !important;
+  }
+
+  /* Icon-based Selection Styling */
+  .icon-selection {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+
+  .state-icon {
+    background: transparent;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    position: relative;
+  }
+
+  .state-icon:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: currentColor;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .state-icon.selected {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: currentColor;
+    border-width: 2px;
+    box-shadow:
+      0 0 8px rgba(255, 255, 255, 0.3),
+      inset 0 0 4px rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+  }
+
+  /* Ensure cover state icons have same border width when selected */
+  .state-icon.selected.cover-none,
+  .state-icon.selected.cover-lesser,
+  .state-icon.selected.cover-standard,
+  .state-icon.selected.cover-greater {
+    border-width: 2px !important;
+  }
+
+  .state-icon.selected::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Specific state icon colors */
+  .state-icon[data-state='observed'] {
+    color: var(--visibility-observed);
+  }
+
+  .state-icon[data-state='concealed'] {
+    color: var(--visibility-concealed);
+  }
+
+  .state-icon[data-state='hidden'] {
+    color: var(--visibility-hidden);
+  }
+
+  .state-icon[data-state='undetected'] {
+    color: var(--visibility-undetected);
+  }
+
+  /* Hide the hidden input */
+  .icon-selection input[type='hidden'] {
+    display: none;
+  }
+
+  /* Token Row Hover Effects - consistent with dialogs */
+  .token-visibility-manager .visibility-table tr[data-token-id]:hover {
+    background: rgba(255, 255, 0, 0.1) !important;
+    border-left: 3px solid var(--visibility-concealed);
+    cursor: pointer;
+  }
+
+  /* Current State Button */
+  .current-state-button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    border-radius: 3px;
+    background: var(--color-bg-tertiary, #3a3a3a);
+    color: var(--color-text-primary, #ffffff);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .current-state-button:hover {
+    background: var(--color-bg-primary, #1e1e1e);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .current-state-button i {
+    font-size: 10px;
+  }
+
+  /* Perception DC */
+  .perception-dc {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--color-text-secondary, #cccccc);
+    text-align: center;
+  }
+
+  /* Outcome Button */
+  .outcome-button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    border-radius: 3px;
+    background: var(--color-bg-tertiary, #3a3a3a);
+    color: var(--color-text-primary, #ffffff);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .outcome-button:hover {
+    background: var(--color-bg-primary, #1e1e1e);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .outcome-button.success {
+    background: var(--color-success, #4caf50);
+    border-color: var(--color-success, #4caf50);
+    color: white;
+  }
+
+  .outcome-button.failure {
+    background: var(--color-danger, #ff4444);
+    border-color: var(--color-danger, #ff4444);
+    color: white;
+  }
+
+  .outcome-button.critical-success {
+    background: var(--color-success-dark, #45a049);
+    border-color: var(--color-success-dark, #45a049);
+    color: white;
+  }
+
+  .outcome-button.critical-failure {
+    background: var(--color-danger-dark, #cc3333);
+    border-color: var(--color-danger-dark, #cc3333);
+    color: white;
+  }
+
+  /* Hidden Input */
+  .icon-selection input[type="hidden"] {
+    display: none;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .table-content {
+      font-size: 11px;
+    }
+
+    .table-content th,
+    .table-content td {
+      padding: 6px 4px;
+    }
+
+    .token-image {
+      width: 20px;
+      height: 20px;
+    }
+
+    .state-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 9px;
+    }
+  }
+}

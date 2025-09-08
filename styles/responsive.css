@@ -93,6 +93,8 @@
 
     .token-image {
       width: 40px;
+      text-align: center;
+      vertical-align: middle;
     }
 
     .token-image img {
@@ -100,6 +102,8 @@
       height: 24px;
       object-fit: cover;
       object-position: top;
+      display: block;
+      margin: 0 auto;
     }
 
     .token-name {
@@ -230,6 +234,8 @@
 
     .token-image {
       width: 30px;
+      text-align: center;
+      vertical-align: middle;
     }
 
     .token-image img {
@@ -237,6 +243,8 @@
       height: 20px;
       object-fit: cover;
       object-position: top;
+      display: block;
+      margin: 0 auto;
     }
 
     .token-name {
@@ -298,6 +306,8 @@
 
     .token-image {
       width: 60px;
+      text-align: center;
+      vertical-align: middle;
     }
 
     .token-image img {
@@ -305,6 +315,8 @@
       height: 40px;
       object-fit: cover;
       object-position: top;
+      display: block;
+      margin: 0 auto;
     }
 
     .token-name {
@@ -354,6 +366,8 @@
       border: 1px solid #000;
       object-fit: cover;
       object-position: top;
+      display: block;
+      margin: 0 auto;
     }
   }
 

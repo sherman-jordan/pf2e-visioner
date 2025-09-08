@@ -67,15 +67,15 @@ export async function extractActionData(message) {
     !message.flavor?.toLowerCase?.().includes?.('sneak');
 
   const isAttackRoll =
-    ( context?.type === 'attack-roll' ||
-    context?.type === 'spell-attack-roll' ||
-    context?.type === 'strike-attack-roll' ||
-    message.content?.includes('Attack Roll') ||
-    message.content?.includes('Strike') ||
-    context?.options?.some((opt) => opt.includes('attack-roll')) ) &&
-    ( !context?.domains?.some((dom) => dom.includes('skill-check')) &&
-    context?.type !== 'self-effect' );
-    
+    (context?.type === 'attack-roll' ||
+      context?.type === 'spell-attack-roll' ||
+      context?.type === 'strike-attack-roll' ||
+      message.content?.includes('Attack Roll') ||
+      message.content?.includes('Strike') ||
+      context?.options?.some((opt) => opt.includes('attack-roll'))) &&
+    (!context?.domains?.some((dom) => dom.includes('skill-check')) &&
+      context?.type !== 'self-effect');
+
   // Skip attack consequences for damage-taken messages
   const isDamageTakenMessage =
     context?.type === 'damage-taken' || message.flags?.pf2e?.appliedDamage;
@@ -91,7 +91,7 @@ export async function extractActionData(message) {
       const speakerActor = game.actors?.get?.(message.speaker.actor);
       const activeTokens = speakerActor?.getActiveTokens?.(true, true) || [];
       actorToken = activeTokens[0] || null;
-    } catch (_) {}
+    } catch (_) { }
   }
   if (!actorToken && origin?.uuid && typeof fromUuidSync === 'function') {
     try {
@@ -99,7 +99,7 @@ export async function extractActionData(message) {
       const originActor = originDoc?.actor ?? originDoc?.parent?.actor ?? null;
       const activeTokens = originActor?.getActiveTokens?.(true, true) || [];
       actorToken = activeTokens[0] || null;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   let isHiddenOrUndetectedToken = false;
@@ -146,7 +146,7 @@ export async function extractActionData(message) {
           });
           if (hasHiddenVsAny) actionType = 'consequences';
         }
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
@@ -174,7 +174,7 @@ export async function extractActionData(message) {
       if (Number.isFinite(total)) {
         data.roll = { total, dice: [{ total: die }] };
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // For Point Out, include target reference if present
@@ -183,7 +183,7 @@ export async function extractActionData(message) {
       data.context = data.context || {};
       data.context.target = { ...message.flags.pf2e.target };
     }
-  } catch (_) {}
+  } catch (_) { }
 
   return data;
 }

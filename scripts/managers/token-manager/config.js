@@ -25,7 +25,10 @@ export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
     reset: null,
     toggleMode: null,
     toggleEncounterFilter: null,
+    toggleIgnoreAllies: null,
+    toggleIgnoreWalls: null,
     toggleTab: null,
+    toggleStateSelector: null,
     // PC-specific bulk actions for visibility
     bulkPCHidden: null,
     bulkPCUndetected: null,

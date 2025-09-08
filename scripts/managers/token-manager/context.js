@@ -351,6 +351,7 @@ export async function buildContext(app, options) {
 
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,
+    value: key,
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,
@@ -359,6 +360,7 @@ export async function buildContext(app, options) {
 
   context.coverStates = Object.entries(COVER_STATES).map(([key, config]) => ({
     key,
+    value: key,
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,

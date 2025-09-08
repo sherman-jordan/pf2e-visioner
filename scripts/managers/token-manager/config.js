@@ -54,6 +54,6 @@ export const TOKEN_MANAGER_DEFAULT_OPTIONS = {
 
 export const TOKEN_MANAGER_PARTS = {
   form: {
-    template: 'modules/pf2e-visioner/templates/token-manager.hbs',
+    template: 'modules/pf2e-visioner/templates/token-manager-new.hbs',
   },
 };

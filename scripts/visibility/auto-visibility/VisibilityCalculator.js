@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID } from '../../constants.js';
+import * as avsOverrideService from '../../services/avs-override-service.js';
 
 export class VisibilityCalculator {
     /** @type {VisibilityCalculator} */
@@ -18,8 +19,6 @@ export class VisibilityCalculator {
     /** @type {ConditionManager} */
     #conditionManager;
 
-    /** @type {ManualOverrideDetector} */
-    #manualOverrideDetector;
 
     constructor() {
         if (VisibilityCalculator.#instance) {
@@ -44,13 +43,11 @@ export class VisibilityCalculator {
      * @param {LightingCalculator} lightingCalculator
      * @param {VisionAnalyzer} visionAnalyzer
      * @param {ConditionManager} ConditionManager
-     * @param {ManualOverrideDetector} manualOverrideDetector
      */
-    initialize(lightingCalculator, visionAnalyzer, ConditionManager, manualOverrideDetector) {
+    initialize(lightingCalculator, visionAnalyzer, ConditionManager) {
         this.#lightingCalculator = lightingCalculator;
         this.#visionAnalyzer = visionAnalyzer;
         this.#conditionManager = ConditionManager;
-        this.#manualOverrideDetector = manualOverrideDetector;
     }
 
     /**
@@ -71,7 +68,7 @@ export class VisibilityCalculator {
      * @param {Object} targetPositionOverride - Optional {x, y} position override for target
      * @returns {Promise<string>} Visibility state
      */
-    async calculateVisibilityWithPosition(observer, target, observerPositionOverride = null, targetPositionOverride = null) {
+    async calculateVisibilityWithPosition(observer, target, _observerPositionOverride = null, targetPositionOverride = null) {
         if (!observer?.actor || !target?.actor) {
             console.log(`${MODULE_ID} | EARLY RETURN: Missing observer or target actor`);
             return 'observed';
@@ -85,55 +82,21 @@ export class VisibilityCalculator {
                 console.log(`${MODULE_ID} | OPTIMIZED: Calculating visibility ${observer.name} → ${target.name} (IMMEDIATE)`);
             }
 
-            // Step 1: Check for manual action overrides first
-            const respectManualActions = game.settings.get(MODULE_ID, 'autoVisibilityRespectManualActions');
-            console.log(`${MODULE_ID} | SETTING CHECK: respectManualActions = ${respectManualActions}`);
+    // Check for AVS overrides first
+    const avsOverride = avsOverrideService.getAVSOverride(observer, target);
+    if (avsOverride) {
+      console.log(`${MODULE_ID} | AVS OVERRIDE: ${observer.name} → ${target.name} = ${avsOverride}`);
+      return avsOverride;
+    }
 
-            if (respectManualActions) {
-                console.log(`${MODULE_ID} | CHECKING: Manual action overrides`);
+    // Check for AVS kill switch
+    if (avsOverrideService.getAVSKillSwitch(observer)) {
+      console.log(`${MODULE_ID} | AVS KILL SWITCH: ${observer.name} has AVS disabled - skipping calculation`);
+      return 'observed'; // Return default state when AVS is disabled
+    }
 
-                try {
-                    // Check for Point Out overrides
-                    console.log(`${MODULE_ID} | ABOUT TO CHECK: Point Out override`);
-                    const hasPointOutOverride = await this.#manualOverrideDetector.hasPointOutOverride(observer, target);
-                    console.log(`${MODULE_ID} | POINT OUT CHECK: ${observer.name} → ${target.name} = ${hasPointOutOverride}`);
-                    if (hasPointOutOverride) {
-                        // Point Out makes invisible creatures "hidden" instead of "undetected"
-                        if (this.#conditionManager.isInvisibleTo(observer, target)) {
-                            console.log(`${MODULE_ID} | EARLY RETURN: Point Out + Invisible = hidden`);
-                            return 'hidden';
-                        }
-                        // For non-invisible creatures, Point Out doesn't change the base calculation
-                        // Fall through to normal lighting-based calculation
-                    }
-                } catch (pointOutError) {
-                    console.error(`${MODULE_ID} | ERROR in Point Out check:`, pointOutError);
-                    throw pointOutError; // Re-throw to see the full error
-                }
 
-                try {
-                    // Check for Seek overrides
-                    console.log(`${MODULE_ID} | ABOUT TO CHECK: Seek override`);
-                    const seekOverride = await this.#manualOverrideDetector.getSeekOverride(observer, target);
-                    console.log(`${MODULE_ID} | SEEK CHECK: ${observer.name} → ${target.name} = ${seekOverride}`);
-                    if (seekOverride) {
-                        // Seek can upgrade visibility regardless of invisibility or lighting
-                        if (debugMode) {
-                            console.log(`${MODULE_ID} | OPTIMIZED: Seek override found: ${observer.name} → ${target.name} = ${seekOverride}`);
-                        }
-                        console.log(`${MODULE_ID} | EARLY RETURN: Seek override = ${seekOverride}`);
-                        return seekOverride; // 'hidden' or 'observed' based on Seek result
-                    }
-                } catch (seekError) {
-                    console.error(`${MODULE_ID} | ERROR in Seek check:`, seekError);
-                    throw seekError; // Re-throw to see the full error
-                }
-
-            } else {
-                console.log(`${MODULE_ID} | SKIPPING: Manual action overrides disabled`);
-            }
-
-            // Step 2: Check if observer is blinded (cannot see anything)
+            // Step 1: Check if observer is blinded (cannot see anything)
             const isBlinded = this.#conditionManager.isBlinded(observer);
             console.log(`${MODULE_ID} | BLINDED CHECK: ${observer.name} = ${isBlinded}`);
             if (isBlinded) {
@@ -141,7 +104,7 @@ export class VisibilityCalculator {
                 return 'hidden';
             }
 
-            // Step 3: Check if target is completely invisible to observer
+            // Step 2: Check if target is completely invisible to observer
             const isInvisible = this.#conditionManager.isInvisibleTo(observer, target);
             console.log(`${MODULE_ID} | INVISIBILITY CHECK: ${observer.name} → ${target.name} = ${isInvisible}`);
             if (isInvisible) {
@@ -152,7 +115,7 @@ export class VisibilityCalculator {
                 console.log(`${MODULE_ID} | NOT INVISIBLE: Proceeding to lighting calculation`);
             }
 
-            // Step 4: Check if observer is dazzled (everything appears concealed)
+            // Step 3: Check if observer is dazzled (everything appears concealed)
             const isDazzled = this.#conditionManager.isDazzled(observer);
             console.log(`${MODULE_ID} | DAZZLED CHECK: ${observer.name} = ${isDazzled}`);
             if (isDazzled) {
@@ -161,7 +124,7 @@ export class VisibilityCalculator {
                 return 'concealed';
             }
 
-            // Step 5: Check line of sight
+            // Step 4: Check line of sight
             const hasLineOfSight = this.#visionAnalyzer.hasLineOfSight(observer, target);
             if (!hasLineOfSight) {
                 // No line of sight - check if observer has special senses
@@ -171,7 +134,7 @@ export class VisibilityCalculator {
                 return 'hidden'; // Cannot see at all
             }
 
-            // Step 6: Check lighting conditions at target's position
+            // Step 5: Check lighting conditions at target's position
             // Use position override if provided, otherwise calculate from document
             const targetPosition = targetPositionOverride || {
                 x: target.document.x + (target.document.width * canvas.grid.size) / 2,
@@ -185,7 +148,7 @@ export class VisibilityCalculator {
             console.log(`${MODULE_ID} | 🔍 LIGHT DEBUG: ${observer.name} → ${target.name} - Light level at target: ${JSON.stringify(lightLevel)}`);
             console.log(`${MODULE_ID} | 🔍 VISION DEBUG: ${observer.name} vision capabilities:`, observerVision);
 
-            // Step 5: Determine visibility based on light level and observer's vision
+            // Step 6: Determine visibility based on light level and observer's vision
             const result = this.#visionAnalyzer.determineVisibilityFromLighting(lightLevel, observerVision);
 
             console.log(`${MODULE_ID} | VISIBILITY RESULT: ${observer.name} → ${target.name} = ${result} (light: ${lightLevel})`);
@@ -205,29 +168,6 @@ export class VisibilityCalculator {
             }
             console.log(`${MODULE_ID} | ERROR FALLBACK: ${observer.name} → ${target.name} - Returning: observed`);
             return 'observed'; // Default fallback
-        }
-    }
-
-    /**
-     * Check for manual overrides - IMMEDIATE
-     * @param {Token} observer
-     * @param {Token} target
-     * @returns {Promise<boolean>}
-     */
-    async hasManualOverride(observer, target) {
-        try {
-            const respectManualActions = game.settings.get(MODULE_ID, 'autoVisibilityRespectManualActions');
-            if (!respectManualActions) return false;
-
-            // Check all override types
-            const hasPointOut = await this.#manualOverrideDetector.hasPointOutOverride(observer, target);
-            const seekOverride = await this.#manualOverrideDetector.getSeekOverride(observer, target);
-            const hasSneakOverride = await this.#manualOverrideDetector.hasSneakOverride(observer, target);
-
-            return hasPointOut || !!seekOverride || hasSneakOverride;
-        } catch (error) {
-            console.warn(`${MODULE_ID} | OPTIMIZED: Error checking manual overrides:`, error);
-            return false;
         }
     }
 
@@ -274,7 +214,6 @@ export class VisibilityCalculator {
         const canDetectWithoutSight = this.#visionAnalyzer.canDetectWithoutSight(observer, target);
         const isInvisible = this.#conditionManager.isInvisibleTo(observer, target);
         const calculatedVisibility = await this.calculateVisibility(observer, target);
-        const hasManualOverride = await this.hasManualOverride(observer, target);
 
         return {
             observer: observer.name,
@@ -285,7 +224,6 @@ export class VisibilityCalculator {
             canDetectWithoutSight,
             isInvisible,
             calculatedVisibility,
-            hasManualOverride,
             optimized: true,
             processingTime: 'immediate',
             components: {
@@ -305,7 +243,6 @@ export class VisibilityCalculator {
             lightingCalculator: this.#lightingCalculator,
             visionAnalyzer: this.#visionAnalyzer,
             ConditionManager: this.#conditionManager,
-            manualOverrideDetector: this.#manualOverrideDetector
         };
     }
 
@@ -316,7 +253,7 @@ export class VisibilityCalculator {
     getStatus() {
         return {
             initialized: !!(this.#lightingCalculator && this.#visionAnalyzer &&
-                this.#conditionManager && this.#manualOverrideDetector),
+                this.#conditionManager),
             optimized: true,
             throttling: false,
             circuitBreaker: false,
@@ -325,7 +262,6 @@ export class VisibilityCalculator {
                 lightingCalculator: !!this.#lightingCalculator,
                 visionAnalyzer: !!this.#visionAnalyzer,
                 ConditionManager: !!this.#conditionManager,
-                manualOverrideDetector: !!this.#manualOverrideDetector
             }
         };
     }

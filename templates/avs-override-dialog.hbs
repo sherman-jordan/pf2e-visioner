@@ -1,0 +1,100 @@
+<div class="pf2e-visioner avs-override-dialog">
+  <div class="dialog-header">
+    <h2 class="dialog-title">
+      <i class="fas fa-eye"></i>
+      {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.TITLE"}}
+    </h2>
+    <div class="token-info">
+      <img src="{{observer.img}}" alt="{{observer.name}}" class="token-image">
+      <span class="token-name">{{observer.name}}</span>
+    </div>
+  </div>
+
+  <div class="dialog-content">
+    {{#if hasOverrides}}
+      <div class="overrides-section">
+        <h3 class="section-title">
+          <i class="fas fa-cog"></i>
+          {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ACTIVE_OVERRIDES"}}
+        </h3>
+        <div class="overrides-list">
+          {{#each processedOverrides as |override|}}
+            <div class="override-item" data-observer-id="{{override.observerId}}" data-target-id="{{override.targetId}}">
+              <div class="override-info">
+                <img src="{{override.targetImg}}" alt="{{override.targetName}}" class="target-image">
+                <div class="target-details">
+                  <span class="target-name">{{override.targetName}}</span>
+                  <div class="visibility-state-display">
+                    <div class="icon-selection" data-target="{{override.targetId}}">
+                      {{#each ../visibilityStates as |state|}}
+                        <button type="button" class="state-icon {{#if (eq state.value override.visibilityState.value)}}selected{{/if}} {{state.cssClass}}" 
+                                data-state="{{state.value}}" data-target="{{override.targetId}}" 
+                                data-tooltip="{{state.label}}">
+                          <i class="{{state.icon}}"></i>
+                        </button>
+                      {{/each}}
+                      <input type="hidden" name="avs-override.{{override.targetId}}" value="{{override.visibilityState.value}}" />
+                    </div>
+                    <span class="state-label">{{override.visibilityState.label}}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="override-actions">
+                <button type="button" class="btn btn-sm btn-danger remove-override" 
+                        data-action="removeOverride"
+                        data-observer-id="{{override.observerId}}"
+                        data-target-id="{{override.targetId}}" 
+                        title="{{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.REMOVE_OVERRIDE"}}">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    {{else}}
+      <div class="no-overrides">
+        <i class="fas fa-info-circle"></i>
+        <p>{{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.NO_OVERRIDES"}}</p>
+      </div>
+    {{/if}}
+
+    <div class="kill-switch-section">
+      <h3 class="section-title">
+        <i class="fas fa-power-off"></i>
+        {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_KILL_SWITCH"}}
+      </h3>
+      <div class="kill-switch-control">
+        <label class="toggle-switch">
+          <input type="checkbox" id="avs-kill-switch" {{#if killSwitchEnabled}}checked{{/if}} data-action="toggleKillSwitch">
+          <span class="toggle-slider"></span>
+        </label>
+        <div class="kill-switch-info">
+          <span class="kill-switch-label {{#if killSwitchEnabled}}override-state{{else}}auto-state{{/if}}">
+            {{#if killSwitchEnabled}}
+              {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_DISABLED"}}
+            {{else}}
+              {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_ENABLED"}}
+            {{/if}}
+          </span>
+          <p class="kill-switch-description">
+            {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.KILL_SWITCH_DESCRIPTION"}}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-footer">
+    <button type="button" class="btn btn-secondary" data-action="close">
+      <i class="fas fa-times"></i>
+      {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLOSE"}}
+    </button>
+    {{#if hasOverrides}}
+      <button type="button" class="btn btn-warning" data-action="clearAllOverrides">
+        <i class="fas fa-trash-alt"></i>
+        {{localize "PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLEAR_ALL"}}
+      </button>
+    {{/if}}
+  </div>
+</div>

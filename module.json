@@ -42,6 +42,9 @@
     },
     {
       "src": "styles/token-manager-ui.css"
+    },
+    {
+      "src": "styles/avs-override.css"
     }
   ],
   "languages": [

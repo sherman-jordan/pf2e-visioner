@@ -34,42 +34,64 @@ export function registerUIHooks() {
   const refreshTokenTool = () => {
     try {
       const tokenTools = ui.controls.controls?.tokens?.tools;
-      const tool = getNamedTool(tokenTools, 'pf2e-visioner-cycle-token-cover');
-      if (!tool) return;
       const selected = canvas?.tokens?.controlled ?? [];
       
-      if (!selected.length) {
-        tool.icon = 'fa-solid fa-bolt-auto';
-        tool.title = 'Cycle Token Cover (Selected Tokens)';
-        ui.controls.render();
-        return;
+      // Update cover cycle tool
+      const coverTool = getNamedTool(tokenTools, 'pf2e-visioner-cycle-token-cover');
+      if (coverTool) {
+        if (!selected.length) {
+          coverTool.icon = 'fa-solid fa-bolt-auto';
+          coverTool.title = 'Cycle Token Cover (Selected Tokens)';
+        } else {
+          // Update icon and title based on first selected token's cover override
+          const firstTokenOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
+          const currentCoverState = firstTokenOverride || 'auto';
+          
+          switch (currentCoverState) {
+            case 'auto':
+              coverTool.icon = 'fa-solid fa-bolt-auto';
+              coverTool.title = 'Cycle Token Cover: Auto → No Cover';
+              break;
+            case 'none':
+              coverTool.icon = 'fa-solid fa-shield-slash';
+              coverTool.title = 'Cycle Token Cover: No Cover → Lesser Cover';
+              break;
+            case 'lesser':
+              coverTool.icon = 'fa-regular fa-shield';
+              coverTool.title = 'Cycle Token Cover: Lesser → Standard Cover';
+              break;
+            case 'standard':
+              coverTool.icon = 'fa-solid fa-shield-alt';
+              coverTool.title = 'Cycle Token Cover: Standard → Greater Cover';
+              break;
+            case 'greater':
+              coverTool.icon = 'fa-solid fa-shield';
+              coverTool.title = 'Cycle Token Cover: Greater → Auto';
+              break;
+          }
+        }
       }
-      
-      // Update icon and title based on first selected token's cover override
-      const firstTokenOverride = selected[0]?.document?.getFlag?.(MODULE_ID, 'coverOverride');
-      const currentCoverState = firstTokenOverride || 'auto';
-      
-      switch (currentCoverState) {
-        case 'auto':
-          tool.icon = 'fa-solid fa-bolt-auto';
-          tool.title = 'Cycle Token Cover: Auto → No Cover';
-          break;
-        case 'none':
-          tool.icon = 'fa-solid fa-shield-slash';
-          tool.title = 'Cycle Token Cover: No Cover → Lesser Cover';
-          break;
-        case 'lesser':
-          tool.icon = 'fa-regular fa-shield';
-          tool.title = 'Cycle Token Cover: Lesser → Standard Cover';
-          break;
-        case 'standard':
-          tool.icon = 'fa-solid fa-shield-alt';
-          tool.title = 'Cycle Token Cover: Standard → Greater Cover';
-          break;
-        case 'greater':
-          tool.icon = 'fa-solid fa-shield';
-          tool.title = 'Cycle Token Cover: Greater → Auto';
-          break;
+
+      // Update AVS kill switch tool
+      const avsTool = getNamedTool(tokenTools, 'pf2e-visioner-avs-kill-switch');
+      if (avsTool) {
+        if (!selected.length) {
+          avsTool.icon = 'fa-solid fa-power-off';
+          avsTool.title = 'Toggle AVS (Selected Tokens)';
+        } else {
+          // Check if any selected token has AVS disabled
+          const hasDisabledAVS = selected.some(token => token.document?.getFlag?.(MODULE_ID, 'avs') === false);
+          
+          if (hasDisabledAVS) {
+            avsTool.icon = 'fa-solid fa-power-off';
+            avsTool.title = 'Enable AVS (Selected Tokens)';
+            avsTool.active = true;
+          } else {
+            avsTool.icon = 'fa-solid fa-power-off';
+            avsTool.title = 'Disable AVS (Selected Tokens)';
+            avsTool.active = false;
+          }
+        }
       }
       
       ui.controls.render();
@@ -693,6 +715,47 @@ export function registerUIHooks() {
           },
         });
 
+        // AVS Kill Switch: Toggle AVS for selected tokens
+        addTool(tokens.tools, {
+          name: 'pf2e-visioner-avs-kill-switch',
+          title: 'PF2E Visioner: Toggle AVS (Selected Tokens)',
+          icon: 'fa-solid fa-power-off',
+          button: true,
+          onChange: async () => {
+            try {
+              const selectedTokens = canvas.tokens?.controlled ?? [];
+              if (selectedTokens.length === 0) {
+                ui.notifications.warn('No tokens selected');
+                return;
+              }
+
+              const avsOverrideService = await import('../services/avs-override-service.js');
+              
+              // Check current state of first selected token
+              const firstToken = selectedTokens[0];
+              const currentState = avsOverrideService.getAVSKillSwitch(firstToken);
+              const newState = !currentState;
+
+              // Apply to all selected tokens
+              await Promise.all(
+                selectedTokens.map(token => avsOverrideService.setAVSKillSwitch(token, newState))
+              );
+
+              const message = newState 
+                ? `AVS disabled for ${selectedTokens.length} token(s)`
+                : `AVS enabled for ${selectedTokens.length} token(s)`;
+              
+              ui.notifications.info(message);
+              
+              // Force controls to re-render to update icon
+              ui.controls.render(true);
+            } catch (e) {
+              console.error('[pf2e-visioner] AVS kill switch error', e);
+              ui.notifications.error('Error toggling AVS kill switch');
+            }
+          },
+        });
+
         // Purge: clear all Visioner scene data or selected token data
         addTool(tokens.tools, {
           name: 'pf2e-visioner-purge-scene',
@@ -714,9 +777,10 @@ export function registerUIHooks() {
                   defaultYes: false,
                 });
                 if (!confirmed) return;
-                const { api } = await import('../api.js');
+                const avsOverrideService = await import('../services/avs-override-service.js');
 
                 // Clear data for all selected tokens with comprehensive cleanup
+                const { api } = await import('../api.js');
                 await api.clearAllDataForSelectedTokens(selectedTokens);
               } else {
                 // No tokens or multiple tokens selected - offer to clear entire scene
@@ -728,6 +792,7 @@ export function registerUIHooks() {
                   defaultYes: false,
                 });
                 if (!confirmed) return;
+                const avsOverrideService = await import('../services/avs-override-service.js');
                 const { api } = await import('../api.js');
                 await api.clearAllSceneData();
               }

@@ -1,4 +1,5 @@
-import { MODULE_TITLE } from '../../constants.js';
+import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
+import * as avsOverrideService from '../../services/avs-override-service.js';
 import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
 import '../services/hbs-helpers.js';
 import { notify } from '../services/infra/notifications.js';
@@ -62,8 +63,53 @@ export class BaseActionDialog extends BasePreviewDialog {
     return outcomes.filter((o) => o?.hasActionableChange).length;
   }
 
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+    this._applySelectionHighlight();
+    
+    // Live re-filtering for per-dialog Ignore Allies checkbox
+    try {
+      const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cb) {
+        cb.addEventListener('change', () => {
+          this.ignoreAllies = !!cb.checked;
+          this.render({ force: true });
+        });
+      }
+    } catch (_) {}
+
+    // AVS Override toggles
+    try {
+      const avsToggles = this.element.querySelectorAll('.avs-override-checkbox');
+      console.log(`${MODULE_ID} | Found ${avsToggles.length} AVS override toggles`);
+      avsToggles.forEach((toggle, index) => {
+        console.log(`${MODULE_ID} | Binding toggle ${index}:`, toggle);
+        toggle.addEventListener('change', (event) => {
+          console.log(`${MODULE_ID} | Toggle change event fired for toggle ${index}`);
+          this._onToggleAVSOverride(event);
+        });
+      });
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error binding AVS override toggles:`, error);
+    }
+  }
+
   buildCommonContext(outcomes) {
     const changesCount = this.computeChangesCount(outcomes);
+    
+    // Add AVS override information to outcomes
+    if (Array.isArray(outcomes) && this.actorToken) {
+      outcomes.forEach(outcome => {
+        if (outcome.target?.id) {
+          const targetToken = canvas.tokens.get(outcome.target.id);
+          if (targetToken) {
+            outcome.avsOverride = !!avsOverrideService.getAVSOverride(this.actorToken, targetToken);
+            outcome.avsOverrideStateClass = outcome.avsOverride ? 'override-state' : 'auto-state';
+          }
+        }
+      });
+    }
+    
     return {
       changesCount,
       totalCount: Array.isArray(outcomes) ? outcomes.length : 0,
@@ -330,5 +376,68 @@ export class BaseActionDialog extends BasePreviewDialog {
         this.updateChangesCount();
       });
     });
+  }
+
+  /**
+   * Handle AVS override toggle
+   * @param {Event} event - The toggle event
+   */
+  async _onToggleAVSOverride(event) {
+    console.log(`${MODULE_ID} | AVS Override toggle clicked`);
+    const checkbox = event.currentTarget;
+    const targetTokenId = checkbox.dataset.tokenId;
+    const isChecked = checkbox.checked;
+    
+    console.log(`${MODULE_ID} | Checkbox checked: ${isChecked}, Target ID: ${targetTokenId}`);
+
+    if (!this.actorToken || !targetTokenId) {
+      console.warn('PF2E Visioner: Missing actor token or target token ID for AVS override');
+      return;
+    }
+
+    try {
+      const targetToken = canvas.tokens.get(targetTokenId);
+      if (!targetToken) {
+        console.warn('PF2E Visioner: Target token not found for AVS override');
+        return;
+      }
+
+      if (isChecked) {
+        // Set AVS override to the calculated visibility state
+        const outcome = this.outcomes?.find(o => o.target?.id === targetTokenId);
+        const visibilityState = outcome?.newVisibility || outcome?.overrideState || 'observed';
+        await avsOverrideService.setAVSOverride(this.actorToken, targetToken, visibilityState);
+      } else {
+        // Remove AVS override
+        await avsOverrideService.removeAVSOverride(this.actorToken, targetToken);
+      }
+
+      // Update the label immediately
+      const toggleContainer = checkbox.parentElement.parentElement; // .avs-override-toggle
+      const label = toggleContainer.querySelector('.avs-override-label');
+      if (label) {
+        console.log(`${MODULE_ID} | Updating label: ${isChecked ? 'Override' : 'Auto'}`);
+        label.textContent = isChecked ? 'Override' : 'Auto';
+        label.className = 'avs-override-label';
+        if (isChecked) {
+          label.classList.add('override-state');
+        } else {
+          label.classList.add('auto-state');
+        }
+        console.log(`${MODULE_ID} | Label updated: ${label.textContent}`);
+      }
+
+      notify.info(
+        isChecked 
+          ? `AVS override set for ${targetToken.name}`
+          : `AVS override removed for ${targetToken.name}`
+      );
+    } catch (error) {
+      console.error('PF2E Visioner: Error toggling AVS override:', error);
+      notify.error('Error toggling AVS override');
+      
+      // Revert checkbox state
+      checkbox.checked = !isChecked;
+    }
   }
 }

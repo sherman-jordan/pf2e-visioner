@@ -33,6 +33,28 @@
       "DIALOG_OVERRIDE": "Cover overridden in roll dialog: {original} → {final}",
       "GENERIC_OVERRIDE": "Cover overridden: {original} → {final}"
     },
+    "AVS_OVERRIDE_DIALOG": {
+      "TITLE": "AVS Override Manager",
+      "ACTIVE_OVERRIDES": "Active Overrides",
+      "NO_OVERRIDES": "No AVS overrides are currently active for this token.",
+      "AVS_KILL_SWITCH": "AVS Kill Switch",
+      "AVS_ENABLED": "AVS Enabled",
+      "AVS_DISABLED": "AVS Disabled",
+      "KILL_SWITCH_DESCRIPTION": "When disabled, AVS will not automatically calculate visibility for this token. Manual visibility changes will still work normally.",
+      "CLOSE": "Close",
+      "CLEAR_ALL": "Clear All Overrides",
+      "CLEAR_ALL_CONFIRM_TITLE": "Clear All AVS Overrides",
+      "CLEAR_ALL_CONFIRM_CONTENT": "Are you sure you want to clear all AVS overrides for {token}? This action cannot be undone.",
+      "TARGET_NOT_FOUND": "Target token not found",
+      "OVERRIDE_REMOVED": "AVS override removed: {observer} → {target}",
+      "ALL_OVERRIDES_CLEARED": "All AVS overrides cleared for {token}",
+      "AVS_DISABLED_FOR_TOKEN": "AVS disabled for {token}",
+      "AVS_ENABLED_FOR_TOKEN": "AVS enabled for {token}",
+      "ERROR_REMOVING_OVERRIDE": "Error removing AVS override",
+      "ERROR_CLEARING_OVERRIDES": "Error clearing AVS overrides",
+      "ERROR_TOGGLING_KILL_SWITCH": "Error toggling AVS kill switch",
+      "NO_TOKEN_SELECTED": "No token selected"
+    },
     "VISUAL_EFFECTS": {
       "HIDDEN_OVERLAY": "This token is hidden from your view",
       "UNDETECTED_OVERLAY": "This token is undetected by you",

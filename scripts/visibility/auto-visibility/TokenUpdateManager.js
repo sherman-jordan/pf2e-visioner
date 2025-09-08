@@ -16,9 +16,6 @@ export class OptimizedTokenUpdateManager {
     #visibilityCalculator = null;
 
     /** @type {Function} */
-    #manualOverrideChecker = null;
-
-    /** @type {Function} */
     #perceptionRefreshCallback = null;
 
     constructor() {
@@ -42,12 +39,10 @@ export class OptimizedTokenUpdateManager {
     /**
      * Initialize with required dependencies
      * @param {Function} visibilityCalculator - Function to calculate visibility between tokens
-     * @param {Function} manualOverrideChecker - Function to check for manual overrides
      * @param {Function} perceptionRefreshCallback - Function to refresh perception
      */
-    initialize(visibilityCalculator, manualOverrideChecker, perceptionRefreshCallback) {
+    initialize(visibilityCalculator, perceptionRefreshCallback) {
         this.#visibilityCalculator = visibilityCalculator;
-        this.#manualOverrideChecker = manualOverrideChecker;
         this.#perceptionRefreshCallback = perceptionRefreshCallback;
     }
 
@@ -206,11 +201,6 @@ export class OptimizedTokenUpdateManager {
             // Calculate visibility to all other tokens
             for (const targetToken of tokensToProcess) {
                 if (!targetToken?.actor || observerToken === targetToken) continue;
-
-                // Check for manual overrides first
-                if (this.#manualOverrideChecker && await this.#manualOverrideChecker(observerToken, targetToken)) {
-                    continue; // Skip automatic updates if manual override exists
-                }
 
                 // Calculate and apply new visibility
                 if (this.#visibilityCalculator) {

@@ -37,7 +37,6 @@ const SETTINGS_GROUPS = {
     'autoVisibilityUpdateOnMovement',
     'autoVisibilityUpdateOnLighting',
     'autoVisibilityThrottleDelay',
-    'autoVisibilityRespectManualActions',
     'autoVisibilityDebugMode',
   ],
   'Seek & Range': [
@@ -327,11 +326,9 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
       const autoVisibilityDependents = [
         'autoVisibilityThrottleDelay',
-        'autoVisibilityRespectManualActions',
         'autoVisibilityDebugMode',
         'autoVisibilityUpdateOnMovement',
         'autoVisibilityUpdateOnLighting',
-        'autoVisibilityRespectManualActions',
 
       ];
 

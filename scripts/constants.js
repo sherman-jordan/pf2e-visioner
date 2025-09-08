@@ -94,6 +94,22 @@ export const COVER_STATES = {
 };
 
 /**
+ * AVS Override system constants
+ */
+export const AVS_OVERRIDE_FLAGS = {
+  AVS_OVERRIDE: 'avs-override', // Token pair overrides
+  AVS_KILL_SWITCH: 'avs', // Kill switch for entire AVS system
+};
+
+/**
+ * AVS Override states
+ */
+export const AVS_OVERRIDE_STATES = {
+  ENABLED: true,
+  DISABLED: false,
+};
+
+/**
  * Default module settings
  */
 export const DEFAULT_SETTINGS = {

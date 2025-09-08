@@ -6,6 +6,7 @@
 // Import test setup first to define global mock functions
 import '../setup.js';
 
+// Import the buildContext function
 import { buildContext } from '../../scripts/managers/token-manager/context.js';
 
 describe('Token Manager Context Building', () => {
@@ -84,7 +85,7 @@ describe('Token Manager Context Building', () => {
       return false;
     });
 
-    // Mock utils functions
+    // Mock utils functions using global mocks from setup.js
     global.getSceneTargets = jest.fn(() => [mockTarget1, mockTarget2]);
     global.getVisibilityMap = jest.fn(() => ({}));
     global.getCoverMap = jest.fn(() => ({}));

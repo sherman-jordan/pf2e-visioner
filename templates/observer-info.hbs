@@ -8,7 +8,7 @@
   <div class="observer-content">
     <div class="observer-main">
       <button type="button" class="mode-toggle {{#if isObserverMode}}observer-active{{else}}target-active{{/if}}" data-action="toggleMode" data-tooltip="Click to switch between Observer and Target modes" {{#if lootObserver}}disabled{{/if}}>
-        {{#if (or lootObserver isOverridesTab)}}
+        {{#if (or lootObserver)}}
           <div class="toggle-option active">
             <i class="fas fa-user-secret"></i>
             <span>Target</span>
@@ -74,11 +74,6 @@
           <i class="fas fa-shield-alt"></i>
         </button>
       {{/unless}}
-      {{#if isTargetMode}}
-        <button type="button" class="icon-tab-button {{#if isOverridesTab}}active{{/if}}" data-action="toggleTab" data-tab="overrides" data-tooltip="{{localize "PF2E_VISIONER.TOKEN_MANAGER.OVERRIDES_TAB"}}">
-          <i class="fas fa-cog"></i>
-        </button>
-      {{/if}}
     </div>
 
     <div class="legend-panel">
@@ -90,25 +85,6 @@
               <span>{{state.label}}</span>
             </div>
           {{/each}}
-          {{#if isOverridesTab}}
-            <div class="legend-item" data-tooltip="{{localize "PF2E_VISIONER.OVERRIDE_STATES.no_override"}}">
-              <i class="fas fa-ban override-none"></i>
-              <span>{{localize "PF2E_VISIONER.OVERRIDE_STATES.no_override"}}</span>
-            </div>
-          {{/if}}
-        </div>
-      {{else if isOverridesTab}}
-        <div class="visibility-legend">
-          {{#each visibilityStates as |state|}}
-            <div class="legend-item" data-tooltip="{{state.label}}">
-              <i class="{{state.icon}} {{state.cssClass}}"></i>
-              <span>{{state.label}}</span>
-            </div>
-          {{/each}}
-          <div class="legend-item" data-tooltip="{{localize "PF2E_VISIONER.OVERRIDE_STATES.no_override"}}">
-            <i class="fas fa-ban override-none"></i>
-            <span>{{localize "PF2E_VISIONER.OVERRIDE_STATES.no_override"}}</span>
-          </div>
         </div>
       {{else}}
         <div class="cover-legend">

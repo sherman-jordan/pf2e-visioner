@@ -1,5 +1,9 @@
 import { MODULE_TITLE } from '../../constants.js';
-import { addTokenImageClickHandlers, panToAndSelectToken, panToWall } from '../../ui/shared-ui-utils.js';
+import {
+  addTokenImageClickHandlers,
+  panToAndSelectToken,
+  panToWall,
+} from '../../ui/shared-ui-utils.js';
 import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
 import '../services/hbs-helpers.js';
 import { notify } from '../services/infra/notifications.js';

@@ -445,11 +445,11 @@ npm run test:ci       # CI mode with strict requirements
 - **Issue**: Height and elevation considerations were only available in a separate "3D Sampling" mode, making it inconsistent
 - **Root cause**: Elevation filtering was isolated to one mode instead of being integrated into all cover detection modes
 - **Solution**: Integrated elevation filtering into all cover detection modes and removed the separate 3D sampling mode
-- **Files**: 
+- **Files**:
   - `scripts/cover/auto-cover/CoverDetector.js` - Added `_filterBlockersByElevation()` method and integrated it into all modes
   - `scripts/constants.js` - Removed `sampling3d` option from `autoCoverTokenIntersectionMode` choices
 - **Impact**: ✅ FIXED - All cover detection modes now consider height and elevation automatically
-- **Technical**: 
+- **Technical**:
   - New `_filterBlockersByElevation()` method calculates relevant elevation bands between attacker and target
   - Filters blockers based on vertical span overlap with line of sight elevations
   - Removed duplicate `_evaluateCoverBy3DSampling()` method

@@ -26,7 +26,7 @@ export async function dedupeCoverAggregates(effectReceiverToken) {
       if (game.user.isGM) {
         try {
           await effectReceiverToken.actor.deleteEmbeddedDocuments('Item', ids);
-        } catch (_) { }
+        } catch (_) {}
       }
     }
   }
@@ -53,7 +53,7 @@ export async function dedupeCoverAggregates(effectReceiverToken) {
     if (effectReceiverToken.actor.items.get(primary.id)) {
       try {
         await primary.update({ 'system.rules': mergedRules });
-      } catch (_) { }
+      } catch (_) {}
     }
     const toDelete = group
       .filter((e) => e.id !== primary.id)
@@ -64,7 +64,7 @@ export async function dedupeCoverAggregates(effectReceiverToken) {
       if (game.user.isGM) {
         try {
           await effectReceiverToken.actor.deleteEmbeddedDocuments('Item', toDelete);
-        } catch (_) { }
+        } catch (_) {}
       }
     }
   }
@@ -127,7 +127,7 @@ export async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
       if (filtered.length !== rules.length) {
         try {
           await agg.update({ 'system.rules': filtered });
-        } catch (_) { }
+        } catch (_) {}
       }
       if (filtered.length === 0) toDelete.push(agg.id);
     }
@@ -136,10 +136,10 @@ export async function reconcileCoverAggregatesAgainstMaps(effectReceiverToken) {
       if (game.user.isGM) {
         try {
           await effectReceiverToken.actor.deleteEmbeddedDocuments('Item', toDelete);
-        } catch (_) { }
+        } catch (_) {}
       }
     }
-  } catch (_) { }
+  } catch (_) {}
 }
 
 export async function batchUpdateCoverEffects(observerToken, targetUpdates, options = {}) {
@@ -163,7 +163,7 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
     // Skip ignored actor types (targets like loot/vehicle/party)
     try {
       if (['loot', 'vehicle', 'party'].includes(target?.actor?.type)) continue;
-    } catch (_) { }
+    } catch (_) {}
     (await target?.actor) &&
       runWithCoverEffectLock(target.actor, async () => {
         const allCoverAggregates = target.actor.itemTypes.effect.filter(
@@ -195,10 +195,17 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
                 const signature = observer.actor.signature;
                 const tokenId = observer.id;
                 const newRules = filteredRules.filter((r) => {
-                  if (r?.key === 'FlatModifier' && (r.selector === 'ac' ||
-                    (Array.isArray(r.selector) && r.selector.length === 1 && r.selector[0] === 'ac'))) {
+                  if (
+                    r?.key === 'FlatModifier' &&
+                    (r.selector === 'ac' ||
+                      (Array.isArray(r.selector) &&
+                        r.selector.length === 1 &&
+                        r.selector[0] === 'ac'))
+                  ) {
                     const hasSig = extractSignaturesFromPredicate(r.predicate).includes(signature);
-                    const hasAgainst = extractCoverAgainstFromPredicate(r.predicate).includes(tokenId);
+                    const hasAgainst = extractCoverAgainstFromPredicate(r.predicate).includes(
+                      tokenId,
+                    );
                     if (hasSig || hasAgainst) {
                       modified = true;
                       return false;
@@ -229,7 +236,7 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
             for (const observer of observers) {
               try {
                 if (['loot', 'vehicle', 'party'].includes(observer?.actor?.type)) continue;
-              } catch (_) { }
+              } catch (_) {}
               const signature = observer.actor?.signature || observer.actor?.id || observer.id;
               const tokenId = observer.id;
               // Remove existing entries for this signature/tokenId, then append once
@@ -288,15 +295,19 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
                 for (const observer of observers) {
                   try {
                     if (['loot', 'vehicle', 'party'].includes(observer?.actor?.type)) continue;
-                  } catch (_) { }
+                  } catch (_) {}
                   const signature = observer.actor?.signature || observer.actor?.id || observer.id;
                   const tokenId = observer.id;
 
-
                   // Filter out rules for this specific observer
                   const newRules = filteredRules.filter((r) => {
-                    if (r?.key === 'FlatModifier' && (r.selector === 'ac' ||
-                      (Array.isArray(r.selector) && r.selector.length === 1 && r.selector[0] === 'ac'))) {
+                    if (
+                      r?.key === 'FlatModifier' &&
+                      (r.selector === 'ac' ||
+                        (Array.isArray(r.selector) &&
+                          r.selector.length === 1 &&
+                          r.selector[0] === 'ac'))
+                    ) {
                       const signatures = extractSignaturesFromPredicate(r.predicate);
                       const coverAgainst = extractCoverAgainstFromPredicate(r.predicate);
                       const hasSig = signatures.includes(signature);
@@ -312,7 +323,6 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
                     }
                     return true;
                   });
-
 
                   // Always update filteredRules to the new filtered result
                   // This ensures that multiple observer removals are cumulative
@@ -342,18 +352,18 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
         if (empties.length > 0) {
           try {
             await target.actor.deleteEmbeddedDocuments('Item', empties);
-          } catch (_) { }
+          } catch (_) {}
         }
         // Recompute reflex/stealth distribution and reconcile against maps
         try {
           await updateReflexStealthAcrossCoverAggregates(target);
-        } catch (_) { }
+        } catch (_) {}
         try {
           await dedupeCoverAggregates(target);
-        } catch (_) { }
+        } catch (_) {}
         try {
           await reconcileCoverAggregatesAgainstMaps(target);
-        } catch (_) { }
+        } catch (_) {}
         // Final log of each state aggregate and rule count
         try {
           const finalAggs = target.actor.itemTypes.effect.filter(
@@ -369,8 +379,10 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
 
             if (empty) {
               toDelete.push(agg.id);
-            } else if (rules.length !== originalRules.length ||
-              JSON.stringify(rules) !== JSON.stringify(originalRules)) {
+            } else if (
+              rules.length !== originalRules.length ||
+              JSON.stringify(rules) !== JSON.stringify(originalRules)
+            ) {
               // Rules were deduplicated or changed, update the effect
               toUpdate.push({ _id: agg.id, 'system.rules': rules });
             }
@@ -379,15 +391,15 @@ export async function batchUpdateCoverEffects(observerToken, targetUpdates, opti
           if (toDelete.length) {
             try {
               await target.actor.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch (_) {}
           }
 
           if (toUpdate.length) {
             try {
               await target.actor.updateEmbeddedDocuments('Item', toUpdate);
-            } catch (_) { }
+            } catch (_) {}
           }
-        } catch (_) { }
+        } catch (_) {}
       });
   }
 }
@@ -423,11 +435,11 @@ function createAggregate(target, coverState, rules, options) {
       duration:
         options.durationRounds >= 0
           ? {
-            value: options.durationRounds,
-            unit: 'rounds',
-            expiry: 'turn-start',
-            sustained: false,
-          }
+              value: options.durationRounds,
+              unit: 'rounds',
+              expiry: 'turn-start',
+              sustained: false,
+            }
           : { value: -1, unit: 'unlimited', expiry: null, sustained: false },
       tokenIcon: { show: false },
       unidentified: true,
@@ -454,8 +466,11 @@ export function canonicalizeObserverRules(rules) {
   const otherRules = [];
 
   for (const r of rules) {
-    if (r?.key === 'FlatModifier' && (r.selector === 'ac' ||
-      (Array.isArray(r.selector) && r.selector.length === 1 && r.selector[0] === 'ac'))) {
+    if (
+      r?.key === 'FlatModifier' &&
+      (r.selector === 'ac' ||
+        (Array.isArray(r.selector) && r.selector.length === 1 && r.selector[0] === 'ac'))
+    ) {
       const normalizedSelector = Array.isArray(r.selector) ? r.selector[0] : r.selector;
       const sigs = extractSignaturesFromPredicate(r.predicate);
       if (sigs.length > 0) {
@@ -482,18 +497,28 @@ export function canonicalizeObserverRules(rules) {
       continue;
     }
     // Handle reflex/stealth rules with selector normalization
-    if (r?.key === 'FlatModifier' && (r.selector === 'reflex' || r.selector === 'stealth' ||
-      (Array.isArray(r.selector) && r.selector.length === 1 && (r.selector[0] === 'reflex' || r.selector[0] === 'stealth')))) {
+    if (
+      r?.key === 'FlatModifier' &&
+      (r.selector === 'reflex' ||
+        r.selector === 'stealth' ||
+        (Array.isArray(r.selector) &&
+          r.selector.length === 1 &&
+          (r.selector[0] === 'reflex' || r.selector[0] === 'stealth')))
+    ) {
       const normalizedSelector = Array.isArray(r.selector) ? r.selector[0] : r.selector;
       const ruleKey = `${normalizedSelector}:${r.type}:${r.value}:${JSON.stringify(r.predicate || [])}`;
 
       // Check if we already have a rule for this selector/type/value/predicate combination
-      if (!otherRules.some(existing => {
-        if (existing?.key !== 'FlatModifier') return false;
-        const existingSelector = Array.isArray(existing.selector) ? existing.selector[0] : existing.selector;
-        const existingKey = `${existingSelector}:${existing.type}:${existing.value}:${JSON.stringify(existing.predicate || [])}`;
-        return existingKey === ruleKey;
-      })) {
+      if (
+        !otherRules.some((existing) => {
+          if (existing?.key !== 'FlatModifier') return false;
+          const existingSelector = Array.isArray(existing.selector)
+            ? existing.selector[0]
+            : existing.selector;
+          const existingKey = `${existingSelector}:${existing.type}:${existing.value}:${JSON.stringify(existing.predicate || [])}`;
+          return existingKey === ruleKey;
+        })
+      ) {
         // Normalize the selector to string format for consistency
         const normalizedRule = { ...r, selector: normalizedSelector };
         otherRules.push(normalizedRule);
@@ -501,7 +526,7 @@ export function canonicalizeObserverRules(rules) {
     } else {
       // All other rules - use stringified rule as key to dedupe exact duplicates
       const ruleStr = JSON.stringify(r);
-      if (!otherRules.some(existing => JSON.stringify(existing) === ruleStr)) {
+      if (!otherRules.some((existing) => JSON.stringify(existing) === ruleStr)) {
         otherRules.push(r);
       }
     }

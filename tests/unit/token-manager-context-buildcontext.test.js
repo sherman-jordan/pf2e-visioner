@@ -22,7 +22,7 @@ jest.mock('../../scripts/chat/services/infra/shared-utils.js', () => ({
       return 15; // Default loot stealth DC
     }
     return token.actor.system?.skills?.stealth?.dc || 0;
-  })
+  }),
 }));
 
 jest.mock('../../scripts/utils.js', () => ({
@@ -30,24 +30,80 @@ jest.mock('../../scripts/utils.js', () => ({
   getLastRollTotalForActor: jest.fn(() => null),
   getSceneTargets: jest.fn(() => []),
   getVisibilityMap: jest.fn(() => ({})),
-  hasActiveEncounter: jest.fn(() => false)
+  hasActiveEncounter: jest.fn(() => false),
 }));
 
 // Mock the constants
 jest.mock('../../scripts/constants.js', () => ({
   COVER_STATES: {
-    none: { label: 'PF2E_VISIONER.COVER.NONE', icon: 'fas fa-circle', color: '#4caf50', cssClass: 'cover-none', bonusAC: 0, bonusReflex: 0, bonusStealth: 0, canHide: true },
-    lesser: { label: 'PF2E_VISIONER.COVER.LESSER', icon: 'fas fa-shield-alt', color: '#ffeb3b', cssClass: 'cover-lesser', bonusAC: 1, bonusReflex: 1, bonusStealth: 1, canHide: true },
-    standard: { label: 'PF2E_VISIONER.COVER.STANDARD', icon: 'fas fa-shield-alt', color: '#ff9800', cssClass: 'cover-standard', bonusAC: 2, bonusReflex: 2, bonusStealth: 2, canHide: true },
-    greater: { label: 'PF2E_VISIONER.COVER.GREATER', icon: 'fas fa-shield-alt', color: '#f44336', cssClass: 'cover-greater', bonusAC: 4, bonusReflex: 4, bonusStealth: 4, canHide: true }
+    none: {
+      label: 'PF2E_VISIONER.COVER.NONE',
+      icon: 'fas fa-circle',
+      color: '#4caf50',
+      cssClass: 'cover-none',
+      bonusAC: 0,
+      bonusReflex: 0,
+      bonusStealth: 0,
+      canHide: true,
+    },
+    lesser: {
+      label: 'PF2E_VISIONER.COVER.LESSER',
+      icon: 'fas fa-shield-alt',
+      color: '#ffeb3b',
+      cssClass: 'cover-lesser',
+      bonusAC: 1,
+      bonusReflex: 1,
+      bonusStealth: 1,
+      canHide: true,
+    },
+    standard: {
+      label: 'PF2E_VISIONER.COVER.STANDARD',
+      icon: 'fas fa-shield-alt',
+      color: '#ff9800',
+      cssClass: 'cover-standard',
+      bonusAC: 2,
+      bonusReflex: 2,
+      bonusStealth: 2,
+      canHide: true,
+    },
+    greater: {
+      label: 'PF2E_VISIONER.COVER.GREATER',
+      icon: 'fas fa-shield-alt',
+      color: '#f44336',
+      cssClass: 'cover-greater',
+      bonusAC: 4,
+      bonusReflex: 4,
+      bonusStealth: 4,
+      canHide: true,
+    },
   },
   MODULE_ID: 'pf2e-visioner',
   VISIBILITY_STATES: {
-    observed: { label: 'PF2E_VISIONER.VISIBILITY.OBSERVED', icon: 'fas fa-eye', color: '#4caf50', cssClass: 'visibility-observed' },
-    concealed: { label: 'PF2E_VISIONER.VISIBILITY.CONCEALED', icon: 'fas fa-cloud', color: '#ffeb3b', cssClass: 'visibility-concealed' },
-    hidden: { label: 'PF2E_VISIONER.VISIBILITY.HIDDEN', icon: 'fas fa-eye-slash', color: '#f44336', cssClass: 'visibility-hidden' },
-    undetected: { label: 'PF2E_VISIONER.VISIBILITY.UNDETECTED', icon: 'fas fa-ghost', color: '#9c27b0', cssClass: 'visibility-undetected' }
-  }
+    observed: {
+      label: 'PF2E_VISIONER.VISIBILITY.OBSERVED',
+      icon: 'fas fa-eye',
+      color: '#4caf50',
+      cssClass: 'visibility-observed',
+    },
+    concealed: {
+      label: 'PF2E_VISIONER.VISIBILITY.CONCEALED',
+      icon: 'fas fa-cloud',
+      color: '#ffeb3b',
+      cssClass: 'visibility-concealed',
+    },
+    hidden: {
+      label: 'PF2E_VISIONER.VISIBILITY.HIDDEN',
+      icon: 'fas fa-eye-slash',
+      color: '#f44336',
+      cssClass: 'visibility-hidden',
+    },
+    undetected: {
+      label: 'PF2E_VISIONER.VISIBILITY.UNDETECTED',
+      icon: 'fas fa-ghost',
+      color: '#9c27b0',
+      cssClass: 'visibility-undetected',
+    },
+  },
 }));
 
 // Mock FoundryVTT ApplicationV2
@@ -56,11 +112,11 @@ global.foundry = {
     api: {
       ApplicationV2: {
         prototype: {
-          _prepareContext: jest.fn().mockResolvedValue({})
-        }
-      }
-    }
-  }
+          _prepareContext: jest.fn().mockResolvedValue({}),
+        },
+      },
+    },
+  },
 };
 
 // Now import the buildContext function after mocking dependencies
@@ -80,16 +136,16 @@ describe('Token Manager Context Building - DC Display Fix', () => {
         hasPlayerOwner: false,
         system: {
           skills: {
-            stealth: { dc: 9 } // Observer's stealth DC
-          }
-        }
+            stealth: { dc: 9 }, // Observer's stealth DC
+          },
+        },
       }),
       document: {
         id: 'observer-1',
         name: 'Ogre Warrior',
         disposition: -1, // hostile
-        getFlag: jest.fn(() => null)
-      }
+        getFlag: jest.fn(() => null),
+      },
     });
 
     // Create mock target tokens (tokens that could perceive the observer)
@@ -101,15 +157,15 @@ describe('Token Manager Context Building - DC Display Fix', () => {
         type: 'character',
         hasPlayerOwner: true,
         system: {
-          perception: { dc: 15 } // Target's perception DC
-        }
+          perception: { dc: 15 }, // Target's perception DC
+        },
       }),
       document: {
         id: 'target-1',
         name: 'Amiri',
         disposition: 1, // friendly
-        getFlag: jest.fn(() => null)
-      }
+        getFlag: jest.fn(() => null),
+      },
     });
 
     mockTarget2 = createMockToken({
@@ -120,15 +176,15 @@ describe('Token Manager Context Building - DC Display Fix', () => {
         type: 'character',
         hasPlayerOwner: true,
         system: {
-          perception: { dc: 12 } // Different perception DC
-        }
+          perception: { dc: 12 }, // Different perception DC
+        },
       }),
       document: {
         id: 'target-2',
         name: 'Ezren',
         disposition: 1, // friendly
-        getFlag: jest.fn(() => null)
-      }
+        getFlag: jest.fn(() => null),
+      },
     });
 
     // Mock the app object
@@ -140,17 +196,17 @@ describe('Token Manager Context Building - DC Display Fix', () => {
       ignoreAllies: false,
       ignoreWalls: false,
       visibilityData: {},
-      coverData: {}
+      coverData: {},
     };
 
     // Mock canvas tokens
     global.canvas = {
       tokens: {
-        placeables: [mockTarget1, mockTarget2]
+        placeables: [mockTarget1, mockTarget2],
       },
       walls: {
-        placeables: []
-      }
+        placeables: [],
+      },
     };
 
     // Mock game settings
@@ -162,11 +218,17 @@ describe('Token Manager Context Building - DC Display Fix', () => {
 
     // Mock game.user.targets
     global.game.user = {
-      targets: new Set() // Empty set of targeted tokens
+      targets: new Set(), // Empty set of targeted tokens
     };
 
     // Configure the mocked utils functions
-    const { getSceneTargets, getVisibilityMap, getCoverMap, hasActiveEncounter, getLastRollTotalForActor } = require('../../scripts/utils.js');
+    const {
+      getSceneTargets,
+      getVisibilityMap,
+      getCoverMap,
+      hasActiveEncounter,
+      getLastRollTotalForActor,
+    } = require('../../scripts/utils.js');
     getSceneTargets.mockReturnValue([mockTarget1, mockTarget2]);
     getVisibilityMap.mockReturnValue({});
     getCoverMap.mockReturnValue({});
@@ -175,7 +237,7 @@ describe('Token Manager Context Building - DC Display Fix', () => {
   });
 
   describe('Target Mode DC Display Fix', () => {
-    test('should show each token\'s perception DC in target mode (not observer\'s stealth DC)', async () => {
+    test("should show each token's perception DC in target mode (not observer's stealth DC)", async () => {
       const context = await buildContext(mockApp, {});
 
       // Should have PC targets
@@ -183,24 +245,24 @@ describe('Token Manager Context Building - DC Display Fix', () => {
       expect(context.npcTargets).toHaveLength(0);
 
       // Check that each target shows its own perception DC
-      const amiriTarget = context.pcTargets.find(t => t.name === 'Amiri');
-      const ezrenTarget = context.pcTargets.find(t => t.name === 'Ezren');
+      const amiriTarget = context.pcTargets.find((t) => t.name === 'Amiri');
+      const ezrenTarget = context.pcTargets.find((t) => t.name === 'Ezren');
 
       expect(amiriTarget).toBeDefined();
       expect(ezrenTarget).toBeDefined();
 
       // In target mode, both perceptionDC and stealthDC should be the perception DC of each token
       expect(amiriTarget.perceptionDC).toBe(15); // Amiri's perception DC
-      expect(amiriTarget.stealthDC).toBe(15);    // Should also be Amiri's perception DC
+      expect(amiriTarget.stealthDC).toBe(15); // Should also be Amiri's perception DC
 
       expect(ezrenTarget.perceptionDC).toBe(12); // Ezren's perception DC
-      expect(ezrenTarget.stealthDC).toBe(12);     // Should also be Ezren's perception DC
+      expect(ezrenTarget.stealthDC).toBe(12); // Should also be Ezren's perception DC
 
       // Should NOT show the observer's stealth DC (9) for any target
       expect(amiriTarget.perceptionDC).not.toBe(9); // Observer's stealth DC
-      expect(amiriTarget.stealthDC).not.toBe(9);    // Observer's stealth DC
+      expect(amiriTarget.stealthDC).not.toBe(9); // Observer's stealth DC
       expect(ezrenTarget.perceptionDC).not.toBe(9); // Observer's stealth DC
-      expect(ezrenTarget.stealthDC).not.toBe(9);    // Observer's stealth DC
+      expect(ezrenTarget.stealthDC).not.toBe(9); // Observer's stealth DC
 
       // Verify we're in target mode
       expect(context.isTargetMode).toBe(true);
@@ -210,13 +272,13 @@ describe('Token Manager Context Building - DC Display Fix', () => {
     test('should show different perception DCs for different tokens', async () => {
       const context = await buildContext(mockApp, {});
 
-      const amiriTarget = context.pcTargets.find(t => t.name === 'Amiri');
-      const ezrenTarget = context.pcTargets.find(t => t.name === 'Ezren');
+      const amiriTarget = context.pcTargets.find((t) => t.name === 'Amiri');
+      const ezrenTarget = context.pcTargets.find((t) => t.name === 'Ezren');
 
       // Each token should have its own unique perception DC
       expect(amiriTarget.perceptionDC).toBe(15);
       expect(ezrenTarget.perceptionDC).toBe(12);
-      
+
       // They should be different
       expect(amiriTarget.perceptionDC).not.toBe(ezrenTarget.perceptionDC);
       expect(amiriTarget.stealthDC).not.toBe(ezrenTarget.stealthDC);
@@ -225,8 +287,8 @@ describe('Token Manager Context Building - DC Display Fix', () => {
     test('should verify the fix prevents the bug where all tokens show same DC', async () => {
       const context = await buildContext(mockApp, {});
 
-      const amiriTarget = context.pcTargets.find(t => t.name === 'Amiri');
-      const ezrenTarget = context.pcTargets.find(t => t.name === 'Ezren');
+      const amiriTarget = context.pcTargets.find((t) => t.name === 'Amiri');
+      const ezrenTarget = context.pcTargets.find((t) => t.name === 'Ezren');
 
       // Before the fix, both would show the observer's stealth DC (9)
       // After the fix, each should show its own perception DC
@@ -246,14 +308,14 @@ describe('Token Manager Context Building - DC Display Fix', () => {
       mockApp.mode = 'observer';
     });
 
-    test('should show target\'s stealth DC in observer mode', async () => {
+    test("should show target's stealth DC in observer mode", async () => {
       const context = await buildContext(mockApp, {});
 
       // Should have PC targets
       expect(context.pcTargets).toHaveLength(2);
 
-      const amiriTarget = context.pcTargets.find(t => t.name === 'Amiri');
-      const ezrenTarget = context.pcTargets.find(t => t.name === 'Ezren');
+      const amiriTarget = context.pcTargets.find((t) => t.name === 'Amiri');
+      const ezrenTarget = context.pcTargets.find((t) => t.name === 'Ezren');
 
       expect(amiriTarget).toBeDefined();
       expect(ezrenTarget).toBeDefined();
@@ -272,7 +334,7 @@ describe('Token Manager Context Building - DC Display Fix', () => {
   describe('Context Properties', () => {
     test('should set correct mode properties in target mode', async () => {
       mockApp.mode = 'target';
-      
+
       const context = await buildContext(mockApp, {});
 
       expect(context.mode).toBe('target');
@@ -282,7 +344,7 @@ describe('Token Manager Context Building - DC Display Fix', () => {
 
     test('should set correct mode properties in observer mode', async () => {
       mockApp.mode = 'observer';
-      
+
       const context = await buildContext(mockApp, {});
 
       expect(context.mode).toBe('observer');
@@ -292,7 +354,7 @@ describe('Token Manager Context Building - DC Display Fix', () => {
 
     test('should set correct tab properties', async () => {
       mockApp.activeTab = 'visibility';
-      
+
       const context = await buildContext(mockApp, {});
 
       expect(context.activeTab).toBe('visibility');

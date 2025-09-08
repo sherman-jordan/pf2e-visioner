@@ -287,7 +287,6 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);
-
   }
 
   /**

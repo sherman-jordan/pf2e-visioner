@@ -93,7 +93,7 @@ export class HidePreviewDialog extends BaseActionDialog {
             })
             .catch(() => this.render({ force: true }));
         });
-    } catch (_) { }
+    } catch (_) {}
   }
 
   /**
@@ -122,7 +122,7 @@ export class HidePreviewDialog extends BaseActionDialog {
         this.ignoreAllies,
         'target',
       );
-    } catch (_) { }
+    } catch (_) {}
 
     // Note: autoCover data is already calculated in hide-action.js and should be preserved
     // No need to call getCoverBetween here as it would overwrite the rich autoCover object
@@ -184,7 +184,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       try {
         const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
         filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
-      } catch (_) { }
+      } catch (_) {}
       if (!Array.isArray(filtered)) return [];
       // Preserve override selections and recompute actionability
       const merged = filtered.map((o) => {
@@ -416,7 +416,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       await import('../services/index.js')
     ).applyNowHide(
       { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
-      { html: () => { }, attr: () => { } },
+      { html: () => {}, attr: () => {} },
     );
 
     // Update button states
@@ -453,9 +453,9 @@ export class HidePreviewDialog extends BaseActionDialog {
       const { revertNowHide } = await import('../services/index.js');
       await revertNowHide(
         { ...app.actionData, ignoreAllies: app.ignoreAllies },
-        { html: () => { }, attr: () => { } },
+        { html: () => {}, attr: () => {} },
       );
-    } catch (error) { }
+    } catch (error) {}
 
     app.bulkActionState = 'reverted';
     app.updateBulkActionButtons();
@@ -499,7 +499,7 @@ export class HidePreviewDialog extends BaseActionDialog {
         await import('../services/index.js')
       ).applyNowHide(
         { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
-        { html: () => { }, attr: () => { } },
+        { html: () => {}, attr: () => {} },
       );
 
       app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
@@ -532,7 +532,7 @@ export class HidePreviewDialog extends BaseActionDialog {
         ignoreAllies: app.ignoreAllies,
         targetTokenId: tokenId,
       };
-      await revertNowHide(actionDataWithTarget, { html: () => { }, attr: () => { } });
+      await revertNowHide(actionDataWithTarget, { html: () => {}, attr: () => {} });
 
       app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();

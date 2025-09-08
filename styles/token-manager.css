@@ -136,9 +136,6 @@
     }
   }
 
-
-
-
   /* Footer Actions */
   .sheet-footer {
     display: flex;
@@ -201,6 +198,4 @@
     background: transparent;
     border-color: var(--color-border-light-primary);
   }
-
-
 } /* End .pf2e-visioner scope */

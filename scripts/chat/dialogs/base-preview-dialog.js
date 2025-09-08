@@ -31,7 +31,7 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
         });
       }
     } catch (_) {}
-    
+
     // Add token image click handlers for panning and selection
     try {
       this.addTokenImageClickHandlers?.();

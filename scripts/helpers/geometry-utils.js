@@ -70,10 +70,12 @@ function orientation(a, b, c) {
  * @returns {boolean} True if c is on segment ab
  */
 function onSegment(a, b, c) {
-  return Math.min(a.x, b.x) <= c.x &&
-         c.x <= Math.max(a.x, b.x) &&
-         Math.min(a.y, b.y) <= c.y &&
-         c.y <= Math.max(a.y, b.y);
+  return (
+    Math.min(a.x, b.x) <= c.x &&
+    c.x <= Math.max(a.x, b.x) &&
+    Math.min(a.y, b.y) <= c.y &&
+    c.y <= Math.max(a.y, b.y)
+  );
 }
 
 /**
@@ -89,7 +91,7 @@ export function segmentsIntersect(p1, p2, q1, q2) {
   const o2 = orientation(p1, p2, q2);
   const o3 = orientation(q1, q2, p1);
   const o4 = orientation(q1, q2, p2);
-  
+
   if (o1 !== o2 && o3 !== o4) return true;
   if (o1 === 0 && onSegment(p1, p2, q1)) return true;
   if (o2 === 0 && onSegment(p1, p2, q2)) return true;
@@ -107,12 +109,12 @@ export function segmentsIntersect(p1, p2, q1, q2) {
  */
 export function segmentIntersectsRect(p1, p2, rect) {
   if (pointInRect(p1.x, p1.y, rect) || pointInRect(p2.x, p2.y, rect)) return true;
-  
+
   const r1 = { x: rect.x1, y: rect.y1 };
   const r2 = { x: rect.x2, y: rect.y1 };
   const r3 = { x: rect.x2, y: rect.y2 };
   const r4 = { x: rect.x1, y: rect.y2 };
-  
+
   return (
     segmentsIntersect(p1, p2, r1, r2) ||
     segmentsIntersect(p1, p2, r2, r3) ||

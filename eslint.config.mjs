@@ -1,23 +1,19 @@
 import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
 
 export default [
-  // Ignore vendored/minified libraries and generated artifacts
-  {
-    ignores: [
-      'pf2e/static/lib/**',
-      'coverage/**',
-    ],
-  },
   js.configs.recommended,
+  prettier,
   {
-    files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.node,
+        ...globals.es2021,
         ...globals.jest,
-        // Foundry VTT globals
+        // FoundryVTT globals
         game: 'readonly',
         canvas: 'readonly',
         ui: 'readonly',
@@ -35,7 +31,7 @@ export default [
         MODULE_ID: 'readonly',
         isStandard: 'readonly',
         isDoor: 'readonly',
-        // Additional Foundry VTT globals
+        // Additional FoundryVTT globals
         MeasuredTemplate: 'readonly',
         fromUuidSync: 'readonly',
         context: 'readonly',
@@ -50,6 +46,11 @@ export default [
         createMockWall: 'readonly',
         CONST: 'readonly',
       },
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+    plugins: {
+      prettier: prettierPlugin,
     },
     rules: {
       'no-unused-vars': 'warn',
@@ -57,7 +58,8 @@ export default [
       'no-empty': 'off', // Common in Foundry VTT modules for try/catch blocks
       'no-useless-catch': 'off', // Common pattern in Foundry VTT for error handling
       'no-constant-binary-expression': 'off', // Sometimes used intentionally in Foundry VTT
-      'no-debugger': 'off', // Sometimes used intentionally in Foundry VTT
+      'no-debugger': 'off', // Sometimes used intentionally in Foundry VTT,
+      'prettier/prettier': 'error',
     },
   },
 ];

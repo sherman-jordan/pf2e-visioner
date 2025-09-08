@@ -165,7 +165,6 @@ Hooks.once('ready', async () => {
     } catch (error) {
       console.error('PF2E Visioner: Failed to initialize cover visualization:', error);
     }
-
   } catch (error) {
     console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);
   }

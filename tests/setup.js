@@ -129,9 +129,9 @@ global.canvas = {
           const u = -((x1 - p1.x) * (y2 - y1) - (y1 - p1.y) * (x2 - x1)) / denom;
 
           if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-            return { t, wall };  // intersection found
+            return { t, wall }; // intersection found
           }
-        } catch (_) { }
+        } catch (_) {}
       }
       return null; // no intersection
     }),
@@ -277,23 +277,37 @@ global.console = {
       textBaseline: 'alphabetic',
 
       // path ops
-      beginPath: jest.fn(() => { }),
-      moveTo: jest.fn(() => { }),
-      lineTo: jest.fn(() => { anyDrawn = true; }),
-      arc: jest.fn(() => { anyDrawn = true; }),
-      stroke: jest.fn(() => { anyDrawn = true; }),
-      fill: jest.fn(() => { anyDrawn = true; }),
-      strokeRect: jest.fn(() => { anyDrawn = true; }),
-      fillRect: jest.fn(() => { anyDrawn = true; }),
-      clearRect: jest.fn(() => { }),
+      beginPath: jest.fn(() => {}),
+      moveTo: jest.fn(() => {}),
+      lineTo: jest.fn(() => {
+        anyDrawn = true;
+      }),
+      arc: jest.fn(() => {
+        anyDrawn = true;
+      }),
+      stroke: jest.fn(() => {
+        anyDrawn = true;
+      }),
+      fill: jest.fn(() => {
+        anyDrawn = true;
+      }),
+      strokeRect: jest.fn(() => {
+        anyDrawn = true;
+      }),
+      fillRect: jest.fn(() => {
+        anyDrawn = true;
+      }),
+      clearRect: jest.fn(() => {}),
 
       // gradients
       createLinearGradient: jest.fn(() => ({
-        addColorStop: jest.fn(() => { }),
+        addColorStop: jest.fn(() => {}),
       })),
 
       // text
-      fillText: jest.fn(() => { anyDrawn = true; }),
+      fillText: jest.fn(() => {
+        anyDrawn = true;
+      }),
       measureText: jest.fn((text) => ({
         width: (text?.length ?? 0) * 7.2,
         actualBoundingBoxAscent: 10,
@@ -404,7 +418,7 @@ jest.mock(
   () => ({
     runTasksWithProgress: global.runTasksWithProgress,
   }),
-  { virtual: true }
+  { virtual: true },
 );
 
 jest.mock(
@@ -412,7 +426,7 @@ jest.mock(
   () => ({
     batchUpdateVisibilityEffects: jest.fn(),
   }),
-  { virtual: true }
+  { virtual: true },
 );
 
 jest.mock(
@@ -421,7 +435,7 @@ jest.mock(
     batchUpdateCoverEffects: jest.fn(),
     reconcileCoverEffectsForTarget: jest.fn(),
   }),
-  { virtual: true }
+  { virtual: true },
 );
 
 jest.mock(
@@ -429,7 +443,7 @@ jest.mock(
   () => ({
     updateWallVisuals: jest.fn(),
   }),
-  { virtual: true }
+  { virtual: true },
 );
 
 // Mock the core auto-cover dependencies to avoid circular dependency during imports
@@ -439,27 +453,27 @@ const mockAutoCoverSystem = {
     // Basic logic for testing purposes
     if (!attacker || !target) return 'none';
     if (attacker === target || attacker.id === target?.id) return 'none';
-    
+
     // For 3D sampling and cover tests, check for blocking tokens on the canvas
     const canvas = global.canvas;
     if (canvas?.tokens?.placeables?.length > 2) {
       // Check if there are live blocking tokens (not dead)
-      const otherTokens = canvas.tokens.placeables.filter(token => 
-        token !== attacker && token !== target
+      const otherTokens = canvas.tokens.placeables.filter(
+        (token) => token !== attacker && token !== target,
       );
-      
+
       // Check if any blocking tokens are alive (hp > 0)
-      const liveBlockers = otherTokens.filter(token => {
+      const liveBlockers = otherTokens.filter((token) => {
         const hp = token.actor?.system?.attributes?.hp;
         return !hp || hp.value > 0; // Assume alive if no HP data or HP > 0
       });
-      
+
       // If there are live blockers, return cover
       if (liveBlockers.length > 0) {
         return 'standard';
       }
     }
-    
+
     return 'none';
   }),
   getCoverBonusByState: jest.fn((state) => {
@@ -511,19 +525,19 @@ const mockCoverUIManager = {
 
 const mockTemplateManager = {
   _templatesData: new Map(),
-  _activeReflexSaves: new Map(), 
+  _activeReflexSaves: new Map(),
   _templatesOrigins: new Map(),
-  
+
   getTemplatesData: jest.fn().mockReturnValue(new Map()),
-  
-  getTemplateData: jest.fn().mockImplementation(function(templateId) {
+
+  getTemplateData: jest.fn().mockImplementation(function (templateId) {
     return this._templatesData.get(templateId) || null;
   }),
-  
-  removeTemplateData: jest.fn().mockImplementation(function(templateId) {
+
+  removeTemplateData: jest.fn().mockImplementation(function (templateId) {
     this._templatesData.delete(templateId);
   }),
-  
+
   getTemplateOrigin: jest.fn((tokenId) => {
     // For the test that expects template origin operations to work
     if (tokenId === 'token1') {
@@ -531,43 +545,43 @@ const mockTemplateManager = {
     }
     return null;
   }),
-  
+
   setTemplateOrigin: jest.fn(),
-  
-  registerTemplate: jest.fn().mockImplementation(function(templateDoc, userId) {
+
+  registerTemplate: jest.fn().mockImplementation(function (templateDoc, userId) {
     if (templateDoc && templateDoc.id) {
       this._templatesData.set(templateDoc.id, {
         id: templateDoc.id,
         userId: userId,
-        ...templateDoc
+        ...templateDoc,
       });
     }
   }),
-  
-  unregisterTemplate: jest.fn().mockImplementation(function(templateId) {
+
+  unregisterTemplate: jest.fn().mockImplementation(function (templateId) {
     this._templatesData.delete(templateId);
   }),
-  
-  clearTemplates: jest.fn().mockImplementation(function() {
+
+  clearTemplates: jest.fn().mockImplementation(function () {
     this._templatesData.clear();
   }),
-  
-  addActiveReflexSaveTemplate: jest.fn().mockImplementation(function(templateId) {
+
+  addActiveReflexSaveTemplate: jest.fn().mockImplementation(function (templateId) {
     if (templateId) {
       this._activeReflexSaves.set(templateId, { ts: Date.now() });
     }
   }),
-  
-  getActiveReflexSaveTemplate: jest.fn().mockImplementation(function(templateId) {
+
+  getActiveReflexSaveTemplate: jest.fn().mockImplementation(function (templateId) {
     return this._activeReflexSaves.get(templateId) || undefined;
   }),
-  
-  removeActiveReflexSaveTemplate: jest.fn().mockImplementation(function(templateId) {
+
+  removeActiveReflexSaveTemplate: jest.fn().mockImplementation(function (templateId) {
     this._activeReflexSaves.delete(templateId);
   }),
-  
+
   cleanupOldTemplates: jest.fn(),
-  clearActiveReflexSaves: jest.fn().mockImplementation(function() {
+  clearActiveReflexSaves: jest.fn().mockImplementation(function () {
     this._activeReflexSaves.clear();
   }),
 };
@@ -579,32 +593,48 @@ const mockTemplateManager = {
 
 // Mock AutoCoverSystem dependencies
 jest.mock('../../scripts/constants.js', () => ({ MODULE_ID: 'pf2e-visioner' }), { virtual: true });
-jest.mock('../../scripts/cover/CoverOverrideManager.js', () => ({
-  default: {
-    setPopupOverride: jest.fn(),
-    setDialogOverride: jest.fn(),
-    setRollOverride: jest.fn(),
-    consumeOverride: jest.fn(),
-    getPopupOverride: jest.fn(),
-    getDialogOverride: jest.fn(),
-    consumePopupOverride: jest.fn(),
-    consumeDialogOverride: jest.fn(),
-    hasOverride: jest.fn().mockReturnValue(false),
-    clearOverrides: jest.fn(),
-  }
-}), { virtual: true });
-jest.mock('../../scripts/helpers/cover-helpers.js', () => ({
-  getCoverBonusByState: jest.fn((state) => {
-    const bonuses = { none: 0, lesser: 1, standard: 2, greater: 4 };
-    return bonuses[state] || 0;
-  })
-}), { virtual: true });
-// These mocks are already handled by the main AutoCoverSystem mock above, 
+jest.mock(
+  '../../scripts/cover/CoverOverrideManager.js',
+  () => ({
+    default: {
+      setPopupOverride: jest.fn(),
+      setDialogOverride: jest.fn(),
+      setRollOverride: jest.fn(),
+      consumeOverride: jest.fn(),
+      getPopupOverride: jest.fn(),
+      getDialogOverride: jest.fn(),
+      consumePopupOverride: jest.fn(),
+      consumeDialogOverride: jest.fn(),
+      hasOverride: jest.fn().mockReturnValue(false),
+      clearOverrides: jest.fn(),
+    },
+  }),
+  { virtual: true },
+);
+jest.mock(
+  '../../scripts/helpers/cover-helpers.js',
+  () => ({
+    getCoverBonusByState: jest.fn((state) => {
+      const bonuses = { none: 0, lesser: 1, standard: 2, greater: 4 };
+      return bonuses[state] || 0;
+    }),
+  }),
+  { virtual: true },
+);
+// These mocks are already handled by the main AutoCoverSystem mock above,
 // but needed for tests that use dynamic import with different paths
 
-// Mock all possible import paths for CoverUIManager  
-jest.mock('../../scripts/cover/auto-cover/CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true });
-jest.mock('../scripts/cover/auto-cover/CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true });
+// Mock all possible import paths for CoverUIManager
+jest.mock(
+  '../../scripts/cover/auto-cover/CoverUIManager.js',
+  () => ({ default: mockCoverUIManager }),
+  { virtual: true },
+);
+jest.mock(
+  '../scripts/cover/auto-cover/CoverUIManager.js',
+  () => ({ default: mockCoverUIManager }),
+  { virtual: true },
+);
 jest.mock('../CoverUIManager.js', () => ({ default: mockCoverUIManager }), { virtual: true }); // From usecases dir
 
 // Mock the dependencies of BaseUseCase.js that cause the circular import
@@ -638,17 +668,17 @@ jest.mock(
       handlePreCreateChatMessage: jest.fn(),
       onRenderChatMessage: jest.fn(),
     };
-    
+
     // Also mock the class constructor to prevent instantiation
     const MockStealthCheckUseCase = jest.fn().mockImplementation(() => mockInstance);
     MockStealthCheckUseCase.prototype = mockInstance;
-    
+
     return {
       default: mockInstance,
       StealthCheckUseCase: MockStealthCheckUseCase,
     };
   },
-  { virtual: true }
+  { virtual: true },
 );
 
 // ✅ REMOVED DANGEROUS UTILS.JS MOCK
@@ -734,8 +764,17 @@ global.createMockToken = (data = {}) => {
       hasPlayerOwner: data.hasPlayerOwner || false,
       isOwner: data.isOwner || false,
     },
-    center: data.center || { x: x * gridSize + (width * gridSize) / 2, y: y * gridSize + (height * gridSize) / 2 },
-    getCenter: jest.fn(() => data.center || { x: x * gridSize + (width * gridSize) / 2, y: y * gridSize + (height * gridSize) / 2 }),
+    center: data.center || {
+      x: x * gridSize + (width * gridSize) / 2,
+      y: y * gridSize + (height * gridSize) / 2,
+    },
+    getCenter: jest.fn(
+      () =>
+        data.center || {
+          x: x * gridSize + (width * gridSize) / 2,
+          y: y * gridSize + (height * gridSize) / 2,
+        },
+    ),
     isOwner: data.isOwner || false,
     visible: data.visible !== false,
     inCombat: data.inCombat !== undefined ? data.inCombat : false, // For encounter tests
@@ -849,7 +888,7 @@ beforeEach(() => {
       placeables: [],
       get: jest.fn(),
       addChild: jest.fn(),
-      removeChild: jest.fn()
+      removeChild: jest.fn(),
     };
   } else {
     global.canvas.tokens.controlled = [];
@@ -858,12 +897,12 @@ beforeEach(() => {
 
   // Ensure these properties exist before trying to set them
   if (!global.canvas.walls) {
-    global.canvas.walls = { 
-      placeables: [], 
+    global.canvas.walls = {
+      placeables: [],
       objects: { children: [] },
-      get: jest.fn(), 
-      addChild: jest.fn(), 
-      removeChild: jest.fn() 
+      get: jest.fn(),
+      addChild: jest.fn(),
+      removeChild: jest.fn(),
     };
   } else if (!global.canvas.walls.objects) {
     global.canvas.walls.objects = { children: [] };
@@ -871,10 +910,20 @@ beforeEach(() => {
     global.canvas.walls.objects.children = [];
   }
   if (!global.canvas.lighting) {
-    global.canvas.lighting = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+    global.canvas.lighting = {
+      placeables: [],
+      get: jest.fn(),
+      addChild: jest.fn(),
+      removeChild: jest.fn(),
+    };
   }
   if (!global.canvas.terrain) {
-    global.canvas.terrain = { placeables: [], get: jest.fn(), addChild: jest.fn(), removeChild: jest.fn() };
+    global.canvas.terrain = {
+      placeables: [],
+      get: jest.fn(),
+      addChild: jest.fn(),
+      removeChild: jest.fn(),
+    };
   }
 
   global.canvas.walls.placeables = [];

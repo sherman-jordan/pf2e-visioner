@@ -24,12 +24,10 @@ export async function batchUpdateVisibilityEffects(observerToken, targetUpdates,
     const receiverId = receiver.actor.id;
     if (!updatesByReceiver.has(receiverId))
       updatesByReceiver.set(receiverId, { receiver, updates: [] });
-    updatesByReceiver
-      .get(receiverId)
-      .updates.push({
-        source: effectTarget === 'observer' ? update.target : observerToken,
-        state: update.state,
-      });
+    updatesByReceiver.get(receiverId).updates.push({
+      source: effectTarget === 'observer' ? update.target : observerToken,
+      state: update.state,
+    });
   }
   for (const { receiver, updates } of updatesByReceiver.values()) {
     try {

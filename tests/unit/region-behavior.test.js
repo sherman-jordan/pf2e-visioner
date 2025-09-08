@@ -10,39 +10,39 @@ global.foundry.data.regionBehaviors.RegionBehaviorType = class RegionBehaviorTyp
   constructor() {
     this.region = null;
   }
-  
+
   static defineSchema() {
     return {};
   }
-  
+
   static _createEventsField(events) {
     return {
-      events: new Set(events.events || events)
+      events: new Set(events.events || events),
     };
   }
-  
+
   static LOCALIZATION_PREFIXES = [];
 };
 
 global.CONST = {
   REGION_EVENTS: {
-    REGION_BOUNDARY: "regionBoundary",
-    BEHAVIOR_ACTIVATED: "behaviorActivated",
-    BEHAVIOR_DEACTIVATED: "behaviorDeactivated",
-    BEHAVIOR_VIEWED: "behaviorViewed",
-    BEHAVIOR_UNVIEWED: "behaviorUnviewed",
-    TOKEN_ENTER: "tokenEnter",
-    TOKEN_EXIT: "tokenExit",
-    TOKEN_MOVE_IN: "tokenMoveIn",
-    TOKEN_MOVE_OUT: "tokenMoveOut",
-    TOKEN_MOVE_WITHIN: "tokenMoveWithin",
-    TOKEN_ANIMATE_IN: "tokenAnimateIn",
-    TOKEN_ANIMATE_OUT: "tokenAnimateOut",
-    TOKEN_TURN_START: "tokenTurnStart",
-    TOKEN_TURN_END: "tokenTurnEnd",
-    TOKEN_ROUND_START: "tokenRoundStart",
-    TOKEN_ROUND_END: "tokenRoundEnd"
-  }
+    REGION_BOUNDARY: 'regionBoundary',
+    BEHAVIOR_ACTIVATED: 'behaviorActivated',
+    BEHAVIOR_DEACTIVATED: 'behaviorDeactivated',
+    BEHAVIOR_VIEWED: 'behaviorViewed',
+    BEHAVIOR_UNVIEWED: 'behaviorUnviewed',
+    TOKEN_ENTER: 'tokenEnter',
+    TOKEN_EXIT: 'tokenExit',
+    TOKEN_MOVE_IN: 'tokenMoveIn',
+    TOKEN_MOVE_OUT: 'tokenMoveOut',
+    TOKEN_MOVE_WITHIN: 'tokenMoveWithin',
+    TOKEN_ANIMATE_IN: 'tokenAnimateIn',
+    TOKEN_ANIMATE_OUT: 'tokenAnimateOut',
+    TOKEN_TURN_START: 'tokenTurnStart',
+    TOKEN_TURN_END: 'tokenTurnEnd',
+    TOKEN_ROUND_START: 'tokenRoundStart',
+    TOKEN_ROUND_END: 'tokenRoundEnd',
+  },
 };
 
 // Import after setting up mocks
@@ -59,29 +59,29 @@ global.foundry.data.fields = {
     constructor(options = {}) {
       this.options = options;
     }
-  }
+  },
 };
 
 global.game = {
   user: { isGM: true },
   i18n: {
-    format: (key, data) => `${key} ${JSON.stringify(data)}`
-  }
+    format: (key, data) => `${key} ${JSON.stringify(data)}`,
+  },
 };
 
 global.ui = {
   notifications: {
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
-  }
+    error: jest.fn(),
+  },
 };
 
 global.canvas = {
   tokens: {
     placeables: [],
-    get: jest.fn()
-  }
+    get: jest.fn(),
+  },
 };
 
 describe('VisibilityRegionBehavior', () => {
@@ -91,11 +91,11 @@ describe('VisibilityRegionBehavior', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create mock region
     mockRegion = {
       testPoint: jest.fn(),
-      behaviors: new Map()
+      behaviors: new Map(),
     };
 
     // Create mock tokens
@@ -104,7 +104,7 @@ describe('VisibilityRegionBehavior', () => {
       document: { id: 'token1' },
       center: { x: 100, y: 100 },
       elevationZ: 0,
-      actor: { type: 'character' }
+      actor: { type: 'character' },
     };
 
     mockToken2 = {
@@ -112,7 +112,7 @@ describe('VisibilityRegionBehavior', () => {
       document: { id: 'token2' },
       center: { x: 200, y: 200 },
       elevationZ: 0,
-      actor: { type: 'npc' }
+      actor: { type: 'npc' },
     };
 
     mockToken3 = {
@@ -120,13 +120,13 @@ describe('VisibilityRegionBehavior', () => {
       document: { id: 'token3' },
       center: { x: 300, y: 300 },
       elevationZ: 0,
-      actor: { type: 'character' }
+      actor: { type: 'character' },
     };
 
     // Set up canvas tokens
     global.canvas.tokens.placeables = [mockToken1, mockToken2, mockToken3];
-    global.canvas.tokens.get.mockImplementation(id => {
-      return global.canvas.tokens.placeables.find(t => t.id === id);
+    global.canvas.tokens.get.mockImplementation((id) => {
+      return global.canvas.tokens.placeables.find((t) => t.id === id);
     });
 
     // Create region behavior instance
@@ -143,7 +143,9 @@ describe('VisibilityRegionBehavior', () => {
     });
 
     test('should have correct localization prefixes', () => {
-      expect(VisibilityRegionBehavior.LOCALIZATION_PREFIXES).toContain('PF2E_VISIONER.REGION_BEHAVIOR');
+      expect(VisibilityRegionBehavior.LOCALIZATION_PREFIXES).toContain(
+        'PF2E_VISIONER.REGION_BEHAVIOR',
+      );
     });
   });
 
@@ -160,18 +162,18 @@ describe('VisibilityRegionBehavior', () => {
       });
 
       const tokensInRegion = regionBehavior._getTokensInRegion();
-      
+
       expect(tokensInRegion).toHaveLength(2);
-      expect(tokensInRegion.map(t => t.id)).toContain('token1');
-      expect(tokensInRegion.map(t => t.id)).toContain('token2');
-      expect(tokensInRegion.map(t => t.id)).not.toContain('token3');
+      expect(tokensInRegion.map((t) => t.id)).toContain('token1');
+      expect(tokensInRegion.map((t) => t.id)).toContain('token2');
+      expect(tokensInRegion.map((t) => t.id)).not.toContain('token3');
     });
 
     test('should handle empty region', () => {
       mockRegion.testPoint.mockReturnValue(false);
-      
+
       const tokensInRegion = regionBehavior._getTokensInRegion();
-      
+
       expect(tokensInRegion).toHaveLength(0);
     });
   });
@@ -179,7 +181,7 @@ describe('VisibilityRegionBehavior', () => {
   describe('Region Property Access', () => {
     test('should access region through parent property', () => {
       regionBehavior.parent = mockRegion;
-      
+
       expect(regionBehavior.parent).toBe(mockRegion);
     });
   });
@@ -190,7 +192,7 @@ describe('VisibilityRegionBehavior', () => {
       // Mock setVisibilityBetween to avoid actual visibility updates
       jest.doMock('../../scripts/stores/visibility-map.js', () => ({
         setVisibilityBetween: jest.fn(),
-        getVisibilityBetween: jest.fn().mockReturnValue('observed')
+        getVisibilityBetween: jest.fn().mockReturnValue('observed'),
       }));
     });
 

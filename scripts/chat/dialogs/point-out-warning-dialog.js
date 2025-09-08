@@ -25,19 +25,17 @@ export class PointOutWarningDialog extends foundry.applications.api.ApplicationV
 
   async _renderHTML() {
     const okLabel = game.i18n?.localize?.('OK') ?? 'OK';
-    
-    const headerText = this.isGM 
-      ? "Player used Point Out without target!"
-      : "No target selected for Point Out action!";
-      
+
+    const headerText = this.isGM
+      ? 'Player used Point Out without target!'
+      : 'No target selected for Point Out action!';
+
     const mainText = this.isGM
       ? "A player attempted to use the <em>Point Out</em> action but didn't select a target token. No automation buttons will appear until they select a proper target."
-      : "The <em>Point Out</em> action requires you to select a target token that your allies cannot currently see.";
-      
-    const instructionTitle = this.isGM 
-      ? "How Point Out should work:"
-      : "To use Point Out:";
-      
+      : 'The <em>Point Out</em> action requires you to select a target token that your allies cannot currently see.';
+
+    const instructionTitle = this.isGM ? 'How Point Out should work:' : 'To use Point Out:';
+
     const instructions = this.isGM
       ? `<ol>
           <li>Player should target a token that is "undetected" from their allies</li>
@@ -50,11 +48,11 @@ export class PointOutWarningDialog extends foundry.applications.api.ApplicationV
           <li>Use the Point Out action from your character sheet or toolbar</li>
           <li>Your allies will be able to see the target as "hidden" instead of "undetected"</li>
         </ol>`;
-        
+
     const footerText = this.isGM
-      ? "You can dismiss this notification."
-      : "Please select a target token and try again.";
-    
+      ? 'You can dismiss this notification.'
+      : 'Please select a target token and try again.';
+
     return `
       <style>
         .pv-pow-wrap { 

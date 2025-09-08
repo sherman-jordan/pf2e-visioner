@@ -3,7 +3,11 @@
  */
 
 import { MODULE_ID } from '../constants.js';
-import { addTokenEventListener, cleanupHoverTooltips, initializeHoverTooltips } from '../services/hover-tooltips.js';
+import {
+  addTokenEventListener,
+  cleanupHoverTooltips,
+  initializeHoverTooltips,
+} from '../services/hover-tooltips.js';
 import { updateTokenVisuals } from '../services/visual-effects.js';
 
 export async function onTokenCreated(scene, tokenDoc) {

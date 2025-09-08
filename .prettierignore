@@ -1,25 +1,11 @@
-# Dependencies
+# Generated files
 node_modules/
-
-# Build output
 coverage/
-dist/
-build/
-
-# Foundry data & packs
-packs/
-# Ignore pack dbs but allow pack source if any
-*.db
-*.ldb
 *.log
+*.lock
 
-# Maps, assets, and generated images
-**/*.png
-**/*.jpg
-**/*.jpeg
-**/*.webp
-**/*.gif
-**/*.svg
-
-# Misc
-package-lock.json
+# FoundryVTT specific
+packs/
+module.json
+system.json
+template.json

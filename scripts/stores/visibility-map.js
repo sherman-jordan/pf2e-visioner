@@ -70,7 +70,7 @@ export async function setVisibilityBetween(
 /**
  * Get visibility state between tokens with flexible parameter handling for compatibility
  * @param {Token|string} observer - Observer token or token ID
- * @param {Token|string} target - Target token or token ID 
+ * @param {Token|string} target - Target token or token ID
  * @param {string} direction - Direction of visibility (observer_to_target or target_to_observer)
  * @returns {string} Visibility state
  */

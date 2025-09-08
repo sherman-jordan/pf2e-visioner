@@ -18,7 +18,7 @@ export async function handleRenderChatMessage(message, html) {
     !!message.flags?.['pf2e-visioner']?.seekTemplate;
   const isPlayerPointOutAuthor =
     !game.user.isGM && actionData.actionType === 'point-out' && message.author?.id === game.user.id;
-    
+
   const isGMPointOutAuthor =
     game.user.isGM && actionData.actionType === 'point-out' && message.author?.id === game.user.id;
 
@@ -32,29 +32,30 @@ export async function handleRenderChatMessage(message, html) {
       if (!targetId && game.user.targets?.size)
         targetId = Array.from(game.user.targets)[0]?.id || null;
       if (!targetId) targetId = actionData.context?.target?.token || null;
-      
+
       // Check if this is a recent message (within last 5 seconds) to avoid showing dialog for old messages on reload
       const messageAge = Date.now() - (message.timestamp || 0);
       const isRecentMessage = messageAge < 5000; // 5 seconds
-      
+
       // If no target found, show warning dialog to player (only for recent messages) and don't forward to GM
       if (!targetId) {
-        
         if (isRecentMessage) {
           try {
-              import('../../../scripts/chat/dialogs/point-out-warning-dialog.js').then(({ showPointOutWarningDialog }) => {
-              showPointOutWarningDialog();
-            });
+            import('../../../scripts/chat/dialogs/point-out-warning-dialog.js').then(
+              ({ showPointOutWarningDialog }) => {
+                showPointOutWarningDialog();
+              },
+            );
           } catch (err) {
             console.warn('[PF2E Visioner] Point Out: Failed to show warning dialog:', err);
             // Fallback notification if dialog fails
             try {
               import('../infra/notifications.js').then(({ notify }) =>
-                notify?.warn?.('Point Out requires a selected target token.')
+                notify?.warn?.('Point Out requires a selected target token.'),
               );
             } catch (_) {}
           }
-        } 
+        }
       } else {
         // Only forward to GM if we have a valid target
         import('../../services/socket.js').then(({ requestGMOpenPointOut }) =>
@@ -89,13 +90,15 @@ export async function handleRenderChatMessage(message, html) {
       // If no target found, show warning dialog to GM
       if (!targetId && isRecentMessage) {
         try {
-          import('../../../scripts/chat/dialogs/point-out-warning-dialog.js').then(({ showPointOutWarningDialog }) => {
-            showPointOutWarningDialog(false); // Pass isGM = false since it's for the GM's own action (show player-style message)
-          });
+          import('../../../scripts/chat/dialogs/point-out-warning-dialog.js').then(
+            ({ showPointOutWarningDialog }) => {
+              showPointOutWarningDialog(false); // Pass isGM = false since it's for the GM's own action (show player-style message)
+            },
+          );
         } catch (_) {
           try {
             import('../services/infra/notifications.js').then(({ notify }) =>
-              notify?.warn?.('Point Out requires a selected target token.')
+              notify?.warn?.('Point Out requires a selected target token.'),
             );
           } catch (_) {}
         }
@@ -104,9 +107,10 @@ export async function handleRenderChatMessage(message, html) {
         try {
           const targetToken = canvas.tokens.get(targetId);
           // Get the pointer token (GM's controlled token or first token they control)
-          const pointerToken = canvas.tokens.controlled?.[0] || 
-                              (canvas?.tokens?.placeables || []).find(t => t.isOwner);
-          
+          const pointerToken =
+            canvas.tokens.controlled?.[0] ||
+            (canvas?.tokens?.placeables || []).find((t) => t.isOwner);
+
           if (targetToken && pointerToken) {
             // Determine whether there are any allies that benefit from Point Out (copy socket handler logic)
             let hasTargets = false;
@@ -135,7 +139,7 @@ export async function handleRenderChatMessage(message, html) {
                 fromUserId: game.user.id,
               },
             });
-            
+
             // Re-render the message to show the automation buttons
             try {
               await message.render(true);
@@ -152,26 +156,24 @@ export async function handleRenderChatMessage(message, html) {
   }
 
   // Handle GM-side Point Out validation - show warning if player used Point Out without target
-  const isGMProcessingPointOut = 
-    actionData.actionType === 'point-out' && 
-    game.user.isGM && 
-    message.author?.id !== game.user.id; // Only for messages from other players
-    
+  const isGMProcessingPointOut =
+    actionData.actionType === 'point-out' && game.user.isGM && message.author?.id !== game.user.id; // Only for messages from other players
+
   if (isGMProcessingPointOut) {
     try {
       // Check if this Point Out message has a valid target
       let hasValidTarget = false;
       try {
-        hasValidTarget = !!(message?.flags?.pf2e?.target?.token);
+        hasValidTarget = !!message?.flags?.pf2e?.target?.token;
         if (!hasValidTarget && message?.flags?.['pf2e-visioner']?.pointOut?.targetTokenId) {
           hasValidTarget = true;
         }
       } catch (_) {}
-      
+
       // Check message age to only show warning for recent messages
       const messageAge = Date.now() - (message.timestamp || 0);
       const isRecentMessage = messageAge < 10000; // 10 seconds for GM (longer than player)
-      
+
       // If no valid target found yet, wait a moment for socket processing before showing warning
       if (!hasValidTarget && isRecentMessage) {
         // Give socket handler time to process and update flags
@@ -185,17 +187,19 @@ export async function handleRenderChatMessage(message, html) {
               updatedMessage?.flags?.['pf2e-visioner']?.pointOut?.targetTokenId
             );
           } catch (_) {}
-          
+
           if (stillNoTarget) {
             try {
-              import('../../../scripts/chat/dialogs/point-out-warning-dialog.js').then(({ showPointOutWarningDialog }) => {
-                showPointOutWarningDialog(true); // Pass isGM = true
-              });
+              import('../../../scripts/chat/dialogs/point-out-warning-dialog.js').then(
+                ({ showPointOutWarningDialog }) => {
+                  showPointOutWarningDialog(true); // Pass isGM = true
+                },
+              );
             } catch (err) {
               console.warn('[PF2E Visioner] GM: Failed to show Point Out warning dialog:', err);
               try {
                 import('../services/infra/notifications.js').then(({ notify }) =>
-                  notify?.warn?.('Player used Point Out without selecting a target.')
+                  notify?.warn?.('Player used Point Out without selecting a target.'),
                 );
               } catch (_) {}
             }

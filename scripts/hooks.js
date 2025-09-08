@@ -6,7 +6,6 @@
  * Register all FoundryVTT hooks
  */
 export function registerHooks() {
-  
   // Always delegate to modular registration
   (async () => {
     try {

@@ -56,7 +56,7 @@ export class ActionHandlerBase {
   }
 
   // Optional hooks for subclasses
-  async ensurePrerequisites(_actionData) { }
+  async ensurePrerequisites(_actionData) {}
   async discoverSubjects(_actionData) {
     throw new Error('discoverSubjects must be implemented in subclass');
   }
@@ -114,13 +114,11 @@ export class ActionHandlerBase {
       const obsId = ch.observer?.id;
       if (!obsId) continue;
       if (!map.has(obsId)) map.set(obsId, { observer: ch.observer, items: [] });
-      map
-        .get(obsId)
-        .items.push({
-          target: ch.target,
-          newVisibility: ch.newVisibility,
-          oldVisibility: ch.oldVisibility,
-        });
+      map.get(obsId).items.push({
+        target: ch.target,
+        newVisibility: ch.newVisibility,
+        oldVisibility: ch.oldVisibility,
+      });
     }
     return Array.from(map.values());
   }
@@ -146,7 +144,7 @@ export class ActionHandlerBase {
           const allowedIds = new Set(Object.keys(overrides));
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
-      } catch (_) { }
+      } catch (_) {}
       if (filtered.length === 0) {
         notify.info('No changes to apply');
         return 0;
@@ -157,7 +155,7 @@ export class ActionHandlerBase {
         if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
-      } catch (_) { }
+      } catch (_) {}
       const changes = filtered
         .map((o) => {
           const ch = this.outcomeToChange(actionData, o);
@@ -202,7 +200,7 @@ export class ActionHandlerBase {
       const existing = cache.get(actionData.messageId) || [];
       const entries = changes.map((c) => this.buildCacheEntryFromChange(c)).filter(Boolean);
       cache.set(actionData.messageId, existing.concat(entries));
-    } catch (_) { }
+    } catch (_) {}
   }
 
   updateButtonToRevert(button) {
@@ -211,7 +209,7 @@ export class ActionHandlerBase {
       button
         .html('<i class="fas fa-undo"></i> Revert Changes')
         .attr('data-action', this.getRevertActionName());
-    } catch (_) { }
+    } catch (_) {}
   }
 
   updateButtonToApply(button) {
@@ -220,7 +218,7 @@ export class ActionHandlerBase {
       button
         .html('<i class="fas fa-check-double"></i> Apply Changes')
         .attr('data-action', this.getApplyActionName());
-    } catch (_) { }
+    } catch (_) {}
   }
 
   // Revert logic
@@ -288,7 +286,7 @@ export class ActionHandlerBase {
   clearCache(actionData) {
     try {
       this.getCacheMap()?.delete(actionData.messageId);
-    } catch (_) { }
+    } catch (_) {}
   }
 
   removeFromCache(actionData, targetTokenId) {
@@ -308,7 +306,7 @@ export class ActionHandlerBase {
       } else {
         cache.set(actionData.messageId, filteredEntries);
       }
-    } catch (_) { }
+    } catch (_) {}
   }
 
   // Helpers

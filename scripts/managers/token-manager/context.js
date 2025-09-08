@@ -63,7 +63,7 @@ export async function buildContext(app, options) {
   try {
     app.visibilityData = getVisibilityMap(app.observer) || {};
     app.coverData = getCoverMap(app.observer) || {};
-  } catch (_) { }
+  } catch (_) {}
 
   const isLootObserver = app.observer?.actor?.type === 'loot';
   if (isLootObserver) {
@@ -331,7 +331,7 @@ export async function buildContext(app, options) {
               showOutcome = true;
             }
           }
-        } catch (_) { }
+        } catch (_) {}
         return {
           id: d.id,
           identifier: idf && String(idf).trim() ? String(idf) : fallback,
@@ -347,7 +347,7 @@ export async function buildContext(app, options) {
       });
       context.includeWalls = context.wallTargets.length > 0;
     }
-  } catch (_) { }
+  } catch (_) {}
 
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,

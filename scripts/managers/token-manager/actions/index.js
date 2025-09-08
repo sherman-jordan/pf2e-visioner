@@ -14,13 +14,14 @@ import {
 export * from './core.js';
 export {
   bindDomIconHandlers,
-  bulkSetCoverState, bulkSetVisibilityState,
+  bulkSetCoverState,
+  bulkSetVisibilityState,
   toggleEncounterFilter,
   toggleIgnoreAllies,
   toggleIgnoreWalls,
   toggleMode,
   toggleStateSelector,
-  toggleTab
+  toggleTab,
 };
 
 export function bindTokenManagerActions(TokenManagerClass) {

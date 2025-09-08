@@ -12,23 +12,23 @@ describe('Door Cover Detection', () => {
 
   beforeEach(() => {
     coverDetector = new CoverDetector();
-    
+
     // Mock canvas and walls
     mockWalls = [];
     mockCanvas = {
       walls: {
         objects: {
-          children: mockWalls
+          children: mockWalls,
         },
-        placeables: mockWalls
+        placeables: mockWalls,
       },
       tokens: {
-        placeables: []
-      }
+        placeables: [],
+      },
     };
-    
+
     global.canvas = mockCanvas;
-    
+
     // Mock game settings
     global.game = {
       settings: {
@@ -43,8 +43,8 @@ describe('Door Cover Detection', () => {
             default:
               return null;
           }
-        })
-      }
+        }),
+      },
     };
   });
 
@@ -61,7 +61,7 @@ describe('Door Cover Detection', () => {
         door: 1, // is a door
         ds: 0, // closed door
         doorState: 0, // closed door (fallback)
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(closedDoorWall, attackerPos);
@@ -74,7 +74,7 @@ describe('Door Cover Detection', () => {
         door: 1, // is a door
         ds: 1, // open door
         doorState: 1, // open door (fallback)
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(openDoorWall, attackerPos);
@@ -87,7 +87,7 @@ describe('Door Cover Detection', () => {
         door: 1, // is a door
         ds: 2, // locked door
         doorState: 2, // locked door (fallback)
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(lockedDoorWall, attackerPos);
@@ -100,7 +100,7 @@ describe('Door Cover Detection', () => {
         door: 2, // secret door
         ds: 0, // closed/secret state
         doorState: 0, // closed/secret state (fallback)
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(secretDoorWall, attackerPos);
@@ -113,7 +113,7 @@ describe('Door Cover Detection', () => {
         door: 2, // secret door
         ds: 1, // open state
         doorState: 1, // open state (fallback)
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(openSecretDoorWall, attackerPos);
@@ -126,7 +126,7 @@ describe('Door Cover Detection', () => {
         door: 0, // not a door
         ds: 0, // not applicable
         doorState: 0, // not applicable
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(normalWall, attackerPos);
@@ -137,7 +137,7 @@ describe('Door Cover Detection', () => {
       const noSightWall = {
         sight: 0, // doesn't block sight
         door: 0, // not a door
-        dir: 0 // blocks from both directions
+        dir: 0, // blocks from both directions
       };
 
       const result = coverDetector._doesWallBlockFromDirection(noSightWall, attackerPos);
@@ -150,7 +150,7 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 1, // open (should take precedence)
         doorState: 0, // closed (should be ignored)
-        dir: 0
+        dir: 0,
       };
 
       const result = coverDetector._doesWallBlockFromDirection(doorWithBothProperties, attackerPos);
@@ -163,7 +163,7 @@ describe('Door Cover Detection', () => {
         door: 1,
         // ds: undefined (not present)
         doorState: 1, // open (should be used)
-        dir: 0
+        dir: 0,
       };
 
       const result = coverDetector._doesWallBlockFromDirection(doorWithOnlyDoorState, attackerPos);
@@ -175,7 +175,7 @@ describe('Door Cover Detection', () => {
         sight: 20,
         door: 1,
         ds: 1, // open door
-        dir: 1 // left-only blocking
+        dir: 1, // left-only blocking
       };
 
       // Open door should not block regardless of direction
@@ -188,7 +188,7 @@ describe('Door Cover Detection', () => {
         sight: 20,
         door: 1,
         ds: 0, // closed door
-        dir: 1 // left-only blocking
+        dir: 1, // left-only blocking
       };
 
       // Closed door should respect directional blocking
@@ -204,7 +204,7 @@ describe('Door Cover Detection', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(null);
       jest.spyOn(coverDetector, '_isRayBlockedByWalls').mockImplementation((p1, p2) => {
         // Mock implementation that checks our test walls
-        return mockWalls.some(wall => {
+        return mockWalls.some((wall) => {
           const wallDoc = wall.document || wall;
           return coverDetector._doesWallBlockFromDirection(wallDoc, p1);
         });
@@ -216,7 +216,7 @@ describe('Door Cover Detection', () => {
         sight: 20,
         door: 1,
         ds: 1, // open
-        dir: 0
+        dir: 0,
       };
 
       mockWalls.push({ document: openDoorWall });
@@ -235,13 +235,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 0, // closed
         dir: 0,
-        getFlag: jest.fn(() => null) // No override
+        getFlag: jest.fn(() => null), // No override
       };
 
       // Add both document and coords properties as expected by the wall detection logic
-      const wallObject = { 
+      const wallObject = {
         document: closedDoorWall,
-        coords: [100, 50, 100, 150] // Vertical wall between p1 and p2
+        coords: [100, 50, 100, 150], // Vertical wall between p1 and p2
       };
       mockWalls.push(wallObject);
 
@@ -263,10 +263,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 1, // open door (normally no cover)
         dir: 0,
-        getFlag: jest.fn().mockReturnValue('none') // override to force no cover
+        getFlag: jest.fn().mockReturnValue('none'), // override to force no cover
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(openDoorWithNoneOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        openDoorWithNoneOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block due to 'none' override
     });
 
@@ -276,10 +279,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 1, // open door (normally no cover)
         dir: 0,
-        getFlag: jest.fn().mockReturnValue('standard') // override should be ignored
+        getFlag: jest.fn().mockReturnValue('standard'), // override should be ignored
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(openDoorWithStandardOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        openDoorWithStandardOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block (open door doesn't naturally block, so override ignored)
     });
 
@@ -289,10 +295,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 0, // closed door (normally provides cover)
         dir: 0,
-        getFlag: jest.fn().mockReturnValue('none') // override to force no cover
+        getFlag: jest.fn().mockReturnValue('none'), // override to force no cover
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(closedDoorWithNoneOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        closedDoorWithNoneOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block due to 'none' override
     });
 
@@ -302,10 +311,13 @@ describe('Door Cover Detection', () => {
         door: 2, // secret door
         ds: 1, // open (normally no cover)
         dir: 0,
-        getFlag: jest.fn().mockReturnValue('standard') // override should be ignored
+        getFlag: jest.fn().mockReturnValue('standard'), // override should be ignored
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(openSecretDoorWithStandardOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        openSecretDoorWithStandardOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block (open door doesn't naturally block, so override ignored)
     });
 
@@ -315,10 +327,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 1, // open door
         dir: 0,
-        getFlag: jest.fn().mockReturnValue('auto') // auto means use default behavior
+        getFlag: jest.fn().mockReturnValue('auto'), // auto means use default behavior
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(openDoorWithAutoOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        openDoorWithAutoOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block (open door default behavior)
     });
 
@@ -328,7 +343,7 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 1, // open door
         dir: 0,
-        getFlag: jest.fn().mockReturnValue(null) // no override
+        getFlag: jest.fn().mockReturnValue(null), // no override
       };
 
       const result = coverDetector._doesWallBlockFromDirection(openDoorNoOverride, attackerPos);
@@ -340,7 +355,7 @@ describe('Door Cover Detection', () => {
         { override: 'none', expected: false, description: 'none override should not block' },
         { override: 'lesser', expected: true, description: 'lesser override should block' },
         { override: 'standard', expected: true, description: 'standard override should block' },
-        { override: 'greater', expected: true, description: 'greater override should block' }
+        { override: 'greater', expected: true, description: 'greater override should block' },
       ];
 
       overrideTypes.forEach(({ override, expected, description }) => {
@@ -349,7 +364,7 @@ describe('Door Cover Detection', () => {
           door: 0, // normal wall (would naturally block)
           ds: 0,
           dir: 0, // blocks from both directions
-          getFlag: jest.fn().mockReturnValue(override)
+          getFlag: jest.fn().mockReturnValue(override),
         };
 
         const result = coverDetector._doesWallBlockFromDirection(door, attackerPos);
@@ -367,12 +382,15 @@ describe('Door Cover Detection', () => {
         door: 0,
         dir: 1, // LEFT - only blocks from left side
         c: [100, 90, 100, 110], // vertical wall
-        getFlag: jest.fn().mockReturnValue('none') // override should apply
+        getFlag: jest.fn().mockReturnValue('none'), // override should apply
       };
 
       // Attacker at x=50 is to the left of wall at x=100, so crossProduct should be negative (left side)
       // For LEFT wall (dir=1), crossProduct < 0 means it blocks, so override should apply
-      const result = coverDetector._doesWallBlockFromDirection(leftOnlyWallWithOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        leftOnlyWallWithOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block due to 'none' override (wall naturally blocks from this direction)
     });
 
@@ -382,7 +400,7 @@ describe('Door Cover Detection', () => {
         door: 0,
         dir: 2, // RIGHT - only blocks from right side
         c: [100, 90, 100, 110], // vertical wall
-        getFlag: jest.fn().mockReturnValue('standard') // override should be ignored
+        getFlag: jest.fn().mockReturnValue('standard'), // override should be ignored
       };
 
       // Debug: Let's see what the actual logic produces
@@ -392,8 +410,11 @@ describe('Door Cover Detection', () => {
       // crossProduct = wallDx * attackerDy - wallDy * attackerDx = 0*10 - 20*(-50) = 0 + 1000 = 1000 (positive)
       // For RIGHT wall (dir=2), crossProduct > 0 means it SHOULD block
       // So this test expectation is wrong - the wall DOES block from this direction
-      
-      const result = coverDetector._doesWallBlockFromDirection(rightOnlyWallWithOverride, attackerPos);
+
+      const result = coverDetector._doesWallBlockFromDirection(
+        rightOnlyWallWithOverride,
+        attackerPos,
+      );
       expect(result).toBe(true); // Should block due to override (wall naturally blocks from this direction)
     });
 
@@ -403,12 +424,15 @@ describe('Door Cover Detection', () => {
         door: 0,
         dir: 1, // LEFT - only blocks from left side
         c: [100, 90, 100, 110], // vertical wall
-        getFlag: jest.fn().mockReturnValue('none') // override to remove cover
+        getFlag: jest.fn().mockReturnValue('none'), // override to remove cover
       };
 
       // Attacker at x=50 is to the left of wall at x=100
       // LEFT wall should naturally block from left side, but override removes cover
-      const result = coverDetector._doesWallBlockFromDirection(leftOnlyWallWithNoneOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        leftOnlyWallWithNoneOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block due to 'none' override
     });
 
@@ -418,7 +442,7 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 1, // open door
         dir: 0, // blocks from both directions (if it were closed)
-        getFlag: jest.fn().mockReturnValue('standard') // override should be ignored
+        getFlag: jest.fn().mockReturnValue('standard'), // override should be ignored
       };
 
       const result = coverDetector._doesWallBlockFromDirection(openDoorWithOverride, attackerPos);
@@ -431,10 +455,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 0, // closed door
         dir: 0, // blocks from both directions
-        getFlag: jest.fn().mockReturnValue('none') // override to remove cover
+        getFlag: jest.fn().mockReturnValue('none'), // override to remove cover
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(closedDoorWithNoneOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        closedDoorWithNoneOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block due to 'none' override
     });
 
@@ -445,10 +472,13 @@ describe('Door Cover Detection', () => {
         ds: 1, // open door (wouldn't naturally block)
         dir: 1, // LEFT - would only block from left side if closed
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue('standard') // override should be ignored
+        getFlag: jest.fn().mockReturnValue('standard'), // override should be ignored
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(directionalOpenDoorWithOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        directionalOpenDoorWithOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block (open door doesn't naturally block regardless of direction)
     });
 
@@ -459,25 +489,28 @@ describe('Door Cover Detection', () => {
         ds: 0, // closed door
         dir: 1, // LEFT - blocks from left side
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue('none') // override to remove cover
+        getFlag: jest.fn().mockReturnValue('none'), // override to remove cover
       };
 
       // Attacker at x=50 is to the left of wall at x=100, so it would naturally block
-      const result = coverDetector._doesWallBlockFromDirection(directionalClosedDoorWithOverride, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        directionalClosedDoorWithOverride,
+        attackerPos,
+      );
       expect(result).toBe(false); // Should not block due to 'none' override
     });
 
     test('should handle complex scenario: directional closed door with override from non-blocking side', () => {
       // Position attacker on the right side of a LEFT-only wall to create a non-blocking scenario
       const attackerOnRight = { x: 150, y: 100 }; // Attacker to the right of wall
-      
+
       const directionalClosedDoorWithOverride = {
         sight: 20,
         door: 1,
         ds: 0, // closed door
         dir: 1, // LEFT - blocks from left side only
         c: [100, 90, 100, 110], // wall at x=100
-        getFlag: jest.fn().mockReturnValue('standard') // override should be ignored
+        getFlag: jest.fn().mockReturnValue('standard'), // override should be ignored
       };
 
       // Attacker at x=150 is to the right of wall at x=100
@@ -485,7 +518,10 @@ describe('Door Cover Detection', () => {
       // crossProduct = 0*10 - 20*50 = -1000 (negative)
       // For LEFT wall (dir=1), crossProduct < 0 means it SHOULD block
       // So the wall would naturally block, and override applies as ceiling
-      const result = coverDetector._doesWallBlockFromDirection(directionalClosedDoorWithOverride, attackerOnRight);
+      const result = coverDetector._doesWallBlockFromDirection(
+        directionalClosedDoorWithOverride,
+        attackerOnRight,
+      );
       expect(result).toBe(true); // Should block (wall naturally blocks from this direction, override applies)
     });
   });
@@ -500,7 +536,7 @@ describe('Door Cover Detection', () => {
         ds: 1, // open door
         dir: 1, // LEFT - would block from left if closed
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue(null)
+        getFlag: jest.fn().mockReturnValue(null),
       };
 
       // Even though attacker is on the left side (would block if closed), open door doesn't block
@@ -515,7 +551,7 @@ describe('Door Cover Detection', () => {
         ds: 0, // closed door
         dir: 1, // LEFT - blocks from left side only
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue(null)
+        getFlag: jest.fn().mockReturnValue(null),
       };
 
       // For LEFT wall (dir=1): crossProduct < 0 means it blocks
@@ -529,7 +565,10 @@ describe('Door Cover Detection', () => {
       // crossProduct = 0*(-40) - 20*0 = 0 (edge case, but let's test another position)
       const attackerForNegativeCross2 = { x: 110, y: 80 }; // Different position
       // crossProduct = 0*(-10) - 20*10 = -200 (negative) → should block
-      const resultFromBlockingSide = coverDetector._doesWallBlockFromDirection(closedLeftDoor, attackerForNegativeCross2);
+      const resultFromBlockingSide = coverDetector._doesWallBlockFromDirection(
+        closedLeftDoor,
+        attackerForNegativeCross2,
+      );
       expect(resultFromBlockingSide).toBe(true); // LEFT door blocks when crossProduct < 0
     });
 
@@ -540,7 +579,7 @@ describe('Door Cover Detection', () => {
         ds: 1, // open door
         dir: 2, // RIGHT - would block from right if closed
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue(null)
+        getFlag: jest.fn().mockReturnValue(null),
       };
 
       // Test from left side
@@ -549,7 +588,10 @@ describe('Door Cover Detection', () => {
 
       // Test from right side
       const attackerOnRight = { x: 150, y: 100 };
-      const resultFromRight = coverDetector._doesWallBlockFromDirection(openRightDoor, attackerOnRight);
+      const resultFromRight = coverDetector._doesWallBlockFromDirection(
+        openRightDoor,
+        attackerOnRight,
+      );
       expect(resultFromRight).toBe(false); // Open door doesn't block
     });
 
@@ -560,19 +602,25 @@ describe('Door Cover Detection', () => {
         ds: 0, // closed door
         dir: 2, // RIGHT - blocks from right side only
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue(null)
+        getFlag: jest.fn().mockReturnValue(null),
       };
 
       // For RIGHT wall (dir=2): crossProduct > 0 means it blocks
       // Wall from (100,90) to (100,110), attacker at (50,100):
       // crossProduct = 0*10 - 20*(-50) = 1000 (positive) → should block for RIGHT door
-      const resultFromLeft = coverDetector._doesWallBlockFromDirection(closedRightDoor, attackerPos);
+      const resultFromLeft = coverDetector._doesWallBlockFromDirection(
+        closedRightDoor,
+        attackerPos,
+      );
       expect(resultFromLeft).toBe(true); // Closed RIGHT door blocks from this side (positive cross product)
 
       // Test from a position that would give negative cross product (shouldn't block for RIGHT door)
       const attackerForNegativeCross = { x: 110, y: 80 }; // Different position
       // crossProduct = 0*(-10) - 20*10 = -200 (negative) → shouldn't block for RIGHT door
-      const resultFromNonBlockingSide = coverDetector._doesWallBlockFromDirection(closedRightDoor, attackerForNegativeCross);
+      const resultFromNonBlockingSide = coverDetector._doesWallBlockFromDirection(
+        closedRightDoor,
+        attackerForNegativeCross,
+      );
       expect(resultFromNonBlockingSide).toBe(false); // RIGHT door doesn't block when crossProduct < 0
     });
 
@@ -583,16 +631,22 @@ describe('Door Cover Detection', () => {
         ds: 0, // closed door
         dir: 1, // LEFT
         c: [100, 90, 100, 110],
-        getFlag: jest.fn().mockReturnValue('none') // override to remove cover
+        getFlag: jest.fn().mockReturnValue('none'), // override to remove cover
       };
 
       // From left side: door would naturally block, so override applies
-      const resultFromLeft = coverDetector._doesWallBlockFromDirection(directionalDoorWithOverride, attackerPos);
+      const resultFromLeft = coverDetector._doesWallBlockFromDirection(
+        directionalDoorWithOverride,
+        attackerPos,
+      );
       expect(resultFromLeft).toBe(false); // Override removes cover
 
       // From right side: door wouldn't naturally block, so override is ignored
       const attackerOnRight = { x: 150, y: 100 };
-      const resultFromRight = coverDetector._doesWallBlockFromDirection(directionalDoorWithOverride, attackerOnRight);
+      const resultFromRight = coverDetector._doesWallBlockFromDirection(
+        directionalDoorWithOverride,
+        attackerOnRight,
+      );
       expect(resultFromRight).toBe(false); // No natural blocking, override ignored
     });
   });
@@ -605,10 +659,13 @@ describe('Door Cover Detection', () => {
         sight: 20,
         // door: undefined
         ds: 1,
-        dir: 0
+        dir: 0,
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(wallWithoutDoorProperty, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        wallWithoutDoorProperty,
+        attackerPos,
+      );
       expect(result).toBe(true); // Should treat as normal wall
     });
 
@@ -618,10 +675,13 @@ describe('Door Cover Detection', () => {
         door: 1,
         // ds: undefined
         // doorState: undefined
-        dir: 0
+        dir: 0,
       };
 
-      const result = coverDetector._doesWallBlockFromDirection(doorWithoutStateProperties, attackerPos);
+      const result = coverDetector._doesWallBlockFromDirection(
+        doorWithoutStateProperties,
+        attackerPos,
+      );
       expect(result).toBe(true); // Should default to closed (0) and block
     });
 
@@ -631,7 +691,7 @@ describe('Door Cover Detection', () => {
         door: 1,
         ds: 'invalid', // invalid value
         doorState: 'also invalid', // invalid value
-        dir: 0
+        dir: 0,
       };
 
       const result = coverDetector._doesWallBlockFromDirection(doorWithInvalidState, attackerPos);
@@ -650,7 +710,7 @@ describe('Door Cover Detection', () => {
           throw new Error('Test error');
         },
         door: 1,
-        ds: 1
+        ds: 1,
       };
 
       // Should not throw and should return true (safe default for exceptions)
@@ -666,7 +726,7 @@ describe('Door Cover Detection', () => {
       const doorStates = [
         { ds: 0, expected: true, description: 'closed/secret' },
         { ds: 1, expected: false, description: 'open' },
-        { ds: 2, expected: true, description: 'locked' }
+        { ds: 2, expected: true, description: 'locked' },
       ];
 
       doorStates.forEach(({ ds, expected, description }) => {
@@ -674,11 +734,14 @@ describe('Door Cover Detection', () => {
           sight: 20,
           door: 1,
           ds: ds,
-          dir: 0
+          dir: 0,
         };
 
         const result = coverDetector._doesWallBlockFromDirection(door, attackerPos);
-        expect(result).toBe(expected, `Door state ${ds} (${description}) should ${expected ? 'block' : 'not block'}`);
+        expect(result).toBe(
+          expected,
+          `Door state ${ds} (${description}) should ${expected ? 'block' : 'not block'}`,
+        );
       });
     });
 
@@ -688,7 +751,7 @@ describe('Door Cover Detection', () => {
         { door: 1, ds: 0, expected: true, description: 'closed door' },
         { door: 1, ds: 1, expected: false, description: 'open door' },
         { door: 2, ds: 0, expected: true, description: 'closed secret door' },
-        { door: 2, ds: 1, expected: false, description: 'open secret door' }
+        { door: 2, ds: 1, expected: false, description: 'open secret door' },
       ];
 
       doorTypes.forEach(({ door, ds, expected, description }) => {
@@ -696,7 +759,7 @@ describe('Door Cover Detection', () => {
           sight: 20,
           door: door,
           ds: ds ?? 0,
-          dir: 0
+          dir: 0,
         };
 
         const result = coverDetector._doesWallBlockFromDirection(wall, attackerPos);

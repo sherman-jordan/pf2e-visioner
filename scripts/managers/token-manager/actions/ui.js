@@ -3,7 +3,11 @@
  */
 
 import { MODULE_ID } from '../../../constants.js';
-import { addTokenImageClickHandlers, panToAndSelectToken, panToWall } from '../../../ui/shared-ui-utils.js';
+import {
+  addTokenImageClickHandlers,
+  panToAndSelectToken,
+  panToWall,
+} from '../../../ui/shared-ui-utils.js';
 import { getSceneTargets, showNotification } from '../../../utils.js';
 
 export async function toggleStateSelector(event, button) {
@@ -11,9 +15,9 @@ export async function toggleStateSelector(event, button) {
   const container = button.closest('.bulk-state-buttons');
   if (container) {
     const allButtons = container.querySelectorAll('.state-selector-button');
-    allButtons.forEach(btn => btn.classList.remove('selected'));
+    allButtons.forEach((btn) => btn.classList.remove('selected'));
   }
-  
+
   // Add selected class to clicked button
   button.classList.add('selected');
 }
@@ -220,7 +224,7 @@ export async function bulkSetVisibilityState(event, button) {
       button.innerHTML = originalText;
       return;
     }
-    
+
     // Use the section to find icon selections
     const iconSelections = section.querySelectorAll('.icon-selection');
 
@@ -326,7 +330,7 @@ export async function bulkSetCoverState(event, button) {
       button.innerHTML = originalText;
       return;
     }
-    
+
     // Use the section to find icon selections
     const iconSelections = section.querySelectorAll('.icon-selection');
 
@@ -419,51 +423,60 @@ export function bindDomIconHandlers(TokenManagerClass) {
     });
   };
 
-  TokenManagerClass.prototype.addTokenImageClickHandlers = function addTokenImageClickHandlersMethod() {
-    const element = this.element;
-    if (!element) return;
-    addTokenImageClickHandlers(element, this);
-  };
+  TokenManagerClass.prototype.addTokenImageClickHandlers =
+    function addTokenImageClickHandlersMethod() {
+      const element = this.element;
+      if (!element) return;
+      addTokenImageClickHandlers(element, this);
+    };
 
   // Pan methods moved to shared utility (scripts/ui/shared-ui-utils.js)
   TokenManagerClass.prototype.panToWall = panToWall;
   TokenManagerClass.prototype.panToAndSelectToken = panToAndSelectToken;
 
   // Add override icon click handlers
-  TokenManagerClass.prototype.addOverrideIconClickHandlers = function addOverrideIconClickHandlersMethod() {
-    const element = this.element;
-    if (!element) return;
-    const app = this;
-    
-    // Add bulk state selection handlers (only for overrides tab state selection)
-    const bulkStateButtons = element.querySelectorAll('.overrides-section .bulk-state-buttons .bulk-state-header:not([data-action])');
-    bulkStateButtons.forEach((button) => {
-      button.removeEventListener('click', button._bulkStateHandler);
-      button._bulkStateHandler = (event) => selectBulkState.call(app, event, button);
-      button.addEventListener('click', button._bulkStateHandler);
-    });
-    
-    // Add state selector button handlers (for toggleStateSelector data-action)
-    const stateSelectorButtons = element.querySelectorAll('.overrides-section .bulk-state-buttons .bulk-state-header[data-action="toggleStateSelector"]');
-    stateSelectorButtons.forEach((button) => {
-      button.removeEventListener('click', button._stateSelectorHandler);
-      button._stateSelectorHandler = (event) => toggleStateSelector.call(app, event, button);
-      button.addEventListener('click', button._stateSelectorHandler);
-    });
-  };
+  TokenManagerClass.prototype.addOverrideIconClickHandlers =
+    function addOverrideIconClickHandlersMethod() {
+      const element = this.element;
+      if (!element) return;
+      const app = this;
+
+      // Add bulk state selection handlers (only for overrides tab state selection)
+      const bulkStateButtons = element.querySelectorAll(
+        '.overrides-section .bulk-state-buttons .bulk-state-header:not([data-action])',
+      );
+      bulkStateButtons.forEach((button) => {
+        button.removeEventListener('click', button._bulkStateHandler);
+        button._bulkStateHandler = (event) => selectBulkState.call(app, event, button);
+        button.addEventListener('click', button._bulkStateHandler);
+      });
+
+      // Add state selector button handlers (for toggleStateSelector data-action)
+      const stateSelectorButtons = element.querySelectorAll(
+        '.overrides-section .bulk-state-buttons .bulk-state-header[data-action="toggleStateSelector"]',
+      );
+      stateSelectorButtons.forEach((button) => {
+        button.removeEventListener('click', button._stateSelectorHandler);
+        button._stateSelectorHandler = (event) => toggleStateSelector.call(app, event, button);
+        button.addEventListener('click', button._stateSelectorHandler);
+      });
+    };
 
   async function handleOverrideIconClick(event) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     const icon = event.currentTarget;
     const targetId = icon.dataset.target;
     const action = icon.dataset.action;
     const newState = icon.dataset.state;
     const app = this;
-    
+
     if (!targetId || !action || !newState || !app?.observer) {
-      showNotification('Missing required data for override action. Please try again or contact support.', 'warning');
+      showNotification(
+        'Missing required data for override action. Please try again or contact support.',
+        'warning',
+      );
       return;
     }
   }
@@ -475,18 +488,17 @@ export function bindDomIconHandlers(TokenManagerClass) {
 export async function selectBulkState(event, button) {
   event.preventDefault();
   event.stopPropagation();
-  
+
   const container = button.closest('.bulk-state-buttons');
   if (!container) return;
-  
+
   // Remove selection from all state buttons
   const allButtons = container.querySelectorAll('.bulk-state-header');
-  allButtons.forEach(btn => btn.classList.remove('selected'));
-  
+  allButtons.forEach((btn) => btn.classList.remove('selected'));
+
   // Mark this button as selected
   button.classList.add('selected');
 }
-
 
 /**
  * Deselect the bulk state after applying a bulk action
@@ -494,12 +506,16 @@ export async function selectBulkState(event, button) {
  */
 function deselectBulkState(app) {
   if (!app?.element) return;
-  
+
   // Find all bulk state selector buttons and remove their selected class
-  const bulkStateButtons = app.element.querySelectorAll('.bulk-state-buttons .bulk-state-header.selected');
-  bulkStateButtons.forEach(button => button.classList.remove('selected'));
-  
+  const bulkStateButtons = app.element.querySelectorAll(
+    '.bulk-state-buttons .bulk-state-header.selected',
+  );
+  bulkStateButtons.forEach((button) => button.classList.remove('selected'));
+
   // Also deselect any state selector buttons in the overrides section
-  const stateSelectorButtons = app.element.querySelectorAll('.overrides-section .state-selector-button.selected');
-  stateSelectorButtons.forEach(button => button.classList.remove('selected'));
+  const stateSelectorButtons = app.element.querySelectorAll(
+    '.overrides-section .state-selector-button.selected',
+  );
+  stateSelectorButtons.forEach((button) => button.classList.remove('selected'));
 }

@@ -476,7 +476,7 @@
   }
 
   /* Hidden Input */
-  .icon-selection input[type="hidden"] {
+  .icon-selection input[type='hidden'] {
     display: none;
   }
 

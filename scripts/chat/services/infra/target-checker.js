@@ -44,7 +44,7 @@ export function checkForValidTargets(actionData) {
 
 function checkConsequencesTargets(actionData, potentialTargets) {
   const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
-  
+
   for (const target of potentialTargets) {
     if (
       enforceRAW &&
@@ -53,7 +53,7 @@ function checkConsequencesTargets(actionData, potentialTargets) {
       continue;
     }
     let visibility = getVisibilityBetween(target, actionData.actor);
-    
+
     try {
       const itemTypeConditions = actionData.actor?.actor?.itemTypes?.condition || [];
       const legacyConditions = actionData.actor?.actor?.conditions?.conditions || [];
@@ -64,9 +64,9 @@ function checkConsequencesTargets(actionData, potentialTargets) {
         visibility = 'concealed';
       }
     } catch (error) {
-      console.error("Error checking concealment in checkConsequencesTargets:", error);
+      console.error('Error checking concealment in checkConsequencesTargets:', error);
     }
-    
+
     if (visibility === 'hidden' || visibility === 'undetected') {
       return true;
     }
@@ -115,7 +115,7 @@ function checkSeekTargets(actionData, potentialTargets) {
         }
       }
     }
-  } catch (_) { }
+  } catch (_) {}
 
   for (const target of potentialTargets) {
     // Check if target is a hazard/loot with a minimum perception rank
@@ -157,7 +157,7 @@ function checkSeekTargets(actionData, potentialTargets) {
           return true;
         }
       }
-    } catch (_) { }
+    } catch (_) {}
 
     const visibility = getVisibilityBetween(actionData.actor, target);
     if (['concealed', 'hidden', 'undetected'].includes(visibility)) return true;
@@ -216,8 +216,10 @@ function checkHideTargets(actionData, potentialTargets) {
       if (autoCover) {
         try {
           cover =
-            autoCoverSystem.detectCoverBetweenTokens(observer, actionData.actor, { rawPrereq: true }) || 'none';
-        } catch (_) { }
+            autoCoverSystem.detectCoverBetweenTokens(observer, actionData.actor, {
+              rawPrereq: true,
+            }) || 'none';
+        } catch (_) {}
       }
       if (cover === 'none') {
         try {
@@ -230,7 +232,7 @@ function checkHideTargets(actionData, potentialTargets) {
         return true;
       }
     }
-  } catch (_) { }
+  } catch (_) {}
   return false;
 }
 
@@ -258,7 +260,7 @@ function checkDiversionTargets(actionData, potentialTargets) {
       const observers = discoverDiversionObservers(actionData.actor);
       return observers.length > 0;
     }
-  } catch (_) { }
+  } catch (_) {}
   // Fallback to simple heuristic if dynamic import not cached
   return potentialTargets.length > 0;
 }

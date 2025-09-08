@@ -15,7 +15,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       icon: 'fas fa-grip-lines-vertical',
       resizable: true,
     },
-    position: { width: 600, height: 600 },
+    position: { width: 650, height: 600 },
     actions: {
       apply: VisionerWallManager._onApply,
       close: VisionerWallManager._onClose,

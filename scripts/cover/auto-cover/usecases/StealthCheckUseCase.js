@@ -71,7 +71,6 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                         } else {
                             mods.push(coverModifier);
                         }
-                        console.log('PF2E Visioner | Added cover modifier with enabled=true:', coverModifier);
                     } catch (e) {
                         console.warn('PF2E Visioner | Failed to create cover modifier:', e);
                     }

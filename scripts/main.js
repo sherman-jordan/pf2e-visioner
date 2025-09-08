@@ -68,6 +68,28 @@ Hooks.once('init', async () => {
       return value !== undefined && value !== null ? value : defaultValue;
     });
 
+    // Register Handlebars helper for capitalizing strings
+    Handlebars.registerHelper('capitalize', function (str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    });
+
+    // Register Handlebars helper for equality comparison
+    Handlebars.registerHelper('eq', function (a, b) {
+      return a === b;
+    });
+
+    // Preload partials for token manager
+    await foundry.applications.handlebars.loadTemplates({
+      'pf2e-visioner.observer-info': 'modules/pf2e-visioner/templates/observer-info.hbs',
+      'pf2e-visioner.visibility-tab': 'modules/pf2e-visioner/templates/visibility-tab.hbs',
+      'pf2e-visioner.cover-tab': 'modules/pf2e-visioner/templates/cover-tab.hbs',
+      'pf2e-visioner.action-buttons': 'modules/pf2e-visioner/templates/action-buttons.hbs',
+      'pf2e-visioner.visibility-table': 'modules/pf2e-visioner/templates/visibility-table.hbs',
+      'pf2e-visioner.cover-table': 'modules/pf2e-visioner/templates/cover-table.hbs',
+      'pf2e-visioner.table-section': 'modules/pf2e-visioner/templates/table-section.hbs',
+    });
+
     // Register settings and keybindings
     registerSettings();
     registerKeybindings();
@@ -143,7 +165,6 @@ Hooks.once('ready', async () => {
     } catch (error) {
       console.error('PF2E Visioner: Failed to initialize cover visualization:', error);
     }
-
   } catch (error) {
     console.error('PF2E Visioner: Failed to initialize colorblind mode:', error);
   }

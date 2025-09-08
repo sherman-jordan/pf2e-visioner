@@ -22,13 +22,13 @@ describe('Wall Coverage Fixes Integration Tests', () => {
     global.canvas = {
       walls: {
         placeables: [],
-        objects: { children: [] }
+        objects: { children: [] },
       },
       tokens: { placeables: [] },
       grid: {
         size: 100,
-        distance: 5
-      }
+        distance: 5,
+      },
     };
 
     // Mock settings with default values
@@ -36,13 +36,13 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       settings: {
         get: jest.fn((module, setting) => {
           const defaults = {
-            'wallCoverStandardThreshold': 50,
-            'wallCoverGreaterThreshold': 70,
-            'wallCoverAllowGreater': true
+            wallCoverStandardThreshold: 50,
+            wallCoverGreaterThreshold: 70,
+            wallCoverAllowGreater: true,
           };
           return defaults[setting] || null;
-        })
-      }
+        }),
+      },
     };
 
     // Mock getTokenRect utility function
@@ -50,7 +50,7 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       x1: token.x,
       y1: token.y,
       x2: token.x + token.w,
-      y2: token.y + token.h
+      y2: token.y + token.h,
     }));
   });
 
@@ -63,14 +63,14 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Mock settings
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 50,
-          'wallCoverGreaterThreshold': 70,
-          'wallCoverAllowGreater': true,
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true
+          wallCoverStandardThreshold: 50,
+          wallCoverGreaterThreshold: 70,
+          wallCoverAllowGreater: true,
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
         };
         return settingsMap[setting] ?? 0;
       });
@@ -79,14 +79,14 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       const rightDirectionalWall = {
         document: {
           id: 'right-wall',
-          sight: 1,  // Changed from 20 to 1 to match working tests
-          door: 0,   // Not a door
-          ds: 0,     // Closed
-          dir: 2,    // RIGHT - blocks when crossProduct > 0 
+          sight: 1, // Changed from 20 to 1 to match working tests
+          door: 0, // Not a door
+          ds: 0, // Closed
+          dir: 2, // RIGHT - blocks when crossProduct > 0
           c: [250, 50, 250, 200], // Vertical wall positioned between tokens
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [250, 50, 250, 200] // Vertical wall
+        coords: [250, 50, 250, 200], // Vertical wall
       };
 
       global.canvas.walls.objects.children = [rightDirectionalWall];
@@ -94,28 +94,28 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Create proper mock tokens positioned for the RIGHT wall test
       const attackerFromRight = global.createMockToken({
         id: 'attacker-right',
-        x: 6,  // Grid position (300px / 50px grid = 6) - right of wall at x=250
-        y: 2,  // Grid position (100px / 50px grid = 2) 
+        x: 6, // Grid position (300px / 50px grid = 6) - right of wall at x=250
+        y: 2, // Grid position (100px / 50px grid = 2)
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        x: 2,  // Grid position (100px / 50px grid = 2) - left of wall at x=250
-        y: 2,  // Grid position (100px / 50px grid = 2)
+        x: 2, // Grid position (100px / 50px grid = 2) - left of wall at x=250
+        y: 2, // Grid position (100px / 50px grid = 2)
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [attackerFromRight, target];
@@ -129,22 +129,22 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // TODO: Directional wall logic needs investigation - currently returns 'none'
       expect(['none', 'standard', 'greater']).toContain(resultFromRight); // Accepting current behavior
 
-      // Test 2: Create attacker on left side of wall (should NOT be blocked by RIGHT wall)  
+      // Test 2: Create attacker on left side of wall (should NOT be blocked by RIGHT wall)
       const attackerFromLeft = global.createMockToken({
         id: 'attacker-left',
-        x: 1,  // Grid position (50px / 50px grid = 1) - left of wall at x=250
-        y: 2,  // Grid position (100px / 50px grid = 2)
+        x: 1, // Grid position (50px / 50px grid = 1) - left of wall at x=250
+        y: 2, // Grid position (100px / 50px grid = 2)
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [attackerFromLeft, target];
-      
+
       const resultFromLeft = coverDetector.detectBetweenTokens(attackerFromLeft, target);
       expect(['none', 'standard', 'greater']).toContain(resultFromLeft); // Direction logic needs verification
     });
@@ -153,14 +153,14 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Mock settings
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 50,
-          'wallCoverGreaterThreshold': 70,
-          'wallCoverAllowGreater': true,
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true
+          wallCoverStandardThreshold: 50,
+          wallCoverGreaterThreshold: 70,
+          wallCoverAllowGreater: true,
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
         };
         return settingsMap[setting] ?? 0;
       });
@@ -168,14 +168,14 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       const leftDirectionalWall = {
         document: {
           id: 'left-wall',
-          sight: 1,  // Changed from 20 to 1
-          door: 0,   // Not a door
-          ds: 0,     // Closed
-          dir: 1,    // LEFT - blocks when crossProduct < 0
+          sight: 1, // Changed from 20 to 1
+          door: 0, // Not a door
+          ds: 0, // Closed
+          dir: 1, // LEFT - blocks when crossProduct < 0
           c: [250, 50, 250, 200], // Vertical wall
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [250, 50, 250, 200] // Vertical wall
+        coords: [250, 50, 250, 200], // Vertical wall
       };
 
       global.canvas.walls.objects.children = [leftDirectionalWall];
@@ -183,28 +183,28 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Create proper mock tokens for LEFT wall test
       const attackerFromLeft = global.createMockToken({
         id: 'attacker-left',
-        x: 1,  // Grid position - left of wall at x=250
-        y: 2,  
+        x: 1, // Grid position - left of wall at x=250
+        y: 2,
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        x: 6,  // Grid position - right of wall
-        y: 2,  
+        x: 6, // Grid position - right of wall
+        y: 2,
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [attackerFromLeft, target];
@@ -221,19 +221,19 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Test 2: Attack from right side of wall (should NOT be blocked by LEFT wall)
       const attackerFromRight = global.createMockToken({
         id: 'attacker-right',
-        x: 6,  // Grid position - right of wall
-        y: 2,  
+        x: 6, // Grid position - right of wall
+        y: 2,
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [attackerFromRight, target];
-      
+
       const resultFromRight = coverDetector.detectBetweenTokens(attackerFromRight, target);
       expect(['none', 'standard', 'greater']).toContain(resultFromRight);
     });
@@ -244,16 +244,19 @@ describe('Wall Coverage Fixes Integration Tests', () => {
           sight: 20,
           dir: 0, // BOTH - blocks from all directions
           c: [500, 300, 500, 600],
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [500, 300, 500, 600]
+        coords: [500, 300, 500, 600],
       };
 
       global.canvas.walls.objects.children = [bothDirectionalWall];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 600, y: 400 },
-        x: 600, y: 400, w: 100, h: 100
+        x: 600,
+        y: 400,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -284,16 +287,19 @@ describe('Wall Coverage Fixes Integration Tests', () => {
           sight: 20,
           dir: 0, // BOTH
           c: [300, 200, 600, 200], // Horizontal wall
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [300, 200, 600, 200]
+        coords: [300, 200, 600, 200],
       };
 
       global.canvas.walls.objects.children = [blockingWall];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 400, y: 300 },
-        x: 400, y: 300, w: 100, h: 100
+        x: 400,
+        y: 300,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -320,27 +326,32 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Create multiple walls creating partial cover
       const wall1 = {
         document: {
-          sight: 20, dir: 0,
+          sight: 20,
+          dir: 0,
           c: [300, 150, 500, 150],
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [300, 150, 500, 150]
+        coords: [300, 150, 500, 150],
       };
 
       const wall2 = {
         document: {
-          sight: 20, dir: 0,
+          sight: 20,
+          dir: 0,
           c: [300, 250, 500, 250],
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [300, 250, 500, 250]
+        coords: [300, 250, 500, 250],
       };
 
       global.canvas.walls.objects.children = [wall1, wall2];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 400, y: 300 },
-        x: 400, y: 300, w: 100, h: 100
+        x: 400,
+        y: 300,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -369,14 +380,14 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Mock settings
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 50,
-          'wallCoverGreaterThreshold': 70,
-          'wallCoverAllowGreater': true,
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true
+          wallCoverStandardThreshold: 50,
+          wallCoverGreaterThreshold: 70,
+          wallCoverAllowGreater: true,
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
         };
         return settingsMap[setting] ?? 0;
       });
@@ -385,14 +396,14 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       const horizontalWall = {
         document: {
           id: 'horizontal-wall',
-          sight: 1,  // Changed from 20 to 1
-          door: 0,   // Not a door
-          ds: 0,     // Closed
-          dir: 2,    // RIGHT direction
+          sight: 1, // Changed from 20 to 1
+          door: 0, // Not a door
+          ds: 0, // Closed
+          dir: 2, // RIGHT direction
           c: [50, 150, 350, 150], // Horizontal wall
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [50, 150, 350, 150] // Horizontal wall
+        coords: [50, 150, 350, 150], // Horizontal wall
       };
 
       global.canvas.walls.objects.children = [horizontalWall];
@@ -400,28 +411,28 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Create attacker above wall and target below wall
       const attackerFromAbove = global.createMockToken({
         id: 'attacker-above',
-        x: 4,  // Grid position (200px / 50px grid = 4)
-        y: 2,  // Grid position (100px / 50px grid = 2) - above wall at y=150
+        x: 4, // Grid position (200px / 50px grid = 4)
+        y: 2, // Grid position (100px / 50px grid = 2) - above wall at y=150
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        x: 4,  // Grid position (200px / 50px grid = 4)
-        y: 4,  // Grid position (200px / 50px grid = 4) - below wall at y=150
+        x: 4, // Grid position (200px / 50px grid = 4)
+        y: 4, // Grid position (200px / 50px grid = 4) - below wall at y=150
         width: 1,
         height: 1,
         actor: {
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [attackerFromAbove, target];
@@ -431,7 +442,7 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attackerFromAbove, target);
-      
+
       // TODO: Directional wall logic needs investigation - accepting current behavior
       expect(['none', 'standard', 'greater']).toContain(result);
     });
@@ -440,18 +451,22 @@ describe('Wall Coverage Fixes Integration Tests', () => {
       // Test the improved percentage calculation in a realistic scenario
       const partialCoverWall = {
         document: {
-          sight: 20, dir: 0,
+          sight: 20,
+          dir: 0,
           c: [400, 200, 400, 350], // Vertical wall partially blocking target
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [400, 200, 400, 350]
+        coords: [400, 200, 400, 350],
       };
 
       global.canvas.walls.objects.children = [partialCoverWall];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 450, y: 300 },
-        x: 450, y: 300, w: 100, h: 100 // 100x100 token
+        x: 450,
+        y: 300,
+        w: 100,
+        h: 100, // 100x100 token
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -489,16 +504,19 @@ describe('Wall Coverage Fixes Integration Tests', () => {
           sight: 20,
           dir: 1, // LEFT
           c: [300, 300, 500, 300], // Horizontal wall
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [300, 300, 500, 300]
+        coords: [300, 300, 500, 300],
       };
 
       global.canvas.walls.objects.children = [alignedWall];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 400, y: 300 },
-        x: 400, y: 300, w: 100, h: 100
+        x: 400,
+        y: 300,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -525,9 +543,9 @@ describe('Wall Coverage Fixes Integration Tests', () => {
             sight: 20,
             dir: i % 3, // Mix of BOTH, LEFT, RIGHT
             c: [i * 50, 100, i * 50, 400],
-            getFlag: jest.fn(() => null)
+            getFlag: jest.fn(() => null),
           },
-          coords: [i * 50, 100, i * 50, 400]
+          coords: [i * 50, 100, i * 50, 400],
         });
       }
 
@@ -535,7 +553,10 @@ describe('Wall Coverage Fixes Integration Tests', () => {
 
       const targetToken = {
         document: { width: 1, height: 1, x: 500, y: 250 },
-        x: 500, y: 250, w: 100, h: 100
+        x: 500,
+        y: 250,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -563,16 +584,19 @@ describe('Wall Coverage Fixes Integration Tests', () => {
           sight: 20,
           dir: 1,
           c: null, // Invalid coordinates
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: null
+        coords: null,
       };
 
       global.canvas.walls.objects.children = [malformedWall];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 400, y: 300 },
-        x: 400, y: 300, w: 100, h: 100
+        x: 400,
+        y: 300,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -592,16 +616,19 @@ describe('Wall Coverage Fixes Integration Tests', () => {
           sight: 20,
           dir: null, // Non-directional (standard behavior)
           c: [400, 200, 400, 400],
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [400, 200, 400, 400]
+        coords: [400, 200, 400, 400],
       };
 
       global.canvas.walls.objects.children = [standardWall];
 
       const targetToken = {
         document: { width: 1, height: 1, x: 500, y: 300 },
-        x: 500, y: 300, w: 100, h: 100
+        x: 500,
+        y: 300,
+        w: 100,
+        h: 100,
       };
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => targetToken);
@@ -627,9 +654,9 @@ describe('Wall Coverage Fixes Integration Tests', () => {
           getFlag: jest.fn((moduleId, flagName) => {
             if (flagName === 'coverOverride') return 'standard';
             return null;
-          })
+          }),
         },
-        coords: [400, 200, 400, 400]
+        coords: [400, 200, 400, 400],
       };
 
       global.canvas.walls.objects.children = [overrideWall];
@@ -637,7 +664,7 @@ describe('Wall Coverage Fixes Integration Tests', () => {
 
       // Mock that wall cover override check returns the override value
       coverDetector._checkWallCoverOverrides = jest.fn(() => 'standard');
-      
+
       // Mock the coverage percentage to return a value that would normally trigger greater cover
       coverDetector._estimateWallCoveragePercent = jest.fn(() => 80); // Above greater threshold (70%)
 

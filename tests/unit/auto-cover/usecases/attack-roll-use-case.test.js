@@ -1,5 +1,5 @@
 /**
- * Unit tests for AttackRollUseCase  
+ * Unit tests for AttackRollUseCase
  * Tests attack roll context handling and cover application in attack scenarios
  */
 
@@ -45,14 +45,22 @@ describe('AttackRollUseCase', () => {
     };
 
     // Mock the modules - return both the mock directly and as default export
-    jest.doMock('../../../../scripts/cover/auto-cover/AutoCoverSystem.js', () => mockAutoCoverSystem);
+    jest.doMock(
+      '../../../../scripts/cover/auto-cover/AutoCoverSystem.js',
+      () => mockAutoCoverSystem,
+    );
 
     jest.doMock('../../../../scripts/cover/auto-cover/CoverUIManager.js', () => mockCoverUIManager);
 
-    jest.doMock('../../../../scripts/cover/auto-cover/TemplateManager.js', () => mockTemplateManager);
+    jest.doMock(
+      '../../../../scripts/cover/auto-cover/TemplateManager.js',
+      () => mockTemplateManager,
+    );
 
     // Import the use case
-    const { AttackRollUseCase } = await import('../../../../scripts/cover/auto-cover/usecases/AttackRollUseCase.js');
+    const { AttackRollUseCase } = await import(
+      '../../../../scripts/cover/auto-cover/usecases/AttackRollUseCase.js'
+    );
     attackRollUseCase = new AttackRollUseCase();
   });
 
@@ -129,7 +137,7 @@ describe('AttackRollUseCase', () => {
       getCoverBetween.mockReturnValue('none');
 
       attackRollUseCase._detectCover.mockReturnValue('standard');
-      
+
       const mockOverride = {
         state: 'greater',
         source: 'popup',
@@ -156,9 +164,7 @@ describe('AttackRollUseCase', () => {
     test('should handle missing tokens gracefully', async () => {
       global.canvas.tokens.get.mockReturnValue(null);
 
-      await expect(
-        attackRollUseCase.handlePreCreateChatMessage(mockData)
-      ).resolves.toBeUndefined();
+      await expect(attackRollUseCase.handlePreCreateChatMessage(mockData)).resolves.toBeUndefined();
     });
   });
 
@@ -203,7 +209,7 @@ describe('AttackRollUseCase', () => {
     test('should detect cover and inject UI', async () => {
       const { getCoverBetween } = await import('../../../../scripts/utils.js');
       getCoverBetween.mockReturnValue('none');
-      
+
       attackRollUseCase._detectCover = jest.fn().mockReturnValue('standard');
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
@@ -216,14 +222,14 @@ describe('AttackRollUseCase', () => {
         'standard',
         targetToken,
         'none', // manualCover
-        expect.any(Function) // onChosen callback
+        expect.any(Function), // onChosen callback
       );
     });
 
     test('should use manual cover when it exists', async () => {
       const { getCoverBetween } = await import('../../../../scripts/utils.js');
       getCoverBetween.mockReturnValue('greater');
-      
+
       attackRollUseCase._detectCover = jest.fn().mockReturnValue('standard');
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
@@ -236,7 +242,7 @@ describe('AttackRollUseCase', () => {
         'standard',
         targetToken,
         'greater', // manualCover
-        expect.any(Function) // onChosen callback
+        expect.any(Function), // onChosen callback
       );
     });
 
@@ -248,9 +254,11 @@ describe('AttackRollUseCase', () => {
       attackRollUseCase.autoCoverSystem.setDialogOverride = jest.fn();
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
-        callbackFunction = callback;
-      });
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation(
+        (dialog, html, state, target, manualCover, callback) => {
+          callbackFunction = callback;
+        },
+      );
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
 
@@ -266,7 +274,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         targetToken,
         'greater',
-        'standard'
+        'standard',
       );
     });
 
@@ -278,9 +286,11 @@ describe('AttackRollUseCase', () => {
       attackRollUseCase.autoCoverSystem.setDialogOverride = jest.fn();
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
-        callbackFunction = callback;
-      });
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation(
+        (dialog, html, state, target, manualCover, callback) => {
+          callbackFunction = callback;
+        },
+      );
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
 
@@ -303,9 +313,11 @@ describe('AttackRollUseCase', () => {
       attackRollUseCase.autoCoverSystem.setDialogOverride = jest.fn();
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
-        callbackFunction = callback;
-      });
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation(
+        (dialog, html, state, target, manualCover, callback) => {
+          callbackFunction = callback;
+        },
+      );
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
 
@@ -324,7 +336,7 @@ describe('AttackRollUseCase', () => {
       mockCoverUIManager.injectDialogCoverUI.mockRejectedValue(new Error('UI injection failed'));
 
       await expect(
-        attackRollUseCase.handleCheckDialog(mockDialog, mockHtml)
+        attackRollUseCase.handleCheckDialog(mockDialog, mockHtml),
       ).resolves.toBeUndefined();
     });
 
@@ -332,9 +344,11 @@ describe('AttackRollUseCase', () => {
       mockDialog.check = null;
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
-        callbackFunction = callback;
-      });
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation(
+        (dialog, html, state, target, manualCover, callback) => {
+          callbackFunction = callback;
+        },
+      );
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
 
@@ -356,9 +370,11 @@ describe('AttackRollUseCase', () => {
       });
 
       let callbackFunction;
-      mockCoverUIManager.injectDialogCoverUI.mockImplementation((dialog, html, state, target, manualCover, callback) => {
-        callbackFunction = callback;
-      });
+      mockCoverUIManager.injectDialogCoverUI.mockImplementation(
+        (dialog, html, state, target, manualCover, callback) => {
+          callbackFunction = callback;
+        },
+      );
 
       await attackRollUseCase.handleCheckDialog(mockDialog, mockHtml);
 
@@ -429,7 +445,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'greater', // finalState should be manual cover
         mockContext,
-        'greater' // manualCover parameter
+        'greater', // manualCover parameter
       );
     });
 
@@ -442,13 +458,16 @@ describe('AttackRollUseCase', () => {
       await attackRollUseCase.handleCheckRoll(mockCheck, mockContext);
 
       expect(getCoverBetween).toHaveBeenCalledWith(attackerToken, targetToken);
-      expect(attackRollUseCase.coverUIManager.showPopupAndApply).toHaveBeenCalledWith('standard', 'none');
+      expect(attackRollUseCase.coverUIManager.showPopupAndApply).toHaveBeenCalledWith(
+        'standard',
+        'none',
+      );
       expect(attackRollUseCase._applyCoverEphemeralEffect).toHaveBeenCalledWith(
         targetToken,
         attackerToken,
         'lesser', // finalState should be popup choice
         mockContext,
-        'none' // manualCover parameter
+        'none', // manualCover parameter
       );
     });
 
@@ -465,7 +484,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard', // finalState should be detected
         mockContext,
-        'none' // manualCover parameter
+        'none', // manualCover parameter
       );
     });
 
@@ -481,7 +500,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         targetToken,
         'greater',
-        'standard'
+        'standard',
       );
     });
 
@@ -520,7 +539,9 @@ describe('AttackRollUseCase', () => {
       const { getCoverBetween } = await import('../../../../scripts/utils.js');
       getCoverBetween.mockReturnValue('none');
 
-      attackRollUseCase.coverUIManager.showPopupAndApply.mockRejectedValue(new Error('Popup error'));
+      attackRollUseCase.coverUIManager.showPopupAndApply.mockRejectedValue(
+        new Error('Popup error'),
+      );
 
       const result = await attackRollUseCase.handleCheckRoll(mockCheck, mockContext);
 
@@ -530,7 +551,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard', // Should fallback to detected state
         mockContext,
-        'none'
+        'none',
       );
     });
 
@@ -623,7 +644,9 @@ describe('AttackRollUseCase', () => {
           const bonuses = { none: 0, lesser: 1, standard: 2, greater: 4 };
           return bonuses[state] || 0;
         }),
-        getCoverLabel: jest.fn().mockImplementation((state) => `${state.charAt(0).toUpperCase() + state.slice(1)} Cover`),
+        getCoverLabel: jest
+          .fn()
+          .mockImplementation((state) => `${state.charAt(0).toUpperCase() + state.slice(1)} Cover`),
         getCoverImageForState: jest.fn().mockReturnValue('cover-icon.svg'),
       }));
 
@@ -636,7 +659,7 @@ describe('AttackRollUseCase', () => {
       const mockStatistic = {
         dc: { value: 17 },
       };
-      
+
       targetToken.actor._source = { items: [] };
       targetToken.actor.clone = jest.fn().mockImplementation(() => ({
         getStatistic: jest.fn().mockReturnValue(mockStatistic),
@@ -649,7 +672,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'none',
         mockContext,
-        'none'
+        'none',
       );
 
       expect(targetToken.actor.clone).not.toHaveBeenCalled();
@@ -664,7 +687,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'custom',
         mockContext,
-        'none'
+        'none',
       );
 
       expect(targetToken.actor.clone).not.toHaveBeenCalled();
@@ -676,7 +699,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard',
         mockContext,
-        'none'
+        'none',
       );
 
       expect(targetToken.actor.clone).toHaveBeenCalledWith(
@@ -692,7 +715,7 @@ describe('AttackRollUseCase', () => {
             }),
           ]),
         }),
-        { keepId: true }
+        { keepId: true },
       );
     });
 
@@ -702,7 +725,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard',
         mockContext,
-        'none'
+        'none',
       );
 
       expect(mockContext.dc.value).toBe(17);
@@ -717,7 +740,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard',
         mockContext,
-        'greater'
+        'greater',
       );
 
       expect(mockContext.dc.value).toBe(originalValue);
@@ -733,7 +756,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard',
         mockContext,
-        'none'
+        'none',
       );
 
       expect(targetToken.actor.clone).toHaveBeenCalledWith(
@@ -748,7 +771,7 @@ describe('AttackRollUseCase', () => {
             }),
           ]),
         }),
-        { keepId: true }
+        { keepId: true },
       );
     });
 
@@ -761,7 +784,7 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard',
         mockContext,
-        'none'
+        'none',
       );
 
       expect(targetToken.actor.clone).toHaveBeenCalledWith(
@@ -776,7 +799,7 @@ describe('AttackRollUseCase', () => {
             }),
           ]),
         }),
-        { keepId: true }
+        { keepId: true },
       );
     });
 
@@ -799,23 +822,19 @@ describe('AttackRollUseCase', () => {
         attackerToken,
         'standard',
         mockContext,
-        'none'
+        'none',
       );
 
       const cloneCall = targetToken.actor.clone.mock.calls[0][0];
-      
+
       // Should not contain the old ephemeral cover effect
       expect(cloneCall.items).not.toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'Old Cover Effect' })
-        ])
+        expect.arrayContaining([expect.objectContaining({ name: 'Old Cover Effect' })]),
       );
 
       // Should contain the normal effect
       expect(cloneCall.items).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'Normal Effect' })
-        ])
+        expect.arrayContaining([expect.objectContaining({ name: 'Normal Effect' })]),
       );
     });
 
@@ -828,8 +847,8 @@ describe('AttackRollUseCase', () => {
           attackerToken,
           'standard',
           contextWithoutDC,
-          'none'
-        )
+          'none',
+        ),
       ).resolves.toBeUndefined();
     });
 
@@ -844,8 +863,8 @@ describe('AttackRollUseCase', () => {
           attackerToken,
           'standard',
           mockContext,
-          'none'
-        )
+          'none',
+        ),
       ).rejects.toThrow('Clone failed');
     });
   });
@@ -858,7 +877,7 @@ describe('AttackRollUseCase', () => {
       };
 
       await expect(
-        attackRollUseCase.handleCheckDialog(malformedDialog, document.createElement('div'))
+        attackRollUseCase.handleCheckDialog(malformedDialog, document.createElement('div')),
       ).resolves.toBeUndefined();
     });
   });

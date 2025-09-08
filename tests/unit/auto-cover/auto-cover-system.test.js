@@ -34,10 +34,14 @@ describe('AutoCoverSystem', () => {
 
     // Mock the modules - singleton pattern
     jest.doMock('../../../scripts/cover/auto-cover/CoverDetector.js', () => mockCoverDetector);
-    jest.doMock('../../../scripts/cover/auto-cover/CoverStateManager.js', () => mockCoverStateManager);
+    jest.doMock(
+      '../../../scripts/cover/auto-cover/CoverStateManager.js',
+      () => mockCoverStateManager,
+    );
 
     // Import the singleton instance after mocking dependencies
-    autoCoverSystem = (await import('../../../scripts/cover/auto-cover/AutoCoverSystem.js')).default;
+    autoCoverSystem = (await import('../../../scripts/cover/auto-cover/AutoCoverSystem.js'))
+      .default;
   });
 
   afterEach(() => {
@@ -91,7 +95,11 @@ describe('AutoCoverSystem', () => {
 
       const result = autoCoverSystem.detectCoverBetweenTokens(sourceToken, targetToken);
 
-      expect(mockCoverDetector.detectBetweenTokens).toHaveBeenCalledWith(sourceToken, targetToken, {});
+      expect(mockCoverDetector.detectBetweenTokens).toHaveBeenCalledWith(
+        sourceToken,
+        targetToken,
+        {},
+      );
       expect(result).toBe('standard');
     });
 

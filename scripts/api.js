@@ -22,7 +22,7 @@ import {
   getVisibility,
   setCoverBetween,
   setVisibilityBetween,
-  showNotification
+  showNotification,
 } from './utils.js';
 
 /**
@@ -115,7 +115,7 @@ export class Pf2eVisionerApi {
     await manager.render({ force: true });
     try {
       if (manager.element || manager.window) manager.bringToFront();
-    } catch (_) { }
+    } catch (_) {}
     return manager;
   }
 
@@ -170,7 +170,7 @@ export class Pf2eVisionerApi {
     await manager.render({ force: true });
     try {
       if (manager.element || manager.window) manager.bringToFront();
-    } catch (_) { }
+    } catch (_) {}
     return manager;
   }
 
@@ -471,7 +471,7 @@ export class Pf2eVisionerApi {
           await scene.updateEmbeddedDocuments('Token', updates, {
             diff: false,
           });
-        } catch (_) { }
+        } catch (_) {}
       }
 
       // 2) Clear scene-level caches used by the module
@@ -480,7 +480,7 @@ export class Pf2eVisionerApi {
         if (game.user.isGM) {
           await scene.setFlag(MODULE_ID, 'deletedEntryCache', {});
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
       try {
@@ -502,7 +502,7 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await actor.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch (_) {}
           }
         }
 
@@ -526,28 +526,28 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await a.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch (_) {}
           }
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 4) Optional extra sweep for cover effects across all actors
       try {
         const { cleanupAllCoverEffects } = await import('./cover/ephemeral.js');
         await cleanupAllCoverEffects();
-      } catch (_) { }
+      } catch (_) {}
 
       // 5) Rebuild effects and refresh visuals/perception
       // Removed effects-coordinator: bulk rebuild handled elsewhere
       try {
         await updateTokenVisuals();
-      } catch (_) { }
+      } catch (_) {}
       try {
         refreshEveryonesPerception();
-      } catch (_) { }
+      } catch (_) {}
       try {
         canvas.perception.update({ refreshVision: true });
-      } catch (_) { }
+      } catch (_) {}
 
       ui.notifications.info('PF2E Visioner: Cleared all scene data.');
       return true;
@@ -597,7 +597,7 @@ export class Pf2eVisionerApi {
           [`flags.${MODULE_ID}.-=cover`]: null,
         };
         await scene.updateEmbeddedDocuments('Token', [unset], { diff: false });
-      } catch (_) { }
+      } catch (_) {}
 
       // Visibility effects contributed by this observer → remove from all targets
       try {
@@ -609,7 +609,7 @@ export class Pf2eVisionerApi {
             removeAllEffects: true,
           });
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // Cover effects contributed by this observer → remove from all targets
       try {
@@ -617,12 +617,12 @@ export class Pf2eVisionerApi {
           if (!t?.actor || t.id === selected.id) continue;
           await cleanupCoverEffectsForObserver(t, selected);
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 2) As target: remove this token from all observers' maps and effects
       try {
         await cleanupDeletedToken(selected.document);
-      } catch (_) { }
+      } catch (_) {}
 
       try {
         for (const obs of tokens) {
@@ -630,19 +630,19 @@ export class Pf2eVisionerApi {
           await cleanupOffGuardEffectsForTarget(obs, selected);
           await cleanupCoverEffectsForObserver(selected, obs);
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 3) Rebuild/refresh
       // Removed effects-coordinator: bulk rebuild handled elsewhere
       try {
         await updateTokenVisuals();
-      } catch (_) { }
+      } catch (_) {}
       try {
         refreshEveryonesPerception();
-      } catch (_) { }
+      } catch (_) {}
       try {
         canvas.perception.update({ refreshVision: true });
-      } catch (_) { }
+      } catch (_) {}
 
       ui.notifications.info('PF2E Visioner: Cleared data for selected token.');
       return true;
@@ -707,12 +707,16 @@ export class Pf2eVisionerApi {
 
       if (forceRecalculate) {
         // Force fresh calculation
-        coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, targetToken, { rawPrereq });
+        coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, targetToken, {
+          rawPrereq,
+        });
       } else {
         // Try to get cached cover first, then fall back to fresh calculation
         coverState = (observerToken, targetToken);
         if (!coverState || coverState === 'none') {
-          coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, targetToken, { rawPrereq });
+          coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, targetToken, {
+            rawPrereq,
+          });
         }
       }
 
@@ -760,7 +764,7 @@ export class Pf2eVisionerApi {
           await scene.updateEmbeddedDocuments('Token', updates, {
             diff: false,
           });
-        } catch (_) { }
+        } catch (_) {}
       }
 
       // 2) Clear scene-level caches used by the module
@@ -769,7 +773,7 @@ export class Pf2eVisionerApi {
         if (game.user.isGM) {
           await scene.setFlag(MODULE_ID, 'deletedEntryCache', {});
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
       try {
@@ -791,7 +795,7 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await actor.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch (_) {}
           }
         }
 
@@ -816,10 +820,10 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await a.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch (_) {}
           }
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 4) Clean up any remaining effects related to the selected tokens specifically
       try {
@@ -829,7 +833,7 @@ export class Pf2eVisionerApi {
           // Clean up this token from all other tokens' maps and effects
           await cleanupDeletedToken(token.document);
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 5) Also remove the selected tokens from ALL other tokens' visibility/cover maps
       try {
@@ -865,18 +869,18 @@ export class Pf2eVisionerApi {
             await scene.updateEmbeddedDocuments('Token', updates, { diff: false });
           }
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // 6) Rebuild effects and refresh visuals/perception
       try {
         await updateTokenVisuals();
-      } catch (_) { }
+      } catch (_) {}
       try {
         refreshEveryonesPerception();
-      } catch (_) { }
+      } catch (_) {}
       try {
         canvas.perception.update({ refreshVision: true });
-      } catch (_) { }
+      } catch (_) {}
 
       ui.notifications.info(
         `PF2E Visioner: Cleared all data for ${tokens.length} selected token${tokens.length === 1 ? '' : 's'}.`,

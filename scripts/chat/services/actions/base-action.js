@@ -69,7 +69,7 @@ export class ActionHandlerBase {
     return outcome?.target?.id ?? null;
   }
 
-  // Apply user-selected overrides from actionData.overrides onto computed outcomes
+  // Apply user-selected overrides from actionData.overrides or OverridesManager onto computed outcomes
   applyOverrides(actionData, outcomes) {
     try {
       const overrides = actionData?.overrides;
@@ -86,7 +86,8 @@ export class ActionHandlerBase {
         if (baseOld) outcome.changed = overrideState !== baseOld;
       }
       return outcomes;
-    } catch (_) {
+    } catch (error) {
+      console.error('Error applying overrides:', error);
       return outcomes;
     }
   }
@@ -113,13 +114,11 @@ export class ActionHandlerBase {
       const obsId = ch.observer?.id;
       if (!obsId) continue;
       if (!map.has(obsId)) map.set(obsId, { observer: ch.observer, items: [] });
-      map
-        .get(obsId)
-        .items.push({
-          target: ch.target,
-          newVisibility: ch.newVisibility,
-          oldVisibility: ch.oldVisibility,
-        });
+      map.get(obsId).items.push({
+        target: ch.target,
+        newVisibility: ch.newVisibility,
+        oldVisibility: ch.oldVisibility,
+      });
     }
     return Array.from(map.values());
   }

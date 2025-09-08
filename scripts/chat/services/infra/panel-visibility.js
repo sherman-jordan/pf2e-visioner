@@ -9,7 +9,6 @@ export function shouldInjectPanel(message, actionData) {
     const isGM = !!game.user?.isGM;
     const hasValidTargets = checkForValidTargets(actionData);
 
-
     // Always show Point Out panels for GM (target detection can be flaky)
     if (actionData.actionType === 'point-out' && isGM) {
       return true;
@@ -17,7 +16,9 @@ export function shouldInjectPanel(message, actionData) {
 
     // Always show for GM even if targets cannot be computed yet (e.g., canvas not ready)
     if (!hasValidTargets) {
-      if (isGM) return true;
+      if (isGM) {
+        return true;
+      }
 
       // Allow players for Seek when template mode is enabled
       if (
@@ -33,7 +34,9 @@ export function shouldInjectPanel(message, actionData) {
     // Special pending flags: Seek template and Point Out handoff
     if (actionData.actionType === 'seek' && isGM) {
       const pending = message?.flags?.['pf2e-visioner']?.seekTemplate;
-      if (pending && pending.hasTargets === false) return false;
+      if (pending && pending.hasTargets === false) {
+        return false;
+      }
     }
     return true;
   } catch (_) {

@@ -7,17 +7,18 @@ import { getCoverMap, getVisibilityMap } from '../../utils.js';
 
 import { MODULE_ID } from '../../constants.js';
 import { bindTokenManagerActions } from './actions/index.js';
+import { toggleIgnoreAllies, toggleIgnoreWalls } from './actions/ui.js';
 import {
-    addTokenBorder as addBorderUtil,
-    removeTokenBorder as removeBorderUtil,
+  addTokenBorder as addBorderUtil,
+  removeTokenBorder as removeBorderUtil,
 } from './borders.js';
 import { TOKEN_MANAGER_DEFAULT_OPTIONS, TOKEN_MANAGER_PARTS } from './config.js';
 import {
-    applySelectionHighlight,
-    attachCanvasHoverHandlers,
-    attachSelectionHandlers,
-    detachCanvasHoverHandlers,
-    detachSelectionHandlers,
+  applySelectionHighlight,
+  attachCanvasHoverHandlers,
+  attachSelectionHandlers,
+  detachCanvasHoverHandlers,
+  detachSelectionHandlers,
 } from './highlighting.js';
 
 export class VisionerTokenManager extends foundry.applications.api.ApplicationV2 {
@@ -35,7 +36,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       reset: VisionerTokenManager.resetAll,
       toggleMode: VisionerTokenManager.toggleMode,
       toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
-      toggleIgnoreAllies: VisionerTokenManager.toggleIgnoreAllies,
+      toggleIgnoreAllies: toggleIgnoreAllies,
+      toggleIgnoreWalls: toggleIgnoreWalls,
       toggleTab: VisionerTokenManager.toggleTab,
       bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
@@ -221,8 +223,14 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    * Toggle ignore allies filter
    */
   static async toggleIgnoreAllies(event, button) {
-    const { toggleIgnoreAllies } = await import('./actions/index.js');
     return toggleIgnoreAllies.call(this, event, button);
+  }
+
+  /**
+   * Toggle ignore walls filter
+   */
+  static async toggleIgnoreWalls(event, button) {
+    return toggleIgnoreWalls.call(this, event, button);
   }
 
   /**
@@ -279,19 +287,6 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);
-
-    // Ignore Allies toggle is now handled by the ApplicationV2 action system
-    // See toggleIgnoreAllies action in actions/ui.js
-    // Wire per-manager Ignore Walls toggle
-    try {
-      const cbw = this.element.querySelector('input[data-action="toggleIgnoreWalls"]');
-      if (cbw) {
-        cbw.addEventListener('change', () => {
-          this.ignoreWalls = !!cbw.checked;
-          this.render({ force: true });
-        });
-      }
-    } catch (_) {}
   }
 
   /**

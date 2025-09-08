@@ -44,7 +44,6 @@ describe('Cover Detection Core Logic', () => {
 
   describe('autoCoverSystem.detectCoverBetweenTokens - Core Algorithm', () => {
     test('returns none for same token (attacker and target identical)', async () => {
-
       const token = {
         id: 'same-token',
         center: { x: 100, y: 100 },
@@ -56,7 +55,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('returns none for null/undefined tokens', async () => {
-
       const validToken = {
         id: 'valid',
         center: { x: 100, y: 100 },
@@ -69,7 +67,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('ignores open doors for cover calculation', async () => {
-
       const attacker = {
         id: 'attacker',
         center: { x: 100, y: 100 },
@@ -110,7 +107,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('detects token cover from blocking creatures', async () => {
-
       const attacker = {
         id: 'attacker',
         center: { x: 100, y: 100 },
@@ -161,7 +157,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('ignores dead tokens for cover calculation when setting enabled', async () => {
-
       // Enable ignore dead setting
       global.game.settings.get = jest.fn().mockImplementation((module, setting) => {
         if (setting === 'autoCoverIgnoreDead') return true;
@@ -216,7 +211,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('handles complex scenarios with multiple cover sources', async () => {
-
       const attacker = {
         id: 'attacker',
         center: { x: 100, y: 100 },
@@ -278,7 +272,6 @@ describe('Cover Detection Core Logic', () => {
 
   describe('Cover Detection Edge Cases', () => {
     test('handles tokens with missing center coordinates', async () => {
-
       const attacker = {
         id: 'attacker',
         center: null,
@@ -302,7 +295,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('handles empty canvas (no walls, tokens, terrain)', async () => {
-
       const attacker = {
         id: 'attacker',
         center: { x: 100, y: 100 },
@@ -328,7 +320,6 @@ describe('Cover Detection Core Logic', () => {
     });
 
     test('handles corrupted wall data gracefully', async () => {
-
       const attacker = {
         id: 'attacker',
         center: { x: 100, y: 100 },

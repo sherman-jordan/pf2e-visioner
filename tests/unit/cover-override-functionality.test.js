@@ -16,7 +16,7 @@ describe('Cover Override Functionality', () => {
         getFlag: jest.fn(),
         setFlag: jest.fn(),
         unsetFlag: jest.fn(),
-      }
+      },
     };
 
     // Create mock token document
@@ -25,7 +25,7 @@ describe('Cover Override Functionality', () => {
         getFlag: jest.fn(),
         setFlag: jest.fn(),
         unsetFlag: jest.fn(),
-      }
+      },
     };
   });
 
@@ -39,7 +39,11 @@ describe('Cover Override Functionality', () => {
 
       await mockWall.document.setFlag(MODULE_ID, 'coverOverride', 'standard');
 
-      expect(mockWall.document.setFlag).toHaveBeenCalledWith(MODULE_ID, 'coverOverride', 'standard');
+      expect(mockWall.document.setFlag).toHaveBeenCalledWith(
+        MODULE_ID,
+        'coverOverride',
+        'standard',
+      );
     });
 
     test('should get wall cover override flag correctly', () => {
@@ -62,7 +66,7 @@ describe('Cover Override Functionality', () => {
     test('should handle all wall cover override types', () => {
       const coverTypes = ['none', 'standard', 'greater'];
 
-      coverTypes.forEach(type => {
+      coverTypes.forEach((type) => {
         mockWall.document.getFlag.mockReturnValue(type);
         const result = mockWall.document.getFlag(MODULE_ID, 'coverOverride');
         expect(result).toBe(type);
@@ -99,7 +103,7 @@ describe('Cover Override Functionality', () => {
     test('should handle all token cover override types', () => {
       const coverTypes = ['none', 'lesser', 'standard', 'greater'];
 
-      coverTypes.forEach(type => {
+      coverTypes.forEach((type) => {
         mockToken.document.getFlag.mockReturnValue(type);
         const result = mockToken.document.getFlag(MODULE_ID, 'coverOverride');
         expect(result).toBe(type);
@@ -111,15 +115,15 @@ describe('Cover Override Functionality', () => {
     test('should maintain consistent state between flags and UI', () => {
       // Test wall override UI state
       mockWall.document.getFlag.mockReturnValue('standard');
-      
+
       const wallOverride = mockWall.document.getFlag(MODULE_ID, 'coverOverride');
-      
+
       // UI should reflect the flag value
       const wallButtonStates = {
         auto: wallOverride === null,
         none: wallOverride === 'none',
         standard: wallOverride === 'standard',
-        greater: wallOverride === 'greater'
+        greater: wallOverride === 'greater',
       };
 
       expect(wallButtonStates.standard).toBe(true);
@@ -149,13 +153,13 @@ describe('Cover Override Functionality', () => {
       const validWallOverrides = [null, 'none', 'standard', 'greater'];
       const validTokenOverrides = [null, 'none', 'lesser', 'standard', 'greater'];
 
-      validWallOverrides.forEach(override => {
+      validWallOverrides.forEach((override) => {
         mockWall.document.getFlag.mockReturnValue(override);
         const result = mockWall.document.getFlag(MODULE_ID, 'coverOverride');
         expect(validWallOverrides).toContain(result);
       });
 
-      validTokenOverrides.forEach(override => {
+      validTokenOverrides.forEach((override) => {
         mockToken.document.getFlag.mockReturnValue(override);
         const result = mockToken.document.getFlag(MODULE_ID, 'coverOverride');
         expect(validTokenOverrides).toContain(result);
@@ -166,14 +170,14 @@ describe('Cover Override Functionality', () => {
   describe('Cover Override Button Behavior', () => {
     test('should simulate wall cover override button clicks', () => {
       const coverTypes = ['auto', 'none', 'standard', 'greater'];
-      
-      coverTypes.forEach(type => {
+
+      coverTypes.forEach((type) => {
         // Simulate button click setting the override
         const expectedValue = type === 'auto' ? null : type;
         mockWall.document.getFlag.mockReturnValue(expectedValue);
-        
+
         const result = mockWall.document.getFlag(MODULE_ID, 'coverOverride');
-        
+
         if (type === 'auto') {
           expect(result).toBeNull();
         } else {
@@ -184,14 +188,14 @@ describe('Cover Override Functionality', () => {
 
     test('should simulate token cover override button clicks', () => {
       const coverTypes = ['auto', 'none', 'lesser', 'standard', 'greater'];
-      
-      coverTypes.forEach(type => {
+
+      coverTypes.forEach((type) => {
         // Simulate button click setting the override
         const expectedValue = type === 'auto' ? null : type;
         mockToken.document.getFlag.mockReturnValue(expectedValue);
-        
+
         const result = mockToken.document.getFlag(MODULE_ID, 'coverOverride');
-        
+
         if (type === 'auto') {
           expect(result).toBeNull();
         } else {
@@ -202,17 +206,17 @@ describe('Cover Override Functionality', () => {
 
     test('should handle cycling through token cover states', () => {
       const cycle = [null, 'none', 'lesser', 'standard', 'greater'];
-      
+
       cycle.forEach((state, index) => {
         mockToken.document.getFlag.mockReturnValue(state);
         const currentState = mockToken.document.getFlag(MODULE_ID, 'coverOverride');
-        
+
         expect(currentState).toBe(state);
-        
+
         // Verify next state in cycle
         const nextIndex = (index + 1) % cycle.length;
         const nextState = cycle[nextIndex];
-        
+
         // This would be set by the cycling tool
         mockToken.document.getFlag.mockReturnValue(nextState);
         const newState = mockToken.document.getFlag(MODULE_ID, 'coverOverride');
@@ -247,10 +251,10 @@ describe('Cover Override Functionality', () => {
     test('should handle invalid flag values', () => {
       // Test with invalid override value
       mockWall.document.getFlag.mockReturnValue('invalid-override');
-      
+
       const result = mockWall.document.getFlag(MODULE_ID, 'coverOverride');
       expect(result).toBe('invalid-override');
-      
+
       // In real implementation, this would be validated and fall back to auto
       const validOverrides = [null, 'none', 'standard', 'greater'];
       const isValid = validOverrides.includes(result);

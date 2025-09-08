@@ -50,7 +50,7 @@ export async function previewActionResults(actionData) {
               );
               return;
             }
-          } catch (_) { }
+          } catch (_) {}
 
           // Do NOT pre-filter allies at discovery time; let the dialog control it live
           const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
@@ -58,14 +58,14 @@ export async function previewActionResults(actionData) {
             subjects.map((s) => handler.analyzeOutcome(actionData, s)),
           );
           const changes = outcomes.filter((o) => o && o.changed);
-          
+
           // Validate actor before creating dialog
           if (!actionData.actor) {
             const { notify } = await import('../infra/notifications.js');
             notify.error('Cannot perform Seek action: No valid actor found');
             return;
           }
-          
+
           // Pass the current desired per-dialog ignoreAllies default
           new SeekPreviewDialog(actionData.actor, outcomes, changes, {
             ...actionData,
@@ -82,12 +82,12 @@ export async function previewActionResults(actionData) {
         const { PointOutPreviewDialog } = await import('../../dialogs/point-out-preview-dialog.js');
         const handler = new PointOutActionHandler();
         const subjects = await handler.discoverSubjects(actionData);
-        
+
         // If no subjects found (e.g., no target selected), don't open the dialog
         if (!subjects || subjects.length === 0) {
           return;
         }
-        
+
         const outcomes = await Promise.all(
           subjects.map((s) => handler.analyzeOutcome(actionData, s)),
         );
@@ -122,7 +122,7 @@ export async function previewActionResults(actionData) {
             );
             return;
           }
-        } catch (_) { }
+        } catch (_) {}
         // Do NOT pre-filter allies; let dialog control it
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(
@@ -151,7 +151,7 @@ export async function previewActionResults(actionData) {
             actionData.context = actionData.context || {};
             actionData.context._visionerRollId = rollId;
           }
-        } catch (_) { }
+        } catch (_) {}
         // RAW enforcement gate: do not open dialog if prerequisites fail
         try {
           const { checkForValidTargets } = await import('../infra/target-checker.js');
@@ -163,7 +163,7 @@ export async function previewActionResults(actionData) {
             );
             return;
           }
-        } catch (_) { }
+        } catch (_) {}
         // Do NOT pre-filter allies; let dialog control it
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(
@@ -224,7 +224,7 @@ export async function previewActionResults(actionData) {
             );
             return;
           }
-        } catch (_) { }
+        } catch (_) {}
 
         const subjects = await handler.discoverSubjects({ ...actionData, ignoreAllies: false });
         const outcomes = await Promise.all(

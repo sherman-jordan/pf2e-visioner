@@ -3,9 +3,7 @@
  * Handles complex geometry calculations for line-rectangle intersections and token-based intersections
  */
 
-import {
-  segmentsIntersect
-} from './geometry-utils.js';
+import { segmentsIntersect } from './geometry-utils.js';
 
 /**
  * Check if a line intersects with a rectangle in various modes
@@ -40,7 +38,7 @@ export function centerLineIntersectsRect(p1, p2, rect, mode = 'any') {
       // For ANY mode, we want to check if there's a significant intersection
       // Simply use a small percentage of the token's width as threshold
       const width = Math.abs(rect.x2 - rect.x1);
-      return len > (width * 0.05); // 5% of token width minimum
+      return len > width * 0.05; // 5% of token width minimum
     }
 
     if (mode === 'length10') {

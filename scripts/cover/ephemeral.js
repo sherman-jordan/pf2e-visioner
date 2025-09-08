@@ -7,7 +7,6 @@ import { runWithCoverEffectLock } from './utils.js';
 
 // cover lock moved to cover/utils.js
 
-
 export { cleanupAllCoverEffects } from './cleanup.js';
 
 // covered by export above; keep wrapper for API compatibility
@@ -40,4 +39,3 @@ export { cleanupDeletedTokenCoverEffects } from './cleanup.js';
  * @param {Object} options - Optional configuration
  */
 export { batchUpdateCoverEffects } from './batch.js';
-

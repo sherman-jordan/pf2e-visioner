@@ -143,7 +143,7 @@ describe('Wall Deletion Cleanup', () => {
 
     // Verify mask1 was destroyed (matching wall ID)
     expect(mockMask1.destroy).toHaveBeenCalled();
-    
+
     // Verify only the correct see-through mask remained
     expect(mockWall._pvSeeThroughMasks).toHaveLength(1);
     expect(mockWall._pvSeeThroughMasks[0]._pvWallId).toBe('different-wall-456');
@@ -190,7 +190,7 @@ describe('Wall Deletion Cleanup', () => {
           },
         },
       ],
-      { diff: false }
+      { diff: false },
     );
   });
 

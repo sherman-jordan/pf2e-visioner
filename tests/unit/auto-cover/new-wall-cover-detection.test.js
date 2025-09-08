@@ -14,7 +14,7 @@ describe('New Wall Cover Detection', () => {
       // Mock canvas with no walls or tokens
       global.canvas = {
         walls: { objects: { children: [] } },
-        tokens: { placeables: [] }
+        tokens: { placeables: [] },
       };
 
       const analysis = coverDetector._analyzeSegmentObstructions(p1, p2);
@@ -33,14 +33,14 @@ describe('New Wall Cover Detection', () => {
           sight: 1,
           door: 0,
           ds: 0,
-          dir: 0
+          dir: 0,
         },
-        coords: [50, 0, 50, 100]
+        coords: [50, 0, 50, 100],
       };
 
       global.canvas = {
         walls: { objects: { children: [mockWall] } },
-        tokens: { placeables: [] }
+        tokens: { placeables: [] },
       };
 
       const analysis = coverDetector._analyzeSegmentObstructions(p1, p2);
@@ -62,10 +62,10 @@ describe('New Wall Cover Detection', () => {
         actor: {
           system: {
             traits: {
-              size: { value: 'med' }
-            }
-          }
-        }
+              size: { value: 'med' },
+            },
+          },
+        },
       });
 
       targetToken = global.createMockToken({
@@ -77,10 +77,10 @@ describe('New Wall Cover Detection', () => {
         actor: {
           system: {
             traits: {
-              size: { value: 'med' }
-            }
-          }
-        }
+              size: { value: 'med' },
+            },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [sourceToken, targetToken];
@@ -98,18 +98,18 @@ describe('New Wall Cover Detection', () => {
       // Add creature between tokens, but no walls
       const blockingCreature = global.createMockToken({
         id: 'blocker',
-        x: 2, // Grid position between source (0,0) and target (4,4) 
+        x: 2, // Grid position between source (0,0) and target (4,4)
         y: 2,
         width: 1,
         height: 1,
-        actor: { 
+        actor: {
           type: 'character',
           system: {
             traits: {
-              size: { value: 'med' }
-            }
-          }
-        }
+              size: { value: 'med' },
+            },
+          },
+        },
       });
 
       global.canvas.tokens.placeables.push(blockingCreature);
@@ -118,14 +118,14 @@ describe('New Wall Cover Detection', () => {
       // Mock settings to ensure proper configuration
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true,
-          'wallCoverStandardThreshold': 50,
-          'wallCoverGreaterThreshold': 70,
-          'wallCoverAllowGreater': true
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
+          wallCoverStandardThreshold: 50,
+          wallCoverGreaterThreshold: 70,
+          wallCoverAllowGreater: true,
         };
         return settingsMap[setting] ?? 0;
       });
@@ -138,14 +138,14 @@ describe('New Wall Cover Detection', () => {
       // Mock settings for low coverage threshold
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 30, // Low threshold
-          'wallCoverGreaterThreshold': 80, // High threshold
-          'wallCoverAllowGreater': true,
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true
+          wallCoverStandardThreshold: 30, // Low threshold
+          wallCoverGreaterThreshold: 80, // High threshold
+          wallCoverAllowGreater: true,
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
         };
         return settingsMap[setting] || 0;
       });
@@ -158,9 +158,9 @@ describe('New Wall Cover Detection', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [125, 0, 125, 250] // Vertical wall between tokens
+        coords: [125, 0, 125, 250], // Vertical wall between tokens
       };
       global.canvas.walls.objects.children = [mockWall];
 
@@ -176,14 +176,14 @@ describe('New Wall Cover Detection', () => {
       // Mock settings
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 50,
-          'wallCoverGreaterThreshold': 70,
-          'wallCoverAllowGreater': true,
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true
+          wallCoverStandardThreshold: 50,
+          wallCoverGreaterThreshold: 70,
+          wallCoverAllowGreater: true,
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
         };
         return settingsMap[setting] || 0;
       });
@@ -196,9 +196,9 @@ describe('New Wall Cover Detection', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [125, 0, 125, 250] // Vertical wall between tokens
+        coords: [125, 0, 125, 250], // Vertical wall between tokens
       };
       global.canvas.walls.objects.children = [mockWall];
 
@@ -224,10 +224,10 @@ describe('New Wall Cover Detection', () => {
         actor: {
           system: {
             traits: {
-              size: { value: 'med' }
-            }
-          }
-        }
+              size: { value: 'med' },
+            },
+          },
+        },
       });
 
       targetToken = global.createMockToken({
@@ -239,10 +239,10 @@ describe('New Wall Cover Detection', () => {
         actor: {
           system: {
             traits: {
-              size: { value: 'med' }
-            }
-          }
-        }
+              size: { value: 'med' },
+            },
+          },
+        },
       });
 
       global.canvas.tokens.placeables = [sourceToken, targetToken];
@@ -257,9 +257,9 @@ describe('New Wall Cover Detection', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => 'none') // Override to none
+          getFlag: jest.fn(() => 'none'), // Override to none
         },
-        coords: [100, 0, 100, 200]
+        coords: [100, 0, 100, 200],
       };
       global.canvas.walls.objects.children = [mockWall];
 
@@ -271,14 +271,14 @@ describe('New Wall Cover Detection', () => {
       // Mock settings for high natural coverage
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 30, // Low threshold
-          'wallCoverGreaterThreshold': 60, // Medium threshold  
-          'wallCoverAllowGreater': true,
-          'autoCoverTokenIntersectionMode': 'tactical',
-          'autoCoverIgnoreUndetected': false,
-          'autoCoverIgnoreDead': false,
-          'autoCoverIgnoreAllies': false,
-          'autoCoverAllowProneBlockers': true
+          wallCoverStandardThreshold: 30, // Low threshold
+          wallCoverGreaterThreshold: 60, // Medium threshold
+          wallCoverAllowGreater: true,
+          autoCoverTokenIntersectionMode: 'tactical',
+          autoCoverIgnoreUndetected: false,
+          autoCoverIgnoreDead: false,
+          autoCoverIgnoreAllies: false,
+          autoCoverAllowProneBlockers: true,
         };
         return settingsMap[setting] || 0;
       });
@@ -291,9 +291,9 @@ describe('New Wall Cover Detection', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => 'lesser') // Override to lesser
+          getFlag: jest.fn(() => 'lesser'), // Override to lesser
         },
-        coords: [125, 0, 125, 250] // Vertical wall between tokens
+        coords: [125, 0, 125, 250], // Vertical wall between tokens
       };
       global.canvas.walls.objects.children = [mockWall];
 

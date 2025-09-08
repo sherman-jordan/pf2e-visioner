@@ -12,34 +12,35 @@ describe('Wall Coverage Scenarios Integration', () => {
     jest.resetModules();
 
     // Import the detector
-    const coverDetectorInstance = (await import('../../scripts/cover/auto-cover/CoverDetector.js')).default;
+    const coverDetectorInstance = (await import('../../scripts/cover/auto-cover/CoverDetector.js'))
+      .default;
     coverDetector = coverDetectorInstance;
 
     // Setup comprehensive canvas mock
     global.canvas = {
       walls: {
         objects: { children: [] },
-        placeables: []
+        placeables: [],
       },
       tokens: {
-        placeables: []
+        placeables: [],
       },
       grid: {
-        size: 50 // Standard grid size
-      }
+        size: 50, // Standard grid size
+      },
     };
 
     // Mock game settings with configurable thresholds
     global.game.settings.get = jest.fn((module, setting) => {
       const settingsMap = {
-        'wallCoverStandardThreshold': 50,
-        'wallCoverGreaterThreshold': 70,
-        'wallCoverAllowGreater': true,
-        'autoCoverTokenIntersectionMode': 'tactical',
-        'autoCoverIgnoreUndetected': false,
-        'autoCoverIgnoreDead': false,
-        'autoCoverIgnoreAllies': false,
-        'autoCoverAllowProneBlockers': true
+        wallCoverStandardThreshold: 50,
+        wallCoverGreaterThreshold: 70,
+        wallCoverAllowGreater: true,
+        autoCoverTokenIntersectionMode: 'tactical',
+        autoCoverIgnoreUndetected: false,
+        autoCoverIgnoreDead: false,
+        autoCoverIgnoreAllies: false,
+        autoCoverAllowProneBlockers: true,
       };
       return settingsMap[setting] ?? 0;
     });
@@ -58,16 +59,16 @@ describe('Wall Coverage Scenarios Integration', () => {
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
-        id: 'target', 
+        id: 'target',
         x: 300,
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       // Create a single wall that provides moderate coverage
@@ -75,12 +76,12 @@ describe('Wall Coverage Scenarios Integration', () => {
         document: {
           id: 'light-wall',
           sight: 1, // Blocks sight
-          door: 0,  // Not a door
-          ds: 0,    // Closed
-          dir: 0,   // Both directions
-          getFlag: jest.fn(() => null) // No override
+          door: 0, // Not a door
+          ds: 0, // Closed
+          dir: 0, // Both directions
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [150, 50, 150, 200] // Vertical wall
+        coords: [150, 50, 150, 200], // Vertical wall
       };
 
       global.canvas.walls.objects.children = [lightWall];
@@ -91,11 +92,11 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       expect(result).toBe('standard');
       expect(coverDetector._estimateWallCoveragePercent).toHaveBeenCalledWith(
         attacker.center,
-        target
+        target,
       );
     });
 
@@ -107,16 +108,16 @@ describe('Wall Coverage Scenarios Integration', () => {
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
         id: 'target',
         x: 300,
-        y: 100, 
+        y: 100,
         width: 1,
         height: 1,
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       // Create walls that provide heavy coverage (like thick walls or multiple segments)
@@ -127,9 +128,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [140, 0, 140, 250]
+        coords: [140, 0, 140, 250],
       };
 
       const heavyWall2 = {
@@ -139,9 +140,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [160, 0, 160, 250]
+        coords: [160, 0, 160, 250],
       };
 
       global.canvas.walls.objects.children = [heavyWall1, heavyWall2];
@@ -152,7 +153,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       expect(result).toBe('greater');
     });
 
@@ -164,7 +165,7 @@ describe('Wall Coverage Scenarios Integration', () => {
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
@@ -173,7 +174,7 @@ describe('Wall Coverage Scenarios Integration', () => {
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 425, y: 125 }
+        center: { x: 425, y: 125 },
       });
 
       // Create two distinct, separated walls
@@ -184,9 +185,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200] // First barrier
+        coords: [150, 50, 150, 200], // First barrier
       };
 
       const wall2 = {
@@ -196,9 +197,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [300, 50, 300, 200] // Second barrier, far from first
+        coords: [300, 50, 300, 200], // Second barrier, far from first
       };
 
       global.canvas.walls.objects.children = [wall1, wall2];
@@ -209,7 +210,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should be greater due to high wall coverage
       expect(result).toBe('greater');
     });
@@ -222,7 +223,7 @@ describe('Wall Coverage Scenarios Integration', () => {
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
@@ -231,7 +232,7 @@ describe('Wall Coverage Scenarios Integration', () => {
         y: 100,
         width: 1,
         height: 1,
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       const blockingCreature = global.createMockToken({
@@ -245,10 +246,10 @@ describe('Wall Coverage Scenarios Integration', () => {
           type: 'character',
           system: {
             traits: {
-              size: { value: 'med' }
-            }
-          }
-        }
+              size: { value: 'med' },
+            },
+          },
+        },
       });
 
       // Add a wall
@@ -259,9 +260,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200]
+        coords: [150, 50, 150, 200],
       };
 
       global.canvas.walls.objects.children = [wall];
@@ -272,7 +273,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should be greater due to high wall coverage
       expect(result).toBe('greater');
     });
@@ -283,21 +284,21 @@ describe('Wall Coverage Scenarios Integration', () => {
       // Mock custom settings
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 30, // Lower threshold
-          'wallCoverGreaterThreshold': 80,  // Higher threshold
-          'wallCoverAllowGreater': true
+          wallCoverStandardThreshold: 30, // Lower threshold
+          wallCoverGreaterThreshold: 80, // Higher threshold
+          wallCoverAllowGreater: true,
         };
         return settingsMap[setting] ?? 0;
       });
 
       const attacker = global.createMockToken({
         id: 'attacker',
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
-        id: 'target', 
-        center: { x: 325, y: 125 }
+        id: 'target',
+        center: { x: 325, y: 125 },
       });
 
       const wall = {
@@ -307,9 +308,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200]
+        coords: [150, 50, 150, 200],
       };
 
       global.canvas.walls.objects.children = [wall];
@@ -320,7 +321,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       expect(result).toBe('standard');
     });
 
@@ -328,21 +329,21 @@ describe('Wall Coverage Scenarios Integration', () => {
       // Mock settings with greater cover disabled
       global.game.settings.get = jest.fn((module, setting) => {
         const settingsMap = {
-          'wallCoverStandardThreshold': 50,
-          'wallCoverGreaterThreshold': 70,
-          'wallCoverAllowGreater': false // Disabled
+          wallCoverStandardThreshold: 50,
+          wallCoverGreaterThreshold: 70,
+          wallCoverAllowGreater: false, // Disabled
         };
         return settingsMap[setting] ?? 0;
       });
 
       const attacker = global.createMockToken({
         id: 'attacker',
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       const wall = {
@@ -352,9 +353,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200]
+        coords: [150, 50, 150, 200],
       };
 
       global.canvas.walls.objects.children = [wall];
@@ -365,7 +366,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should be capped at standard due to setting
       expect(result).toBe('standard');
     });
@@ -379,10 +380,10 @@ describe('Wall Coverage Scenarios Integration', () => {
         actor: {
           type: 'character',
           system: {
-            traits: { size: { value: 'med' } }
+            traits: { size: { value: 'med' } },
           },
-          alliance: 'party'
-        }
+          alliance: 'party',
+        },
       });
 
       const target = global.createMockToken({
@@ -391,10 +392,10 @@ describe('Wall Coverage Scenarios Integration', () => {
         actor: {
           type: 'character',
           system: {
-            traits: { size: { value: 'med' } }
+            traits: { size: { value: 'med' } },
           },
-          alliance: 'opposition'
-        }
+          alliance: 'opposition',
+        },
       });
 
       const blockingCreature = global.createMockToken({
@@ -407,10 +408,10 @@ describe('Wall Coverage Scenarios Integration', () => {
         actor: {
           type: 'character',
           system: {
-            traits: { size: { value: 'med' } }
+            traits: { size: { value: 'med' } },
           },
-          alliance: 'opposition'
-        }
+          alliance: 'opposition',
+        },
       });
 
       // No walls, only creature
@@ -425,11 +426,11 @@ describe('Wall Coverage Scenarios Integration', () => {
         blockingWalls: [],
         intersectingCreatures: [{ token: blockingCreature, intersectionLength: 50 }],
         totalBlockedLength: 50,
-        segmentLength: 300
+        segmentLength: 300,
       });
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should use token cover rules - expect some form of cover
       expect(['none', 'lesser', 'standard', 'greater']).toContain(result);
     });
@@ -437,12 +438,12 @@ describe('Wall Coverage Scenarios Integration', () => {
     test('Walls present: should use wall cover system', () => {
       const attacker = global.createMockToken({
         id: 'attacker',
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       const blockingCreature = global.createMockToken({
@@ -455,9 +456,9 @@ describe('Wall Coverage Scenarios Integration', () => {
         actor: {
           type: 'character',
           system: {
-            traits: { size: { value: 'med' } }
-          }
-        }
+            traits: { size: { value: 'med' } },
+          },
+        },
       });
 
       const wall = {
@@ -467,9 +468,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200]
+        coords: [150, 50, 150, 200],
       };
 
       global.canvas.walls.objects.children = [wall];
@@ -480,7 +481,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should use wall cover rules (standard for moderate coverage)
       expect(result).toBe('standard');
     });
@@ -490,12 +491,12 @@ describe('Wall Coverage Scenarios Integration', () => {
     test('Should handle coverage calculation failure gracefully', () => {
       const attacker = global.createMockToken({
         id: 'attacker',
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       const wall = {
@@ -505,9 +506,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200]
+        coords: [150, 50, 150, 200],
       };
 
       global.canvas.walls.objects.children = [wall];
@@ -520,7 +521,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(target);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should fallback to standard cover when wall is detected but coverage fails
       // The current implementation should handle this gracefully
       expect(['none', 'standard', 'greater']).toContain(result);
@@ -529,12 +530,12 @@ describe('Wall Coverage Scenarios Integration', () => {
     test('Should handle missing target token gracefully', () => {
       const attacker = global.createMockToken({
         id: 'attacker',
-        center: { x: 25, y: 125 }
+        center: { x: 25, y: 125 },
       });
 
       const target = global.createMockToken({
         id: 'target',
-        center: { x: 325, y: 125 }
+        center: { x: 325, y: 125 },
       });
 
       const wall = {
@@ -544,9 +545,9 @@ describe('Wall Coverage Scenarios Integration', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null)
+          getFlag: jest.fn(() => null),
         },
-        coords: [150, 50, 150, 200]
+        coords: [150, 50, 150, 200],
       };
 
       global.canvas.walls.objects.children = [wall];
@@ -556,7 +557,7 @@ describe('Wall Coverage Scenarios Integration', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(null);
 
       const result = coverDetector.detectBetweenTokens(attacker, target);
-      
+
       // Should still work and return standard for wall detection
       expect(result).toBe('standard');
     });

@@ -15,8 +15,8 @@ export async function extractActionData(message) {
     origin?.rollOptions?.some((opt) => opt.includes('item:point-out'));
 
   const isSeekAction =
-    (context?.type === 'perception-check' &&
-      (context.options?.includes('action:seek') || context.slug === 'seek'))
+    context?.type === 'perception-check' &&
+    (context.options?.includes('action:seek') || context.slug === 'seek');
 
   const isCreateADiversionAction =
     (context?.type === 'skill-check' &&
@@ -67,15 +67,15 @@ export async function extractActionData(message) {
     !message.flavor?.toLowerCase?.().includes?.('sneak');
 
   const isAttackRoll =
-    ( context?.type === 'attack-roll' ||
-    context?.type === 'spell-attack-roll' ||
-    context?.type === 'strike-attack-roll' ||
-    message.content?.includes('Attack Roll') ||
-    message.content?.includes('Strike') ||
-    context?.options?.some((opt) => opt.includes('attack-roll')) ) &&
-    ( !context?.domains?.some((dom) => dom.includes('skill-check')) &&
-    context?.type !== 'self-effect' );
-    
+    (context?.type === 'attack-roll' ||
+      context?.type === 'spell-attack-roll' ||
+      context?.type === 'strike-attack-roll' ||
+      message.content?.includes('Attack Roll') ||
+      message.content?.includes('Strike') ||
+      context?.options?.some((opt) => opt.includes('attack-roll'))) &&
+    !context?.domains?.some((dom) => dom.includes('skill-check')) &&
+    context?.type !== 'self-effect';
+
   // Skip attack consequences for damage-taken messages
   const isDamageTakenMessage =
     context?.type === 'damage-taken' || message.flags?.pf2e?.appliedDamage;

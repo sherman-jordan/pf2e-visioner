@@ -1,0 +1,76 @@
+{{!--
+  Cover Table Component
+--}}
+<table class="cover-table">
+  <colgroup>
+    <col style="width:7%" />
+    <col style="width:10%" />
+    <col style="width:28%" />
+    <col style="width:17%" />
+    <col style="width:38%" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th class="token-image">Token</th>
+      <th class="token-name">Name</th>
+      <th class="cover-state">{{localize "PF2E_VISIONER.TOKEN_MANAGER.COVER_STATE"}}</th>
+      <th class="current-state">Current State</th>
+      <th class="mechanical-effects">Effects</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each tokens as |target|}}
+      {{#unless target.isLoot}}
+        <tr class="token-row {{sectionType}}-row {{#if target.dispositionClass}}{{target.dispositionClass}}-npc{{/if}}" data-token-id="{{target.id}}">
+          <td class="token-image">
+            <img src="{{target.img}}" width="28" height="28" />
+          </td>
+          <td class="token-name">
+            <strong>{{target.name}}</strong>
+          </td>
+          <td class="cover-state">
+            <div class="icon-selection" data-target="{{target.id}}">
+              {{#each target.coverStates as |state|}}
+                <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{state.cssClass}}" 
+                        data-state="{{state.value}}" data-target="{{target.id}}" 
+                        data-tooltip="{{state.label}}">
+                  <i class="{{state.icon}}"></i>
+                </button>
+              {{/each}}
+              <input type="hidden" name="cover.{{target.id}}" value="{{target.currentCoverState}}" />
+            </div>
+          </td>
+          <td class="current-state">
+            {{#each target.coverStates as |state|}}
+              {{#if state.selected}}
+                <span class="state-indicator {{state.cssClass}}">
+                  <i class="{{state.icon}}"></i>
+                  {{state.label}}
+                </span>
+              {{/if}}
+            {{/each}}
+          </td>
+          <td class="mechanical-effects">
+            {{#if (eq target.currentCoverState "none")}}
+              <span class="no-effect cover-none" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.NO_COVER_TOOLTIP'}}">
+                <i class="fas fa-check-circle"></i> No cover
+              </span>
+            {{else if (eq target.currentCoverState "lesser")}}
+              <span class="cover-effect cover-lesser" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.LESSER_COVER_TOOLTIP'}}">
+                <i class="fas fa-shield-alt"></i> +1 AC
+              </span>
+            {{else if (eq target.currentCoverState "standard")}}
+              <span class="cover-effect cover-standard" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.STANDARD_COVER_TOOLTIP'}}">
+                <i class="fas fa-shield-alt"></i> +2 AC, +2 Reflex, +2 Stealth
+              </span>
+            {{else if (eq target.currentCoverState "greater")}}
+              <span class="cover-effect cover-greater" data-tooltip="{{localize 'PF2E_VISIONER.MECHANICAL_EFFECTS.GREATER_COVER_TOOLTIP'}}">
+                <i class="fas fa-shield"></i> +4 AC, +4 Reflex, +4 Stealth
+              </span>
+            {{/if}}
+          </td>
+        </tr>
+      {{/unless}}
+    {{/each}}
+  </tbody>
+</table>

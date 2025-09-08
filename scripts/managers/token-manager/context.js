@@ -63,7 +63,7 @@ export async function buildContext(app, options) {
   try {
     app.visibilityData = getVisibilityMap(app.observer) || {};
     app.coverData = getCoverMap(app.observer) || {};
-  } catch (_) { }
+  } catch (_) {}
 
   const isLootObserver = app.observer?.actor?.type === 'loot';
   if (isLootObserver) {
@@ -100,7 +100,7 @@ export async function buildContext(app, options) {
 
       const disposition = token.document.disposition || 0;
 
-      const perceptionDC = extractPerceptionDC(app.observer);
+      const perceptionDC = extractPerceptionDC(token);
       const stealthDC = extractStealthDC(token);
       const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       let showOutcome = false;
@@ -181,7 +181,7 @@ export async function buildContext(app, options) {
       const disposition = observerToken.document.disposition || 0;
 
       const perceptionDC = extractPerceptionDC(observerToken);
-      const stealthDC = extractStealthDC(app.observer);
+      const stealthDC = extractPerceptionDC(observerToken);
       const showOutcomeSetting = game.settings.get(MODULE_ID, 'integrateRollOutcome');
       let showOutcome = false;
       let outcomeLabel = '';
@@ -331,7 +331,7 @@ export async function buildContext(app, options) {
               showOutcome = true;
             }
           }
-        } catch (_) { }
+        } catch (_) {}
         return {
           id: d.id,
           identifier: idf && String(idf).trim() ? String(idf) : fallback,
@@ -347,10 +347,11 @@ export async function buildContext(app, options) {
       });
       context.includeWalls = context.wallTargets.length > 0;
     }
-  } catch (_) { }
+  } catch (_) {}
 
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,
+    value: key,
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,
@@ -359,6 +360,7 @@ export async function buildContext(app, options) {
 
   context.coverStates = Object.entries(COVER_STATES).map(([key, config]) => ({
     key,
+    value: key,
     label: game.i18n.localize(config.label),
     icon: config.icon,
     color: config.color,

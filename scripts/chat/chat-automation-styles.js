@@ -2168,6 +2168,9 @@ function getChatAutomationCSS() {
         .sneak-preview-dialog .visibility-table .token-name {
             width: 50px;
             text-align: center;
+            word-break: normal;
+            word-wrap: normal;
+            overflow-wrap: break-word;
         }
         
         .sneak-preview-dialog .visibility-table .roll-result {

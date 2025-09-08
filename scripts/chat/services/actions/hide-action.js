@@ -63,9 +63,8 @@ export class HideActionHandler extends ActionHandlerBase {
           let cover = 'none';
           if (this.autoCoverSystem.isEnabled()) {
             try {
-              cover =
-                this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
-            } catch (_) { }
+              cover = this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
+            } catch (_) {}
           }
           if (cover === 'none' || cover === 'lesser') {
             try {
@@ -76,7 +75,7 @@ export class HideActionHandler extends ActionHandlerBase {
           }
           return cover === 'standard' || cover === 'greater';
         }
-      } catch (_) { }
+      } catch (_) {}
       return false;
     });
   }
@@ -91,9 +90,9 @@ export class HideActionHandler extends ActionHandlerBase {
     // Initialize result object for auto-cover data
     const result = {};
 
-
     try {
-      const hidingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
+      const hidingToken =
+        actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
 
       let coverState = null;
       let isOverride = false;
@@ -125,15 +124,17 @@ export class HideActionHandler extends ActionHandlerBase {
       // Don't delete on consume yet - we need it for all observers
       let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
       try {
-        const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
+        const rollId =
+          actionData?.context?._visionerRollId ||
+          actionData?.context?.rollId ||
+          actionData?.message?.flags?.['pf2e-visioner']?.rollId ||
+          null;
 
         // First check if there's a stored modifier for this roll (from StealthCheckUseCase)
         let storedModifier = null;
         if (rollId) {
           storedModifier = this.stealthCheckUseCase?.getOriginalCoverModifier?.(rollId);
         }
-
-
 
         if (storedModifier && storedModifier.isOverride) {
           // Use the stored modifier data to determine override
@@ -145,13 +146,17 @@ export class HideActionHandler extends ActionHandlerBase {
           // Mark as override since we have a stored override modifier
           isOverride = true;
           coverSource = storedModifier.source || 'dialog';
-
         } else {
           // Fallback to the old method (but don't consume yet)
           // NOTE: Override parameter order is DIFFERENT from cover detection!
-          // Stealth check stores overrides as (hiding token -> observer)  
+          // Stealth check stores overrides as (hiding token -> observer)
           // Cover detection uses (observer -> hiding token)
-          const overrideData = this.autoCoverSystem.consumeCoverOverride(hidingToken, subject, rollId, false);
+          const overrideData = this.autoCoverSystem.consumeCoverOverride(
+            hidingToken,
+            subject,
+            rollId,
+            false,
+          );
           if (overrideData) {
             // Store the original detected state before applying override
             originalDetectedState = coverState || 'none';
@@ -186,24 +191,23 @@ export class HideActionHandler extends ActionHandlerBase {
           ...(isOverride && {
             overrideDetails: {
               originalState: originalDetectedState,
-              originalLabel: game.i18n.localize(COVER_STATES[originalDetectedState]?.label || 'None'),
+              originalLabel: game.i18n.localize(
+                COVER_STATES[originalDetectedState]?.label || 'None',
+              ),
               originalIcon: COVER_STATES[originalDetectedState]?.icon || 'fas fa-shield',
               originalColor: COVER_STATES[originalDetectedState]?.color || '#999',
               finalState: coverState || 'none',
               finalLabel: game.i18n.localize(coverConfig?.label || 'None'),
               finalIcon: coverConfig?.icon || 'fas fa-shield',
               finalColor: coverConfig?.color || '#999',
-              source: coverSource
-            }
-          })
+              source: coverSource,
+            },
+          }),
         };
-
-
       }
     } catch (e) {
       console.error(`PF2E Visioner | Error in cover calculation for Hide action:`, e);
     }
-
 
     // Calculate roll information (stealth vs observer's perception DC)
     const baseTotal = Number(actionData?.roll?.total ?? 0);
@@ -212,7 +216,7 @@ export class HideActionHandler extends ActionHandlerBase {
     const { total, originalTotal, baseRollTotal } = calculateStealthRollTotals(
       baseTotal,
       result?.autoCover,
-      actionData
+      actionData,
     );
 
     const die = Number(
@@ -222,21 +226,26 @@ export class HideActionHandler extends ActionHandlerBase {
     const originalMargin = originalTotal ? originalTotal - adjustedDC : margin;
     const baseMargin = baseRollTotal ? baseRollTotal - adjustedDC : margin;
     const outcome = determineOutcome(total, die, adjustedDC);
-    const originalOutcome = originalTotal ? determineOutcome(originalTotal, die, adjustedDC) : outcome;
+    const originalOutcome = originalTotal
+      ? determineOutcome(originalTotal, die, adjustedDC)
+      : outcome;
 
     // Generate outcome labels
     const getOutcomeLabel = (outcomeValue) => {
       switch (outcomeValue) {
-        case 'critical-success': return 'Critical Success';
-        case 'success': return 'Success';
-        case 'failure': return 'Failure';
-        case 'critical-failure': return 'Critical Failure';
-        default: return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
+        case 'critical-success':
+          return 'Critical Success';
+        case 'success':
+          return 'Success';
+        case 'failure':
+          return 'Failure';
+        case 'critical-failure':
+          return 'Critical Failure';
+        default:
+          return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
       }
     };
     const originalOutcomeLabel = originalTotal ? getOutcomeLabel(originalOutcome) : null;
-
-
 
     // Maintain previous behavior for visibility change while enriching display fields
     // Use centralized mapping for defaults
@@ -244,17 +253,17 @@ export class HideActionHandler extends ActionHandlerBase {
     let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
 
     // Calculate what the visibility change would have been with original outcome
-    const originalNewVisibility = originalTotal ?
-      getDefaultNewStateFor('hide', current, originalOutcome) || current :
-      newVisibility;
+    const originalNewVisibility = originalTotal
+      ? getDefaultNewStateFor('hide', current, originalOutcome) || current
+      : newVisibility;
 
     // Check if we should show override displays (only if there's a meaningful difference)
-    const shouldShowOverride = result.autoCover?.isOverride && (
-      total !== originalTotal ||
-      margin !== originalMargin ||
-      outcome !== originalOutcome ||
-      newVisibility !== originalNewVisibility
-    );
+    const shouldShowOverride =
+      result.autoCover?.isOverride &&
+      (total !== originalTotal ||
+        margin !== originalMargin ||
+        outcome !== originalOutcome ||
+        newVisibility !== originalNewVisibility);
 
     return {
       target: subject,

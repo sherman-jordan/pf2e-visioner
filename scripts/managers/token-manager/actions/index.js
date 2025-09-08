@@ -5,7 +5,9 @@ import {
   bulkSetVisibilityState,
   toggleEncounterFilter,
   toggleIgnoreAllies,
+  toggleIgnoreWalls,
   toggleMode,
+  toggleStateSelector,
   toggleTab,
 } from './ui.js';
 
@@ -16,7 +18,9 @@ export {
   bulkSetVisibilityState,
   toggleEncounterFilter,
   toggleIgnoreAllies,
+  toggleIgnoreWalls,
   toggleMode,
+  toggleStateSelector,
   toggleTab,
 };
 
@@ -28,7 +32,8 @@ export function bindTokenManagerActions(TokenManagerClass) {
 
   TokenManagerClass.toggleMode = toggleMode;
   TokenManagerClass.toggleEncounterFilter = toggleEncounterFilter;
-  // TokenManagerClass.toggleIgnoreAllies = toggleIgnoreAllies; // Commented out - using static method instead
+  TokenManagerClass.toggleIgnoreAllies = toggleIgnoreAllies;
+  TokenManagerClass.toggleIgnoreWalls = toggleIgnoreWalls;
   TokenManagerClass.toggleTab = toggleTab;
   TokenManagerClass.bulkSetVisibilityState = bulkSetVisibilityState;
   TokenManagerClass.bulkSetCoverState = bulkSetCoverState;

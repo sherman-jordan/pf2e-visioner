@@ -1,4 +1,4 @@
-export function buildPointOutPanel() {  
+export function buildPointOutPanel() {
   const label = 'Open Point Out Results';
   const tooltip = 'Preview and apply Point Out visibility changes';
   const title = 'Point Out Results';
@@ -10,7 +10,7 @@ export function buildPointOutPanel() {
   // Simplified: GM always gets buttons
 
   let actionButtonsHtml = '';
-  
+
   // Always show buttons for GM - simplify the logic
   if (game.user.isGM) {
     actionButtonsHtml = `

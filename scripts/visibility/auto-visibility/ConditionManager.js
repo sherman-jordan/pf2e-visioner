@@ -47,15 +47,16 @@ export class ConditionManager {
     let conditionsCollectionHas = false;
     if (observer.actor?.conditions) {
       try {
-        conditionsCollectionHas = observer.actor.conditions.some(condition =>
-          condition.slug === 'blinded' || condition.key === 'blinded'
+        conditionsCollectionHas = observer.actor.conditions.some(
+          (condition) => condition.slug === 'blinded' || condition.key === 'blinded',
         );
       } catch (e) {
         // Ignore errors in condition checking
       }
     }
 
-    const isBlinded = hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
+    const isBlinded =
+      hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
 
     if (debugMode && isBlinded) {
       console.log(`${MODULE_ID} | Blinded check for ${observer.name}:`, {
@@ -67,7 +68,7 @@ export class ConditionManager {
         hasConditionMethodExists: !!observer.actor?.hasCondition,
         systemConditions: observer.actor?.system?.conditions,
         conditions: observer.actor?.conditions,
-        conditionsType: observer.actor?.conditions?.constructor?.name
+        conditionsType: observer.actor?.conditions?.constructor?.name,
       });
     }
 
@@ -91,15 +92,16 @@ export class ConditionManager {
     let conditionsCollectionHas = false;
     if (observer.actor?.conditions) {
       try {
-        conditionsCollectionHas = observer.actor.conditions.some(condition =>
-          condition.slug === 'dazzled' || condition.key === 'dazzled'
+        conditionsCollectionHas = observer.actor.conditions.some(
+          (condition) => condition.slug === 'dazzled' || condition.key === 'dazzled',
         );
       } catch (e) {
         // Ignore errors in condition checking
       }
     }
 
-    const isDazzled = hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
+    const isDazzled =
+      hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
 
     if (debugMode && isDazzled) {
       console.log(`${MODULE_ID} | Dazzled check for ${observer.name}:`, {
@@ -111,7 +113,7 @@ export class ConditionManager {
         hasConditionMethodExists: !!observer.actor?.hasCondition,
         systemConditions: observer.actor?.system?.conditions,
         conditions: observer.actor?.conditions,
-        conditionsType: observer.actor?.conditions?.constructor?.name
+        conditionsType: observer.actor?.conditions?.constructor?.name,
       });
     }
 
@@ -136,15 +138,16 @@ export class ConditionManager {
     let conditionsCollectionHas = false;
     if (target.actor?.conditions) {
       try {
-        conditionsCollectionHas = target.actor.conditions.some(condition =>
-          condition.slug === 'invisible' || condition.key === 'invisible'
+        conditionsCollectionHas = target.actor.conditions.some(
+          (condition) => condition.slug === 'invisible' || condition.key === 'invisible',
         );
       } catch (e) {
         // Ignore errors in condition checking
       }
     }
 
-    const hasInvisible = hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
+    const hasInvisible =
+      hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
 
     if (debugMode) {
       console.log(`${MODULE_ID} | Invisibility check for ${target.name}:`, {
@@ -156,17 +159,20 @@ export class ConditionManager {
         hasConditionMethodExists: !!target.actor?.hasCondition,
         systemConditions: target.actor?.system?.conditions,
         conditions: target.actor?.conditions,
-        conditionsType: target.actor?.conditions?.constructor?.name
+        conditionsType: target.actor?.conditions?.constructor?.name,
       });
     }
 
     if (hasInvisible) {
       // Check if observer can see invisibility
-      const canSeeInvisible = observer.actor?.perception?.senses?.has?.('see-invisibility') ||
+      const canSeeInvisible =
+        observer.actor?.perception?.senses?.has?.('see-invisibility') ||
         observer.actor?.system?.perception?.senses?.['see-invisibility'];
 
       if (debugMode) {
-        console.log(`${MODULE_ID} | ${target.name} is invisible, ${observer.name} can see invisible: ${!!canSeeInvisible}`);
+        console.log(
+          `${MODULE_ID} | ${target.name} is invisible, ${observer.name} can see invisible: ${!!canSeeInvisible}`,
+        );
       }
 
       return !canSeeInvisible;
@@ -232,16 +238,17 @@ export class ConditionManager {
       console.log(`${MODULE_ID} | Actor ${actor.name} conditions changed:`, {
         hasConditionMethod: !!actor.hasCondition,
         systemConditions: actor.system?.conditions,
-        conditions: actor.conditions
+        conditions: actor.conditions,
       });
     }
 
     // Find the actor's token(s) on the current scene
-    const tokens = canvas.tokens.placeables.filter(token => token.actor?.id === actor.id);
+    const tokens = canvas.tokens.placeables.filter((token) => token.actor?.id === actor.id);
 
     for (const token of tokens) {
       // Check if invisibility was added (try multiple methods)
-      const hasInvisibility = actor.hasCondition?.('invisible') ||
+      const hasInvisibility =
+        actor.hasCondition?.('invisible') ||
         actor.system?.conditions?.invisible?.active ||
         actor.conditions?.has?.('invisible');
 
@@ -327,7 +334,7 @@ export class ConditionManager {
       wasVisibleWhenInvisible,
       invisibilityFlags,
       targetHasInvisibilityCondition: target.actor.hasCondition?.('invisible'),
-      observerHasSeeInvisibility: observer.actor.perception?.senses?.has?.('see-invisibility')
+      observerHasSeeInvisibility: observer.actor.perception?.senses?.has?.('see-invisibility'),
     };
   }
 

@@ -51,7 +51,7 @@ describe('AutoVisibilitySystem', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Get fresh instance for each test
     autoVisibilitySystem = AutoVisibilitySystem;
   });
@@ -111,15 +111,13 @@ describe('AutoVisibilitySystem', () => {
 
     beforeEach(async () => {
       await autoVisibilitySystem.initialize();
-      
+
       // Create mock tokens
       mockObserver = {
         actor: {
           perception: {
             hasVision: true,
-            senses: new Map([
-              ['darkvision', { range: 60 }],
-            ]),
+            senses: new Map([['darkvision', { range: 60 }]]),
           },
         },
         center: { x: 0, y: 0 },
@@ -138,12 +136,14 @@ describe('AutoVisibilitySystem', () => {
 
     test('should return observed in bright light', async () => {
       // Mock bright light conditions
-      canvas.lighting.placeables = [{
-        emitsLight: true,
-        center: { x: 50, y: 50 },
-        brightRadius: 100,
-        dimRadius: 200,
-      }];
+      canvas.lighting.placeables = [
+        {
+          emitsLight: true,
+          center: { x: 50, y: 50 },
+          brightRadius: 100,
+          dimRadius: 200,
+        },
+      ];
 
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('observed');
@@ -152,14 +152,16 @@ describe('AutoVisibilitySystem', () => {
     test('should return concealed in dim light without darkvision', async () => {
       // Observer without darkvision
       mockObserver.actor.perception.senses = new Map();
-      
+
       // Mock dim light conditions
-      canvas.lighting.placeables = [{
-        emitsLight: true,
-        center: { x: 50, y: 50 },
-        brightRadius: 50,
-        dimRadius: 150,
-      }];
+      canvas.lighting.placeables = [
+        {
+          emitsLight: true,
+          center: { x: 50, y: 50 },
+          brightRadius: 50,
+          dimRadius: 150,
+        },
+      ];
 
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('concealed');
@@ -168,7 +170,7 @@ describe('AutoVisibilitySystem', () => {
     test('should return hidden in darkness without darkvision', async () => {
       // Observer without darkvision
       mockObserver.actor.perception.senses = new Map();
-      
+
       // Mock darkness (no light sources)
       canvas.lighting.placeables = [];
       canvas.scene.darkness = 1;
@@ -188,7 +190,7 @@ describe('AutoVisibilitySystem', () => {
 
     test('should return undetected for invisible targets without see-invisibility', async () => {
       mockTarget.actor.hasCondition = jest.fn().mockReturnValue(true);
-      
+
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('undetected');
     });
@@ -196,7 +198,7 @@ describe('AutoVisibilitySystem', () => {
     test('should return observed for invisible targets with see-invisibility', async () => {
       mockTarget.actor.hasCondition = jest.fn().mockReturnValue(true);
       mockObserver.actor.perception.senses.set('see-invisibility', { range: Infinity });
-      
+
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('observed');
     });
@@ -204,7 +206,7 @@ describe('AutoVisibilitySystem', () => {
     test('should return hidden when no line of sight but has tremorsense', async () => {
       canvas.visibility.testVisibility = jest.fn().mockReturnValue(false);
       mockObserver.actor.perception.senses.set('tremorsense', { range: 60 });
-      
+
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('hidden');
     });
@@ -212,7 +214,7 @@ describe('AutoVisibilitySystem', () => {
     test('should return undetected when no line of sight and no special senses', async () => {
       canvas.visibility.testVisibility = jest.fn().mockReturnValue(false);
       mockObserver.actor.perception.senses = new Map();
-      
+
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('undetected');
     });
@@ -227,7 +229,7 @@ describe('AutoVisibilitySystem', () => {
       mockObserver.distanceTo = jest.fn().mockImplementation(() => {
         throw new Error('Test error');
       });
-      
+
       const visibility = await autoVisibilitySystem.calculateVisibility(mockObserver, mockTarget);
       expect(visibility).toBe('observed'); // Should fallback to default
       expect(console.error).toHaveBeenCalled();
@@ -240,24 +242,28 @@ describe('AutoVisibilitySystem', () => {
     });
 
     test('should detect bright light correctly', () => {
-      canvas.lighting.placeables = [{
-        emitsLight: true,
-        center: { x: 0, y: 0 },
-        brightRadius: 100,
-        dimRadius: 200,
-      }];
+      canvas.lighting.placeables = [
+        {
+          emitsLight: true,
+          center: { x: 0, y: 0 },
+          brightRadius: 100,
+          dimRadius: 200,
+        },
+      ];
 
       const lightLevel = autoVisibilitySystem._getLightLevelAt({ x: 50, y: 50 });
       expect(lightLevel).toBe(1); // Bright light
     });
 
     test('should detect dim light correctly', () => {
-      canvas.lighting.placeables = [{
-        emitsLight: true,
-        center: { x: 0, y: 0 },
-        brightRadius: 50,
-        dimRadius: 150,
-      }];
+      canvas.lighting.placeables = [
+        {
+          emitsLight: true,
+          center: { x: 0, y: 0 },
+          brightRadius: 50,
+          dimRadius: 150,
+        },
+      ];
 
       const lightLevel = autoVisibilitySystem._getLightLevelAt({ x: 100, y: 100 });
       expect(lightLevel).toBe(0.5); // Dim light
@@ -272,12 +278,14 @@ describe('AutoVisibilitySystem', () => {
     });
 
     test('should factor in scene darkness', () => {
-      canvas.lighting.placeables = [{
-        emitsLight: true,
-        center: { x: 0, y: 0 },
-        brightRadius: 100,
-        dimRadius: 200,
-      }];
+      canvas.lighting.placeables = [
+        {
+          emitsLight: true,
+          center: { x: 0, y: 0 },
+          brightRadius: 100,
+          dimRadius: 200,
+        },
+      ];
       canvas.scene.darkness = 0.5;
 
       const lightLevel = autoVisibilitySystem._getLightLevelAt({ x: 50, y: 50 });
@@ -295,9 +303,7 @@ describe('AutoVisibilitySystem', () => {
         actor: {
           perception: {
             hasVision: true,
-            senses: new Map([
-              ['darkvision', { range: 60 }],
-            ]),
+            senses: new Map([['darkvision', { range: 60 }]]),
           },
         },
       };
@@ -312,9 +318,7 @@ describe('AutoVisibilitySystem', () => {
         actor: {
           perception: {
             hasVision: true,
-            senses: new Map([
-              ['low-light-vision', { range: Infinity }],
-            ]),
+            senses: new Map([['low-light-vision', { range: Infinity }]]),
           },
         },
       };
@@ -354,7 +358,7 @@ describe('AutoVisibilitySystem', () => {
 
     beforeEach(async () => {
       await autoVisibilitySystem.initialize();
-      
+
       mockObserver = {
         name: 'Observer',
         actor: {
@@ -380,7 +384,7 @@ describe('AutoVisibilitySystem', () => {
 
     test('should provide comprehensive debug information', async () => {
       const debugInfo = await autoVisibilitySystem.getVisibilityDebugInfo(mockObserver, mockTarget);
-      
+
       expect(debugInfo).toHaveProperty('observer', 'Observer');
       expect(debugInfo).toHaveProperty('target', 'Target');
       expect(debugInfo).toHaveProperty('lightLevel');
@@ -396,7 +400,7 @@ describe('AutoVisibilitySystem', () => {
   describe('Hook Registration', () => {
     test('should register all necessary hooks', async () => {
       await autoVisibilitySystem.initialize();
-      
+
       expect(Hooks.on).toHaveBeenCalledWith('updateToken', expect.any(Function));
       expect(Hooks.on).toHaveBeenCalledWith('createToken', expect.any(Function));
       expect(Hooks.on).toHaveBeenCalledWith('lightingRefresh', expect.any(Function));
@@ -425,7 +429,7 @@ describe('AutoVisibilitySystem', () => {
       const promise2 = autoVisibilitySystem._updateTokenVisibility(mockTokenDoc);
 
       await Promise.all([promise1, promise2]);
-      
+
       // Should handle gracefully without errors
       expect(console.error).not.toHaveBeenCalled();
     });
@@ -440,16 +444,16 @@ describe('AutoVisibilitySystem', () => {
       };
 
       await autoVisibilitySystem._updateTokenVisibility(mockTokenDoc);
-      
+
       // Should not throw errors
       expect(console.error).not.toHaveBeenCalled();
-      
+
       global.canvas = originalCanvas;
     });
 
     test('should skip processing when system is disabled', async () => {
       autoVisibilitySystem.setEnabled(false);
-      
+
       const mockTokenDoc = {
         id: 'test-token',
         object: {
@@ -458,14 +462,14 @@ describe('AutoVisibilitySystem', () => {
       };
 
       await autoVisibilitySystem._updateTokenVisibility(mockTokenDoc);
-      
+
       // Should exit early without processing
       expect(canvas.tokens.placeables).toHaveLength(0);
     });
 
     test('should skip processing for non-GM users', async () => {
       game.user.isGM = false;
-      
+
       const mockTokenDoc = {
         id: 'test-token',
         object: {
@@ -474,10 +478,10 @@ describe('AutoVisibilitySystem', () => {
       };
 
       await autoVisibilitySystem._updateTokenVisibility(mockTokenDoc);
-      
+
       // Should exit early without processing
       expect(canvas.tokens.placeables).toHaveLength(0);
-      
+
       game.user.isGM = true; // Reset for other tests
     });
   });

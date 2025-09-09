@@ -52,7 +52,7 @@ export class VisionAnalyzer {
     // Check cache first
     if (this.#visionCapabilitiesCache.has(tokenId)) {
       const cacheTime = this.#visionCacheTimestamp.get(tokenId) || 0;
-      if ((now - cacheTime) < this.#visionCacheTimeout) {
+      if (now - cacheTime < this.#visionCacheTimeout) {
         return this.#visionCapabilitiesCache.get(tokenId);
       }
     }
@@ -163,7 +163,6 @@ export class VisionAnalyzer {
         hasLowLightVision = true;
         lowLightRange = flags['low-light-vision'].range || Infinity;
       }
-
     } catch (error) {
       if (debugMode) {
         console.warn(`${MODULE_ID} | Error getting vision capabilities for ${actor.name}:`, error);
@@ -177,7 +176,7 @@ export class VisionAnalyzer {
       darkvisionRange,
       lowLightRange,
       isBlinded,
-      isDazzled
+      isDazzled,
     };
 
     if (debugMode) {
@@ -200,7 +199,7 @@ export class VisionAnalyzer {
       // Use FoundryVTT's built-in visibility testing
       return canvas.visibility.testVisibility(target.center, {
         tolerance: 0,
-        object: target
+        object: target,
       });
     } catch (error) {
       console.warn(`${MODULE_ID} | Error testing line of sight:`, error);
@@ -260,7 +259,9 @@ export class VisionAnalyzer {
       case 'dim':
         if (observerVision.hasLowLightVision || observerVision.hasDarkvision) {
           if (debugMode) {
-            console.log(`${MODULE_ID} | 🌒 DIM LIGHT → OBSERVED: Observer has ${observerVision.hasDarkvision ? 'darkvision' : 'low-light vision'}`);
+            console.log(
+              `${MODULE_ID} | 🌒 DIM LIGHT → OBSERVED: Observer has ${observerVision.hasDarkvision ? 'darkvision' : 'low-light vision'}`,
+            );
           }
           return 'observed';
         } else {
@@ -273,7 +274,9 @@ export class VisionAnalyzer {
       case 'darkness':
         if (observerVision.hasDarkvision) {
           if (debugMode) {
-            console.log(`${MODULE_ID} | 🌑 DARKNESS → OBSERVED: Observer has darkvision (range: ${observerVision.darkvisionRange})`);
+            console.log(
+              `${MODULE_ID} | 🌑 DARKNESS → OBSERVED: Observer has darkvision (range: ${observerVision.darkvisionRange})`,
+            );
           }
           return 'observed';
         } else {
@@ -347,8 +350,8 @@ export class VisionAnalyzer {
       // Method 4: Iterate through conditions collection
       if (actor.conditions) {
         try {
-          return actor.conditions.some(condition =>
-            condition.slug === conditionSlug || condition.key === conditionSlug
+          return actor.conditions.some(
+            (condition) => condition.slug === conditionSlug || condition.key === conditionSlug,
           );
         } catch (e) {
           // Ignore iteration errors
@@ -357,7 +360,10 @@ export class VisionAnalyzer {
 
       return false;
     } catch (error) {
-      console.warn(`${MODULE_ID} | Error checking condition ${conditionSlug} for ${actor.name}:`, error);
+      console.warn(
+        `${MODULE_ID} | Error checking condition ${conditionSlug} for ${actor.name}:`,
+        error,
+      );
       return false;
     }
   }
@@ -376,8 +382,9 @@ export class VisionAnalyzer {
     const cacheInfo = {
       cached: this.#visionCapabilitiesCache.has(token.document.id),
       cacheTime: this.#visionCacheTimestamp.get(token.document.id),
-      cacheAge: this.#visionCacheTimestamp.has(token.document.id) ?
-        Date.now() - this.#visionCacheTimestamp.get(token.document.id) : null
+      cacheAge: this.#visionCacheTimestamp.has(token.document.id)
+        ? Date.now() - this.#visionCacheTimestamp.get(token.document.id)
+        : null,
     };
 
     return {
@@ -385,7 +392,7 @@ export class VisionAnalyzer {
       actorName: token.actor.name,
       capabilities,
       cacheInfo,
-      rawSenses: token.actor.system?.perception?.senses || token.actor.perception?.senses
+      rawSenses: token.actor.system?.perception?.senses || token.actor.perception?.senses,
     };
   }
 }

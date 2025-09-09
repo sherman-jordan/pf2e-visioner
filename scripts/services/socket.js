@@ -72,18 +72,18 @@ export function refreshEveryonesPerception() {
   if (_perceptionRefreshTimeout) {
     clearTimeout(_perceptionRefreshTimeout);
   }
-  
+
   _perceptionRefreshTimeout = setTimeout(() => {
     try {
       if (_socketService.socket) _socketService.executeForEveryone(REFRESH_CHANNEL);
-      
+
       (async () => {
         const observerId = canvas.tokens.controlled?.[0]?.id || null;
         const { updateWallVisuals } = await import('./visual-effects.js');
         await updateWallVisuals(observerId);
       })();
     } catch (_) {}
-    
+
     _perceptionRefreshTimeout = null;
   }, 100); // 100ms debounce to prevent spam
 }

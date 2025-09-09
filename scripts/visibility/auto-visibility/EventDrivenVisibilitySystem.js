@@ -622,9 +622,14 @@ export class EventDrivenVisibilitySystem {
           if (otherToken.document.id === changedTokenId) continue;
 
           // Check for AVS kill switch - skip processing if either token has AVS disabled
-          if (avsOverrideService.getAVSKillSwitch(changedToken) || avsOverrideService.getAVSKillSwitch(otherToken)) {
+          if (
+            avsOverrideService.getAVSKillSwitch(changedToken) ||
+            avsOverrideService.getAVSKillSwitch(otherToken)
+          ) {
             if (debugMode) {
-              console.log(`${MODULE_ID} | AVS KILL SWITCH: Skipping ${changedToken.name} ↔ ${otherToken.name} (AVS disabled)`);
+              console.log(
+                `${MODULE_ID} | AVS KILL SWITCH: Skipping ${changedToken.name} ↔ ${otherToken.name} (AVS disabled)`,
+              );
             }
             continue;
           }
@@ -632,18 +637,24 @@ export class EventDrivenVisibilitySystem {
           // Check for AVS overrides - skip calculation if either direction has an override
           const avsOverride1 = avsOverrideService.getAVSOverride(changedToken, otherToken);
           const avsOverride2 = avsOverrideService.getAVSOverride(otherToken, changedToken);
-          
+
           let effectiveVisibility1, effectiveVisibility2;
-          
+
           if (avsOverride1 || avsOverride2) {
             // Skip calculation entirely and use override values
             effectiveVisibility1 = avsOverride1 || 'observed';
             effectiveVisibility2 = avsOverride2 || 'observed';
-            
+
             if (debugMode) {
-              console.log(`${MODULE_ID} | AVS OVERRIDE: Skipping calculation for ${changedToken.name} ↔ ${otherToken.name}`);
-              console.log(`  Override: ${changedToken.name} → ${otherToken.name} = ${effectiveVisibility1}`);
-              console.log(`  Override: ${otherToken.name} → ${changedToken.name} = ${effectiveVisibility2}`);
+              console.log(
+                `${MODULE_ID} | AVS OVERRIDE: Skipping calculation for ${changedToken.name} ↔ ${otherToken.name}`,
+              );
+              console.log(
+                `  Override: ${changedToken.name} → ${otherToken.name} = ${effectiveVisibility1}`,
+              );
+              console.log(
+                `  Override: ${otherToken.name} → ${changedToken.name} = ${effectiveVisibility2}`,
+              );
             }
           } else {
             // No overrides, proceed with normal calculation

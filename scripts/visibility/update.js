@@ -4,8 +4,8 @@
 
 import { MODULE_ID } from '../constants.js';
 import {
-    createAggregateEffectData,
-    createEphemeralEffectRule,
+  createAggregateEffectData,
+  createEphemeralEffectRule,
 } from '../helpers/visibility-helpers.js';
 import { runWithEffectLock } from './utils.js';
 
@@ -16,7 +16,7 @@ export async function updateSingleVisibilityEffect(
   options = {},
 ) {
   if (!observerToken?.actor || !targetToken?.actor) return;
-  
+
   // Debug logging for Hidden effect creation
   const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
   if (debugMode && newVisibilityState === 'hidden') {
@@ -164,7 +164,9 @@ export async function updateSingleVisibilityEffect(
     }
     if (effectsToCreate.length > 0) {
       if (debugMode) {
-        console.log(`${MODULE_ID} | ✅ CREATED ${effectsToCreate.length} Hidden effects on ${effectReceiverToken.name}`);
+        console.log(
+          `${MODULE_ID} | ✅ CREATED ${effectsToCreate.length} Hidden effects on ${effectReceiverToken.name}`,
+        );
       }
       await effectReceiverToken.actor.createEmbeddedDocuments('Item', effectsToCreate);
     }

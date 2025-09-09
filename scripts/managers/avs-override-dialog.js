@@ -36,7 +36,6 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
     },
   };
 
-
   async _renderHTML(context, options) {
     const html = await foundry.applications.handlebars.renderTemplate(
       this.constructor.PARTS.content.template,
@@ -77,10 +76,12 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
           visibilityState: {
             value: override.visibilityState,
             icon: visibilityState?.icon || 'fas fa-eye',
-            label: game.i18n.localize(visibilityState?.label || 'PF2E_VISIONER.VISIBILITY_STATES.observed'),
-            cssClass: this.getVisibilityCssClass(override.visibilityState)
+            label: game.i18n.localize(
+              visibilityState?.label || 'PF2E_VISIONER.VISIBILITY_STATES.observed',
+            ),
+            cssClass: this.getVisibilityCssClass(override.visibilityState),
           },
-          timestamp: override.timestamp
+          timestamp: override.timestamp,
         });
       }
     }
@@ -90,18 +91,18 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
       value: key,
       label: game.i18n.localize(config.label),
       icon: config.icon,
-      cssClass: config.cssClass
+      cssClass: config.cssClass,
     }));
 
     const data = {
       observer: {
         name: this.token.name,
-        img: this.token.document.texture.src || 'icons/svg/book.svg'
+        img: this.token.document.texture.src || 'icons/svg/book.svg',
       },
       processedOverrides: processedOverrides,
       hasOverrides: processedOverrides.length > 0,
       killSwitchEnabled: killSwitchEnabled,
-      visibilityStates: visibilityStates
+      visibilityStates: visibilityStates,
     };
 
     console.log(`${MODULE_ID} | AVS Override Dialog - Final Data:`, data);
@@ -115,7 +116,7 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
       observed: 'fas fa-eye',
       concealed: 'fas fa-eye-slash',
       hidden: 'fas fa-eye-slash',
-      undetected: 'fas fa-question'
+      undetected: 'fas fa-question',
     };
     return icons[state] || 'fas fa-eye';
   }
@@ -123,9 +124,9 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
   getVisibilityLabel(state) {
     const labels = {
       observed: 'Observed',
-      concealed: 'Concealed', 
+      concealed: 'Concealed',
       hidden: 'Hidden',
-      undetected: 'Undetected'
+      undetected: 'Undetected',
     };
     return labels[state] || 'Observed';
   }
@@ -135,14 +136,14 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
       observed: 'observed',
       concealed: 'concealed',
       hidden: 'hidden',
-      undetected: 'undetected'
+      undetected: 'undetected',
     };
     return classes[state] || 'observed';
   }
 
   addEventListeners() {
     console.log(`${MODULE_ID} | AVS Override Dialog - Adding event listeners`);
-    
+
     // Bind state icon clicks
     const stateIcons = this.element.querySelectorAll('.state-icon');
     console.log(`${MODULE_ID} | Found ${stateIcons.length} state icons`);
@@ -169,15 +170,17 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
 
   async _onRemoveOverride(event) {
     console.log(`${MODULE_ID} | Remove override clicked`);
-    
+
     const button = event.currentTarget;
     const targetId = button.dataset.targetId;
     console.log(`${MODULE_ID} | Target ID: ${targetId}`);
-    
+
     const targetToken = canvas.tokens.get(targetId);
 
     if (!targetToken) {
-      ui.notifications.warn(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.TARGET_NOT_FOUND'));
+      ui.notifications.warn(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.TARGET_NOT_FOUND'),
+      );
       return;
     }
 
@@ -186,13 +189,15 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
       ui.notifications.info(
         game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.OVERRIDE_REMOVED', {
           observer: this.token.name,
-          target: targetToken.name
-        })
+          target: targetToken.name,
+        }),
       );
       this.render();
     } catch (error) {
       console.error(`${MODULE_ID} | Error removing AVS override:`, error);
-      ui.notifications.error(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_REMOVING_OVERRIDE'));
+      ui.notifications.error(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_REMOVING_OVERRIDE'),
+      );
     }
   }
 
@@ -200,7 +205,7 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
     const confirmed = await Dialog.confirm({
       title: game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLEAR_ALL_CONFIRM_TITLE'),
       content: game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLEAR_ALL_CONFIRM_CONTENT', {
-        token: this.token.name
+        token: this.token.name,
       }),
       yes: () => true,
       no: () => false,
@@ -213,25 +218,27 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
       await avsOverrideService.clearAllAVSOverrides(this.token);
       ui.notifications.info(
         game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ALL_OVERRIDES_CLEARED', {
-          token: this.token.name
-        })
+          token: this.token.name,
+        }),
       );
       this.render();
     } catch (error) {
       console.error(`${MODULE_ID} | Error clearing all AVS overrides:`, error);
-      ui.notifications.error(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_CLEARING_OVERRIDES'));
+      ui.notifications.error(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_CLEARING_OVERRIDES'),
+      );
     }
   }
 
   async _onToggleKillSwitch(event) {
     console.log(`${MODULE_ID} | Kill switch toggled`);
-    
+
     const enabled = event.currentTarget?.checked ?? event.target?.checked;
     console.log(`${MODULE_ID} | Kill switch enabled: ${enabled}`);
 
     try {
       await avsOverrideService.setAVSKillSwitch(this.token, enabled);
-      
+
       // Update the label with appropriate CSS class
       const target = event.currentTarget || event.target;
       const label = target?.parentElement?.querySelector('.kill-switch-label');
@@ -244,31 +251,37 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
           label.classList.add('auto-state');
         }
       }
-      
-      const message = enabled 
-        ? game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_DISABLED_FOR_TOKEN', { token: this.token.name })
-        : game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_ENABLED_FOR_TOKEN', { token: this.token.name });
-      
+
+      const message = enabled
+        ? game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_DISABLED_FOR_TOKEN', {
+            token: this.token.name,
+          })
+        : game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_ENABLED_FOR_TOKEN', {
+            token: this.token.name,
+          });
+
       ui.notifications.info(message);
       this.render();
     } catch (error) {
       console.error(`${MODULE_ID} | Error toggling AVS kill switch:`, error);
-      ui.notifications.error(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_TOGGLING_KILL_SWITCH'));
+      ui.notifications.error(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_TOGGLING_KILL_SWITCH'),
+      );
     }
   }
 
   async _onStateIconClick(event) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     console.log(`${MODULE_ID} | State icon clicked`);
-    
+
     const icon = event.currentTarget;
     const targetId = icon.dataset.target;
     const newState = icon.dataset.state;
-    
+
     console.log(`${MODULE_ID} | Target ID: ${targetId}, New State: ${newState}`);
-    
+
     if (!targetId || !newState) return;
 
     try {
@@ -280,18 +293,18 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
 
       // Update the AVS override with the new state
       await avsOverrideService.setAVSOverride(this.token, targetToken, newState);
-      
+
       // Update the UI selection
       const iconSelection = icon.closest('.icon-selection');
       if (iconSelection) {
         const allIcons = iconSelection.querySelectorAll('.state-icon');
         allIcons.forEach((i) => i.classList.remove('selected'));
         icon.classList.add('selected');
-        
+
         // Update the hidden input
         const hiddenInput = iconSelection.querySelector('input[type="hidden"]');
         if (hiddenInput) hiddenInput.value = newState;
-        
+
         // Update the label
         const label = iconSelection.parentElement.querySelector('.state-label');
         if (label) {
@@ -300,7 +313,9 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
         }
       }
 
-      ui.notifications.info(`AVS Override updated: ${this.token.name} → ${targetToken.name} = ${newState}`);
+      ui.notifications.info(
+        `AVS Override updated: ${this.token.name} → ${targetToken.name} = ${newState}`,
+      );
     } catch (error) {
       console.error(`${MODULE_ID} | Error updating AVS override:`, error);
       ui.notifications.error('Error updating AVS override');
@@ -317,7 +332,9 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
    */
   static async openForToken(token) {
     if (!token) {
-      ui.notifications.warn(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.NO_TOKEN_SELECTED'));
+      ui.notifications.warn(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.NO_TOKEN_SELECTED'),
+      );
       return;
     }
 
@@ -356,7 +373,7 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
 
     const observerId = target.dataset.observerId;
     const targetId = target.dataset.targetId;
-    
+
     if (!observerId || !targetId) {
       ui.notifications.warn('Invalid override data');
       return;
@@ -365,26 +382,28 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
     try {
       const observerToken = canvas.tokens.get(observerId);
       const targetToken = canvas.tokens.get(targetId);
-      
+
       if (!observerToken || !targetToken) {
         ui.notifications.warn('Token not found');
         return;
       }
 
       await avsOverrideService.removeAVSOverride(observerToken, targetToken);
-      
+
       ui.notifications.info(
         game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.OVERRIDE_REMOVED', {
           observer: observerToken.name,
-          target: targetToken.name
-        })
+          target: targetToken.name,
+        }),
       );
 
       // Re-render the dialog to update the display
       app.render({ force: true });
     } catch (error) {
       console.error(`${MODULE_ID} | Error removing override:`, error);
-      ui.notifications.error(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_REMOVING_OVERRIDE'));
+      ui.notifications.error(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_REMOVING_OVERRIDE'),
+      );
     }
   }
 
@@ -393,10 +412,10 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
     if (!app) return;
 
     const isChecked = target.checked;
-    
+
     try {
       await avsOverrideService.setAVSKillSwitch(app.token, isChecked);
-      
+
       // Update the label with appropriate CSS class
       const label = target.parentElement?.querySelector('.kill-switch-label');
       if (label) {
@@ -408,18 +427,24 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
           label.classList.add('auto-state');
         }
       }
-      
-      const message = isChecked 
-        ? game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_DISABLED_FOR_TOKEN', { token: app.token.name })
-        : game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_ENABLED_FOR_TOKEN', { token: app.token.name });
-      
+
+      const message = isChecked
+        ? game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_DISABLED_FOR_TOKEN', {
+            token: app.token.name,
+          })
+        : game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.AVS_ENABLED_FOR_TOKEN', {
+            token: app.token.name,
+          });
+
       ui.notifications.info(message);
 
       // Re-render the dialog to update the display
       app.render({ force: true });
     } catch (error) {
       console.error(`${MODULE_ID} | Error toggling kill switch:`, error);
-      ui.notifications.error(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_TOGGLING_KILL_SWITCH'));
+      ui.notifications.error(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_TOGGLING_KILL_SWITCH'),
+      );
     }
   }
 
@@ -429,7 +454,9 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
 
     const confirmed = await Dialog.confirm({
       title: game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLEAR_ALL_CONFIRM_TITLE'),
-      content: game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLEAR_ALL_CONFIRM_CONTENT', { token: app.token.name }),
+      content: game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.CLEAR_ALL_CONFIRM_CONTENT', {
+        token: app.token.name,
+      }),
       yes: () => true,
       no: () => false,
       defaultYes: false,
@@ -439,16 +466,20 @@ export class AVSOverrideDialog extends foundry.applications.api.ApplicationV2 {
 
     try {
       await avsOverrideService.clearAllAVSOverrides(app.token);
-      
+
       ui.notifications.info(
-        game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ALL_OVERRIDES_CLEARED', { token: app.token.name })
+        game.i18n.format('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ALL_OVERRIDES_CLEARED', {
+          token: app.token.name,
+        }),
       );
 
       // Re-render the dialog to update the display
       app.render({ force: true });
     } catch (error) {
       console.error(`${MODULE_ID} | Error clearing overrides:`, error);
-      ui.notifications.error(game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_CLEARING_OVERRIDES'));
+      ui.notifications.error(
+        game.i18n.localize('PF2E_VISIONER.AVS_OVERRIDE_DIALOG.ERROR_CLEARING_OVERRIDES'),
+      );
     }
   }
 }

@@ -56,16 +56,18 @@ export async function setAVSOverride(observer, target, visibilityState) {
   try {
     const overrideKey = `${observer.document.id}->${target.document.id}`;
     const currentOverrides = observer.document.getFlag(MODULE_ID, 'avs-override') || {};
-    
+
     currentOverrides[overrideKey] = {
       targetId: target.document.id,
       targetName: target.name,
       visibilityState: visibilityState,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     await observer.document.setFlag(MODULE_ID, 'avs-override', currentOverrides);
-    console.log(`${MODULE_ID} | AVS override set: ${observer.name} → ${target.name} = ${visibilityState}`);
+    console.log(
+      `${MODULE_ID} | AVS override set: ${observer.name} → ${target.name} = ${visibilityState}`,
+    );
   } catch (error) {
     console.error(`${MODULE_ID} | Error setting AVS override:`, error);
     throw error;
@@ -85,7 +87,7 @@ export async function removeAVSOverride(observer, target) {
   try {
     const overrideKey = `${observer.document.id}->${target.document.id}`;
     const currentOverrides = observer.document.getFlag(MODULE_ID, 'avs-override') || {};
-    
+
     if (currentOverrides[overrideKey]) {
       delete currentOverrides[overrideKey];
       await observer.document.setFlag(MODULE_ID, 'avs-override', currentOverrides);
@@ -108,7 +110,7 @@ export function getAVSOverride(observer, target) {
 
   const overrideKey = `${observer.document.id}->${target.document.id}`;
   const currentOverrides = observer.document.getFlag(MODULE_ID, 'avs-override') || {};
-  
+
   return currentOverrides[overrideKey]?.visibilityState || null;
 }
 

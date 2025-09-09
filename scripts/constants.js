@@ -213,8 +213,8 @@ export const DEFAULT_SETTINGS = {
     range: {
       min: 100,
       max: 2000,
-      step: 100
-    }
+      step: 100,
+    },
   },
 
   autoVisibilityRespectManualActions: {

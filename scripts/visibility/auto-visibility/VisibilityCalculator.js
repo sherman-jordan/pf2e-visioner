@@ -3,7 +3,6 @@
  * Bypasses all throttling and circuit breaking for immediate processing
  */
 
-import { MODULE_ID } from '../../constants.js';
 import * as avsOverrideService from '../../services/avs-override-service.js';
 
 export class VisibilityCalculator {
@@ -74,67 +73,37 @@ export class VisibilityCalculator {
     targetPositionOverride = null,
   ) {
     if (!observer?.actor || !target?.actor) {
-      console.log(`${MODULE_ID} | EARLY RETURN: Missing observer or target actor`);
       return 'observed';
     }
 
     try {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-      console.log(
-        `${MODULE_ID} | CALC START: ${observer.name} → ${target.name} - Starting calculation`,
-      );
-
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Calculating visibility ${observer.name} → ${target.name} (IMMEDIATE)`,
-        );
-      }
-
       // Check for AVS overrides first
       const avsOverride = avsOverrideService.getAVSOverride(observer, target);
       if (avsOverride) {
-        console.log(
-          `${MODULE_ID} | AVS OVERRIDE: ${observer.name} → ${target.name} = ${avsOverride}`,
-        );
         return avsOverride;
       }
 
       // Check for AVS kill switch
       if (avsOverrideService.getAVSKillSwitch(observer)) {
-        console.log(
-          `${MODULE_ID} | AVS KILL SWITCH: ${observer.name} has AVS disabled - skipping calculation`,
-        );
         return 'observed'; // Return default state when AVS is disabled
       }
 
       // Step 1: Check if observer is blinded (cannot see anything)
       const isBlinded = this.#conditionManager.isBlinded(observer);
-      console.log(`${MODULE_ID} | BLINDED CHECK: ${observer.name} = ${isBlinded}`);
       if (isBlinded) {
-        console.log(`${MODULE_ID} | BLINDED PATH: Observer cannot see anything - returning hidden`);
         return 'hidden';
       }
 
       // Step 2: Check if target is completely invisible to observer
       const isInvisible = this.#conditionManager.isInvisibleTo(observer, target);
-      console.log(
-        `${MODULE_ID} | INVISIBILITY CHECK: ${observer.name} → ${target.name} = ${isInvisible}`,
-      );
       if (isInvisible) {
-        console.log(`${MODULE_ID} | INVISIBLE PATH: Target is invisible - returning undetected`);
         // In PF2e, invisible targets are undetected to all observers unless they have special abilities
         return 'undetected';
-      } else {
-        console.log(`${MODULE_ID} | NOT INVISIBLE: Proceeding to lighting calculation`);
       }
 
       // Step 3: Check if observer is dazzled (everything appears concealed)
       const isDazzled = this.#conditionManager.isDazzled(observer);
-      console.log(`${MODULE_ID} | DAZZLED CHECK: ${observer.name} = ${isDazzled}`);
       if (isDazzled) {
-        console.log(
-          `${MODULE_ID} | DAZZLED PATH: Observer is dazzled - everything appears concealed`,
-        );
         // In PF2e, dazzled creatures see everything as concealed unless they have special abilities
         return 'concealed';
       }
@@ -158,52 +127,14 @@ export class VisibilityCalculator {
       const lightLevel = this.#lightingCalculator.getLightLevelAt(targetPosition);
       const observerVision = this.#visionAnalyzer.getVisionCapabilities(observer);
 
-      // Enhanced debugging to understand light/vision calculation
-      console.log(
-        `${MODULE_ID} | 🔍 POSITION DEBUG: ${target.name} position: (${targetPosition.x}, ${targetPosition.y}) [doc: (${target.document.x}, ${target.document.y}), center: (${target.center.x}, ${target.center.y})]`,
-      );
-      console.log(
-        `${MODULE_ID} | 🔍 LIGHT DEBUG: ${observer.name} → ${target.name} - Light level at target: ${JSON.stringify(lightLevel)}`,
-      );
-      console.log(
-        `${MODULE_ID} | 🔍 VISION DEBUG: ${observer.name} vision capabilities:`,
-        observerVision,
-      );
-
       // Step 6: Determine visibility based on light level and observer's vision
       const result = this.#visionAnalyzer.determineVisibilityFromLighting(
         lightLevel,
         observerVision,
       );
 
-      console.log(
-        `${MODULE_ID} | VISIBILITY RESULT: ${observer.name} → ${target.name} = ${result} (light: ${lightLevel})`,
-      );
-
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Calculated visibility ${observer.name} → ${target.name} = ${result} (IMMEDIATE)`,
-        );
-      }
-
-      console.log(
-        `${MODULE_ID} | CALC END: ${observer.name} → ${target.name} - Returning: ${result}`,
-      );
       return result;
     } catch (error) {
-      console.error(
-        `${MODULE_ID} | OPTIMIZED: Error calculating visibility for ${observer.name} → ${target.name}:`,
-        error,
-      );
-      console.error(
-        `${MODULE_ID} | ERROR DETAILS: Type: ${error.constructor.name}, Message: ${error.message}`,
-      );
-      if (error.stack) {
-        console.error(`${MODULE_ID} | ERROR STACK:`, error.stack);
-      }
-      console.log(
-        `${MODULE_ID} | ERROR FALLBACK: ${observer.name} → ${target.name} - Returning: observed`,
-      );
       return 'observed'; // Default fallback
     }
   }

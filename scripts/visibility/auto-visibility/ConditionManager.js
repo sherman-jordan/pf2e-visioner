@@ -4,8 +4,6 @@
  * SINGLETON PATTERN
  */
 
-import { MODULE_ID } from '../../constants.js';
-
 export class ConditionManager {
   /** @type {ConditionManager} */
   static #instance = null;
@@ -36,8 +34,6 @@ export class ConditionManager {
    * @returns {boolean}
    */
   isBlinded(observer) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
     // Check if observer has blinded condition - try multiple methods
     const hasConditionMethod = observer.actor?.hasCondition?.('blinded');
     const systemConditionActive = observer.actor?.system?.conditions?.blinded?.active;
@@ -58,20 +54,6 @@ export class ConditionManager {
     const isBlinded =
       hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
 
-    if (debugMode && isBlinded) {
-      console.log(`${MODULE_ID} | Blinded check for ${observer.name}:`, {
-        isBlinded,
-        hasConditionMethod,
-        systemConditionActive,
-        conditionsHas,
-        conditionsCollectionHas,
-        hasConditionMethodExists: !!observer.actor?.hasCondition,
-        systemConditions: observer.actor?.system?.conditions,
-        conditions: observer.actor?.conditions,
-        conditionsType: observer.actor?.conditions?.constructor?.name,
-      });
-    }
-
     return isBlinded;
   }
 
@@ -81,8 +63,6 @@ export class ConditionManager {
    * @returns {boolean}
    */
   isDazzled(observer) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
     // Check if observer has dazzled condition - try multiple methods
     const hasConditionMethod = observer.actor?.hasCondition?.('dazzled');
     const systemConditionActive = observer.actor?.system?.conditions?.dazzled?.active;
@@ -103,20 +83,6 @@ export class ConditionManager {
     const isDazzled =
       hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
 
-    if (debugMode && isDazzled) {
-      console.log(`${MODULE_ID} | Dazzled check for ${observer.name}:`, {
-        isDazzled,
-        hasConditionMethod,
-        systemConditionActive,
-        conditionsHas,
-        conditionsCollectionHas,
-        hasConditionMethodExists: !!observer.actor?.hasCondition,
-        systemConditions: observer.actor?.system?.conditions,
-        conditions: observer.actor?.conditions,
-        conditionsType: observer.actor?.conditions?.constructor?.name,
-      });
-    }
-
     return isDazzled;
   }
 
@@ -127,8 +93,6 @@ export class ConditionManager {
    * @returns {boolean}
    */
   isInvisibleTo(observer, target) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
     // Check if target has invisibility condition - try multiple methods
     const hasConditionMethod = target.actor?.hasCondition?.('invisible');
     const systemConditionActive = target.actor?.system?.conditions?.invisible?.active;
@@ -149,31 +113,11 @@ export class ConditionManager {
     const hasInvisible =
       hasConditionMethod || systemConditionActive || conditionsHas || conditionsCollectionHas;
 
-    if (debugMode) {
-      console.log(`${MODULE_ID} | Invisibility check for ${target.name}:`, {
-        hasInvisible,
-        hasConditionMethod,
-        systemConditionActive,
-        conditionsHas,
-        conditionsCollectionHas,
-        hasConditionMethodExists: !!target.actor?.hasCondition,
-        systemConditions: target.actor?.system?.conditions,
-        conditions: target.actor?.conditions,
-        conditionsType: target.actor?.conditions?.constructor?.name,
-      });
-    }
-
     if (hasInvisible) {
       // Check if observer can see invisibility
       const canSeeInvisible =
         observer.actor?.perception?.senses?.has?.('see-invisibility') ||
         observer.actor?.system?.perception?.senses?.['see-invisibility'];
-
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | ${target.name} is invisible, ${observer.name} can see invisible: ${!!canSeeInvisible}`,
-        );
-      }
 
       return !canSeeInvisible;
     }
@@ -232,16 +176,6 @@ export class ConditionManager {
    * @param {Actor} actor
    */
   async handleInvisibilityChange(actor) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-    if (debugMode) {
-      console.log(`${MODULE_ID} | Actor ${actor.name} conditions changed:`, {
-        hasConditionMethod: !!actor.hasCondition,
-        systemConditions: actor.system?.conditions,
-        conditions: actor.conditions,
-      });
-    }
-
     // Find the actor's token(s) on the current scene
     const tokens = canvas.tokens.placeables.filter((token) => token.actor?.id === actor.id);
 
@@ -252,24 +186,12 @@ export class ConditionManager {
         actor.system?.conditions?.invisible?.active ||
         actor.conditions?.has?.('invisible');
 
-      if (debugMode) {
-        console.log(`${MODULE_ID} | Token ${token.name} invisibility check: ${hasInvisibility}`);
-      }
-
       if (hasInvisibility) {
         // Invisibility was added - record current visibility states
         await this.#recordVisibilityBeforeInvisibility(token);
-
-        if (debugMode) {
-          console.log(`${MODULE_ID} | ${actor.name} became invisible - recorded visibility states`);
-        }
       } else {
         // Invisibility was removed - clear the flags
         await this.#clearInvisibilityFlags(token);
-
-        if (debugMode) {
-          console.log(`${MODULE_ID} | ${actor.name} is no longer invisible - cleared flags`);
-        }
       }
     }
   }

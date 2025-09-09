@@ -50,9 +50,7 @@ export class EventDrivenVisibilitySystem {
    * Initialize the system - self-contained with optimized components (ZERO DELAYS)
    */
   async initialize() {
-    console.log(
-      `${MODULE_ID} | Initializing EventDrivenVisibilitySystem - Zero Delays Architecture`,
-    );
+    // Removed debug log
 
     // Create core components
     const { LightingCalculator } = await import('./LightingCalculator.js');
@@ -81,11 +79,7 @@ export class EventDrivenVisibilitySystem {
    * Register only the essential Foundry event listeners
    */
   #registerEventListeners() {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-    if (debugMode) {
-      console.log(`${MODULE_ID} | Registering OPTIMIZED event listeners (zero-delay)`);
-    }
+    // Removed debug log
 
     // Token events that affect visibility
     Hooks.on('updateToken', this.#onTokenUpdate.bind(this));
@@ -134,13 +128,12 @@ export class EventDrivenVisibilitySystem {
   #onTokenUpdate(tokenDoc, changes) {
     if (!this.#enabled || !game.user.isGM) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
     // Check what actually changed
     const positionChanged = changes.x !== undefined || changes.y !== undefined;
     const lightChanged = changes.light !== undefined;
     const visionChanged = changes.vision !== undefined;
-    const effectsChanged = changes.effects !== undefined || changes.actorData !== undefined;
+    const effectsChanged =
+      changes.actorData?.effects !== undefined || changes.actorData !== undefined;
 
     const updateOnMovement = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnMovement');
     const updateOnLighting = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting');
@@ -154,30 +147,18 @@ export class EventDrivenVisibilitySystem {
 
       if (distance >= threshold) {
         shouldUpdate = true;
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | OPTIMIZED: Token ${tokenDoc.name} moved ${distance.toFixed(1)}px - IMMEDIATE update`,
-          );
-        }
+        // Removed debug log
       }
     }
 
     if ((lightChanged || visionChanged) && updateOnLighting) {
       shouldUpdate = true;
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Token ${tokenDoc.name} vision/light changed - IMMEDIATE update`,
-        );
-      }
+      // Removed debug log
     }
 
     if (effectsChanged) {
       shouldUpdate = true;
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Token ${tokenDoc.name} effects changed - IMMEDIATE update`,
-        );
-      }
+      // Removed debug log
     }
 
     if (shouldUpdate) {
@@ -201,10 +182,7 @@ export class EventDrivenVisibilitySystem {
   #onTokenCreate(tokenDoc) {
     if (!this.#enabled || !game.user.isGM) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Token ${tokenDoc.name} created - IMMEDIATE update`);
-    }
+    // Removed debug log
 
     this.#markTokenChangedImmediate(tokenDoc.id);
   }
@@ -218,10 +196,7 @@ export class EventDrivenVisibilitySystem {
     // Clean up any pending changes for this token
     this.#changedTokens.delete(tokenDoc.id);
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Token ${tokenDoc.name} deleted - cleaned up`);
-    }
+    // Removed debug log
   }
 
   /**
@@ -230,8 +205,6 @@ export class EventDrivenVisibilitySystem {
   #onLightUpdate(lightDoc, changes) {
     if (!this.#enabled || !game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
-
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
 
     // Check what changed about the light
     const significantChange =
@@ -242,11 +215,7 @@ export class EventDrivenVisibilitySystem {
       changes.hidden !== undefined;
 
     if (significantChange) {
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Light updated (${Object.keys(changes).join(', ')}) - IMMEDIATE update for all tokens`,
-        );
-      }
+      // Removed debug log
       this.#markAllTokensChangedImmediate();
     }
   }
@@ -255,10 +224,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled || !game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Light created - IMMEDIATE update for all tokens`);
-    }
+    // Removed debug log
 
     this.#markAllTokensChangedImmediate();
   }
@@ -267,10 +233,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled || !game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Light deleted - IMMEDIATE update for all tokens`);
-    }
+    // Removed debug log
 
     this.#markAllTokensChangedImmediate();
   }
@@ -282,10 +245,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled || !game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Wall updated - IMMEDIATE update for all tokens`);
-    }
+    // Removed debug log
 
     this.#markAllTokensChangedImmediate();
   }
@@ -294,10 +254,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled || !game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Wall created - IMMEDIATE update for all tokens`);
-    }
+    // Removed debug log
 
     this.#markAllTokensChangedImmediate();
   }
@@ -306,10 +263,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled || !game.user.isGM) return;
     if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED: Wall deleted - IMMEDIATE update for all tokens`);
-    }
+    // Removed debug log
 
     this.#markAllTokensChangedImmediate();
   }
@@ -328,19 +282,14 @@ export class EventDrivenVisibilitySystem {
     // Check for condition-related changes
     const hasConditionChanges =
       changes.system?.conditions !== undefined ||
-      changes.effects !== undefined ||
+      changes.actorData?.effects !== undefined ||
       changes.items !== undefined;
 
     if (hasConditionChanges) {
       const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
 
       if (tokens.length > 0) {
-        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | PRE-UPDATE: Actor ${actor.name} conditions changing - IMMEDIATE update for ${tokens.length} tokens`,
-          );
-        }
+        // Removed debug log
 
         tokens.forEach((token) => this.#markTokenChangedImmediate(token.document.id));
       }
@@ -362,12 +311,7 @@ export class EventDrivenVisibilitySystem {
     const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
 
     if (tokens.length > 0) {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Actor ${actor.name} updated - IMMEDIATE update for ${tokens.length} tokens`,
-        );
-      }
+      // Removed debug log
 
       tokens.forEach((token) => this.#markTokenChangedImmediate(token.document.id));
     }
@@ -381,12 +325,7 @@ export class EventDrivenVisibilitySystem {
 
     // Check if darkness or lighting changed
     if (changes.darkness !== undefined || changes.environment !== undefined) {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Scene darkness/environment updated - IMMEDIATE update for all tokens`,
-        );
-      }
+      // Removed debug log
 
       this.#markAllTokensChangedImmediate();
     }
@@ -414,12 +353,7 @@ export class EventDrivenVisibilitySystem {
   #onEffectDelete(effect) {
     if (!this.#enabled || !game.user.isGM) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | 🗑️ EFFECT DELETED: "${effect.name || effect.label}" from ${effect.parent?.name || 'unknown'}`,
-      );
-    }
+    // Removed debug log
 
     this.#handleEffectChange(effect, 'deleted');
   }
@@ -446,12 +380,7 @@ export class EventDrivenVisibilitySystem {
   #onItemDelete(item) {
     if (!this.#enabled || !game.user.isGM) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | 🗑️ ITEM DELETED: "${item.name}" (type: ${item.type}) from ${item.parent?.name || 'unknown'}`,
-      );
-    }
+    // Removed debug log
 
     this.#handleItemChange(item, 'deleted');
   }
@@ -460,14 +389,7 @@ export class EventDrivenVisibilitySystem {
    * Handle effect changes that might affect visibility
    */
   #handleEffectChange(effect, action) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-    // Debug: Always log effect changes to see what we're missing
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | EFFECT ${action.toUpperCase()}: "${effect.name || effect.label}" on ${effect.parent?.name || 'unknown'}`,
-      );
-    }
+    // Removed debug log
 
     // Check if this effect is related to invisibility, vision, or conditions that affect sight
     const effectName = effect.name?.toLowerCase() || effect.label?.toLowerCase() || '';
@@ -496,11 +418,7 @@ export class EventDrivenVisibilitySystem {
       const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
 
       if (tokens.length > 0) {
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | VISIBILITY TRIGGER: EFFECT ${action.toUpperCase()} "${effectName}" on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`,
-          );
-        }
+        // Removed debug log
 
         tokens.forEach((token) => this.#markTokenChangedImmediate(token.document.id));
       }
@@ -511,14 +429,7 @@ export class EventDrivenVisibilitySystem {
    * Handle item changes that might affect visibility (PF2e conditions)
    */
   #handleItemChange(item, action) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-    // Debug: Always log item changes to see what we're missing
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | ITEM ${action.toUpperCase()}: "${item.name}" (type: ${item.type}) on ${item.parent?.name || 'unknown'}`,
-      );
-    }
+    // Removed debug log
 
     // In PF2e, conditions might be items, but also spells and effects
     const itemName = item.name?.toLowerCase() || '';
@@ -553,11 +464,7 @@ export class EventDrivenVisibilitySystem {
       const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
 
       if (tokens.length > 0) {
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | VISIBILITY TRIGGER: ${action.toUpperCase()} "${itemName}" (${itemType}) on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`,
-          );
-        }
+        // Removed debug log
 
         tokens.forEach((token) => this.#markTokenChangedImmediate(token.document.id));
       }
@@ -601,14 +508,9 @@ export class EventDrivenVisibilitySystem {
     this.#processingBatch = true;
 
     try {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-      const startTime = performance.now();
-
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Processing visibility batch IMMEDIATELY: ${this.#changedTokens.size} changed tokens`,
-        );
-      }
+      // Removed debug log
+      // const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+      // const startTime = performance.now();
 
       const allTokens = canvas.tokens?.placeables?.filter((t) => t.actor) || [];
       const updates = [];
@@ -626,11 +528,7 @@ export class EventDrivenVisibilitySystem {
             avsOverrideService.getAVSKillSwitch(changedToken) ||
             avsOverrideService.getAVSKillSwitch(otherToken)
           ) {
-            if (debugMode) {
-              console.log(
-                `${MODULE_ID} | AVS KILL SWITCH: Skipping ${changedToken.name} ↔ ${otherToken.name} (AVS disabled)`,
-              );
-            }
+            // Removed debug log
             continue;
           }
 
@@ -645,17 +543,7 @@ export class EventDrivenVisibilitySystem {
             effectiveVisibility1 = avsOverride1 || 'observed';
             effectiveVisibility2 = avsOverride2 || 'observed';
 
-            if (debugMode) {
-              console.log(
-                `${MODULE_ID} | AVS OVERRIDE: Skipping calculation for ${changedToken.name} ↔ ${otherToken.name}`,
-              );
-              console.log(
-                `  Override: ${changedToken.name} → ${otherToken.name} = ${effectiveVisibility1}`,
-              );
-              console.log(
-                `  Override: ${otherToken.name} → ${changedToken.name} = ${effectiveVisibility2}`,
-              );
-            }
+            // Removed debug log
           } else {
             // No overrides, proceed with normal calculation
             const changedTokenPosition = this.#getTokenPosition(changedToken);
@@ -686,26 +574,10 @@ export class EventDrivenVisibilitySystem {
           const currentVisibility2 =
             getVisibilityMap(otherToken)[changedToken.document.id] || 'observed';
 
-          // Enhanced debugging to show calculated vs current values
-          if (debugMode) {
-            console.log(
-              `${MODULE_ID} | VISIBILITY CHECK: ${changedToken.name} → ${otherToken.name}`,
-            );
-            console.log(
-              `  Effective: ${effectiveVisibility1}, Current: ${currentVisibility1}, AVS Override: ${avsOverride1 || 'none'}`,
-            );
-            console.log(
-              `${MODULE_ID} | VISIBILITY CHECK: ${otherToken.name} → ${changedToken.name}`,
-            );
-            console.log(
-              `  Effective: ${effectiveVisibility2}, Current: ${currentVisibility2}, AVS Override: ${avsOverride2 || 'none'}`,
-            );
-          }
+          // Removed debug log
 
           if (effectiveVisibility1 !== currentVisibility1) {
-            console.log(
-              `${MODULE_ID} | UPDATING: ${changedToken.name} → ${otherToken.name} from ${currentVisibility1} to ${effectiveVisibility1}`,
-            );
+            // Removed debug log
             updates.push({
               observer: changedToken,
               target: otherToken,
@@ -714,9 +586,7 @@ export class EventDrivenVisibilitySystem {
           }
 
           if (effectiveVisibility2 !== currentVisibility2) {
-            console.log(
-              `${MODULE_ID} | UPDATING: ${otherToken.name} → ${changedToken.name} from ${currentVisibility2} to ${effectiveVisibility2}`,
-            );
+            // Removed debug log
             updates.push({
               observer: otherToken,
               target: changedToken,
@@ -728,20 +598,7 @@ export class EventDrivenVisibilitySystem {
 
       // Apply all updates immediately
       if (updates.length > 0) {
-        const processingTime = performance.now() - startTime;
-
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | OPTIMIZED: Applying ${updates.length} visibility updates IMMEDIATELY (calculated in ${processingTime.toFixed(1)}ms)`,
-          );
-
-          const hiddenUpdates = updates.filter((u) => u.visibility === 'hidden');
-          if (hiddenUpdates.length > 0) {
-            console.log(
-              `${MODULE_ID} | OPTIMIZED: Setting ${hiddenUpdates.length} tokens to hidden`,
-            );
-          }
-        }
+        // Removed debug log
 
         for (const update of updates) {
           setVisibilityBetween(update.observer, update.target, update.visibility, {
@@ -759,12 +616,7 @@ export class EventDrivenVisibilitySystem {
       this.#changedTokens.clear();
       this.#updatedTokenDocs.clear();
 
-      if (debugMode) {
-        const totalTime = performance.now() - startTime;
-        console.log(
-          `${MODULE_ID} | OPTIMIZED: Batch completed in ${totalTime.toFixed(1)}ms (total updates: ${this.#updateCount})`,
-        );
-      }
+      // Removed debug log
     } finally {
       this.#processingBatch = false;
     }
@@ -808,10 +660,7 @@ export class EventDrivenVisibilitySystem {
   enable() {
     if (this.#enabled) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED system enabled - zero delays, immediate processing`);
-    }
+    // Removed debug log
 
     this.#enabled = true;
     this.#registerEventListeners();
@@ -824,10 +673,7 @@ export class EventDrivenVisibilitySystem {
    * Disable the system
    */
   disable() {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(`${MODULE_ID} | OPTIMIZED system disabled`);
-    }
+    // Removed debug log
 
     this.#enabled = false;
 
@@ -841,12 +687,7 @@ export class EventDrivenVisibilitySystem {
   recalculateAll() {
     if (!this.#enabled) return;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | OPTIMIZED: Manual recalculation triggered - IMMEDIATE processing`,
-      );
-    }
+    // Removed debug log
 
     this.#markAllTokensChangedImmediate();
   }
@@ -881,13 +722,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled && !force) return;
 
     const tokens = canvas.tokens?.placeables || [];
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | 🔄 RECALCULATING ALL VISIBILITY (${tokens.length} tokens, force=${force})`,
-      );
-    }
+    // Removed debug log
 
     // Process all tokens in a single batch
     for (const token of tokens) {
@@ -942,12 +777,7 @@ export class EventDrivenVisibilitySystem {
       const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
 
       if (tokens.length > 0) {
-        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | EQUIPMENT CHANGE: ${itemName} on ${actor.name} - IMMEDIATE update for ${tokens.length} tokens`,
-          );
-        }
+        // Removed debug log
 
         tokens.forEach((token) => this.#markTokenChangedImmediate(token.document.id));
       }
@@ -969,12 +799,7 @@ export class EventDrivenVisibilitySystem {
       templateName.includes('shadow');
 
     if (isLightTemplate) {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | TEMPLATE CREATED: ${templateName} - IMMEDIATE update for all tokens`,
-        );
-      }
+      // Removed debug log
       this.#markAllTokensChangedImmediate();
     }
   }
@@ -1001,12 +826,7 @@ export class EventDrivenVisibilitySystem {
         templateName.includes('shadow');
 
       if (isLightTemplate) {
-        const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-        if (debugMode) {
-          console.log(
-            `${MODULE_ID} | TEMPLATE UPDATED: ${templateName} - IMMEDIATE update for all tokens`,
-          );
-        }
+        // Removed debug log
         this.#markAllTokensChangedImmediate();
       }
     }
@@ -1026,12 +846,7 @@ export class EventDrivenVisibilitySystem {
       templateName.includes('shadow');
 
     if (isLightTemplate) {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | TEMPLATE DELETED: ${templateName} - IMMEDIATE update for all tokens`,
-        );
-      }
+      // Removed debug log
       this.#markAllTokensChangedImmediate();
     }
   }

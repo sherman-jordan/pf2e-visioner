@@ -189,11 +189,21 @@ export class LightingCalculator {
           );
         }
       } else {
-        // Handle normal light sources (they increase illumination)
-        if (distance <= brightRadius) {
+        // Handle normal light sources (they increase illumination) - use pixel-converted radii
+        if (distance <= brightRadiusPixels) {
           maxLightIllumination = Math.max(maxLightIllumination, 1); // Bright light
-        } else if (distance <= dimRadius) {
+          if (debugMode) {
+            console.log(
+              `${MODULE_ID} | 🔦 LIGHT SOURCE ${light.id} provides BRIGHT light at distance ${distance.toFixed(1)} pixels`,
+            );
+          }
+        } else if (distance <= dimRadiusPixels) {
           maxLightIllumination = Math.max(maxLightIllumination, 0.5); // Dim light
+          if (debugMode) {
+            console.log(
+              `${MODULE_ID} | 🔦 LIGHT SOURCE ${light.id} provides DIM light at distance ${distance.toFixed(1)} pixels`,
+            );
+          }
         }
       }
     }
@@ -440,6 +450,10 @@ export class LightingCalculator {
       position,
       lightLevel,
       sceneDarkness: canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0,
+      globalLight: canvas.scene?.globalLight ?? false,
+      hasGlobalIllumination: canvas.scene?.hasGlobalIllumination ?? false,
+      ambientLight: canvas.scene?.ambientLight ?? false,
+      globalIllumination: canvas.scene?.globalIllumination ?? false,
       dedicatedLightSources: lightSources.length,
       lightEmittingTokens: lightEmittingTokens.length,
       lightEmittingTokensDetails: lightEmittingTokens,

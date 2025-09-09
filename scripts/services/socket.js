@@ -36,7 +36,7 @@ const _socketService = new SocketService();
 // Export the socket service for use by other modules
 export { _socketService };
 
-const REFRESH_CHANNEL = 'RefreshPerception';
+export const REFRESH_CHANNEL = 'RefreshPerception';
 const POINT_OUT_CHANNEL = 'PointOut';
 const SEEK_TEMPLATE_CHANNEL = 'SeekTemplate';
 const POINTOUT_REQUEST_CHANNEL = 'PointOutRequest';

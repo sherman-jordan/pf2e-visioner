@@ -1,12 +1,17 @@
 # Changelog
 
+## [3.1.5] - 2025-09-06
+
+### 🐛 Fixed
+
+- **Token Manager**: Target mode will show perception dc correctly again
+  - Changed to partials usage instead of monoith template
 
 ## [3.1.4] - 2025-09-06
 
 ### 🐛 Fixed
 
 - **Manual Cover**: Fixed Stealth and Saving Throw rolls handling of manual cover
-
 
 ## [3.1.3] - 2025-09-06
 

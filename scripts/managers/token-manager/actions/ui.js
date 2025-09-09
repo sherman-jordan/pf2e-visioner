@@ -3,7 +3,24 @@
  */
 
 import { MODULE_ID } from '../../../constants.js';
+import {
+  addTokenImageClickHandlers,
+  panToAndSelectToken,
+  panToWall,
+} from '../../../ui/shared-ui-utils.js';
 import { getSceneTargets, showNotification } from '../../../utils.js';
+
+export async function toggleStateSelector(event, button) {
+  // Remove selected class from all state selector buttons in the same container
+  const container = button.closest('.bulk-state-buttons');
+  if (container) {
+    const allButtons = container.querySelectorAll('.state-selector-button');
+    allButtons.forEach((btn) => btn.classList.remove('selected'));
+  }
+
+  // Add selected class to clicked button
+  button.classList.add('selected');
+}
 
 export async function toggleMode(event, button) {
   const app = this;
@@ -165,6 +182,12 @@ export async function toggleIgnoreAllies(event, button) {
   await app.render({ force: true });
 }
 
+export async function toggleIgnoreWalls(event, button) {
+  const app = this;
+  app.ignoreWalls = !app.ignoreWalls;
+  await app.render({ force: true });
+}
+
 export async function bulkSetVisibilityState(event, button) {
   try {
     const state = button.dataset.state;
@@ -192,26 +215,18 @@ export async function bulkSetVisibilityState(event, button) {
       return;
     }
 
-    // Build selector based on target type
-    let selector = '.visibility-section .icon-selection';
-    if (targetType === 'pc')
-      selector = '.visibility-section .table-section:has(.header-left .fa-users) .icon-selection';
-    else if (targetType === 'npc')
-      selector = '.visibility-section .table-section:has(.header-left .fa-dragon) .icon-selection';
-    else if (targetType === 'loot')
-      selector = '.visibility-section .table-section.loot-section .icon-selection';
-    else if (targetType === 'walls')
-      selector = '.visibility-section .table-section.walls-section .icon-selection';
-
-    // Cache DOM queries to avoid repeated lookups
-    const iconSelections = form.querySelectorAll(selector);
-    if (!iconSelections.length) {
-      // Restore button state if no elements found
+    // Find the section that contains this bulk action button
+    const section = button.closest('.table-section');
+    if (!section) {
+      // Restore button state if no section found
       button.classList.remove('loading');
       button.disabled = false;
       button.innerHTML = originalText;
       return;
     }
+
+    // Use the section to find icon selections
+    const iconSelections = section.querySelectorAll('.icon-selection');
 
     // Pre-cache all elements that need updates
     const updates = [];
@@ -306,22 +321,18 @@ export async function bulkSetCoverState(event, button) {
       return;
     }
 
-    // Build selector based on target type
-    let selector = '.cover-section .icon-selection';
-    if (targetType === 'pc')
-      selector = '.cover-section .table-section:has(.header-left .fa-users) .icon-selection';
-    else if (targetType === 'npc')
-      selector = '.cover-section .table-section:has(.header-left .fa-dragon) .icon-selection';
-
-    // Cache DOM queries to avoid repeated lookups
-    const iconSelections = form.querySelectorAll(selector);
-    if (!iconSelections.length) {
-      // Restore button state if no elements found
+    // Find the section that contains this bulk action button
+    const section = button.closest('.table-section');
+    if (!section) {
+      // Restore button state if no section found
       button.classList.remove('loading');
       button.disabled = false;
       button.innerHTML = originalText;
       return;
     }
+
+    // Use the section to find icon selections
+    const iconSelections = section.querySelectorAll('.icon-selection');
 
     // Pre-cache all elements that need updates
     const updates = [];
@@ -411,4 +422,100 @@ export function bindDomIconHandlers(TokenManagerClass) {
       });
     });
   };
+
+  TokenManagerClass.prototype.addTokenImageClickHandlers =
+    function addTokenImageClickHandlersMethod() {
+      const element = this.element;
+      if (!element) return;
+      addTokenImageClickHandlers(element, this);
+    };
+
+  // Pan methods moved to shared utility (scripts/ui/shared-ui-utils.js)
+  TokenManagerClass.prototype.panToWall = panToWall;
+  TokenManagerClass.prototype.panToAndSelectToken = panToAndSelectToken;
+
+  // Add override icon click handlers
+  TokenManagerClass.prototype.addOverrideIconClickHandlers =
+    function addOverrideIconClickHandlersMethod() {
+      const element = this.element;
+      if (!element) return;
+      const app = this;
+
+      // Add bulk state selection handlers (only for overrides tab state selection)
+      const bulkStateButtons = element.querySelectorAll(
+        '.overrides-section .bulk-state-buttons .bulk-state-header:not([data-action])',
+      );
+      bulkStateButtons.forEach((button) => {
+        button.removeEventListener('click', button._bulkStateHandler);
+        button._bulkStateHandler = (event) => selectBulkState.call(app, event, button);
+        button.addEventListener('click', button._bulkStateHandler);
+      });
+
+      // Add state selector button handlers (for toggleStateSelector data-action)
+      const stateSelectorButtons = element.querySelectorAll(
+        '.overrides-section .bulk-state-buttons .bulk-state-header[data-action="toggleStateSelector"]',
+      );
+      stateSelectorButtons.forEach((button) => {
+        button.removeEventListener('click', button._stateSelectorHandler);
+        button._stateSelectorHandler = (event) => toggleStateSelector.call(app, event, button);
+        button.addEventListener('click', button._stateSelectorHandler);
+      });
+    };
+
+  async function handleOverrideIconClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const icon = event.currentTarget;
+    const targetId = icon.dataset.target;
+    const action = icon.dataset.action;
+    const newState = icon.dataset.state;
+    const app = this;
+
+    if (!targetId || !action || !newState || !app?.observer) {
+      showNotification(
+        'Missing required data for override action. Please try again or contact support.',
+        'warning',
+      );
+      return;
+    }
+  }
+}
+
+/**
+ * Handle bulk state selection (like visibility/cover tabs)
+ */
+export async function selectBulkState(event, button) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const container = button.closest('.bulk-state-buttons');
+  if (!container) return;
+
+  // Remove selection from all state buttons
+  const allButtons = container.querySelectorAll('.bulk-state-header');
+  allButtons.forEach((btn) => btn.classList.remove('selected'));
+
+  // Mark this button as selected
+  button.classList.add('selected');
+}
+
+/**
+ * Deselect the bulk state after applying a bulk action
+ * This prevents accidental re-application of the same bulk change
+ */
+function deselectBulkState(app) {
+  if (!app?.element) return;
+
+  // Find all bulk state selector buttons and remove their selected class
+  const bulkStateButtons = app.element.querySelectorAll(
+    '.bulk-state-buttons .bulk-state-header.selected',
+  );
+  bulkStateButtons.forEach((button) => button.classList.remove('selected'));
+
+  // Also deselect any state selector buttons in the overrides section
+  const stateSelectorButtons = app.element.querySelectorAll(
+    '.overrides-section .state-selector-button.selected',
+  );
+  stateSelectorButtons.forEach((button) => button.classList.remove('selected'));
 }

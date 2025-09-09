@@ -68,9 +68,7 @@ export async function formHandler(event, form, formData) {
       await setCoverMap(app.observer, mergedCover);
 
       try {
-        const { batchUpdateCoverEffects } = await import(
-          '../../../cover/ephemeral.js'
-        );
+        const { batchUpdateCoverEffects } = await import('../../../cover/ephemeral.js');
         const targetUpdates = [];
         for (const [tokenId, newState] of Object.entries(coverChanges)) {
           const prev = currentCover?.[tokenId];
@@ -110,7 +108,7 @@ export async function formHandler(event, form, formData) {
       if (!observerToken) continue;
       try {
         if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-      } catch (_) { }
+      } catch (_) {}
       const current = getVisibilityMap(observerToken) || {};
       const currentState = current[app.observer.document.id];
       if (currentState === newVisibilityState) continue;
@@ -129,7 +127,7 @@ export async function formHandler(event, form, formData) {
         if (!observerToken) continue;
         try {
           if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-        } catch (_) { }
+        } catch (_) {}
         observerUpdates.push({
           target: app.observer,
           state: newVisibilityState,
@@ -171,7 +169,7 @@ export async function formHandler(event, form, formData) {
           }
           continue;
         }
-      } catch (_) { }
+      } catch (_) {}
       if (currentState === newCoverState && newCoverState !== 'none') continue;
       if (!perObserverCover.has(observerTokenId))
         perObserverCover.set(observerTokenId, { token: observerToken, map: current });
@@ -181,16 +179,14 @@ export async function formHandler(event, form, formData) {
       await setCoverMap(observerToken, map);
     }
     try {
-      const { batchUpdateCoverEffects } = await import(
-        '../../../cover/ephemeral.js'
-      );
+      const { batchUpdateCoverEffects } = await import('../../../cover/ephemeral.js');
       const observerUpdates = [];
       for (const [observerTokenId, newCoverState] of Object.entries(coverChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
         try {
           if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-        } catch (_) { }
+        } catch (_) {}
         observerUpdates.push({
           target: app.observer,
           state: newCoverState,
@@ -225,11 +221,11 @@ export async function formHandler(event, form, formData) {
       );
       try {
         await updateSpecificTokenPairs([]);
-      } catch (_) { }
+      } catch (_) {}
       try {
         await updateWallVisuals();
-      } catch (_) { }
-    } catch (_) { }
+      } catch (_) {}
+    } catch (_) {}
   })();
   return app.render();
 }
@@ -277,9 +273,7 @@ export async function applyCurrent(event, button) {
 
   try {
     const { batchUpdateVisibilityEffects } = await import('../../../visibility/ephemeral.js');
-    const { batchUpdateCoverEffects } = await import(
-      '../../../cover/ephemeral.js'
-    );
+    const { batchUpdateCoverEffects } = await import('../../../cover/ephemeral.js');
     const { updateWallVisuals } = await import('../../../services/visual-effects.js');
     const isVisibility = app.activeTab === 'visibility';
     const isCover = app.activeTab === 'cover';
@@ -326,7 +320,7 @@ export async function applyCurrent(event, button) {
           if (!observerToken) continue;
           try {
             if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-          } catch (_) { }
+          } catch (_) {}
           const observerVisibilityData = getVisibilityMap(observerToken) || {};
           await setVisibilityMap(observerToken, {
             ...observerVisibilityData,
@@ -369,7 +363,7 @@ export async function applyCurrent(event, button) {
             });
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     if (isCover) {
@@ -418,11 +412,9 @@ export async function applyCurrent(event, button) {
           try {
             const t = observer.actor?.type;
             if (t === 'loot' || t === 'vehicle' || t === 'party') continue;
-          } catch (_) { }
+          } catch (_) {}
           allOperations.push(async () => {
-            const { batchUpdateCoverEffects } = await import(
-              '../../../cover/ephemeral.js'
-            );
+            const { batchUpdateCoverEffects } = await import('../../../cover/ephemeral.js');
             await batchUpdateCoverEffects(observer, updates);
             for (const { target, state } of updates) {
               visualUpdatePairs.push({
@@ -454,7 +446,7 @@ export async function applyCurrent(event, button) {
       // Refresh wall indicators for current observer
       try {
         await updateWallVisuals(app.observer?.id || null);
-      } catch (_) { }
+      } catch (_) {}
     }
   } catch (error) {
     console.error('Token Manager: Error applying current type for both modes:', error);

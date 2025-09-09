@@ -583,22 +583,24 @@ describe('Sneak Action Comprehensive Tests', () => {
 
   describe('Cover Modifier Service Integration', () => {
     test('calculateStealthRollTotals works with sneak context', () => {
-      const { calculateStealthRollTotals } = require('../../../scripts/chat/services/infra/shared-utils.js');
-      
+      const {
+        calculateStealthRollTotals,
+      } = require('../../../scripts/chat/services/infra/shared-utils.js');
+
       const baseTotal = 22;
       const autoCoverResult = {
         state: 'standard',
         bonus: 2,
-        isOverride: false
+        isOverride: false,
       };
       const actionData = {
         context: {
-          _visionerStealth: { bonus: 0 }
-        }
+          _visionerStealth: { bonus: 0 },
+        },
       };
-      
+
       const result = calculateStealthRollTotals(baseTotal, autoCoverResult, actionData);
-      
+
       expect(result.total).toBe(24); // Base total + cover bonus (22 + 2)
       expect(result).toHaveProperty('originalTotal');
     });
@@ -614,14 +616,14 @@ describe('Sneak Action Comprehensive Tests', () => {
       const originalOutcome = 'failure';
       const newVisibility = 'hidden';
       const originalNewVisibility = 'observed';
-      
-      const shouldShowOverride = wasOverridden && (
-        total !== originalTotal || 
-        margin !== originalMargin || 
-        outcome !== originalOutcome ||
-        newVisibility !== originalNewVisibility
-      );
-      
+
+      const shouldShowOverride =
+        wasOverridden &&
+        (total !== originalTotal ||
+          margin !== originalMargin ||
+          outcome !== originalOutcome ||
+          newVisibility !== originalNewVisibility);
+
       expect(shouldShowOverride).toBe(true);
     });
 
@@ -635,14 +637,14 @@ describe('Sneak Action Comprehensive Tests', () => {
       const originalOutcome = 'success';
       const newVisibility = 'hidden';
       const originalNewVisibility = 'hidden';
-      
-      const shouldShowOverride = wasOverridden && (
-        total !== originalTotal || 
-        margin !== originalMargin || 
-        outcome !== originalOutcome ||
-        newVisibility !== originalNewVisibility
-      );
-      
+
+      const shouldShowOverride =
+        wasOverridden &&
+        (total !== originalTotal ||
+          margin !== originalMargin ||
+          outcome !== originalOutcome ||
+          newVisibility !== originalNewVisibility);
+
       expect(shouldShowOverride).toBe(false);
     });
   });

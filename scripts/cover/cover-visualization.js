@@ -54,7 +54,13 @@ class CoverVisualization {
       const invalid = [minX, maxX, minY, maxY].some((v) => !isFinite(v));
       if (invalid) {
         const rect = canvas.dimensions?.sceneRect;
-        if (rect) return { minX: rect.x, minY: rect.y, maxX: rect.x + rect.width, maxY: rect.y + rect.height };
+        if (rect)
+          return {
+            minX: rect.x,
+            minY: rect.y,
+            maxX: rect.x + rect.width,
+            maxY: rect.y + rect.height,
+          };
         return { minX: -Infinity, minY: -Infinity, maxX: Infinity, maxY: Infinity };
       }
       return { minX, minY, maxX, maxY };
@@ -525,7 +531,10 @@ class CoverVisualization {
   isGridPositionVisible(worldX, worldY, canvas) {
     try {
       // For GMs, everything is visible
-      const respectFogForGM = game.settings?.get?.(MODULE_ID, 'autoCoverVisualizationRespectFogForGM');
+      const respectFogForGM = game.settings?.get?.(
+        MODULE_ID,
+        'autoCoverVisualizationRespectFogForGM',
+      );
       if (game.user.isGM && !respectFogForGM) {
         return true;
       }
@@ -753,11 +762,17 @@ class CoverVisualization {
 
     const selectedToken = selectedTokens[0]; // Use first selected token
     const selectedCenter = selectedToken.center ?? selectedToken.getCenter();
-    const respectFogForGM = game.settings?.get?.(MODULE_ID, 'autoCoverVisualizationRespectFogForGM');
+    const respectFogForGM = game.settings?.get?.(
+      MODULE_ID,
+      'autoCoverVisualizationRespectFogForGM',
+    );
 
     // For players: Only show cover overlay for tokens that are currently visible (respects fog of war)
     // GMs can see cover overlay for all tokens regardless of vision
-    if (!game.user.isGM && !hoveredToken.isVisible || (game.user.isGM && respectFogForGM && !hoveredToken.isVisible)) {
+    if (
+      (!game.user.isGM && !hoveredToken.isVisible) ||
+      (game.user.isGM && respectFogForGM && !hoveredToken.isVisible)
+    ) {
       // Player cannot see this token due to current vision/fog of war, don't show cover overlay
       return;
     }
@@ -788,7 +803,7 @@ class CoverVisualization {
       const tokenCenter = token.center ?? token.getCenter();
       const distance = Math.sqrt(
         Math.pow(tokenCenter.x - selectedCenter.x, 2) +
-        Math.pow(tokenCenter.y - selectedCenter.y, 2),
+          Math.pow(tokenCenter.y - selectedCenter.y, 2),
       );
       const gridDistance = Math.ceil(distance / gridSize);
       maxDistance = Math.max(maxDistance, gridDistance);
@@ -805,19 +820,19 @@ class CoverVisualization {
     // Compute index bounds that intersect with the viewport to avoid iterating the whole range
     const minIndexX = Math.max(
       -range,
-      Math.ceil((viewportWorld.minX - selectedCenter.x) / gridSize)
+      Math.ceil((viewportWorld.minX - selectedCenter.x) / gridSize),
     );
     const maxIndexX = Math.min(
       range,
-      Math.floor((viewportWorld.maxX - selectedCenter.x) / gridSize)
+      Math.floor((viewportWorld.maxX - selectedCenter.x) / gridSize),
     );
     const minIndexY = Math.max(
       -range,
-      Math.ceil((viewportWorld.minY - selectedCenter.y) / gridSize)
+      Math.ceil((viewportWorld.minY - selectedCenter.y) / gridSize),
     );
     const maxIndexY = Math.min(
       range,
-      Math.floor((viewportWorld.maxY - selectedCenter.y) / gridSize)
+      Math.floor((viewportWorld.maxY - selectedCenter.y) / gridSize),
     );
 
     for (let x = minIndexX; x <= maxIndexX; x++) {
@@ -865,7 +880,10 @@ class CoverVisualization {
 
         // Check if the grid position is currently visible to the player (respects fog of war)
         let shouldShowCover = true;
-        const respectFogForGM = game.settings?.get?.(MODULE_ID, 'autoCoverVisualizationRespectFogForGM');
+        const respectFogForGM = game.settings?.get?.(
+          MODULE_ID,
+          'autoCoverVisualizationRespectFogForGM',
+        );
         if (!game.user.isGM || (game.user.isGM && respectFogForGM)) {
           // Check if this grid position is currently visible considering fog of war
           const isPositionVisible = this.isGridPositionVisible(worldX, worldY, canvas);
@@ -920,7 +938,6 @@ class CoverVisualization {
         standard: 0xff8c00, // Orange - standard cover
         greater: 0xd946ef, // Magenta - greater cover
       };
-
     } else if (colorblindMode == 'tritanopia') {
       colors = {
         none: 0x00b050, // Green - no cover
@@ -928,7 +945,6 @@ class CoverVisualization {
         standard: 0xff6600, // Orange - standard cover
         greater: 0xdc143c, // Crimson - greater cover
       };
-
     } else if (colorblindMode == 'achromatopsia') {
       colors = {
         none: 0x000000, // Black - no cover
@@ -936,7 +952,6 @@ class CoverVisualization {
         standard: 0x666666, // Medium gray - standard cover
         greater: 0x999999, // Light gray - greater cover
       };
-
     } else {
       colors = {
         none: 0x4caf50, // Green - no cover
@@ -945,7 +960,6 @@ class CoverVisualization {
         greater: 0xff0000, // Red - greater cover
       };
     }
-
 
     const alpha = 0.4; // Semi-transparent
     const color = colors[coverLevel] || colors.none;

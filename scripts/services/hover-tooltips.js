@@ -71,16 +71,13 @@ class HoverTooltipsImpl {
         '--pf2e-visioner-tooltip-badge-radius',
         `${borderRadius}px`,
       );
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 export const HoverTooltips = new HoverTooltipsImpl();
 
 // Backwards-compatible alias
 export const HoverTooltipsService = HoverTooltips;
-
-
-
 
 let keyTooltipTokens = new Set(); // Track tokens showing key-based tooltips
 // Initialize with default, will try to get from settings when available
@@ -296,7 +293,7 @@ export function onHighlightObjects(highlight) {
         showVisibilityIndicators(HoverTooltips.currentHoveredToken);
         try {
           showCoverIndicators(HoverTooltips.currentHoveredToken);
-        } catch (_) { }
+        } catch (_) {}
       }, 50);
     }
   }
@@ -399,7 +396,7 @@ function showVisibilityIndicators(hoveredToken) {
   // Already suppressed above if Alt overlay is active
   try {
     showCoverIndicators(hoveredToken);
-  } catch (_) { }
+  } catch (_) {}
 }
 
 /**
@@ -542,8 +539,6 @@ function showVisibilityIndicatorsForToken(observerToken, forceMode = null) {
   }
 }
 
-
-
 /**
  * Compute auto-cover fresh (ignoring stored maps) and render cover-only badges above targets.
  * Does not affect any visibility states.
@@ -567,7 +562,7 @@ export function showAutoCoverComputedOverlay(sourceToken) {
         addCoverIndicator(target, sourceToken, state, 'target');
       }
     }
-  } catch (_) { }
+  } catch (_) {}
 }
 
 export function hideAutoCoverComputedOverlay() {
@@ -710,7 +705,7 @@ function addVisibilityIndicator(
       const coverState = coverMap[relationToken.document.id] || 'none';
       if (coverState !== 'none') coverConfig = COVER_STATES[coverState];
     }
-  } catch (_) { }
+  } catch (_) {}
 
   // Compute aligned positions using world->screen transform
   const globalPoint = canvas.tokens.toGlobal(new PIXI.Point(indicator.x, indicator.y));
@@ -753,7 +748,7 @@ function addVisibilityIndicator(
         const coverMap = getCoverMap(coverMapSource);
         coverStateName = coverMap[relationToken.document.id] || 'none';
       }
-    } catch (_) { }
+    } catch (_) {}
     indicator._coverBadgeEl = placeBadge(
       coverLeft,
       centerY,
@@ -764,7 +759,13 @@ function addVisibilityIndicator(
   } else {
     // Only visibility badge, centered
     const visLeft = centerX - badgeWidth / 2;
-    indicator._visBadgeEl = placeBadge(visLeft, centerY, visibilityState, config.icon, 'visibility');
+    indicator._visBadgeEl = placeBadge(
+      visLeft,
+      centerY,
+      visibilityState,
+      config.icon,
+      'visibility',
+    );
   }
 
   HoverTooltips.visibilityIndicators.set(targetToken.id, indicator);
@@ -778,11 +779,11 @@ function ensureBadgeTicker() {
   HoverTooltips.badgeTicker = () => {
     try {
       updateBadgePositions();
-    } catch (_) { }
+    } catch (_) {}
   };
   try {
     canvas.app.ticker.add(HoverTooltips.badgeTicker);
-  } catch (_) { }
+  } catch (_) {}
 }
 
 function updateBadgePositions() {
@@ -883,31 +884,32 @@ function addCoverIndicator(targetToken, observerToken, coverState) {
   const colorblindMode = game.settings.get(MODULE_ID, 'colorblindMode');
   const colorblindmodeMap = {
     protanopia: {
-      none: "#0072b2",
-      lesser: "#f0e442",
-      standard: "#cc79a7",
-      greater: "#9467bd",
+      none: '#0072b2',
+      lesser: '#f0e442',
+      standard: '#cc79a7',
+      greater: '#9467bd',
     },
     deuteranopia: {
-      none: "#0072b2", /* Blue instead of green */
-      lesser: "#f0e442", /* Yellow */
-      standard: "#ff8c00", /* Orange (safe for green-blind) */
-      greater: "#d946ef", /* Magenta instead of red */
+      none: '#0072b2' /* Blue instead of green */,
+      lesser: '#f0e442' /* Yellow */,
+      standard: '#ff8c00' /* Orange (safe for green-blind) */,
+      greater: '#d946ef' /* Magenta instead of red */,
     },
     tritanopia: {
-      none: "#00b050",
-      lesser: "#ffd700",
-      standard: "#ff6600",
-      greater: "#dc143c",
+      none: '#00b050',
+      lesser: '#ffd700',
+      standard: '#ff6600',
+      greater: '#dc143c',
     },
     achromatopsia: {
-      none: "#ffffff", /* White - highest contrast */
-      lesser: "#cccccc", /* Light gray */
-      standard: "#888888", /* Medium gray */
-      greater: "#333333", /* Dark gray */
+      none: '#ffffff' /* White - highest contrast */,
+      lesser: '#cccccc' /* Light gray */,
+      standard: '#888888' /* Medium gray */,
+      greater: '#333333' /* Dark gray */,
     },
   };
-  const color = colorblindMode !== 'none' ? colorblindmodeMap[colorblindMode][coverState] : config.color;
+  const color =
+    colorblindMode !== 'none' ? colorblindmodeMap[colorblindMode][coverState] : config.color;
   el.innerHTML = `<span style="display:inline-flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.9); border: var(--pf2e-visioner-tooltip-badge-border, 2px) solid ${color}; border-radius: ${borderRadius}px; width: ${badgeWidth}px; height: ${badgeHeight}px; color: ${color};">
     <i class="${config.icon}" style="font-size: var(--pf2e-visioner-tooltip-icon-size, 14px); line-height: 1;"></i>
   </span>`;
@@ -956,7 +958,7 @@ function hideAllVisibilityIndicators() {
         try {
           if (indicator._coverBadgeEl.parentNode)
             indicator._coverBadgeEl.parentNode.removeChild(indicator._coverBadgeEl);
-        } catch (_) { }
+        } catch (_) {}
         delete indicator._coverBadgeEl;
       }
 
@@ -979,7 +981,7 @@ function hideAllVisibilityIndicators() {
         indicator._visBadgeEl.parentNode.removeChild(indicator._visBadgeEl);
       }
       delete indicator._visBadgeEl;
-    } catch (_) { }
+    } catch (_) {}
   });
 
   // Clear the map
@@ -994,7 +996,7 @@ function hideAllVisibilityIndicators() {
       canvas.app?.ticker?.remove?.(HoverTooltips.badgeTicker);
       HoverTooltips.badgeTicker = null;
     }
-  } catch (_) { }
+  } catch (_) {}
 }
 
 /**
@@ -1003,7 +1005,7 @@ function hideAllVisibilityIndicators() {
 function hideAllCoverIndicators() {
   try {
     game.tooltip.deactivate();
-  } catch (_) { }
+  } catch (_) {}
   HoverTooltips.coverIndicators.forEach((indicator) => {
     try {
       if (indicator._coverBadgeEl && indicator._coverBadgeEl.parentNode) {
@@ -1018,7 +1020,7 @@ function hideAllCoverIndicators() {
       }
       if (indicator.parent) indicator.parent.removeChild(indicator);
       indicator.destroy({ children: true, texture: true, baseTexture: true });
-    } catch (_) { }
+    } catch (_) {}
   });
   HoverTooltips.coverIndicators.clear();
   // Stop ticker if nothing remains
@@ -1031,7 +1033,7 @@ function hideAllCoverIndicators() {
       canvas.app?.ticker?.remove?.(HoverTooltips.badgeTicker);
       HoverTooltips.badgeTicker = null;
     }
-  } catch (_) { }
+  } catch (_) {}
 }
 
 /**

@@ -1,0 +1,1018 @@
+/*
+ * Dialog Layout Styles - Simplified for maximum compatibility
+ * All styles scoped to .pf2e-visioner to avoid conflicts
+ */
+
+/* Import shared UI component styles */
+@import url('shared-ui-components.css');
+
+.pf2e-visioner {
+  /* Force dialog to have a fixed height */
+  .point-out-preview-dialog,
+  .seek-preview-dialog,
+  .hide-preview-dialog,
+  .sneak-preview-dialog,
+  .create-a-diversion-preview-dialog,
+  .consequences-preview-dialog,
+  .take-cover-preview-dialog {
+    height: 600px;
+  }
+
+  /* Force dialog content to be full height */
+  .point-out-preview-dialog .window-content,
+  .seek-preview-dialog .window-content,
+  .hide-preview-dialog .window-content,
+  .sneak-preview-dialog .window-content,
+  .create-a-diversion-preview-dialog .window-content,
+  .consequences-preview-dialog .window-content,
+  .take-cover-preview-dialog .window-content {
+    height: 100%;
+    padding: 10px;
+    overflow: hidden;
+  }
+
+  /* Force content wrapper to be flex with full height */
+  .point-out-preview-content,
+  .seek-preview-content,
+  .hide-preview-content,
+  .sneak-preview-content,
+  .create-a-diversion-preview-content,
+  .consequences-preview-content,
+  .take-cover-preview-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Force header to not grow */
+  .actor-info,
+  .hider-info,
+  .attacker-info,
+  .encounter-filter-section {
+    flex: 0 0 auto;
+  }
+
+  /* Force table container to grow and scroll */
+  .results-table-container {
+    flex: 1 1 auto;
+    overflow-y: scroll !important;
+    overflow-x: hidden;
+    border: 1px solid var(--color-border-light-primary);
+    margin-bottom: 10px;
+    /* Default scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(73, 80, 87, 0.6) transparent;
+  }
+
+  /* Force footer to not grow */
+  .point-out-preview-dialog-bulk-actions-header,
+  .seek-preview-dialog-bulk-actions-header,
+  .hide-preview-dialog-bulk-actions-header,
+  .sneak-preview-dialog-bulk-actions-header,
+  .create-a-diversion-preview-dialog-bulk-actions-header,
+  .consequences-preview-dialog-bulk-actions-header,
+  .take-cover-preview-dialog-bulk-actions-header {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--color-border-light-primary);
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Basic table styling */
+  .visibility-table,
+  .point-out-results-table,
+  .seek-results-table,
+  .hide-results-table,
+  .sneak-results-table,
+  .create-a-diversion-results-table,
+  .consequences-results-table,
+  .take-cover-results-table {
+    width: 100%;
+  }
+
+  /* Sticky headers */
+  .results-table-container thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Name column word wrapping */
+  .token-name strong,
+  .hider-name,
+  .seeker-name,
+  .attacker-name,
+  .diverter-name,
+  .sneaker-name,
+  .actor-name,
+  .observer-name {
+    white-space: normal;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto; /* Allows hyphenation for very long words */
+  }
+
+  .results-table-container td.token-name {
+    white-space: normal;
+    word-wrap: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    max-width: 150px; /* Forces wrapping when needed */
+  }
+
+  /* Token image clickable styling */
+  .token-image img {
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    border-radius: 4px;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Row styling */
+  .results-table-container tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Selection-based highlight parity with token manager */
+  .results-table-container tr.token-row.row-hover,
+  .results-table-container tr[data-token-id].row-hover {
+    outline: 2px solid var(--pf2e-visioner-primary);
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 2px var(--visibility-hidden-bg-strong);
+    background: var(--visibility-hidden-bg) !important;
+  }
+
+  /* Theme-colored row highlight per dialog */
+  .seek-preview-dialog .results-table-container tr.row-hover,
+  .seek-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-info);
+    box-shadow: inset 0 0 0 2px rgba(44, 90, 160, 0.35);
+    background: rgba(44, 90, 160, 0.1) !important;
+  }
+
+  .hide-preview-dialog .results-table-container tr.row-hover,
+  .hide-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-purple);
+    box-shadow: inset 0 0 0 2px rgba(142, 36, 170, 0.35);
+    background: rgba(142, 36, 170, 0.1) !important;
+  }
+
+  .point-out-preview-dialog .results-table-container tr.row-hover,
+  .point-out-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-warning);
+    box-shadow: inset 0 0 0 2px var(--visibility-hidden-bg-strong);
+    background: var(--visibility-hidden-bg) !important;
+  }
+
+  .sneak-preview-dialog .results-table-container tr.row-hover,
+  .sneak-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-gray);
+    box-shadow: inset 0 0 0 2px rgba(108, 117, 125, 0.35);
+    background: rgba(108, 117, 125, 0.1) !important;
+  }
+
+  .create-a-diversion-preview-dialog .results-table-container tr.row-hover,
+  .create-a-diversion-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-teal);
+    box-shadow: inset 0 0 0 2px rgba(23, 162, 184, 0.35);
+    background: rgba(23, 162, 184, 0.1) !important;
+  }
+
+  .consequences-preview-dialog .results-table-container tr.row-hover,
+  .consequences-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-danger);
+    box-shadow: inset 0 0 0 2px rgba(220, 53, 69, 0.35);
+    background: rgba(220, 53, 69, 0.1) !important;
+  }
+
+  /* Take Cover - Brown */
+  .take-cover-preview-dialog .results-table-container tr.row-hover,
+  .take-cover-preview-dialog .results-table-container tr[data-token-id].row-hover {
+    outline-color: var(--pf2e-visioner-brown);
+    box-shadow: inset 0 0 0 2px rgba(121, 85, 72, 0.35);
+    background: rgba(121, 85, 72, 0.1) !important;
+  }
+
+  /* WebKit scrollbar styling (default) */
+  .results-table-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .results-table-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(73, 80, 87, 0.6);
+    border-radius: 4px;
+  }
+
+  .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(73, 80, 87, 0.8);
+  }
+
+  /* Theme-specific styling */
+
+  /* Hide - Purple */
+  .hide-preview-dialog .results-table-container {
+    scrollbar-color: rgba(142, 36, 170, 0.6) transparent;
+  }
+
+  .hide-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(142, 36, 170, 0.6);
+  }
+
+  .hide-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(142, 36, 170, 0.8);
+  }
+
+  .hide-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-purple);
+    color: white;
+  }
+
+  /* Seek - Blue */
+  .seek-preview-dialog .results-table-container {
+    scrollbar-color: rgba(44, 90, 160, 0.6) transparent;
+  }
+
+  .seek-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(44, 90, 160, 0.6);
+  }
+
+  .seek-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(44, 90, 160, 0.8);
+  }
+
+  .seek-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-info);
+    color: white;
+  }
+
+  /* Point Out - Orange */
+  .point-out-preview-dialog .results-table-container {
+    scrollbar-color: var(--visibility-hidden) transparent;
+  }
+
+  .point-out-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: var(--visibility-hidden);
+  }
+
+  .point-out-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--visibility-hidden);
+  }
+
+  .point-out-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-warning);
+    color: white;
+  }
+
+  /* Override any CSS variable backgrounds that might be interfering */
+  .point-out-preview-dialog .results-table-container tbody tr[style*='--color-bg-primary'],
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background: var(--color-bg-primary'],
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background-color: var(--color-bg-primary'] {
+    background: transparent !important;
+  }
+
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='--color-bg-primary']:nth-child(even),
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background: var(--color-bg-primary']:nth-child(even),
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background-color: var(--color-bg-primary']:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Sneak - Gray */
+  .sneak-preview-dialog .results-table-container {
+    scrollbar-color: rgba(108, 117, 125, 0.6) transparent;
+  }
+
+  .sneak-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(108, 117, 125, 0.6);
+  }
+
+  .sneak-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(108, 117, 125, 0.8);
+  }
+
+  .sneak-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-gray);
+    color: white;
+  }
+
+  /* Create a Diversion - Teal */
+  .create-a-diversion-preview-dialog .results-table-container {
+    scrollbar-color: rgba(23, 162, 184, 0.6) transparent;
+  }
+
+  .create-a-diversion-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(23, 162, 184, 0.6);
+  }
+
+  .create-a-diversion-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(23, 162, 184, 0.8);
+  }
+
+  .create-a-diversion-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-teal);
+    color: white;
+  }
+
+  /* Consequences - Red */
+  .consequences-preview-dialog .results-table-container {
+    scrollbar-color: rgba(220, 53, 69, 0.6) transparent;
+  }
+
+  .consequences-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(220, 53, 69, 0.6);
+  }
+
+  .consequences-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(220, 53, 69, 0.8);
+  }
+
+  .consequences-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-danger);
+    color: white;
+  }
+
+  /* Take Cover - Brown theme */
+  .take-cover-preview-dialog .results-table-container {
+    scrollbar-color: rgba(121, 85, 72, 0.6) transparent;
+  }
+  .take-cover-preview-dialog .results-table-container::-webkit-scrollbar-thumb {
+    background: rgba(121, 85, 72, 0.6);
+  }
+  .take-cover-preview-dialog .results-table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(121, 85, 72, 0.8);
+  }
+  .take-cover-preview-dialog .results-table-container thead th {
+    background-color: var(--pf2e-visioner-brown);
+    color: var(--color-text-light-primary);
+  }
+
+  /* Visibility change layout for consequences dialog */
+  .consequences-preview-dialog .visibility-change {
+    width: 100px;
+  }
+
+  /* Visibility change layout for consequences dialog */
+  .consequences-preview-dialog .actions {
+    width: 50px;
+  }
+
+  .consequences-preview-dialog .visibility-change-with-override {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .consequences-preview-dialog .visibility-arrow {
+    color: var(--color-text-dark-secondary);
+    font-size: 14px;
+    margin: 0 4px;
+  }
+
+  .consequences-preview-dialog .override-icons {
+    display: flex;
+    gap: 4px;
+  }
+
+  /* State icon styling for consequences dialog */
+  .consequences-preview-dialog .override-icons .state-icon {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+  }
+
+  /* State icon colors are now inline in the template */
+
+  /* Animation for initial outcome */
+  @keyframes initialGlow {
+    0% {
+      box-shadow: 0 0 8px var(--visibility-observed);
+      border-color: var(--visibility-observed);
+      transform: scale(1.05);
+    }
+    50% {
+      box-shadow: 0 0 20px var(--visibility-observed);
+      border-color: var(--cover-none);
+      transform: scale(1.1);
+    }
+    100% {
+      box-shadow: 0 0 8px var(--visibility-observed);
+      border-color: var(--visibility-observed);
+      transform: scale(1.05);
+    }
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon.initial-outcome {
+    animation: initialGlow 1.5s ease-in-out infinite;
+    border: 2px solid var(--visibility-observed) !important;
+    background-color: var(--visibility-observed-bg);
+  }
+
+  /* Selected state styling for each visibility state */
+  .consequences-preview-dialog .override-icons .state-icon[data-state='observed'].selected {
+    background: var(--visibility-observed-bg-strong);
+    border: 2px solid var(--visibility-observed);
+    box-shadow: 0 0 8px var(--visibility-observed);
+    transform: scale(1.1);
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon[data-state='concealed'].selected {
+    background: rgba(255, 193, 7, 0.2);
+    border: 2px solid var(--visibility-concealed);
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
+    transform: scale(1.1);
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon[data-state='hidden'].selected {
+    background: var(--visibility-hidden-bg-strong);
+    border: 2px solid var(--visibility-hidden);
+    box-shadow: 0 0 8px rgba(255, 102, 0, 0.5);
+    transform: scale(1.1);
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon[data-state='undetected'].selected {
+    background: var(--visibility-undetected-bg-strong);
+    border: 2px solid var(--visibility-undetected);
+    box-shadow: 0 0 8px var(--visibility-undetected);
+    transform: scale(1.1);
+  }
+
+  /* Selected dot indicator for each visibility state */
+  .consequences-preview-dialog .override-icons .state-icon[data-state='observed'].selected::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--visibility-observed);
+    border-radius: 50%;
+    border: 1px solid var(--color-text-light-primary);
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon[data-state='concealed'].selected::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--visibility-concealed);
+    border-radius: 50%;
+    border: 1px solid var(--color-text-light-primary);
+  }
+
+  .consequences-preview-dialog .override-icons .state-icon[data-state='hidden'].selected::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--visibility-hidden);
+    border-radius: 50%;
+    border: 1px solid var(--color-text-light-primary);
+  }
+
+  .consequences-preview-dialog
+    .override-icons
+    .state-icon[data-state='undetected'].selected::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--visibility-undetected);
+    border-radius: 50%;
+    border: 1px solid var(--color-text-light-primary);
+  }
+
+  /* Bulk action buttons styling */
+  .bulk-action-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    background: var(--color-bg-option);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  .bulk-action-btn:hover {
+    background: var(--color-bg-option-active);
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .bulk-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .bulk-action-btn.apply-all {
+    background: var(--color-bg-btn-primary);
+    color: var(--color-text-light-primary);
+    border-color: var(--color-border-highlight-alt);
+  }
+
+  .bulk-action-btn.apply-all:hover:not(:disabled) {
+    background: var(--color-bg-btn-primary-active);
+    border-color: var(--color-border-highlight);
+  }
+
+  .bulk-action-btn.revert-all {
+    background: var(--color-bg-btn-secondary);
+    color: var(--color-text-light-primary);
+    border-color: var(--color-border-light-primary);
+  }
+
+  .bulk-action-btn.revert-all:hover:not(:disabled) {
+    background: var(--color-bg-btn-secondary-active);
+    border-color: var(--color-border-highlight);
+  }
+
+  /* Row action buttons styling */
+  .row-action-btn {
+    width: 30px;
+    height: 30px;
+    margin: 0 3px;
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 4px;
+    background: var(--color-bg-option);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .row-action-btn:hover {
+    background: var(--color-bg-option-active);
+    border-color: var(--color-border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .row-action-btn.apply-change {
+    background: var(--color-bg-btn-primary);
+    color: var(--color-text-light-primary);
+    border-color: var(--color-bg-btn-primary);
+  }
+
+  .row-action-btn.apply-change:hover {
+    background: var(--color-bg-btn-primary-active);
+    border-color: var(--color-bg-btn-primary-active);
+  }
+
+  .row-action-btn.revert-change {
+    background: var(--color-bg-btn-secondary);
+    color: var(--color-text-dark-primary);
+    border-color: var(--color-bg-btn-secondary);
+  }
+
+  .row-action-btn.revert-change:hover {
+    background: var(--color-bg-btn-secondary-active);
+    border-color: var(--color-bg-btn-secondary-active);
+  }
+
+  /* Action buttons styling for specific dialogs */
+  .consequences-preview-dialog .row-action-btn {
+    width: 30px;
+    height: 30px;
+    margin: 0 3px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Wall Manager specific styles */
+  .pf2e-visioner-wall-manager {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .search-filter-container {
+      flex-wrap: wrap;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .search-filter-container > div {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .search-filter-container input,
+    .search-filter-container select {
+      padding: 4px 8px;
+      border: 1px solid var(--color-border-light-primary);
+      border-radius: 3px;
+      background: var(--color-bg-input);
+      color: var(--color-text-primary);
+      font-size: 12px;
+    }
+
+    .search-filter-container input:focus,
+    .search-filter-container select:focus {
+      outline: none;
+      border-color: var(--color-text-hyperlink);
+      box-shadow: 0 0 3px rgba(255, 152, 0, 0.3);
+    }
+
+    /* Fix dropdown option styling for better contrast */
+    .search-filter-container select option {
+      background: var(--color-bg-primary, #2a2a2a);
+      color: var(--color-text-primary, #ffffff);
+      padding: 4px 8px;
+    }
+
+    .search-filter-container select option:hover {
+      background: var(--color-bg-option-hover, #3a3a3a);
+    }
+
+    .search-filter-container select option:checked {
+      background: var(--color-bg-option-active, #4a4a4a);
+      color: var(--color-text-light-primary, #ffffff);
+    }
+
+    .table-container {
+      flex: 1;
+      min-height: 0;
+      height: 400px;
+      max-height: 400px;
+      background: var(--color-bg-primary);
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      overflow: auto;
+      position: relative;
+    }
+
+    .table-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+      background: var(--color-scrollbar-track);
+      border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+      background: var(--color-scrollbar-thumb);
+      border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover {
+      background: var(--color-scrollbar-thumb-hover);
+    }
+
+    .sticky-header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+    }
+
+    .sticky-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 999 !important;
+      background: var(--color-bg-header, #2a2a2a) !important;
+    }
+
+    .sticky-row {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 999 !important;
+      background: var(--color-bg-header, #2a2a2a) !important;
+    }
+
+    .sticky-header th {
+      padding: 8px;
+      border-bottom: 2px solid var(--color-border-dark);
+      font-weight: bold;
+      text-align: center;
+      background: var(--color-bg-header, #2a2a2a) !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 999 !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .sticky-header-table tbody td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--color-border-light);
+      vertical-align: middle;
+    }
+
+    .sticky-header-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .wall-count {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      flex-shrink: 0;
+      margin-bottom: 8px;
+    }
+
+    .header-actions .visioner-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--color-border-light-primary);
+      border-radius: 4px;
+      background: var(--color-bg-btn-secondary, #6c757d);
+      color: var(--color-text-btn-secondary, #ffffff);
+      font-weight: 500;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-actions .visioner-btn:hover {
+      background: var(--color-bg-btn-secondary-hover, #5a6268);
+      border-color: var(--color-border-hover, var(--color-text-hyperlink));
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .header-actions .visioner-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-actions .visioner-btn i {
+      font-size: 11px;
+    }
+
+    /* Bulk cover button styling */
+    .header-actions .visioner-btn[data-action='bulkCoverAuto'] {
+      background: var(--color-bg-btn-secondary, #6c757d);
+      border-color: var(--color-border-light-primary);
+    }
+
+    .header-actions .visioner-btn[data-action='bulkCoverNone'] {
+      background: var(--cover-none-bg, #dc3545);
+      border-color: var(--cover-none-border, #dc3545);
+      color: var(--cover-none-text, #ffffff);
+    }
+
+    .header-actions .visioner-btn[data-action='bulkCoverStandard'] {
+      background: var(--cover-standard-bg, #fd7e14);
+      border-color: var(--cover-standard-border, #fd7e14);
+      color: var(--cover-standard-text, #ffffff);
+    }
+
+    .header-actions .visioner-btn[data-action='bulkCoverGreater'] {
+      background: var(--cover-greater-bg, #e83e8c);
+      border-color: var(--cover-greater-border, #e83e8c);
+      color: var(--cover-greater-text, #ffffff);
+    }
+
+    .header-actions .visioner-btn[data-action='bulkCoverNone']:hover {
+      background: var(--cover-none-bg-hover, #c82333);
+      border-color: var(--cover-none-border-hover, #c82333);
+    }
+
+    .header-actions .visioner-btn[data-action='bulkCoverStandard']:hover {
+      background: var(--cover-standard-bg-hover, #e8690b);
+      border-color: var(--cover-standard-border-hover, #e8690b);
+    }
+
+    .header-actions .visioner-btn[data-action='bulkCoverGreater']:hover {
+      background: var(--cover-greater-bg-hover, #d63384);
+      border-color: var(--cover-greater-border-hover, #d63384);
+    }
+
+    .sheet-footer {
+      flex-shrink: 0;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--color-border-light);
+      background: var(--color-bg-primary);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .sheet-footer .visioner-btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .sheet-footer .visioner-btn.visioner-primary {
+      background: var(--color-bg-btn-primary, #28a745);
+      color: var(--color-text-btn-primary, #ffffff);
+      border-color: var(--color-border-btn-primary, #28a745);
+    }
+
+    .sheet-footer .visioner-btn.visioner-primary:hover {
+      background: var(--color-bg-btn-primary-hover, #218838);
+      border-color: var(--color-border-btn-primary-hover, #218838);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .sheet-footer .visioner-btn:not(.visioner-primary) {
+      background: var(--color-bg-btn-secondary, #6c757d);
+      color: var(--color-text-btn-secondary, #ffffff);
+      border-color: var(--color-border-btn-secondary, #6c757d);
+    }
+
+    .sheet-footer .visioner-btn:not(.visioner-primary):hover {
+      background: var(--color-bg-btn-secondary-hover, #5a6268);
+      border-color: var(--color-border-btn-secondary-hover, #5a6268);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .sheet-footer .visioner-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .sheet-footer .visioner-btn i {
+      margin-right: 6px;
+    }
+
+    .cover-override-buttons {
+      gap: 2px !important;
+    }
+
+    .cover-override-buttons .visioner-icon-btn {
+      min-width: 28px;
+      height: 28px;
+      padding: 4px;
+      font-size: 12px;
+    }
+
+    .wall-type-select {
+      width: 100%;
+      max-width: 100px;
+      padding: 4px 6px;
+      border: 1px solid var(--color-border-light-primary);
+      border-radius: 3px;
+      background: var(--color-bg-input);
+      color: var(--color-text-primary);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .wall-type-select:focus {
+      outline: none;
+      border-color: var(--color-text-hyperlink);
+      box-shadow: 0 0 3px rgba(255, 152, 0, 0.3);
+    }
+
+    .wall-type-select:hover {
+      border-color: var(--color-border-hover, var(--color-text-hyperlink));
+    }
+
+    .wall-type-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .wall-type-button {
+      background: none;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      padding: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wall-type-button:hover {
+      border-color: var(--color-text-hyperlink, #ff9800);
+      background: rgba(255, 152, 0, 0.1);
+      transform: scale(1.05);
+    }
+
+    .wall-type-button:active {
+      transform: scale(0.95);
+    }
+
+    .wall-type-button img {
+      display: block;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .wall-dc-input {
+      width: 100%;
+      max-width: 60px;
+      padding: 4px 6px;
+      border: 1px solid var(--color-border-light-primary);
+      border-radius: 3px;
+      background: var(--color-bg-input);
+      color: var(--color-text-primary);
+      font-size: 11px;
+      text-align: center;
+      cursor: text;
+    }
+
+    .wall-dc-input:focus {
+      outline: none;
+      border-color: var(--color-text-hyperlink);
+      box-shadow: 0 0 3px rgba(255, 152, 0, 0.3);
+    }
+
+    .wall-dc-input:hover {
+      border-color: var(--color-border-hover, var(--color-text-hyperlink));
+    }
+
+    .wall-dc-input::placeholder {
+      color: var(--color-text-secondary);
+      opacity: 0.7;
+    }
+
+    /* Responsive design for smaller screens */
+    @media (max-width: 800px) {
+      .search-filter-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-filter-container > div {
+        justify-content: space-between;
+      }
+
+      .search-filter-container input {
+        min-width: unset;
+        flex: 1;
+      }
+    }
+  }
+} /* End .pf2e-visioner scope */

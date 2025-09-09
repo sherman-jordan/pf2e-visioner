@@ -99,10 +99,32 @@
   /* Name column word wrapping */
   .token-name strong {
     white-space: normal;
-    word-wrap: break-word;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto; /* Allows hyphenation for very long words */
   }
 
+  .results-table-container td.token-name {
+    white-space: normal;
+    word-wrap: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    max-width: 150px; /* Forces wrapping when needed */
+  }
 
+  /* Token image clickable styling */
+  .token-image img {
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    border-radius: 4px;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    margin: 0 auto;
+  }
 
   /* Row styling */
   .results-table-container tr:nth-child(even) {

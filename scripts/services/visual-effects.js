@@ -99,7 +99,7 @@ export async function cleanupDeletedWallVisuals(wallDocument) {
       canvas.effects,
       canvas.walls,
       canvas.interface,
-      canvas.stage  // Sometimes indicators can end up here
+      canvas.stage, // Sometimes indicators can end up here
     ].filter(Boolean);
 
     // Look for any PIXI graphics objects that might be orphaned wall indicators
@@ -110,9 +110,11 @@ export async function cleanupDeletedWallVisuals(wallDocument) {
       for (const child of container.children) {
         try {
           // Check if this is a wall indicator that belongs to the deleted wall
-          if (child._pvWallId === wallId ||
+          if (
+            child._pvWallId === wallId ||
             child._wallDocumentId === wallId ||
-            (child._associatedWallId && child._associatedWallId === wallId)) {
+            (child._associatedWallId && child._associatedWallId === wallId)
+          ) {
             toRemove.push(child);
           }
 
@@ -146,8 +148,10 @@ export async function cleanupDeletedWallVisuals(wallDocument) {
       try {
         // Clean up hidden indicator references
         if (wall._pvHiddenIndicator) {
-          if (wall._pvHiddenIndicator._pvWallId === wallId ||
-            wall._pvHiddenIndicator._wallDocumentId === wallId) {
+          if (
+            wall._pvHiddenIndicator._pvWallId === wallId ||
+            wall._pvHiddenIndicator._wallDocumentId === wallId
+          ) {
             try {
               if (wall._pvHiddenIndicator.parent) {
                 wall._pvHiddenIndicator.parent.removeChild(wall._pvHiddenIndicator);
@@ -160,7 +164,7 @@ export async function cleanupDeletedWallVisuals(wallDocument) {
 
         // Clean up see-through masks
         if (wall._pvSeeThroughMasks && Array.isArray(wall._pvSeeThroughMasks)) {
-          const filteredMasks = wall._pvSeeThroughMasks.filter(mask => {
+          const filteredMasks = wall._pvSeeThroughMasks.filter((mask) => {
             if (mask._pvWallId === wallId || mask._wallDocumentId === wallId) {
               try {
                 if (mask.parent) mask.parent.removeChild(mask);
@@ -193,7 +197,7 @@ export async function cleanupDeletedWallVisuals(wallDocument) {
             delete newWallMap[wallId];
             tokenUpdates.push({
               _id: token.id,
-              [`flags.${MODULE_ID}.walls`]: newWallMap
+              [`flags.${MODULE_ID}.walls`]: newWallMap,
             });
           }
         } catch (_) { }
@@ -212,10 +216,9 @@ export async function cleanupDeletedWallVisuals(wallDocument) {
         refreshLighting: false,
         refreshVision: false,
         refreshOcclusion: false,
-        refreshEffects: true
+        refreshEffects: true,
       });
-    } catch (_) { }
-
+    } catch (_) {}
   } catch (error) {
     console.warn(`[${MODULE_ID}] Error cleaning up deleted wall visuals:`, error);
   }

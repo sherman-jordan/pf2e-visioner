@@ -15,7 +15,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       icon: 'fas fa-grip-lines-vertical',
       resizable: true,
     },
-    position: { width: 600, height: 600 },
+    position: { width: 650, height: 600 },
     actions: {
       apply: VisionerWallManager._onApply,
       close: VisionerWallManager._onClose,
@@ -75,7 +75,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       this._bindSelectionSync(content);
       this._bindCoverToggle(content);
       this._bindSearchAndFilter(content);
-    } catch (_) { }
+    } catch (_) {}
     return content;
   }
 
@@ -95,12 +95,12 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       const updates = [];
       const byId = new Map();
       // Read inputs directly so unchecked checkboxes are captured as false
-      const inputs = form.querySelectorAll('input[name^="wall."], select[name^="wall."], button[data-wall-id][data-cover-override]');
+      const inputs = form.querySelectorAll(
+        'input[name^="wall."], select[name^="wall."], button[data-wall-id][data-cover-override]',
+      );
       inputs.forEach((input) => {
         const name = input.getAttribute('name') || '';
-        const m = name.match(
-          /^wall\.(?<id>[^.]+)\.(?<field>hiddenWall|identifier|dc|doorType)$/,
-        );
+        const m = name.match(/^wall\.(?<id>[^.]+)\.(?<field>hiddenWall|identifier|dc|doorType)$/);
         if (m) {
           const { id, field } = m.groups;
           if (!byId.has(id)) byId.set(id, {});
@@ -137,7 +137,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
       // Prepare update patches - only include walls that actually have changes
       const walls = (canvas?.walls?.placeables || []).map((w) => w.document);
-      const wallsById = new Map(walls.map(w => [w.id, w]));
+      const wallsById = new Map(walls.map((w) => [w.id, w]));
 
       for (const [id, data] of byId.entries()) {
         const wallDoc = wallsById.get(id);
@@ -225,7 +225,10 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         }
 
         // Create progress bar with batch count instead of individual walls
-        const progressBar = new VisionerProgress(`Applying Changes to ${updates.length} Walls`, wallBatches.length + 1);
+        const progressBar = new VisionerProgress(
+          `Applying Changes to ${updates.length} Walls`,
+          wallBatches.length + 1,
+        );
 
         try {
           progressBar.render(true);
@@ -236,13 +239,11 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             const start = batchIndex * batchSize + 1;
             const end = Math.min((batchIndex + 1) * batchSize, updates.length);
 
-
             // Update progress only at batch boundaries
             progressBar.setProgress(batchIndex, wallBatches.length + 1);
 
             // Process the entire batch at once
             await canvas.scene?.updateEmbeddedDocuments?.('Wall', batch, { diff: false });
-
           }
 
           // Visual effects update - skip for large updates to improve performance
@@ -254,10 +255,15 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
               const { updateWallVisuals } = await import('../../services/visual-effects.js');
               await updateWallVisuals();
             } catch (visualError) {
-              console.warn(`[${MODULE_ID}] Visual effects update failed (non-critical):`, visualError);
+              console.warn(
+                `[${MODULE_ID}] Visual effects update failed (non-critical):`,
+                visualError,
+              );
             }
           } else {
-            ui.notifications?.info?.(`Applied changes to ${updates.length} walls. Refresh the scene if visual effects need updating.`);
+            ui.notifications?.info?.(
+              `Applied changes to ${updates.length} walls. Refresh the scene if visual effects need updating.`,
+            );
           }
 
           progressBar.close();
@@ -266,7 +272,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             ui.notifications?.info?.(`Applied changes to ${updates.length} walls successfully!`);
           }
           // Note: notification for large batches is already shown above
-
         } catch (error) {
           progressBar.close();
           ui.notifications?.error?.(`Failed to apply wall changes: ${error.message}`);
@@ -280,14 +285,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       console.error(`[${MODULE_ID}] Wall Manager apply failed`, e);
       try {
         await app.close();
-      } catch (_) { }
+      } catch (_) {}
     }
   }
 
   static async _onClose(_event, _button) {
     try {
       await this.close();
-    } catch (_) { }
+    } catch (_) {}
   }
 
   static async _onSelectWall(event, button) {
@@ -310,7 +315,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       try {
         // Release all currently selected walls
         wall.layer?.releaseAll?.();
-      } catch (_) { }
+      } catch (_) {}
 
       try {
         // Select the target wall
@@ -318,7 +323,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       } catch (_) {
         try {
           wall.control?.();
-        } catch (_) { }
+        } catch (_) {}
       }
 
       try {
@@ -337,8 +342,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
         setTimeout(() => {
           button.style.color = '';
         }, 1000);
-
-      } catch (_) { }
+      } catch (_) {}
     } catch (e) {
       console.warn(`[${MODULE_ID}] Select wall failed`, e);
     }
@@ -354,11 +358,11 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
   static _setAllCoverOverride(form, coverType) {
     // Remove active class from all cover override buttons
     const allButtons = form.querySelectorAll('button[data-cover-override]');
-    allButtons.forEach(btn => btn.classList.remove('active'));
+    allButtons.forEach((btn) => btn.classList.remove('active'));
 
     // Add active class to buttons matching the cover type
     const targetButtons = form.querySelectorAll(`button[data-cover-override="${coverType}"]`);
-    targetButtons.forEach(btn => btn.classList.add('active'));
+    targetButtons.forEach((btn) => btn.classList.add('active'));
   }
 
   static async _onBulkHiddenOn(event, _button) {
@@ -387,7 +391,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
     if (form) this.constructor._setAllCoverOverride(form, 'greater');
   }
 
-
   static async _onSetCoverOverride(event, button) {
     try {
       const wallId = button?.dataset?.wallId;
@@ -397,13 +400,14 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       // Remove active class from all cover override buttons for this wall
       const form = this.element?.querySelector?.('form.pf2e-visioner-wall-manager');
       if (form) {
-        const wallButtons = form.querySelectorAll(`button[data-wall-id="${wallId}"][data-cover-override]`);
-        wallButtons.forEach(btn => btn.classList.remove('active'));
+        const wallButtons = form.querySelectorAll(
+          `button[data-wall-id="${wallId}"][data-cover-override]`,
+        );
+        wallButtons.forEach((btn) => btn.classList.remove('active'));
       }
 
       // Always make the clicked button active (no toggle behavior - one must always be selected)
       button.classList.add('active');
-
     } catch (e) {
       console.warn(`[${MODULE_ID}] Set cover override failed`, e);
     }
@@ -427,7 +431,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             tr.style.outline = on ? '2px solid var(--color-text-hyperlink, #ff9800)' : '';
             tr.style.background = on ? 'rgba(255, 152, 0, 0.12)' : '';
           });
-        } catch (_) { }
+        } catch (_) {}
       };
       const onControl = () => highlight();
       const onDelete = async (wallDocument) => {
@@ -435,7 +439,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
           // Clean up visual effects for deleted wall first
           const { cleanupDeletedWallVisuals } = await import('../../services/visual-effects.js');
           await cleanupDeletedWallVisuals(wallDocument);
-        } catch (_) { }
+        } catch (_) {}
         highlight();
       };
       Hooks.on('controlWall', onControl);
@@ -446,24 +450,24 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       this._unbindSelectionSync = () => {
         try {
           Hooks.off('controlWall', onControl);
-        } catch (_) { }
+        } catch (_) {}
         try {
           Hooks.off('deleteWall', onDelete);
-        } catch (_) { }
+        } catch (_) {}
         try {
           Hooks.off('createWall', onControl);
-        } catch (_) { }
+        } catch (_) {}
         try {
           Hooks.off('updateWall', onControl);
-        } catch (_) { }
+        } catch (_) {}
         this._unbindSelectionSync = null;
       };
       this.once?.('close', () => {
         try {
           this._unbindSelectionSync?.();
-        } catch (_) { }
+        } catch (_) {}
       });
-    } catch (_) { }
+    } catch (_) {}
   }
 
   _bindCoverToggle(root) {
@@ -499,7 +503,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
           let visibleCount = 0;
 
-          allRows.forEach(row => {
+          allRows.forEach((row) => {
             const wallId = row.getAttribute('data-wall-id') || '';
             const identifierInput = row.querySelector('input[name$=".identifier"]');
             const identifier = (identifierInput?.value || '').toLowerCase();
@@ -511,7 +515,9 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
             const wallType = typeInput?.value || '0';
 
             // Get cover override from active button
-            const activeCoverButton = row.querySelector('.cover-override-buttons .active[data-cover-override]');
+            const activeCoverButton = row.querySelector(
+              '.cover-override-buttons .active[data-cover-override]',
+            );
             const coverOverride = activeCoverButton?.getAttribute('data-cover-override') || 'auto';
 
             // Apply filters
@@ -526,18 +532,18 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
             // Type filter
             if (typeValue !== '') {
-              matches = matches && (wallType === typeValue);
+              matches = matches && wallType === typeValue;
             }
 
             // Hidden filter
             if (hiddenValue !== '') {
               const expectedHidden = hiddenValue === 'true';
-              matches = matches && (isHidden === expectedHidden);
+              matches = matches && isHidden === expectedHidden;
             }
 
             // Cover filter
             if (coverValue !== '') {
-              matches = matches && (coverOverride === coverValue);
+              matches = matches && coverOverride === coverValue;
             }
 
             // Show/hide row
@@ -547,7 +553,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
           // Update visible count
           if (visibleCountSpan) visibleCountSpan.textContent = visibleCount;
-
         } catch (e) {
           console.warn(`[${MODULE_ID}] Filter application failed`, e);
         }
@@ -576,8 +581,10 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       });
 
       // Also apply filters when cover override buttons are clicked
-      const coverButtons = table.querySelectorAll('.cover-override-buttons button[data-cover-override]');
-      coverButtons.forEach(button => {
+      const coverButtons = table.querySelectorAll(
+        '.cover-override-buttons button[data-cover-override]',
+      );
+      coverButtons.forEach((button) => {
         button.addEventListener('click', () => {
           // Small delay to let the active class update first
           setTimeout(applyFilters, 50);
@@ -586,7 +593,7 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
       // Apply filters when wall type buttons are clicked
       const typeButtons = table.querySelectorAll('.wall-type-button');
-      typeButtons.forEach(button => {
+      typeButtons.forEach((button) => {
         button.addEventListener('click', (event) => {
           event.preventDefault();
           this._cycleWallType(button, event.button === 2); // true for right-click
@@ -603,7 +610,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
 
       // Initial filter application
       applyFilters();
-
     } catch (e) {
       console.warn(`[${MODULE_ID}] Search and filter binding failed`, e);
     }
@@ -618,18 +624,20 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       if (!img) return;
 
       // Import the getWallImage utility
-      import('../../utils.js').then(({ getWallImage }) => {
-        const newSrc = getWallImage(doorType);
-        img.src = newSrc;
+      import('../../utils.js')
+        .then(({ getWallImage }) => {
+          const newSrc = getWallImage(doorType);
+          img.src = newSrc;
 
-        // Update tooltip
-        let tooltipText = 'Wall';
-        if (doorType === 1) tooltipText = 'Door';
-        else if (doorType === 2) tooltipText = 'Secret Door';
-        img.setAttribute('data-tooltip', tooltipText);
-      }).catch(e => {
-        console.warn(`[${MODULE_ID}] Failed to update wall image`, e);
-      });
+          // Update tooltip
+          let tooltipText = 'Wall';
+          if (doorType === 1) tooltipText = 'Door';
+          else if (doorType === 2) tooltipText = 'Secret Door';
+          img.setAttribute('data-tooltip', tooltipText);
+        })
+        .catch((e) => {
+          console.warn(`[${MODULE_ID}] Failed to update wall image`, e);
+        });
     } catch (e) {
       console.warn(`[${MODULE_ID}] Wall type image update failed`, e);
     }
@@ -666,7 +674,6 @@ export class VisionerWallManager extends foundry.applications.api.ApplicationV2 
       if (newType === 1) altText = 'Door';
       else if (newType === 2) altText = 'Secret Door';
       img.setAttribute('alt', altText);
-
     } catch (e) {
       console.warn(`[${MODULE_ID}] Wall type cycling failed`, e);
     }

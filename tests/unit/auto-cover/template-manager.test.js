@@ -75,22 +75,22 @@ describe('TemplateManager', () => {
       distance: 20,
       direction: 0,
       angle: 90,
-      flags: {}
+      flags: {},
     };
 
     beforeEach(() => {
       // Mock game globals
       global.game = {
         userId: 'test-user',
-        user: { character: null }
+        user: { character: null },
       };
       global.canvas = {
         tokens: {
           controlled: [],
-          placeables: []
+          placeables: [],
         },
         grid: { size: 100 },
-        dimensions: { distance: 5 }
+        dimensions: { distance: 5 },
       };
     });
 

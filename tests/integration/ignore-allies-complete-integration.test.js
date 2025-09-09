@@ -128,11 +128,11 @@ describe('Ignore Allies Complete Integration', () => {
   });
 
   describe('3. Template Integration', () => {
-    test('token-manager.hbs should have correct data-action attribute', async () => {
+    test('observer-info.hbs should have correct data-action attribute', async () => {
       const fs = await import('fs');
       const path = await import('path');
 
-      const templatePath = path.resolve('templates/token-manager.hbs');
+      const templatePath = path.resolve('templates/observer-info.hbs');
       const templateContent = fs.readFileSync(templatePath, 'utf8');
 
       // Check for the ignore allies checkbox with correct data-action

@@ -1,0 +1,41 @@
+{{!
+  Footer Action Buttons
+}}
+<footer class='sheet-footer flexrow'>
+  <button
+    type='button'
+    class='vm-action-button apply'
+    data-action='applyCurrent'
+    data-tooltip='Apply changes to the current tab only'
+  >
+    <i class='fas fa-check'></i>
+    {{localize 'PF2E_VISIONER.TOKEN_MANAGER.APPLY'}}
+  </button>
+  <button
+    type='button'
+    class='vm-action-button apply'
+    data-action='applyBoth'
+    data-tooltip='Apply changes to visibility andcover settings'
+  >
+    <i class='fas fa-layer-group'></i>
+    {{localize 'PF2E_VISIONER.TOKEN_MANAGER.APPLY_BOTH'}}
+  </button>
+  <button
+    type='button'
+    class='vm-action-button reset'
+    data-action='reset'
+    data-tooltip='Reset all changes to their original state'
+  >
+    <i class='fas fa-undo'></i>
+    {{localize 'PF2E_VISIONER.TOKEN_MANAGER.RESET'}}
+  </button>
+  <button
+    type='button'
+    class='vm-action-button cancel'
+    data-action='close'
+    data-tooltip='Close without applying any changes'
+  >
+    <i class='fas fa-times'></i>
+    {{localize 'PF2E_VISIONER.TOKEN_MANAGER.CANCEL'}}
+  </button>
+</footer>

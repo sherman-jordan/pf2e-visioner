@@ -324,8 +324,9 @@ export function markPanelComplete(panel, changes) {
     const completionMsg = `
             <div class="automation-completion">
                 <i class="fas fa-check-circle"></i>
-                <span>Applied ${changes.length} visibility change${changes.length !== 1 ? 's' : ''
-      }</span>
+                <span>Applied ${changes.length} visibility change${
+                  changes.length !== 1 ? 's' : ''
+                }</span>
             </div>
         `;
 
@@ -607,15 +608,21 @@ export function filterOutcomesByTemplate(outcomes, center, radiusFeet, tokenProp
  * @param {Array} allOutcomes - All outcomes to determine the highest cover detected (optional)
  * @returns {Object} { total, originalTotal } - Adjusted totals
  */
-export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionData, allOutcomes = []) {
-
-
+export function calculateStealthRollTotals(
+  baseTotal,
+  autoCoverResult,
+  actionData,
+  allOutcomes = [],
+) {
   // Get the original cover bonus that was applied to the base roll
   const visionerContext = actionData?.context?._visionerStealth;
   let originalCoverBonus = Number(visionerContext?.bonus || 0);
 
   // Try to get original modifier from stored map if available
-  const rollId = visionerContext?.rollId || actionData?.context?._visionerRollId || actionData?.flags?.['pf2e-visioner']?.rollId;
+  const rollId =
+    visionerContext?.rollId ||
+    actionData?.context?._visionerRollId ||
+    actionData?.flags?.['pf2e-visioner']?.rollId;
   let originalModifier = null;
 
   if (rollId && originalCoverBonus === 0) {
@@ -623,7 +630,6 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
       originalModifier = CoverModifierService.getInstance().getOriginalCoverModifier(rollId);
       if (originalModifier) {
         originalCoverBonus = Number(originalModifier.finalBonus || originalModifier.bonus || 0);
-
       }
     } catch (e) {
       console.warn('PF2E Visioner | Failed to retrieve original cover modifier:', e);
@@ -633,9 +639,9 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
   // Fallback: try roll modifiers if still no original bonus found
   if (originalCoverBonus === 0) {
     const rollModifiers = actionData?.roll?.options?.modifiers || [];
-    const coverModifier = rollModifiers.find(mod =>
-      mod.label?.toLowerCase().includes('cover') ||
-      mod.slug?.toLowerCase().includes('cover')
+    const coverModifier = rollModifiers.find(
+      (mod) =>
+        mod.label?.toLowerCase().includes('cover') || mod.slug?.toLowerCase().includes('cover'),
     );
     if (coverModifier) {
       originalCoverBonus = Number(coverModifier.modifier || 0);
@@ -648,7 +654,7 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
 
   // Check if this is an override case using the stored modifier data (more reliable)
   const wasOverridden = originalModifier?.isOverride || false;
-  const isOverride = wasOverridden || (autoCoverResult?.isOverride || false);
+  const isOverride = wasOverridden || autoCoverResult?.isOverride || false;
 
   let total = baseTotal;
   let originalTotal = null;
@@ -667,8 +673,6 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
 
     // Brackets: Show what this specific observer DETECTED (before override)
     originalTotal = baseTotal - originalCoverBonus + originalStateBonus;
-
-
   } else {
     // NORMAL CASE: Show detected cover result, no override involved
     total = baseTotal - originalCoverBonus + currentCoverBonus;
@@ -677,8 +681,6 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
     if (currentCoverBonus !== originalCoverBonus) {
       originalTotal = baseTotal;
     }
-
-
   }
 
   // Calculate base roll total (without any cover modifiers) for override display
@@ -686,8 +688,6 @@ export function calculateStealthRollTotals(baseTotal, autoCoverResult, actionDat
   if (wasOverridden || isOverride) {
     baseRollTotal = baseTotal - originalCoverBonus;
   }
-
-
 
   return { total, originalTotal, baseRollTotal };
 }

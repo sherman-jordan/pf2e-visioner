@@ -3,10 +3,7 @@
  * Handles saving throw contexts for auto-cover
  */
 
-import {
-  getCoverImageForState,
-  getCoverLabel
-} from '../../../helpers/cover-helpers.js';
+import { getCoverImageForState, getCoverLabel } from '../../../helpers/cover-helpers.js';
 import { getCoverBetween } from '../../../utils.js';
 import autoCoverSystem from '../AutoCoverSystem.js';
 import coverUIManager from '../CoverUIManager.js';
@@ -14,11 +11,10 @@ import templateManager from '../TemplateManager.js';
 import { BaseAutoCoverUseCase } from './BaseUseCase.js';
 
 const coverPredecende = {
-  'greater': 4,
-  'standard': 2,
-  'none': 0
-}
-
+  greater: 4,
+  standard: 2,
+  none: 0,
+};
 
 class SavingThrowUseCase extends BaseAutoCoverUseCase {
   constructor() {
@@ -31,8 +27,9 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
   // Lightweight helper that determines whether the current context represents an area effect
   _isAreaEffect(context) {
     try {
-      const hasArea = (context?.traits?.has?.('area') ||
-        (Array.isArray(context?.traits) && context.traits.includes('area'))) ||
+      const hasArea =
+        context?.traits?.has?.('area') ||
+        (Array.isArray(context?.traits) && context.traits.includes('area')) ||
         (Array.isArray(context?.options) && context.options.includes('area-effect')) ||
         (context?.options?.has && context.options.has('area-effect'));
       return !!hasArea;
@@ -42,11 +39,11 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
   }
 
   /**
-     * Handle a chat message context
-     * @param {Object} data - Message data
-     * @param {Object} doc - Message document (optional)
-     * @returns {Promise<Object>} Result with tokens and cover state
-     */
+   * Handle a chat message context
+   * @param {Object} data - Message data
+   * @param {Object} doc - Message document (optional)
+   * @returns {Promise<Object>} Result with tokens and cover state
+   */
   async handlePreCreateChatMessage(data, doc = null) {
     return;
   }
@@ -106,9 +103,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         const manualCover = getCoverBetween(attacker, target);
         if (manualCover && manualCover !== 'none') {
           state = manualCover;
-          highestFoundManualCover = coverPredecende[manualCover] > coverPredecende[highestFoundManualCover] ? manualCover : highestFoundManualCover;
+          highestFoundManualCover =
+            coverPredecende[manualCover] > coverPredecende[highestFoundManualCover]
+              ? manualCover
+              : highestFoundManualCover;
         }
-      } catch (_) { }
+      } catch (_) {}
 
       // Fallback to auto-detection if no manual cover
       if (!state) {
@@ -117,65 +117,86 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
     }
 
     try {
-      await this.coverUIManager.injectDialogCoverUI(dialog, html, state, target, highestFoundManualCover, ({ chosen }) => {
-        if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
-        const mods = dialog.check.modifiers;
-        const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');
+      await this.coverUIManager.injectDialogCoverUI(
+        dialog,
+        html,
+        state,
+        target,
+        highestFoundManualCover,
+        ({ chosen }) => {
+          if (!dialog?.check || !Array.isArray(dialog.check.modifiers)) return;
+          const mods = dialog.check.modifiers;
+          const existing = mods.find((m) => m?.slug === 'pf2e-visioner-cover');
 
-        const bonus = this.autoCoverSystem.getCoverBonusByState(chosen);
-        const label = getCoverLabel(chosen);
-        const shouldKeep = bonus > 1 || bonus === 0
+          const bonus = this.autoCoverSystem.getCoverBonusByState(chosen);
+          const label = getCoverLabel(chosen);
+          const shouldKeep = bonus > 1 || bonus === 0;
 
-        if (shouldKeep) {
-          if (existing) {
-            try { if ('modifier' in existing) existing.modifier = bonus; } catch (_) { }
-            try { if ('value' in existing) existing.value = bonus; } catch (_) { }
-            try { if ('label' in existing) existing.label = label; } catch (_) { }
-            try { if ('name' in existing) existing.name = label; } catch (_) { }
-            try { existing.enabled = true; } catch (_) { }
-          } else {
-            let coverModifier;
-            try {
-              if (game?.pf2e?.Modifier) {
-                coverModifier = new game.pf2e.Modifier({
-                  slug: 'pf2e-visioner-cover',
-                  label,
-                  modifier: bonus,
-                  type: 'circumstance',
-                });
-              } else {
-                coverModifier = { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance' };
+          if (shouldKeep) {
+            if (existing) {
+              try {
+                if ('modifier' in existing) existing.modifier = bonus;
+              } catch (_) {}
+              try {
+                if ('value' in existing) existing.value = bonus;
+              } catch (_) {}
+              try {
+                if ('label' in existing) existing.label = label;
+              } catch (_) {}
+              try {
+                if ('name' in existing) existing.name = label;
+              } catch (_) {}
+              try {
+                existing.enabled = true;
+              } catch (_) {}
+            } else {
+              let coverModifier;
+              try {
+                if (game?.pf2e?.Modifier) {
+                  coverModifier = new game.pf2e.Modifier({
+                    slug: 'pf2e-visioner-cover',
+                    label,
+                    modifier: bonus,
+                    type: 'circumstance',
+                  });
+                } else {
+                  coverModifier = {
+                    slug: 'pf2e-visioner-cover',
+                    label,
+                    modifier: bonus,
+                    type: 'circumstance',
+                  };
+                }
+                if (typeof dialog.check.push === 'function') {
+                  dialog.check.push(coverModifier);
+                } else {
+                  mods.push(coverModifier);
+                }
+              } catch (e) {
+                console.warn('PF2E Visioner | Failed to create cover modifier:', e);
               }
-              if (typeof dialog.check.push === 'function') {
-                dialog.check.push(coverModifier);
-              } else {
-                mods.push(coverModifier);
-              }
-            } catch (e) {
-              console.warn('PF2E Visioner | Failed to create cover modifier:', e);
             }
+          } else if (existing) {
+            const idx = mods.indexOf(existing);
+            if (idx >= 0) mods.splice(idx, 1);
           }
-        } else if (existing) {
-          const idx = mods.indexOf(existing);
-          if (idx >= 0) mods.splice(idx, 1);
-        }
 
-        try {
-          if (typeof dialog.check.calculateTotal === 'function') dialog.check.calculateTotal();
-        } catch (e) {
-          console.warn('PF2E Visioner | Failed to recalculate dialog total:', e);
-        }
+          try {
+            if (typeof dialog.check.calculateTotal === 'function') dialog.check.calculateTotal();
+          } catch (e) {
+            console.warn('PF2E Visioner | Failed to recalculate dialog total:', e);
+          }
 
-        try {
-          dialog.render(false);
-        } catch (e) {
-          console.warn('PF2E Visioner | Dialog re-render failed:', e);
-        }
-      });
+          try {
+            dialog.render(false);
+          } catch (e) {
+            console.warn('PF2E Visioner | Dialog re-render failed:', e);
+          }
+        },
+      );
     } catch (e) {
       console.warn('PF2E Visioner | Failed to inject dialog cover UI via CoverUIManager:', e);
     }
-
   }
 
   /**
@@ -197,7 +218,6 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         return;
       }
 
-
       // Find the attacker (origin of the area effect) and template data
       let attacker = null;
       let isTargetInTemplate = false;
@@ -208,13 +228,11 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       const savedTemplateData = this.templateManager.getTemplatesData();
 
       if (savedTemplateData && savedTemplateData.size > 0) {
-
         // Find the most recent template that contains this target
         let mostRecentTemplate = null;
         let mostRecentTs = 0;
 
         for (const [id, data] of savedTemplateData.entries()) {
-
           // Check if this target is in the template's targets
           if (data.targets && data.targets[target.id]) {
             // Found a match - check if it's the most recent
@@ -246,7 +264,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         templateData.targets[target.id].saveProcessed = true;
 
         // Check if all targets have been processed
-        const allProcessed = Object.values(templateData.targets).every(t => t.saveProcessed);
+        const allProcessed = Object.values(templateData.targets).every((t) => t.saveProcessed);
 
         if (allProcessed) {
           // Schedule cleanup if all targets have been processed
@@ -258,7 +276,8 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
                 // Only remove template data from our maps, don't delete templates from canvas
                 this.templateManager.removeTemplateData(templateId);
 
-                const activeReflexSaveTemplate = this.templateManager.getActiveReflexSaveTemplate(templateId);
+                const activeReflexSaveTemplate =
+                  this.templateManager.getActiveReflexSaveTemplate(templateId);
 
                 if (activeReflexSaveTemplate) {
                   this.templateManager.removeActiveReflexSaveTemplate(templateId);
@@ -321,7 +340,6 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         }
       }
 
-
       let state;
       let highestFoundManualCover = 'none';
 
@@ -331,7 +349,10 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         const manualCover = getCoverBetween(target, attacker);
         if (manualCover && manualCover !== 'none') {
           state = manualCover;
-          highestFoundManualCover = coverPredecende[manualCover] > coverPredecende[highestFoundManualCover] ? manualCover : highestFoundManualCover;
+          highestFoundManualCover =
+            coverPredecende[manualCover] > coverPredecende[highestFoundManualCover]
+              ? manualCover
+              : highestFoundManualCover;
         }
       }
       // If we have an attacker token, use standard calculation
@@ -341,9 +362,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
           const manualCover = getCoverBetween(target, attacker);
           if (manualCover && manualCover !== 'none') {
             state = manualCover;
-            highestFoundManualCover = coverPredecende[manualCover] > coverPredecende[highestFoundManualCover] ? manualCover : highestFoundManualCover;
+            highestFoundManualCover =
+              coverPredecende[manualCover] > coverPredecende[highestFoundManualCover]
+                ? manualCover
+                : highestFoundManualCover;
           }
-        } catch (_) { }
+        } catch (_) {}
 
         // Fallback to auto-detection if no manual cover
         if (!state) {
@@ -354,7 +378,6 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       if (!state) {
         return;
       }
-
 
       // Persist cover info early so it's available for final safety injection
       try {
@@ -368,7 +391,10 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
       try {
         const selectedState = highestFoundManualCover !== 'none' ? highestFoundManualCover : state;
         // Only show popup if keybind is held
-        const popupResult = await this.coverUIManager.showPopupAndApply(selectedState, highestFoundManualCover);
+        const popupResult = await this.coverUIManager.showPopupAndApply(
+          selectedState,
+          highestFoundManualCover,
+        );
         chosen = highestFoundManualCover !== 'none' ? highestFoundManualCover : popupResult.chosen;
       } catch (e) {
         console.warn('PF2E Visioner | Popup error (delegated):', e);
@@ -392,10 +418,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
           // Remove any existing one-roll cover effects
           const filteredItems = items.filter(
             (i) =>
-              !(
-                i?.type === 'effect' &&
-                i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true
-              ),
+              !(i?.type === 'effect' && i?.flags?.['pf2e-visioner']?.ephemeralCoverRoll === true),
           );
 
           const label = getCoverLabel(state);
@@ -436,10 +459,7 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
           filteredItems.push(coverEffect);
 
           // Clone the actor with the temporary cover effect
-          const clonedActor = tgtActor.clone(
-            { items: filteredItems },
-            { keepId: true },
-          );
+          const clonedActor = tgtActor.clone({ items: filteredItems }, { keepId: true });
 
           // Ensure area-effect is in the roll options to trigger the predicate
           if (!context.options) context.options = [];
@@ -457,11 +477,12 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
           }
 
           // Store computed cover for final pre-roll safety injection
-          try { context._visionerCover = { state, bonus }; } catch (_) { }
+          try {
+            context._visionerCover = { state, bonus };
+          } catch (_) {}
 
           // CRITICAL: Mark this reflex save as handled by popup wrapper
           // Use a time-based global flag that doesn't depend on context
-
 
           // CRITICAL: Store the original context actor for comparison
           context.actor = clonedActor;
@@ -469,7 +490,11 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
           // IMPORTANT: Rebuild the CheckModifier using the cloned actor's statistic
           try {
             // Decide statistic slug and enforce in context
-            let statSlug = context?.statistic || (Array.isArray(context?.domains) && context.domains.includes('reflex') ? 'reflex' : null);
+            let statSlug =
+              context?.statistic ||
+              (Array.isArray(context?.domains) && context.domains.includes('reflex')
+                ? 'reflex'
+                : null);
             if (!statSlug) statSlug = 'reflex';
             context.statistic = statSlug;
 
@@ -488,37 +513,64 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
               const rebuildCtx = {
                 domains: context.domains,
                 options: new Set(context.options),
-                type: 'saving-throw'
+                type: 'saving-throw',
               };
               const rebuilt = statObj.check.clone(rebuildCtx);
               check = rebuilt;
 
               // Fallback: if the rebuilt check still doesn't include our cover, inject directly
               try {
-                const alreadyHas = Array.isArray(check?.modifiers) && check.modifiers.some(m => m?.slug === 'pf2e-visioner-cover');
+                const alreadyHas =
+                  Array.isArray(check?.modifiers) &&
+                  check.modifiers.some((m) => m?.slug === 'pf2e-visioner-cover');
                 if (!alreadyHas && (bonus || 0) > 0) {
-                  const label = state === 'greater' ? 'Greater Cover' : state === 'standard' ? 'Cover' : 'Lesser Cover';
+                  const label =
+                    state === 'greater'
+                      ? 'Greater Cover'
+                      : state === 'standard'
+                        ? 'Cover'
+                        : 'Lesser Cover';
                   let pf2eMod;
                   try {
-                    pf2eMod = game?.pf2e?.Modifier ? new game.pf2e.Modifier({
+                    pf2eMod = game?.pf2e?.Modifier
+                      ? new game.pf2e.Modifier({
+                          slug: 'pf2e-visioner-cover',
+                          label,
+                          modifier: bonus,
+                          type: 'circumstance',
+                          predicate: { any: ['area-effect'] },
+                        })
+                      : {
+                          slug: 'pf2e-visioner-cover',
+                          label,
+                          modifier: bonus,
+                          type: 'circumstance',
+                          enabled: true,
+                        };
+                  } catch (_) {
+                    pf2eMod = {
                       slug: 'pf2e-visioner-cover',
                       label,
                       modifier: bonus,
                       type: 'circumstance',
-                      predicate: { any: ['area-effect'] },
-                    }) : { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance', enabled: true };
-                  } catch (_) {
-                    pf2eMod = { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance', enabled: true };
+                      enabled: true,
+                    };
                   }
                   // Push onto the check's modifiers array if present
                   if (Array.isArray(check.modifiers)) check.modifiers.push(pf2eMod);
                 }
               } catch (injErr) {
-                console.error('PF2E Visioner | ⚠️ Failed fallback injection of cover modifier:', injErr);
+                console.error(
+                  'PF2E Visioner | ⚠️ Failed fallback injection of cover modifier:',
+                  injErr,
+                );
               }
             }
           } catch (rebuildErr) {
-            console.error('PF2E Visioner | ❌ Failed to rebuild CheckModifier for reflex save:', rebuildErr);
+            console.error(
+              'PF2E Visioner | ❌ Failed to rebuild CheckModifier for reflex save:',
+              rebuildErr,
+            );
           }
         }
       }
@@ -540,32 +592,53 @@ class SavingThrowUseCase extends BaseAutoCoverUseCase {
         context.options = Array.from(optSet);
 
         // Build PF2E Modifier
-        const label = state === 'greater' ? 'Greater Cover' : state === 'standard' ? 'Standard Cover' : 'Lesser Cover';
+        const label =
+          state === 'greater'
+            ? 'Greater Cover'
+            : state === 'standard'
+              ? 'Standard Cover'
+              : 'Lesser Cover';
         let pf2eMod;
         try {
-          pf2eMod = game?.pf2e?.Modifier ? new game.pf2e.Modifier({
+          pf2eMod = game?.pf2e?.Modifier
+            ? new game.pf2e.Modifier({
+                slug: 'pf2e-visioner-cover',
+                label,
+                modifier: bonus,
+                type: 'circumstance',
+                predicate: ['area-effect'],
+              })
+            : {
+                slug: 'pf2e-visioner-cover',
+                label,
+                modifier: bonus,
+                type: 'circumstance',
+                predicate: ['area-effect'],
+                enabled: true,
+              };
+        } catch (_) {
+          pf2eMod = {
             slug: 'pf2e-visioner-cover',
             label,
             modifier: bonus,
             type: 'circumstance',
-            predicate: ['area-effect'],
-          }) : { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance', predicate: ['area-effect'], enabled: true };
-
-        } catch (_) {
-          pf2eMod = { slug: 'pf2e-visioner-cover', label, modifier: bonus, type: 'circumstance', enabled: true };
+            enabled: true,
+          };
         }
 
-        const already = !!(check?.modifiers && typeof check.modifiers.some === 'function' && check.modifiers.some(m => m?.slug === 'pf2e-visioner-cover'));
+        const already = !!(
+          check?.modifiers &&
+          typeof check.modifiers.some === 'function' &&
+          check.modifiers.some((m) => m?.slug === 'pf2e-visioner-cover')
+        );
         if (!already && check && typeof check.push === 'function') {
           check.push(pf2eMod);
         }
-
       }
     } catch (finalErr) {
       console.error('PF2E Visioner | ⚠️ Minimal reflex injection failed', finalErr);
     }
   }
-
 
   /**
    * Resolve stealther token from stealth check context
@@ -599,4 +672,3 @@ export default savingThrowUseCase;
 
 // Also export the class for reference
 export { SavingThrowUseCase };
-

@@ -1,0 +1,147 @@
+/*
+ * Action Buttons Partial Styles
+ * Styles for the footer action buttons (Apply Current, Apply Both, Reset Mode, Cancel)
+ */
+
+.pf2e-visioner {
+  /* Action Buttons Container */
+  .action-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--color-bg-secondary, #2a2a2a);
+    border-top: 1px solid var(--color-border-light-primary, #4a4a4a);
+    margin-top: auto;
+  }
+
+  .action-buttons-left,
+  .action-buttons-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Action Button Base Styles */
+  .action-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--color-border-light-primary, #4a4a4a);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    background: var(--color-bg-tertiary, #3a3a3a);
+    color: var(--color-text-primary, #ffffff);
+  }
+
+  .action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .action-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .action-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .action-button i {
+    font-size: 14px;
+  }
+
+  /* Apply Current Button */
+  .action-button.apply-current {
+    background: var(--color-success, #4caf50);
+    border-color: var(--color-success, #4caf50);
+    color: white;
+  }
+
+  .action-button.apply-current:hover:not(:disabled) {
+    background: var(--color-success-dark, #45a049);
+    border-color: var(--color-success-dark, #45a049);
+  }
+
+  /* Apply Both Button */
+  .action-button.apply-both {
+    background: var(--color-primary, #4a9eff);
+    border-color: var(--color-primary, #4a9eff);
+    color: white;
+  }
+
+  .action-button.apply-both:hover:not(:disabled) {
+    background: var(--color-primary-dark, #3a8eef);
+    border-color: var(--color-primary-dark, #3a8eef);
+  }
+
+  /* Reset Mode Button */
+  .action-button.reset-mode {
+    background: var(--color-warning, #ff9800);
+    border-color: var(--color-warning, #ff9800);
+    color: white;
+  }
+
+  .action-button.reset-mode:hover:not(:disabled) {
+    background: var(--color-warning-dark, #e68900);
+    border-color: var(--color-warning-dark, #e68900);
+  }
+
+  /* Cancel Button */
+  .action-button.cancel {
+    background: var(--color-danger, #ff4444);
+    border-color: var(--color-danger, #ff4444);
+    color: white;
+  }
+
+  .action-button.cancel:hover:not(:disabled) {
+    background: var(--color-danger-dark, #cc3333);
+    border-color: var(--color-danger-dark, #cc3333);
+  }
+
+  /* Loading State */
+  .action-button.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .action-button.loading i {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .action-buttons {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-buttons-left,
+    .action-buttons-right {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .action-button {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+}

@@ -12,7 +12,6 @@ import { registerTokenHooks } from './token-events.js';
 import { registerUIHooks } from './ui.js';
 
 export async function registerHooks() {
-
   Hooks.on('ready', onReady);
   Hooks.on('canvasReady', onCanvasReady);
   const { registerHooks: registerOptimized } = await import('../hooks/optimized-registration.js');
@@ -35,7 +34,7 @@ export async function registerHooks() {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
   Hooks.on('updateWall', async (doc, changes) => {
     try {
@@ -73,12 +72,12 @@ export async function registerHooks() {
                 await canvas.scene?.updateEmbeddedDocuments?.('Token', updates, { diff: false });
               }
             }
-          } catch (_) { }
+          } catch (_) {}
           // Mirror hidden flag to connected walls
           try {
             const { mirrorHiddenFlagToConnected } = await import('../services/connected-walls.js');
             await mirrorHiddenFlagToConnected(doc, true);
-          } catch (_) { }
+          } catch (_) {}
         } else {
           // If unhidden, remove entries for that wall from tokens
           try {
@@ -111,20 +110,20 @@ export async function registerHooks() {
                 await canvas.scene?.updateEmbeddedDocuments?.('Token', updates, { diff: false });
               }
             }
-          } catch (_) { }
+          } catch (_) {}
           // Mirror hidden flag to connected walls (set hidden=false)
           try {
             const { mirrorHiddenFlagToConnected } = await import('../services/connected-walls.js');
             await mirrorHiddenFlagToConnected(doc, false);
-          } catch (_) { }
+          } catch (_) {}
         }
       }
-    } catch (_) { }
+    } catch (_) {}
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
   Hooks.on('deleteWall', async (wallDocument) => {
     try {
@@ -136,7 +135,7 @@ export async function registerHooks() {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
 
   // Debounced token selection handler to prevent jittering
@@ -154,10 +153,13 @@ export async function registerHooks() {
           const { updateWallVisuals } = await import('../services/visual-effects.js');
           const id = canvas.tokens.controlled?.[0]?.id || null;
           await updateWallVisuals(id);
-        } catch (_) { }
+        } catch (_) {}
         controlTokenTimeout = null;
       }, 50); // 50ms debounce
-    } catch (_) { }
+    } catch (_) {}
+    const { updateWallVisuals } = await import('../services/visual-effects.js');
+    const id = canvas.tokens.controlled?.[0]?.id || null;
+    await updateWallVisuals(id);
   });
 
   Hooks.on('updateToken', async () => {
@@ -165,27 +167,27 @@ export async function registerHooks() {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
   Hooks.on('createToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
   Hooks.on('deleteToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
   Hooks.on('refreshToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) { }
+    } catch (_) {}
   });
 }

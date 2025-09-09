@@ -851,7 +851,7 @@ describe('Action Extractor Tests', () => {
       const mockActor = {
         getActiveTokens: jest.fn().mockReturnValue([mockToken]),
       };
-      
+
       // Ensure the mock exists before setting it
       if (!global.game.actors) {
         global.game.actors = { get: jest.fn() };
@@ -878,7 +878,7 @@ describe('Action Extractor Tests', () => {
           getActiveTokens: jest.fn().mockReturnValue([mockToken]),
         },
       };
-      
+
       // Ensure the mock exists before setting it
       if (!global.fromUuidSync) {
         global.fromUuidSync = jest.fn();
@@ -1076,11 +1076,11 @@ describe('Action Extractor Tests', () => {
       const message = {
         id: 'msg1',
         flavor: 'hide lore:',
-      }
+      };
 
       const result = await extractActionData(message);
       expect(result).toBeNull();
-    })
+    });
 
     test('handles Devise a Stratagem and other self checks', async () => {
       const message = {
@@ -1089,15 +1089,15 @@ describe('Action Extractor Tests', () => {
           pf2e: {
             context: {
               type: 'self-effect',
-              item: 'abcdef123'
-            }
-          }
-        }
-      }
+              item: 'abcdef123',
+            },
+          },
+        },
+      };
 
       const result = await extractActionData(message);
       expect(result).toBeNull();
-    })
+    });
 
     test('handles skill checks that should not be processed', async () => {
       const message = {
@@ -1107,16 +1107,16 @@ describe('Action Extractor Tests', () => {
             context: {
               domains: {
                 0: 'skill-check',
-                1: 'arcana'
-              }
-            }
-          }
-        }
-      }
+                1: 'arcana',
+              },
+            },
+          },
+        },
+      };
 
       const result = await extractActionData(message);
       expect(result).toBeNull();
-    })
+    });
   });
 
   describe('Action Priority and Exclusions', () => {

@@ -13,20 +13,20 @@ describe('Door Cover Integration Tests', () => {
 
   beforeEach(() => {
     coverDetector = new CoverDetector();
-    
+
     // Mock tokens
     mockAttacker = {
       id: 'attacker1',
       center: { x: 100, y: 100 },
       getCenter: () => ({ x: 100, y: 100 }),
       actor: { alliance: 'party' },
-      document: { 
-        x: 100, 
-        y: 100, 
-        width: 1, 
+      document: {
+        x: 100,
+        y: 100,
+        width: 1,
         height: 1,
-        elevation: 0
-      }
+        elevation: 0,
+      },
     };
 
     mockTarget = {
@@ -34,36 +34,36 @@ describe('Door Cover Integration Tests', () => {
       center: { x: 300, y: 100 },
       getCenter: () => ({ x: 300, y: 100 }),
       actor: { alliance: 'opposition' },
-      document: { 
-        x: 300, 
-        y: 100, 
-        width: 1, 
+      document: {
+        x: 300,
+        y: 100,
+        width: 1,
         height: 1,
-        elevation: 0
-      }
+        elevation: 0,
+      },
     };
 
     // Mock canvas
     mockCanvas = {
       walls: {
         objects: {
-          children: []
+          children: [],
         },
-        placeables: []
+        placeables: [],
       },
       tokens: {
-        placeables: [mockAttacker, mockTarget]
+        placeables: [mockAttacker, mockTarget],
       },
       scene: {
         dimensions: {
           size: 100,
-          distance: 5
-        }
-      }
+          distance: 5,
+        },
+      },
     };
-    
+
     global.canvas = mockCanvas;
-    
+
     // Mock game settings
     global.game = {
       settings: {
@@ -88,8 +88,8 @@ describe('Door Cover Integration Tests', () => {
             default:
               return null;
           }
-        })
-      }
+        }),
+      },
     };
   });
 
@@ -101,12 +101,12 @@ describe('Door Cover Integration Tests', () => {
     beforeEach(() => {
       // Clear any existing mocks
       jest.clearAllMocks();
-      
+
       // Mock the wall coverage calculation methods for integration tests
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(mockTarget);
       jest.spyOn(coverDetector, '_estimateWallCoveragePercent').mockImplementation((p1, target) => {
         // Check if any walls in the scene would block based on door state
-        const blockingWalls = mockCanvas.walls.objects.children.filter(wall => {
+        const blockingWalls = mockCanvas.walls.objects.children.filter((wall) => {
           const wallDoc = wall.document || wall;
           return coverDetector._doesWallBlockFromDirection(wallDoc, p1);
         });
@@ -129,9 +129,9 @@ describe('Door Cover Integration Tests', () => {
           door: 1,
           ds: 1, // open
           dir: 0,
-          c: [200, 90, 200, 110] // vertical door between tokens
+          c: [200, 90, 200, 110], // vertical door between tokens
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children.push(openDoor);
@@ -151,9 +151,9 @@ describe('Door Cover Integration Tests', () => {
           ds: 0, // closed
           dir: 0,
           c: [200, 90, 200, 110], // vertical door between tokens
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children.push(closedDoor);
@@ -174,9 +174,9 @@ describe('Door Cover Integration Tests', () => {
           ds: 2, // locked
           dir: 0,
           c: [200, 90, 200, 110], // vertical door between tokens
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children.push(lockedDoor);
@@ -197,9 +197,9 @@ describe('Door Cover Integration Tests', () => {
           ds: 1, // open
           dir: 0,
           c: [180, 90, 180, 110], // first vertical line
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [180, 90, 180, 110]
+        coords: [180, 90, 180, 110],
       };
 
       const normalWall = {
@@ -209,9 +209,9 @@ describe('Door Cover Integration Tests', () => {
           door: 0, // not a door
           dir: 0,
           c: [220, 90, 220, 110], // second vertical line
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [220, 90, 220, 110]
+        coords: [220, 90, 220, 110],
       };
 
       mockCanvas.walls.objects.children.push(openDoor, normalWall);
@@ -230,9 +230,9 @@ describe('Door Cover Integration Tests', () => {
           door: 2, // secret door
           ds: 0, // closed/secret
           dir: 0,
-          c: [200, 90, 200, 110]
+          c: [200, 90, 200, 110],
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children = [closedSecretDoor];
@@ -253,12 +253,12 @@ describe('Door Cover Integration Tests', () => {
     beforeEach(() => {
       // Clear any existing mocks
       jest.clearAllMocks();
-      
+
       // Mock the wall coverage calculation methods for detectFromPoint tests
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(mockTarget);
       jest.spyOn(coverDetector, '_estimateWallCoveragePercent').mockImplementation((p1, target) => {
         // Check if any walls in the scene would block based on door state
-        const blockingWalls = mockCanvas.walls.objects.children.filter(wall => {
+        const blockingWalls = mockCanvas.walls.objects.children.filter((wall) => {
           const wallDoc = wall.document || wall;
           return coverDetector._doesWallBlockFromDirection(wallDoc, p1);
         });
@@ -275,16 +275,16 @@ describe('Door Cover Integration Tests', () => {
 
     test('should detect no cover from point when door is open', () => {
       const origin = { x: 100, y: 100 };
-      
+
       const openDoor = {
         document: {
           sight: 20,
           door: 1,
           ds: 1, // open
           dir: 0,
-          c: [200, 90, 200, 110]
+          c: [200, 90, 200, 110],
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children.push(openDoor);
@@ -296,16 +296,16 @@ describe('Door Cover Integration Tests', () => {
 
     test('should detect cover from point when door is closed', () => {
       const origin = { x: 100, y: 100 };
-      
+
       const closedDoor = {
         document: {
           sight: 20,
           door: 1,
           ds: 0, // closed
           dir: 0,
-          c: [200, 90, 200, 110]
+          c: [200, 90, 200, 110],
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children.push(closedDoor);
@@ -326,7 +326,7 @@ describe('Door Cover Integration Tests', () => {
       jest.spyOn(coverDetector, '_findNearestTokenToPoint').mockReturnValue(mockTarget);
       jest.spyOn(coverDetector, '_estimateWallCoveragePercent').mockImplementation((p1, target) => {
         // Check if any walls in the scene would block based on door state
-        const blockingWalls = mockCanvas.walls.objects.children.filter(wall => {
+        const blockingWalls = mockCanvas.walls.objects.children.filter((wall) => {
           const wallDoc = wall.document || wall;
           return coverDetector._doesWallBlockFromDirection(wallDoc, p1);
         });
@@ -340,9 +340,9 @@ describe('Door Cover Integration Tests', () => {
           door: 1,
           ds: 0, // initially closed
           dir: 0,
-          c: [200, 90, 200, 110]
+          c: [200, 90, 200, 110],
         },
-        coords: [200, 90, 200, 110]
+        coords: [200, 90, 200, 110],
       };
 
       mockCanvas.walls.objects.children.push(door);
@@ -383,9 +383,9 @@ describe('Door Cover Integration Tests', () => {
             door: 1,
             ds: i % 3, // Mix of closed (0), open (1), locked (2)
             dir: 0,
-            c: [150 + i, 90, 150 + i, 110] // Spread them out
+            c: [150 + i, 90, 150 + i, 110], // Spread them out
           },
-          coords: [150 + i, 90, 150 + i, 110]
+          coords: [150 + i, 90, 150 + i, 110],
         };
         doors.push(door);
       }
@@ -399,7 +399,7 @@ describe('Door Cover Integration Tests', () => {
 
       // Should complete quickly (less than 100ms for 50 doors)
       expect(endTime - startTime).toBeLessThan(100);
-      
+
       // Should detect cover from the closed/locked doors
       expect(['none', 'standard']).toContain(result);
     });
@@ -412,9 +412,9 @@ describe('Door Cover Integration Tests', () => {
           // Missing required properties
           sight: null,
           door: undefined,
-          ds: 'invalid'
+          ds: 'invalid',
         },
-        coords: null
+        coords: null,
       };
 
       mockCanvas.walls.objects.children.push(malformedDoor);

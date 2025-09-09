@@ -66,7 +66,7 @@ export class BaseActionDialog extends BasePreviewDialog {
   _onRender(context, options) {
     super._onRender?.(context, options);
     this._applySelectionHighlight();
-    
+
     // Live re-filtering for per-dialog Ignore Allies checkbox
     try {
       const cb = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
@@ -96,10 +96,10 @@ export class BaseActionDialog extends BasePreviewDialog {
 
   buildCommonContext(outcomes) {
     const changesCount = this.computeChangesCount(outcomes);
-    
+
     // Add AVS override information to outcomes
     if (Array.isArray(outcomes) && this.actorToken) {
-      outcomes.forEach(outcome => {
+      outcomes.forEach((outcome) => {
         if (outcome.target?.id) {
           const targetToken = canvas.tokens.get(outcome.target.id);
           if (targetToken) {
@@ -109,7 +109,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         }
       });
     }
-    
+
     return {
       changesCount,
       totalCount: Array.isArray(outcomes) ? outcomes.length : 0,
@@ -387,7 +387,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     const checkbox = event.currentTarget;
     const targetTokenId = checkbox.dataset.tokenId;
     const isChecked = checkbox.checked;
-    
+
     console.log(`${MODULE_ID} | Checkbox checked: ${isChecked}, Target ID: ${targetTokenId}`);
 
     if (!this.actorToken || !targetTokenId) {
@@ -404,7 +404,7 @@ export class BaseActionDialog extends BasePreviewDialog {
 
       if (isChecked) {
         // Set AVS override to the calculated visibility state
-        const outcome = this.outcomes?.find(o => o.target?.id === targetTokenId);
+        const outcome = this.outcomes?.find((o) => o.target?.id === targetTokenId);
         const visibilityState = outcome?.newVisibility || outcome?.overrideState || 'observed';
         await avsOverrideService.setAVSOverride(this.actorToken, targetToken, visibilityState);
       } else {
@@ -428,14 +428,14 @@ export class BaseActionDialog extends BasePreviewDialog {
       }
 
       notify.info(
-        isChecked 
+        isChecked
           ? `AVS override set for ${targetToken.name}`
-          : `AVS override removed for ${targetToken.name}`
+          : `AVS override removed for ${targetToken.name}`,
       );
     } catch (error) {
       console.error('PF2E Visioner: Error toggling AVS override:', error);
       notify.error('Error toggling AVS override');
-      
+
       // Revert checkbox state
       checkbox.checked = !isChecked;
     }

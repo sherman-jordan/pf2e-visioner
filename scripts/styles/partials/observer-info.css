@@ -1,0 +1,337 @@
+/*
+ * Observer Info Partial Styles
+ * Styles for the observer information section, mode toggle, tabs, and legend
+ */
+
+.pf2e-visioner {
+  /* Observer Information Section - always visible at top */
+  .observer-info {
+    flex-shrink: 0;
+    background: var(--color-bg-alt, rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-lg);
+    padding: 6px 6px 8px 6px; /* extra top/side padding prevents button glow clipping */
+    margin-bottom: -24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    justify-content: space-between; /* space for tools on the right */
+    overflow: visible; /* allow glow and borders to render */
+  }
+
+  .observer-image {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 24px;
+    max-height: 24px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-light-primary);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .observer-image img {
+    width: 75%;
+    height: 75%;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .observer-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Right tools: tab buttons + legend stacked */
+  .observer-tools {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* position tools at top-right */
+    gap: 4px;
+  }
+
+  .icon-tab-navigation {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px; /* push legend below the toggle to avoid overlap */
+    overflow: visible; /* allow glow to render */
+  }
+
+  /* Color the tab buttons: eye = green, shield = blue */
+  .icon-tab-navigation .icon-tab-button {
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 6px;
+    padding: 4px 6px;
+    background: var(--color-bg-secondary);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .icon-tab-navigation .icon-tab-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+  .icon-tab-navigation .icon-tab-button:active {
+    transform: scale(0.98);
+  }
+
+  .icon-tab-navigation .icon-tab-button[data-tab='visibility'].active {
+    background: linear-gradient(135deg, var(--visibility-observed), var(--visibility-observed));
+    border-color: var(--visibility-observed);
+    color: var(--color-text-light-primary);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='cover'].active {
+    background: linear-gradient(135deg, var(--cover-standard), var(--cover-standard));
+    border-color: var(--cover-standard);
+    color: var(--color-text-light-primary);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='visibility'] i {
+    color: var(--visibility-observed);
+  }
+  .icon-tab-navigation .icon-tab-button[data-tab='cover'] i {
+    color: var(--cover-standard);
+  }
+
+  .icon-tab-navigation .icon-tab-button.active i {
+    color: var(--color-text-light-primary);
+  }
+
+  /* 2x2 legend grid */
+  .observer-tools .visibility-legend,
+  .observer-tools .cover-legend {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 2px 6px;
+    padding: 4px;
+    background: var(--color-bg-secondary, rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--color-border-light-tertiary);
+    border-radius: var(--radius-md);
+  }
+
+  /* Ensure the legend container itself takes normal flow beneath the toggle */
+  .observer-tools .legend-panel {
+    width: auto;
+    display: block;
+    padding-top: 50px;
+  }
+
+  .observer-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .observer-name {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: normal;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .observer-main .hint {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    margin: 0;
+    line-height: 1.2;
+    font-style: italic;
+  }
+
+  /* Mode Toggle Button - Toggle Switch Style */
+  .mode-toggle {
+    background: var(--color-bg-option);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 12px;
+    padding: 1px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    white-space: nowrap;
+    position: relative;
+    width: 140px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+
+  .mode-toggle:hover {
+    border-color: var(--color-border-highlight);
+    box-shadow: var(--shadow-md);
+  }
+
+  .mode-toggle:active {
+    transform: scale(0.98);
+  }
+
+  /* Toggle Options */
+  .toggle-option {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 5px;
+    border-radius: 8px;
+    transition: all var(--transition-normal);
+    flex: 0.5;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    height: 18px;
+  }
+
+  .toggle-option.active {
+    background: var(--color-bg-btn);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .toggle-option:not(.active) {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+  }
+
+  .toggle-option i {
+    font-size: 11px;
+  }
+
+  .toggle-option span {
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  /* Toggle Divider */
+  .toggle-divider {
+    color: var(--color-border-light-primary);
+    font-weight: bold;
+    opacity: 0.4;
+    margin: 0 4px;
+    z-index: 1;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Active State Colors */
+  .mode-toggle.observer-active .toggle-option:first-child {
+    background: linear-gradient(
+      135deg,
+      var(--pf2e-visioner-info),
+      var(--pf2e-visioner-info)
+    ) !important;
+    color: white !important;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mode-toggle.target-active .toggle-option:last-child {
+    background: linear-gradient(
+      135deg,
+      var(--pf2e-visioner-danger),
+      var(--pf2e-visioner-danger)
+    ) !important;
+    color: white !important;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Encounter Filter Section */
+  .token-visibility-manager .encounter-filter-section {
+    margin-top: 8px;
+    padding: 6px 0;
+    width: fit-content;
+    max-width: 200px;
+    flex-shrink: 1;
+  }
+
+  .token-visibility-manager .encounter-filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    user-select: none;
+  }
+
+  .token-visibility-manager .encounter-filter-checkbox input[type='checkbox'] {
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent;
+    width: auto;
+    height: auto;
+  }
+
+  .token-visibility-manager .encounter-filter-label {
+    cursor: pointer;
+    font-weight: 400;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .token-visibility-manager .encounter-filter-checkbox:hover .encounter-filter-label {
+    color: var(--color-text-primary);
+  }
+
+  /* Visibility Legend */
+  .visibility-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 2px;
+    padding-right: 0;
+    font-size: 20px;
+    flex-shrink: 0;
+    min-width: 75px;
+  }
+
+  .legend-title {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    margin-bottom: 1px;
+    text-align: center;
+    grid-column: 1 / -1;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-border-light-tertiary);
+    font-size: 11px;
+  }
+
+  .legend-item i {
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+
+  .legend-item span {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+  }
+}

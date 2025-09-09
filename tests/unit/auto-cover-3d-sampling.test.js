@@ -41,7 +41,10 @@ function makeToken({ id, gx, gy, elevationFt = 0, heightFt = null, sizeSquares =
       type: 'character',
       system: { traits: { size: { value: sizeSquares >= 2 ? 'lg' : 'med' } } },
     },
-    getCenter: jest.fn(() => ({ x: x + (width * canvas.grid.size) / 2, y: y + (height * canvas.grid.size) / 2 })),
+    getCenter: jest.fn(() => ({
+      x: x + (width * canvas.grid.size) / 2,
+      y: y + (height * canvas.grid.size) / 2,
+    })),
     center: { x: x + (width * canvas.grid.size) / 2, y: y + (height * canvas.grid.size) / 2 },
   });
 }
@@ -50,10 +53,24 @@ function makeToken({ id, gx, gy, elevationFt = 0, heightFt = null, sizeSquares =
  * Places attacker at (0,0), target at (4,0) squares. Returns {attacker, target}.
  */
 function placeAttackerAndTarget() {
-  const attacker = makeToken({ id: 'attacker', gx: 0, gy: 0, elevationFt: 0, heightFt: 5, sizeSquares: 1 });
-  const target = makeToken({ id: 'target', gx: 4, gy: 0, elevationFt: 0, heightFt: 5, sizeSquares: 1 });
+  const attacker = makeToken({
+    id: 'attacker',
+    gx: 0,
+    gy: 0,
+    elevationFt: 0,
+    heightFt: 5,
+    sizeSquares: 1,
+  });
+  const target = makeToken({
+    id: 'target',
+    gx: 4,
+    gy: 0,
+    elevationFt: 0,
+    heightFt: 5,
+    sizeSquares: 1,
+  });
   canvas.tokens.placeables.push(attacker, target);
-  canvas.tokens.get.mockImplementation((id) => ({ attacker, target }[id]));
+  canvas.tokens.get.mockImplementation((id) => ({ attacker, target })[id]);
   return { attacker, target };
 }
 
@@ -73,12 +90,18 @@ describe('3D Sampling Mode - Integration', () => {
     setSetting('autoCoverUseElevationFilter', true);
   });
 
-
   test('includes blockers that overlap the vertical band (yields some cover)', () => {
     const { attacker, target } = placeAttackerAndTarget();
 
     // Blocker between them at 2–7 ft overlaps attacker/target band (0–5)
-    const midBlocker = makeToken({ id: 'blk-mid', gx: 2, gy: 0, elevationFt: 2, heightFt: 5, sizeSquares: 1 });
+    const midBlocker = makeToken({
+      id: 'blk-mid',
+      gx: 2,
+      gy: 0,
+      elevationFt: 2,
+      heightFt: 5,
+      sizeSquares: 1,
+    });
     canvas.tokens.placeables.push(midBlocker);
 
     const result = autoCoverSystem.detectCoverBetweenTokens(attacker, target);

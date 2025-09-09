@@ -67,7 +67,10 @@ function renderVisibilityButton(app, html) {
   buttonElement.className = 'control-icon';
   buttonElement.style.display = 'flex';
   buttonElement.setAttribute('data-action', 'pf2e-visioner-visibility');
-  buttonElement.setAttribute('data-tooltip', 'Visibility Manager (Left: Target Mode | Right: Observer Mode)');
+  buttonElement.setAttribute(
+    'data-tooltip',
+    'Visibility Manager (Left: Target Mode | Right: Observer Mode)',
+  );
   buttonElement.innerHTML = '<i class="fas fa-face-hand-peeking"></i>';
 
   // Add click handlers for both left and right click

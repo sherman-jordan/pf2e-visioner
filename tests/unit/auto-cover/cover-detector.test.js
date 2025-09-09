@@ -12,7 +12,9 @@ describe('CoverDetector', () => {
     jest.resetModules();
 
     // Import the detector
-    const coverDetectorInstance = (await import('../../../scripts/cover/auto-cover/CoverDetector.js')).default;
+    const coverDetectorInstance = (
+      await import('../../../scripts/cover/auto-cover/CoverDetector.js')
+    ).default;
     coverDetector = coverDetectorInstance;
 
     // Setup mock canvas with walls and tokens

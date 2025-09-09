@@ -1,0 +1,40 @@
+{{!--
+  Reusable Table Section Component
+  Parameters:
+  - sectionType: 'pc', 'npc', 'loot', 'walls'
+  - tokens: Array of token data
+  - tableType: 'visibility', 'cover'
+  - bulkActions: Optional bulk action buttons
+--}}
+<div class="table-section {{#if cssClass}}{{cssClass}}{{/if}}">
+  <div class="table-section-header">
+    <div class="header-left">
+      {{#if (eq sectionType 'pc')}}
+        <i class="fas fa-users"></i>
+        <span>Player Characters</span>
+      {{else if (eq sectionType 'npc')}}
+        <i class="fas fa-dragon"></i>
+        <span>NPCs</span>
+      {{else if (eq sectionType 'loot')}}
+        <i class="fas fa-box"></i>
+        <span>Loot</span>
+      {{else if (eq sectionType 'walls')}}
+        <i class="fas fa-grip-lines-vertical"></i>
+        <span>Hidden Walls</span>
+      {{/if}}
+    </div>
+    {{#if bulkActions}}
+      <div class="bulk-actions-header">
+        {{{bulkActions}}}
+      </div>
+    {{/if}}
+  </div>
+  
+  <div class="{{tableType}}-table-container">
+    {{#if (eq tableType 'visibility')}}
+      {{> "pf2e-visioner.visibility-table" tokens=tokens sectionType=sectionType}}
+    {{else if (eq tableType 'cover')}}
+      {{> "pf2e-visioner.cover-table" tokens=tokens sectionType=sectionType}}
+    {{/if}}
+  </div>
+</div>

@@ -452,8 +452,10 @@ describe('Hide Action Comprehensive Tests', () => {
 
   describe('Cover Modifier Service Integration', () => {
     test('calculateStealthRollTotals handles override modifiers correctly', () => {
-      const { calculateStealthRollTotals } = require('../../../scripts/chat/services/infra/shared-utils.js');
-      
+      const {
+        calculateStealthRollTotals,
+      } = require('../../../scripts/chat/services/infra/shared-utils.js');
+
       const baseTotal = 18;
       const autoCoverResult = {
         state: 'greater',
@@ -461,46 +463,48 @@ describe('Hide Action Comprehensive Tests', () => {
         isOverride: true,
         overrideDetails: {
           originalState: 'standard',
-          finalState: 'greater'
-        }
+          finalState: 'greater',
+        },
       };
       const actionData = {
         context: {
-          _visionerStealth: { bonus: 0 }
-        }
+          _visionerStealth: { bonus: 0 },
+        },
       };
-      
+
       const result = calculateStealthRollTotals(baseTotal, autoCoverResult, actionData);
-      
+
       expect(result.total).toBe(22); // Base total + cover bonus (18 + 4)
       expect(result).toHaveProperty('originalTotal');
       expect(result).toHaveProperty('baseRollTotal');
     });
 
     test('calculateStealthRollTotals calculates base roll total for overrides', () => {
-      const { calculateStealthRollTotals } = require('../../../scripts/chat/services/infra/shared-utils.js');
-      
+      const {
+        calculateStealthRollTotals,
+      } = require('../../../scripts/chat/services/infra/shared-utils.js');
+
       const baseTotal = 20;
       const autoCoverResult = {
         state: 'greater',
         bonus: 4,
-        isOverride: true
+        isOverride: true,
       };
       const actionData = {
         context: {
-          _visionerStealth: { bonus: 0 }
-        }
+          _visionerStealth: { bonus: 0 },
+        },
       };
-      
+
       const result = calculateStealthRollTotals(baseTotal, autoCoverResult, actionData);
-      
+
       expect(result.baseRollTotal).toBe(20); // Base roll without any cover modifiers
       expect(result.total).toBe(24); // Base total + cover bonus (20 + 4)
     });
 
     test('getOutcomeLabel formats outcomes correctly', () => {
       const { getOutcomeLabel } = require('../../../scripts/chat/services/ui/dialog-utils.js');
-      
+
       expect(getOutcomeLabel('success')).toBe('Success');
       expect(getOutcomeLabel('failure')).toBe('Failure');
       expect(getOutcomeLabel('critical-success')).toBe('Critical Success');
@@ -509,12 +513,12 @@ describe('Hide Action Comprehensive Tests', () => {
 
     test('determineOutcome calculates correct outcomes', () => {
       const { determineOutcome } = require('../../../scripts/chat/services/infra/shared-utils.js');
-      
+
       expect(determineOutcome(20, 10, 15)).toBe('success'); // +5 margin
       expect(determineOutcome(25, 10, 15)).toBe('critical-success'); // +10 margin
       expect(determineOutcome(14, 10, 15)).toBe('failure'); // -1 margin
       expect(determineOutcome(5, 10, 15)).toBe('failure'); // -10 margin, but need <= -10 for crit failure
-      
+
       // Natural 20/1 effects
       expect(determineOutcome(14, 20, 15)).toBe('success'); // Nat 20 promotes failure to success
       expect(determineOutcome(16, 1, 15)).toBe('failure'); // Nat 1 demotes success to failure

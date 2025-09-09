@@ -128,7 +128,7 @@ export function getTokenCorners(token, rect, sizeValue) {
   try {
     const actualRect = rect || getTokenRect(token);
     const size = sizeValue ?? token?.actor?.system?.traits?.size?.value ?? 'med';
-    
+
     if (size === 'tiny') {
       const centerX = (actualRect.x1 + actualRect.x2) / 2;
       const centerY = (actualRect.y1 + actualRect.y2) / 2;
@@ -142,7 +142,7 @@ export function getTokenCorners(token, rect, sizeValue) {
         { x: centerX - halfEffective, y: centerY + halfEffective }, // bottom-left
       ];
     }
-    
+
     // Regular creatures use document boundaries
     return [
       { x: actualRect.x1, y: actualRect.y1 }, // top-left

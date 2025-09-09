@@ -79,9 +79,9 @@ export class SneakActionHandler extends ActionHandlerBase {
     // Initialize result object for auto-cover data
     const result = {};
 
-
     try {
-      const sneakingToken = actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
+      const sneakingToken =
+        actionData.actorToken || actionData.actor?.token?.object || actionData.actor;
 
       let coverState = null;
       let isOverride = false;
@@ -113,7 +113,11 @@ export class SneakActionHandler extends ActionHandlerBase {
       // Don't delete on consume yet - we need it for all observers
       let originalDetectedState = coverState || 'none'; // Store what we actually detected for this observer
       try {
-        const rollId = actionData?.context?._visionerRollId || actionData?.context?.rollId || actionData?.message?.flags?.['pf2e-visioner']?.rollId || null;
+        const rollId =
+          actionData?.context?._visionerRollId ||
+          actionData?.context?.rollId ||
+          actionData?.message?.flags?.['pf2e-visioner']?.rollId ||
+          null;
 
         // First check if there's a stored modifier for this roll (from StealthCheckUseCase)
         let storedModifier = null;
@@ -134,9 +138,14 @@ export class SneakActionHandler extends ActionHandlerBase {
         } else {
           // Fallback to the old method (but don't consume yet)
           // NOTE: Override parameter order is DIFFERENT from cover detection!
-          // Stealth check stores overrides as (sneaking token -> observer)  
+          // Stealth check stores overrides as (sneaking token -> observer)
           // Cover detection uses (observer -> sneaking token)
-          const overrideData = this.autoCoverSystem.consumeCoverOverride(sneakingToken, subject, rollId, false);
+          const overrideData = this.autoCoverSystem.consumeCoverOverride(
+            sneakingToken,
+            subject,
+            rollId,
+            false,
+          );
           if (overrideData) {
             // Store the original detected state before applying override
             originalDetectedState = coverState || 'none';
@@ -171,22 +180,23 @@ export class SneakActionHandler extends ActionHandlerBase {
           ...(isOverride && {
             overrideDetails: {
               originalState: originalDetectedState,
-              originalLabel: game.i18n.localize(COVER_STATES[originalDetectedState]?.label || 'None'),
+              originalLabel: game.i18n.localize(
+                COVER_STATES[originalDetectedState]?.label || 'None',
+              ),
               originalIcon: COVER_STATES[originalDetectedState]?.icon || 'fas fa-shield',
               originalColor: COVER_STATES[originalDetectedState]?.color || '#999',
               finalState: coverState || 'none',
               finalLabel: game.i18n.localize(coverConfig?.label || 'None'),
               finalIcon: coverConfig?.icon || 'fas fa-shield',
               finalColor: coverConfig?.color || '#999',
-              source: coverSource
-            }
-          })
+              source: coverSource,
+            },
+          }),
         };
       }
     } catch (e) {
       console.error(`PF2E Visioner | Error in cover calculation for Sneak action:`, e);
     }
-
 
     // Calculate roll information (stealth vs observer's perception DC)
     const baseTotal = Number(actionData?.roll?.total ?? 0);
@@ -195,7 +205,7 @@ export class SneakActionHandler extends ActionHandlerBase {
     const { total, originalTotal, baseRollTotal } = calculateStealthRollTotals(
       baseTotal,
       result?.autoCover,
-      actionData
+      actionData,
     );
 
     const dc = adjustedDC;
@@ -211,11 +221,16 @@ export class SneakActionHandler extends ActionHandlerBase {
     // Generate outcome labels
     const getOutcomeLabel = (outcomeValue) => {
       switch (outcomeValue) {
-        case 'critical-success': return 'Critical Success';
-        case 'success': return 'Success';
-        case 'failure': return 'Failure';
-        case 'critical-failure': return 'Critical Failure';
-        default: return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
+        case 'critical-success':
+          return 'Critical Success';
+        case 'success':
+          return 'Success';
+        case 'failure':
+          return 'Failure';
+        case 'critical-failure':
+          return 'Critical Failure';
+        default:
+          return outcomeValue?.charAt(0).toUpperCase() + outcomeValue?.slice(1) || '';
       }
     };
     const originalOutcomeLabel = originalTotal ? getOutcomeLabel(originalOutcome) : null;
@@ -225,17 +240,17 @@ export class SneakActionHandler extends ActionHandlerBase {
     const newVisibility = getDefaultNewStateFor('sneak', current, outcome) || current;
 
     // Calculate what the visibility change would have been with original outcome
-    const originalNewVisibility = originalTotal ?
-      getDefaultNewStateFor('sneak', current, originalOutcome) || current :
-      newVisibility;
+    const originalNewVisibility = originalTotal
+      ? getDefaultNewStateFor('sneak', current, originalOutcome) || current
+      : newVisibility;
 
     // Check if we should show override displays (only if there's a meaningful difference)
-    const shouldShowOverride = result.autoCover?.isOverride && (
-      total !== originalTotal ||
-      margin !== originalMargin ||
-      outcome !== originalOutcome ||
-      newVisibility !== originalNewVisibility
-    );
+    const shouldShowOverride =
+      result.autoCover?.isOverride &&
+      (total !== originalTotal ||
+        margin !== originalMargin ||
+        outcome !== originalOutcome ||
+        newVisibility !== originalNewVisibility);
 
     return {
       token: subject,

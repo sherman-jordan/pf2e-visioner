@@ -57,54 +57,54 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
 
   _replaceHTML(result, content, _options) {
     content.innerHTML = result;
-    
+
     // Add event listener for the hidden wall checkbox
     const hiddenWallCheckbox = content.querySelector('input[name="hiddenWall"]');
     const hiddenWallSections = content.querySelectorAll('.hidden-wall-section');
-    
+
     if (hiddenWallCheckbox && hiddenWallSections.length > 0) {
       // Set initial state
-      hiddenWallSections.forEach(section => {
+      hiddenWallSections.forEach((section) => {
         section.style.display = hiddenWallCheckbox.checked ? '' : 'none';
       });
-      
+
       // Add change listener
       hiddenWallCheckbox.addEventListener('change', (event) => {
-        hiddenWallSections.forEach(section => {
+        hiddenWallSections.forEach((section) => {
           section.style.display = event.target.checked ? '' : 'none';
         });
       });
     }
-    
+
     // Add event listeners for cover override functionality
     this._bindCoverOverrideListeners(content);
-    
+
     return content;
   }
 
   _onRender(context, options) {
     super._onRender?.(context, options);
-    
+
     // Also bind after render in case _replaceHTML wasn't called
     try {
       const root = this.element;
       const hiddenWallCheckbox = root.querySelector('input[name="hiddenWall"]');
       const hiddenWallSections = root.querySelectorAll('.hidden-wall-section');
-      
+
       if (hiddenWallCheckbox && hiddenWallSections.length > 0) {
         // Set initial state
-        hiddenWallSections.forEach(section => {
+        hiddenWallSections.forEach((section) => {
           section.style.display = hiddenWallCheckbox.checked ? '' : 'none';
         });
-        
+
         // Add change listener
         hiddenWallCheckbox.addEventListener('change', (event) => {
-          hiddenWallSections.forEach(section => {
+          hiddenWallSections.forEach((section) => {
             section.style.display = event.target.checked ? '' : 'none';
           });
         });
       }
-      
+
       // Bind cover override listeners
       this._bindCoverOverrideListeners(root);
     } catch (_) {
@@ -117,20 +117,20 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
       // Bind cover override buttons
       const coverButtons = root.querySelectorAll('.cover-override-buttons .visioner-icon-btn');
       const hiddenInput = root.querySelector('input[name="coverOverride"]');
-      
-      coverButtons.forEach(button => {
+
+      coverButtons.forEach((button) => {
         button.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          
+
           const coverType = button.getAttribute('data-cover-override');
-          
+
           // Remove active class from all cover override buttons
-          coverButtons.forEach(btn => btn.classList.remove('active'));
-          
+          coverButtons.forEach((btn) => btn.classList.remove('active'));
+
           // Always make the clicked button active (no toggle behavior - one must always be selected)
           button.classList.add('active');
-          
+
           // Update the hidden input for the cover override
           if (hiddenInput) {
             // Set the value (empty string for auto, coverType for specific override)
@@ -150,11 +150,11 @@ export class VisionerWallQuickSettings extends foundry.applications.api.Applicat
     const fd = new FormData(form);
     const entries = Object.fromEntries(fd.entries());
     const patch = { _id: app.wall.id };
-    
+
     // Handle cover override - this now determines if wall provides cover
     const coverOverride = entries['coverOverride'];
     patch[`flags.${MODULE_ID}.coverOverride`] = coverOverride || null;
-    
+
     // Set provideCover based on cover override (false only if explicitly set to 'none')
     patch[`flags.${MODULE_ID}.provideCover`] = coverOverride !== 'none';
     if (game.settings.get(MODULE_ID, 'hiddenWallsEnabled')) {

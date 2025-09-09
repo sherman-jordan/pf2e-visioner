@@ -1,7 +1,7 @@
 /**
  * Unit tests for Wall Coverage Percentage Calculation
  * Tests the improved wall coverage calculation logic in CoverDetector
- * 
+ *
  * This tests the fixes made to the _estimateWallCoveragePercent method:
  * - Removed arbitrary center weight reduction
  * - Increased sampling density for better accuracy
@@ -24,7 +24,7 @@ describe('Wall Coverage Percentage Calculation', () => {
     // Setup mock canvas
     global.canvas.walls = {
       placeables: [],
-      objects: { children: [] }
+      objects: { children: [] },
     };
     global.canvas.tokens = { placeables: [] };
   });
@@ -37,21 +37,24 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should sample corners explicitly for D&D/PF2e compatibility', () => {
       // Mock a target token
       const mockTarget = {
-        document: { 
-          width: 1, 
+        document: {
+          width: 1,
           height: 1,
-          x: 100, 
-          y: 100
+          x: 100,
+          y: 100,
         },
         x: 100,
         y: 100,
         w: 100,
-        h: 100
+        h: 100,
       };
 
       // Mock getTokenRect to return expected rectangle
       const mockGetTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
       global.getTokenRect = mockGetTokenRect;
 
@@ -66,11 +69,12 @@ describe('Wall Coverage Percentage Calculation', () => {
       const result = coverDetector._estimateWallCoveragePercent(attackerPos, mockTarget);
 
       // Verify that corners were explicitly sampled
-      const cornerCalls = rayBlockedCalls.filter(call => 
-        (call.to.x === 100 && call.to.y === 100) || // Top-left corner
-        (call.to.x === 200 && call.to.y === 100) || // Top-right corner
-        (call.to.x === 200 && call.to.y === 200) || // Bottom-right corner
-        (call.to.x === 100 && call.to.y === 200)    // Bottom-left corner
+      const cornerCalls = rayBlockedCalls.filter(
+        (call) =>
+          (call.to.x === 100 && call.to.y === 100) || // Top-left corner
+          (call.to.x === 200 && call.to.y === 100) || // Top-right corner
+          (call.to.x === 200 && call.to.y === 200) || // Bottom-right corner
+          (call.to.x === 100 && call.to.y === 200), // Bottom-left corner
       );
 
       // Some corners may be duplicated in edge sampling, so we expect at least 3 unique corner samples
@@ -81,11 +85,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should sample center point for additional context', () => {
       const mockTarget = {
         document: { width: 1, height: 1, x: 100, y: 100 },
-        x: 100, y: 100, w: 100, h: 100
+        x: 100,
+        y: 100,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
 
       const rayBlockedCalls = [];
@@ -98,8 +108,8 @@ describe('Wall Coverage Percentage Calculation', () => {
       coverDetector._estimateWallCoveragePercent(attackerPos, mockTarget);
 
       // Verify center point was sampled (may appear multiple times due to edge sampling)
-      const centerCalls = rayBlockedCalls.filter(call => 
-        call.to.x === 150 && call.to.y === 150 // Center of rectangle
+      const centerCalls = rayBlockedCalls.filter(
+        (call) => call.to.x === 150 && call.to.y === 150, // Center of rectangle
       );
 
       expect(centerCalls.length).toBeGreaterThanOrEqual(1);
@@ -108,11 +118,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should use increased sampling density (4 points per edge)', () => {
       const mockTarget = {
         document: { width: 1, height: 1, x: 100, y: 100 },
-        x: 100, y: 100, w: 100, h: 100
+        x: 100,
+        y: 100,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
 
       const rayBlockedCalls = [];
@@ -137,16 +153,22 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should return accurate percentage without center weight reduction', () => {
       const mockTarget = {
         document: { width: 1, height: 1, x: 100, y: 100 },
-        x: 100, y: 100, w: 100, h: 100
+        x: 100,
+        y: 100,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
 
       let callCount = 0;
       const totalCalls = [];
-      
+
       // Mock 50% of rays blocked
       coverDetector._isRayBlockedByWalls = jest.fn((p1, pt) => {
         totalCalls.push({ from: p1, to: pt });
@@ -165,11 +187,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should handle 100% blockage correctly', () => {
       const mockTarget = {
         document: { width: 1, height: 1, x: 100, y: 100 },
-        x: 100, y: 100, w: 100, h: 100
+        x: 100,
+        y: 100,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
 
       // All rays blocked
@@ -184,11 +212,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should handle 0% blockage correctly', () => {
       const mockTarget = {
         document: { width: 1, height: 1, x: 100, y: 100 },
-        x: 100, y: 100, w: 100, h: 100
+        x: 100,
+        y: 100,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
 
       // No rays blocked
@@ -203,11 +237,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should handle edge case with very small tokens', () => {
       const mockTarget = {
         document: { width: 0.5, height: 0.5, x: 100, y: 100 },
-        x: 100, y: 100, w: 50, h: 50
+        x: 100,
+        y: 100,
+        w: 50,
+        h: 50,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 150, y2: 150 // Small 50x50 token
+        x1: 100,
+        y1: 100,
+        x2: 150,
+        y2: 150, // Small 50x50 token
       }));
 
       coverDetector._isRayBlockedByWalls = jest.fn(() => false);
@@ -222,11 +262,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should handle edge case with large tokens', () => {
       const mockTarget = {
         document: { width: 4, height: 4, x: 100, y: 100 },
-        x: 100, y: 100, w: 400, h: 400
+        x: 100,
+        y: 100,
+        w: 400,
+        h: 400,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 500, y2: 500 // Large 400x400 token
+        x1: 100,
+        y1: 100,
+        x2: 500,
+        y2: 500, // Large 400x400 token
       }));
 
       // Block 25% of rays
@@ -277,19 +323,25 @@ describe('Wall Coverage Percentage Calculation', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [125, 0, 125, 300] // Vertical wall between attacker and target
+        coords: [125, 0, 125, 300], // Vertical wall between attacker and target
       };
       global.canvas.walls.objects.children = [mockWall];
 
       const mockTarget = {
         document: { width: 1, height: 1, x: 200, y: 200 },
-        x: 200, y: 200, w: 100, h: 100
+        x: 200,
+        y: 200,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 200, y1: 200, x2: 300, y2: 300
+        x1: 200,
+        y1: 200,
+        x2: 300,
+        y2: 300,
       }));
 
       // Mock _findNearestTokenToPoint to return our mock target
@@ -304,12 +356,15 @@ describe('Wall Coverage Percentage Calculation', () => {
 
       const attackerPos = { x: 0, y: 0 };
       const targetPos = { x: 250, y: 250 };
-      
+
       const result = coverDetector._evaluateWallsCover(attackerPos, targetPos);
 
       // 60% is above standard threshold (50%) but below greater threshold (75%)
       expect(result).toBe('standard');
-      expect(coverDetector._estimateWallCoveragePercent).toHaveBeenCalledWith(attackerPos, mockTarget);
+      expect(coverDetector._estimateWallCoveragePercent).toHaveBeenCalledWith(
+        attackerPos,
+        mockTarget,
+      );
 
       // Restore original method
       coverDetector._estimateWallCoveragePercent = originalEstimate;
@@ -331,19 +386,25 @@ describe('Wall Coverage Percentage Calculation', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [125, 0, 125, 300] // Vertical wall between attacker and target
+        coords: [125, 0, 125, 300], // Vertical wall between attacker and target
       };
       global.canvas.walls.objects.children = [mockWall];
 
       const mockTarget = {
         document: { width: 1, height: 1, x: 200, y: 200 },
-        x: 200, y: 200, w: 100, h: 100
+        x: 200,
+        y: 200,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 200, y1: 200, x2: 300, y2: 300
+        x1: 200,
+        y1: 200,
+        x2: 300,
+        y2: 300,
       }));
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => mockTarget);
@@ -357,12 +418,12 @@ describe('Wall Coverage Percentage Calculation', () => {
       const testCases = [
         { percentage: 30, expectedCover: 'standard' }, // Below standard threshold, but walls detected = standard minimum
         { percentage: 50, expectedCover: 'standard' }, // Above standard, below greater
-        { percentage: 80, expectedCover: 'greater' }   // Above greater threshold
+        { percentage: 80, expectedCover: 'greater' }, // Above greater threshold
       ];
 
       for (const testCase of testCases) {
         coverDetector._estimateWallCoveragePercent = jest.fn(() => testCase.percentage);
-        
+
         const result = coverDetector._evaluateWallsCover(attackerPos, targetPos);
         expect(result).toBe(testCase.expectedCover);
       }
@@ -384,19 +445,25 @@ describe('Wall Coverage Percentage Calculation', () => {
           door: 0,
           ds: 0,
           dir: 0,
-          getFlag: jest.fn(() => null) // No override
+          getFlag: jest.fn(() => null), // No override
         },
-        coords: [125, 0, 125, 300] // Vertical wall between attacker and target
+        coords: [125, 0, 125, 300], // Vertical wall between attacker and target
       };
       global.canvas.walls.objects.children = [mockWall];
 
       const mockTarget = {
         document: { width: 1, height: 1, x: 200, y: 200 },
-        x: 200, y: 200, w: 100, h: 100
+        x: 200,
+        y: 200,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 200, y1: 200, x2: 300, y2: 300
+        x1: 200,
+        y1: 200,
+        x2: 300,
+        y2: 300,
       }));
 
       coverDetector._findNearestTokenToPoint = jest.fn(() => mockTarget);
@@ -405,7 +472,7 @@ describe('Wall Coverage Percentage Calculation', () => {
 
       const attackerPos = { x: 0, y: 0 };
       const targetPos = { x: 250, y: 250 };
-      
+
       const result = coverDetector._evaluateWallsCover(attackerPos, targetPos);
 
       // Should cap at standard even though percentage is above greater threshold
@@ -418,18 +485,25 @@ describe('Wall Coverage Percentage Calculation', () => {
       // This test demonstrates that the new calculation is more intuitive
       const mockTarget = {
         document: { width: 1, height: 1, x: 100, y: 100 },
-        x: 100, y: 100, w: 100, h: 100
+        x: 100,
+        y: 100,
+        w: 100,
+        h: 100,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 200, y2: 200
+        x1: 100,
+        y1: 100,
+        x2: 200,
+        y2: 200,
       }));
 
       // Simulate a scenario where edges are blocked but center is not
       // Old system would reduce this to 30% due to center weight
       // New system returns the actual percentage
       coverDetector._isRayBlockedByWalls = jest.fn((p1, pt) => {
-        const centerX = 150, centerY = 150;
+        const centerX = 150,
+          centerY = 150;
         // Block everything except center point
         return !(pt.x === centerX && pt.y === centerY);
       });
@@ -445,11 +519,17 @@ describe('Wall Coverage Percentage Calculation', () => {
     test('should handle partial blockage scenarios accurately', () => {
       const mockTarget = {
         document: { width: 2, height: 2, x: 100, y: 100 },
-        x: 100, y: 100, w: 200, h: 200
+        x: 100,
+        y: 100,
+        w: 200,
+        h: 200,
       };
 
       global.getTokenRect = jest.fn(() => ({
-        x1: 100, y1: 100, x2: 300, y2: 300
+        x1: 100,
+        y1: 100,
+        x2: 300,
+        y2: 300,
       }));
 
       // Block only the top half of the token

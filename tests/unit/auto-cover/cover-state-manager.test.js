@@ -13,7 +13,9 @@ describe('CoverStateManager', () => {
     jest.resetModules();
 
     // Import the manager
-    const coverStateManagerInstance = (await import('../../../scripts/cover/auto-cover/CoverStateManager.js')).default;
+    const coverStateManagerInstance = (
+      await import('../../../scripts/cover/auto-cover/CoverStateManager.js')
+    ).default;
     coverStateManager = coverStateManagerInstance;
 
     // Setup mock tokens
@@ -73,7 +75,7 @@ describe('CoverStateManager', () => {
 
     test('should return stored cover state', () => {
       const coverMap = {
-        [targetToken.document.id]: 'standard'
+        [targetToken.document.id]: 'standard',
       };
       sourceToken.document.getFlag.mockReturnValue(coverMap);
 
@@ -83,7 +85,7 @@ describe('CoverStateManager', () => {
 
     test('should return none for non-existent target in cover map', () => {
       const coverMap = {
-        'other-target': 'standard'
+        'other-target': 'standard',
       };
       sourceToken.document.getFlag.mockReturnValue(coverMap);
 
@@ -106,46 +108,39 @@ describe('CoverStateManager', () => {
 
       await coverStateManager.setCoverBetween(sourceToken, targetToken, 'standard');
 
-      expect(sourceToken.document.setFlag).toHaveBeenCalledWith(
-        'pf2e-visioner',
-        'autoCoverMap',
-        { [targetToken.document.id]: 'standard' }
-      );
+      expect(sourceToken.document.setFlag).toHaveBeenCalledWith('pf2e-visioner', 'autoCoverMap', {
+        [targetToken.document.id]: 'standard',
+      });
     });
 
     test('should remove target entry when setting none', async () => {
       const existingMap = {
         [targetToken.document.id]: 'standard',
-        'other-target': 'lesser'
+        'other-target': 'lesser',
       };
       sourceToken.document.getFlag.mockReturnValue(existingMap);
 
       await coverStateManager.setCoverBetween(sourceToken, targetToken, 'none');
 
-      expect(sourceToken.document.setFlag).toHaveBeenCalledWith(
-        'pf2e-visioner',
-        'autoCoverMap',
-        { 'other-target': 'lesser' }
-      );
+      expect(sourceToken.document.setFlag).toHaveBeenCalledWith('pf2e-visioner', 'autoCoverMap', {
+        'other-target': 'lesser',
+      });
     });
 
     test('should unset flag when map becomes empty', async () => {
       const existingMap = {
-        [targetToken.document.id]: 'standard'
+        [targetToken.document.id]: 'standard',
       };
       sourceToken.document.getFlag.mockReturnValue(existingMap);
 
       await coverStateManager.setCoverBetween(sourceToken, targetToken, 'none');
 
-      expect(sourceToken.document.unsetFlag).toHaveBeenCalledWith(
-        'pf2e-visioner',
-        'autoCoverMap'
-      );
+      expect(sourceToken.document.unsetFlag).toHaveBeenCalledWith('pf2e-visioner', 'autoCoverMap');
     });
 
     test('should skip update if state unchanged', async () => {
       const existingMap = {
-        [targetToken.document.id]: 'standard'
+        [targetToken.document.id]: 'standard',
       };
       sourceToken.document.getFlag.mockReturnValue(existingMap);
 
@@ -160,11 +155,10 @@ describe('CoverStateManager', () => {
 
       // Should throw since we don't catch errors
       await expect(
-        coverStateManager.setCoverBetween(sourceToken, targetToken, 'standard')
+        coverStateManager.setCoverBetween(sourceToken, targetToken, 'standard'),
       ).rejects.toThrow('Flag setting failed');
     });
   });
-
 
   describe('clearCover', () => {
     test('should not clear cover for invalid token', async () => {
@@ -175,19 +169,16 @@ describe('CoverStateManager', () => {
     test('should clear all cover flags for token', async () => {
       await coverStateManager.clearCover(sourceToken);
 
-      expect(sourceToken.document.unsetFlag).toHaveBeenCalledWith(
-        'pf2e-visioner',
-        'autoCoverMap'
-      );
+      expect(sourceToken.document.unsetFlag).toHaveBeenCalledWith('pf2e-visioner', 'autoCoverMap');
     });
 
     test('should handle flag clearing errors gracefully', async () => {
       sourceToken.document.unsetFlag.mockRejectedValue(new Error('Flag clearing failed'));
 
       // Should throw since we don't catch errors
-      await expect(
-        coverStateManager.clearCover(sourceToken)
-      ).rejects.toThrow('Flag clearing failed');
+      await expect(coverStateManager.clearCover(sourceToken)).rejects.toThrow(
+        'Flag clearing failed',
+      );
     });
   });
 

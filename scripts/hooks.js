@@ -6,7 +6,6 @@
  * Register all FoundryVTT hooks - using optimized zero-delay versions
  */
 export function registerHooks() {
-  
   // Always delegate to modular registration
   (async () => {
     try {

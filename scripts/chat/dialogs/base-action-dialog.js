@@ -28,6 +28,8 @@ export class BaseActionDialog extends BasePreviewDialog {
   resolveTokenImage(token) {
     try {
       return (
+        token?.actor?.img ||
+        token?.actor?.prototypeToken?.texture?.src ||
         token?.texture?.src ||
         token?.document?.texture?.src ||
         token?.img ||
@@ -441,3 +443,4 @@ export class BaseActionDialog extends BasePreviewDialog {
     }
   }
 }
+

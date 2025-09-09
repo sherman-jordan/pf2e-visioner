@@ -5,6 +5,12 @@
  * - Safe hook attachment/cleanup
  */
 
+import {
+  addTokenImageClickHandlers,
+  panToAndSelectToken,
+  panToWall,
+} from '../../ui/shared-ui-utils.js';
+
 export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
   constructor(options = {}) {
     super(options);
@@ -34,7 +40,7 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
 
     // Add token image click handlers for panning and selection
     try {
-      this.addTokenImageClickHandlers?.();
+      addTokenImageClickHandlers(this.element, this);
     } catch (_) {}
   }
 
@@ -88,5 +94,14 @@ export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
         firstRow.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     } catch (_) {}
+  }
+
+  // Token image click handlers
+  panToAndSelectToken(token) {
+    return panToAndSelectToken(token);
+  }
+
+  panToWall(wall) {
+    return panToWall(wall);
   }
 }

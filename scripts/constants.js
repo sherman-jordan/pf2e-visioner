@@ -217,16 +217,6 @@ export const DEFAULT_SETTINGS = {
     },
   },
 
-  autoVisibilityRespectManualActions: {
-    name: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_RESPECT_MANUAL_ACTIONS.name',
-    hint: 'PF2E_VISIONER.SETTINGS.AUTO_VISIBILITY_RESPECT_MANUAL_ACTIONS.hint',
-    scope: 'world',
-    config: true,
-    restricted: true,
-    type: Boolean,
-    default: true,
-  },
-
   colorblindMode: {
     name: 'PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.name',
     hint: 'PF2E_VISIONER.SETTINGS.COLORBLIND_MODE.hint',

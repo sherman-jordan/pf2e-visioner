@@ -200,12 +200,12 @@
   background: var(--color-bg-light);
 }
 
-/* Toggle Switch Styles */
+/* Compact Toggle Switch Styles - Elegant Design */
 .pf2e-visioner .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 40px;
-  height: 20px;
+  width: 24px;
+  height: 14px;
 }
 
 .pf2e-visioner .toggle-switch input {
@@ -221,70 +221,182 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-border-light); /* Use theme color for "Auto" state */
-  transition: all 0.3s ease;
-  border-radius: 20px;
-  border: 1px solid var(--color-border-light);
+  background-color: rgba(108, 117, 125, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  border: 1px solid rgba(108, 117, 125, 0.5);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .pf2e-visioner .toggle-slider:before {
   position: absolute;
   content: '';
-  height: 16px;
-  width: 16px;
+  height: 10px;
+  width: 10px;
   left: 1px;
   bottom: 1px;
-  background-color: var(--color-text-light);
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
+/* Subtle glow effect for active override state */
 .pf2e-visioner .toggle-switch input:checked + .toggle-slider {
-  background-color: var(--avs-primary); /* Use theme primary color for "Override" state */
-  border-color: var(--avs-primary);
+  background: linear-gradient(135deg, var(--pf2e-visioner-primary, #4caf50) 0%, #45a049 100%);
+  border-color: var(--pf2e-visioner-primary, #4caf50);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(76, 175, 80, 0.2),
+    0 0 8px rgba(76, 175, 80, 0.15);
 }
 
 .pf2e-visioner .toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(20px);
-  background-color: white;
+  transform: translateX(10px);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .pf2e-visioner .toggle-switch input:focus + .toggle-slider {
-  box-shadow: 0 0 0 2px var(--avs-primary);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 2px rgba(76, 175, 80, 0.3);
   outline: none;
 }
 
+/* Enhanced hover and focus states for better UX */
 .pf2e-visioner .toggle-switch:hover .toggle-slider {
-  border-color: var(--avs-primary);
+  border-color: var(--pf2e-visioner-primary, #4caf50);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(76, 175, 80, 0.15);
+  transform: scale(1.02);
 }
 
-/* AVS Override Toggle in Action Dialogs */
+.pf2e-visioner .toggle-switch:hover .toggle-slider:before {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.pf2e-visioner .toggle-switch input:checked:hover + .toggle-slider {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(76, 175, 80, 0.3);
+}
+
+.pf2e-visioner .toggle-switch input:checked:hover + .toggle-slider:before {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Active state for better click feedback */
+.pf2e-visioner .toggle-switch:active .toggle-slider {
+  transform: scale(0.98);
+}
+
+.pf2e-visioner .toggle-switch:active .toggle-slider:before {
+  transform: scale(0.95);
+}
+
+.pf2e-visioner .toggle-switch input:checked:active + .toggle-slider:before {
+  transform: translateX(10px) scale(0.95);
+}
+
+/* AVS Override Toggle in Action Dialogs - Ultra-Compact Vertical Layout */
 .pf2e-visioner .avs-override-toggle {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 3px;
+  justify-content: center;
+  min-width: 32px;
 }
 
-/* Toggle label styling for distinct states */
+/* Ultra-compact toggle label styling */
 .pf2e-visioner .avs-override-label {
-  font-weight: 500;
-  font-size: 0.75rem;
+  font-weight: 600;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  transition: color 0.3s ease;
+  letter-spacing: 0.1px;
+  transition: all 0.2s ease;
   text-align: center;
-  margin-top: 2px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  line-height: 1;
 }
 
 .pf2e-visioner .avs-override-label.auto-state {
-  color: var(--color-text-light) !important;
+  color: rgba(108, 117, 125, 0.7) !important;
 }
 
 .pf2e-visioner .avs-override-label.override-state {
-  color: var(--avs-primary) !important;
-  font-weight: 600;
+  color: var(--pf2e-visioner-primary, #4caf50) !important;
+  background: rgba(76, 175, 80, 0.15);
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.3);
+}
+
+/* Colorblind mode support for toggle */
+.pf2e-visioner-colorblind-protanopia .toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  border-color: #2196f3;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(33, 150, 243, 0.2),
+    0 0 8px rgba(33, 150, 243, 0.15);
+}
+
+.pf2e-visioner-colorblind-protanopia .avs-override-label.override-state {
+  color: #2196f3 !important;
+  background: rgba(33, 150, 243, 0.1);
+  box-shadow: 0 0 0 1px rgba(33, 150, 243, 0.2);
+}
+
+.pf2e-visioner-colorblind-deuteranopia .toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+  border-color: #9c27b0;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(156, 39, 176, 0.2),
+    0 0 8px rgba(156, 39, 176, 0.15);
+}
+
+.pf2e-visioner-colorblind-deuteranopia .avs-override-label.override-state {
+  color: #9c27b0 !important;
+  background: rgba(156, 39, 176, 0.1);
+  box-shadow: 0 0 0 1px rgba(156, 39, 176, 0.2);
+}
+
+.pf2e-visioner-colorblind-tritanopia .toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #ff5722 0%, #e64a19 100%);
+  border-color: #ff5722;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 87, 34, 0.2),
+    0 0 8px rgba(255, 87, 34, 0.15);
+}
+
+.pf2e-visioner-colorblind-tritanopia .avs-override-label.override-state {
+  color: #ff5722 !important;
+  background: rgba(255, 87, 34, 0.1);
+  box-shadow: 0 0 0 1px rgba(255, 87, 34, 0.2);
+}
+
+.pf2e-visioner-colorblind-achromatopsia .toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #424242 0%, #212121 100%);
+  border-color: #424242;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(66, 66, 66, 0.2),
+    0 0 8px rgba(66, 66, 66, 0.15);
+}
+
+.pf2e-visioner-colorblind-achromatopsia .avs-override-label.override-state {
+  color: #424242 !important;
+  background: rgba(66, 66, 66, 0.1);
+  box-shadow: 0 0 0 1px rgba(66, 66, 66, 0.2);
 }
 
 /* Kill switch label styling */
@@ -364,9 +476,9 @@
   font-size: 0.75rem;
 }
 
-/* Table Column Styles */
+/* Table Column Styles - Ultra-Compact Design */
 .pf2e-visioner .avs-override {
-  width: 100px;
+  width: 60px;
   text-align: center;
   vertical-align: middle;
 }
@@ -516,3 +628,4 @@
     gap: 0.75rem;
   }
 }
+

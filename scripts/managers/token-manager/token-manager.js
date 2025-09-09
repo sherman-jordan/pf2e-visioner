@@ -280,6 +280,10 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       // Bind per-row icon click handlers (visibility/cover selection)
       this.addIconClickHandlers?.();
     } catch (_) {}
+    try {
+      // Add token image click handlers for panning and selection
+      this.addTokenImageClickHandlers?.();
+    } catch (_) {}
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);

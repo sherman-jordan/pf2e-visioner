@@ -59,7 +59,7 @@ export default [
       'no-useless-catch': 'off', // Common pattern in Foundry VTT for error handling
       'no-constant-binary-expression': 'off', // Sometimes used intentionally in Foundry VTT
       'no-debugger': 'off', // Sometimes used intentionally in Foundry VTT,
-      'prettier/prettier': 'error',
     },
   },
 ];
+

@@ -82,69 +82,31 @@ export class EnhancedSneakOutcome {
       enhancedLogic: true
     };
 
-    // Case 1: Start position doesn't qualify, end position does qualify
-    // -> Let AVS system decide the outcome state
-    if (!startQualifies && endQualifies) {
-      console.debug('PF2E Visioner | Case 1: Start doesn\'t qualify, end does - using AVS decision');
+    // Case 1: Start OR end position doesn't qualify for sneak
+    // -> Set newVisibility to 'observed' (sneak fails)
+    if (!startQualifies || !endQualifies) {
+      console.debug('PF2E Visioner | Case 1: Start or end position doesn\'t qualify - sneak fails, setting to observed');
       
-      finalOutcome = await this._handleAVSDecision(
-        observerToken, 
-        sneakingToken, 
-        currentVisibilityState,
-        { 
-          reason: 'start_unqualified_end_qualified',
-          positionTransition,
-          rollOutcome,
-          rollTotal,
-          perceptionDC
-        }
-      );
+      finalOutcome.newVisibility = 'observed';
+      finalOutcome.outcomeReason = !startQualifies && !endQualifies 
+        ? 'neither_position_qualified' 
+        : !startQualifies 
+          ? 'start_position_unqualified' 
+          : 'end_position_unqualified';
+      finalOutcome.enhancedLogic = true;
+      finalOutcome.positionImpact = 'sneak_failed_due_to_position';
 
-    // Case 2: Start position qualifies, end position doesn't qualify  
-    // -> Let AVS system decide the outcome state
-    } else if (startQualifies && !endQualifies) {
-      console.debug('PF2E Visioner | Case 2: Start qualifies, end doesn\'t - using AVS decision');
-      
-      finalOutcome = await this._handleAVSDecision(
-        observerToken,
-        sneakingToken,
-        currentVisibilityState,
-        {
-          reason: 'start_qualified_end_unqualified',
-          positionTransition,
-          rollOutcome,
-          rollTotal,
-          perceptionDC
-        }
-      );
-
-    // Case 3: Both start and end positions qualify for sneak
-    // -> Use roll vs perception DC with enhanced logic
-    } else if (startQualifies && endQualifies) {
-      console.debug('PF2E Visioner | Case 3: Both positions qualify - using roll vs DC logic');
-      
-      finalOutcome = await this._handleQualifiedPositionOutcome(
-        startVisibilityState,
-        endVisibilityState,
-        currentVisibilityState,
-        rollOutcome,
-        rollTotal,
-        perceptionDC,
-        dieResult,
-        positionTransition,
-        observerToken,
-        sneakingToken
-      );
-
-    // Case 4: Neither start nor end position qualifies
-    // -> This shouldn't normally happen in a valid sneak, but handle gracefully
+    // Case 2: Both start and end positions qualify for sneak
+    // -> Use regular calculation from action-state-config.js
     } else {
-      console.debug('PF2E Visioner | Case 4: Neither position qualifies - fallback to standard logic');
+      console.debug('PF2E Visioner | Case 2: Both positions qualify - using standard outcome calculation');
       
-      // Fall back to standard outcome determination
+      // Use the standard outcome determination from action-state-config.js
       const standardOutcome = getDefaultNewStateFor('sneak', currentVisibilityState, rollOutcome);
       finalOutcome.newVisibility = standardOutcome || currentVisibilityState;
-      finalOutcome.outcomeReason = 'neither_position_qualified';
+      finalOutcome.outcomeReason = 'both_positions_qualified_standard_calculation';
+      finalOutcome.enhancedLogic = true;
+      finalOutcome.positionImpact = 'sneak_successful';
     }
 
     // Add additional outcome metadata

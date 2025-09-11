@@ -202,7 +202,9 @@ export class SeekActionHandler extends ActionHandlerBase {
     }
     const total = Number(actionData?.roll?.total ?? 0);
     const die = Number(
-      actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
+      actionData?.roll?.dice?.[0]?.results?.[0]?.result ?? 
+      actionData?.roll?.dice?.[0]?.total ?? 
+      actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const outcome = determineOutcome(total, die, dc);
     // Simple mapping: success → observed; failure → concealed/hidden depending on target state; crit-failure → undetected

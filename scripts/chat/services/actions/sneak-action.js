@@ -73,84 +73,7 @@ export class SneakActionHandler extends ActionHandlerBase {
     }
   }
 
-  /**
-   * Handles validation results and displays warnings/errors to users
-   * @param {Object} validationResult - Result from prerequisite validation
-   * @param {Object} actionData - Action data
-   * @private
-   */
-  async _handleValidationResults(validationResult, actionData) {
-    const { notify } = await import('../infra/notifications.js');
 
-    // Handle critical errors that prevent the action
-    if (!validationResult.canProceed) {
-      const errorMessage = validationResult.errors.join('; ');
-      notify.error(`Sneak action cannot proceed: ${errorMessage}`);
-
-      // Show recommendations if available
-      if (validationResult.recommendations.length > 0) {
-        const recommendations = validationResult.recommendations.slice(0, 3).join('; ');
-        notify.info(`Recommendations: ${recommendations}`);
-      }
-
-      throw new Error(`Prerequisites not met: ${errorMessage}`);
-    }
-
-    // Show warning dialog for non-critical issues
-    if (!validationResult.valid || validationResult.warnings.length > 0) {
-      const shouldProceed = await this._showValidationWarningDialog(validationResult, actionData);
-      if (!shouldProceed) {
-        throw new Error('User cancelled sneak action due to validation warnings');
-      }
-    }
-
-    // Show helpful recommendations via notifications for perfect validation
-    if (validationResult.valid && validationResult.recommendations.length > 0) {
-      const topRecommendations = validationResult.recommendations.slice(0, 2).join('; ');
-      notify.info(`Tactical advice: ${topRecommendations}`);
-    }
-
-    // Log detailed validation results for debugging
-    if (validationResult.positionAnalysis) {
-      console.debug('PF2E Visioner | Sneak validation results:', {
-        valid: validationResult.valid,
-        canProceed: validationResult.canProceed,
-        observerCount: validationResult.observerCount,
-        positionQuality: validationResult.positionAnalysis.overallQuality,
-        systemStatus: validationResult.systemStatus,
-      });
-    }
-  }
-
-  /**
-   * Shows validation warning dialog to user
-   * @param {Object} validationResult - Validation results
-   * @param {Object} actionData - Action data
-   * @returns {Promise<boolean>} True if user chooses to proceed
-   * @private
-   */
-  async _showValidationWarningDialog(validationResult, actionData) {
-    try {
-      const { PrerequisiteWarningDialog } = await import(
-        '../dialogs/prerequisite-warning-dialog.js'
-      );
-      return await PrerequisiteWarningDialog.show(validationResult, actionData);
-    } catch (error) {
-      console.warn('PF2E Visioner | Failed to show validation warning dialog:', error);
-
-      // Fallback to notifications if dialog fails
-      const { notify } = await import('../infra/notifications.js');
-
-      if (validationResult.warnings.length > 0) {
-        const warningMessage = validationResult.warnings.slice(0, 2).join('; ');
-        notify.warn(`Sneak attempt warnings: ${warningMessage}`);
-      }
-
-      // Ask user via simple confirm dialog
-      const message = `Sneak action has warnings. Proceed anyway?\n\nWarnings:\n${validationResult.warnings.slice(0, 3).join('\n')}`;
-      return confirm(message);
-    }
-  }
 
   /**
    * Captures position state at the start of the sneak action
@@ -686,7 +609,9 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     const dc = adjustedDC;
     const die = Number(
-      actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
+      actionData?.roll?.dice?.[0]?.results?.[0]?.result ?? 
+      actionData?.roll?.dice?.[0]?.total ?? 
+      actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const margin = total - dc;
     const originalMargin = originalTotal ? originalTotal - dc : margin;
@@ -2452,59 +2377,6 @@ export class SneakActionHandler extends ActionHandlerBase {
     }
   }
 
-  /**
-   * Generates comprehensive recommendations using the recommendation engine
-   * @param {Object} validationResult - Validation results
-   * @param {Object} positionAnalysis - Position analysis
-   * @param {Object} actionData - Action data
-   * @returns {Promise<Object>} Comprehensive recommendations
-   * @private
-   */
-  async _generateComprehensiveRecommendations(validationResult, positionAnalysis, actionData) {
-    try {
-      const { SneakRecommendationEngine } = await import(
-        '../recommendations/sneak-recommendation-engine.js'
-      );
-      return SneakRecommendationEngine.generateRecommendations(
-        validationResult,
-        positionAnalysis,
-        actionData,
-      );
-    } catch (error) {
-      console.warn('PF2E Visioner | Failed to generate comprehensive recommendations:', error);
-      return {
-        primary: null,
-        alternatives: [],
-        tactical: [],
-        positioning: [],
-        conditions: [],
-        priority: 'medium',
-      };
-    }
-  }
-
-  /**
-   * Temporary workaround to get cached roll-time position
-   * This uses a simple in-memory cache to store positions by actor name
-   * @param {Object} actionData - Action data containing actor information
-   * @returns {Object|null} Cached roll-time position or null
-   * @private
-   */
-  _getCachedRollTimePosition(actionData) {
-    if (!this._rollTimePositionCache) {
-      this._rollTimePositionCache = new Map();
-    }
-
-    const actorName = actionData.actor?.name;
-    const cached = this._rollTimePositionCache.get(actorName);
-    
-    // Check if the cached position is recent (within last 30 seconds)
-    if (cached && (Date.now() - cached.timestamp) < 30000) {
-      return cached;
-    }
-
-    return null;
-  }
 
   /**
    * Store roll-time position in cache (to be called from position capture service)
@@ -2524,25 +2396,332 @@ export class SneakActionHandler extends ActionHandlerBase {
     });
   }
 
+
   /**
-   * Get cached roll-time position from global cache
-   * @param {Object} actionData - Action data
-   * @returns {Object|null} Cached position or null
-   * @private
+   * Starts the sneak action by capturing initial states and hiding the token
+   * @param {Object} actionData - Action data from the message
+   * @param {Object} button - Button element (optional)
    */
-  _getCachedRollTimePositionFromGlobal(actionData) {
-    if (!SneakActionHandler._globalRollTimeCache) {
-      return null;
-    }
+  static async startSneak(actionData, button) {
+    console.log('🚀 NEW STATE-BASED startSneak() function called! actionData:', actionData);
+    try {
+      // Get actor name and message from actionData - handle both token objects and names
+      let actorName;
+      if (actionData.actor?.name) {
+        // If actionData.actor is a token/actor object
+        actorName = actionData.actor.name;
+      } else if (typeof actionData.actor === 'string') {
+        // If actionData.actor is already a string
+        actorName = actionData.actor;
+      } else if (actionData.message?.actor?.name) {
+        actorName = actionData.message.actor.name;
+      } else if (typeof actionData.message?.actor === 'string') {
+        actorName = actionData.message.actor;
+      }
+      
+      const messageId = actionData.messageId || actionData.message?.id;
+      const message = game.messages.get(messageId);
+      
+      if (!actorName) {
+        console.error('PF2E Visioner | Cannot start sneak - actor name not found in actionData:', actionData);
+        return;
+      }
+      
+      console.log('PF2E Visioner | Starting sneak for actor:', actorName);
+      
+      // Get the sneaking token
+      const token = canvas.tokens.placeables.find(t => t.actor?.name === actorName);
+      if (!token) {
+        console.error('PF2E Visioner | Cannot start sneak - token not found for actor:', actorName);
+        return;
+      }
 
-    const actorName = actionData.actor?.name;
-    const cached = SneakActionHandler._globalRollTimeCache.get(actorName);
+      // Check system availability by checking if systems are enabled
+      const avsEnabled = game.settings.get('pf2e-visioner', 'autoVisibilityEnabled') ?? false;
+      const autoCoverEnabled = autoCoverSystem?.isEnabled?.() ?? false;
+      
+      console.log(`PF2E Visioner | System status - AVS: ${avsEnabled ? 'enabled' : 'disabled'}, Auto-Cover: ${autoCoverEnabled ? 'enabled' : 'disabled'}`);
+      
+      // Capture current visibility and cover states from all observer tokens
+      const startStates = {};
+      
+      // Get all potential observer tokens (non-allied tokens)
+      const observerTokens = canvas.tokens.placeables.filter(t => 
+        t.id !== token.id && t.actor && !t.document.hidden
+      );
+      
+      // Capture state from each observer's perspective
+      for (const observer of observerTokens) {
+        try {
+          let visibilityState;
+          let coverState;
+          
+          // Use AVS or manual visibility detection based on setting
+          if (avsEnabled) {
+            // Use AVS visibility detection - getVisibilityBetween integrates AVS when enabled
+            const { getVisibilityBetween } = await import('../../../utils.js');
+            visibilityState = getVisibilityBetween(observer, token) || 'observed';
+            console.log(`PF2E Visioner | AVS visibility for ${observer.name} → ${token.name}: ${visibilityState}`);
+          } else {
+            // Use manual/Foundry visibility detection
+            visibilityState = observer.document.canObserve(token.document) ? 'observed' : 'hidden';
+            console.log(`PF2E Visioner | Manual visibility for ${observer.name} → ${token.name}: ${visibilityState}`);
+          }
+          
+          // Get cover state based on Auto-Cover system availability
+          if (autoCoverEnabled) {
+            // Use auto-cover system directly
+            coverState = autoCoverSystem.getCoverBetween(observer, token) || 'none';
+            console.log(`PF2E Visioner | AUTO cover detection for ${observer.name} → ${token.name}: ${coverState}`);
+          } else {
+            // Use manual cover detection
+            coverState = getCoverBetween(observer, token) || 'none';
+            console.log(`PF2E Visioner | Manual cover for ${observer.name} → ${token.name}: ${coverState}`);
+          }
+          
+          startStates[observer.id] = {
+            observerName: observer.name,
+            observerId: observer.id,
+            visibility: visibilityState,
+            cover: coverState,
+            timestamp: Date.now(),
+            // Store which systems were used for capture
+            capturedWith: {
+              avs: avsEnabled,
+              autoCover: autoCoverEnabled
+            }
+          };
+          
+          console.log(`PF2E Visioner | Captured start state for ${observer.name}:`, startStates[observer.id]);
+        } catch (error) {
+          console.warn(`PF2E Visioner | Failed to capture start state for ${observer.name}:`, error);
+          startStates[observer.id] = {
+            observerName: observer.name,
+            observerId: observer.id,
+            visibility: 'observed',
+            cover: 'none',
+            timestamp: Date.now(),
+            capturedWith: {
+              avs: avsEnabled,
+              autoCover: autoCoverEnabled
+            }
+          };
+        }
+      }
+      
+      // Store states in message flags instead of position
+      await message.setFlag('pf2e-visioner', 'sneakStartStates', startStates);
+      
+      // Hide the token (representing successful stealth)
+      await token.document.update({ hidden: true });
+      
+      console.log('PF2E Visioner | Sneak started - states captured and token hidden:', {
+        observerCount: Object.keys(startStates).length,
+        states: startStates
+      });
+
+      // Refresh the UI to show "Open Results" button instead of "Start Sneak"
+      try {
+        const parent = button.closest('.automation-content');
+        if (parent && messageId) {
+          const message = game.messages.get(messageId);
+          if (message) {
+            const html = $(message.element);
+            parent.remove();
+            
+            // Re-inject the UI with updated actionData that includes the message
+            const { injectAutomationUI } = await import('../ui/ui-injector.js');
+            const updatedActionData = { ...actionData, message };
+            injectAutomationUI(message, html, updatedActionData);
+          }
+        }
+      } catch (refreshError) {
+        console.warn('PF2E Visioner | Failed to refresh UI after starting sneak:', refreshError);
+      }
+      
+    } catch (error) {
+      console.error('PF2E Visioner | Error starting sneak:', error);
+      const { notify } = await import('../infra/notifications.js');
+      notify.error('Failed to start sneak - see console for details');
+    }
+  }
+
+  /**
+   * Opens the sneak results dialog for preview and application
+   * @param {Object} actionData - Action data from the message
+   * @param {Object} button - Button element (optional)
+   */
+  static async openSneakResults(actionData, button) {
+    console.log('PF2E Visioner | Opening sneak results dialog for actionData:', actionData);
     
-    // Check if the cached position is recent (within last 30 seconds)
-    if (cached && (Date.now() - cached.timestamp) < 30000) {
-      return cached;
-    }
+    try {
+      // Get the token and message
+      const messageId = actionData.messageId || actionData.message?.id;
+      const message = game.messages.get(messageId);
+      console.log('PF2E Visioner | Message found:', !!message, 'ID:', messageId);
+      
+      // Extract token ID from actionData
+      let tokenId;
+      
+      if (actionData.actor) {
+        if (typeof actionData.actor === 'string') {
+          // If it's a string, it might be a token ID
+          tokenId = actionData.actor;
+        } else if (actionData.actor.id) {
+          // actionData.actor is a token object with ID
+          tokenId = actionData.actor.id;
+        }
+      }
+      
+      // Fallback to direct tokenId property
+      tokenId = tokenId || actionData.tokenId;
+      
+      console.log('PF2E Visioner | Looking for token ID:', tokenId);
+      
+      // Find the token by ID
+      const token = canvas.tokens.placeables.find(t => t.id === tokenId);
+      if (!token) {
+        console.error('PF2E Visioner | Cannot open sneak results - token not found for ID:', tokenId);
+        console.error('PF2E Visioner | Available token IDs:', canvas.tokens.placeables.map(t => t.id));
+        return;
+      }
+      
+      console.log('PF2E Visioner | Token found:', token.name, 'Actor:', token.actor?.name);
 
-    return null;
+      // Get the stored start states from message flags
+      const startStates = message?.flags?.['pf2e-visioner']?.sneakStartStates;
+      
+      if (!startStates || Object.keys(startStates).length === 0) {
+        console.error('PF2E Visioner | Cannot open sneak results - no stored start states found');
+        const { notify } = await import('./infra/notifications.js');
+        notify.error('No start states found - please start sneak first');
+        return;
+      }
+
+      console.log('PF2E Visioner | Found stored start states:', startStates);
+
+      // Get current visibility states for all observers
+      const { getVisibilityBetween } = await import('../../../utils.js');
+      const outcomes = [];
+
+      for (const [observerId, startState] of Object.entries(startStates)) {
+        const observer = canvas.tokens.placeables.find(t => t.id === observerId);
+        if (!observer) continue;
+
+        // Get current visibility state
+        const currentVisibility = getVisibilityBetween(observer, token);
+        console.log(`PF2E Visioner | Current AVS visibility for ${observer.name} → ${token.name}: ${currentVisibility}`);
+
+        // Get current cover state
+        const { autoCoverSystem } = await import('../../../cover/auto-cover/AutoCoverSystem.js');
+        const currentCover = await autoCoverSystem.detectCover(observer, token);
+        console.log(`PF2E Visioner | Current AUTO cover detection for ${observer.name} → ${token.name}: ${currentCover.state}`);
+
+        // Calculate roll data using the action handler
+        let rollTotal = 0;
+        let originalRollTotal = null;
+        let dc = 14;
+        let margin = 0;
+        let calculatedOutcome = 'failure';
+
+        try {
+          // Get base roll total from the message
+          const baseTotal = Number(message?.roll?.total ?? 0);
+          
+          if (baseTotal > 0) {
+            // Use the action handler's roll calculation logic
+            const handler = new SneakActionHandler();
+            
+            // Analyze this specific observer to get proper roll calculations
+            try {
+              const analysisResult = await handler.analyzeOutcome(actionData, observer);
+              rollTotal = analysisResult.rollTotal || baseTotal;
+              originalRollTotal = analysisResult.originalRollTotal;
+              dc = analysisResult.dc || 14;
+              margin = analysisResult.margin || (rollTotal - dc);
+              calculatedOutcome = analysisResult.outcome || 'failure'; // Use the calculated outcome
+              
+              console.log('PF2E Visioner | Calculated roll data for', observer.name, ':', {
+                rollTotal,
+                originalRollTotal,
+                dc,
+                margin,
+                baseTotal,
+                calculatedOutcome
+              });
+            } catch (analysisError) {
+              console.warn('PF2E Visioner | Failed to analyze outcome, using base total:', analysisError);
+              rollTotal = baseTotal;
+              dc = 14; // Fallback DC
+              margin = baseTotal - dc;
+            }
+          }
+        } catch (rollError) {
+          console.warn('PF2E Visioner | Failed to calculate roll data:', rollError);
+        }
+        
+        // Create outcome with state transition data
+        const outcome = {
+          token: observer,
+          actor: observer.actor,
+          tokenImage: observer.document.texture.src,
+          startVisibility: startState.visibility,
+          startCover: startState.cover,
+          endVisibility: currentVisibility,
+          endCover: currentCover.state,
+          oldVisibility: startState.visibility, // This is the "old" visibility state
+          newVisibility: currentVisibility,
+          hasChanged: startState.visibility !== currentVisibility || startState.cover !== currentCover.state,
+          outcome: calculatedOutcome, // Use the calculated outcome from roll analysis
+          outcomeLabel: calculatedOutcome === 'critical-success' ? 'Critical Success' : 
+                       calculatedOutcome === 'success' ? 'Success' :
+                       calculatedOutcome === 'failure' ? 'Failure' :
+                       calculatedOutcome === 'critical-failure' ? 'Critical Failure' : 'Unknown',
+          rollTotal,
+          originalRollTotal, 
+          shouldShowOverride: !!originalRollTotal,
+          dc,
+          margin,
+          // Add visibility change data for the arrow display
+          availableStates: Object.keys(VISIBILITY_STATES).map(state => ({
+            value: state,
+            label: VISIBILITY_STATES[state].label,
+            icon: VISIBILITY_STATES[state].icon,
+            color: VISIBILITY_STATES[state].color
+          }))
+        };
+
+        outcomes.push(outcome);
+      }
+
+      // Create state transition summary
+      const stateTransition = {
+        start: startStates,
+        current: Object.fromEntries(
+          outcomes.map(o => [o.token.id, {
+            visibility: o.endVisibility,
+            cover: o.endCover,
+            timestamp: Date.now()
+          }])
+        ),
+        hasChanged: outcomes.some(o => o.hasChanged)
+      };
+
+      console.log('PF2E Visioner | State transition for', token.name, ':', stateTransition);
+
+      // Import and open the dialog
+      const { SneakPreviewDialog } = await import('../../dialogs/sneak-preview-dialog.js');
+      const dialog = new SneakPreviewDialog(token, outcomes, stateTransition, {
+        messageId,
+        startStates
+      });
+      
+      dialog.render(true);
+      
+    } catch (error) {
+      console.error('PF2E Visioner | Error opening sneak results:', error);
+      const { notify } = await import('./infra/notifications.js');
+      notify.error('Failed to open sneak results dialog');
+    }
   }
 }

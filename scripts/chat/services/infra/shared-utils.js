@@ -185,6 +185,7 @@ export function determineOutcome(total, die, dc) {
   const ladder = ['critical-failure', 'failure', 'success', 'critical-success'];
   const idx = ladder.indexOf(outcome);
   const natural = Number(die);
+  
   if (natural === 20) {
     // Promote by one step unless already crit success
     return ladder[Math.min(idx + 1, ladder.length - 1)];
@@ -193,6 +194,7 @@ export function determineOutcome(total, die, dc) {
     // Demote by one step unless already crit failure
     return ladder[Math.max(idx - 1, 0)];
   }
+  
   return outcome;
 }
 

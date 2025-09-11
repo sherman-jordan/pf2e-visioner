@@ -36,8 +36,6 @@ export function bindAutomationEvents(panel, message, actionData) {
         setupSeekTemplate,
         removeSeekTemplate,
         injectAutomationUI,
-        startSneak,
-        openSneakResults,
       } = await import('../services/index.js');
 
       // Declarative apply/revert handlers by action string
@@ -49,8 +47,14 @@ export function bindAutomationEvents(panel, message, actionData) {
         'apply-now-diversion': applyNowDiversion,
         'apply-now-consequences': applyNowConsequences,
         'apply-now-take-cover': applyNowTakeCover,
-        'start-sneak': startSneak,
-        'open-sneak-results': openSneakResults,
+        'start-sneak': async (actionData) => {
+          const { SneakActionHandler } = await import('../services/actions/sneak-action.js');
+          return SneakActionHandler.startSneak(actionData);
+        },
+        'open-sneak-results': async (actionData) => {
+          const { SneakActionHandler } = await import('../services/actions/sneak-action.js');
+          return SneakActionHandler.openSneakResults(actionData);
+        },
       };
       const revertHandlers = {
         'revert-now-seek': revertNowSeek,
@@ -159,10 +163,6 @@ export function bindAutomationEvents(panel, message, actionData) {
           ...actionData,
           ignoreAllies: game.settings.get('pf2e-visioner', 'ignoreAllies'),
         });
-      } else if (action === 'open-sneak-results' && actionData.actionType === 'sneak') {
-        // Route to new state-based sneak system
-        const { openSneakResults } = await import('../services/index.js');
-        await openSneakResults(actionData);
       } else if (action === 'open-point-out-results' && actionData.actionType === 'point-out') {
         if (game.user.isGM) {
           const { enrichPointOutActionDataForGM } = await import('../services/index.js');

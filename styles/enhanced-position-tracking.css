@@ -2,12 +2,37 @@
 
 /* ===== SUCCESS/FAILURE RESULT INDICATORS ===== */
 
-/* Sneak Result Success Indicators */
-.sneak-result-success {
-  background: linear-gradient(135deg, rgba(40, 167, 69, 0.15), rgba(40, 167, 69, 0.05));
-  border-left: 4px solid #28a745;
-  color: #155724;
-  position: relative;
+/* ===== OUTCOME COLOR SCHEME ===== */
+/* Success: Blue */
+.outcome.success,
+.sneak-result-success,
+.outcome-primary.sneak-result-success,
+.outcome-text.sneak-result-success {
+  color: #2196f3 !important;
+}
+
+/* Critical Success: Green */
+.outcome.critical-success,
+.sneak-result-critical-success,
+.outcome-primary.sneak-result-critical-success,
+.outcome-text.sneak-result-critical-success {
+  color: #4caf50 !important;
+}
+
+/* Failure: Orange */
+.outcome.failure,
+.sneak-result-failure,
+.outcome-primary.sneak-result-failure,
+.outcome-text.sneak-result-failure {
+  color: #ff9800 !important;
+}
+
+/* Critical Failure: Red */
+.outcome.critical-failure,
+.sneak-result-critical-failure,
+.outcome-primary.sneak-result-critical-failure,
+.outcome-text.sneak-result-critical-failure {
+  color: #f44336 !important;
 }
 
 .sneak-visibility-indicator.visibility-observed {
@@ -26,23 +51,7 @@
   color: var(--visibility-undetected);
 }
 
-.sneak-result-success::before {
-  content: '✓';
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #28a745;
-  color: white;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-}
+/* Removed checkmark icon - text labels are sufficient */
 
 @keyframes criticalSuccessGlow {
   0% {

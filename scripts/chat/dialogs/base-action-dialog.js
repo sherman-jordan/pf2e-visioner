@@ -251,6 +251,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         : value === 'criticalFailure'
           ? 'critical-failure'
           : value;
+    
     switch (norm) {
       case 'critical-success':
         return 'Critical Success';

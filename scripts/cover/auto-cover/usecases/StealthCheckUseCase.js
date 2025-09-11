@@ -340,10 +340,17 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
               // Calculate the new bonus for the chosen state
               const newBonus = getCoverStealthBonusByState(detectedState);
 
-              // Update the current dialog's modifiers immediately (in onChosen allow zero to be kept)
-              this._applyDialogCoverModifier(dialog, newBonus, getCoverLabel(chosen), {
-                keepWhenZero: true,
-              });
+              // Check if this is a sneak action - if so, don't apply cover bonus
+              const isSneakAction = this._isSneakAction(dialog.context || {});
+              
+              if (!isSneakAction) {
+                // Update the current dialog's modifiers immediately (in onChosen allow zero to be kept)
+                this._applyDialogCoverModifier(dialog, newBonus, getCoverLabel(chosen), {
+                  keepWhenZero: true,
+                });
+              } else {
+                console.debug('PF2E Visioner | Skipping cover modifier for sneak action in dialog');
+              }
               // Apply cover state between tokens (for both attacks and saves)
               if (hider && target && detectedState !== 'none') {
                 await this.autoCoverSystem.setCoverBetween(hider, target, detectedState, {
@@ -586,6 +593,14 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
       // Check if this is a Sneak action (not Hide) to skip cover bonus
       const isSneakAction = this._isSneakAction(context);
       
+      console.debug('PF2E Visioner | Cover bonus decision:', {
+        bonus,
+        isSneakAction,
+        willApplyCover: bonus > 1 && !isSneakAction,
+        checkModifiers: check?.modifiers?.length || 0,
+        existingCoverModifier: check?.modifiers?.some(m => m?.slug === 'pf2e-visioner-cover')
+      });
+      
       if (bonus > 1 && !isSneakAction) {
         const state = coverInfo?.state ?? 'standard';
         // Ensure predicate support
@@ -657,33 +672,22 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
    */
   _isSneakAction(context) {
     try {
-      // Safety check for context
-      if (!context || typeof context !== 'object') {
-        return false;
+      // Check for the standard PF2E sneak action roll option
+      const options = context?.options;
+      let hasActionSneak = false;
+      
+      if (options) {
+        if (Array.isArray(options)) {
+          hasActionSneak = options.includes('action:sneak');
+        } else if (options instanceof Set) {
+          hasActionSneak = options.has('action:sneak');
+        } else if (typeof options.includes === 'function') {
+          hasActionSneak = options.includes('action:sneak');
+        }
       }
       
-      // Check for explicit action type in context
-      if (context?.action?.slug === 'sneak') return true;
-      if (context?.action?.name && typeof context.action.name === 'string' && context.action.name.toLowerCase().includes('sneak')) return true;
-      
-      // Check for action type in the roll data
-      if (context?.type === 'sneak-check') return true;
-      
-      // Check for action identifier in options (with extra safety)
-      if (context?.options && Array.isArray(context.options) && context.options.includes('sneak-action')) return true;
-      
-      // Check slug in various possible locations
-      const slug = context?.slug || context?.action?.slug || context?.item?.slug;
-      if (slug === 'sneak') return true;
-      
-      // Check the actor's last action if available
-      const lastAction = context?.actor?.getFlag?.('pf2e-visioner', 'lastAction');
-      if (lastAction?.type === 'sneak') return true;
-      
-      // Check for sneak-specific flags
-      if (context?._visionerActionType === 'sneak') return true;
-      
-      return false;
+      // Debug logging removed - sneak action detection working correctly
+      return hasActionSneak;
     } catch (error) {
       console.warn('PF2E Visioner | Error detecting Sneak action:', error);
       return false;

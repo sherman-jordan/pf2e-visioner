@@ -1174,9 +1174,9 @@ export class SneakPreviewDialog extends BaseActionDialog {
       case 'lesser':
         return 'fas fa-shield-alt';
       case 'standard':
-        return 'fas fa-shield';
+        return 'fas fa-shield-alt';
       case 'greater':
-        return 'fas fa-shield-check';
+        return 'fas fa-shield';
       default:
         return 'fas fa-question-circle';
     }
@@ -2569,6 +2569,9 @@ export class SneakPreviewDialog extends BaseActionDialog {
       target.setAttribute('data-tooltip', 'Start position does not qualify for sneak');
     }
 
+    // Recalculate newVisibility based on updated position qualifications
+    await app._recalculateNewVisibilityForOutcome(outcome);
+
     // Notify change
     notify.info(`${outcome.token.name} start position ${outcome.positionDisplay.startPosition.qualifies ? 'now qualifies' : 'no longer qualifies'} for sneak`);
   }
@@ -2604,8 +2607,113 @@ export class SneakPreviewDialog extends BaseActionDialog {
       target.setAttribute('data-tooltip', 'End position does not qualify for sneak');
     }
 
+    // Recalculate newVisibility based on updated position qualifications
+    await app._recalculateNewVisibilityForOutcome(outcome);
+
     // Notify change
     notify.info(`${outcome.token.name} end position ${outcome.positionDisplay.endPosition.qualifies ? 'now qualifies' : 'no longer qualifies'} for sneak`);
+  }
+
+  /**
+   * Recalculates newVisibility for an outcome based on current position qualifications
+   * @param {Object} outcome - The outcome object to recalculate
+   */
+  async _recalculateNewVisibilityForOutcome(outcome) {
+    if (!outcome || !outcome.hasPositionData) return;
+
+    const startQualifies = outcome.positionDisplay.startPosition.qualifies;
+    const endQualifies = outcome.positionDisplay.endPosition.qualifies;
+    const currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+    const rollOutcome = outcome.outcome;
+
+    console.debug('PF2E Visioner | Recalculating newVisibility:', {
+      tokenName: outcome.token.name,
+      startQualifies,
+      endQualifies,
+      currentVisibility,
+      rollOutcome,
+      oldVisibility: outcome.oldVisibility,
+      currentVisibilityFromOutcome: outcome.currentVisibility
+    });
+
+    let newVisibility;
+
+    // Apply the position qualification logic
+    if (!startQualifies || !endQualifies) {
+      // If start OR end position doesn't qualify for sneak -> observed (sneak fails)
+      newVisibility = 'observed';
+      console.debug('PF2E Visioner | Position qualification failed - setting to observed');
+    } else {
+      // If both positions qualify -> use standard calculation from action-state-config.js
+      const { getDefaultNewStateFor } = await import('../services/data/action-state-config.js');
+      const calculatedVisibility = getDefaultNewStateFor('sneak', currentVisibility, rollOutcome);
+      newVisibility = calculatedVisibility || currentVisibility;
+      console.debug('PF2E Visioner | Both positions qualify - using standard calculation:', {
+        currentVisibility,
+        rollOutcome,
+        calculatedVisibility,
+        finalNewVisibility: newVisibility
+      });
+    }
+
+    // Update the outcome
+    outcome.newVisibility = newVisibility;
+
+    // Update the UI to reflect the change
+    await this._updateOutcomeDisplayForToken(outcome.token.id, outcome);
+  }
+
+  /**
+   * Updates the outcome display for a specific token
+   * @param {string} tokenId - Token ID
+   * @param {Object} outcome - Updated outcome object
+   */
+  async _updateOutcomeDisplayForToken(tokenId, outcome) {
+    console.debug('PF2E Visioner | _updateOutcomeDisplayForToken called:', {
+      tokenId,
+      newVisibility: outcome.newVisibility,
+      outcome: outcome.outcome
+    });
+    
+    const row = document.querySelector(`tr[data-token-id="${tokenId}"]`);
+    if (!row) {
+      console.debug('PF2E Visioner | Row not found for token:', tokenId);
+      return;
+    }
+
+    // Update outcome display
+    const outcomeCell = row.querySelector('.outcome');
+    const outcomeText = outcomeCell.querySelector('.outcome-text');
+    if (outcomeText) {
+      const outcomeLabel = this._getOutcomeLabel(outcome.outcome);
+      outcomeText.textContent = outcomeLabel;
+    }
+
+    // Update outcome CSS class
+    if (outcomeCell) {
+      outcomeCell.className = `outcome ${this.getOutcomeClass(outcome.outcome)}`;
+      
+      // Also update the outcome-primary element class
+      const outcomePrimary = outcomeCell.querySelector('.outcome-primary');
+      if (outcomePrimary) {
+        outcomePrimary.className = `outcome-primary sneak-result-${this.getOutcomeClass(outcome.outcome)}`;
+      }
+    }
+
+    // Update visibility state indicators
+    this._updateVisibilityStateIndicators(row, outcome.newVisibility);
+
+    // Update actionable change status
+    const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+    outcome.hasActionableChange = effectiveNewState !== outcome.oldVisibility;
+    this.updateActionButtonsForToken(tokenId, outcome.hasActionableChange);
+
+    // Update apply button state
+    const applyButton = row.querySelector('.apply-change');
+    if (applyButton) {
+      const hasChange = effectiveNewState !== outcome.oldVisibility;
+      applyButton.disabled = !hasChange;
+    }
   }
 
   /**
@@ -2685,10 +2793,27 @@ export class SneakPreviewDialog extends BaseActionDialog {
     // Update outcome CSS class
     if (outcomeCell) {
       outcomeCell.className = `outcome ${app.getOutcomeClass(newOutcome)}`;
+      
+      // Also update the outcome-primary element class
+      const outcomePrimary = outcomeCell.querySelector('.outcome-primary');
+      if (outcomePrimary) {
+        outcomePrimary.className = `outcome-primary sneak-result-${app.getOutcomeClass(newOutcome)}`;
+      }
     }
     
-    // Update visibility state indicators
-    app._updateVisibilityStateIndicators(row, newOutcome);
+    // Recalculate newVisibility based on position qualifications and new outcome
+    try {
+      if (app && typeof app._recalculateNewVisibilityForOutcome === 'function') {
+        await app._recalculateNewVisibilityForOutcome(outcome);
+      } else {
+        console.warn('PF2E Visioner | _recalculateNewVisibilityForOutcome method not available');
+      }
+    } catch (error) {
+      console.error('PF2E Visioner | Error recalculating newVisibility:', error);
+    }
+    
+    // Update visibility state indicators with the recalculated newVisibility
+    app._updateVisibilityStateIndicators(row, outcome.newVisibility);
 
     notify.info(`Applied +${bonus} cover bonus to ${outcome.token.name} (Roll: ${newTotal} vs DC ${outcome.dc})`);
   }
@@ -2708,15 +2833,15 @@ export class SneakPreviewDialog extends BaseActionDialog {
     let appliedCount = 0;
 
     // Apply to all visible outcomes
-    app.outcomes.forEach(outcome => {
-      if (!outcome.token) return;
+    for (const outcome of app.outcomes) {
+      if (!outcome.token) continue;
 
       // Update the applied cover bonus
       outcome.appliedCoverBonus = bonus;
 
       // Find the row and update buttons
       const row = app.element.querySelector(`tr[data-token-id="${outcome.token.id}"]`);
-      if (!row) return;
+      if (!row) continue;
 
       // Update cover bonus buttons
       const coverButtons = row.querySelectorAll('.cover-bonus-btn');
@@ -2750,11 +2875,33 @@ export class SneakPreviewDialog extends BaseActionDialog {
         outcomeText.textContent = app._getOutcomeLabel(newOutcome);
       }
       
-      // Update visibility indicators
-      app._updateVisibilityStateIndicators(row, newOutcome);
+      // Update outcome CSS class
+      if (outcomeCell) {
+        outcomeCell.className = `outcome ${app.getOutcomeClass(newOutcome)}`;
+        
+        // Also update the outcome-primary element class
+        const outcomePrimary = outcomeCell.querySelector('.outcome-primary');
+        if (outcomePrimary) {
+          outcomePrimary.className = `outcome-primary sneak-result-${app.getOutcomeClass(newOutcome)}`;
+        }
+      }
+      
+      // Recalculate newVisibility based on position qualifications and new outcome
+      try {
+        if (app && typeof app._recalculateNewVisibilityForOutcome === 'function') {
+          await app._recalculateNewVisibilityForOutcome(outcome);
+        } else {
+          console.warn('PF2E Visioner | _recalculateNewVisibilityForOutcome method not available');
+        }
+      } catch (error) {
+        console.error('PF2E Visioner | Error recalculating newVisibility:', error);
+      }
+      
+      // Update visibility indicators with the recalculated newVisibility
+      app._updateVisibilityStateIndicators(row, outcome.newVisibility);
 
       appliedCount++;
-    });
+    }
 
     // Highlight the "Apply All" button that was clicked
     const applyAllButtons = app.element.querySelectorAll('.apply-all-cover-btn');
@@ -2796,24 +2943,25 @@ export class SneakPreviewDialog extends BaseActionDialog {
    * @param {HTMLElement} row - Table row element
    * @param {string} outcome - New outcome
    */
-  _updateVisibilityStateIndicators(row, outcome) {
-    const visibilityStates = row.querySelectorAll('.visibility-state');
-    visibilityStates.forEach(state => state.classList.remove('active'));
+  _updateVisibilityStateIndicators(row, visibilityState) {
+    console.debug('PF2E Visioner | _updateVisibilityStateIndicators called:', {
+      visibilityState,
+      rowFound: !!row
+    });
+    
+    const visibilityStates = row.querySelectorAll('.state-icon');
+    console.debug('PF2E Visioner | Found visibility states:', visibilityStates.length);
+    
+    // Remove selected class from all state icons
+    visibilityStates.forEach(state => state.classList.remove('selected'));
 
-    // Map outcomes to visibility states
-    const stateMapping = {
-      'critical-success': 'undetected-state',
-      'success': 'success-state',
-      'failure': 'failure-state', 
-      'critical-failure': 'critical-failure-state'
-    };
-
-    const targetState = stateMapping[outcome];
-    if (targetState) {
-      const targetElement = row.querySelector(`.${targetState}`);
-      if (targetElement) {
-        targetElement.classList.add('active');
-      }
+    // Find the state icon with the matching data-state attribute
+    const targetElement = row.querySelector(`.state-icon[data-state="${visibilityState}"]`);
+    console.debug('PF2E Visioner | Target element found:', !!targetElement, 'for state:', visibilityState);
+    
+    if (targetElement) {
+      targetElement.classList.add('selected');
+      console.debug('PF2E Visioner | Added selected class to:', visibilityState);
     }
   }
 }

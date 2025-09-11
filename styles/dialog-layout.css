@@ -107,32 +107,55 @@
     }
 
     .cover-bonus-btn {
-      border: 2px solid #dee2e6;
-      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-      color: #495057;
-      padding: 6px 10px;
-      border-radius: 5px;
+      background: transparent;
+      border: 1px solid var(--color-border-light-primary);
+      border-radius: 4px;
+      padding: 3px;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      min-width: 32px;
-      text-align: center;
-      transition: all 0.3s ease;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+      font-size: 11px;
+      min-width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      position: relative;
     }
 
     .cover-bonus-btn:hover {
-      transform: translateY(-1px);
-      background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .cover-bonus-btn.active {
-      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-      color: white;
-      border-color: #0056b3;
-      transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
+      opacity: 1;
+      border-width: 2px !important;
+    }
+
+    .cover-bonus-btn.active::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Cover state colors for buttons */
+    .cover-bonus-btn[data-bonus='0'] {
+      color: var(--cover-none, #9e9e9e);
+    }
+
+    .cover-bonus-btn[data-bonus='2'] {
+      color: var(--cover-standard, #ff9800);
+    }
+
+    .cover-bonus-btn[data-bonus='4'] {
+      color: var(--cover-greater, #4caf50);
     }
 
     /* Apply All Cover Section - Top of dialog, module style */
@@ -162,37 +185,49 @@
       gap: 4px !important;
     }
 
-    /* Module style cover buttons - matching existing module design */
+    /* COVER_STATES design for cover bonus buttons */
     .cover-bonus-btn.module-style,
     .apply-all-cover-btn.module-style {
-      border: 1px solid var(--color-border-base, #666);
-      background: var(--color-bg-btn, #3a3a3a);
-      color: var(--color-text-primary, #f0f0f0);
-      padding: 4px 6px;
-      border-radius: 3px;
+      background: transparent;
+      border: 1px solid var(--color-border-light-primary);
+      border-radius: 4px;
+      padding: 3px;
       cursor: pointer;
-      font-size: 12px;
+      transition: all 0.2s ease;
+      font-size: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 2px;
-      transition: all 0.2s ease;
-      min-width: 32px;
-      height: 24px;
+      opacity: 0.6;
+      position: relative;
+      min-width: 20px;
+      height: 20px;
     }
 
     .cover-bonus-btn.module-style:hover,
     .apply-all-cover-btn.module-style:hover {
-      background: var(--color-bg-btn-hover, #4a4a4a);
-      border-color: var(--color-border-highlight, #888);
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .cover-bonus-btn.module-style.active,
     .apply-all-cover-btn.module-style.active {
-      background: var(--color-bg-btn-active, #007bff);
-      color: white;
-      border-color: var(--color-border-active, #0056b3);
-      box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
+      opacity: 1;
+      border-width: 2px !important;
+    }
+
+    .cover-bonus-btn.module-style.active::after,
+    .apply-all-cover-btn.module-style.active::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
     }
 
     /* Apply All Cover buttons - slightly larger */
@@ -201,6 +236,22 @@
       min-width: 42px;
       height: 28px;
       font-size: 11px;
+    }
+
+    /* Cover state colors for module-style buttons */
+    .cover-bonus-btn.module-style[data-bonus='0'],
+    .apply-all-cover-btn.module-style[data-bonus='0'] {
+      color: var(--cover-none, #9e9e9e);
+    }
+
+    .cover-bonus-btn.module-style[data-bonus='2'],
+    .apply-all-cover-btn.module-style[data-bonus='2'] {
+      color: var(--cover-standard, #ff9800);
+    }
+
+    .cover-bonus-btn.module-style[data-bonus='4'],
+    .apply-all-cover-btn.module-style[data-bonus='4'] {
+      color: var(--cover-greater, #4caf50);
     }
   }
 
@@ -353,7 +404,6 @@
   th.end-position small {
     display: block;
     font-weight: normal;
-    color: #666;
     font-size: 9px;
     line-height: 1.2;
   }

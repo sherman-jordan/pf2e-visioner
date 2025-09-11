@@ -37,10 +37,10 @@
         <i class="fas fa-shield-slash"></i> +0
       </button>
       <button type="button" class="apply-all-cover-btn module-style" data-action="applyAllCover" data-bonus="2" data-tooltip="Apply standard cover bonus to all observers">
-        <i class="fas fa-shield"></i> +2
+        <i class="fas fa-shield-alt"></i> +2
       </button>
       <button type="button" class="apply-all-cover-btn module-style" data-action="applyAllCover" data-bonus="4" data-tooltip="Apply greater cover bonus to all observers">
-        <i class="fas fa-shield-check"></i> +4
+        <i class="fas fa-shield"></i> +4
       </button>
     </div>
   </div>
@@ -133,14 +133,14 @@
                         data-token-id="{{outcome.token.id}}" 
                         data-bonus="2"
                         data-tooltip="Standard cover bonus (+2)">
-                  <i class="fas fa-shield"></i>
+                  <i class="fas fa-shield-alt"></i>
                 </button>
                 <button type="button" class="cover-bonus-btn module-style {{#if (eq outcome.appliedCoverBonus 4)}}active{{/if}}" 
                         data-action="setCoverBonus" 
                         data-token-id="{{outcome.token.id}}" 
                         data-bonus="4"
                         data-tooltip="Greater cover bonus (+4)">
-                  <i class="fas fa-shield-check"></i>
+                  <i class="fas fa-shield"></i>
                 </button>
               </div>
             </td>

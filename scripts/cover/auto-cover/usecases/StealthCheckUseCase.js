@@ -403,6 +403,54 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
    */
   async handleCheckRoll(check, context) {
     try {
+      // CRITICAL: Capture start positions for movement tracking when stealth check begins
+      try {
+        console.debug('PF2E Visioner | Capturing start positions during stealth check roll');
+        
+        // Resolve the hider (actor making the stealth check)
+        let hider = context?.actor?.getActiveTokens?.()?.[0] || context?.token?.object || null;
+        if (!hider) hider = this._resolveStealtherFromCtx(context);
+        
+        if (hider && (hider.isOwner || game.user.isGM)) {
+          console.debug('PF2E Visioner | START position - Token coordinates:', {
+            sneakingTokenX: hider.x,
+            sneakingTokenY: hider.y,
+            sneakingTokenCenter: hider.center,
+          });
+          
+          // Store the current position coordinates for historical tracking
+          const storedStartPosition = {
+            x: hider.x,
+            y: hider.y,
+            center: { x: hider.center.x, y: hider.center.y },
+            tokenId: hider.id,
+            tokenName: hider.name,
+            timestamp: Date.now(),
+          };
+          
+          console.debug('PF2E Visioner | Roll-time position captured and stored in flags:', storedStartPosition);
+          
+          // Import sneak action service to capture positions
+          const { SneakActionHandler } = await import('../../../chat/services/actions/sneak-action.js');
+          const sneakActionService = new SneakActionHandler();
+          
+          // Create action data for position capture
+          const actionData = {
+            actor: context.actor || hider.actor,
+            messageId: `stealth-check-${Date.now()}`, // Temporary ID until real message is created
+            timestamp: Date.now(),
+            rollId: context._visionerRollId,
+          };
+          
+          // Capture start positions immediately when stealth check begins, using stored coordinates
+          await sneakActionService._captureStartPositions(actionData, storedStartPosition);
+          
+          console.debug('PF2E Visioner | Start position capture completed for stealth check roll');
+        }
+      } catch (error) {
+        console.warn('PF2E Visioner | Failed to capture start positions during stealth check:', error);
+      }
+
       try {
         // Resolve the hider (actor making the stealth check)
         let hider = context?.actor?.getActiveTokens?.()?.[0] || context?.token?.object || null;
@@ -465,7 +513,8 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
             const originalBonus = Number(COVER_STATES?.[originalDetectedState]?.bonusStealth ?? 0);
 
             try {
-              const { chosen, rollId } = await this.coverUIManager.showPopupAndApply(state);
+              const popupResult = await this.coverUIManager.showPopupAndApply(state);
+              const { chosen, rollId } = popupResult || {};
               if (chosen) {
                 context._visionerRollId = rollId;
                 const finalState =
@@ -533,7 +582,11 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
 
       const coverInfo = context?._visionerStealth;
       const bonus = Number(coverInfo?.bonus) || 0;
-      if (bonus > 1) {
+      
+      // Check if this is a Sneak action (not Hide) to skip cover bonus
+      const isSneakAction = this._isSneakAction(context);
+      
+      if (bonus > 1 && !isSneakAction) {
         const state = coverInfo?.state ?? 'standard';
         // Ensure predicate support
         const optSet = new Set(Array.isArray(context.options) ? context.options : []);
@@ -594,6 +647,47 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
    */
   getOriginalCoverModifier(rollId) {
     return this.coverModifierService.getOriginalCoverModifier(rollId);
+  }
+
+  /**
+   * Determines if the current action is a Sneak action (as opposed to Hide)
+   * @param {Object} context - Roll context
+   * @returns {boolean} True if this is a Sneak action
+   * @private
+   */
+  _isSneakAction(context) {
+    try {
+      // Safety check for context
+      if (!context || typeof context !== 'object') {
+        return false;
+      }
+      
+      // Check for explicit action type in context
+      if (context?.action?.slug === 'sneak') return true;
+      if (context?.action?.name && typeof context.action.name === 'string' && context.action.name.toLowerCase().includes('sneak')) return true;
+      
+      // Check for action type in the roll data
+      if (context?.type === 'sneak-check') return true;
+      
+      // Check for action identifier in options (with extra safety)
+      if (context?.options && Array.isArray(context.options) && context.options.includes('sneak-action')) return true;
+      
+      // Check slug in various possible locations
+      const slug = context?.slug || context?.action?.slug || context?.item?.slug;
+      if (slug === 'sneak') return true;
+      
+      // Check the actor's last action if available
+      const lastAction = context?.actor?.getFlag?.('pf2e-visioner', 'lastAction');
+      if (lastAction?.type === 'sneak') return true;
+      
+      // Check for sneak-specific flags
+      if (context?._visionerActionType === 'sneak') return true;
+      
+      return false;
+    } catch (error) {
+      console.warn('PF2E Visioner | Error detecting Sneak action:', error);
+      return false;
+    }
   }
 
   /**

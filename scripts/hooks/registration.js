@@ -18,6 +18,19 @@ export async function registerHooks() {
   registerOptimized();
   registerChatHooks();
 
+  // Hook to capture token positions at the moment stealth rolls are made
+  Hooks.on('preCreateChatMessage', async (message) => {
+    try {
+      // Import the position capture service
+      const { captureRollTimePosition } = await import(
+        '../chat/services/position-capture-service.js'
+      );
+      await captureRollTimePosition(message);
+    } catch (error) {
+      console.warn('PF2E Visioner | Failed to capture roll-time position:', error);
+    }
+  });
+
   Hooks.on('highlightObjects', onHighlightObjects);
 
   // Token lifecycle

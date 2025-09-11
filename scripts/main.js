@@ -192,9 +192,11 @@ Hooks.on('renderApplication', (app, html) => {
 });
 
 // Hook to ensure colorblind mode is applied when chat messages are rendered
-Hooks.on('renderChatMessage', (message, html) => {
+Hooks.on('renderChatMessageHTML', (message, html) => {
   // Apply colorblind mode to chat messages that contain PF2E Visioner automation panels
-  const automationPanels = html.find('.pf2e-visioner-automation-panel');
+  // Ensure html is a jQuery object for FoundryVTT v13+ compatibility
+  const $html = $(html);
+  const automationPanels = $html.find('.pf2e-visioner-automation-panel');
   if (automationPanels.length > 0) {
     const colorblindMode = game.settings.get('pf2e-visioner', 'colorblindMode');
     if (colorblindMode !== 'none') {

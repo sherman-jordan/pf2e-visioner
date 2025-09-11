@@ -726,3 +726,6 @@
 .pf2e-visioner-tooltip-badge.cover-greater {
   color: var(--cover-greater);
 }
+
+/* Import enhanced multi-target processing styles */
+@import url('./enhanced-multi-target-processing.css');

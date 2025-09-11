@@ -128,6 +128,11 @@ export class EventDrivenVisibilitySystem {
   #onTokenUpdate(tokenDoc, changes) {
     if (!this.#enabled || !game.user.isGM) return;
 
+    // Skip if token is Foundry hidden (either before or after the update)
+    const wasHidden = tokenDoc.hidden;
+    const isHidden = changes.hidden !== undefined ? changes.hidden : tokenDoc.hidden;
+    if (wasHidden || isHidden) return;
+
     // Check what actually changed
     const positionChanged = changes.x !== undefined || changes.y !== undefined;
     const lightChanged = changes.light !== undefined;
@@ -181,6 +186,9 @@ export class EventDrivenVisibilitySystem {
    */
   #onTokenCreate(tokenDoc) {
     if (!this.#enabled || !game.user.isGM) return;
+
+    // Skip if token is Foundry hidden
+    if (tokenDoc.hidden) return;
 
     // Removed debug log
 
@@ -286,7 +294,7 @@ export class EventDrivenVisibilitySystem {
       changes.items !== undefined;
 
     if (hasConditionChanges) {
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !t.document.hidden) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -307,8 +315,8 @@ export class EventDrivenVisibilitySystem {
       return;
     }
 
-    // Find tokens for this actor
-    const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
+    // Find tokens for this actor - skip hidden tokens
+    const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !t.document.hidden) || [];
 
     if (tokens.length > 0) {
       // Removed debug log
@@ -323,8 +331,9 @@ export class EventDrivenVisibilitySystem {
   #onSceneUpdate(scene, changes) {
     if (!this.#enabled || !game.user.isGM) return;
 
-    // Check if darkness or lighting changed
-    if (changes.darkness !== undefined || changes.environment !== undefined) {
+    // Check if darkness level or other lighting changed (FoundryVTT v13+ compatibility)
+    const darknessChanged = changes.environment?.darknessLevel !== undefined || changes.darkness !== undefined;
+    if (darknessChanged || changes.environment !== undefined) {
       // Removed debug log
 
       this.#markAllTokensChangedImmediate();
@@ -415,7 +424,7 @@ export class EventDrivenVisibilitySystem {
 
     if (isVisibilityRelated && effect.parent?.documentName === 'Actor') {
       const actor = effect.parent;
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !t.document.hidden) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -461,7 +470,7 @@ export class EventDrivenVisibilitySystem {
 
     if (isRelevantType && isVisibilityRelated && item.parent?.documentName === 'Actor') {
       const actor = item.parent;
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !t.document.hidden) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -475,6 +484,10 @@ export class EventDrivenVisibilitySystem {
    * Mark a token as changed - triggers IMMEDIATE processing with fresh coordinates
    */
   #markTokenChangedImmediate(tokenId) {
+    // Skip if token is Foundry hidden
+    const token = canvas.tokens?.get(tokenId);
+    if (token?.document?.hidden) return;
+
     this.#changedTokens.add(tokenId);
 
     // Use requestAnimationFrame for immediate processing with fresh coordinates from #updatedTokenDocs
@@ -489,7 +502,7 @@ export class EventDrivenVisibilitySystem {
   #markAllTokensChangedImmediate() {
     const tokens = canvas.tokens?.placeables || [];
     tokens.forEach((token) => {
-      if (token.actor) {
+      if (token.actor && !token.document.hidden) {
         this.#changedTokens.add(token.document.id);
       }
     });
@@ -512,7 +525,7 @@ export class EventDrivenVisibilitySystem {
       // const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
       // const startTime = performance.now();
 
-      const allTokens = canvas.tokens?.placeables?.filter((t) => t.actor) || [];
+      const allTokens = canvas.tokens?.placeables?.filter((t) => t.actor && !t.document.hidden) || [];
       const updates = [];
 
       // For each changed token, recalculate visibility with all other tokens
@@ -520,8 +533,14 @@ export class EventDrivenVisibilitySystem {
         const changedToken = allTokens.find((t) => t.document.id === changedTokenId);
         if (!changedToken) continue;
 
+        // Skip if the changed token is Foundry hidden
+        if (changedToken.document.hidden) continue;
+
         for (const otherToken of allTokens) {
           if (otherToken.document.id === changedTokenId) continue;
+
+          // Skip if the other token is Foundry hidden
+          if (otherToken.document.hidden) continue;
 
           // Check for AVS kill switch - skip processing if either token has AVS disabled
           if (
@@ -774,7 +793,7 @@ export class EventDrivenVisibilitySystem {
 
     if (isVisionEquipment && item.parent?.documentName === 'Actor') {
       const actor = item.parent;
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !t.document.hidden) || [];
 
       if (tokens.length > 0) {
         // Removed debug log

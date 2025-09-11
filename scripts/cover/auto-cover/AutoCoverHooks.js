@@ -83,14 +83,7 @@ export class AutoCoverHooks {
       // Core message hooks
       Hooks.on('preCreateChatMessage', instance.onPreCreateChatMessage.bind(instance));
 
-      // Test multiple hooks to see which ones fire for attack rolls
-      Hooks.on('renderChatMessage', (message, html) => {
-        const ctx = message?.flags?.pf2e?.context || {};
-        if (ctx.type === 'attack-roll') {
-          return instance.onRenderChatMessage.bind(instance)(message, html);
-        }
-      });
-
+      // Use v13+ hook for chat message rendering
       Hooks.on('renderChatMessageHTML', (message, html) => {
         return instance.onRenderChatMessage.bind(instance)(message, html);
       });

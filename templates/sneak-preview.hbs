@@ -15,8 +15,8 @@
     </div>
   </div>
 
-  {{!-- Encounter Filter + Ignore Allies (Encounter-only shown when relevant; Ignore allies always shown) --}}
-  <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
+  {{!-- Enhanced Controls Section --}}
+  <div class="enhanced-controls-section" style="display:flex; gap:16px; align-items:center; flex-wrap: wrap;">
     {{#if showEncounterFilter}}
     <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
       <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
@@ -29,6 +29,22 @@
     </label>
   </div>
 
+  {{!-- Apply All Cover Section - Above Table --}}
+  <div class="apply-all-cover-section-top">
+    <span class="apply-all-label">Apply All Cover:</span>
+    <div class="apply-all-cover-buttons">
+      <button type="button" class="apply-all-cover-btn module-style" data-action="applyAllCover" data-bonus="0" data-tooltip="Apply no cover bonus to all observers">
+        <i class="fas fa-shield-slash"></i> +0
+      </button>
+      <button type="button" class="apply-all-cover-btn module-style" data-action="applyAllCover" data-bonus="2" data-tooltip="Apply standard cover bonus to all observers">
+        <i class="fas fa-shield"></i> +2
+      </button>
+      <button type="button" class="apply-all-cover-btn module-style" data-action="applyAllCover" data-bonus="4" data-tooltip="Apply greater cover bonus to all observers">
+        <i class="fas fa-shield-check"></i> +4
+      </button>
+    </div>
+  </div>
+
   {{!-- Results Table --}}
   <div class="results-table-container">
     <table class="visibility-table sneak-results-table">
@@ -36,101 +52,113 @@
         <tr>
           <th class="token-image">Token</th>
           <th class="token-name">Name</th>
-          <th class="auto-cover">Cover</th>
-          <th class="roll-result">Roll vs Perception DC</th>
-          <th class="outcome">Outcome</th>
+          <th class="start-position">Start Pos<br><small>(hidden +)</small></th>
+          <th class="end-position">End Pos<br><small>(concealed/ cover)</small></th>
+          <th class="cover-bonus">Cover Bonus</th>
+          <th class="roll-result">Stealth vs<br>Perception</th>
+          <th class="outcome">Roll Outcome</th>
           <th class="visibility-change">Visibility Change</th>
-          <th class="avs-override">AVS Override</th>
           <th class="actions">Actions</th>
         </tr>
       </thead>
       <tbody>
         {{#each outcomes as |outcome|}}
-          <tr class="token-row" data-token-id="{{outcome.token.id}}">
+          <tr class="token-row result-{{outcome.outcome}} {{#if outcome.hasPositionData}}has-position-data{{/if}}" 
+              data-token-id="{{outcome.token.id}}" 
+              data-outcome="{{outcome.outcome}}"
+              data-result-type="{{outcome.outcome}}">
             <td class="token-image">
               <img src="{{outcome.tokenImage}}" width="28" height="28" />
             </td>
             <td class="token-name">
               <strong data-tooltip="{{outcome.token.name}}">{{outcome.token.name}}</strong>
+              <span class="sr-only">Sneak result: {{outcome.outcomeLabel}}</span>
             </td>
-            <td class="auto-cover">
-              {{#if outcome.autoCover}}
-                <div class="auto-cover-info-sneak {{#if outcome.autoCover.isOverride}}override{{/if}}">
-                  {{#if outcome.autoCover.isOverride}}
-                    {{#if outcome.autoCover.overrideDetails}}
-                      <!-- Show detailed override indicator with original → final transition -->
-                      <span class="auto-cover-override-detailed" 
-                            data-tooltip="Cover overridden {{#if (eq outcome.autoCover.source 'popup')}}via keybind popup{{else if (eq outcome.autoCover.source 'dialog')}}in roll dialog{{else}}manually{{/if}}: {{outcome.autoCover.overrideDetails.originalLabel}} → {{outcome.autoCover.overrideDetails.finalLabel}}">
-                        <!-- Original state -->
-                        <span class="original-cover" style="
-                          color: {{outcome.autoCover.overrideDetails.originalColor}};
-                          display: inline-flex;
-                          align-items: center;
-                        ">
-                          <i class="{{outcome.autoCover.overrideDetails.originalIcon}}" style="font-size: 1.1em;"></i>
-                        </span>
-                        <!-- Arrow -->
-                        <i class="fas fa-arrow-right" style="
-                          color: #999;
-                          font-size: 1em;
-                          margin: 0 2px;
-                        "></i>
-                        <!-- Final state -->
-                        <span class="final-cover" style="
-                          color: {{outcome.autoCover.overrideDetails.finalColor}};
-                          display: inline-flex;
-                          align-items: center;
-                        ">
-                          <i class="{{outcome.autoCover.overrideDetails.finalIcon}}" style="font-size: 1.1em;"></i>
-                        </span>
-                      </span>
+            <td class="start-position">
+              {{#if outcome.hasPositionData}}
+                <div class="position-requirements-row">
+                  {{!-- Start Position Requirements - Interactive Buttons --}}
+                  <button type="button" class="position-requirement-btn {{#if outcome.positionDisplay.startPosition.qualifies}}position-check active{{else}}position-x{{/if}}" 
+                          data-action="toggleStartPosition" 
+                          data-token-id="{{outcome.token.id}}" 
+                          data-requirement="start"
+                          data-tooltip="{{#if outcome.positionDisplay.startPosition.qualifies}}Start position qualifies for sneak{{else}}Start position does not qualify for sneak{{/if}}">
+                    {{#if outcome.positionDisplay.startPosition.qualifies}}
+                      <i class="fas fa-check"></i>
                     {{else}}
-                      <!-- Fallback: simple override indicator -->
-                      <span class="auto-cover-icon">
-                        <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
-                      </span>
+                      <i class="fas fa-times"></i>
                     {{/if}}
-                  {{else}}
-                    <!-- Normal display without override -->
-                    <span class="auto-cover-icon" data-tooltip="{{outcome.autoCover.label}}{{#if outcome.autoCover.bonus}} (+{{outcome.autoCover.bonus}} Stealth){{/if}}">
-                      <i class="{{outcome.autoCover.icon}} {{outcome.autoCover.cssClass}}"></i>
-                    </span>
-                  {{/if}}
+                  </button>
                 </div>
               {{else}}
-                <span class="auto-cover-icon no-cover" data-tooltip="No Cover (+0 Stealth)">
-                  <i class="fas fa-shield-slash cover-none" style="color: var(--cover-none, #4caf50);"></i>
-                </span>
+                <div class="no-position-data" data-tooltip="Start position data not available">
+                  <i class="fas fa-question-circle"></i>
+                </div>
+              {{/if}}
             </td>
-            {{/if}}
+            <td class="end-position">
+              {{#if outcome.hasPositionData}}
+                <div class="position-requirements-row">
+                  {{!-- End Position Requirements - Interactive Buttons --}}
+                  <button type="button" class="position-requirement-btn {{#if outcome.positionDisplay.endPosition.qualifies}}position-check active{{else}}position-x{{/if}}" 
+                          data-action="toggleEndPosition" 
+                          data-token-id="{{outcome.token.id}}" 
+                          data-requirement="end"
+                          data-tooltip="{{#if outcome.positionDisplay.endPosition.qualifies}}End position qualifies for sneak{{else}}End position does not qualify for sneak{{/if}}">
+                    {{#if outcome.positionDisplay.endPosition.qualifies}}
+                      <i class="fas fa-check"></i>
+                    {{else}}
+                      <i class="fas fa-times"></i>
+                    {{/if}}
+                  </button>
+                </div>
+              {{else}}
+                <div class="no-position-data" data-tooltip="End position data not available">
+                  <i class="fas fa-question-circle"></i>
+                </div>
+              {{/if}}
+            </td>
+            <td class="cover-bonus">
+              <div class="cover-bonus-controls">
+                {{!-- Cover Bonus Selection Buttons --}}
+                <button type="button" class="cover-bonus-btn module-style {{#unless outcome.appliedCoverBonus}}active{{else}}{{#if (eq outcome.appliedCoverBonus 0)}}active{{/if}}{{/unless}}" 
+                        data-action="setCoverBonus" 
+                        data-token-id="{{outcome.token.id}}" 
+                        data-bonus="0"
+                        data-tooltip="No cover bonus (+0)">
+                  <i class="fas fa-shield-slash"></i>
+                </button>
+                <button type="button" class="cover-bonus-btn module-style {{#if (eq outcome.appliedCoverBonus 2)}}active{{/if}}" 
+                        data-action="setCoverBonus" 
+                        data-token-id="{{outcome.token.id}}" 
+                        data-bonus="2"
+                        data-tooltip="Standard cover bonus (+2)">
+                  <i class="fas fa-shield"></i>
+                </button>
+                <button type="button" class="cover-bonus-btn module-style {{#if (eq outcome.appliedCoverBonus 4)}}active{{/if}}" 
+                        data-action="setCoverBonus" 
+                        data-token-id="{{outcome.token.id}}" 
+                        data-bonus="4"
+                        data-tooltip="Greater cover bonus (+4)">
+                  <i class="fas fa-shield-check"></i>
+                </button>
+              </div>
+            </td>
             <td class="roll-result">
               <div class="roll-vs-dc">
                 <div class="roll-dc-line">
-                  <span class="roll-total">{{outcome.rollTotal}}</span>
-                  {{#if (and outcome.shouldShowOverride outcome.originalRollTotal)}}
-                    <span class="original-roll-total" style="font-size: 1em; opacity: 0.7; margin-left: 2px;">
-                      ({{outcome.originalRollTotal}})
-                    </span>
-                  {{/if}}
+                  <span class="roll-total" data-base-total="{{outcome.baseRollTotal}}">{{outcome.rollTotal}}</span>
                   <span class="vs-text">vs DC</span>
                   <span class="dc-value">{{outcome.dc}}</span>
-                </div>
-                <div class="margin-display">({{#if (gt outcome.margin 0)}}+{{/if}}{{outcome.margin}})
-                  {{#if (and outcome.shouldShowOverride outcome.originalMargin)}}
-                    <span style="font-size: 1em; opacity: 0.7; margin-left: 2px;">
-                      ({{#if (gt outcome.originalMargin 0)}}+{{/if}}{{outcome.originalMargin}})
-                    </span>
-                  {{/if}}
                 </div>
               </div>
             </td>
             <td class="outcome {{outcome.outcome}}">
-              <div>{{outcome.outcomeLabel}}</div>
-              {{#if (and outcome.shouldShowOverride outcome.originalOutcomeLabel)}}
-                <div style="font-size: 1em; opacity: 0.7; margin-top: 2px;">
-                  ({{outcome.originalOutcomeLabel}})
+              <div class="final-result-display">
+                <div class="outcome-primary sneak-result-{{outcome.outcome}}">
+                  <span class="outcome-text">{{outcome.outcomeLabel}}</span>
                 </div>
-              {{/if}}
+              </div>
             </td>
             <td class="visibility-change">
               <div class="visibility-change-with-override">
@@ -140,7 +168,7 @@
                   {{#each outcome.availableStates as |state|}}
                     <button type="button" class="state-icon {{#if state.selected}}selected{{/if}} {{#if state.calculatedOutcome}}calculated-outcome{{/if}} {{state.cssClass}}" 
                             data-state="{{state.value}}" data-token-id="{{outcome.token.id}}" 
-                            data-tooltip="Override to {{state.label}}">
+                            data-tooltip="{{#if state.calculatedOutcome}}AVS Recommended: {{/if}}{{state.label}}">
                       <i class="{{state.icon}}"></i>
                     </button>
                   {{/each}}
@@ -155,25 +183,6 @@
                   </span>
                 </div>
               {{/if}}
-            </td>
-            <td class="avs-override">
-              <div class="avs-override-toggle">
-                <label class="toggle-switch">
-                  <input type="checkbox" 
-                         class="avs-override-checkbox" 
-                         data-token-id="{{outcome.token.id}}"
-                         {{#if outcome.avsOverride}}checked{{/if}}
-                         data-tooltip="Override AVS for this token pair">
-                  <span class="toggle-slider"></span>
-                </label>
-                <span class="avs-override-label {{outcome.avsOverrideStateClass}}">
-                  {{#if outcome.avsOverride}}
-                    Override
-                  {{else}}
-                    Auto
-                  {{/if}}
-                </span>
-              </div>
             </td>
             <td class="actions">
               {{#if outcome.hasActionableChange}}

@@ -7,7 +7,6 @@
 @import url('shared-ui-components.css');
 
 .pf2e-visioner {
-
   /* Force dialog to have a fixed height */
   .point-out-preview-dialog,
   .seek-preview-dialog,
@@ -280,14 +279,29 @@
 
   /* Override any CSS variable backgrounds that might be interfering */
   .point-out-preview-dialog .results-table-container tbody tr[style*='--color-bg-primary'],
-  .point-out-preview-dialog .results-table-container tbody tr[style*='background: var(--color-bg-primary'],
-  .point-out-preview-dialog .results-table-container tbody tr[style*='background-color: var(--color-bg-primary'] {
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background: var(--color-bg-primary'],
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background-color: var(--color-bg-primary'] {
     background: transparent !important;
   }
 
-  .point-out-preview-dialog .results-table-container tbody tr[style*='--color-bg-primary']:nth-child(even),
-  .point-out-preview-dialog .results-table-container tbody tr[style*='background: var(--color-bg-primary']:nth-child(even),
-  .point-out-preview-dialog .results-table-container tbody tr[style*='background-color: var(--color-bg-primary']:nth-child(even) {
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='--color-bg-primary']:nth-child(even),
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background: var(--color-bg-primary']:nth-child(even),
+  .point-out-preview-dialog
+    .results-table-container
+    tbody
+    tr[style*='background-color: var(--color-bg-primary']:nth-child(even) {
     background-color: rgba(0, 0, 0, 0.1) !important;
   }
 
@@ -507,7 +521,9 @@
     border: 1px solid var(--color-text-light-primary);
   }
 
-  .consequences-preview-dialog .override-icons .state-icon[data-state='undetected'].selected::after {
+  .consequences-preview-dialog
+    .override-icons
+    .state-icon[data-state='undetected'].selected::after {
     content: '';
     position: absolute;
     bottom: -2px;
@@ -642,7 +658,7 @@
       flex-shrink: 0;
     }
 
-    .search-filter-container>div {
+    .search-filter-container > div {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -996,7 +1012,7 @@
         align-items: stretch;
       }
 
-      .search-filter-container>div {
+      .search-filter-container > div {
         justify-content: space-between;
       }
 

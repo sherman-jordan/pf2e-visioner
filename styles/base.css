@@ -24,24 +24,38 @@
   /* Red - danger */
 
   /* Visibility state background colors (with alpha) */
-  --visibility-observed-bg-light: var(--visibility-observed-bg-light-color,
-      rgba(76, 175, 80, 0.05));
+  --visibility-observed-bg-light: var(
+    --visibility-observed-bg-light-color,
+    rgba(76, 175, 80, 0.05)
+  );
   --visibility-observed-bg: var(--visibility-observed-bg-color, rgba(76, 175, 80, 0.1));
-  --visibility-observed-bg-medium: var(--visibility-observed-bg-medium-color,
-      rgba(76, 175, 80, 0.15));
-  --visibility-observed-bg-strong: var(--visibility-observed-bg-strong-color,
-      rgba(76, 175, 80, 0.2));
+  --visibility-observed-bg-medium: var(
+    --visibility-observed-bg-medium-color,
+    rgba(76, 175, 80, 0.15)
+  );
+  --visibility-observed-bg-strong: var(
+    --visibility-observed-bg-strong-color,
+    rgba(76, 175, 80, 0.2)
+  );
   --visibility-observed-bg-solid: var(--visibility-observed-bg-solid-color, rgba(76, 175, 80, 0.9));
 
-  --visibility-concealed-bg-light: var(--visibility-concealed-bg-light-color,
-      rgba(255, 235, 59, 0.05));
+  --visibility-concealed-bg-light: var(
+    --visibility-concealed-bg-light-color,
+    rgba(255, 235, 59, 0.05)
+  );
   --visibility-concealed-bg: var(--visibility-concealed-bg-color, rgba(255, 235, 59, 0.1));
-  --visibility-concealed-bg-medium: var(--visibility-concealed-bg-medium-color,
-      rgba(255, 235, 59, 0.15));
-  --visibility-concealed-bg-strong: var(--visibility-concealed-bg-strong-color,
-      rgba(255, 235, 59, 0.2));
-  --visibility-concealed-bg-solid: var(--visibility-concealed-bg-solid-color,
-      rgba(255, 235, 59, 0.9));
+  --visibility-concealed-bg-medium: var(
+    --visibility-concealed-bg-medium-color,
+    rgba(255, 235, 59, 0.15)
+  );
+  --visibility-concealed-bg-strong: var(
+    --visibility-concealed-bg-strong-color,
+    rgba(255, 235, 59, 0.2)
+  );
+  --visibility-concealed-bg-solid: var(
+    --visibility-concealed-bg-solid-color,
+    rgba(255, 235, 59, 0.9)
+  );
 
   --visibility-hidden-bg-light: var(--visibility-hidden-bg-light-color, rgba(255, 152, 0, 0.05));
   --visibility-hidden-bg: var(--visibility-hidden-bg-color, rgba(255, 152, 0, 0.1));
@@ -49,15 +63,23 @@
   --visibility-hidden-bg-strong: var(--visibility-hidden-bg-strong-color, rgba(255, 152, 0, 0.2));
   --visibility-hidden-bg-solid: var(--visibility-hidden-bg-solid-color, rgba(255, 152, 0, 0.9));
 
-  --visibility-undetected-bg-light: var(--visibility-undetected-bg-light-color,
-      rgba(244, 67, 54, 0.05));
+  --visibility-undetected-bg-light: var(
+    --visibility-undetected-bg-light-color,
+    rgba(244, 67, 54, 0.05)
+  );
   --visibility-undetected-bg: var(--visibility-undetected-bg-color, rgba(244, 67, 54, 0.1));
-  --visibility-undetected-bg-medium: var(--visibility-undetected-bg-medium-color,
-      rgba(244, 67, 54, 0.15));
-  --visibility-undetected-bg-strong: var(--visibility-undetected-bg-strong-color,
-      rgba(244, 67, 54, 0.2));
-  --visibility-undetected-bg-solid: var(--visibility-undetected-bg-solid-color,
-      rgba(244, 67, 54, 0.9));
+  --visibility-undetected-bg-medium: var(
+    --visibility-undetected-bg-medium-color,
+    rgba(244, 67, 54, 0.15)
+  );
+  --visibility-undetected-bg-strong: var(
+    --visibility-undetected-bg-strong-color,
+    rgba(244, 67, 54, 0.2)
+  );
+  --visibility-undetected-bg-solid: var(
+    --visibility-undetected-bg-solid-color,
+    rgba(244, 67, 54, 0.9)
+  );
 
   /* Cover state colors */
   --cover-none: var(--cover-none-color, #4caf50);
@@ -197,7 +219,6 @@
 }
 
 .pf2e-visioner {
-
   /* Common utility classes */
   .pf2e-visioner-flex {
     display: flex;

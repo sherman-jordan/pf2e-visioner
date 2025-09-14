@@ -46,10 +46,18 @@ export class LightingCalculator {
 
     const sceneDarkness = canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0;
 
-    // Start with base illumination based on scene darkness
+    // Determine if the scene actually has global illumination enabled.
+    // If not, there should be no base illumination and only light sources contribute.
+    // v13+: Use environment.globalLight.enabled; fall back to hasGlobalIllumination for older scenes
+    const hasGlobalIllumination =
+      canvas.scene?.environment?.globalLight?.enabled ??
+      canvas.scene?.hasGlobalIllumination ??
+      false;
+
+    // Start with base illumination only when global illumination is active.
     // In bright daylight (darkness = 0), base illumination is 1 (bright)
     // In complete darkness (darkness = 1), base illumination is 0
-    let baseIllumination = Math.max(0, 1 - sceneDarkness);
+    let baseIllumination = hasGlobalIllumination ? Math.max(0, 1 - sceneDarkness) : 0;
 
     // Check if position is illuminated by any light sources OR light-emitting tokens
     const lightSources = canvas.lighting?.placeables || [];
@@ -256,7 +264,7 @@ export class LightingCalculator {
       }
     }
 
-    // Final illumination is the maximum of base and light sources, reduced by darkness sources
+  // Final illumination is the maximum of base and light sources, reduced by darkness sources
     let finalIllumination = Math.max(baseIllumination, maxLightIllumination);
 
     // Apply darkness reduction (darkness sources reduce illumination)
@@ -281,7 +289,7 @@ export class LightingCalculator {
     // Debug final light level determination
     if (debugMode) {
       console.log(
-        `${MODULE_ID} | 💡 LIGHT CALC RESULT: position(${position.x}, ${position.y}) → level="${lightLevel}" illumination=${finalIllumination}`,
+        `${MODULE_ID} | 💡 LIGHT CALC RESULT: position(${position.x}, ${position.y}) → level="${lightLevel}" illumination=${finalIllumination} (base=${baseIllumination}, lights=${maxLightIllumination}, globalIllum=${hasGlobalIllumination})`,
       );
     }
 
@@ -450,10 +458,10 @@ export class LightingCalculator {
       position,
       lightLevel,
       sceneDarkness: canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0,
-      globalLight: canvas.scene?.globalLight ?? false,
-      hasGlobalIllumination: canvas.scene?.hasGlobalIllumination ?? false,
-      ambientLight: canvas.scene?.ambientLight ?? false,
-      globalIllumination: canvas.scene?.globalIllumination ?? false,
+  globalLight: canvas.scene?.environment?.globalLight?.enabled ?? false,
+  hasGlobalIllumination: canvas.scene?.environment?.globalLight?.enabled ?? canvas.scene?.hasGlobalIllumination ?? false,
+  ambientLight: canvas.scene?.environment?.globalLight?.darknessThreshold ?? false,
+  globalIllumination: canvas.scene?.environment?.globalLight?.enabled ?? false,
       dedicatedLightSources: lightSources.length,
       lightEmittingTokens: lightEmittingTokens.length,
       lightEmittingTokensDetails: lightEmittingTokens,

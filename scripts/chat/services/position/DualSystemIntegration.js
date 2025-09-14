@@ -4,7 +4,7 @@
  * with comprehensive error handling and fallback mechanisms for FoundryVTT v13
  */
 
-import { MODULE_ID, VISIBILITY_STATES, COVER_STATES } from '../../../constants.js';
+import { COVER_STATES, MODULE_ID } from '../../../constants.js';
 import errorHandlingService, { SYSTEM_TYPES } from '../infra/error-handling-service.js';
 
 /**
@@ -31,7 +31,6 @@ import errorHandlingService, { SYSTEM_TYPES } from '../infra/error-handling-serv
 export class DualSystemIntegration {
   constructor() {
     this._autoCoverSystem = null;
-    this._avsOverrideService = null;
     this._initialized = false;
     this._systemStatus = {
       avs: { available: false, lastCheck: 0 },
@@ -56,7 +55,6 @@ export class DualSystemIntegration {
         this._systemStatus.autoCover.available,
       );
 
-      // Initialize AVS override service
       await this._initializeAVSService();
       console.debug(`${MODULE_ID} | AVS service initialized:`, this._systemStatus.avs.available);
 
@@ -118,20 +116,12 @@ export class DualSystemIntegration {
     }
 
     try {
-      // First check for AVS overrides using v13 flag APIs
-      const override = await this._getAVSOverride(observer, target);
-      if (override) {
-        result.success = true;
-        result.data = override;
-        result.source = 'override';
-        return result;
-      }
-
       // Use existing visibility detection with v13 APIs
       const visibilityState = await this._detectAVSVisibility(observer, target, options);
 
       result.success = true;
       result.data = visibilityState;
+      debugger;
       return result;
     } catch (error) {
       const errorResult = await errorHandlingService.handleSystemError(SYSTEM_TYPES.AVS, error, {
@@ -410,8 +400,6 @@ export class DualSystemIntegration {
    */
   async _initializeAVSService() {
     try {
-      const avsModule = await import('../../../services/avs-override-service.js');
-      this._avsOverrideService = avsModule;
       this._systemStatus.avs.available = true;
       this._systemStatus.avs.lastCheck = Date.now();
     } catch (error) {
@@ -520,22 +508,6 @@ export class DualSystemIntegration {
     }
   }
 
-  /**
-   * Gets AVS override for token pair using v13 flag APIs
-   * @param {Token} observer - Observer token
-   * @param {Token} target - Target token
-   * @returns {Promise<string|null>} Override visibility state or null
-   * @private
-   */
-  async _getAVSOverride(observer, target) {
-    try {
-      if (!this._avsOverrideService) return null;
-      return this._avsOverrideService.getAVSOverride(observer, target);
-    } catch (error) {
-      console.warn(`${MODULE_ID} | Failed to get AVS override:`, error);
-      return null;
-    }
-  }
 
   /**
    * Detects AVS visibility using existing utilities
@@ -755,6 +727,7 @@ export class DualSystemIntegration {
    */
   _combineSystemStates(avsVisibility, coverState) {
     // If already hidden or undetected, cover doesn't change that
+    debugger;
     if (['hidden', 'undetected'].includes(avsVisibility)) {
       return avsVisibility;
     }
@@ -768,86 +741,6 @@ export class DualSystemIntegration {
     return avsVisibility;
   }
 
-  /**
-   * Applies AVS fallback mechanism when system fails
-   * @param {SystemResult} result - Current result object
-   * @param {Token} observer - Observer token
-   * @param {Token} target - Target token
-   * @param {Object} options - Additional options
-   * @returns {SystemResult} Result with fallback applied
-   * @private
-   */
-  _applyAVSFallback(result, observer, target, options) {
-    try {
-      // Fallback to basic line of sight check using v13+ APIs
-      if (this._validateTokens(observer, target)) {
-        const ray = new foundry.canvas.geometry.Ray(observer.center, target.center);
-        
-        let hasLineOfSight = true;
-        try {
-          if (canvas.walls?.testCollision) {
-            hasLineOfSight = !canvas.walls.testCollision(ray.A, ray.B, { type: 'sight' });
-          } else if (canvas.walls?.checkCollision) {
-            hasLineOfSight = !canvas.walls.checkCollision(ray, { type: 'sight' });
-          }
-        } catch (collisionError) {
-          console.warn('PF2E Visioner | Fallback collision detection failed', collisionError);
-        }
-
-        result.data = hasLineOfSight ? 'observed' : 'concealed';
-        result.fallbackUsed = true;
-        result.source = 'fallback';
-        result.success = true;
-      }
-    } catch (fallbackError) {
-      console.warn(`${MODULE_ID} | AVS fallback also failed:`, fallbackError);
-      result.data = 'observed'; // Ultimate fallback
-    }
-
-    return result;
-  }
-
-  /**
-   * Applies Auto-Cover fallback mechanism when system fails
-   * @param {SystemResult} result - Current result object
-   * @param {Token} observer - Observer token
-   * @param {Token} target - Target token
-   * @param {Object} options - Additional options
-   * @returns {SystemResult} Result with fallback applied
-   * @private
-   */
-  _applyAutoCoverFallback(result, observer, target, options) {
-    try {
-      // Fallback to basic wall collision check using v13 APIs
-      if (this._validateTokens(observer, target)) {
-        const ray = new foundry.canvas.geometry.Ray(observer.center, target.center);
-        
-        let hasWallCollision = false;
-        try {
-          if (canvas.walls?.testCollision) {
-            hasWallCollision = canvas.walls.testCollision(ray.A, ray.B, { type: 'move' });
-          } else if (canvas.walls?.checkCollision) {
-            hasWallCollision = canvas.walls.checkCollision(ray, { type: 'move' });
-          }
-        } catch (collisionError) {
-          console.warn('PF2E Visioner | Fallback cover collision detection failed', collisionError);
-        }
-
-        result.data = {
-          state: hasWallCollision ? 'standard' : 'none',
-          bonus: hasWallCollision ? 2 : 0,
-        };
-        result.fallbackUsed = true;
-        result.source = 'fallback';
-        result.success = true;
-      }
-    } catch (fallbackError) {
-      console.warn(`${MODULE_ID} | Auto-Cover fallback also failed:`, fallbackError);
-      result.data = { state: 'none', bonus: 0 }; // Ultimate fallback
-    }
-
-    return result;
-  }
 
   /**
    * Creates error state for failed operations

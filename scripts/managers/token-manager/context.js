@@ -138,6 +138,7 @@ export async function buildContext(app, options) {
         cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
+
       return {
         id: token.document.id,
         name: token.document.name,
@@ -175,8 +176,17 @@ export async function buildContext(app, options) {
     allTargets = sceneTokens.map((observerToken) => {
       const observerVisibilityData = getVisibilityMap(observerToken);
       const observerCoverData = getCoverMap(observerToken);
-      const currentVisibilityState = observerVisibilityData[app.observer.document.id] || 'observed';
+      let currentVisibilityState = observerVisibilityData[app.observer.document.id] || 'observed';
       const currentCoverState = observerCoverData[app.observer.document.id] || 'none';
+      
+      // For sneaking tokens, show the AVS internal state instead of the detection wrapper state
+      if (app.observer.document.getFlag(MODULE_ID, 'sneak-active')) {
+        // Read from the observer token's visibility map to see how it sees the sneaking token
+        const avsInternalState = observerVisibilityData?.[app.observer.document.id];
+        if (avsInternalState) {
+          currentVisibilityState = avsInternalState;
+        }
+      }
 
       const disposition = observerToken.document.disposition || 0;
 
@@ -216,6 +226,7 @@ export async function buildContext(app, options) {
         color: VISIBILITY_STATES[key].color,
         cssClass: VISIBILITY_STATES[key].cssClass,
       }));
+
 
       return {
         id: observerToken.document.id,

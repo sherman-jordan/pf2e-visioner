@@ -5,7 +5,6 @@
 
 import { openVisibilityManagerWithMode } from '../api.js';
 import { MODULE_ID } from '../constants.js';
-import { AVSOverrideDialog } from '../managers/avs-override-dialog.js';
 
 /**
  * Handle rendering of token HUD to add visibility button
@@ -27,7 +26,6 @@ export function onRenderTokenHUD(app, html) {
   } catch (_) {}
 
   renderVisibilityButton(app, html);
-  renderAVSOverrideButton(app, html);
 }
 
 /**
@@ -100,58 +98,3 @@ function renderVisibilityButton(app, html) {
   column.appendChild(buttonElement);
 }
 
-/**
- * Render the AVS override button in the token HUD
- * @param {TokenHUD} app - The token HUD application
- * @param {HTMLElement} html - The HTML element of the HUD
- */
-function renderAVSOverrideButton(app, html) {
-  const token = app.object;
-  if (!token) return;
-
-  // Only show for GMs
-  if (!game.user.isGM) {
-    return;
-  }
-
-  // html is a jQuery in Foundry; normalize to a DOM element
-  const root = html?.jquery ? html[0] : html;
-  if (!root) return;
-
-  // Find the left column to add the button
-  let column = root.querySelector('div.col.left');
-  if (!column && html?.find) {
-    column = html.find('div.col.left')[0];
-  }
-  if (!column) {
-    console.warn('PF2E Visioner: Could not find left column in token HUD');
-    return;
-  }
-
-  // Remove any existing instance first
-  const existing = column.querySelector('[data-action="pf2e-visioner-avs-override"]');
-  if (existing) existing.remove();
-
-  // Create the button element
-  const buttonElement = document.createElement('div');
-  buttonElement.className = 'control-icon';
-  buttonElement.style.display = 'flex';
-  buttonElement.setAttribute('data-action', 'pf2e-visioner-avs-override');
-  buttonElement.setAttribute('data-tooltip', 'AVS Override Manager');
-  buttonElement.innerHTML = '<i class="fas fa-cog"></i>';
-
-  // Add click handler
-  buttonElement.addEventListener('click', async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    try {
-      await AVSOverrideDialog.openForToken(token);
-    } catch (error) {
-      console.error('PF2E Visioner: Error opening AVS override dialog:', error);
-    }
-  });
-
-  // Add the button to the column
-  column.appendChild(buttonElement);
-}

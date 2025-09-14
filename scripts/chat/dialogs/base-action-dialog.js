@@ -1,5 +1,4 @@
-import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
-import * as avsOverrideService from '../../services/avs-override-service.js';
+import { MODULE_TITLE } from '../../constants.js';
 import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
 import '../services/hbs-helpers.js';
 import { notify } from '../services/infra/notifications.js';
@@ -80,37 +79,11 @@ export class BaseActionDialog extends BasePreviewDialog {
       }
     } catch (_) {}
 
-    // AVS Override toggles
-    try {
-      const avsToggles = this.element.querySelectorAll('.avs-override-checkbox');
-      console.log(`${MODULE_ID} | Found ${avsToggles.length} AVS override toggles`);
-      avsToggles.forEach((toggle, index) => {
-        console.log(`${MODULE_ID} | Binding toggle ${index}:`, toggle);
-        toggle.addEventListener('change', (event) => {
-          console.log(`${MODULE_ID} | Toggle change event fired for toggle ${index}`);
-          this._onToggleAVSOverride(event);
-        });
-      });
-    } catch (error) {
-      console.error(`${MODULE_ID} | Error binding AVS override toggles:`, error);
-    }
   }
 
   buildCommonContext(outcomes) {
     const changesCount = this.computeChangesCount(outcomes);
 
-    // Add AVS override information to outcomes
-    if (Array.isArray(outcomes) && this.actorToken) {
-      outcomes.forEach((outcome) => {
-        if (outcome.target?.id) {
-          const targetToken = canvas.tokens.get(outcome.target.id);
-          if (targetToken) {
-            outcome.avsOverride = !!avsOverrideService.getAVSOverride(this.actorToken, targetToken);
-            outcome.avsOverrideStateClass = outcome.avsOverride ? 'override-state' : 'auto-state';
-          }
-        }
-      });
-    }
 
     return {
       changesCount,
@@ -143,18 +116,27 @@ export class BaseActionDialog extends BasePreviewDialog {
   }
 
   updateRowButtonsToApplied(outcomes) {
+    // Normalize outcomes so helpers can locate rows regardless of shape
+    // Some dialogs (e.g., Sneak) use `token` instead of `target`
+    const normalized = Array.isArray(outcomes)
+      ? outcomes.map((o) => (o?.target?.id ? o : o?.token?.id ? { target: { id: o.token.id } } : o))
+      : outcomes;
     import('../services/ui/dialog-utils.js').then(({ updateRowButtonsToApplied }) => {
       try {
-        updateRowButtonsToApplied(this.element, outcomes);
-      } catch (_) {}
+        updateRowButtonsToApplied(this.element, normalized);
+      } catch {}
     });
   }
 
   updateRowButtonsToReverted(outcomes) {
+    // Normalize outcomes so helpers can locate rows regardless of shape
+    const normalized = Array.isArray(outcomes)
+      ? outcomes.map((o) => (o?.target?.id ? o : o?.token?.id ? { target: { id: o.token.id } } : o))
+      : outcomes;
     import('../services/ui/dialog-utils.js').then(({ updateRowButtonsToReverted }) => {
       try {
-        updateRowButtonsToReverted(this.element, outcomes);
-      } catch (_) {}
+        updateRowButtonsToReverted(this.element, normalized);
+      } catch {}
       try {
         // After reverting, reset each row's selection to its initial calculated outcome
         if (!Array.isArray(outcomes)) return;
@@ -186,9 +168,9 @@ export class BaseActionDialog extends BasePreviewDialog {
               (x) => String(this.getOutcomeTokenId(x)) === String(tokenId),
             );
             if (outcome) outcome.overrideState = null;
-          } catch (_) {}
+          } catch {}
         }
-      } catch (_) {}
+      } catch {}
     });
   }
 
@@ -196,7 +178,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     import('../services/ui/dialog-utils.js').then(({ updateBulkActionButtons }) => {
       try {
         updateBulkActionButtons(this.element, this.bulkActionState);
-      } catch (_) {}
+      } catch {}
     });
   }
 
@@ -204,7 +186,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     import('../services/ui/dialog-utils.js').then(({ updateChangesCount }) => {
       try {
         updateChangesCount(this.element, this.getChangesCounterClass());
-      } catch (_) {}
+      } catch {}
     });
   }
 
@@ -229,7 +211,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         const icon = container.querySelector(`.state-icon[data-state="${desiredState}"]`);
         if (icon) icon.classList.add('selected');
       }
-    } catch (_) {}
+  } catch {}
   }
 
   // Outcome display helpers (string-based). Subclasses can override if needed
@@ -294,7 +276,7 @@ export class BaseActionDialog extends BasePreviewDialog {
       } else {
         container.innerHTML = '<span class="no-action">No Change</span>';
       }
-    } catch (_) {}
+  } catch {}
   }
 
   addIconClickHandlers() {
@@ -338,7 +320,7 @@ export class BaseActionDialog extends BasePreviewDialog {
               wallId,
               row: event.currentTarget.closest('tr'),
             });
-          } catch (_) {}
+          } catch {}
           // Direct DOM fallback to ensure row shows buttons immediately
           try {
             const rowEl = event.currentTarget.closest('tr');
@@ -364,7 +346,7 @@ export class BaseActionDialog extends BasePreviewDialog {
                 }
               }
             }
-          } catch (_) {}
+          } catch {}
           try {
             // Maintain a lightweight list of changed outcomes for convenience
             this.changes = Array.isArray(this.outcomes)
@@ -374,7 +356,7 @@ export class BaseActionDialog extends BasePreviewDialog {
                   return baseOld != null && baseNew != null && baseOld !== baseNew;
                 })
               : [];
-          } catch (_) {}
+          } catch {}
         }
         this.updateChangesCount();
       });
@@ -382,66 +364,296 @@ export class BaseActionDialog extends BasePreviewDialog {
   }
 
   /**
-   * Handle AVS override toggle
-   * @param {Event} event - The toggle event
+   * Generic apply change handler that can be used by all action dialogs
+   * @param {Event} event - Click event
+   * @param {HTMLElement} target - Button element
+   * @param {Object} context - Dialog context with app instance and apply function
    */
-  async _onToggleAVSOverride(event) {
-    console.log(`${MODULE_ID} | AVS Override toggle clicked`);
-    const checkbox = event.currentTarget;
-    const targetTokenId = checkbox.dataset.tokenId;
-    const isChecked = checkbox.checked;
+  static async onApplyChange(event, target, context) {
+    const { app, applyFunction, actionType } = context;
+    if (!app) {
+      console.error(`[${actionType} Dialog] Could not find application instance`);
+      return;
+    }
 
-    console.log(`${MODULE_ID} | Checkbox checked: ${isChecked}, Target ID: ${targetTokenId}`);
+    const tokenId = target.dataset.tokenId;
+    const wallId = target.dataset.wallId;
+    let outcome = null;
+    
+    if (wallId) {
+      outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
+    } else {
+      outcome = app.outcomes.find((o) => o.token?.id === tokenId || o.target?.id === tokenId);
+    }
 
-    if (!this.actorToken || !targetTokenId) {
-      console.warn('PF2E Visioner: Missing actor token or target token ID for AVS override');
+    if (!outcome) {
+      notify.warn(`${MODULE_TITLE}: No outcome found for this ${wallId ? 'wall' : 'token'}`);
+      return;
+    }
+
+    // Check if there's actually a change to apply
+    const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+    const hasChange = effectiveNewState !== outcome.oldVisibility;
+
+    if (!hasChange) {
+      notify.warn(`${MODULE_TITLE}: No changes to apply for this ${wallId ? 'wall' : 'token'}`);
       return;
     }
 
     try {
-      const targetToken = canvas.tokens.get(targetTokenId);
-      if (!targetToken) {
-        console.warn('PF2E Visioner: Target token not found for AVS override');
+      const actionData = {
+        ...app.actionData,
+        ignoreAllies: app.ignoreAllies,
+        encounterOnly: app.encounterOnly,
+      };
+
+      // Create overrides based on wall vs token
+      if (outcome._isWall && outcome.wallId) {
+        const overrides = {
+          __wall__: { [outcome.wallId]: effectiveNewState }
+        };
+        await applyFunction({ ...actionData, overrides }, target);
+        app.updateRowButtonsToApplied([{ wallId: outcome.wallId }]);
+      } else {
+        // Apply visibility changes - this sets AVS pair overrides which will
+        // prevent future AVS calculations for this token pair until reverted
+        const overrides = { [tokenId]: effectiveNewState };
+        await applyFunction({ ...actionData, overrides }, target);
+        
+        // Update the outcome to reflect the applied state
+        outcome.oldVisibility = effectiveNewState;
+        outcome.overrideState = null;
+        outcome.hasActionableChange = false;
+        outcome.hasRevertableChange = false;
+
+        // Update the UI if method exists
+        if (app._updateOutcomeDisplayForToken) {
+          app._updateOutcomeDisplayForToken(tokenId, outcome);
+        }
+        if (app.updateRowButtonsToApplied) {
+          app.updateRowButtonsToApplied([{ target: { id: tokenId } }]);
+        }
+      }
+
+      // Clear sneak-active flag for sneak actions
+      if (actionType === 'Sneak' && app.sneakingToken) {
+        await app._clearSneakActiveFlag();
+      }
+
+      if (app.updateChangesCount) {
+        app.updateChangesCount();
+      }
+      
+      const tokenName = outcome.token?.name || outcome.target?.name || 'token';
+      notify.info(`${MODULE_TITLE}: Applied ${actionType.toLowerCase()} result for ${tokenName}`);
+    } catch (error) {
+      console.error(`[${actionType} Dialog] Error applying change:`, error);
+      notify.error(`${MODULE_TITLE}: Failed to apply change - see console for details`);
+    }
+  }
+
+  /**
+   * Generic revert change handler that can be used by all action dialogs
+   * @param {Event} event - Click event
+   * @param {HTMLElement} target - Button element
+   * @param {Object} context - Dialog context with app instance
+   */
+  static async onRevertChange(event, target, context) {
+    const { app, actionType } = context;
+    if (!app) {
+      console.error(`[${actionType} Dialog] Could not find application instance`);
+      return;
+    }
+
+    const tokenId = target.dataset.tokenId;
+    const wallId = target.dataset.wallId;
+    let outcome = null;
+    
+    if (wallId) {
+      outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
+    } else {
+      outcome = app.outcomes.find((o) => o.token?.id === tokenId || o.target?.id === tokenId);
+    }
+
+    if (!outcome) {
+      notify.warn(`${MODULE_TITLE}: No outcome found for this ${wallId ? 'wall' : 'token'}`);
+      return;
+    }
+
+    // Check if there's actually a change to revert
+    const hasChange = outcome.oldVisibility !== outcome.newVisibility;
+    if (!hasChange) {
+      notify.warn(`${MODULE_TITLE}: No changes to revert for this ${wallId ? 'wall' : 'token'}`);
+      return;
+    }
+
+    try {
+      // Revert to original visibility
+      outcome.oldVisibility = outcome.currentVisibility; // Reset to original visibility
+      outcome.overrideState = null;
+      outcome.hasActionableChange = false;
+      outcome.hasRevertableChange = false;
+
+      // Update the UI if method exists
+      if (app._updateOutcomeDisplayForToken) {
+        app._updateOutcomeDisplayForToken(tokenId, outcome);
+      }
+      if (app.updateRowButtonsToReverted) {
+        app.updateRowButtonsToReverted([outcome]);
+      }
+
+      if (app.updateChangesCount) {
+        app.updateChangesCount();
+      }
+      
+      const tokenName = outcome.token?.name || outcome.target?.name || 'token';
+      notify.info(`${MODULE_TITLE}: Reverted changes for ${tokenName}`);
+    } catch (error) {
+      console.error(`[${actionType} Dialog] Error reverting change:`, error);
+      notify.error(`${MODULE_TITLE}: Failed to revert change - see console for details`);
+    }
+  }
+
+  /**
+   * Generic apply all handler that can be used by all action dialogs
+   * @param {Event} event - Click event
+   * @param {HTMLElement} target - Button element
+   * @param {Object} context - Dialog context with app instance and apply function
+   */
+  static async onApplyAll(event, target, context) {
+    const { app, applyFunction, actionType } = context;
+    if (!app) {
+      console.error(`[${actionType} Dialog] Could not find application instance`);
+      return;
+    }
+
+    // Check if already applied
+    if (app.bulkActionState === 'applied') {
+      notify.warn(`${MODULE_TITLE}: Apply All has already been used. Use Revert All to undo changes.`);
+      return;
+    }
+
+    // Get all outcomes that have actionable changes
+    const outcomesWithChanges = app.outcomes.filter(o => o.hasActionableChange);
+    
+    if (outcomesWithChanges.length === 0) {
+      notify.warn(`${MODULE_TITLE}: No changes to apply`);
+      return;
+    }
+
+    try {
+      // Create overrides object for all tokens with changes
+      // This sets AVS pair overrides which will prevent future AVS calculations
+      // for these token pairs until reverted
+      const overrides = {};
+      outcomesWithChanges.forEach(outcome => {
+        const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+        const tokenId = outcome.token?.id || outcome.target?.id;
+        if (tokenId) {
+          overrides[tokenId] = effectiveNewState;
+        }
+      });
+
+      const actionData = {
+        ...app.actionData,
+        ignoreAllies: app.ignoreAllies,
+        encounterOnly: app.encounterOnly,
+        overrides
+      };
+
+      await applyFunction(actionData, target);
+
+      // Update all outcomes to reflect applied state
+      outcomesWithChanges.forEach(outcome => {
+        const effectiveNewState = outcome.overrideState || outcome.newVisibility;
+        outcome.oldVisibility = effectiveNewState;
+        outcome.overrideState = null;
+        outcome.hasActionableChange = false;
+        outcome.hasRevertableChange = false;
+      });
+
+      // Update bulk state
+      app.bulkActionState = 'applied';
+
+      // Update UI
+      if (app.updateRowButtonsToApplied) {
+        app.updateRowButtonsToApplied(outcomesWithChanges);
+      }
+      if (app.updateChangesCount) {
+        app.updateChangesCount();
+      }
+      if (app.updateBulkActionButtons) {
+        app.updateBulkActionButtons();
+      }
+
+      // Clear sneak-active flag for sneak actions
+      if (actionType === 'Sneak' && app.sneakingToken) {
+        await app._clearSneakActiveFlag();
+      }
+
+      notify.info(`${MODULE_TITLE}: Applied ${actionType.toLowerCase()} results for ${outcomesWithChanges.length} tokens`);
+    } catch (error) {
+      console.error(`[${actionType} Dialog] Error applying all changes:`, error);
+      notify.error(`${MODULE_TITLE}: Failed to apply changes - see console for details`);
+    }
+  }
+
+  /**
+   * Generic revert all handler that can be used by all action dialogs
+   * @param {Event} event - Click event
+   * @param {HTMLElement} target - Button element
+   * @param {Object} context - Dialog context with app instance
+   */
+  static async onRevertAll(event, target, context) {
+    const { app, actionType } = context;
+    if (!app) {
+      console.error(`[${actionType} Dialog] Could not find application instance`);
+      return;
+    }
+
+    // Check if there are changes to revert
+    if (app.bulkActionState !== 'applied') {
+      notify.warn(`${MODULE_TITLE}: No changes to revert. Apply changes first.`);
+      return;
+    }
+
+    try {
+      // Get all outcomes that were applied (where oldVisibility was changed from original)
+      const appliedOutcomes = app.outcomes.filter(o => o.oldVisibility !== o.currentVisibility);
+      
+      if (appliedOutcomes.length === 0) {
+        notify.warn(`${MODULE_TITLE}: No applied changes found to revert`);
         return;
       }
 
-      if (isChecked) {
-        // Set AVS override to the calculated visibility state
-        const outcome = this.outcomes?.find((o) => o.target?.id === targetTokenId);
-        const visibilityState = outcome?.newVisibility || outcome?.overrideState || 'observed';
-        await avsOverrideService.setAVSOverride(this.actorToken, targetToken, visibilityState);
-      } else {
-        // Remove AVS override
-        await avsOverrideService.removeAVSOverride(this.actorToken, targetToken);
+      // Revert all outcomes to their original state
+      appliedOutcomes.forEach(outcome => {
+        outcome.oldVisibility = outcome.currentVisibility; // Reset to original visibility
+        outcome.overrideState = null;
+        outcome.hasActionableChange = false;
+        outcome.hasRevertableChange = false;
+      });
+
+      // Update bulk state
+      app.bulkActionState = 'initial';
+
+      // Update UI
+      if (app.updateRowButtonsToReverted) {
+        app.updateRowButtonsToReverted(appliedOutcomes);
+      }
+      if (app.updateChangesCount) {
+        app.updateChangesCount();
+      }
+      if (app.updateBulkActionButtons) {
+        app.updateBulkActionButtons();
       }
 
-      // Update the label immediately
-      const toggleContainer = checkbox.parentElement.parentElement; // .avs-override-toggle
-      const label = toggleContainer.querySelector('.avs-override-label');
-      if (label) {
-        console.log(`${MODULE_ID} | Updating label: ${isChecked ? 'Override' : 'Auto'}`);
-        label.textContent = isChecked ? 'Override' : 'Auto';
-        label.className = 'avs-override-label';
-        if (isChecked) {
-          label.classList.add('override-state');
-        } else {
-          label.classList.add('auto-state');
-        }
-        console.log(`${MODULE_ID} | Label updated: ${label.textContent}`);
-      }
-
-      notify.info(
-        isChecked
-          ? `AVS override set for ${targetToken.name}`
-          : `AVS override removed for ${targetToken.name}`,
-      );
+      notify.info(`${MODULE_TITLE}: Reverted changes for ${appliedOutcomes.length} tokens`);
     } catch (error) {
-      console.error('PF2E Visioner: Error toggling AVS override:', error);
-      notify.error('Error toggling AVS override');
-
-      // Revert checkbox state
-      checkbox.checked = !isChecked;
+      console.error(`[${actionType} Dialog] Error reverting all changes:`, error);
+      notify.error(`${MODULE_TITLE}: Failed to revert changes - see console for details`);
     }
   }
+
 }
 

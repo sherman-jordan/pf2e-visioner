@@ -4,12 +4,9 @@
  * in the enhanced sneak AVS integration system.
  */
 
-import { 
-  AVS_VISIBILITY_STATES, 
-  AUTO_COVER_STATES, 
-  TRANSITION_TYPES,
-  validatePositionState,
-  validatePositionTransition 
+import {
+    validatePositionState,
+    validatePositionTransition
 } from './PositionStateModels.js';
 
 /**
@@ -40,7 +37,6 @@ export function comparePositionStates(state1, state2, options = {}) {
   const fieldsToCompare = [
     'avsVisibility',
     'avsCalculated',
-    'avsOverride',
     'coverState',
     'coverCalculated',
     'coverOverride',

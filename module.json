@@ -44,9 +44,6 @@
       "src": "styles/token-manager-ui.css"
     },
     {
-      "src": "styles/avs-override.css"
-    },
-    {
       "src": "styles/enhanced-position-tracking.css"
     }
   ],

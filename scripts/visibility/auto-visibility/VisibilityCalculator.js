@@ -3,7 +3,6 @@
  * Bypasses all throttling and circuit breaking for immediate processing
  */
 
-import * as avsOverrideService from '../../services/avs-override-service.js';
 
 export class VisibilityCalculator {
   /** @type {VisibilityCalculator} */
@@ -77,17 +76,6 @@ export class VisibilityCalculator {
     }
 
     try {
-      // Check for AVS overrides first
-      const avsOverride = avsOverrideService.getAVSOverride(observer, target);
-      if (avsOverride) {
-        return avsOverride;
-      }
-
-      // Check for AVS kill switch
-      if (avsOverrideService.getAVSKillSwitch(observer)) {
-        return 'observed'; // Return default state when AVS is disabled
-      }
-
       // Step 1: Check if observer is blinded (cannot see anything)
       const isBlinded = this.#conditionManager.isBlinded(observer);
       if (isBlinded) {
@@ -131,6 +119,7 @@ export class VisibilityCalculator {
       const result = this.#visionAnalyzer.determineVisibilityFromLighting(
         lightLevel,
         observerVision,
+        target, // Pass the target token for sneaking checks
       );
 
       return result;

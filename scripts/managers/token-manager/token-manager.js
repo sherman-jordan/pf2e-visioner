@@ -97,6 +97,9 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
 
     // Set this as the current instance
     VisionerTokenManager.currentInstance = this;
+    
+    // Set up auto-refresh when tokens move
+    this._setupAutoRefresh();
   }
 
   // Bind extracted action handlers to this class once (static initialization)
@@ -125,6 +128,60 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
 
     // Re-render the dialog with new data
     this.render({ force: true });
+  }
+
+  /**
+   * Set up auto-refresh when tokens move or visibility changes
+   * @private
+   */
+  _setupAutoRefresh() {
+    // Refresh when any token moves
+    this._updateTokenHook = Hooks.on('updateToken', (tokenDoc, changes) => {
+      if (this.rendered && this.observer) {
+        // Check if the observer token moved or if any relevant token moved
+        if (tokenDoc.id === this.observer.id || 
+            (changes.x !== undefined || changes.y !== undefined)) {
+          // Small delay to allow AVS to process the movement
+          setTimeout(() => {
+            if (this.rendered) {
+              this.render({ force: true });
+            }
+          }, 100);
+        }
+      }
+    });
+
+    // Refresh when visibility map changes (for sneaking tokens)
+    this._visibilityChangeHook = Hooks.on('pf2e-visioner.visibilityChanged', (observerId, targetId, newVisibility) => {
+      if (this.rendered && this.observer && observerId === this.observer.id) {
+        console.log('PF2E Visioner | Token Manager refreshing due to visibility change:', {
+          observerId,
+          targetId,
+          newVisibility
+        });
+        // Small delay to ensure the change is fully processed
+        setTimeout(() => {
+          if (this.rendered) {
+            this.render({ force: true });
+          }
+        }, 50);
+      }
+    });
+  }
+
+  /**
+   * Clean up auto-refresh hooks
+   * @private
+   */
+  _cleanupAutoRefresh() {
+    if (this._updateTokenHook) {
+      Hooks.off('updateToken', this._updateTokenHook);
+      this._updateTokenHook = null;
+    }
+    if (this._visibilityChangeHook) {
+      Hooks.off('pf2e-visioner.visibilityChanged', this._visibilityChangeHook);
+      this._visibilityChangeHook = null;
+    }
   }
 
   /**
@@ -284,6 +341,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       // Add token image click handlers for panning and selection
       this.addTokenImageClickHandlers?.();
     } catch (_) {}
+    try {
+    } catch (_) {}
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);
@@ -293,6 +352,9 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
    * Clean up when closing
    */
   async close(options = {}) {
+    // Clean up auto-refresh hooks
+    this._cleanupAutoRefresh();
+    
     // Clean up any remaining token borders
     this.cleanupAllTokenBorders();
     // Remove selection/hover handlers and clear row highlights

@@ -11,7 +11,9 @@ import {
   panToWall,
 } from '../../ui/shared-ui-utils.js';
 
-export class BasePreviewDialog extends foundry.applications.api.ApplicationV2 {
+export class BasePreviewDialog extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2
+) {
   constructor(options = {}) {
     super(options);
     this._selectionHookId = null;

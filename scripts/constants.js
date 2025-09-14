@@ -94,20 +94,12 @@ export const COVER_STATES = {
 };
 
 /**
- * AVS Override system constants
+ * Sneak action flags
  */
-export const AVS_OVERRIDE_FLAGS = {
-  AVS_OVERRIDE: 'avs-override', // Token pair overrides
-  AVS_KILL_SWITCH: 'avs', // Kill switch for entire AVS system
+export const SNEAK_FLAGS = {
+  SNEAK_ACTIVE: 'sneak-active', // Flag indicating token is currently sneaking
 };
 
-/**
- * AVS Override states
- */
-export const AVS_OVERRIDE_STATES = {
-  ENABLED: true,
-  DISABLED: false,
-};
 
 /**
  * Default module settings

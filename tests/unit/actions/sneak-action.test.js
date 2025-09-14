@@ -25,19 +25,6 @@ describe('Sneak Action Comprehensive Tests', () => {
     });
   });
 
-  describe('Panel Generation and Button Actions', () => {
-    test('chat panel generates correct apply-changes button', () => {
-      const { buildSneakPanel } = require('../../../scripts/chat/ui/panel/sneak.js');
-
-      game.user.isGM = true;
-      const panel = buildSneakPanel();
-
-      expect(panel.actionButtonsHtml).toContain('data-action="apply-now-sneak"');
-      expect(panel.actionButtonsHtml).not.toContain('data-action="apply-now-hide"');
-      expect(panel.actionButtonsHtml).toContain('Apply Changes');
-    });
-  });
-
   describe('Status Mapping Tests', () => {
     describe('Without RAW Enforcement', () => {
       beforeEach(() => {

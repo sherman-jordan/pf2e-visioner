@@ -48,12 +48,13 @@ export function bindAutomationEvents(panel, message, actionData) {
         'apply-now-consequences': applyNowConsequences,
         'apply-now-take-cover': applyNowTakeCover,
         'start-sneak': async (actionData) => {
-          const { SneakActionHandler } = await import('../services/actions/sneak-action.js');
-          return SneakActionHandler.startSneak(actionData);
+          const { SneakDialogService } = await import('../services/dialogs/sneak-dialog-service.js');
+          const service = new SneakDialogService();
+          return service.startSneak(actionData);
         },
         'open-sneak-results': async (actionData) => {
-          const { SneakActionHandler } = await import('../services/actions/sneak-action.js');
-          return SneakActionHandler.openSneakResults(actionData);
+          const { SneakDialogService } = await import('../services/dialogs/sneak-dialog-service.js');
+          return SneakDialogService.openSneakResults(actionData);
         },
       };
       const revertHandlers = {

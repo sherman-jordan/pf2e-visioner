@@ -196,7 +196,18 @@ export class VisionAnalyzer {
     if (!observer || !target) return false;
 
     try {
-      // Use FoundryVTT's built-in visibility testing
+      // Special handling for sneaking tokens - bypass Foundry's detection system
+      // to avoid interference from detection wrapper
+      const isTargetSneaking = target.document.getFlag('pf2e-visioner', 'sneak-active');
+      const isObserverSneaking = observer.document.getFlag('pf2e-visioner', 'sneak-active');
+      
+      if (isTargetSneaking || isObserverSneaking) {
+        // For sneaking tokens, use direct ray casting instead of Foundry's testVisibility
+        // This bypasses the detection wrapper and gives us true line-of-sight
+        return this.#hasDirectLineOfSight(observer, target);
+      }
+      
+      // For normal tokens, use FoundryVTT's built-in visibility testing
       return canvas.visibility.testVisibility(target.center, {
         tolerance: 0,
         object: target,
@@ -204,6 +215,66 @@ export class VisionAnalyzer {
     } catch (error) {
       console.warn(`${MODULE_ID} | Error testing line of sight:`, error);
       return false;
+    }
+  }
+
+  /**
+   * Direct line-of-sight check that bypasses Foundry's detection system
+   * @param {Token} observer
+   * @param {Token} target
+   * @returns {boolean}
+   * @private
+   */
+  #hasDirectLineOfSight(observer, target) {
+    try {
+      // For sneaking tokens, we need to be more careful about line of sight
+      // Let's use a more comprehensive approach that mimics Foundry's testVisibility
+      // but without the detection mode interference
+      
+      // First, check if the target is within the observer's vision range
+      const distance = Math.hypot(
+        target.center.x - observer.center.x,
+        target.center.y - observer.center.y
+      );
+      
+      // Get observer's vision capabilities
+      const observerVision = this.getVisionCapabilities(observer);
+      
+      // Check if target is within vision range
+      let maxRange = Infinity;
+      if (observerVision.hasDarkvision) {
+        maxRange = Math.min(maxRange, observerVision.darkvisionRange * canvas.grid.size);
+      }
+      if (observerVision.hasLowLightVision) {
+        maxRange = Math.min(maxRange, observerVision.lowLightRange * canvas.grid.size);
+      }
+      
+      if (distance > maxRange) {
+        return false; // Target is too far away
+      }
+      
+      // Use Foundry's core ray casting for walls, but bypass detection modes
+      const ray = new foundry.canvas.geometry.Ray(observer.center, target.center);
+      const walls = canvas.walls?.placeables || [];
+      
+      // Check if the ray intersects any walls that would block vision
+      for (const wall of walls) {
+        if (wall.document.door === CONST.WALL_DOOR_TYPES.NONE && 
+            wall.document.type === CONST.WALL_TYPES.NORMAL) {
+          if (ray.intersectSegment(wall.coords)) {
+            return false; // Wall blocks line of sight
+          }
+        }
+      }
+      
+      return true; // No walls block the line of sight
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Error in direct line of sight check:`, error);
+      // Fallback to Foundry's method if direct check fails
+      return canvas.visibility.testVisibility(target.center, {
+        tolerance: 0,
+        object: target,
+      });
     }
   }
 
@@ -233,9 +304,10 @@ export class VisionAnalyzer {
    * Determine visibility based on lighting conditions and observer's vision
    * @param {Object} lightLevel - Light level information from LightingCalculator
    * @param {Object} observerVision - Vision capabilities from getVisionCapabilities
+   * @param {Token} target - The target token (for sneaking checks)
    * @returns {string} Visibility state
    */
-  determineVisibilityFromLighting(lightLevel, observerVision) {
+  determineVisibilityFromLighting(lightLevel, observerVision, target = null) {
     const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
 
     // Blinded: Can't see anything (handled by hasVision = false)
@@ -258,32 +330,15 @@ export class VisionAnalyzer {
 
       case 'dim':
         if (observerVision.hasLowLightVision || observerVision.hasDarkvision) {
-          if (debugMode) {
-            console.log(
-              `${MODULE_ID} | 🌒 DIM LIGHT → OBSERVED: Observer has ${observerVision.hasDarkvision ? 'darkvision' : 'low-light vision'}`,
-            );
-          }
           return 'observed';
         } else {
-          if (debugMode) {
-            console.log(`${MODULE_ID} | 🌒 DIM LIGHT → CONCEALED: No special vision in dim light`);
-          }
           return 'concealed';
         }
 
       case 'darkness':
         if (observerVision.hasDarkvision) {
-          if (debugMode) {
-            console.log(
-              `${MODULE_ID} | 🌑 DARKNESS → OBSERVED: Observer has darkvision (range: ${observerVision.darkvisionRange})`,
-            );
-          }
           return 'observed';
         } else {
-          // ONLY log when darkness results in hidden state for debugging
-          if (debugMode) {
-            console.log(`${MODULE_ID} | 🌑 DARKNESS → HIDDEN: No darkvision in darkness area`);
-          }
           return 'hidden';
         }
 

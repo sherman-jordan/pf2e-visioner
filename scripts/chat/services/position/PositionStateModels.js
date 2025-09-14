@@ -96,7 +96,6 @@ export function createDefaultPositionState(overrides = {}) {
     // AVS System Data
     avsVisibility: 'observed',
     avsCalculated: false,
-    avsOverride: null,
     
     // Auto-Cover System Data
     coverState: 'none',
@@ -186,10 +185,6 @@ export function validatePositionState(positionState) {
     errors.push('avsCalculated must be a boolean');
   }
   
-  // Validate AVS override (can be null or string)
-  if (positionState.avsOverride !== null && typeof positionState.avsOverride !== 'string') {
-    errors.push('avsOverride must be null or a string');
-  }
   
   // Validate cover state
   if (!AUTO_COVER_STATES.includes(positionState.coverState)) {

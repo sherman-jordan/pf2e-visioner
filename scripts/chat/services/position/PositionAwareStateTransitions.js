@@ -481,17 +481,7 @@ export class PositionAwareStateTransitions {
         console.warn('PF2E Visioner | Cannot apply state change - tokens not found');
         return false;
       }
-
-      // Use AVS override service to apply the change
-      const { default: enhancedAVSOverrideService } = await import('../../../services/enhanced-avs-override-service.js');
-      
-      return await enhancedAVSOverrideService.setPositionAwareOverride(
-        observerToken,
-        targetToken,
-        newState,
-        null,
-        'position_transition'
-      );
+     
     } catch (error) {
       console.error('PF2E Visioner | Failed to apply state change:', error);
       return false;

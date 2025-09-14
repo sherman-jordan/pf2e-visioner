@@ -40,7 +40,6 @@
           <th class="roll-result">Roll vs Perception DC</th>
           <th class="outcome">Outcome</th>
           <th class="visibility-change">Visibility Change</th>
-          <th class="avs-override">AVS Override</th>
           <th class="actions">Actions</th>
         </tr>
       </thead>
@@ -155,25 +154,6 @@
                   </span>
                 </div>
               {{/if}}
-            </td>
-            <td class="avs-override">
-              <div class="avs-override-toggle">
-                <label class="toggle-switch">
-                  <input type="checkbox" 
-                         class="avs-override-checkbox" 
-                         data-token-id="{{outcome.target.id}}"
-                         {{#if outcome.avsOverride}}checked{{/if}}
-                         data-tooltip="Override AVS for this token pair">
-                  <span class="toggle-slider"></span>
-                </label>
-                        <span class="avs-override-label {{outcome.avsOverrideStateClass}}">
-                            {{#if outcome.avsOverride}}
-                                Override
-                            {{else}}
-                                Auto
-                            {{/if}}
-                        </span>
-              </div>
             </td>
             <td class="actions">
               {{#if outcome.hasActionableChange}}

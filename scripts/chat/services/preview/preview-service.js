@@ -170,7 +170,33 @@ export async function previewActionResults(actionData) {
           subjects.map((s) => handler.analyzeOutcome(actionData, s)),
         );
         const changes = outcomes.filter((o) => o && o.changed);
-        new SneakPreviewDialog(actionData.actor, outcomes, changes, actionData).render(true);
+        // Get the token from the actor
+        const token = actionData.actor?.token || actionData.actor;
+        if (!token) {
+          console.error('PF2E Visioner | No token found for sneak action');
+          return;
+        }
+        
+        // Try to retrieve start states for sneak action
+        let startStates = {};
+        try {
+          // Check message flags for start states
+          if (actionData.message?.flags?.['pf2e-visioner']?.startStates) {
+            startStates = actionData.message.flags['pf2e-visioner'].startStates;
+          }
+          // Check token flags as backup
+          else if (token?.document?.flags?.['pf2e-visioner']?.startStates) {
+            startStates = token.document.flags['pf2e-visioner'].startStates;
+          }
+        } catch (error) {
+          console.debug('PF2E Visioner | Could not retrieve start states in preview service:', error);
+        }
+        
+        // Create dialog with start states included
+        new SneakPreviewDialog(token, outcomes, changes, { 
+          ...actionData, 
+          startStates 
+        }).render(true);
         return;
       }
       case 'create-a-diversion': {

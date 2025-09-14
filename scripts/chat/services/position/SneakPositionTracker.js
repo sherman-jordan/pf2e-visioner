@@ -4,21 +4,19 @@
  * unified position state information for enhanced sneak mechanics.
  */
 
-import { VISIBILITY_STATES, COVER_STATES } from '../../../constants.js';
-import dualSystemIntegration from './DualSystemIntegration.js';
+import { getVisibilityBetween } from '../../../utils.js';
+import { LightingCalculator } from '../../../visibility/auto-visibility/LightingCalculator.js';
+import { visibilityCalculator } from '../../../visibility/auto-visibility/VisibilityCalculator.js';
 import errorHandlingService, { SYSTEM_TYPES } from '../infra/error-handling-service.js';
+import dualSystemIntegration from './DualSystemIntegration.js';
 import performanceOptimizer from './PerformanceOptimizer.js';
 import positionCacheManager from './PositionCacheManager.js';
-import { getVisibilityBetween, getCoverBetween } from '../../../utils.js';
-import { visibilityCalculator } from '../../../visibility/auto-visibility/VisibilityCalculator.js';
-import { LightingCalculator } from '../../../visibility/auto-visibility/LightingCalculator.js';
 
 /**
  * Position state data structure combining AVS and Auto-Cover information
  * @typedef {Object} PositionState
  * @property {string} avsVisibility - AVS visibility state ('hidden', 'concealed', 'observed', 'undetected')
  * @property {boolean} avsCalculated - Whether AVS calculation was successful
- * @property {string|null} avsOverride - Any AVS override applied
  * @property {string} coverState - Auto-Cover state ('none', 'lesser', 'standard', 'greater')
  * @property {boolean} coverCalculated - Whether cover calculation was successful
  * @property {string|null} coverOverride - Any cover override applied
@@ -163,23 +161,6 @@ export class SneakPositionTracker {
     return positionStates;
   }
 
-  /**
-   * Calculates end position state after movement using both systems
-   * @param {Token} sneakingToken - The token after movement
-   * @param {Array<Token>} targets - Array of observer tokens
-   * @param {Object} options - Calculation options
-   * @returns {Promise<Map<string, PositionState>>} Map of target ID to combined end position state
-   */
-  async calculateEndPositions(sneakingToken, targets, options = {}) {
-    // Invalidate cache for moved token to ensure fresh calculations
-    positionCacheManager.invalidateTokenCache(sneakingToken);
-
-    // Use optimized capture with fresh cache
-    return await this.captureStartPositions(sneakingToken, targets, null, {
-      ...options,
-      forceFresh: true,
-    });
-  }
 
   /**
    * Captures position state between two tokens using dual system integration
@@ -267,8 +248,6 @@ export class SneakPositionTracker {
         // AVS System Data
         avsVisibility: combinedState.avsResult.data,
         avsCalculated: combinedState.avsResult.success,
-        avsOverride:
-          combinedState.avsResult.source === 'override' ? combinedState.avsResult.data : null,
 
         // Auto-Cover System Data
         coverState: combinedState.coverResult.data.state,
@@ -316,190 +295,6 @@ export class SneakPositionTracker {
       console.warn('PF2E Visioner | Failed to capture position state:', error);
       return this._createErrorState(timestamp, error);
     }
-  }
-
-  /**
-   * Batch capture positions for multiple targets using dual system integration
-   * @param {Token} sneakingToken - The sneaking token
-   * @param {Array<Token>} targets - Array of observer tokens
-   * @returns {Promise<Map<string, PositionState>>} Map of target ID to position state
-   */
-  async captureBatchPositions(sneakingToken, targets) {
-    await this._initialize();
-
-    if (!sneakingToken || !Array.isArray(targets)) {
-      console.warn('PF2E Visioner | Invalid parameters for captureBatchPositions');
-      return new Map();
-    }
-
-    try {
-      // Use dual system integration for efficient batch processing
-      const batchResults = await dualSystemIntegration.getBatchCombinedStates(
-        sneakingToken,
-        targets,
-      );
-
-      const positionStates = new Map();
-      const timestamp = Date.now();
-
-      for (const [targetId, combinedState] of batchResults) {
-        const target = targets.find((t) => t.document.id === targetId);
-        if (!target) continue;
-
-        // Calculate additional position data
-        const distance = this._calculateDistance(sneakingToken, target);
-        const hasLineOfSight = this._hasLineOfSight(sneakingToken, target);
-        const lightingConditions = this._getLightingConditions(sneakingToken, target);
-
-        const positionState = {
-          // AVS System Data
-          avsVisibility: combinedState.avsResult.data,
-          avsCalculated: combinedState.avsResult.success,
-          avsOverride:
-            combinedState.avsResult.source === 'override' ? combinedState.avsResult.data : null,
-
-          // Auto-Cover System Data
-          coverState: combinedState.coverResult.data.state,
-          coverCalculated: combinedState.coverResult.success,
-          coverOverride:
-            combinedState.coverResult.source === 'manual'
-              ? combinedState.coverResult.data.state
-              : null,
-          stealthBonus: combinedState.stealthBonus,
-
-          // Combined/Derived Data
-          effectiveVisibility: combinedState.effectiveVisibility,
-          distance,
-          hasLineOfSight,
-          lightingConditions,
-          timestamp,
-
-          // System Status
-          avsEnabled: combinedState.avsResult.success || combinedState.avsResult.fallbackUsed,
-          autoCoverEnabled:
-            combinedState.coverResult.success || combinedState.coverResult.fallbackUsed,
-          systemErrors: combinedState.warnings,
-        };
-
-        positionStates.set(targetId, positionState);
-      }
-
-      return positionStates;
-    } catch (error) {
-      console.warn('PF2E Visioner | Batch position capture failed:', error);
-      return new Map();
-    }
-  }
-
-  /**
-   * Compares start and end positions to determine movement impact
-   * @param {Map<string, PositionState>} startPositions - Start position states
-   * @param {Map<string, PositionState>} endPositions - End position states
-   * @returns {Map<string, PositionTransition>} Position transition data
-   */
-  analyzePositionTransitions(startPositions, endPositions) {
-    const transitions = new Map();
-
-    // Get all unique target IDs from both maps
-    const allTargetIds = new Set([...startPositions.keys(), ...endPositions.keys()]);
-
-    for (const targetId of allTargetIds) {
-      const startPos = startPositions.get(targetId);
-      const endPos = endPositions.get(targetId);
-
-      // Skip if we don't have both positions
-      if (!startPos || !endPos) continue;
-
-      const transition = this._analyzePositionTransition(targetId, startPos, endPos);
-      transitions.set(targetId, transition);
-    }
-
-    return transitions;
-  }
-
-  /**
-   * Analyzes transition between two position states
-   * @param {string} targetId - Target token ID
-   * @param {PositionState} startPos - Start position state
-   * @param {PositionState} endPos - End position state
-   * @returns {PositionTransition} Transition analysis
-   * @private
-   */
-  _analyzePositionTransition(targetId, startPos, endPos) {
-    // Check what changed
-    const avsVisibilityChanged = startPos.avsVisibility !== endPos.avsVisibility;
-    const coverStateChanged = startPos.coverState !== endPos.coverState;
-    const hasChanged = avsVisibilityChanged || coverStateChanged;
-
-    // Calculate stealth bonus change
-    const stealthBonusChange = endPos.stealthBonus - startPos.stealthBonus;
-
-    // Determine transition type
-    let transitionType = 'unchanged';
-    if (hasChanged) {
-      // Improved if visibility got better for sneaking or cover improved
-      const visibilityImproved = this._isVisibilityImprovedForStealth(
-        startPos.avsVisibility,
-        endPos.avsVisibility,
-      );
-      const coverImproved = stealthBonusChange > 0;
-
-      if (visibilityImproved || coverImproved) {
-        transitionType = 'improved';
-      } else {
-        transitionType = 'worsened';
-      }
-    }
-
-    // Calculate impact on DC (simplified)
-    const impactOnDC = stealthBonusChange;
-
-    return {
-      targetId,
-      startPosition: startPos,
-      endPosition: endPos,
-      hasChanged,
-      avsVisibilityChanged,
-      coverStateChanged,
-      impactOnDC,
-      stealthBonusChange,
-      transitionType,
-      avsTransition: {
-        from: startPos.avsVisibility,
-        to: endPos.avsVisibility,
-        changed: avsVisibilityChanged,
-      },
-      coverTransition: {
-        from: startPos.coverState,
-        to: endPos.coverState,
-        bonusChange: stealthBonusChange,
-        changed: coverStateChanged,
-      },
-    };
-  }
-
-  /**
-   * Determines if visibility change is improved for stealth purposes
-   * @param {string} fromVisibility - Starting visibility
-   * @param {string} toVisibility - Ending visibility
-   * @returns {boolean} Whether the change is an improvement for stealth
-   * @private
-   */
-  _isVisibilityImprovedForStealth(fromVisibility, toVisibility) {
-    // Define stealth preference order (better for stealth = higher index)
-    const stealthOrder = ['observed', 'concealed', 'hidden', 'undetected'];
-    const fromIndex = stealthOrder.indexOf(fromVisibility);
-    const toIndex = stealthOrder.indexOf(toVisibility);
-
-    return toIndex > fromIndex;
-  }
-
-  /**
-   * Gets system diagnostics using dual system integration
-   * @returns {Object} System diagnostic information
-   */
-  getSystemDiagnostics() {
-    return dualSystemIntegration.getSystemDiagnostics();
   }
 
   /**
@@ -632,50 +427,6 @@ export class SneakPositionTracker {
     }
   }
 
-  /**
-   * Calculate visibility using AVS directly (for fallback scenarios)
-   * @param {Token} observer - Observer token
-   * @param {Token} target - Target token
-   * @returns {Promise<string>} Visibility state
-   * @private
-   */
-  async _calculateVisibilityWithAVS(observer, target) {
-    try {
-      // Use AVS visibility calculator directly
-      return await visibilityCalculator.calculateVisibility(observer, target);
-    } catch (error) {
-      console.warn('PF2E Visioner | AVS visibility calculation failed:', error);
-      // Fallback to stored visibility state
-      return getVisibilityBetween(observer, target) || 'observed';
-    }
-  }
-
-  /**
-   * Get detailed lighting information using the LightingCalculator
-   * @param {Token} token - Token to get lighting info for
-   * @returns {Object} Detailed lighting information
-   * @private
-   */
-  _getDetailedLightingInfo(token) {
-    try {
-      const lightingCalculator = LightingCalculator.getInstance();
-      const position = {
-        x: token.center.x,
-        y: token.center.y,
-      };
-
-      return lightingCalculator.getLightLevelAt(position);
-    } catch (error) {
-      console.warn('PF2E Visioner | Detailed lighting calculation failed:', error);
-      return {
-        level: 'unknown',
-        illumination: 0,
-        sceneDarkness: 0,
-        baseIllumination: 0,
-        lightIllumination: 0,
-      };
-    }
-  }
 
   /**
    * Creates an error state when position calculation fails
@@ -690,7 +441,6 @@ export class SneakPositionTracker {
     return {
       avsVisibility: 'observed',
       avsCalculated: false,
-      avsOverride: null,
       coverState: 'none',
       coverCalculated: false,
       coverOverride: null,
@@ -719,7 +469,6 @@ export class SneakPositionTracker {
     return {
       avsVisibility: fallbackData?.visibility || 'observed',
       avsCalculated: false,
-      avsOverride: null,
       coverState: fallbackData?.cover?.state || 'none',
       coverCalculated: false,
       coverOverride: null,
@@ -735,181 +484,7 @@ export class SneakPositionTracker {
     };
   }
 
-  /**
-   * Gets comprehensive system status including error handling information
-   * @returns {Object} Enhanced system diagnostic information
-   */
-  getEnhancedSystemDiagnostics() {
-    const baseDiagnostics = this.getSystemDiagnostics();
-    const errorHandlingStatus = errorHandlingService.getSystemStatus();
-    const errorHistory = errorHandlingService.getErrorHistory();
 
-    return {
-      ...baseDiagnostics,
-      errorHandling: {
-        systemStatus: errorHandlingStatus,
-        recentErrors: errorHistory.slice(0, 10), // Last 10 errors
-        recoveryCapabilities: {
-          avs: errorHandlingStatus[SYSTEM_TYPES.AVS]?.recoveryAttempts < 3,
-          autoCover: errorHandlingStatus[SYSTEM_TYPES.AUTO_COVER]?.recoveryAttempts < 3,
-          positionTracker: errorHandlingStatus[SYSTEM_TYPES.POSITION_TRACKER]?.recoveryAttempts < 3,
-        },
-      },
-    };
-  }
-
-  /**
-   * Attempts to recover from system failures
-   * @param {string} systemType - Optional specific system to recover
-   * @returns {Promise<Object>} Recovery results
-   */
-  async attemptSystemRecovery(systemType = null) {
-    const results = {};
-
-    if (systemType) {
-      results[systemType] = await errorHandlingService.attemptSystemRecovery(systemType);
-    } else {
-      // Attempt recovery for all systems
-      const systems = [SYSTEM_TYPES.AVS, SYSTEM_TYPES.AUTO_COVER, SYSTEM_TYPES.POSITION_TRACKER];
-
-      for (const system of systems) {
-        results[system] = await errorHandlingService.attemptSystemRecovery(system);
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Optimizes position tracking for large scenes with many tokens
-   * @param {Token} sneakingToken - The sneaking token
-   * @param {Array<Token>} allTargets - All potential observer tokens
-   * @param {Object} options - Optimization options
-   * @returns {Promise<Map<string, PositionState>>} Optimized position states
-   */
-  async optimizeForLargeScene(sneakingToken, allTargets, options = {}) {
-    const maxDistance = options.maxDistance || 1000; // Only consider nearby tokens
-    const useStreaming = options.useStreaming || allTargets.length > 100;
-
-    // Filter targets by distance for performance
-    const nearbyTargets = allTargets.filter((target) => {
-      const distance = this._calculateDistance(sneakingToken, target);
-      return distance <= maxDistance;
-    });
-
-    // Use streaming for very large token counts
-    if (useStreaming) {
-      const results = new Map();
-
-      for await (const batch of performanceOptimizer.streamLargeTokenProcessing(
-        sneakingToken,
-        nearbyTargets,
-        (observer, target) => this._capturePositionState(observer, target, Date.now()),
-        options,
-      )) {
-        // Merge batch results
-        for (const [targetId, result] of batch.results) {
-          results.set(targetId, result);
-        }
-
-        // Optional progress callback
-        if (options.onProgress) {
-          options.onProgress(batch.progress);
-        }
-      }
-
-      return results;
-    }
-
-    // Use standard optimization for moderate counts
-    return performanceOptimizer.optimizeMultiTargetProcessing(
-      sneakingToken,
-      nearbyTargets,
-      (observer, target) => this._capturePositionState(observer, target, Date.now()),
-      options,
-    );
-  }
-
-  /**
-   * Preloads position cache for anticipated sneak actions
-   * @param {Token} sneakingToken - The token that might sneak
-   * @param {Array<Token>} potentialTargets - Potential observer tokens
-   * @param {Object} options - Preload options
-   * @returns {Promise<number>} Number of entries preloaded
-   */
-  async preloadPositionCache(sneakingToken, potentialTargets, options = {}) {
-    const calculator = async (observer, target) => {
-      return this._capturePositionState(observer, target, Date.now(), { forceFresh: true });
-    };
-
-    return positionCacheManager.preloadPositionStates(sneakingToken, potentialTargets, calculator, {
-      batchSize: options.batchSize || 10,
-      ttl: options.ttl || 60000, // Longer TTL for preloaded data
-    });
-  }
-
-  /**
-   * Implements predictive caching based on token movement
-   * @param {Token} sneakingToken - The moving token
-   * @param {Array<Token>} observers - Observer tokens
-   * @param {Object} options - Prediction options
-   * @returns {Promise<void>} Prediction completion
-   */
-  async enablePredictivePositionCaching(sneakingToken, observers, options = {}) {
-    const calculator = async (observer, target) => {
-      return this._capturePositionState(observer, target, Date.now(), { forceFresh: true });
-    };
-
-    return positionCacheManager.predictiveCache(sneakingToken, observers, calculator, {
-      predictionRadius: options.predictionRadius || 200,
-      maxPredictions: options.maxPredictions || 20,
-      ttl: options.ttl || 15000, // Shorter TTL for predictions
-    });
-  }
-
-  /**
-   * Gets comprehensive performance metrics
-   * @returns {Object} Performance and cache metrics
-   */
-  getPerformanceMetrics() {
-    return {
-      optimizer: performanceOptimizer.getMetrics(),
-      cache: positionCacheManager.getStats(),
-      system: this.getEnhancedSystemDiagnostics(),
-    };
-  }
-
-  /**
-   * Optimizes memory usage by cleaning up caches
-   * @param {Object} options - Cleanup options
-   * @returns {Promise<Object>} Cleanup results
-   */
-  async optimizeMemoryUsage(options = {}) {
-    const results = {
-      cacheCleanup: false,
-      memoryFreed: 0,
-      entriesRemoved: 0,
-    };
-
-    // Get current memory usage
-    const cacheStats = positionCacheManager.getStats();
-    const targetMemoryMB = options.targetMemoryMB || 30; // 30MB default
-
-    if (cacheStats.memoryUsageMB > targetMemoryMB) {
-      const beforeMemory = cacheStats.memoryUsageMB;
-      const beforeEntries = cacheStats.totalEntries;
-
-      await positionCacheManager.memoryAwareCleanup(targetMemoryMB);
-
-      const afterStats = positionCacheManager.getStats();
-
-      results.cacheCleanup = true;
-      results.memoryFreed = beforeMemory - afterStats.memoryUsageMB;
-      results.entriesRemoved = beforeEntries - afterStats.totalEntries;
-    }
-
-    return results;
-  }
 
   /**
    * Determines the importance level of a position state for caching

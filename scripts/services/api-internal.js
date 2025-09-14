@@ -5,8 +5,8 @@
 import { MODULE_ID } from '../constants.js';
 import { cleanupCoverEffectsForObserver } from '../cover/ephemeral.js';
 import {
-  batchUpdateVisibilityEffects,
-  cleanupEphemeralEffectsForTarget,
+    batchUpdateVisibilityEffects,
+    cleanupEphemeralEffectsForTarget,
 } from '../visibility/ephemeral.js';
 import { refreshEveryonesPerception } from './socket.js';
 import { updateTokenVisuals } from './visual-effects.js';
@@ -14,13 +14,22 @@ import { updateTokenVisuals } from './visual-effects.js';
 export async function unsetMapsForTokens(scene, tokens) {
   try {
     if (!scene || !Array.isArray(tokens) || tokens.length === 0) return;
+    console.log('PF2E Visioner | unsetMapsForTokens called with', tokens.length, 'tokens');
+    console.log('PF2E Visioner | MODULE_ID:', MODULE_ID);
+    
     const updates = tokens.map((t) => ({
       _id: t.id,
-      [`flags.${MODULE_ID}.-=visibility`]: null,
-      [`flags.${MODULE_ID}.-=cover`]: null,
+      // Remove ALL visioner flags completely
+      [`flags.${MODULE_ID}`]: null,
     }));
-    await scene.updateEmbeddedDocuments('Token', updates, { diff: false });
-  } catch (_) {}
+    
+    console.log('PF2E Visioner | unsetMapsForTokens update objects:', updates.slice(0, 3));
+    
+    const result = await scene.updateEmbeddedDocuments('Token', updates, { diff: false });
+    console.log('PF2E Visioner | unsetMapsForTokens result:', result);
+  } catch (error) {
+    console.error('PF2E Visioner | Error in unsetMapsForTokens:', error);
+  }
 }
 
 export function collectModuleEffectIds(actor) {

@@ -419,6 +419,267 @@
   }
 }
 
+/* ==============================
+   Override Validation Dialog UI
+   ============================== */
+.pf2e-visioner .override-validation-dialog .window-content {
+  padding: 16px 18px;
+}
+
+.pf2e-visioner .override-validation-dialog .override-validation-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Header */
+.pf2e-visioner .override-validation-dialog .validation-header {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border-light-primary);
+}
+.pf2e-visioner .override-validation-dialog .validation-header .header-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 179, 0, 0.12);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.3);
+}
+.pf2e-visioner .override-validation-dialog .validation-header h2 {
+  margin: 0;
+  line-height: 1.05;
+  font-size: 22px;
+  font-weight: 800;
+}
+.pf2e-visioner .override-validation-dialog .validation-header .subtitle {
+  margin: 4px 0 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* Info card */
+.pf2e-visioner .override-validation-dialog .info-card {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.pf2e-visioner .override-validation-dialog .info-card .info-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 188, 212, 0.12);
+  color: #00bcd4;
+  border: 1px solid rgba(0, 188, 212, 0.35);
+}
+.pf2e-visioner .override-validation-dialog .info-card h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.pf2e-visioner .override-validation-dialog .info-card p {
+  margin: 3px 0 0 0;
+  font-size: 13px;
+}
+
+/* List header */
+.pf2e-visioner .override-validation-dialog .override-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pf2e-visioner .override-validation-dialog .override-list .list-header {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border-light-primary);
+}
+.pf2e-visioner .override-validation-dialog .override-list .col-label.text-right {
+  text-align: right;
+}
+
+/* Items */
+.pf2e-visioner .override-validation-dialog .override-item {
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.pf2e-visioner .override-validation-dialog .override-item:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+.pf2e-visioner .override-validation-dialog .override-item:hover {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06) inset;
+}
+
+/* Chips */
+.pf2e-visioner .override-validation-dialog .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-light-primary);
+  background: var(--color-bg-base);
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.pf2e-visioner .override-validation-dialog .chip-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.pf2e-visioner .override-validation-dialog .chip .chip-label {
+  line-height: 1;
+}
+
+/* Status */
+.pf2e-visioner .override-validation-dialog .status-description {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Badge */
+.pf2e-visioner .override-validation-dialog .override-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-sneak {
+  background: rgba(0, 0, 0, 0.15);
+  color: #cfd8dc;
+  border-color: rgba(207, 216, 220, 0.25);
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-hide {
+  background: rgba(83, 109, 254, 0.12);
+  color: #c5cae9;
+  border-color: rgba(83, 109, 254, 0.35);
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-manual {
+  background: rgba(255, 152, 0, 0.12);
+  color: #ffe0b2;
+  border-color: rgba(255, 152, 0, 0.35);
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-generic {
+  background: rgba(158, 158, 158, 0.14);
+  color: #eeeeee;
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+/* Buttons */
+.pf2e-visioner .override-validation-dialog .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid var(--color-border-light-primary);
+  background: transparent;
+  color: var(--color-text-primary);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease;
+}
+.pf2e-visioner .override-validation-dialog .btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-border-highlight);
+}
+.pf2e-visioner .override-validation-dialog .btn:active {
+  transform: translateY(1px);
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-clear {
+  border-color: rgba(244, 67, 54, 0.35);
+  color: #ffcdd2;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-clear:hover {
+  background: rgba(244, 67, 54, 0.12);
+  border-color: rgba(244, 67, 54, 0.6);
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-keep {
+  background: #2e7d32;
+  color: #e8f5e9;
+  border-color: #2e7d32;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-keep:hover {
+  background: #27692b;
+  border-color: #27692b;
+}
+
+/* Bulk */
+.pf2e-visioner .override-validation-dialog .bulk-actions {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-light-primary);
+}
+.pf2e-visioner .override-validation-dialog .bulk-actions h4 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+}
+.pf2e-visioner .override-validation-dialog .bulk-actions p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.pf2e-visioner .override-validation-dialog .bulk-buttons {
+  display: flex;
+  gap: 8px;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-bulk {
+  flex: 1 1 0;
+  justify-content: flex-start;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-clear-all {
+  border-color: rgba(244, 67, 54, 0.35);
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-keep-all {
+  background: #2e7d32;
+  color: #e8f5e9;
+  border-color: #2e7d32;
+}
+
+/* Responsive */
+@media (max-width: 840px) {
+  .pf2e-visioner .override-validation-dialog .list-header {
+    display: none;
+  }
+  .pf2e-visioner .override-validation-dialog .override-row {
+    grid-template-columns: 1fr !important;
+    row-gap: 8px;
+  }
+  .pf2e-visioner .override-validation-dialog .actions-section {
+    justify-content: flex-start !important;
+  }
+}
 /* Force table container to grow and scroll */
 .results-table-container {
   flex: 1 1 auto;
@@ -429,6 +690,32 @@
   /* Default scrollbar styling */
   scrollbar-width: thin;
   scrollbar-color: rgba(73, 80, 87, 0.6) transparent;
+}
+
+/* === Override Validation v2 (scoped by data-ui attribute) === */
+.pf2e-visioner .override-validation-dialog [data-ui='override-v2'] .validation-header .header-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  border-radius: 9px;
+}
+
+.pf2e-visioner .override-validation-dialog [data-ui='override-v2'] .btn.btn-keep {
+  background: #1f8a3b;
+  border-color: #1f8a3b;
+}
+.pf2e-visioner .override-validation-dialog [data-ui='override-v2'] .btn.btn-keep:hover {
+  background: #187233;
+  border-color: #187233;
+}
+
+.pf2e-visioner .override-validation-dialog [data-ui='override-v2'] .override-badge,
+.pf2e-visioner .override-validation-dialog [data-ui='override-v2'] .chip .chip-label {
+  white-space: nowrap;
+}
+
+.pf2e-visioner .override-validation-dialog [data-ui='override-v2'] .override-item:nth-child(even) {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 /* Force footer to not grow */
@@ -463,6 +750,178 @@
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+/* Override Validation table column sizing to mirror action dialogs */
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.observer,
+.override-validation-dialog .results-table-container table.override-validation-table td.observer {
+  width: 34%;
+}
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.source,
+.override-validation-dialog .results-table-container table.override-validation-table td.source {
+  width: 20%;
+}
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.status,
+.override-validation-dialog .results-table-container table.override-validation-table td.status {
+  width: 30%;
+}
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.actions,
+.override-validation-dialog .results-table-container table.override-validation-table td.actions {
+  width: 16%;
+  text-align: right;
+}
+
+/* Explicit alignment and spacing for Override Validation table */
+.override-validation-dialog .results-table-container table.override-validation-table th,
+.override-validation-dialog .results-table-container table.override-validation-table td {
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.observer,
+.override-validation-dialog .results-table-container table.override-validation-table td.observer {
+  text-align: left;
+}
+
+/* Observer cell avatar sizing and layout */
+.override-validation-dialog td.observer .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.override-validation-dialog td.observer img.chip-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
+/* Safety net in case class is missing */
+.override-validation-dialog td.observer img {
+  max-width: 32px;
+  max-height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Target header styles (like token manager) */
+.override-validation-dialog .target-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+  background: var(--color-bg-option);
+  margin: 6px 0 8px 0;
+}
+.override-validation-dialog .target-header .target-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border-light-primary);
+}
+.override-validation-dialog .target-header .target-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.override-validation-dialog .target-header .target-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.override-validation-dialog .target-header .target-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.override-validation-dialog .target-header .target-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.source,
+.override-validation-dialog .results-table-container table.override-validation-table td.source {
+  text-align: left;
+  white-space: nowrap; /* keep badge tidy */
+}
+
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.status,
+.override-validation-dialog .results-table-container table.override-validation-table td.status {
+  text-align: left;
+}
+
+/* Status icons styling */
+.override-validation-dialog .status-icons {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex-direction: column;
+}
+.override-validation-dialog .status-icons .visioner-icon-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  background: var(--color-bg-option);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+.override-validation-dialog .status-icons .state-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.override-validation-dialog .status-icons .state-arrow {
+  color: var(--color-text-dark-secondary);
+  opacity: 0.7;
+}
+/* Previous state icons now use full, actual state colors (no fade) */
+.override-validation-dialog .status-icons .status-visibility i,
+.override-validation-dialog .status-icons .status-cover i {
+  text-shadow: 0 0 6px rgba(126, 255, 164, 0.5);
+}
+.override-validation-dialog .status-description {
+  display: none; /* hide textual status until Keep/Clear updates it */
+  margin-top: 4px;
 }
 
 /* Name column word wrapping */
@@ -1390,4 +1849,664 @@
       flex: 1;
     }
   }
+
+  /* Override Validation Dialog Styles - Modern Professional Design */
+  .override-validation-dialog {
+    font-family: 'Signika', sans-serif;
+  }
+
+  .override-validation-dialog .override-validation-modern {
+    padding: 0;
+    min-width: 540px;
+    max-width: 700px;
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
+  }
+
+  /* Header Section - toned down to match module scale */
+  .override-validation-dialog .validation-header {
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border-light-primary);
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .override-validation-dialog .header-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: #0d6efd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.05rem;
+    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
+  }
+
+  .override-validation-dialog .header-content {
+    flex: 1;
+  }
+
+  .override-validation-dialog .header-content h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1.2;
+  }
+
+  .override-validation-dialog .subtitle {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  /* Info Card */
+  .override-validation-dialog .info-card {
+    background: var(--color-bg-option);
+    border-left: 3px solid #2196f3;
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    margin: 0.9rem 1.25rem 1rem 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .override-validation-dialog .info-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: #2196f3;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+  }
+
+  .override-validation-dialog .info-content h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .override-validation-dialog .info-content p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* Override List */
+  .override-validation-dialog .override-list {
+    padding: 0 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .override-validation-dialog .override-item {
+    background: var(--color-bg-option);
+    border: 2px solid var(--color-border-light-primary);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Flex-row layout for each override card */
+  .override-validation-dialog .override-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .override-validation-dialog .token-section {
+    flex: 1 1 40%;
+    min-width: 240px;
+  }
+
+  .override-validation-dialog .status-section {
+    flex: 1 1 40%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 280px;
+  }
+
+  .override-validation-dialog .actions-section {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .override-validation-dialog .override-item:hover {
+    border-color: var(--color-border-highlight);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .override-validation-dialog .override-relationship {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .override-validation-dialog .token-pair {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .override-validation-dialog .observer,
+  .override-validation-dialog .target {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border-light-primary);
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .override-validation-dialog .observer i {
+    color: #28a745;
+  }
+
+  .override-validation-dialog .target i {
+    color: #6f42c1;
+  }
+
+  .override-validation-dialog .arrow {
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .override-validation-dialog .override-badge {
+    background: linear-gradient(135deg, #6f42c1 0%, #9c27b0 100%);
+    color: white;
+    padding: 0.3rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 2px 4px rgba(111, 66, 193, 0.3);
+  }
+
+  /* Override Status */
+  /* Back-compat: keep .override-status behaving like our new .status-section */
+  .override-validation-dialog .override-status,
+  .override-validation-dialog .status-description,
+  .override-validation-dialog .status-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .override-validation-dialog .status-info,
+  .override-validation-dialog .status-description {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .override-validation-dialog .status-info i,
+  .override-validation-dialog .status-description i {
+    color: #0d6efd;
+  }
+
+  /* Action Buttons */
+  .override-validation-dialog .override-actions,
+  .override-validation-dialog .actions-section {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .override-validation-dialog .btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 70px;
+    justify-content: center;
+    background: var(--color-bg-base);
+  }
+
+  .override-validation-dialog .btn-clear {
+    border-color: #dc3545;
+    color: #dc3545;
+  }
+
+  .override-validation-dialog .btn-clear:hover {
+    background: #dc3545;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+  }
+
+  .override-validation-dialog .btn-keep {
+    border-color: #198754;
+    color: #198754;
+  }
+
+  .override-validation-dialog .btn-keep:hover {
+    background: #198754;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
+  }
+
+  /* Bulk Actions */
+  .override-validation-dialog .bulk-actions {
+    background: var(--color-bg-option);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 0 1.25rem 1.25rem 1.25rem;
+    border: 1px solid var(--color-border-light-primary);
+  }
+
+  .override-validation-dialog .bulk-actions h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .override-validation-dialog .bulk-actions h4 i {
+    color: #0d6efd;
+  }
+
+  .override-validation-dialog .bulk-actions p {
+    margin: 0 0 1rem 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .override-validation-dialog .bulk-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .override-validation-dialog .btn-bulk {
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border-light-primary);
+    border-radius: 10px;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 130px;
+    text-align: center;
+    color: var(--color-text-primary);
+  }
+
+  .override-validation-dialog .btn-bulk:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .override-validation-dialog .btn-clear-all {
+    border-color: #dc3545;
+  }
+
+  .override-validation-dialog .btn-clear-all:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+  }
+
+  .override-validation-dialog .btn-keep-all {
+    border-color: #198754;
+  }
+
+  .override-validation-dialog .btn-keep-all:hover {
+    background: #198754;
+    color: white;
+    border-color: #198754;
+  }
+
+  .override-validation-dialog .btn-bulk i {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .override-validation-dialog .btn-clear-all i {
+    color: #dc3545;
+  }
+
+  .override-validation-dialog .btn-keep-all i {
+    color: #198754;
+  }
+
+  .override-validation-dialog .btn-bulk:hover i {
+    color: inherit;
+  }
+
+  .override-validation-dialog .btn-bulk span {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .override-validation-dialog .btn-bulk small {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    line-height: 1.2;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .override-validation-dialog .override-validation-modern {
+      min-width: auto;
+      max-width: 90vw;
+    }
+
+    .override-validation-dialog .validation-header {
+      padding: 1rem;
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+    }
+
+    /* Stack the flex-row into a column on small screens */
+    .override-validation-dialog .override-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .override-validation-dialog .token-pair {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .override-validation-dialog .status-section,
+    .override-validation-dialog .override-status {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .override-validation-dialog .bulk-buttons {
+      flex-direction: column;
+    }
+
+    .override-validation-dialog .btn-bulk {
+      min-width: auto;
+    }
+  }
 } /* End .pf2e-visioner scope */
+
+/* --- Explicit scoped overrides to guarantee layout (non-nested for broad browser support) --- */
+.pf2e-visioner .override-validation-dialog .override-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pf2e-visioner .override-validation-dialog .override-item {
+  background: var(--color-bg-option);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.pf2e-visioner .override-validation-dialog .override-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+}
+.pf2e-visioner .override-validation-dialog .token-section {
+  flex: 1 1 40%;
+  min-width: 220px;
+}
+.pf2e-visioner .override-validation-dialog .status-section {
+  flex: 1 1 40%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 260px;
+}
+.pf2e-visioner .override-validation-dialog .actions-section {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf2e-visioner .override-validation-dialog .token-pair {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pf2e-visioner .override-validation-dialog .observer,
+.pf2e-visioner .override-validation-dialog .target {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-light-primary);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+.pf2e-visioner .override-validation-dialog .observer i {
+  color: #2ecc71;
+}
+.pf2e-visioner .override-validation-dialog .target i {
+  color: #e67e22;
+}
+.pf2e-visioner .override-validation-dialog .arrow {
+  color: var(--color-text-secondary);
+  opacity: 0.9;
+}
+.pf2e-visioner .override-validation-dialog .status-description {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
+}
+.pf2e-visioner .override-validation-dialog .override-badge {
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-light-primary);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-sneak {
+  background: rgba(13, 110, 253, 0.15);
+  border-color: #0d6efd;
+  color: #cfe2ff;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-hide {
+  background: rgba(111, 66, 193, 0.15);
+  border-color: #6f42c1;
+  color: #e0cffc;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-manual {
+  background: rgba(25, 135, 84, 0.12);
+  border-color: #198754;
+  color: #d1e7dd;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-generic {
+  background: var(--color-bg-option);
+}
+.pf2e-visioner .override-validation-dialog .btn {
+  padding: 6px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-bg-base);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-clear {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-keep {
+  border-color: #198754;
+  background: #198754;
+  color: #fff;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-clear:hover {
+  background: #dc3545;
+  color: #fff;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-keep:hover {
+  background: #157347;
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .pf2e-visioner .override-validation-dialog .override-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .pf2e-visioner .override-validation-dialog .actions-section {
+    justify-content: flex-start;
+  }
+}
+
+/* --- Action-dialog-aligned overrides (explicit selectors) --- */
+.pf2e-visioner .override-validation-dialog .validation-header {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border-light-primary);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pf2e-visioner .override-validation-dialog .header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
+}
+.pf2e-visioner .override-validation-dialog .header-content h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.pf2e-visioner .override-validation-dialog .subtitle {
+  margin: 2px 0 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+}
+
+.pf2e-visioner .override-validation-dialog .info-card {
+  margin: 10px 14px;
+  padding: 10px 12px;
+  border-left: 3px solid #2196f3;
+}
+.pf2e-visioner .override-validation-dialog .info-icon {
+  background: #2196f3;
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+.pf2e-visioner .override-validation-dialog .info-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.pf2e-visioner .override-validation-dialog .info-content p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.pf2e-visioner .override-validation-dialog .override-list {
+  padding: 0 14px;
+  gap: 10px;
+}
+.pf2e-visioner .override-validation-dialog .status-description i {
+  color: #0dcaf0;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-sneak {
+  background: rgba(13, 110, 253, 0.18);
+  border-color: #0d6efd;
+  color: #d7e7ff;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-hide {
+  background: rgba(111, 66, 193, 0.18);
+  border-color: #6f42c1;
+  color: #e7d7ff;
+}
+.pf2e-visioner .override-validation-dialog .override-badge.badge-manual {
+  background: rgba(25, 135, 84, 0.18);
+  border-color: #198754;
+  color: #dbefe4;
+}
+
+.pf2e-visioner .override-validation-dialog .bulk-actions {
+  margin: 12px 14px 14px;
+}
+.pf2e-visioner .override-validation-dialog .bulk-actions h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  justify-content: flex-start;
+}
+.pf2e-visioner .override-validation-dialog .btn-bulk {
+  font-size: 12px;
+}
+.pf2e-visioner .override-validation-dialog .btn-clear-all {
+  color: #dc3545;
+}
+.pf2e-visioner .override-validation-dialog .btn-keep-all {
+  background: #198754;
+  color: #fff;
+  border-color: #198754;
+}
+.pf2e-visioner .override-validation-dialog .btn-keep-all:hover {
+  background: #157347;
+}

@@ -377,7 +377,7 @@ export class SeekActionHandler extends ActionHandlerBase {
           await applyVisibilityChanges(
             group.observer,
             group.items.map((i) => ({ target: i.target, newVisibility: i.newVisibility })),
-            { direction: this.getApplyDirection() },
+            { direction: this.getApplyDirection(), source: 'seek_action' },
           );
         }
       }

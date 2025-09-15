@@ -56,6 +56,22 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
         badgeLabel = 'Sneak Override';
         badgeIcon = 'fa-running';
         badgeClass = 'badge-sneak';
+      } else if (/seek/i.test(src)) {
+        badgeLabel = 'Seek action';
+        badgeIcon = 'fa-search';
+        badgeClass = 'badge-seek';
+      } else if (/point[_-]?out/i.test(src)) {
+        badgeLabel = 'Point Out';
+        badgeIcon = 'fa-hand-point-right';
+        badgeClass = 'badge-pointout';
+      } else if (/diversion/i.test(src)) {
+        badgeLabel = 'Diversion';
+        badgeIcon = 'fa-theater-masks';
+        badgeClass = 'badge-diversion';
+      } else if (/take[_-]?cover/i.test(src)) {
+        badgeLabel = 'Take Cover';
+        badgeIcon = 'fa-shield-alt';
+        badgeClass = 'badge-takecover';
       } else if (/hide/i.test(src)) {
         badgeLabel = 'Hide Override';
         badgeIcon = 'fa-user-secret';
@@ -228,9 +244,13 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
         if (desc) desc.style.display = 'inline-flex';
       }
       
-      // If no more overrides, close the dialog
+      // If no more overrides, close the dialog and hide indicator
       if (this.invalidOverrides.length === 0) {
         setTimeout(() => this.close(), 1000);
+        try {
+          const { default: indicator } = await import('./override-validation-indicator.js');
+          indicator.hide();
+        } catch {}
       }
       
       ui.notifications.info(`Kept override: ${override.observerName} → ${override.targetName}`);
@@ -255,10 +275,8 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       const target = canvas.tokens?.get(override.targetId);
       
       if (observer && target) {
-        // Remove the flag from target token
-        const flagKey = `avs-override-from-${override.observerId}`;
-        await target.document.unsetFlag('pf2e-visioner', flagKey);
-        console.log('PF2E Visioner | Removed individual override flag:', flagKey);
+        const { default: AvsOverrideManager } = await import('../chat/services/infra/avs-override-manager.js');
+        await AvsOverrideManager.removeOverride(override.observerId, override.targetId);
         
         // Remove from the dialog's data
         this.invalidOverrides = this.invalidOverrides.filter(o => `${o.observerId}-${o.targetId}` !== overrideId);
@@ -282,9 +300,13 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
           if (desc) desc.style.display = 'inline-flex';
         }
         
-        // If no more overrides, close the dialog
+        // If no more overrides, close the dialog and hide indicator
         if (this.invalidOverrides.length === 0) {
           setTimeout(() => this.close(), 1000);
+          try {
+            const { default: indicator } = await import('./override-validation-indicator.js');
+            indicator.hide();
+          } catch {}
         }
         
         ui.notifications.info(`Cleared override: ${override.observerName} → ${override.targetName}`);
@@ -304,27 +326,28 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     // Remove all invalid overrides
     for (const override of this.invalidOverrides) {
       try {
-        const observer = canvas.tokens?.get(override.observerId);
-        const target = canvas.tokens?.get(override.targetId);
-        
-        if (observer && target) {
-          // Remove the flag from target token
-          const flagKey = `avs-override-from-${override.observerId}`;
-          await target.document.unsetFlag('pf2e-visioner', flagKey);
-          console.log('PF2E Visioner | Removed override flag:', flagKey);
-        }
+        const { default: AvsOverrideManager } = await import('../chat/services/infra/avs-override-manager.js');
+        await AvsOverrideManager.removeOverride(override.observerId, override.targetId);
       } catch (error) {
         console.error('PF2E Visioner | Error removing override:', error);
       }
     }
     
     ui.notifications.info(`Cleared ${this.invalidOverrides.length} invalid override(s)`);
+    try {
+      const { default: indicator } = await import('./override-validation-indicator.js');
+      indicator.hide();
+    } catch {}
   }
 
   async _onKeepAll() {
     console.log('PF2E Visioner | Keep All clicked');
     await this.close();
     ui.notifications.info('Kept all current overrides');
+    try {
+      const { default: indicator } = await import('./override-validation-indicator.js');
+      indicator.hide();
+    } catch {}
   }
 
   /**

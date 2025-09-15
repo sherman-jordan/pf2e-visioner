@@ -4,13 +4,11 @@ import { MODULE_ID } from '../../../constants.js';
 export function getDesiredOverrideStatesForAction(actionType) {
   switch (actionType) {
     case 'seek':
-      return ['observed', 'hidden'];
     case 'hide':
+    case 'create-a-diversion':
       return ['observed', 'hidden'];
     case 'sneak':
       return ['observed', 'hidden', 'undetected'];
-    case 'create-a-diversion':
-      return ['observed', 'hidden'];
     case 'point-out':
       return ['hidden'];
     case 'consequences':

@@ -689,134 +689,6 @@ export class Pf2eVisionerApi {
   }
 
   /**
-   * Clear all PF2E Visioner data for a single token (selected or provided)
-   * - As observer: remove its visibility/cover maps and its contributed effects on all targets
-   * - As target: remove all observers' entries that point to this token and related effects
-   */
-  static async clearAllDataForSelectedToken(token = null) {
-    try {
-      if (!game.user.isGM) {
-        ui.notifications.warn('Only GMs can clear Visioner data');
-        return false;
-      }
-
-      // Resolve token
-      let selected = token;
-      if (!selected) {
-        const controlled = canvas.tokens?.controlled ?? [];
-        if (controlled.length !== 1) {
-          ui.notifications.warn(
-            controlled.length === 0 ? 'No token selected.' : 'Select a single token.',
-          );
-          return false;
-        }
-        selected = controlled[0];
-      }
-      if (!selected?.actor) return false;
-
-      const scene = canvas?.scene;
-      if (!scene) return false;
-
-      const tokens = canvas.tokens?.placeables ?? [];
-
-      // 1) As observer: delete this token's maps and remove effects it contributed on targets
-      try {
-        const unset = {
-          _id: selected.id,
-          [`flags.${MODULE_ID}.-=visibility`]: null,
-          [`flags.${MODULE_ID}.-=cover`]: null,
-        };
-        await scene.updateEmbeddedDocuments('Token', [unset], { diff: false });
-      } catch (_) {}
-
-      // Visibility effects contributed by this observer → remove from all targets
-      try {
-        const targetUpdates = tokens
-          .filter((t) => t.id !== selected.id && t?.actor)
-          .map((t) => ({ target: t, state: 'observed' }));
-        if (targetUpdates.length) {
-          await batchUpdateOffGuardEffects(selected, targetUpdates, {
-            removeAllEffects: true,
-          });
-        }
-      } catch (_) {}
-
-      // Cover effects contributed by this observer → remove from all targets
-      try {
-        for (const t of tokens) {
-          if (!t?.actor || t.id === selected.id) continue;
-          await cleanupCoverEffectsForObserver(t, selected);
-        }
-      } catch (_) {}
-
-      // 2) As target: remove this token from all observers' maps and effects
-      try {
-        await cleanupDeletedToken(selected.document);
-      } catch (_) {}
-
-      try {
-        for (const obs of tokens) {
-          if (!obs?.actor || obs.id === selected.id) continue;
-          await cleanupOffGuardEffectsForTarget(obs, selected);
-          await cleanupCoverEffectsForObserver(selected, obs);
-        }
-      } catch (_) {}
-
-      // 3) Clear AVS overrides involving this token from the new map-based system
-      try {
-        const autoVis = autoVisibilitySystem;
-        if (autoVis && autoVis.removeOverride) {
-          const allTokens = canvas.tokens?.placeables ?? [];
-          let removedCount = 0;
-          
-          // Remove overrides where this token is the observer
-          for (const otherToken of allTokens) {
-            if (otherToken.id !== selected.id) {
-              if (autoVis.removeOverride(selected.id, otherToken.id)) {
-                removedCount++;
-              }
-            }
-          }
-          
-          // Remove overrides where this token is the target
-          for (const otherToken of allTokens) {
-            if (otherToken.id !== selected.id) {
-              if (autoVis.removeOverride(otherToken.id, selected.id)) {
-                removedCount++;
-              }
-            }
-          }
-          
-          if (removedCount > 0) {
-            console.log(`PF2E Visioner | Removed ${removedCount} AVS overrides involving token: ${selected.name}`);
-          }
-        }
-      } catch (error) {
-        console.warn('PF2E Visioner | Error clearing AVS overrides for token:', error);
-      }
-
-      // 4) Rebuild/refresh
-      // Removed effects-coordinator: bulk rebuild handled elsewhere
-      try {
-        await updateTokenVisuals();
-      } catch (_) {}
-      try {
-        refreshEveryonesPerception();
-      } catch (_) {}
-      try {
-        canvas.perception.update({ refreshVision: true });
-      } catch (_) {}
-
-      ui.notifications.info('PF2E Visioner: Cleared data for selected token.');
-      return true;
-    } catch (error) {
-      console.error('PF2E Visioner: Error clearing data for selected token:', error);
-      ui.notifications.error('PF2E Visioner: Failed to clear token data. See console.');
-      return false;
-    }
-  }
-
-  /**
    * Get the current auto-cover state from an observer token to a target token
    * @param {Token|string} observer - The observer token or token ID
    * @param {Token|string} target - The target token or token ID
@@ -1105,7 +977,7 @@ export class Pf2eVisionerApi {
             // Remove overrides where this token is the observer
             for (const otherToken of allTokens) {
               if (!selectedTokenIds.includes(otherToken.id)) {
-                if (autoVis.removeOverride(selectedToken.id, otherToken.id)) {
+                if (await autoVis.removeOverride(selectedToken.id, otherToken.id)) {
                   removedCount++;
                 }
               }
@@ -1114,7 +986,7 @@ export class Pf2eVisionerApi {
             // Remove overrides where this token is the target
             for (const otherToken of allTokens) {
               if (!selectedTokenIds.includes(otherToken.id)) {
-                if (autoVis.removeOverride(otherToken.id, selectedToken.id)) {
+                if (await autoVis.removeOverride(otherToken.id, selectedToken.id)) {
                   removedCount++;
                 }
               }
@@ -1125,7 +997,7 @@ export class Pf2eVisionerApi {
           for (const token1 of tokens) {
             for (const token2 of tokens) {
               if (token1.id !== token2.id) {
-                if (autoVis.removeOverride(token1.id, token2.id)) {
+                if (await autoVis.removeOverride(token1.id, token2.id)) {
                   removedCount++;
                 }
               }

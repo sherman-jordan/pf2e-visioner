@@ -2,6 +2,7 @@ import { MODULE_ID, VISIBILITY_STATES } from '../../../constants.js';
 import { appliedConsequencesChangesByMessage } from '../data/message-cache.js';
 import { log, notify } from '../infra/notifications.js';
 import { shouldFilterAlly } from '../infra/shared-utils.js';
+import AvsOverrideManager from '../infra/avs-override-manager.js';
 import { ActionHandlerBase } from './base-action.js';
 
 export class ConsequencesActionHandler extends ActionHandlerBase {
@@ -41,7 +42,7 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
         )
           return false;
         return true;
-      } catch (_) {
+      } catch {
         return false;
       }
     });
@@ -143,7 +144,7 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
           const { filterOutcomesByEncounter } = await import('../infra/shared-utils.js');
           filtered = filterOutcomesByEncounter(changed, actionData.encounterOnly, 'target');
         }
-      } catch (_) {}
+  } catch {}
 
       if (filtered.length === 0) {
         notify.info('No changes to apply');
@@ -156,7 +157,7 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
         if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
-      } catch (_) {}
+  } catch {}
       const changes = filtered
         .map((o) => {
           const ch = this.outcomeToChange(actionData, o);
@@ -168,7 +169,7 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
         })
         .filter(Boolean);
 
-      await this.applyChangesInternal(changes);
+  await this.applyChangesInternal(changes);
 
       // Explicitly persist visibility maps for observers toward attacker in one scene batch
       try {
@@ -192,7 +193,22 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
           updates.push(update);
         }
         if (updates.length) await canvas.scene.updateEmbeddedDocuments('Token', updates);
-      } catch (_) {}
+  } catch {}
+
+      // Clear any AVS overrides between each observer and the attacker to ensure consistency
+      try {
+        // Group targets by observer
+        const byObserver = new Map();
+        for (const ch of changes) {
+          if (!ch?.observer || !ch?.target) continue;
+          const key = ch.observer.id;
+          if (!byObserver.has(key)) byObserver.set(key, { observer: ch.observer, targets: new Set() });
+          byObserver.get(key).targets.add(ch.target);
+        }
+        for (const { observer, targets } of byObserver.values()) {
+          await AvsOverrideManager.clearForConsequences(observer, Array.from(targets));
+        }
+  } catch {}
 
       this.cacheAfterApply(actionData, changes);
       this.updateButtonToRevert(button);

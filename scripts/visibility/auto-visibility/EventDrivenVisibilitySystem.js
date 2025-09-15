@@ -7,8 +7,8 @@
 import { MODULE_ID } from '../../constants.js';
 import { refreshEveryonesPerceptionOptimized } from '../../services/optimized-socket.js';
 import { getVisibilityMap, setVisibilityBetween } from '../../stores/visibility-map.js';
-import { setVisibilityBetween as setVisibility } from '../../utils.js';
 import { optimizedVisibilityCalculator } from './VisibilityCalculator.js';
+import AvsOverrideManager from '../../chat/services/infra/avs-override-manager.js';
 import { optimizedPerceptionManager } from './PerceptionManager.js';
 
 export class EventDrivenVisibilitySystem {
@@ -98,8 +98,8 @@ export class EventDrivenVisibilitySystem {
     Hooks.on('createToken', this.#onTokenCreate.bind(this));
     Hooks.on('deleteToken', this.#onTokenDelete.bind(this));
 
-    // AVS Override Management Hook
-    Hooks.on('avsOverride', this.#onAVSOverride.bind(this));
+  // AVS Override Management Hook is centralized in AvsOverrideManager
+  try { AvsOverrideManager.registerHooks(); } catch {}
 
     // Lighting events
     Hooks.on('updateAmbientLight', this.#onLightUpdate.bind(this));
@@ -1119,6 +1119,19 @@ export class EventDrivenVisibilitySystem {
   }
 
   /**
+   * Recalculate visibility for a specific set of tokens (by id).
+   * Useful when overrides are cleared and we need precise, immediate updates.
+   * @param {string[]|Set<string>} tokenIds
+   */
+  async recalculateForTokens(tokenIds) {
+    if (!this.#enabled) return;
+    const ids = Array.from(new Set((tokenIds || []).filter(Boolean)));
+    if (ids.length === 0) return;
+    for (const id of ids) this.#changedTokens.add(id);
+    await this.#processBatch();
+  }
+
+  /**
    * Calculate visibility between two tokens using optimized calculator
    * @param {Token} observer - The observing token
    * @param {Token} target - The target token
@@ -1199,31 +1212,7 @@ export class EventDrivenVisibilitySystem {
    * Handle AVS override requests from actions like sneak
    * @param {Object} overrideData - Override data structure
    */
-  #onAVSOverride(overrideData) {
-    if (!this.#enabled || !game.user.isGM) return;
-    
-  const { observer, target, state, source, hasCover, hasConcealment, expectedCover } = overrideData;
-    
-    if (!observer?.document?.id || !target?.document?.id || !state) {
-      console.warn('PF2E Visioner | Invalid AVS override data:', overrideData);
-      return;
-    }
-
-    // Store override in persistent token flags instead of memory-only Map
-  this.#storeOverrideAsFlag(observer, target, state, source, hasCover, hasConcealment, expectedCover);
-
-    console.log('PF2E Visioner | AVS Override Set (persistent):', {
-      from: observer.name,
-      to: target.name,
-      state,
-      source,
-      hasCover,
-      hasConcealment
-    });
-
-    // Apply the override immediately
-    this.#applyOverrideFromFlag(observer, target, state);
-  }
+  // AVS override handling is centralized in AvsOverrideManager
 
   /**
    * Store override as persistent token flag
@@ -1235,36 +1224,7 @@ export class EventDrivenVisibilitySystem {
   * @param {boolean} hasConcealment - Whether target has concealment
   * @param {('none'|'lesser'|'standard'|'greater')} [expectedCover] - Explicit expected cover level at apply-time
    */
-  async #storeOverrideAsFlag(observer, target, state, source, hasCover, hasConcealment, expectedCover) {
-    try {
-      const flagKey = `avs-override-from-${observer.document.id}`;
-      const flagData = {
-        state,
-        source: source || 'unknown',
-        hasCover: hasCover || false,
-        hasConcealment: hasConcealment || false,
-        // Keep the explicit expected cover state if known so UI can display original cover properly
-        expectedCover: expectedCover,
-        timestamp: Date.now(),
-        observerId: observer.document.id,
-        targetId: target.document.id,
-        observerName: observer.name,
-        targetName: target.name
-      };
-
-      await target.document.setFlag('pf2e-visioner', flagKey, flagData);
-      
-      console.log('PF2E Visioner | ✅ Stored persistent override flag:', {
-        observer: observer.name,
-        target: target.name,
-        flagKey,
-        state,
-        source
-      });
-    } catch (error) {
-      console.error('PF2E Visioner | Failed to store override flag:', error);
-    }
-  }
+  // Removed: #storeOverrideAsFlag (moved to AvsOverrideManager)
 
   /**
    * Apply override from persistent flag
@@ -1272,30 +1232,7 @@ export class EventDrivenVisibilitySystem {
    * @param {Token} target - Target token
    * @param {string} state - Visibility state
    */
-  async #applyOverrideFromFlag(observer, target, state) {
-    try {
-      // Apply the visibility state
-      await setVisibility(observer, target, state, {
-        isAutomatic: true,
-        source: 'avs_override'
-      });
-
-      // Trigger hook for Token Manager refresh
-      Hooks.call('pf2e-visioner.visibilityChanged', 
-        observer.document.id, 
-        target.document.id, 
-        state
-      );
-
-      console.log('PF2E Visioner | Applied persistent AVS Override:', {
-        from: observer.name,
-        to: target.name,
-        state
-      });
-    } catch (error) {
-      console.error('PF2E Visioner | Error applying AVS override from flag:', error);
-    }
-  }
+  // Removed: #applyOverrideFromFlag (moved to AvsOverrideManager)
 
   /**
    * Check if there's an active override for a token pair
@@ -1315,66 +1252,19 @@ export class EventDrivenVisibilitySystem {
    * @param {Object} options - Options including type and token reference
    */
   async removeOverride(observerId, targetId) {
-    let removedMemory = false;
-    let removedFlag = false;
-
-    // Remove from memory-based system (backwards compatibility)
+    // Delegate to AvsOverrideManager; keep memory map cleanup for legacy if desired
     const overrideKey = `${observerId}-${targetId}`;
-    removedMemory = this.#activeOverrides.delete(overrideKey);
-    
-    // Remove from persistent flag-based system (stored on target token)
-    try {
-      const targetToken = canvas.tokens?.get(targetId);
-      if (targetToken) {
-        const flagKey = `avs-override-from-${observerId}`;
-        const flagExists = targetToken.document.getFlag('pf2e-visioner', flagKey);
-        if (flagExists) {
-          await targetToken.document.unsetFlag('pf2e-visioner', flagKey);
-          removedFlag = true;
-        }
-      }
-    } catch (error) {
-      console.error('PF2E Visioner | Failed to remove override flag:', error);
-    }
-    
-    if (removedMemory || removedFlag) {
-      console.log('PF2E Visioner | Removed AVS override:', {
-        from: observerId,
-        to: targetId,
-        removedMemory,
-        removedFlag
-      });
-    }
-    
-    return removedMemory || removedFlag;
+    this.#activeOverrides.delete(overrideKey);
+    return AvsOverrideManager.removeOverride(observerId, targetId);
   }
 
   /**
    * Clear all overrides (memory and persistent flags)
    */
   async clearAllOverrides() {
-    console.log('PF2E Visioner | Clearing all AVS overrides (memory and flags)');
-    
-    // Clear memory overrides
+    // Clear memory and delegate persistent flags cleanup to manager
     this.#activeOverrides.clear();
-    
-    // Clear all persistent flag overrides
-    const allTokens = canvas.tokens?.placeables || [];
-    for (const token of allTokens) {
-      if (!token?.document) continue;
-      
-      const flags = token.document.flags['pf2e-visioner'] || {};
-      for (const flagKey of Object.keys(flags)) {
-        if (flagKey.startsWith('avs-override-from-')) {
-          try {
-            await token.document.unsetFlag('pf2e-visioner', flagKey);
-            console.log('PF2E Visioner | Cleared override flag:', flagKey);
-          } catch (error) {
-            console.warn('PF2E Visioner | Failed to clear override flag:', flagKey, error);
-          }
-        }
-      }
-    }
+    await AvsOverrideManager.clearAllOverrides();
   }
 
   /**
@@ -1395,15 +1285,6 @@ export class EventDrivenVisibilitySystem {
       hasConcealment
     });
     console.log('PF2E Visioner | Created debug override:', { observerId, targetId, hasCover, hasConcealment });
-  }
-
-  /**
-   * Debug method to manually trigger validation for a token (PUBLIC)
-   * @param {string} tokenId - Token ID to validate
-   */
-  async debugValidateToken(tokenId) {
-    console.log('PF2E Visioner | 🔧 DEBUG: Manually triggering validation for token:', tokenId);
-    await this.#validateOverridesForToken(tokenId);
   }
 
   // ==========================================
@@ -1852,16 +1733,19 @@ export class EventDrivenVisibilitySystem {
         // Removed additional ninja reason icons; a single ninja tag will be added for UI separately
       }
 
-      // Build reason icons for UI: only show the ninja source tag when from Sneak
+      // Build reason icons for UI: add a compact source tag icon for each action type
       // Hide eye/eye-slash/shield reason icons in the UI; keep them internal for logic
       const reasonIconsForUi = [];
-      if (override.source === 'sneak_action') {
-        reasonIconsForUi.push({
-          icon: 'fas fa-user-ninja',
-          text: 'sneak',
-          type: 'sneak-source'
-        });
-      }
+      const sourceIconMap = {
+        sneak_action: { icon: 'fas fa-user-ninja', text: 'sneak', type: 'sneak-source' },
+        seek_action: { icon: 'fas fa-search', text: 'seek', type: 'seek-source' },
+        point_out_action: { icon: 'fas fa-hand-point-right', text: 'point out', type: 'pointout-source' },
+        hide_action: { icon: 'fas fa-mask', text: 'hide', type: 'hide-source' },
+        diversion_action: { icon: 'fas fa-theater-masks', text: 'diversion', type: 'diversion-source' },
+        manual_action: { icon: 'fas fa-tools', text: 'manual', type: 'manual-source' },
+      };
+      const srcKey = override.source || 'manual_action';
+      if (sourceIconMap[srcKey]) reasonIconsForUi.push(sourceIconMap[srcKey]);
 
       if (reasons.length > 0) {
         console.log('PF2E Visioner | Override validation FAILED - reasons:', reasons);

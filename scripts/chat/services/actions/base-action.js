@@ -55,12 +55,34 @@ export class ActionHandlerBase {
     return null;
   }
 
+  // Provide a stable source tag for AVS override semantics
+  getSourceTag() {
+    switch (this.actionType) {
+      case 'point-out':
+        return 'point_out_action';
+      case 'create-a-diversion':
+        return 'diversion_action';
+      case 'take-cover':
+        return 'take_cover_action';
+      case 'seek':
+        return 'seek_action';
+      case 'sneak':
+        return 'sneak_action';
+      case 'hide':
+        return 'hide_action';
+      case 'consequences':
+        return 'consequences_action';
+      default:
+        return `${this.actionType || 'manual'}_action`;
+    }
+  }
+
   // Optional hooks for subclasses
-  async ensurePrerequisites(_actionData) {}
-  async discoverSubjects(_actionData) {
+  async ensurePrerequisites() {}
+  async discoverSubjects() {
     throw new Error('discoverSubjects must be implemented in subclass');
   }
-  async analyzeOutcome(_actionData, _subject) {
+  async analyzeOutcome() {
     throw new Error('analyzeOutcome must be implemented in subclass');
   }
 
@@ -103,7 +125,7 @@ export class ActionHandlerBase {
     };
   }
 
-  buildCacheEntryFromChange(_change) {
+  buildCacheEntryFromChange() {
     return null;
   }
 
@@ -144,7 +166,7 @@ export class ActionHandlerBase {
           const allowedIds = new Set(Object.keys(overrides));
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
-      } catch (_) {}
+  } catch {}
       if (filtered.length === 0) {
         notify.info('No changes to apply');
         return 0;
@@ -155,7 +177,7 @@ export class ActionHandlerBase {
         if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
-      } catch (_) {}
+  } catch {}
       const changes = filtered
         .map((o) => {
           const ch = this.outcomeToChange(actionData, o);
@@ -203,7 +225,7 @@ export class ActionHandlerBase {
           const allowedIds = new Set(Object.keys(overrides));
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
-      } catch (_) {}
+  } catch {}
       
       if (filtered.length === 0) {
         notify.info('No changes to apply');
@@ -263,7 +285,7 @@ export class ActionHandlerBase {
         if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
-      } catch (_) {}
+  } catch {}
       
       const changes = filtered
         .map((o) => {
@@ -331,13 +353,14 @@ export class ActionHandlerBase {
   async applyChangesInternal(changes) {
     const { applyVisibilityChanges } = await import('../infra/shared-utils.js');
     const direction = this.getApplyDirection();
+  const sourceTag = this.getSourceTag();
     // Group by observer and apply batched
     const groups = this.groupChangesByObserver(changes);
     for (const group of groups) {
       await applyVisibilityChanges(
         group.observer,
         group.items.map((i) => ({ target: i.target, newVisibility: i.newVisibility })),
-        { direction },
+        { direction, source: sourceTag },
       );
     }
   }
@@ -349,7 +372,7 @@ export class ActionHandlerBase {
       const existing = cache.get(actionData.messageId) || [];
       const entries = changes.map((c) => this.buildCacheEntryFromChange(c)).filter(Boolean);
       cache.set(actionData.messageId, existing.concat(entries));
-    } catch (_) {}
+  } catch {}
   }
 
   updateButtonToRevert(button) {
@@ -358,7 +381,7 @@ export class ActionHandlerBase {
       button
         .html('<i class="fas fa-undo"></i> Revert Changes')
         .attr('data-action', this.getRevertActionName());
-    } catch (_) {}
+  } catch {}
   }
 
   updateButtonToApply(button) {
@@ -367,7 +390,7 @@ export class ActionHandlerBase {
       button
         .html('<i class="fas fa-check-double"></i> Apply Changes')
         .attr('data-action', this.getApplyActionName());
-    } catch (_) {}
+  } catch {}
   }
 
   // Revert logic
@@ -415,7 +438,7 @@ export class ActionHandlerBase {
   }
 
   // Subclasses should override according to their cache shape
-  entriesToRevertChanges(_entries, _actionData) {
+  entriesToRevertChanges() {
     return [];
   }
 
@@ -435,7 +458,7 @@ export class ActionHandlerBase {
   clearCache(actionData) {
     try {
       this.getCacheMap()?.delete(actionData.messageId);
-    } catch (_) {}
+  } catch {}
   }
 
   removeFromCache(actionData, targetTokenId) {
@@ -455,7 +478,7 @@ export class ActionHandlerBase {
       } else {
         cache.set(actionData.messageId, filteredEntries);
       }
-    } catch (_) {}
+  } catch {}
   }
 
   // Helpers

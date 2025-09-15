@@ -5,6 +5,7 @@
  */
 
 import * as SharedUtils from './infra/shared-utils.js';
+import AvsOverrideManager from './infra/avs-override-manager.js';
 import autoCoverSystem from '../../cover/auto-cover/AutoCoverSystem.js';
 
 class DualSystemResultApplication {
@@ -131,9 +132,8 @@ class DualSystemResultApplication {
 
           if (changesByTarget.size > 0) {
             try {
-              await SharedUtils.setAVSPairOverrides(data.observer, changesByTarget, {
+              await AvsOverrideManager.applyForSneak(data.observer, changesByTarget, {
                 overrideDurationMinutes: options.overrideDurationMinutes || 5,
-                source: 'sneak_action', // Mark this as a sneak action for proper unidirectional override handling
               });
             } catch (avsSetError) {
               console.warn('PF2E Visioner | Failed to pre-set AVS overrides (continuing):', avsSetError);

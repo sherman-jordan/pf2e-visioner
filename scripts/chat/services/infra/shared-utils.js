@@ -9,6 +9,7 @@ import { refreshEveryonesPerception } from '../../../services/socket.js';
 import { updateTokenVisuals } from '../../../services/visual-effects.js';
 import { setVisibilityBetween } from '../../../utils.js';
 import { notify } from './notifications.js';
+import AvsOverrideManager from './avs-override-manager.js';
 
 /**
  * Set AVS pair overrides to prevent automatic recalculation of manually set visibility states
@@ -17,84 +18,9 @@ import { notify } from './notifications.js';
  * @param {Map} changesByTarget - Map of target changes
  * @param {Object} options - Application options
  */
+// setAVSPairOverrides has moved to AvsOverrideManager. Keep a thin delegate for backward compatibility.
 export async function setAVSPairOverrides(observer, changesByTarget, options = {}) {
-  try {
-    // Check if this is a sneak action - only override visibility TO the sneaking token, not FROM it
-    const isSneakAction = options.source === 'sneak_action' || 
-                          observer.document.getFlag('pf2e-visioner', 'sneak-active');
-    
-    for (const [, changeData] of changesByTarget) {
-      const target = changeData.target;
-      const state = changeData.state;
-      
-      if (isSneakAction) {
-        // For sneak actions, only set overrides to prevent others seeing the sneaking token
-        // Do NOT prevent the sneaking token from seeing others with AVS
-        
-        // Set AVS override via new hook system (observer -> target)
-        // This makes the observer see the sneaking token as undetected
-        Hooks.call('avsOverride', {
-          observer,
-          target,
-          state,
-          source: 'sneak_action',
-          hasCover: changeData.hasCover || false,
-          hasConcealment: changeData.hasConcealment || false,
-          // Propagate explicit expected cover level when known (e.g., from Sneak results)
-          expectedCover: changeData.expectedCover
-        });
-        
-        // DO NOT set reverse direction for sneak - the sneaking token should see normally
-        
-        console.log('PF2E Visioner | ✅ Set AVS sneak override via hooks (one-way only):', {
-          observer: observer.name,
-          target: target.name,
-          state,
-          hasCover: changeData.hasCover || false,
-          hasConcealment: changeData.hasConcealment || false,
-          note: 'Sneak affects only how others see the sneaking token'
-        });
-        
-      } else {
-        // For non-sneak actions, set symmetric overrides
-        
-        // Set AVS override via new hook system (observer -> target)
-        Hooks.call('avsOverride', {
-          observer,
-          target,
-          state,
-          source: options.source || 'manual_action',
-          hasCover: changeData.hasCover || false,
-          hasConcealment: changeData.hasConcealment || false,
-          expectedCover: changeData.expectedCover
-        });
-        
-        // Set reverse direction override (target -> observer)
-        Hooks.call('avsOverride', {
-          observer: target,
-          target: observer,
-          state,
-          source: options.source || 'manual_action',
-          hasCover: changeData.hasCover || false,
-          hasConcealment: changeData.hasConcealment || false,
-          expectedCover: changeData.expectedCover
-        });
-        
-        console.log('PF2E Visioner | ✅ Set AVS override via hooks (symmetric):', {
-          observer: observer.name,
-          target: target.name,
-          state,
-          hasCover: changeData.hasCover || false,
-          hasConcealment: changeData.hasConcealment || false,
-          source: options.source || 'manual_action',
-          note: 'Using new hook-based override system'
-        });
-      }
-    }
-    
-  } catch (error) {
-    console.error('PF2E Visioner | Error setting AVS overrides via hooks:', error);
-  }
+  return AvsOverrideManager.setPairOverrides(observer, changesByTarget, options);
 }
 
 /**
@@ -347,7 +273,7 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
         console.warn('PF2E Visioner | No changes found - cannot set AVS overrides');
       } else {
         try {
-          await setAVSPairOverrides(observer, changesByTarget, options);
+          await AvsOverrideManager.setPairOverrides(observer, changesByTarget, options);
         } catch (avsError) {
           console.warn('PF2E Visioner | Failed to set AVS pair overrides:', avsError);
         }

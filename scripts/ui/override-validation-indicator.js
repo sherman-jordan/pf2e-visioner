@@ -59,9 +59,9 @@ class OverrideValidationIndicator {
   async clearAll() {
     if (!this._data?.overrides?.length) return;
     try {
-      const { eventDrivenVisibilitySystem } = await import('../visibility/auto-visibility/EventDrivenVisibilitySystem.js');
+      const { default: AvsOverrideManager } = await import('../chat/services/infra/avs-override-manager.js');
       for (const { observerId, targetId } of this._data.overrides) {
-        await eventDrivenVisibilitySystem.removeOverride(observerId, targetId);
+        await AvsOverrideManager.removeOverride(observerId, targetId);
       }
       ui.notifications?.info?.(`Cleared ${this._data.overrides.length} invalid override(s)`);
       this.hide();

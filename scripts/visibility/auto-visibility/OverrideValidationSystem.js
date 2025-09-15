@@ -444,8 +444,11 @@ export class OverrideValidationSystem {
         switch (result.action) {
           case 'clear-all':
             // Remove all overrides
-            for (const { observerId, targetId } of invalidOverrides) {
-              await this.#visibilitySystem.removeOverride(observerId, targetId);
+            {
+              const { default: AvsOverrideManager } = await import('../../chat/services/infra/avs-override-manager.js');
+              for (const { observerId, targetId } of invalidOverrides) {
+                await AvsOverrideManager.removeOverride(observerId, targetId);
+              }
             }
             ui.notifications.info(`Cleared ${invalidOverrides.length} invalid override${invalidOverrides.length > 1 ? 's' : ''}`);
             break;
@@ -453,10 +456,13 @@ export class OverrideValidationSystem {
           case 'clear-manual': {
             // Remove only manual overrides
             let clearedCount = 0;
-            for (const { observerId, targetId, override } of invalidOverrides) {
-              if (override.source === 'manual_action') {
-                await this.#visibilitySystem.removeOverride(observerId, targetId);
-                clearedCount++;
+            {
+              const { default: AvsOverrideManager } = await import('../../chat/services/infra/avs-override-manager.js');
+              for (const { observerId, targetId, override } of invalidOverrides) {
+                if (override.source === 'manual_action') {
+                  await AvsOverrideManager.removeOverride(observerId, targetId);
+                  clearedCount++;
+                }
               }
             }
             if (clearedCount > 0) {
@@ -491,7 +497,10 @@ export class OverrideValidationSystem {
         });
 
         if (result) {
-          await this.#visibilitySystem.removeOverride(first.observerId, first.targetId);
+          {
+            const { default: AvsOverrideManager } = await import('../../chat/services/infra/avs-override-manager.js');
+            await AvsOverrideManager.removeOverride(first.observerId, first.targetId);
+          }
           ui.notifications.info(`Removed visibility override: ${observer.document.name} → ${target.document.name}`);
         }
       }

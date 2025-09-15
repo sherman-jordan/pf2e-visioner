@@ -35,7 +35,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         'icons/svg/mystery-man.svg'
       );
     } catch (_) {
-      return 'icons/svg/mystery-man.svg';
+        return 'icons/svg/mystery-man.svg';
     }
   }
 

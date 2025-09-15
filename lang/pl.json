@@ -292,7 +292,12 @@
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Pokaż tylko tokeny spotkań",
       "COVER_OVERRIDE": "Pomijanie osłony",
-      "ROLL": "Rzut"
+      "ROLL": "Rzut",
+      "APPLY_ALL": "Apply All",
+      "REVERT_ALL": "Revert All",
+      "REMOVE_OVERRIDES": "Remove Overrides",
+      "BULK_SET_VISIBILITY": "Bulk Set Visibility",
+      "CLEAR_BULK_OVERRIDES": "Clear Bulk Overrides"
     },
     "WALL": {
       "VISIBLE_TO_YOU": "Ukryta ściana",

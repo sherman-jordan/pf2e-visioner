@@ -337,9 +337,6 @@ export class PositionCacheManager {
       }
     }
     
-    const warmingDuration = performance.now() - warmingStartTime;
-    console.log(`${MODULE_ID} | Cache warming completed: ${warmedCount} entries in ${Math.round(warmingDuration)}ms`);
-    
     return warmedCount;
   }
 
@@ -425,17 +422,13 @@ export class PositionCacheManager {
     
     // Remove entries until target memory is reached
     let currentMemory = this._stats.memoryUsage;
-    let removedCount = 0;
     
     for (const { key, entry } of entries) {
       if (currentMemory <= targetBytes) break;
       
       currentMemory -= entry.size;
       this._delete(key);
-      removedCount++;
     }
-    
-    console.log(`${MODULE_ID} | Memory cleanup: removed ${removedCount} entries, freed ${Math.round((this._stats.memoryUsage - currentMemory) / 1024 / 1024 * 100) / 100}MB`);
   }
 
   /**
@@ -776,11 +769,6 @@ export class PositionCacheManager {
     
     for (const key of keysToDelete) {
       this._delete(key);
-    }
-    
-    // Log cleanup if significant
-    if (keysToDelete.length > 10) {
-      console.log(`${MODULE_ID} | Cleaned up ${keysToDelete.length} expired cache entries`);
     }
   }
 }

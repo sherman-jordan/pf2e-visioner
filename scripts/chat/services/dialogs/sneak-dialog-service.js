@@ -16,8 +16,6 @@ export class SneakDialogService {
    * @param {Object} button - Button element (optional)
    */
   async startSneak(actionData, _button) {
-    console.log('🚀 NEW STATE-BASED startSneak() function called! actionData:', actionData);
-    console.log('🚀 startSneak method is being called!');
     try {
       // Get the sneaking token from actionData - handle both token objects and IDs
       let token = null;
@@ -25,22 +23,15 @@ export class SneakDialogService {
       // First, try to get token directly from actionData.actor if it's already a token
       if (actionData.actor?.document?.id) {
         token = actionData.actor;
-        console.log('PF2E Visioner | Using token directly from actionData.actor:', token.name);
       }
       // If actionData.actor has an ID, look up the token by actor ID
       else if (actionData.actor?.id && canvas?.tokens?.placeables) {
         token = canvas.tokens.placeables.find(t => t.actor?.id === actionData.actor.id);
-        if (token) {
-          console.log('PF2E Visioner | Found token by actor ID:', token.name);
-        }
       }
       // Fallback: try to get from message context
       else if (actionData.message?.speaker?.token) {
         const tokenId = actionData.message.speaker.token;
         token = canvas?.tokens?.placeables?.find(t => t.id === tokenId);
-        if (token) {
-          console.log('PF2E Visioner | Found token via message speaker:', token.name);
-        }
       }
       
       if (!token) {
@@ -48,8 +39,6 @@ export class SneakDialogService {
         return;
       }
       
-      console.log('PF2E Visioner | Starting sneak for token:', token.name);
-
       // Get message and messageId from actionData
       const messageId = actionData.messageId || actionData.message?.id;
       const message = messageId ? game.messages.get(messageId) : null;
@@ -57,9 +46,7 @@ export class SneakDialogService {
       // Check system availability by checking if systems are enabled
       const avsEnabled = game.settings.get('pf2e-visioner', 'autoVisibilityEnabled') ?? false;
       const autoCoverEnabled = autoCoverSystem?.isEnabled?.() ?? false;
-      
-      console.log(`PF2E Visioner | System status - AVS: ${avsEnabled ? 'enabled' : 'disabled'}, Auto-Cover: ${autoCoverEnabled ? 'enabled' : 'disabled'}`);
-      
+            
       // Capture current visibility and cover states from all observer tokens
       const startStates = {};
       
@@ -79,7 +66,6 @@ export class SneakDialogService {
             try {
               const { optimizedVisibilityCalculator } = await import('../../../visibility/auto-visibility/index.js');
               visibilityState = await optimizedVisibilityCalculator.calculateVisibility(observer, token);
-              console.log(`PF2E Visioner | Fresh AVS visibility calculation for ${observer.name} → ${token.name}: ${visibilityState}`);
             } catch (error) {
               console.warn(`PF2E Visioner | Failed fresh visibility calculation, using stored state:`, error);
               visibilityState = getVisibilityBetween(observer, token) || 'observed';
@@ -87,18 +73,15 @@ export class SneakDialogService {
           } else {
             // Use manual/Foundry visibility detection
             visibilityState = observer.document.canObserve(token.document) ? 'observed' : 'hidden';
-            console.log(`PF2E Visioner | Manual visibility for ${observer.name} → ${token.name}: ${visibilityState}`);
           }
           
           // Get cover state based on Auto-Cover system availability
           if (autoCoverEnabled) {
             // Use auto-cover system directly
             coverState = autoCoverSystem.getCoverBetween(observer, token) || 'none';
-            console.log(`PF2E Visioner | AUTO cover detection for ${observer.name} → ${token.name}: ${coverState}`);
           } else {
             // Use manual cover detection
             coverState = getCoverBetween(observer, token) || 'none';
-            console.log(`PF2E Visioner | Manual cover for ${observer.name} → ${token.name}: ${coverState}`);
           }
           
           startStates[observer.id] = {
@@ -113,8 +96,6 @@ export class SneakDialogService {
               autoCover: autoCoverEnabled
             }
           };
-          
-          console.log(`PF2E Visioner | Captured start state for ${observer.name}:`, startStates[observer.id]);
         } catch (error) {
           console.warn(`PF2E Visioner | Failed to capture start state for ${observer.name}:`, error);
           startStates[observer.id] = {
@@ -136,24 +117,13 @@ export class SneakDialogService {
       
       // Set sneak flag on the token to indicate it's currently sneaking
       await token.document.setFlag('pf2e-visioner', SNEAK_FLAGS.SNEAK_ACTIVE, true);
-      
-      // Apply sneak visibility changes immediately
-      console.log('PF2E Visioner | About to apply sneak visibility changes...');
-      console.log('PF2E Visioner | Method exists?', typeof this._applySneakVisibilityChanges);
-      console.log('PF2E Visioner | About to call method...');
+
       await this._applySneakVisibilityChanges(token, startStates);
-      console.log('PF2E Visioner | Sneak visibility changes applied successfully');
-      
-      console.log('PF2E Visioner | Sneak started - states captured and visibility applied:', {
-        observerCount: Object.keys(startStates).length,
-        states: startStates
-      });
 
       // Store start states in message flags for persistence
       if (message) {
         try {
           await message.setFlag('pf2e-visioner', 'startStates', startStates);
-          console.debug('PF2E Visioner | Start states stored in message flags');
         } catch (error) {
           console.warn('PF2E Visioner | Failed to store start states in message flags:', error);
         }
@@ -191,13 +161,11 @@ export class SneakDialogService {
    * @param {Object} button - Button element (optional)
    */
   static async openSneakResults(actionData, _button) {
-    console.log('PF2E Visioner | Opening sneak results dialog for actionData:', actionData);
     
     try {
       // Get the token and message
       const messageId = actionData.messageId || actionData.message?.id;
       const message = game.messages.get(messageId);
-      console.log('PF2E Visioner | Message found:', !!message, 'ID:', messageId);
       
       // Extract token ID from actionData
       let tokenId;
@@ -215,7 +183,6 @@ export class SneakDialogService {
       // Fallback to direct tokenId property
       tokenId = tokenId || actionData.tokenId;
       
-      console.log('PF2E Visioner | Looking for token ID:', tokenId);
       
       // Find the token by ID
       const token = canvas.tokens.placeables.find(t => t.id === tokenId);
@@ -225,7 +192,6 @@ export class SneakDialogService {
         return;
       }
       
-      console.log('PF2E Visioner | Token found:', token.name, 'Actor:', token.actor?.name);
 
       // Get the stored start states from message flags
       const startStates = message?.flags?.['pf2e-visioner']?.sneakStartStates;
@@ -237,7 +203,6 @@ export class SneakDialogService {
         return;
       }
 
-      console.log('PF2E Visioner | Found start states for', Object.keys(startStates).length, 'observers');
 
       // Generate fresh outcomes using the sneak action handler to calculate end positions
       const { SneakActionHandler } = await import('../actions/sneak-action.js');
@@ -245,7 +210,6 @@ export class SneakDialogService {
       
       // Discover current subjects (observers)
       const subjects = await sneakHandler.discoverSubjects(actionData);
-      console.log('PF2E Visioner | Discovered', subjects.length, 'subjects for end position calculation');
       
       // Calculate outcomes with current (end) positions and inject start states
       const outcomes = await Promise.all(
@@ -259,31 +223,20 @@ export class SneakDialogService {
           if (startState && outcome.positionTransition) {
             // Override the start position with the correct visibility from start states
             outcome.positionTransition.startPosition.avsVisibility = startState.visibility;
-            console.log(`PF2E Visioner | Corrected start visibility for ${subject.name}: ${startState.visibility}`);
           }
           
           return outcome;
         })
       );
       
-      console.log('PF2E Visioner | Generated', outcomes.length, 'outcomes with end position qualifications');
       
       // Filter to only changed outcomes
       const changes = outcomes.filter(outcome => outcome && outcome.changed);
-      
-      // Debug: Log what start states we're passing to the dialog
-      console.debug('PF2E Visioner | SneakDialogService startStates debug before dialog creation:', {
-        startStatesExists: !!startStates,
-        startStatesKeys: startStates ? Object.keys(startStates) : [],
-        startStatesSize: startStates ? Object.keys(startStates).length : 0,
-        startStatesContent: startStates
-      });
       
       // Create the sneak preview dialog with proper outcomes
       const dialog = new SneakPreviewDialog(token, outcomes, changes, { startStates, message, actionData });
       await dialog.render(true);
       
-      console.log('PF2E Visioner | Sneak results dialog opened successfully');
       
     } catch (error) {
       console.error('PF2E Visioner | Error opening sneak results dialog:', error);
@@ -300,33 +253,25 @@ export class SneakDialogService {
    */
   async _applySneakVisibilityChanges(token, startStates) {
     try {
-      console.log('PF2E Visioner | _applySneakVisibilityChanges called for token:', token.name);
       
       // Get all observer tokens
       const observerTokens = canvas.tokens.placeables.filter(t => 
         t.id !== token.id && t.actor
       );
       
-      console.log('PF2E Visioner | Found observer tokens:', observerTokens.map(t => t.name));
-
-      // Import the visibility calculator to get proper AVS calculations
-      console.log('PF2E Visioner | About to import visibility calculator...');
       
       let visibilityModule;
       let optimizedVisibilityCalculator;
       
       try {
         visibilityModule = await import('../../../visibility/auto-visibility/index.js');
-        console.log('PF2E Visioner | Visibility module imported:', Object.keys(visibilityModule));
         
         optimizedVisibilityCalculator = visibilityModule.optimizedVisibilityCalculator;
-        console.log('PF2E Visioner | Visibility calculator extracted:', typeof optimizedVisibilityCalculator);
         
         if (!optimizedVisibilityCalculator) {
           throw new Error('optimizedVisibilityCalculator is undefined');
         }
         
-        console.log('PF2E Visioner | Visibility calculator imported successfully');
       } catch (importError) {
         console.error('PF2E Visioner | Import error:', importError);
         throw importError;
@@ -334,14 +279,12 @@ export class SneakDialogService {
       
       // Check if the calculator is properly initialized
       const status = optimizedVisibilityCalculator.getStatus();
-      console.log('PF2E Visioner | Visibility calculator status:', status);
       
       if (!status.initialized) {
         throw new Error('Visibility calculator is not initialized');
       }
       
       // Set visibility for sneak: ONLY affect how observers see the sneaking token, NOT how sneaking token sees observers
-      console.log('PF2E Visioner | Starting visibility calculations for', observerTokens.length, 'observers');
       for (const observer of observerTokens) {
         try {
         // Calculate proper visibility using AVS
@@ -356,12 +299,6 @@ export class SneakDialogService {
           sneakingTokenPosition,
         );
 
-        console.log('PF2E Visioner | AVS calculated visibility:', {
-          sneakingToken: token.name,
-          observer: observer.name,
-          observerToSneaking
-        });
-
         // DO NOT set how the sneaking token sees the observer - they should see normally
         // Sneak only affects how others see the sneaking token, not how the sneaking token sees others
 
@@ -369,14 +306,10 @@ export class SneakDialogService {
         const observerVisibilityMap = getVisibilityMap(observer);
         observerVisibilityMap[token.document.id] = observerToSneaking;
         await setVisibilityMap(observer, observerVisibilityMap);
-        console.log(`PF2E Visioner | Set observer visibility: ${observer.name} → ${token.name}: ${observerToSneaking}`);
         } catch (observerError) {
           console.error('PF2E Visioner | Error processing observer:', observer.name, observerError);
         }
-      }
-
-      console.log('PF2E Visioner | Bidirectional visibility set based on AVS calculations');
-      
+      }      
     } catch (error) {
       console.error('PF2E Visioner | Error applying sneak visibility changes:', error);
       console.error('PF2E Visioner | Error stack:', error.stack);
@@ -408,7 +341,6 @@ export class SneakDialogService {
    */
   static async initializeSneakVisibility(tokenId) {
     try {
-      console.log('PF2E Visioner | Manually initializing sneak visibility for token:', tokenId);
       
       const token = canvas.tokens.get(tokenId);
       if (!token) {
@@ -418,14 +350,11 @@ export class SneakDialogService {
 
       const isSneaking = token.document.getFlag('pf2e-visioner', 'sneak-active');
       if (!isSneaking) {
-        console.log('PF2E Visioner | Token is not sneaking, skipping initialization');
         return;
       }
 
-      console.log('PF2E Visioner | Token is sneaking, proceeding with initialization');
       const service = new SneakDialogService();
       await service._applySneakVisibilityChanges(token, {});
-      console.log('PF2E Visioner | Sneak visibility initialization completed');
       
     } catch (error) {
       console.error('PF2E Visioner | Error initializing sneak visibility:', error);
@@ -438,20 +367,14 @@ export class SneakDialogService {
    */
   static async initializeAllSneakingTokens() {
     try {
-      console.log('PF2E Visioner | Initializing all sneaking tokens...');
-      
       const sneakingTokens = canvas.tokens.placeables.filter(token => 
         token.document.getFlag('pf2e-visioner', 'sneak-active')
       );
       
-      console.log('PF2E Visioner | Found sneaking tokens:', sneakingTokens.map(t => t.name));
-      
       for (const token of sneakingTokens) {
         await this.initializeSneakVisibility(token.id);
       }
-      
-      console.log('PF2E Visioner | All sneaking tokens initialized');
-      
+            
     } catch (error) {
       console.error('PF2E Visioner | Error initializing sneaking tokens:', error);
     }

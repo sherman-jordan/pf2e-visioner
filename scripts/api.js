@@ -502,8 +502,6 @@ export class Pf2eVisionerApi {
 
       // 1) Bulk-reset flags on all scene tokens (remove ALL visioner flags)
       const tokens = canvas.tokens?.placeables ?? [];
-      console.log('PF2E Visioner | Purging flags from', tokens.length, 'tokens');
-      console.log('PF2E Visioner | MODULE_ID:', MODULE_ID);
       
       // Count AVS override flags before removal for logging
       let avsOverrideCount = 0;
@@ -517,10 +515,6 @@ export class Pf2eVisionerApi {
           }
         });
       });
-      console.log('PF2E Visioner | Found', avsOverrideCount, 'AVS override flags to remove');
-      if (avsOverrideFlags.length > 0) {
-        console.log('PF2E Visioner | AVS flags to remove:', avsOverrideFlags);
-      }
       
       // First, try to remove the entire flag namespace
       const updates = tokens.map((t) => ({
@@ -530,16 +524,9 @@ export class Pf2eVisionerApi {
         [`flags.-=${MODULE_ID}`]: null
       }));
       
-      console.log('PF2E Visioner | Update objects:', updates.slice(0, 3)); // Log first 3 for debugging
       
       if (updates.length && scene.updateEmbeddedDocuments) {
         try {
-          const result = await scene.updateEmbeddedDocuments('Token', updates, {
-            diff: false,
-          });
-          console.log('PF2E Visioner | Token update result:', result);
-          console.log('PF2E Visioner | Successfully removed all Visioner flags (including', avsOverrideCount, 'AVS override flags) from', tokens.length, 'tokens');
-          
           // Additional verification and cleanup: check if flags are actually gone
           setTimeout(async () => {
             const remainingFlags = [];
@@ -569,13 +556,10 @@ export class Pf2eVisionerApi {
               if (explicitUpdates.length > 0) {
                 try {
                   await scene.updateEmbeddedDocuments('Token', explicitUpdates, { diff: false });
-                  console.log('PF2E Visioner | Attempted explicit removal of stubborn flags');
                 } catch (error) {
                   console.error('PF2E Visioner | Error in explicit flag removal:', error);
                 }
               }
-            } else {
-              console.log('PF2E Visioner | ✅ All flags successfully removed');
             }
           }, 100);
           
@@ -597,7 +581,6 @@ export class Pf2eVisionerApi {
           await scene.unsetFlag(MODULE_ID, 'deletedEntryCache');
           await scene.unsetFlag(MODULE_ID, 'partyTokenStateCache');
           await scene.unsetFlag(MODULE_ID, 'deferredPartyUpdates');
-          console.log('PF2E Visioner | Cleared scene-level flags');
         }
       } catch (_) {}
 
@@ -655,7 +638,6 @@ export class Pf2eVisionerApi {
         const autoVis = autoVisibilitySystem;
         if (autoVis && typeof autoVis.clearAllOverrides === 'function') {
           autoVis.clearAllOverrides();
-          console.log('PF2E Visioner | Cleared all AVS overrides from map-based system');
         }
       } catch (error) {
         console.warn('PF2E Visioner | Error clearing AVS overrides:', error);
@@ -786,10 +768,6 @@ export class Pf2eVisionerApi {
         ui.notifications.warn('No active scene.');
         return false;
       }
-
-      // 1) Bulk-reset flags on selected tokens (hard remove the maps)
-      console.log('PF2E Visioner | Purging flags from', tokens.length, 'selected tokens');
-      console.log('PF2E Visioner | MODULE_ID:', MODULE_ID);
       
       // Count AVS override flags before removal for logging
       let avsOverrideCount = 0;
@@ -801,27 +779,7 @@ export class Pf2eVisionerApi {
           }
         });
       });
-      console.log('PF2E Visioner | Found', avsOverrideCount, 'AVS override flags to remove from selected tokens');
       
-      const updates = tokens.map((t) => ({
-        _id: t.id,
-        // Use Foundry removal syntax to ensure full deletion of maps (including AVS override flags)
-        [`flags.${MODULE_ID}`]: null,
-      }));
-      
-      console.log('PF2E Visioner | Selected token update objects:', updates);
-      
-      if (updates.length && scene.updateEmbeddedDocuments) {
-        try {
-          const result = await scene.updateEmbeddedDocuments('Token', updates, {
-            diff: false,
-          });
-          console.log('PF2E Visioner | Selected token update result:', result);
-          console.log('PF2E Visioner | Successfully removed all Visioner flags (including', avsOverrideCount, 'AVS override flags) from', tokens.length, 'selected tokens');
-        } catch (error) {
-          console.error('PF2E Visioner | Error updating selected tokens:', error);
-        }
-      }
 
       // 1.5) Additional safety: explicitly clear sneak flags from selected tokens
       try {
@@ -844,7 +802,6 @@ export class Pf2eVisionerApi {
           await scene.unsetFlag(MODULE_ID, 'deletedEntryCache');
           await scene.unsetFlag(MODULE_ID, 'partyTokenStateCache');
           await scene.unsetFlag(MODULE_ID, 'deferredPartyUpdates');
-          console.log('PF2E Visioner | Cleared scene-level flags (selected all tokens)');
         }
       } catch (_) {}
 
@@ -934,7 +891,6 @@ export class Pf2eVisionerApi {
       try {
         const allTokens = canvas.tokens?.placeables ?? [];
         const purgedTokenIds = tokens.map(t => t.id);
-        let cleanedOverrideFlags = 0;
         
         for (const token of allTokens) {
           const updates = {};
@@ -947,7 +903,6 @@ export class Pf2eVisionerApi {
               const match = flagKey.match(/^avs-override-(?:to|from)-(.+)$/);
               if (match && purgedTokenIds.includes(match[1])) {
                 updates[`flags.${MODULE_ID}.-=${flagKey}`] = null;
-                cleanedOverrideFlags++;
               }
             }
           }
@@ -958,54 +913,20 @@ export class Pf2eVisionerApi {
             await scene.updateEmbeddedDocuments('Token', [updates], { diff: false });
           }
         }
-        
-        if (cleanedOverrideFlags > 0) {
-          console.log('PF2E Visioner | Cleaned up', cleanedOverrideFlags, 'AVS override flags referencing purged tokens');
-        }
       } catch (_) {}
 
       // 5.5) Clear AVS overrides involving these tokens from the new map-based system
       try {
         const autoVis = autoVisibilitySystem;
         if (autoVis && autoVis.removeOverride) {
-          const allTokens = canvas.tokens?.placeables ?? [];
-          const selectedTokenIds = tokens.map(t => t.id);
-          let removedCount = 0;
-          
-          // Remove overrides where selected tokens are observers or targets
-          for (const selectedToken of tokens) {
-            // Remove overrides where this token is the observer
-            for (const otherToken of allTokens) {
-              if (!selectedTokenIds.includes(otherToken.id)) {
-                if (await autoVis.removeOverride(selectedToken.id, otherToken.id)) {
-                  removedCount++;
-                }
-              }
-            }
-            
-            // Remove overrides where this token is the target
-            for (const otherToken of allTokens) {
-              if (!selectedTokenIds.includes(otherToken.id)) {
-                if (await autoVis.removeOverride(otherToken.id, selectedToken.id)) {
-                  removedCount++;
-                }
-              }
-            }
-          }
-          
           // Also remove overrides between selected tokens
           for (const token1 of tokens) {
             for (const token2 of tokens) {
               if (token1.id !== token2.id) {
                 if (await autoVis.removeOverride(token1.id, token2.id)) {
-                  removedCount++;
                 }
               }
             }
-          }
-          
-          if (removedCount > 0) {
-            console.log(`PF2E Visioner | Removed ${removedCount} AVS overrides involving ${tokens.length} selected tokens`);
           }
         }
       } catch (error) {
@@ -1078,17 +999,12 @@ export const autoVisibility = {
     }
 
     const token = selected[0];
-    const sceneDarkness = canvas.scene?.environment?.darknessLevel ?? 'undefined';
-    console.log(`Testing lighting at ${token.name}'s position:`, token.center);
-    console.log(`Scene darkness: ${sceneDarkness} (0=daylight, 1=complete darkness)`);
-    console.log(`Light sources: ${canvas.lighting?.placeables?.length ?? 0}`);
 
     // Access the private method via the global reference
     if (globalThis.pf2eVisionerAutoVisibility?._getLightLevelAt) {
       const lightLevel = globalThis.pf2eVisionerAutoVisibility._getLightLevelAt(token.center);
       const interpretation =
         lightLevel >= 1 ? 'BRIGHT LIGHT' : lightLevel >= 0.5 ? 'DIM LIGHT' : 'DARKNESS';
-      console.log(`Light level: ${lightLevel} (${interpretation})`);
       ui.notifications.info(
         `${token.name}: ${interpretation} (level ${lightLevel}) - see console for details`,
       );
@@ -1107,14 +1023,9 @@ export const autoVisibility = {
     const observer = selected[0];
     const target = selected[1];
 
-    console.log(`=== Debugging visibility: ${observer.name} → ${target.name} ===`);
 
     try {
-      const debugInfo = await autoVisibilitySystem.getVisibilityDebugInfo(observer, target);
-      console.log('Debug info:', debugInfo);
-
       const visibility = await autoVisibilitySystem.calculateVisibility(observer, target);
-      console.log('Calculated visibility:', visibility);
 
       ui.notifications.info(
         `${observer.name} → ${target.name}: ${visibility} (see console for details)`,
@@ -1181,11 +1092,6 @@ export const autoVisibility = {
       return;
     }
 
-    const vision =
-      autoVisibilitySystem.getVisionCapabilities?.(selected) || 'Vision method not available';
-    console.log(`${selected.name} Vision Capabilities:`, vision);
-    console.log(`Actor System Data:`, selected.actor?.system?.perception);
-    console.log(`Actor Perception:`, selected.actor?.perception);
     ui.notifications.info(`Vision data logged to console for ${selected.name}`);
   },
 
@@ -1194,9 +1100,6 @@ export const autoVisibility = {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnMovement', false);
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnLighting', false);
     ui.notifications.warn('All auto-visibility updates disabled');
-    console.log(
-      'Auto-visibility: All automatic updates disabled. Use enableAllUpdates() to re-enable.',
-    );
   },
 
   // Re-enable all automatic updates
@@ -1204,7 +1107,6 @@ export const autoVisibility = {
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnMovement', true);
     game.settings.set('pf2e-visioner', 'autoVisibilityUpdateOnLighting', true);
     ui.notifications.info('All auto-visibility updates re-enabled');
-    console.log('Auto-visibility: All automatic updates re-enabled.');
   },
 
   // Check if scene config dialog is currently open
@@ -1216,7 +1118,6 @@ export const autoVisibility = {
         app.title?.includes('Scene Configuration') ||
         app.options?.id === 'scene-config',
     );
-    console.log(`Scene Config Dialog Open: ${hasOpenSceneConfig}`);
     return hasOpenSceneConfig;
   },
 
@@ -1225,39 +1126,6 @@ export const autoVisibility = {
     const lightSources = canvas.lighting?.placeables || [];
     const tokens = canvas.tokens?.placeables || [];
     const lightEmittingTokens = tokens.filter((t) => t.emitsLight);
-
-    console.log(`=== LIGHT SOURCES (${lightSources.length}) ===`);
-    lightSources.forEach((light, index) => {
-      console.log(`Light Source ${index + 1}:`, {
-        position: `(${light.center.x}, ${light.center.y})`,
-        emitsLight: light.emitsLight,
-        hidden: light.document.hidden,
-        brightRadius: light.brightRadius,
-        dimRadius: light.dimRadius,
-        documentBright: light.document?.config?.bright || light.document?.bright,
-        documentDim: light.document?.config?.dim || light.document?.dim,
-        configBright: light.config?.bright,
-        configDim: light.config?.dim,
-        fullLight: light,
-        fullDocument: light.document,
-      });
-    });
-
-    console.log(`=== LIGHT-EMITTING TOKENS (${lightEmittingTokens.length}) ===`);
-    lightEmittingTokens.forEach((token, index) => {
-      console.log(`Light Token ${index + 1} - "${token.name}":`, {
-        position: `(${token.center.x}, ${token.center.y})`,
-        emitsLight: token.emitsLight,
-        hidden: token.document.hidden,
-        brightRadius: token.brightRadius,
-        dimRadius: token.dimRadius,
-        documentLightBright: token.document?.light?.bright,
-        documentLightDim: token.document?.light?.dim,
-        lightObject: token.light,
-        fullTokenLight: token.document?.light,
-        fullToken: token,
-      });
-    });
 
     const totalLights = lightSources.length + lightEmittingTokens.length;
     ui.notifications.info(
@@ -1311,12 +1179,6 @@ export const autoVisibility = {
     const [observer, target] = controlled;
     const isInvisible = autoVisibilitySystem.testInvisibility?.(observer, target);
 
-    console.log(`Invisibility test: ${observer.name} → ${target.name}:`, {
-      isInvisible,
-      targetConditions: target.actor?.conditions,
-      targetSystemConditions: target.actor?.system?.conditions,
-    });
-
     ui.notifications.info(
       `${target.name} is ${isInvisible ? 'invisible' : 'visible'} to ${observer.name}`,
     );
@@ -1326,8 +1188,6 @@ export const autoVisibility = {
   debugOpenApps: () => {
     if (autoVisibilitySystem.debugOpenApplications) {
       return autoVisibilitySystem.debugOpenApplications();
-    } else {
-      console.log('Debug method not available');
     }
   },
 
@@ -1336,19 +1196,14 @@ export const autoVisibility = {
     if (autoVisibilitySystem.resetSceneConfigFlag) {
       autoVisibilitySystem.resetSceneConfigFlag();
       ui.notifications.info('Scene Config flag reset - updates should resume');
-    } else {
-      console.log('Reset method not available');
     }
   },
 
   // Force lighting update (bypasses Scene Config check)
   forceLightingUpdate: () => {
     if (autoVisibilitySystem.recalculateAllVisibility) {
-      console.log('Forcing lighting update...');
       autoVisibilitySystem.recalculateAllVisibility(true);
       ui.notifications.info('Forced lighting update completed');
-    } else {
-      console.log('Force update method not available');
     }
   },
 
@@ -1375,7 +1230,6 @@ export const autoVisibility = {
 
     const capabilities = visionAnalyzer.getVisionCapabilities(token);
 
-    console.log(`Vision capabilities for ${token.name}:`, capabilities);
 
     const statusText = [];
     if (capabilities.isBlinded) statusText.push('BLINDED');
@@ -1403,50 +1257,12 @@ export const autoVisibility = {
       return;
     }
 
-    // Test both conditions
-    const isBlinded = actor.hasCondition?.('blinded') || false;
-    const isDazzled = actor.hasCondition?.('dazzled') || false;
-
-    console.log(`Condition test for ${actor.name}:`);
-    console.log(`- Blinded: ${isBlinded}`);
-    console.log(`- Dazzled: ${isDazzled}`);
-    console.log(`- Expected: If blinded=true, then dazzled should=false (PF2E override)`);
-
-    // Also show all active conditions
-    if (actor.conditions) {
-      const activeConditions = Array.from(actor.conditions)
-        .filter((c) => c.active)
-        .map((c) => c.name || c.slug)
-        .join(', ');
-      console.log(`- Active conditions: ${activeConditions || 'none'}`);
-    }
-
     ui.notifications.info(`Check console for ${actor.name}'s condition details`);
   },
 
   // Test light source detection
   testLightSources: () => {
     const lightSources = canvas.lighting?.placeables || [];
-    console.log(`=== Light Sources Debug (${lightSources.length} total) ===`);
-
-    lightSources.forEach((light, index) => {
-      const isDarknessSource = light.isDarknessSource || light.document?.isDarknessSource || false;
-      const brightRadius =
-        light.document.config?.bright || light.document.bright || light.config?.bright || 0;
-      const dimRadius = light.document.config?.dim || light.document.dim || light.config?.dim || 0;
-      const hidden = light.document.hidden;
-      const emitsLight = light.emitsLight;
-
-      console.log(`Light ${index + 1}:`, {
-        id: light.id,
-        isDarknessSource,
-        brightRadius,
-        dimRadius,
-        hidden,
-        emitsLight,
-        center: light.center,
-      });
-    });
 
     ui.notifications.info(`Found ${lightSources.length} light sources - check console for details`);
   },
@@ -1455,39 +1271,10 @@ export const autoVisibility = {
   testDarknessSources: () => {
     const lightSources = canvas.lighting?.placeables || [];
 
-    console.log(`=== All Light Sources Debug (${lightSources.length} total) ===`);
-
-    lightSources.forEach((light, index) => {
-      const brightRadius =
-        light.document.config?.bright || light.document.bright || light.config?.bright || 0;
-      const dimRadius = light.document.config?.dim || light.document.dim || light.config?.dim || 0;
-
-      // Check multiple ways to detect darkness sources
-      const isDarknessSource = light.isDarknessSource || light.document?.config?.negative || false;
-
-      console.log(`Light Source ${index + 1} ${isDarknessSource ? '(DARKNESS)' : '(NORMAL)'}:`, {
-        id: light.id,
-        brightRadius,
-        dimRadius,
-        x: light.document.x,
-        y: light.document.y,
-        isDarknessSource,
-        'light.isDarknessSource': light.isDarknessSource,
-        'light.document.isDarknessSource': light.document?.isDarknessSource,
-        'light.document.config.negative': light.document?.config?.negative,
-        'light.negative': light.negative,
-        'light.document.config.type': light.document?.config?.type,
-        'light.document.config': light.document?.config,
-      });
-    });
 
     const darknessCount = lightSources.filter((light) => {
       return light.isDarknessSource || light.document?.config?.negative;
     }).length;
-
-    console.log(
-      `Found ${darknessCount} darkness sources out of ${lightSources.length} total lights`,
-    );
     ui.notifications.info(
       `Found ${darknessCount} darkness sources out of ${lightSources.length} total lights`,
     );
@@ -1498,7 +1285,6 @@ export const autoVisibility = {
     const autoVisibilitySystem = game.modules.get(MODULE_ID)?.api?.autoVisibilitySystem;
     if (autoVisibilitySystem) {
       // Reset circuit breaker via a force recalculation
-      console.log(`${MODULE_ID} | Manually resetting circuit breaker`);
       autoVisibilitySystem.recalculateAllVisibility(true);
       ui.notifications.info('Circuit breaker reset - visibility system reactivated');
     } else {
@@ -1511,7 +1297,6 @@ export const autoVisibility = {
     let recalcCount = 0;
     const startTime = Date.now();
 
-    console.log(`${MODULE_ID} | Starting feedback loop test - monitoring for 10 seconds...`);
 
     // Hook into recalculations to count them
     const originalRecalc =
@@ -1524,7 +1309,6 @@ export const autoVisibility = {
     // Wrap the recalculation function to count calls
     const testWrapper = function (...args) {
       recalcCount++;
-      console.log(`${MODULE_ID} | Recalculation #${recalcCount} at ${Date.now() - startTime}ms`);
       return originalRecalc.apply(this, args);
     };
 
@@ -1538,9 +1322,6 @@ export const autoVisibility = {
       const elapsed = Date.now() - startTime;
       const rate = ((recalcCount / elapsed) * 1000).toFixed(2);
 
-      console.log(
-        `${MODULE_ID} | Feedback test complete: ${recalcCount} recalculations in ${elapsed}ms (${rate} per second)`,
-      );
 
       if (recalcCount > 20) {
         ui.notifications.error(
@@ -1596,14 +1377,6 @@ export const autoVisibility = {
     }
 
     ui.notifications.info(`PF2E Visioner | AVS override set: ${observer.name} → ${target.name} (${state})`);
-    console.log('PF2E Visioner | AVS Override Test:', {
-      from: observer.name,
-      to: target.name,
-      state,
-      bidirectional: options.bidirectional,
-      hasCover: options.hasCover,
-      hasConcealment: options.hasConcealment
-    });
   },
 
   /**

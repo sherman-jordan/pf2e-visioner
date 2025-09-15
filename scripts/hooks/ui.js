@@ -716,7 +716,6 @@ export function registerUIHooks() {
                 if (!confirmed) return;
                 const { api } = await import('../api.js');
 
-                console.log('PF2E Visioner | Calling clearAllDataForSelectedTokens for', selectedTokens.length, 'tokens');
                 // Clear data for all selected tokens with comprehensive cleanup
                 await api.clearAllDataForSelectedTokens(selectedTokens);
               } else {
@@ -730,7 +729,6 @@ export function registerUIHooks() {
                 });
                 if (!confirmed) return;
                 const { api } = await import('../api.js');
-                console.log('PF2E Visioner | Calling clearAllSceneData');
                 await api.clearAllSceneData();
               }
             } catch (e) {

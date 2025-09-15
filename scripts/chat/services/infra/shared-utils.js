@@ -261,13 +261,6 @@ export async function applyVisibilityChanges(observer, changes, options = {}) {
     // Set AVS pair overrides to prevent automatic recalculation of these visibility states
     // This is crucial for sneak actions - we don't want AVS to override our manual visibility changes
     if (options.setAVSOverrides !== false) { // Default to true unless explicitly disabled
-      console.log('PF2E Visioner | About to set AVS overrides:', {
-        observerName: observer.name,
-        changesByTargetSize: changesByTarget.size,
-        changesByTargetKeys: Array.from(changesByTarget.keys()),
-        changesByTargetValues: Array.from(changesByTarget.values()),
-        options
-      });
       
       if (changesByTarget.size === 0) {
         console.warn('PF2E Visioner | No changes found - cannot set AVS overrides');
@@ -677,7 +670,6 @@ export function calculateStealthRollTotals(
   // Fallback: try roll modifiers if still no original bonus found
   if (originalCoverBonus === 0) {
     const rollModifiers = actionData?.roll?.options?.modifiers || [];
-    console.log('PF2E Visioner | Checking roll modifiers for cover:', rollModifiers.map(m => ({ label: m.label, slug: m.slug, modifier: m.modifier })));
     
     const coverModifier = rollModifiers.find(
       (mod) => {
@@ -694,7 +686,6 @@ export function calculateStealthRollTotals(
       }
     );
     if (coverModifier) {
-      console.log('PF2E Visioner | Found cover modifier:', coverModifier);
       originalCoverBonus = Number(coverModifier.modifier || 0);
     }
   }
@@ -702,22 +693,6 @@ export function calculateStealthRollTotals(
   // Current cover state and bonus
   const currentCoverState = autoCoverResult?.state || 'none';
   const currentCoverBonus = Number(COVER_STATES?.[currentCoverState]?.bonusStealth || 0);
-
-  console.log('PF2E Visioner | calculateStealthRollTotals debug:', {
-    baseTotal,
-    originalCoverBonus,
-    currentCoverState,
-    currentCoverBonus,
-    originalModifier: originalModifier ? { 
-      bonus: originalModifier.bonus,
-      finalBonus: originalModifier.finalBonus,
-      isOverride: originalModifier.isOverride
-    } : null,
-    visionerContext: visionerContext ? {
-      bonus: visionerContext.bonus,
-      state: visionerContext.state
-    } : null
-  });
 
   // Check if this is an override case using the stored modifier data (more reliable)
   const wasOverridden = originalModifier?.isOverride || false;

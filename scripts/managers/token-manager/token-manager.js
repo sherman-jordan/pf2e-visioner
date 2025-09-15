@@ -152,13 +152,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     });
 
     // Refresh when visibility map changes (for sneaking tokens)
-    this._visibilityChangeHook = Hooks.on('pf2e-visioner.visibilityChanged', (observerId, targetId, newVisibility) => {
+    this._visibilityChangeHook = Hooks.on('pf2e-visioner.visibilityChanged', (observerId) => {
       if (this.rendered && this.observer && observerId === this.observer.id) {
-        console.log('PF2E Visioner | Token Manager refreshing due to visibility change:', {
-          observerId,
-          targetId,
-          newVisibility
-        });
         // Small delay to ensure the change is fully processed
         setTimeout(() => {
           if (this.rendered) {

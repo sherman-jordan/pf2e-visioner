@@ -52,14 +52,6 @@ export async function applyNowSneak(actionData, button) {
       outcomesToApply = allOutcomes.filter(outcome => 
         overrideTokenIds.includes(outcome.token?.id)
       );
-      
-      console.log('PF2E Visioner | Applying sneak to specific tokens only:', {
-        requestedTokenIds: overrideTokenIds,
-        foundOutcomes: outcomesToApply.length,
-        totalOutcomes: allOutcomes.length
-      });
-    } else {
-      console.log('PF2E Visioner | Applying sneak to all tokens (no overrides specified)');
     }
     
     if (outcomesToApply.length === 0) {
@@ -67,7 +59,6 @@ export async function applyNowSneak(actionData, button) {
       return 0;
     }
     
-    console.log('PF2E Visioner | Applying sneak via dual system with', outcomesToApply.length, 'outcomes');
     
     // Convert outcomes to the format expected by dual system
     const sneakResults = outcomesToApply.map(outcome => ({
@@ -94,7 +85,6 @@ export async function applyNowSneak(actionData, button) {
         const sneakingToken = handler._getSneakingToken(actionData);
         if (sneakingToken) {
           await sneakingToken.document.unsetFlag('pf2e-visioner', 'sneak-active');
-          console.log('PF2E Visioner | Cleared sneak-active flag from token:', sneakingToken.name);
         }
       }
       

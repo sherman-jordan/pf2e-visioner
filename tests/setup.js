@@ -6,7 +6,7 @@
 // Mock Foundry VTT global objects
 global.game = {
   modules: {
-    get: jest.fn((id) => ({
+  get: jest.fn(() => ({
       api: {},
       version: '2.6.1',
     })),
@@ -74,7 +74,7 @@ global.game = {
   },
   i18n: {
     localize: jest.fn((key) => key || 'mock.message'), // Simple mock that returns the key or a default
-    format: jest.fn((template, data) => template),
+  format: jest.fn((template) => template),
   },
 };
 
@@ -131,7 +131,7 @@ global.canvas = {
           if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
             return { t, wall }; // intersection found
           }
-        } catch (_) {}
+  } catch {}
       }
       return null; // no intersection
     }),
@@ -227,7 +227,7 @@ global.foundry = {
           this.window = null;
         }
 
-        render(options = {}) {
+        render() {
           this.rendered = true;
           return Promise.resolve(this);
         }
@@ -236,6 +236,19 @@ global.foundry = {
           // Mock implementation
         }
       },
+      HandlebarsApplicationMixin: (Base) =>
+        class MockHandlebarsApplication extends Base {
+          static PARTS = { content: { template: '' } };
+          async _prepareContext() {
+            return {};
+          }
+          async render() {
+            // create a minimal element to attach listeners in tests
+            this.element = document.createElement('div');
+            return this;
+          }
+          _onRender() {}
+        },
     },
   },
 };
@@ -377,7 +390,7 @@ global.window = {
 };
 
 // Mock shouldFilterAlly function to break circular dependency
-global.shouldFilterAlly = jest.fn((observer, token, filterType, ignoreAllies) => {
+global.shouldFilterAlly = jest.fn(() => {
   // Simple mock: return false (don't filter) for testing
   return false;
 });

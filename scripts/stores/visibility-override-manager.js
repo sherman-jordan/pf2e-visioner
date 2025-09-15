@@ -49,17 +49,6 @@ export class VisibilityOverrideManager {
       expiryTime,
       source,
     });
-    
-    console.log('PF2E Visioner | ✅ Visibility override SET:', {
-      key,
-      observerId,
-      targetId,
-      visibilityState,
-      durationMinutes,
-      source,
-      expiryTime: new Date(expiryTime).toISOString(),
-      totalOverrides: this.visibilityOverrides.size
-    });
   }
 
   /**
@@ -72,13 +61,6 @@ export class VisibilityOverrideManager {
     const key = this._generateKey(observer, target);
     const override = this.visibilityOverrides.get(key);
     
-    console.log('PF2E Visioner | Checking visibility override:', {
-      key,
-      hasOverride: !!override,
-      totalOverrides: this.visibilityOverrides.size,
-      allKeys: Array.from(this.visibilityOverrides.keys())
-    });
-    
     if (!override) {
       return null;
     }
@@ -86,16 +68,8 @@ export class VisibilityOverrideManager {
     // Check if override has expired
     if (Date.now() > override.expiryTime) {
       this.visibilityOverrides.delete(key);
-      console.log('PF2E Visioner | 🗑️ Removed expired visibility override:', key);
       return null;
     }
-    
-    console.log('PF2E Visioner | ✅ Found active visibility override:', {
-      key,
-      visibilityState: override.visibilityState,
-      source: override.source,
-      remainingMinutes: Math.round((override.expiryTime - Date.now()) / (1000 * 60))
-    });
     
     return override;
   }
@@ -224,7 +198,6 @@ setInterval(() => {
 // Add global debug helper
 if (typeof globalThis !== 'undefined') {
   globalThis.debugVisibilityOverrides = () => {
-    console.log('PF2E Visioner | 🔍 Visibility Overrides Debug Info:', visibilityOverrideManager.getDebugInfo());
     return visibilityOverrideManager.getDebugInfo();
   };
 }

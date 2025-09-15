@@ -46,7 +46,6 @@ export class OverrideValidationSystem {
    */
   enable() {
     this.#enabled = true;
-    console.log('PF2E Visioner | Override Validation System enabled');
   }
 
   /**
@@ -59,7 +58,6 @@ export class OverrideValidationSystem {
       clearTimeout(this.#validationTimeoutId);
       this.#validationTimeoutId = null;
     }
-    console.log('PF2E Visioner | Override Validation System disabled');
   }
 
   /**
@@ -68,11 +66,9 @@ export class OverrideValidationSystem {
    */
   queueOverrideValidation(tokenId) {
     if (!this.#enabled || !game.user.isGM) {
-      console.log('PF2E Visioner | Override validation skipped:', { enabled: this.#enabled, isGM: game.user.isGM });
       return;
     }
 
-    console.log('PF2E Visioner | Queueing override validation for token:', tokenId);
     this.#tokensQueuedForValidation.add(tokenId);
 
     // Clear existing timeout and set new one to batch validations
@@ -82,7 +78,6 @@ export class OverrideValidationSystem {
 
     // Validate after a short delay to handle waypoints and complete movements
     this.#validationTimeoutId = setTimeout(() => {
-      console.log('PF2E Visioner | Processing queued validations...');
       this.#processQueuedValidations();
     }, 500); // 500ms delay to ensure movement is complete
   }
@@ -97,8 +92,6 @@ export class OverrideValidationSystem {
     this.#tokensQueuedForValidation.clear();
     this.#validationTimeoutId = null;
 
-    console.log('PF2E Visioner | Processing override validation for tokens:', tokensToValidate);
-
     for (const tokenId of tokensToValidate) {
       await this.#validateOverridesForToken(tokenId);
     }
@@ -111,11 +104,8 @@ export class OverrideValidationSystem {
   async #validateOverridesForToken(movedTokenId) {
     const movedToken = canvas.tokens?.get(movedTokenId);
     if (!movedToken) {
-      console.log('PF2E Visioner | Could not find moved token:', movedTokenId);
       return;
     }
-
-    console.log('PF2E Visioner | Validating overrides for moved token:', movedToken.name);
 
     const overridesToCheck = [];
 
@@ -125,7 +115,6 @@ export class OverrideValidationSystem {
       const [observerId, targetId] = overrideKey.split('-');
       
       if (observerId === movedTokenId || targetId === movedTokenId) {
-        console.log('PF2E Visioner | Found memory override to check:', { key: overrideKey, override });
         overridesToCheck.push({
           key: overrideKey,
           override,
@@ -151,13 +140,6 @@ export class OverrideValidationSystem {
         
         // Skip if not involving the moved token
         if (observerId !== movedTokenId && targetId !== movedTokenId) continue;
-
-        console.log('PF2E Visioner | Found persistent flag override to check:', { 
-          flagKey, 
-          observerId, 
-          targetId, 
-          flagData 
-        });
         
         overridesToCheck.push({
           key: `${observerId}-${targetId}`,
@@ -182,7 +164,6 @@ export class OverrideValidationSystem {
       }
     }
 
-    console.log('PF2E Visioner | Total overrides to check:', overridesToCheck.length);
 
     // Check each override for validity and collect invalid ones
     const invalidOverrides = [];
@@ -190,25 +171,12 @@ export class OverrideValidationSystem {
       const { override, observerId, targetId, type, flagKey, token } = checkData;
       const shouldRemove = await this.#checkOverrideValidity(observerId, targetId, override);
       
-      console.log('PF2E Visioner | Validity check result:', { 
-        observerId, 
-        targetId, 
-        shouldRemove,
-        override: override 
-      });
-      
       if (shouldRemove) {
-        console.log('PF2E Visioner | Override should be removed:', { 
-          observerId, 
-          targetId, 
-          type,
-          reason: shouldRemove.reason 
-        });
         // Attach current visibility/cover to the override for dialog rendering
         try {
           if (shouldRemove.currentVisibility) override.currentVisibility = shouldRemove.currentVisibility;
           if (shouldRemove.currentCover) override.currentCover = shouldRemove.currentCover;
-  } catch { /* ignore */ }
+        } catch { /* ignore */ }
         invalidOverrides.push({
           observerId,
           targetId,
@@ -218,20 +186,12 @@ export class OverrideValidationSystem {
           flagKey,
           token
         });
-      } else {
-        console.log('PF2E Visioner | Override is still valid:', { observerId, targetId, type });
       }
     }
 
     // If we found invalid overrides, show the validation dialog
     if (invalidOverrides.length > 0) {
-      console.log('PF2E Visioner | About to show validation dialog with invalid overrides:', {
-        count: invalidOverrides.length,
-        overrides: invalidOverrides
-      });
       await this.#showOverrideValidationDialog(invalidOverrides);
-    } else {
-      console.log('PF2E Visioner | No invalid overrides found to show dialog for');
     }
   }
 
@@ -249,34 +209,9 @@ export class OverrideValidationSystem {
     if (!observer || !target) return null;
 
     try {
-      // Get current positions for detailed logging
-      const observerPos = { x: observer.document.x, y: observer.document.y };
-      const targetPos = { x: target.document.x, y: target.document.y };
-      
-      console.log('PF2E Visioner | Validation position check:', {
-        observer: observer.name,
-        target: target.name,
-        observerPos,
-        targetPos,
-        observerCanvas: { x: observer.x, y: observer.y },
-        targetCanvas: { x: target.x, y: target.y }
-      });
-      
+
       // Calculate current visibility and cover using the auto-visibility system
       const visibility = await this.#visibilitySystem.calculateVisibility(observer, target);
-      
-      console.log('PF2E Visioner | Validation check for override:', {
-        observer: observer.name,
-        target: target.name,
-        storedOverride: override,
-        storedFlags: {
-          hasCover: override.hasCover,
-          hasConcealment: override.hasConcealment,
-          state: override.state,
-          source: override.source
-        },
-        currentVisibility: visibility
-      });
       
       if (!visibility) return null;
 
@@ -284,44 +219,13 @@ export class OverrideValidationSystem {
       const currentlyConcealed = visibility.visibility === 'concealed' || visibility.visibility === 'hidden';
       const currentlyVisible = visibility.visibility === 'observed' || visibility.visibility === 'concealed';
 
-      console.log('PF2E Visioner | Cover calculation breakdown:', {
-        'visibility.cover': visibility.cover,
-        'visibility.cover !== "none"': visibility.cover !== 'none',
-        'currentlyHasCover result': currentlyHasCover,
-        'Expected result if no cover': false,
-        'Position analysis': `${target.name} at (${targetPos.x}, ${targetPos.y}) observed by ${observer.name} at (${observerPos.x}, ${observerPos.y})`
-      });
-
-      console.log('PF2E Visioner | Validation conditions:', {
-        stored: { hasCover: override.hasCover, hasConcealment: override.hasConcealment },
-        current: { hasCover: currentlyHasCover, concealed: currentlyConcealed, visible: currentlyVisible },
-        rawVisibility: visibility,
-        visibility: visibility?.visibility,
-        cover: visibility?.cover
-      });
-
-      // Enhanced debug logging for validation logic
-      console.log('PF2E Visioner | Detailed validation logic:', {
-        'override.hasCover': override.hasCover,
-        'currentlyHasCover': currentlyHasCover,
-        'override.hasCover && !currentlyHasCover': override.hasCover && !currentlyHasCover,
-        '!override.hasCover && currentlyHasCover': !override.hasCover && currentlyHasCover,
-        'cover calculation': {
-          rawCover: visibility?.cover,
-          coverIsNone: visibility?.cover === 'none',
-          coverIsNotNone: visibility?.cover !== 'none'
-        }
-      });
-
       const reasons = [];
 
       // Check if cover conditions have changed
       if (override.hasCover && !currentlyHasCover) {
-        console.log('PF2E Visioner | Validation reason: no longer has cover');
         reasons.push('has NO cover (override expected cover)');
       }
       if (!override.hasCover && currentlyHasCover) {
-        console.log('PF2E Visioner | Validation reason: now has cover');
         reasons.push('now has cover (override expected no cover)');
       }
 
@@ -374,7 +278,6 @@ export class OverrideValidationSystem {
       }
 
       if (reasons.length > 0) {
-        console.log('PF2E Visioner | Override validation FAILED - reasons:', reasons);
         return {
           shouldRemove: true,
           reason: reasons.join(' and '),
@@ -383,7 +286,6 @@ export class OverrideValidationSystem {
         };
       }
 
-      console.log('PF2E Visioner | Override validation PASSED - no reasons to remove');
       return null;
     } catch (error) {
       console.warn('PF2E Visioner | Error validating override:', error);
@@ -402,15 +304,6 @@ export class OverrideValidationSystem {
     const overrideData = invalidOverrides.map(({ observerId, targetId, override, reason }) => {
       const observer = canvas.tokens?.get(observerId);
       const target = canvas.tokens?.get(targetId);
-      
-      console.log('PF2E Visioner | Preparing dialog data for override:', {
-        observer: observer?.document?.name,
-        target: target?.document?.name,
-        reason,
-        storedState: override,
-        observerId,
-        targetId
-      });
       
       return {
         id: `${observerId}-${targetId}`,
@@ -432,9 +325,7 @@ export class OverrideValidationSystem {
 
     // Dynamically import the dialog
     try {
-      console.log('PF2E Visioner | Attempting to import OverrideValidationDialog...');
       const { OverrideValidationDialog } = await import('../../ui/override-validation-dialog.js');
-      console.log('PF2E Visioner | Successfully imported OverrideValidationDialog');
       
       // Show the dialog and wait for the user's decision
       const result = await OverrideValidationDialog.show(overrideData, 'Token Movement');
@@ -512,7 +403,6 @@ export class OverrideValidationSystem {
    * @param {string} tokenId - Token ID to validate
    */
   async debugValidateToken(tokenId) {
-    console.log('PF2E Visioner | 🔧 DEBUG: Manually triggering validation for token:', tokenId);
     await this.#validateOverridesForToken(tokenId);
   }
 }

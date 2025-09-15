@@ -19,9 +19,6 @@ export async function updateSingleVisibilityEffect(
 
   // Debug logging for Hidden effect creation
   const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-  if (debugMode && newVisibilityState === 'hidden') {
-    console.log(`${MODULE_ID} | ⚙️ PROCESSING HIDDEN: ${observerToken.name} → ${targetToken.name}`);
-  }
   // Determine receiver based on effectTarget
   const direction = options.direction || 'observer_to_target';
   const effectTarget =
@@ -102,9 +99,6 @@ export async function updateSingleVisibilityEffect(
     }
 
     if (operations.hidden.add) {
-      if (debugMode) {
-        console.log(`${MODULE_ID} | ✨ CREATING HIDDEN EFFECT on ${effectReceiverToken.name}`);
-      }
       if (!hiddenAggregate) {
         effectsToCreate.push(
           createAggregateEffectData('hidden', signature, {
@@ -163,11 +157,6 @@ export async function updateSingleVisibilityEffect(
       await effectReceiverToken.actor.updateEmbeddedDocuments('Item', effectsToUpdate);
     }
     if (effectsToCreate.length > 0) {
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | ✅ CREATED ${effectsToCreate.length} Hidden effects on ${effectReceiverToken.name}`,
-        );
-      }
       await effectReceiverToken.actor.createEmbeddedDocuments('Item', effectsToCreate);
     }
   });

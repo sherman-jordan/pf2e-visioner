@@ -67,12 +67,6 @@ export async function setVisibilityBetween(
 
   if (options.skipEphemeralUpdate) return;
   try {
-    // Debug logging for Hidden effect application
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode && state === 'hidden') {
-      console.log(`${MODULE_ID} | 🎭 HIDDEN EFFECT: ${observer.name} → ${target.name}`);
-    }
-
     // Set flag to prevent auto-visibility system from reacting to its own effect changes
     if (autoVisibilitySystem) {
       autoVisibilitySystem._setUpdatingEffects(true);

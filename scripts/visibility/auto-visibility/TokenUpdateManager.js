@@ -64,16 +64,6 @@ export class OptimizedTokenUpdateManager {
     const updateOnMovement = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnMovement');
     const updateOnLighting = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting');
 
-    // Debug: Log ALL token updates to see what we're getting
-    if (debugMode) {
-      console.log(`${MODULE_ID} | Token update for ${tokenDoc.name}:`, {
-        positionChanged,
-        lightChanged,
-        actorChanged,
-        changes,
-      });
-    }
-
     let significantPositionChange = false;
     if (positionChanged && updateOnMovement) {
       significantPositionChange = this.#isSignificantPositionChange(tokenDoc, changes);
@@ -83,21 +73,7 @@ export class OptimizedTokenUpdateManager {
     // Handle actor changes (always processed if movement updates are enabled)
     const shouldUpdateForActor = actorChanged && updateOnMovement;
 
-    // Debug logging for light changes
-    if (debugMode && lightChanged) {
-      console.log(`${MODULE_ID} | Light change detected for ${tokenDoc.name}:`, changes.light);
-    }
-
     if (significantPositionChange || shouldUpdateForLighting || shouldUpdateForActor) {
-      if (debugMode) {
-        const reasons = [];
-        if (significantPositionChange) reasons.push('significant movement');
-        if (shouldUpdateForLighting) reasons.push('lighting change');
-        if (shouldUpdateForActor) reasons.push('actor change');
-        console.log(
-          `${MODULE_ID} | Triggering IMMEDIATE update for ${tokenDoc.name}: ${reasons.join(', ')}`,
-        );
-      }
 
       // IMMEDIATE update - no delays
       this.updateTokenVisibility(tokenDoc);
@@ -140,13 +116,6 @@ export class OptimizedTokenUpdateManager {
     const distance = Math.sqrt(Math.pow(newX - currentX, 2) + Math.pow(newY - currentY, 2));
     const significantChange = distance >= threshold;
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | Movement distance for ${tokenDoc.name}: ${distance.toFixed(1)}px (threshold: ${threshold.toFixed(1)}px, significant: ${significantChange})`,
-      );
-    }
-
     return significantChange;
   }
 
@@ -160,21 +129,10 @@ export class OptimizedTokenUpdateManager {
     this.#processingTokens.add(tokenDoc.id);
 
     try {
-      const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-      if (debugMode) {
-        console.log(
-          `${MODULE_ID} | IMMEDIATE visibility update for ${tokenDoc.name || tokenDoc.id}`,
-        );
-      }
-
       const tokens = canvas.tokens?.placeables?.filter((t) => t.actor) || [];
       const targetToken = tokens.find((t) => t.document.id === tokenDoc.id);
 
       if (!targetToken) {
-        if (debugMode) {
-          console.log(`${MODULE_ID} | Token not found on canvas: ${tokenDoc.id}`);
-        }
         return;
       }
 
@@ -192,14 +150,6 @@ export class OptimizedTokenUpdateManager {
   async updateAllTokensVisibility(tokens) {
     const maxTokensToProcess = 50; // Increased limit since we're not throttling
     const tokensToProcess = tokens.slice(0, maxTokensToProcess);
-
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
-    if (debugMode) {
-      console.log(
-        `${MODULE_ID} | Processing ${tokensToProcess.length} tokens for IMMEDIATE visibility updates`,
-      );
-    }
 
     // Process all updates immediately
     for (const observerToken of tokensToProcess) {

@@ -76,25 +76,10 @@ export class AvsOverrideManager {
         if (isSneakAction) {
           // One-way only
           await this.onAVSOverride(payload);
-          console.log('PF2E Visioner | ✅ Set AVS sneak override (one-way):', {
-            observer: observer.name,
-            target: target.name,
-            state,
-            hasCover: payload.hasCover,
-            hasConcealment: payload.hasConcealment,
-          });
         } else {
           // Symmetric
           await this.onAVSOverride(payload);
           await this.onAVSOverride({ ...payload, observer: target, target: observer });
-          console.log('PF2E Visioner | ✅ Set AVS override (symmetric):', {
-            observer: observer.name,
-            target: target.name,
-            state,
-            hasCover: payload.hasCover,
-            hasConcealment: payload.hasConcealment,
-            source: payload.source,
-          });
         }
       }
     } catch (error) {

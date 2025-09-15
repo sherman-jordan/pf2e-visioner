@@ -46,7 +46,6 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     
     // Prepare invalid overrides data for display
   const overrides = this.invalidOverrides.map(override => {
-      console.log('PF2E Visioner | Processing override for dialog:', override);
       const src = String(override.source || 'manual_action');
       let badgeLabel = 'Manual Override';
       let badgeIcon = 'fa-user-secret';
@@ -169,7 +168,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       targetHeader
     };
     
-    console.log('PF2E Visioner | Dialog context prepared:', result);
+    
     return result;
   }
 
@@ -208,16 +207,16 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       });
     });
 
-    console.log('PF2E Visioner | Override validation dialog rendered with enhanced UI');
+    
   }
 
   async _onKeepIndividual(overrideId) {
-    console.log('PF2E Visioner | Keep individual override:', overrideId);
+    
     
     // Find the override by ID
     const override = this.invalidOverrides.find(o => `${o.observerId}-${o.targetId}` === overrideId);
     if (!override) {
-      console.warn('PF2E Visioner | Override not found:', overrideId);
+      
       return;
     }
 
@@ -261,12 +260,12 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
   }
 
   async _onClearIndividual(overrideId) {
-    console.log('PF2E Visioner | Clear individual override:', overrideId);
+    
     
     // Find the override by ID
     const override = this.invalidOverrides.find(o => `${o.observerId}-${o.targetId}` === overrideId);
     if (!override) {
-      console.warn('PF2E Visioner | Override not found:', overrideId);
+      
       return;
     }
 
@@ -318,7 +317,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
   }
 
   async _onClearAll() {
-    console.log('PF2E Visioner | Clear All clicked');
+    
     
     // Close dialog first
     await this.close();
@@ -341,7 +340,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
   }
 
   async _onKeepAll() {
-    console.log('PF2E Visioner | Keep All clicked');
+    
     await this.close();
     ui.notifications.info('Kept all current overrides');
     try {
@@ -358,15 +357,10 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
    */
   static async show(invalidOverrides, tokenName) {
     if (!invalidOverrides?.length) {
-      console.log('PF2E Visioner | No invalid overrides to show dialog for');
       return null;
     }
 
-    console.log('PF2E Visioner | Showing override validation dialog:', {
-      tokenName,
-      overrideCount: invalidOverrides.length,
-      overrides: invalidOverrides
-    });
+    
 
     const dialog = new OverrideValidationDialog({
       invalidOverrides,

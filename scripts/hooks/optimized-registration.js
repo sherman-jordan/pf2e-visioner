@@ -9,16 +9,16 @@ import { MODULE_ID } from '../constants.js';
  * Register optimized hooks with no artificial delays
  */
 export function registerHooks() {
-  console.log(`${MODULE_ID} | Registering optimized hooks (zero delays)`);
+  
 
   // Optimized controlToken hook - NO DEBOUNCING
-  Hooks.on('controlToken', async (_token, _controlled) => {
+  Hooks.on('controlToken', async () => {
     try {
       // Immediate visual update - no timeout/debounce
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized updateToken hook - NO THROTTLING
@@ -27,7 +27,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized createToken hook - IMMEDIATE
@@ -36,7 +36,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized deleteToken hook - IMMEDIATE
@@ -45,16 +45,16 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized renderTokenConfig hook - IMMEDIATE
-  Hooks.on('renderTokenConfig', async (config, _html, _options) => {
+  Hooks.on('renderTokenConfig', async (config) => {
     try {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = config.token?.id || canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized updateWall hook - IMMEDIATE
@@ -63,7 +63,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized createWall hook - IMMEDIATE
@@ -72,7 +72,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized deleteWall hook - IMMEDIATE + cleanup
@@ -86,7 +86,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized renderWallConfig hook - IMMEDIATE
@@ -95,7 +95,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized lighting update hooks - IMMEDIATE
@@ -104,7 +104,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   Hooks.on('createAmbientLight', async () => {
@@ -112,7 +112,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   Hooks.on('deleteAmbientLight', async () => {
@@ -120,7 +120,7 @@ export function registerHooks() {
       const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+  } catch {}
   });
 
   // Optimized scene hooks - IMMEDIATE
@@ -132,9 +132,9 @@ export function registerHooks() {
           const { updateWallVisuals } = await import('../services/optimized-visual-effects.js');
           const id = canvas.tokens.controlled?.[0]?.id || null;
           await updateWallVisuals(id);
-        } catch (_) {}
+  } catch {}
       });
-    } catch (_) {}
+  } catch {}
   });
 
   // UI hooks for token tool updates - IMMEDIATE
@@ -155,9 +155,9 @@ export function registerHooks() {
           }
 
           ui.controls.render();
-        } catch (_) {}
+  } catch {}
       });
-    } catch (_) {}
+  } catch {}
   };
 
   Hooks.on('getSceneControlButtons', refreshTokenTool);
@@ -195,5 +195,5 @@ export function registerHooks() {
     } catch (_) {}
   });
 
-  console.log(`${MODULE_ID} | Optimized hooks registered successfully (zero delays)`);
+  
 }

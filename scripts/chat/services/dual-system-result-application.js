@@ -30,12 +30,6 @@ class DualSystemResultApplication {
    */
   async applySneakResults(sneakResults, options = {}) {
     const transactionId = this._generateTransactionId();
-    
-    console.log('PF2E Visioner | Applying sneak results via dual system:', {
-      resultCount: sneakResults.length,
-      transactionId,
-      options
-    });
 
     const applicationResult = {
       success: false,
@@ -87,11 +81,6 @@ class DualSystemResultApplication {
       
       for (const [observerId, data] of changesByObserver) {
         try {
-          console.log('PF2E Visioner | Applying visibility changes for observer:', {
-            observerId,
-            observerName: data.observer.name,
-            changeCount: data.changes.length
-          });
 
           // Ensure AVS pair override flags are set BEFORE we apply visibility changes.
           // This prevents the Auto-Visibility System from recalculating and clobbering
@@ -193,13 +182,6 @@ class DualSystemResultApplication {
       });
 
       applicationResult.success = applicationResult.errors.length === 0;
-      
-      console.log('PF2E Visioner | Sneak results application completed:', {
-        success: applicationResult.success,
-        changesApplied: totalChangesApplied,
-        errors: applicationResult.errors.length,
-        warnings: applicationResult.warnings.length
-      });
 
       return applicationResult;
     } catch (error) {
@@ -222,7 +204,6 @@ class DualSystemResultApplication {
         return false;
       }
 
-      console.log('PF2E Visioner | Rolling back transaction:', transactionId);
 
       // For sneak actions, rollback means restoring the old visibility states
       const changesByObserver = new Map();
@@ -264,7 +245,6 @@ class DualSystemResultApplication {
       // Remove transaction from cache
       this._activeTransactions.delete(transactionId);
       
-      console.log('PF2E Visioner | Transaction rollback completed:', transactionId);
       return true;
     } catch (error) {
       console.error('PF2E Visioner | Rollback failed:', error);
@@ -288,17 +268,12 @@ class DualSystemResultApplication {
     for (const transactionId of expiredTransactions) {
       this._activeTransactions.delete(transactionId);
     }
-
-    if (expiredTransactions.length > 0) {
-      console.debug('PF2E Visioner | Cleaned up', expiredTransactions.length, 'expired transactions');
-    }
   }
 }
 
 const dualSystemApplication = new DualSystemResultApplication();
 
 // Debug: Log that this file was loaded
-console.log('PF2E Visioner | dual-system-result-application.js loaded successfully');
 
 // Set up periodic cleanup (every 5 minutes)
 setInterval(() => {

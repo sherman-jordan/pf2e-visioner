@@ -96,7 +96,6 @@ export class SneakActionHandler extends ActionHandlerBase {
    */
   async _initializeSneakVisibility(actionData) {
     try {
-      console.log('PF2E Visioner | Initializing sneak visibility states...');
       
       // Get the sneaking token
       const sneakingToken = this._getSneakingToken(actionData);
@@ -107,33 +106,27 @@ export class SneakActionHandler extends ActionHandlerBase {
 
       // Set sneak flag on the token to indicate it's currently sneaking
       await sneakingToken.document.setFlag('pf2e-visioner', SNEAK_FLAGS.SNEAK_ACTIVE, true);
-      console.log('PF2E Visioner | Set sneak-active flag on token:', sneakingToken.name);
 
       // Get all observer tokens
       const observerTokens = canvas.tokens.placeables.filter(t => 
         t.id !== sneakingToken.id && t.actor
       );
       
-      console.log('PF2E Visioner | Found observer tokens for visibility initialization:', observerTokens.map(t => t.name));
 
       // Import the visibility calculator to get proper AVS calculations
-      console.log('PF2E Visioner | About to import visibility calculator...');
       
       let visibilityModule;
       let optimizedVisibilityCalculator;
       
       try {
         visibilityModule = await import('../../../visibility/auto-visibility/index.js');
-        console.log('PF2E Visioner | Visibility module imported:', Object.keys(visibilityModule));
         
         optimizedVisibilityCalculator = visibilityModule.optimizedVisibilityCalculator;
-        console.log('PF2E Visioner | Visibility calculator extracted:', typeof optimizedVisibilityCalculator);
         
         if (!optimizedVisibilityCalculator) {
           throw new Error('optimizedVisibilityCalculator is undefined');
         }
         
-        console.log('PF2E Visioner | Visibility calculator imported successfully');
       } catch (importError) {
         console.error('PF2E Visioner | Import error:', importError);
         throw importError;
@@ -141,7 +134,6 @@ export class SneakActionHandler extends ActionHandlerBase {
       
       // Check if the calculator is properly initialized
       const status = optimizedVisibilityCalculator.getStatus();
-      console.log('PF2E Visioner | Visibility calculator status:', status);
       
       if (!status.initialized) {
         throw new Error('Visibility calculator is not initialized');
@@ -151,7 +143,6 @@ export class SneakActionHandler extends ActionHandlerBase {
       const { getVisibilityMap, setVisibilityMap } = await import('../../../stores/visibility-map.js');
       
       // Set visibility for sneak: ONLY affect how observers see the sneaking token, NOT how sneaking token sees observers
-      console.log('PF2E Visioner | Starting visibility calculations for', observerTokens.length, 'observers');
       for (const observer of observerTokens) {
         try {
           // Calculate proper visibility using AVS
@@ -174,11 +165,6 @@ export class SneakActionHandler extends ActionHandlerBase {
             sneakingTokenPosition,
           );
 
-          console.log('PF2E Visioner | AVS calculated visibility:', {
-            sneakingToken: sneakingToken.name,
-            observer: observer.name,
-            observerToSneaking
-          });
 
           // DO NOT set how the sneaking token sees the observer - they should see normally
           // Sneak only affects how others see the sneaking token, not how the sneaking token sees others
@@ -187,20 +173,17 @@ export class SneakActionHandler extends ActionHandlerBase {
           const observerVisibilityMap = getVisibilityMap(observer);
           observerVisibilityMap[sneakingToken.document.id] = observerToSneaking;
           await setVisibilityMap(observer, observerVisibilityMap);
-          console.log(`PF2E Visioner | Set observer visibility: ${observer.name} → ${sneakingToken.name}: ${observerToSneaking}`);
         } catch (observerError) {
           console.error('PF2E Visioner | Error processing observer:', observer.name, observerError);
         }
       }
 
-      console.log('PF2E Visioner | Sneak visibility initialization completed successfully');
       
       // Manually trigger AVS to recalculate specifically for sneaking tokens
       // This ensures AVS processes the sneaking token even when it's hidden by Foundry
       try {
         const { eventDrivenVisibilitySystem } = await import('../../../visibility/auto-visibility/EventDrivenVisibilitySystem.js');
         if (eventDrivenVisibilitySystem) {
-          console.log('PF2E Visioner | Manually triggering AVS recalculation for sneaking tokens');
           await eventDrivenVisibilitySystem.recalculateSneakingTokens();
         }
       } catch (avsError) {
@@ -227,24 +210,16 @@ export class SneakActionHandler extends ActionHandlerBase {
    */
   async _captureStartPositions(actionData, storedStartPosition = null) {
     try {
-      console.debug('PF2E Visioner | _captureStartPositions called for action:', {
-        actor: actionData.actor?.name,
-        messageId: actionData.messageId,
-        sessionId: this._currentSessionId,
-        hasStoredPosition: !!storedStartPosition,
-        storedCoordinates: storedStartPosition ? `(${storedStartPosition.x}, ${storedStartPosition.y})` : 'none',
-      });
+
 
       // Skip if we already have a session started
       if (this._currentSessionId) {
-        console.debug('PF2E Visioner | Sneak session already started, skipping position capture');
         return;
       }
 
       // Store the provided stored position for later use
       if (storedStartPosition) {
         actionData.storedStartPosition = storedStartPosition;
-        console.debug('PF2E Visioner | Stored start position preserved for later use:', storedStartPosition);
       } else {
         // Try to get stored position from message flags if not provided directly
         const message = actionData?.message || game.messages.get(actionData?.messageId);
@@ -252,14 +227,11 @@ export class SneakActionHandler extends ActionHandlerBase {
         // Check for sneakStartPosition first (from "Start Sneak" button), then rollTimePosition
         if (message?.flags?.['pf2e-visioner']?.sneakStartPosition) {
           actionData.storedStartPosition = message.flags['pf2e-visioner'].sneakStartPosition;
-          console.debug('PF2E Visioner | Retrieved stored position from sneakStartPosition flag:', actionData.storedStartPosition);
         } else if (message?.flags?.['pf2e-visioner']?.rollTimePosition) {
           actionData.storedStartPosition = message.flags['pf2e-visioner'].rollTimePosition;
-          console.debug('PF2E Visioner | Retrieved stored position from rollTimePosition flag:', actionData.storedStartPosition);
         }
       }
 
-      console.debug('PF2E Visioner | Position capture completed - data stored for SneakCore');
     } catch (error) {
       console.warn('PF2E Visioner | Error in position capture setup:', error);
     }
@@ -406,12 +378,6 @@ export class SneakActionHandler extends ActionHandlerBase {
     return final;
   }
   async analyzeOutcome(actionData, subject) {
-    console.log('PF2E Visioner | ⭐ analyzeOutcome START called for:', {
-      actor: actionData.actor?.name,
-      subject: subject?.name,
-      messageId: actionData.messageId,
-      sessionId: this._currentSessionId,
-    });
 
     try {
       // Initialize sneak session if not already started
@@ -572,18 +538,6 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     // Calculate roll information (stealth vs observer's perception DC)
     const baseTotal = Number(actionData?.roll?.total ?? 0);
-    const diceTotal = Number(
-      actionData?.roll?.dice?.[0]?.total ?? actionData?.roll?.terms?.[0]?.total ?? 0,
-    );
-    
-    console.log('PF2E Visioner | Sneak roll data:', {
-      baseTotal,
-      diceTotal,
-      rollData: actionData?.roll,
-      observerName: subject?.name,
-      hasCover: !!result?.autoCover,
-      coverState: result?.autoCover?.state
-    });
 
     // Use shared utility to calculate stealth roll totals with cover adjustments
     const { total, originalTotal, baseRollTotal } = calculateStealthRollTotals(
@@ -736,19 +690,6 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     // Simple position qualification check
     const positionQualifies = this._checkPositionQualification(positionTransition);
-
-    console.log('PF2E Visioner | Final sneak outcome values:', {
-      observer: subject?.name,
-      rollTotal: baseTotal,
-      originalRollTotal: total,
-      margin: baseTotal - finalDC,
-      adjustedMargin: finalMargin,
-      baseTotal,
-      total,
-      originalTotal,
-      finalDC,
-      dc
-    });
 
     return {
       token: subject,

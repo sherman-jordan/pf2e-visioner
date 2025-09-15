@@ -78,8 +78,6 @@ export class VisionAnalyzer {
       return { hasVision: false, hasDarkvision: false, hasLowLightVision: false };
     }
 
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
-
     let hasVision = true;
     let hasDarkvision = false;
     let hasLowLightVision = false;
@@ -96,9 +94,6 @@ export class VisionAnalyzer {
       // Blinded overrides dazzled and disables all vision
       if (isBlinded) {
         hasVision = false;
-        if (debugMode) {
-          console.log(`${MODULE_ID} | ${actor.name} is blinded - no vision`);
-        }
       }
 
       // Check if actor has vision at all
@@ -164,9 +159,6 @@ export class VisionAnalyzer {
         lowLightRange = flags['low-light-vision'].range || Infinity;
       }
     } catch (error) {
-      if (debugMode) {
-        console.warn(`${MODULE_ID} | Error getting vision capabilities for ${actor.name}:`, error);
-      }
     }
 
     const result = {
@@ -178,10 +170,6 @@ export class VisionAnalyzer {
       isBlinded,
       isDazzled,
     };
-
-    if (debugMode) {
-      console.log(`${MODULE_ID} | Vision capabilities for ${actor.name}:`, result);
-    }
 
     return result;
   }

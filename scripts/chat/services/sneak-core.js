@@ -144,11 +144,6 @@ export class SneakCore {
    * @returns {Promise<Object>} Application result
    */
   async applyResults(sessionId, outcomes, options = {}) {
-    console.log('PF2E Visioner | SneakCore.applyResults called:', {
-      sessionId,
-      outcomesCount: outcomes?.length || 0,
-      options
-    });
     
     const state = this._activeStates.get(sessionId);
     if (!state) {
@@ -158,23 +153,10 @@ export class SneakCore {
 
     try {
       // Convert outcomes to sneak results format
-      console.log('PF2E Visioner | Converting outcomes to sneak results...');
       const sneakResults = this._convertToSneakResults(outcomes, state);
-      console.log('PF2E Visioner | Converted sneakResults:', sneakResults);
 
       // Apply using dual system (only visibility changes for sneak)
-      console.log('PF2E Visioner | About to import dual-system-result-application.js...');
       const { default: dualSystemApplication } = await import('./dual-system-result-application.js');
-      console.log('PF2E Visioner | Successfully imported dual-system-result-application.js');
-      console.log('PF2E Visioner | About to call applySneakResults with:', {
-        sneakResultsCount: sneakResults.length,
-        sneakResults: sneakResults,
-        options: {
-          direction: 'observer_to_target',
-          skipCoverChanges: true,
-          ...options
-        }
-      });
       
       const result = await dualSystemApplication.applySneakResults(sneakResults, {
         direction: 'observer_to_target',
@@ -182,12 +164,9 @@ export class SneakCore {
         ...options
       });
 
-      console.log('PF2E Visioner | applySneakResults returned:', result);
-
       if (result.success) {
         // Cache for revert functionality
         this._cacheApplicationResult(sessionId, result);
-        console.debug('PF2E Visioner | Sneak results applied successfully:', sessionId);
       }
 
       return result;

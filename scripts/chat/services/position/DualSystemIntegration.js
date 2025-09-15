@@ -121,7 +121,6 @@ export class DualSystemIntegration {
 
       result.success = true;
       result.data = visibilityState;
-      debugger;
       return result;
     } catch (error) {
       const errorResult = await errorHandlingService.handleSystemError(SYSTEM_TYPES.AVS, error, {
@@ -242,69 +241,69 @@ export class DualSystemIntegration {
    * @param {Object} options - Additional options
    * @returns {Promise<CombinedSystemState>} Combined system state
    */
-    async getCombinedSystemState(observerToken, targetToken, options = {}) {
-        try {
-            // Get both AVS and Auto-Cover states
-            let avsResult, coverResult;
-            
-            try {
-                avsResult = await this.getAVSState(observerToken, targetToken, options);
-            } catch (avsError) {
-                console.warn('PF2E Visioner: AVS failed, using fallback', avsError);
-                avsResult = {
-                    success: false,
-                    data: 'observed',
-                    error: avsError.message,
-                    fallbackUsed: true,
-                    source: 'fallback'
-                };
-            }
-            
-            try {
-                coverResult = await this.getAutoCoverState(observerToken, targetToken, options);
-            } catch (autoCoverError) {
-                console.warn('PF2E Visioner: Auto-Cover failed, using fallback', autoCoverError);
-                coverResult = {
-                    success: false,
-                    data: { state: 'none', bonus: 0 },
-                    error: autoCoverError.message,
-                    fallbackUsed: true,
-                    source: 'fallback'
-                };
-            }
-            
-            // Calculate combined effective visibility and stealth bonus
-            const effectiveVisibility = this._combineSystemStates(avsResult.data, coverResult.data.state);
-            const stealthBonus = coverResult.data.bonus || 0;
-            
-            return {
-                avsResult,
-                coverResult,
-                effectiveVisibility,
-                stealthBonus
-            };
-        } catch (error) {
-            console.error('PF2E Visioner: Combined system state failed', error);
-            return {
-                avsResult: {
-                    success: false,
-                    data: 'observed',
-                    error: error.message,
-                    fallbackUsed: true,
-                    source: 'fallback'
-                },
-                coverResult: {
-                    success: false,
-                    data: { state: 'none', bonus: 0 },
-                    error: error.message,
-                    fallbackUsed: true,
-                    source: 'fallback'
-                },
-                effectiveVisibility: 'observed',
-                stealthBonus: 0
-            };
-        }
-    }  /**
+  async getCombinedSystemState(observerToken, targetToken, options = {}) {
+    try {
+      // Get both AVS and Auto-Cover states
+      let avsResult, coverResult;
+
+      try {
+        avsResult = await this.getAVSState(observerToken, targetToken, options);
+      } catch (avsError) {
+        console.warn('PF2E Visioner: AVS failed, using fallback', avsError);
+        avsResult = {
+          success: false,
+          data: 'observed',
+          error: avsError.message,
+          fallbackUsed: true,
+          source: 'fallback',
+        };
+      }
+
+      try {
+        coverResult = await this.getAutoCoverState(observerToken, targetToken, options);
+      } catch (autoCoverError) {
+        console.warn('PF2E Visioner: Auto-Cover failed, using fallback', autoCoverError);
+        coverResult = {
+          success: false,
+          data: { state: 'none', bonus: 0 },
+          error: autoCoverError.message,
+          fallbackUsed: true,
+          source: 'fallback',
+        };
+      }
+
+      // Calculate combined effective visibility and stealth bonus
+      const effectiveVisibility = this._combineSystemStates(avsResult.data, coverResult.data.state);
+      const stealthBonus = coverResult.data.bonus || 0;
+
+      return {
+        avsResult,
+        coverResult,
+        effectiveVisibility,
+        stealthBonus,
+      };
+    } catch (error) {
+      console.error('PF2E Visioner: Combined system state failed', error);
+      return {
+        avsResult: {
+          success: false,
+          data: 'observed',
+          error: error.message,
+          fallbackUsed: true,
+          source: 'fallback',
+        },
+        coverResult: {
+          success: false,
+          data: { state: 'none', bonus: 0 },
+          error: error.message,
+          fallbackUsed: true,
+          source: 'fallback',
+        },
+        effectiveVisibility: 'observed',
+        stealthBonus: 0,
+      };
+    }
+  } /**
    * Batch processing for multiple token pairs with v13 performance optimizations
    * @param {Token} observer - Observer token
    * @param {Array<Token>} targets - Array of target tokens
@@ -421,7 +420,7 @@ export class DualSystemIntegration {
     if (observer?.document?.id === target?.document?.id) {
       return observer?.document?.id && canvas?.tokens?.get(observer.document.id);
     }
-    
+
     // Different tokens validation
     return (
       observer?.document?.id &&
@@ -508,7 +507,6 @@ export class DualSystemIntegration {
     }
   }
 
-
   /**
    * Detects AVS visibility using existing utilities
    * @param {Token} observer - Observer token
@@ -521,11 +519,16 @@ export class DualSystemIntegration {
     try {
       // Check if we have stored position information for historical visibility calculation
       const storedSneakingPosition = options?.storedSneakingPosition;
-      
+
       if (storedSneakingPosition && target) {
-        return await this._detectVisibilityWithStoredPosition(observer, target, storedSneakingPosition, options);
+        return await this._detectVisibilityWithStoredPosition(
+          observer,
+          target,
+          storedSneakingPosition,
+          options,
+        );
       }
-      
+
       // Use current positions for normal visibility detection
       const { getVisibilityBetween } = await import('../../../utils.js');
       return getVisibilityBetween(observer, target) || 'observed';
@@ -548,17 +551,17 @@ export class DualSystemIntegration {
     try {
       // For now, use a simplified visibility calculation based on line of sight and lighting
       // This could be enhanced to use more sophisticated AVS logic with stored positions
-      
+
       const observerCenter = observer.center;
       const storedSneakingCenter = {
         x: storedPosition.x + (target.document.width * canvas.grid.size) / 2,
-        y: storedPosition.y + (target.document.height * canvas.grid.size) / 2
+        y: storedPosition.y + (target.document.height * canvas.grid.size) / 2,
       };
-      
+
       // Check line of sight using wall collision
       const ray = new foundry.canvas.geometry.Ray(observerCenter, storedSneakingCenter);
       let hasLineOfSight = true;
-      
+
       try {
         if (typeof canvas.walls.testCollision === 'function') {
           // If walls block the ray, there's no line of sight
@@ -568,22 +571,25 @@ export class DualSystemIntegration {
           hasLineOfSight = !canvas.walls.checkCollision(ray, { type: 'sight' });
         }
       } catch (collisionError) {
-        console.warn('PF2E Visioner | Sight collision detection failed, defaulting to visible', collisionError);
+        console.warn(
+          'PF2E Visioner | Sight collision detection failed, defaulting to visible',
+          collisionError,
+        );
         hasLineOfSight = true;
       }
-      
+
       // Basic visibility determination
       const visibilityState = hasLineOfSight ? 'observed' : 'hidden';
-      
+
       console.debug('PF2E Visioner | Visibility detection with stored position:', {
         observer: observer.name,
         storedSneakingPosition: `(${storedPosition.x}, ${storedPosition.y})`,
         storedSneakingCenter: storedSneakingCenter,
         observerCenter: observerCenter,
         hasLineOfSight,
-        visibilityState
+        visibilityState,
       });
-      
+
       return visibilityState;
     } catch (error) {
       console.warn(`${MODULE_ID} | Stored position visibility detection failed:`, error);
@@ -622,9 +628,9 @@ export class DualSystemIntegration {
         observerName: observer?.name,
         targetName: target?.name,
         autoCoverEnabled: this._autoCoverSystem?.isEnabled(),
-        hasStoredPosition: !!options?.storedSneakingPosition
+        hasStoredPosition: !!options?.storedSneakingPosition,
       });
-      
+
       if (!this._autoCoverSystem?.isEnabled()) {
         console.debug('PF2E Visioner | Auto-Cover system disabled, returning none');
         return 'none';
@@ -632,17 +638,23 @@ export class DualSystemIntegration {
 
       // Check if we have stored position information
       const storedSneakingPosition = options?.storedSneakingPosition;
-      
-      // If we have stored positions and we're not explicitly requesting current position for cover, 
+
+      // If we have stored positions and we're not explicitly requesting current position for cover,
       // use fallback collision detection with custom coordinates
       if (storedSneakingPosition && target && !options?.useCurrentPositionForCover) {
         console.debug('PF2E Visioner | Using stored position cover detection');
-        return await this._detectCoverWithStoredPosition(observer, target, storedSneakingPosition, options);
+        return await this._detectCoverWithStoredPosition(
+          observer,
+          target,
+          storedSneakingPosition,
+          options,
+        );
       }
 
       // Use Auto-Cover system detection with v13 wall and geometry APIs (current position)
       console.debug('PF2E Visioner | Using current position cover detection');
-      const detectedCover = this._autoCoverSystem.detectCoverBetweenTokens(observer, target, options) || 'none';
+      const detectedCover =
+        this._autoCoverSystem.detectCoverBetweenTokens(observer, target, options) || 'none';
       console.debug('PF2E Visioner | Auto-Cover system result:', detectedCover);
       return detectedCover;
     } catch (error) {
@@ -666,11 +678,11 @@ export class DualSystemIntegration {
       const observerCenter = observer.center;
       const storedSneakingCenter = {
         x: storedPosition.x + (target.document.width * canvas.grid.size) / 2,
-        y: storedPosition.y + (target.document.height * canvas.grid.size) / 2
+        y: storedPosition.y + (target.document.height * canvas.grid.size) / 2,
       };
-      
+
       const ray = new foundry.canvas.geometry.Ray(observerCenter, storedSneakingCenter);
-      
+
       // Use FoundryVTT v13+ collision detection
       let hasWallCollision = false;
       try {
@@ -681,7 +693,10 @@ export class DualSystemIntegration {
           hasWallCollision = canvas.walls.checkCollision(ray, { type: 'move' });
         }
       } catch (collisionError) {
-        console.warn('PF2E Visioner | Wall collision detection failed, defaulting to no collision', collisionError);
+        console.warn(
+          'PF2E Visioner | Wall collision detection failed, defaulting to no collision',
+          collisionError,
+        );
         hasWallCollision = false;
       }
 
@@ -693,9 +708,9 @@ export class DualSystemIntegration {
         storedSneakingCenter: storedSneakingCenter,
         observerCenter: observerCenter,
         hasWallCollision,
-        coverState
+        coverState,
       });
-      
+
       return coverState;
     } catch (error) {
       console.warn(`${MODULE_ID} | Stored position cover detection failed:`, error);
@@ -740,7 +755,6 @@ export class DualSystemIntegration {
     // Otherwise, return the AVS visibility state
     return avsVisibility;
   }
-
 
   /**
    * Creates error state for failed operations

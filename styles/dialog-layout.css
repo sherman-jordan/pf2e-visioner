@@ -1715,6 +1715,34 @@
   border-color: var(--color-border-highlight);
 }
 
+/* Remove Overrides (danger / destructive accent) */
+.bulk-action-btn.apply-visibility-remove-overrides {
+  background: var(--pf2e-visioner-danger-light); /* subtle red-tinted background */
+  color: var(--pf2e-visioner-danger);
+  border-color: var(--pf2e-visioner-danger);
+  position: relative;
+  overflow: hidden; /* allow decorative focus ring */
+}
+
+.bulk-action-btn.apply-visibility-remove-overrides:hover:not(:disabled) {
+  background: var(--pf2e-visioner-danger);
+  color: #fff;
+  border-color: var(--pf2e-visioner-danger-hover);
+  box-shadow: 0 2px 6px rgba(244, 67, 54, 0.4);
+}
+
+.bulk-action-btn.apply-visibility-remove-overrides:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--pf2e-visioner-danger-light), 0 0 0 4px var(--pf2e-visioner-danger);
+}
+
+.bulk-action-btn.apply-visibility-remove-overrides:disabled {
+  background: var(--pf2e-visioner-danger-lighter);
+  color: var(--pf2e-visioner-danger);
+  opacity: 0.65;
+  box-shadow: none;
+}
+
 /* Row action buttons styling */
 .row-action-btn {
   width: 30px;

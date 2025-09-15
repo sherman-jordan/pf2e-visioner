@@ -247,7 +247,7 @@ export class AvsOverrideManager {
   }
 
   // Consequences: clear pair overrides for provided pairs (both directions for safety)
-  static async clearForConsequences(observer, targets) {
+  static async clearForConsequences(observer, targets, { refresh = true } = {}) {
     const arr = Array.isArray(targets) ? targets : [targets].filter(Boolean);
     for (const tgt of arr) {
       try {
@@ -260,6 +260,7 @@ export class AvsOverrideManager {
         console.warn('PF2E Visioner | Failed to clear AVS override for consequences:', e);
       }
     }
+    if (refresh) await this.#refreshSystems({ scope: 'batch', reason: 'clear-consequences' });
     return true;
   }
 
@@ -270,6 +271,60 @@ export class AvsOverrideManager {
     // Mark as sneak so setAVSPairOverrides enforces one-way semantics
     await this.setPairOverrides(observer, map, { source: 'sneak_action', ...options });
     return true;
+  }
+
+  /**
+   * Centralized post-mutation refresh for perception, token visuals, indicators, and dialogs.
+   * Kept private to avoid accidental external heavy refresh calls; callers opt-in via method params.
+   * Skips expensive work under Jest or if canvas not ready.
+   */
+  static async #refreshSystems({ scope = 'pair', reason = 'avs-override-changed' } = {}) {
+    // Avoid during tests (unit tests mock minimal canvas) unless explicitly forced in future
+    if (globalThis.jest) return;
+    if (!globalThis.canvas) return;
+    try {
+      // 1. Perception refresh (optimized if available)
+      try {
+        const { forceRefreshEveryonesPerception } = await import('../../../services/optimized-socket.js');
+        await forceRefreshEveryonesPerception();
+      } catch {
+        try {
+          const { refreshLocalPerception } = await import('../../../services/socket.js');
+          refreshLocalPerception();
+        } catch { }
+      }
+
+      // 2. Token visuals (safe if no dice animation)
+      try {
+        const { updateTokenVisuals } = await import('../../../services/visual-effects.js');
+        await updateTokenVisuals();
+      } catch { }
+
+      // 3. Hover indicators: clear so they repopulate lazily
+      try {
+        const mod = await import('../../../services/hover-tooltips.js');
+        if (typeof mod.hideAllVisibilityIndicators === 'function') {
+          mod.hideAllVisibilityIndicators();
+        }
+      } catch { }
+
+      try {
+        const mod = await import('../../../ui/override-validation-indicator.js');
+        if (typeof mod.hide === 'function') {
+          mod.hide();
+        }
+      } catch { }
+
+      // 4. Override validation indicator: update (empty) so badge count drops immediately after batch clears
+      if (scope === 'batch') {
+        try {
+          const { default: indicator } = await import('../../../ui/override-validation-indicator.js');
+          indicator.update([], '');
+        } catch { }
+      }
+    } catch (err) {
+      console.warn('PF2E Visioner | Post-override refresh issue:', err, reason, scope);
+    }
   }
 }
 

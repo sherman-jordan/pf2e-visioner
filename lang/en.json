@@ -338,7 +338,10 @@
     "UI": {
       "ENCOUNTER_FILTER_TEXT": "Show only encounter tokens",
       "COVER_OVERRIDE": "Cover Override",
-      "ROLL": "Roll"
+      "ROLL": "Roll",
+      "APPLY_ALL": "Apply All",
+      "REVERT_ALL": "Revert All",
+      "REMOVE_OVERRIDES": "Remove Overrides"
     },
     "WALL": {
       "VISIBLE_TO_YOU": "Hidden Wall",

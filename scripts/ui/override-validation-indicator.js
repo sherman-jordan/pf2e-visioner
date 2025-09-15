@@ -340,6 +340,8 @@ class OverrideValidationIndicator {
     .pf2e-visioner-override-tooltip .tip-row:first-of-type { border-top: none; }
     .pf2e-visioner-override-tooltip .who { color: #ddd; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pf2e-visioner-override-tooltip .state-pair { display: inline-flex; align-items: center; gap: 4px; color: #aaa; }
+  /* Add separation between the visibility and cover state groups */
+  .pf2e-visioner-override-tooltip .state-pair + .state-pair { margin-left: 10px; }
     .pf2e-visioner-override-tooltip .state-pair i.fas.fa-arrow-right { color: #999; }
     .pf2e-visioner-override-tooltip .state-pair i.state-indicator { margin: 0; }
     .pf2e-visioner-override-tooltip .reasons { display: inline-flex; align-items: center; gap: 4px; color: var(--pf2e-visioner-info, #90caf9); }

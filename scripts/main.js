@@ -88,6 +88,7 @@ Hooks.once('init', async () => {
       'pf2e-visioner.visibility-table': 'modules/pf2e-visioner/templates/visibility-table.hbs',
       'pf2e-visioner.cover-table': 'modules/pf2e-visioner/templates/cover-table.hbs',
       'pf2e-visioner.table-section': 'modules/pf2e-visioner/templates/table-section.hbs',
+      'pf2e-visioner.bulk-override': 'modules/pf2e-visioner/templates/partials/bulk-override.hbs',
     });
 
     // Register settings and keybindings

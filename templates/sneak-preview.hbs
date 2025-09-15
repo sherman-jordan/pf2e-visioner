@@ -46,6 +46,9 @@
   </div>
 
   {{!-- Results Table --}}
+  {{#if bulkOverrideStates}}
+    {{> "pf2e-visioner.bulk-override"}}
+  {{/if}}
   <div class="results-table-container">
     <table class="visibility-table sneak-results-table">
       <thead>

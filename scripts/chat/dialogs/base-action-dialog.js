@@ -34,8 +34,8 @@ export class BaseActionDialog extends BasePreviewDialog {
         token?.img ||
         'icons/svg/mystery-man.svg'
       );
-    } catch (_) {
-        return 'icons/svg/mystery-man.svg';
+    } catch {
+      return 'icons/svg/mystery-man.svg';
     }
   }
 
@@ -77,7 +77,10 @@ export class BaseActionDialog extends BasePreviewDialog {
           this.render({ force: true });
         });
       }
-    } catch (_) {}
+    } catch { }
+
+    // Ensure bulk override buttons get listeners
+    try { this._attachBulkOverrideHandlers(); } catch { }
 
   }
 
@@ -93,7 +96,91 @@ export class BaseActionDialog extends BasePreviewDialog {
       // Per-dialog ignore-allies checkbox state (defaults from global setting)
       ignoreAllies: this.ignoreAllies,
       bulkActionState: this.bulkActionState ?? 'initial',
+      bulkOverrideStates: this._deriveBulkStatesFromOutcomes?.(outcomes) || this._buildBulkOverrideStates?.() || [],
     };
+  }
+
+  // ===== Bulk Override Helpers =====
+  _buildBulkOverrideStates() {
+    try {
+      if (this._cachedBulkStates && Array.isArray(this._cachedBulkStates)) return this._cachedBulkStates;
+      const states = ['observed', 'concealed', 'hidden', 'undetected'];
+      this._cachedBulkStates = states.map((s) => ({ value: s, ...this.visibilityConfig(s) }));
+      return this._cachedBulkStates;
+    } catch {
+      return [];
+    }
+  }
+
+  _deriveBulkStatesFromOutcomes(outcomes) {
+    try {
+      if (!Array.isArray(outcomes) || outcomes.length === 0) return [];
+      const set = new Set();
+      for (const o of outcomes) {
+        if (Array.isArray(o.availableStates)) {
+          for (const st of o.availableStates) {
+            const value = st?.value ?? st?.key;
+            if (typeof value === 'string') set.add(value);
+          }
+        }
+      }
+      return Array.from(set).map((v) => ({ value: v, ...this.visibilityConfig(v) }));
+    } catch {
+      return [];
+    }
+  }
+
+  _attachBulkOverrideHandlers() {
+    try {
+      if (!this.element) return;
+      const root = this.element.querySelector('.bulk-override-bar');
+      if (!root) return;
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+      root.querySelectorAll('button[data-action="bulkOverrideSet"]').forEach((btn) => {
+        btn.addEventListener('click', (ev) => this._onBulkOverrideSet(ev));
+      });
+      const clearBtn = root.querySelector('button[data-action="bulkOverrideClear"]');
+      if (clearBtn) clearBtn.addEventListener('click', (ev) => this._onBulkOverrideClear(ev));
+    } catch { }
+  }
+
+  _onBulkOverrideSet(event) {
+    try {
+      const state = event.currentTarget?.dataset?.state;
+      if (!state || !Array.isArray(this.outcomes)) return;
+      for (const o of this.outcomes) {
+        const tokenId = this.getOutcomeTokenId(o);
+        if (!tokenId && !o._isWall) continue;
+        const oldState = o.oldVisibility ?? o.currentVisibility ?? null;
+        o.overrideState = state;
+        o.hasActionableChange = oldState != null && state !== null && state !== oldState;
+        if (o.hasActionableChange) o.hasRevertableChange = true;
+      }
+      this.markInitialSelections();
+      this.updateChangesCount();
+      this.updateBulkActionButtons();
+    } catch (e) {
+      console.warn('PF2E Visioner | Bulk override set failed', e);
+    }
+  }
+
+  _onBulkOverrideClear() {
+    try {
+      if (!Array.isArray(this.outcomes)) return;
+      for (const o of this.outcomes) {
+        o.overrideState = null;
+        const effective = o.newVisibility;
+        const oldState = o.oldVisibility ?? o.currentVisibility ?? null;
+        o.hasActionableChange = oldState != null && effective != null && effective !== oldState;
+        if (!o.hasActionableChange) o.hasRevertableChange = false;
+      }
+      this.markInitialSelections();
+      this.updateChangesCount();
+      this.updateBulkActionButtons();
+    } catch (e) {
+      console.warn('PF2E Visioner | Bulk override clear failed', e);
+    }
   }
 
   applyEncounterFilter(outcomes, tokenProperty, emptyNotice) {
@@ -104,7 +191,7 @@ export class BaseActionDialog extends BasePreviewDialog {
       const message = emptyNotice || 'No encounter tokens found, showing all';
       try {
         notify.info(`${MODULE_TITLE}: ${message}`);
-      } catch (_) {}
+      } catch { }
     }
     return filtered;
   }
@@ -124,7 +211,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     import('../services/ui/dialog-utils.js').then(({ updateRowButtonsToApplied }) => {
       try {
         updateRowButtonsToApplied(this.element, normalized);
-      } catch {}
+      } catch { }
     });
   }
 
@@ -136,7 +223,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     import('../services/ui/dialog-utils.js').then(({ updateRowButtonsToReverted }) => {
       try {
         updateRowButtonsToReverted(this.element, normalized);
-      } catch {}
+      } catch { }
       try {
         // After reverting, reset each row's selection to its initial calculated outcome
         if (!Array.isArray(outcomes)) return;
@@ -168,9 +255,9 @@ export class BaseActionDialog extends BasePreviewDialog {
               (x) => String(this.getOutcomeTokenId(x)) === String(tokenId),
             );
             if (outcome) outcome.overrideState = null;
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
     });
   }
 
@@ -178,7 +265,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     import('../services/ui/dialog-utils.js').then(({ updateBulkActionButtons }) => {
       try {
         updateBulkActionButtons(this.element, this.bulkActionState);
-      } catch {}
+      } catch { }
     });
   }
 
@@ -186,7 +273,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     import('../services/ui/dialog-utils.js').then(({ updateChangesCount }) => {
       try {
         updateChangesCount(this.element, this.getChangesCounterClass());
-      } catch {}
+      } catch { }
     });
   }
 
@@ -211,7 +298,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         const icon = container.querySelector(`.state-icon[data-state="${desiredState}"]`);
         if (icon) icon.classList.add('selected');
       }
-  } catch {}
+    } catch { }
   }
 
   // Outcome display helpers (string-based). Subclasses can override if needed
@@ -233,7 +320,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         : value === 'criticalFailure'
           ? 'critical-failure'
           : value;
-    
+
     switch (norm) {
       case 'critical-success':
         return 'Critical Success';
@@ -276,7 +363,7 @@ export class BaseActionDialog extends BasePreviewDialog {
       } else {
         container.innerHTML = '<span class="no-action">No Change</span>';
       }
-  } catch {}
+    } catch { }
   }
 
   addIconClickHandlers() {
@@ -320,7 +407,7 @@ export class BaseActionDialog extends BasePreviewDialog {
               wallId,
               row: event.currentTarget.closest('tr'),
             });
-          } catch {}
+          } catch { }
           // Direct DOM fallback to ensure row shows buttons immediately
           try {
             const rowEl = event.currentTarget.closest('tr');
@@ -346,17 +433,17 @@ export class BaseActionDialog extends BasePreviewDialog {
                 }
               }
             }
-          } catch {}
+          } catch { }
           try {
             // Maintain a lightweight list of changed outcomes for convenience
             this.changes = Array.isArray(this.outcomes)
               ? this.outcomes.filter((o) => {
-                  const baseOld = o.oldVisibility ?? o.currentVisibility ?? null;
-                  const baseNew = o.overrideState ?? o.newVisibility ?? null;
-                  return baseOld != null && baseNew != null && baseOld !== baseNew;
-                })
+                const baseOld = o.oldVisibility ?? o.currentVisibility ?? null;
+                const baseNew = o.overrideState ?? o.newVisibility ?? null;
+                return baseOld != null && baseNew != null && baseOld !== baseNew;
+              })
               : [];
-          } catch {}
+          } catch { }
         }
         this.updateChangesCount();
       });
@@ -379,7 +466,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     const tokenId = target.dataset.tokenId;
     const wallId = target.dataset.wallId;
     let outcome = null;
-    
+
     if (wallId) {
       outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
     } else {
@@ -419,7 +506,7 @@ export class BaseActionDialog extends BasePreviewDialog {
         // prevent future AVS calculations for this token pair until reverted
         const overrides = { [tokenId]: effectiveNewState };
         await applyFunction({ ...actionData, overrides }, target);
-        
+
         // Update the outcome to reflect the applied state
         outcome.oldVisibility = effectiveNewState;
         outcome.overrideState = null;
@@ -443,7 +530,7 @@ export class BaseActionDialog extends BasePreviewDialog {
       if (app.updateChangesCount) {
         app.updateChangesCount();
       }
-      
+
       const tokenName = outcome.token?.name || outcome.target?.name || 'token';
       notify.info(`${MODULE_TITLE}: Applied ${actionType.toLowerCase()} result for ${tokenName}`);
     } catch (error) {
@@ -468,7 +555,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     const tokenId = target.dataset.tokenId;
     const wallId = target.dataset.wallId;
     let outcome = null;
-    
+
     if (wallId) {
       outcome = app.outcomes.find((o) => o._isWall && o.wallId === wallId);
     } else {
@@ -505,7 +592,7 @@ export class BaseActionDialog extends BasePreviewDialog {
       if (app.updateChangesCount) {
         app.updateChangesCount();
       }
-      
+
       const tokenName = outcome.token?.name || outcome.target?.name || 'token';
       notify.info(`${MODULE_TITLE}: Reverted changes for ${tokenName}`);
     } catch (error) {
@@ -535,7 +622,7 @@ export class BaseActionDialog extends BasePreviewDialog {
 
     // Get all outcomes that have actionable changes
     const outcomesWithChanges = app.outcomes.filter(o => o.hasActionableChange);
-    
+
     if (outcomesWithChanges.length === 0) {
       notify.warn(`${MODULE_TITLE}: No changes to apply`);
       return;
@@ -620,7 +707,7 @@ export class BaseActionDialog extends BasePreviewDialog {
     try {
       // Get all outcomes that were applied (where oldVisibility was changed from original)
       const appliedOutcomes = app.outcomes.filter(o => o.oldVisibility !== o.currentVisibility);
-      
+
       if (appliedOutcomes.length === 0) {
         notify.warn(`${MODULE_TITLE}: No applied changes found to revert`);
         return;

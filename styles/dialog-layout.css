@@ -1743,6 +1743,79 @@
   box-shadow: none;
 }
 
+/* Bulk Override Bar */
+.bulk-override-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin: 6px 0 10px 0;
+  border: 1px solid var(--color-border-light-primary);
+  background: var(--color-bg-option, rgba(0,0,0,0.15));
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+.bulk-override-bar .bulk-override-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+.bulk-override-bar .bulk-override-states {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.bulk-override-bar .bulk-override-state-btn {
+  border: 1px solid var(--color-border-light-primary);
+  background: var(--color-bg-base, #2b2b2b);
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  min-width: 30px;
+  transition: all 0.15s ease;
+  position: relative;
+}
+.bulk-override-bar .bulk-override-state-btn:hover {
+  background: var(--color-bg-option-active, rgba(255,255,255,0.08));
+  transform: translateY(-1px);
+}
+.bulk-override-bar .bulk-override-actions {
+  margin-left: auto;
+  display: inline-flex;
+}
+.bulk-override-bar .bulk-override-clear-btn {
+  border: 1px solid var(--pf2e-visioner-danger, #f44336);
+  color: var(--pf2e-visioner-danger, #f44336);
+  background: rgba(244,67,54,0.12);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+.bulk-override-bar .bulk-override-clear-btn:hover {
+  background: var(--pf2e-visioner-danger, #f44336);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(244,67,54,0.4);
+}
+
+/* Visibility state color tints on bulk buttons (reuse cssClass) */
+.bulk-override-state-btn.visibility-observed { color: var(--visibility-observed, #90caf9); }
+.bulk-override-state-btn.visibility-concealed { color: var(--visibility-concealed, #ffb300); }
+.bulk-override-state-btn.visibility-hidden { color: var(--visibility-hidden, #ff6600); }
+.bulk-override-state-btn.visibility-undetected { color: var(--visibility-undetected, #f44336); }
+
 /* Row action buttons styling */
 .row-action-btn {
   width: 30px;

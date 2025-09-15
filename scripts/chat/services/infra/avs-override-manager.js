@@ -57,8 +57,23 @@ export class AvsOverrideManager {
    */
   static async setPairOverrides(observer, changesByTarget, options = {}) {
     try {
-      const isSneakAction =
-        options.source === 'sneak_action' || observer.document.getFlag('pf2e-visioner', 'sneak-active');
+      const src = options.source || 'manual_action';
+      // Only treat as sneak when explicitly requested by source; do not infer from token flags
+      // Manual edits must remain symmetric even if the token is currently sneaking
+      const isSneakAction = src === 'sneak_action';
+
+      // Direction policy by source:
+      // - One-way: sneak, hide, diversion, seek, point-out, manual edits from Token Manager
+      //   Rationale: Token Manager already calls this with the correct logical direction
+      //   (observer -> target). Making manual_action symmetric here caused double overrides.
+      // - Symmetric: region overrides and any other bulk/system-generated sources
+      const isOneWayBySource =
+        isSneakAction ||
+        src === 'hide_action' ||
+        src === 'diversion_action' ||
+        src === 'seek_action' ||
+        src === 'point_out_action' ||
+        src === 'manual_action';
 
       for (const [, changeData] of changesByTarget) {
         const target = changeData.target;
@@ -73,8 +88,8 @@ export class AvsOverrideManager {
           expectedCover: changeData.expectedCover,
         };
 
-        if (isSneakAction) {
-          // One-way only
+        if (isOneWayBySource) {
+          // One-way only (observer -> target)
           await this.onAVSOverride(payload);
         } else {
           // Symmetric

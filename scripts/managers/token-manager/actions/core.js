@@ -34,6 +34,8 @@ export async function formHandler(event, form, formData) {
     if (Object.keys(visibilityChanges).length > 0) {
       const currentMap = getVisibilityMap(app.observer) || {};
       const merged = { ...currentMap };
+      // Track changes for AVS overrides (manual_action)
+      const overrideMap = new Map();
       for (const [tokenId, newState] of Object.entries(visibilityChanges)) {
         if (merged[tokenId] !== newState) merged[tokenId] = newState;
       }
@@ -48,6 +50,23 @@ export async function formHandler(event, form, formData) {
           const currentState = currentMap?.[tokenId];
           if (currentState === newState) continue;
           targetUpdates.push({ target: targetToken, state: newState });
+          // Include cover context if present for UI clarity
+          const expectedCover = coverChanges?.[tokenId];
+          overrideMap.set(tokenId, {
+            target: targetToken,
+            state: newState,
+            hasCover: expectedCover ? expectedCover !== 'none' : undefined,
+            expectedCover,
+          });
+        }
+        // Apply AVS overrides for manual token manager changes
+        if (overrideMap.size > 0) {
+          try {
+            const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+            await AvsOverrideManager.applyOverrides(app.observer, overrideMap, { source: 'manual_action' });
+          } catch (e) {
+            console.warn('Token Manager: failed to create AVS overrides (observer mode):', e);
+          }
         }
         if (targetUpdates.length > 0) {
           await batchUpdateVisibilityEffects(app.observer, targetUpdates, {
@@ -122,6 +141,8 @@ export async function formHandler(event, form, formData) {
     try {
       const { batchUpdateVisibilityEffects } = await import('../../../visibility/ephemeral.js');
       const observerUpdates = [];
+      // Prepare AVS overrides per observer
+      const overridesByObserver = new Map();
       for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
@@ -133,6 +154,27 @@ export async function formHandler(event, form, formData) {
           state: newVisibilityState,
           observer: observerToken,
         });
+        const expectedCover = coverChanges?.[observerTokenId];
+        if (!overridesByObserver.has(observerTokenId))
+          overridesByObserver.set(observerTokenId, new Map());
+        overridesByObserver.get(observerTokenId).set(app.observer.document.id, {
+          target: app.observer,
+          state: newVisibilityState,
+          hasCover: expectedCover ? expectedCover !== 'none' : undefined,
+          expectedCover,
+        });
+      }
+      // Apply AVS overrides for each observer pair
+      for (const [observerTokenId, map] of overridesByObserver.entries()) {
+        try {
+          const observerToken = canvas.tokens.get(observerTokenId);
+          if (observerToken && map.size > 0) {
+            const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+            await AvsOverrideManager.applyOverrides(observerToken, map, { source: 'manual_action' });
+          }
+        } catch (e) {
+          console.warn('Token Manager: failed to create AVS overrides (target mode):', e);
+        }
       }
       if (observerUpdates.length > 0) {
         const updatesByObserver = new Map();
@@ -286,6 +328,28 @@ export async function applyCurrent(event, button) {
       if (Object.keys(obsVis).length > 0) {
         const currentMap = getVisibilityMap(app.observer) || {};
         await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
+        // Create AVS overrides for manual changes (observer mode)
+        try {
+          const changes = new Map();
+          for (const [tokenId, newState] of Object.entries(obsVis)) {
+            const targetToken = canvas.tokens.get(tokenId);
+            if (targetToken) {
+              const expectedCover = app._savedModeData.observer?.cover?.[tokenId];
+              changes.set(tokenId, {
+                target: targetToken,
+                state: newState,
+                hasCover: expectedCover ? expectedCover !== 'none' : undefined,
+                expectedCover,
+              });
+            }
+          }
+          if (changes.size > 0) {
+            const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+            await AvsOverrideManager.applyOverrides(app.observer, changes, { source: 'manual_action' });
+          }
+        } catch (e) {
+          console.warn('Token Manager: failed to create AVS overrides (applyCurrent observer):', e);
+        }
         const targetUpdates = [];
         for (const [tokenId, newState] of Object.entries(obsVis)) {
           const targetToken = canvas.tokens.get(tokenId);
@@ -320,7 +384,7 @@ export async function applyCurrent(event, button) {
           if (!observerToken) continue;
           try {
             if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-          } catch (_) {}
+          } catch {}
           const observerVisibilityData = getVisibilityMap(observerToken) || {};
           await setVisibilityMap(observerToken, {
             ...observerVisibilityData,
@@ -331,6 +395,21 @@ export async function applyCurrent(event, button) {
           updatesByObserver
             .get(observerTokenId)
             .updates.push({ target: app.observer, state: newState });
+          // AVS override for target-mode edit
+          try {
+            const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+            const map = new Map();
+            const expectedCover = app._savedModeData.target?.cover?.[observerTokenId];
+            map.set(app.observer.document.id, {
+              target: app.observer,
+              state: newState,
+              hasCover: expectedCover ? expectedCover !== 'none' : undefined,
+              expectedCover,
+            });
+            await AvsOverrideManager.applyOverrides(observerToken, map, { source: 'manual_action' });
+          } catch (e) {
+            console.warn('Token Manager: failed to create AVS overrides (applyCurrent target):', e);
+          }
         }
         for (const { observer, updates } of updatesByObserver.values()) {
           allOperations.push(async () => {
@@ -363,7 +442,7 @@ export async function applyCurrent(event, button) {
             });
           }
         }
-      } catch (_) {}
+  } catch {}
     }
 
     if (isCover) {
@@ -412,7 +491,7 @@ export async function applyCurrent(event, button) {
           try {
             const t = observer.actor?.type;
             if (t === 'loot' || t === 'vehicle' || t === 'party') continue;
-          } catch (_) {}
+          } catch {}
           allOperations.push(async () => {
             const { batchUpdateCoverEffects } = await import('../../../cover/ephemeral.js');
             await batchUpdateCoverEffects(observer, updates);
@@ -446,7 +525,7 @@ export async function applyCurrent(event, button) {
       // Refresh wall indicators for current observer
       try {
         await updateWallVisuals(app.observer?.id || null);
-      } catch (_) {}
+  } catch {}
     }
   } catch (error) {
     console.error('Token Manager: Error applying current type for both modes:', error);
@@ -462,7 +541,10 @@ export async function applyCurrent(event, button) {
   })();
 }
 
-export async function applyBoth(event, button) {
+export async function applyBoth(_event, _button) {
+  // Mark parameters as used to satisfy linters in some environments
+  void _event; // unused
+  void _button; // unused
   const app = this;
   const { runTasksWithProgress } = await import('../../progress.js');
 
@@ -505,6 +587,25 @@ export async function applyBoth(event, button) {
     if (Object.keys(vis).length > 0) {
       const currentMap = getVisibilityMap(app.observer) || {};
       await setVisibilityMap(app.observer, { ...currentMap, ...vis });
+      // AVS overrides for observer-mode changes
+      try {
+        const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+        const map = new Map();
+        for (const [tokenId, newState] of Object.entries(vis)) {
+          const targetToken = canvas.tokens.get(tokenId);
+          if (!targetToken) continue;
+          const expectedCover = app._savedModeData.observer?.cover?.[tokenId];
+          map.set(tokenId, {
+            target: targetToken,
+            state: newState,
+            hasCover: expectedCover ? expectedCover !== 'none' : undefined,
+            expectedCover,
+          });
+        }
+        if (map.size > 0) await AvsOverrideManager.applyOverrides(app.observer, map, { source: 'manual_action' });
+      } catch (e) {
+        console.warn('Token Manager: failed to create AVS overrides (applyBoth observer):', e);
+      }
       for (const [tokenId, newState] of Object.entries(vis)) {
         const targetToken = canvas.tokens.get(tokenId);
         if (targetToken) {
@@ -547,6 +648,21 @@ export async function applyBoth(event, button) {
           ...observerVisibilityData,
           [app.observer.document.id]: newState,
         });
+        // AVS overrides for target-mode changes
+        try {
+          const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+          const map = new Map();
+          const expectedCover = app._savedModeData.target?.cover?.[observerTokenId];
+          map.set(app.observer.document.id, {
+            target: app.observer,
+            state: newState,
+            hasCover: expectedCover ? expectedCover !== 'none' : undefined,
+            expectedCover,
+          });
+          await AvsOverrideManager.applyOverrides(observerToken, map, { source: 'manual_action' });
+        } catch (e) {
+          console.warn('Token Manager: failed to create AVS overrides (applyBoth target):', e);
+        }
         if (!targetVisUpdates.has(observerTokenId))
           targetVisUpdates.set(observerTokenId, { observer: observerToken, updates: [] });
         targetVisUpdates
@@ -637,7 +753,9 @@ export async function applyBoth(event, button) {
   })();
 }
 
-export async function resetAll(event, button) {
+export async function resetAll(_event, _button) {
+  void _event; // unused
+  void _button; // unused
   const app = this;
   await setVisibilityMap(app.observer, {});
   await setCoverMap(app.observer, {});

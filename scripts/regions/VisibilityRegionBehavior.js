@@ -8,6 +8,7 @@
 import { VISIBILITY_STATES } from '../constants.js';
 import { segmentsIntersect } from '../helpers/geometry-utils.js';
 import { getVisibility, setVisibilityBetween } from '../stores/visibility-map.js';
+import AvsOverrideManager from '../chat/services/infra/avs-override-manager.js';
 import { isValidToken } from '../utils.js';
 
 const RegionBehaviorBase =
@@ -494,12 +495,30 @@ export class VisibilityRegionBehavior extends RegionBehaviorBase {
             } catch (_) {}
 
             resolved += 1;
-            promises.push(
-              setVisibilityBetween(sourceToken, targetToken, state).catch((err) => ({
+            promises.push((async () => {
+              try {
+                // Create or remove AVS overrides for region-driven changes
+                if (state && state !== 'observed') {
+                  // one-way override for this specific direction
+                  await AvsOverrideManager.onAVSOverride({
+                    observer: sourceToken,
+                    target: targetToken,
+                    state,
+                    source: 'region_override',
+                  });
+                } else if (state === 'observed') {
+                  // Clearing: remove any prior override for this direction to restore AVS control
+                  try { await AvsOverrideManager.removeOverride(sourceToken.document.id, targetToken.document.id); } catch (__) {}
+                }
+              } catch (overrideErr) {
+                console.warn('PF2E Visioner | Region override operation failed:', overrideErr);
+              }
+
+              return setVisibilityBetween(sourceToken, targetToken, state).catch((err) => ({
                 err,
                 update,
-              })),
-            );
+              }));
+            })());
           } catch (err) {
             console.error('PF2e Visioner | Error resolving update:', err, update);
           }

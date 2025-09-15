@@ -25,7 +25,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     },
     position: {
       width: 500,
-      height: "auto",
+      height: 560,
       left: null,
       top: null
     },
@@ -151,18 +151,36 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       };
     });
 
-    // Determine target header info (like token manager) - assume a single target across overrides
-    const primary = this.invalidOverrides[0];
-    const headerTargetToken = primary ? canvas.tokens?.get(primary.targetId) : null;
+    // Group into observer- and target-oriented lists for separate tables
+  const observerOrientedOverrides = [];
+    const targetOrientedOverrides = [];
+    for (const o of overrides) {
+      // If moved token is the observer in the pair, it's observer-oriented; if target, target-oriented.
+      // Fallback: put into target-oriented if we can't resolve moved token.
+      const moved = game?.pf2eVisioner?.lastMovedTokenId || null;
+      if (moved) {
+        if (o.observerId === moved) observerOrientedOverrides.push(o);
+        else if (o.targetId === moved) targetOrientedOverrides.push(o);
+        else targetOrientedOverrides.push(o);
+      } else {
+        targetOrientedOverrides.push(o);
+      }
+    }
+
+    // Determine header info for target table. Prefer the moved token if available.
+    let headerToken = null;
+    try { headerToken = canvas.tokens?.placeables?.find(t => t?.document?.name === this.tokenName) || null; } catch {}
     const targetHeader = {
-      name: primary?.targetName || this.tokenName,
-      img: headerTargetToken?.document?.texture?.src ?? headerTargetToken?.texture?.src ?? headerTargetToken?.document?.img ?? null
+      name: this.tokenName,
+      img: headerToken?.document?.texture?.src ?? headerToken?.texture?.src ?? headerToken?.document?.img ?? null
     };
 
     const result = {
       ...context,
       tokenName: this.tokenName,
       overrides,
+      observerOrientedOverrides,
+      targetOrientedOverrides,
       overrideCount: overrides.length,
       hasManualOverrides: overrides.some(o => /manual/i.test(o.source)),
       targetHeader
@@ -178,6 +196,8 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     // Add event listeners for bulk action buttons
     const clearAllBtn = this.element.querySelector('.btn-clear-all');
     const keepAllBtn = this.element.querySelector('.btn-keep-all');
+    const clearObserverBtn = this.element.querySelector('.btn-clear-observer');
+    const clearTargetBtn = this.element.querySelector('.btn-clear-target');
     
     // Add event listeners for individual action buttons
     const individualClearBtns = this.element.querySelectorAll('.btn-clear');
@@ -189,6 +209,13 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     
     if (keepAllBtn) {
       keepAllBtn.addEventListener('click', () => this._onKeepAll());
+    }
+
+    if (clearObserverBtn) {
+      clearObserverBtn.addEventListener('click', () => this._onClearByGroup('observer'));
+    }
+    if (clearTargetBtn) {
+      clearTargetBtn.addEventListener('click', () => this._onClearByGroup('target'));
     }
 
     // Add listeners for individual clear buttons
@@ -207,7 +234,66 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       });
     });
 
-    
+    // Click a token chip to pan/select that token and highlight the row
+    const tokenChips = this.element.querySelectorAll('.chip--token');
+    tokenChips.forEach(chip => {
+      chip.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const tokenId = chip.dataset.tokenId;
+        if (!tokenId) return;
+        try {
+          const token = canvas.tokens?.get(tokenId);
+          if (!token) return;
+          // Pan to token and select it
+          const center = token.center ?? { x: token.x + (token.w ?? token.width ?? 0) / 2, y: token.y + (token.h ?? token.height ?? 0) / 2 };
+          // Animate pan without altering scale
+          await canvas.animatePan({ x: center.x, y: center.y, duration: 400 });
+          // Select just this token
+          try { canvas?.tokens?.selectObjects?.([token], { releaseOthers: true, control: true }); } catch {}
+
+          // Highlight the corresponding row within the same table
+          const row = chip.closest('tr.token-row');
+          if (row) {
+            // Remove highlight from all rows in this dialog so only one is highlighted overall
+            this.element.querySelectorAll('tr.token-row.row-hover').forEach(r => r.classList.remove('row-hover'));
+            row.classList.add('row-hover');
+          }
+        } catch (err) {
+          console.warn('PF2E Visioner | Failed to pan/select token from override dialog:', err);
+        }
+      });
+    });
+
+  }
+
+  async _onClearByGroup(group) {
+    try {
+      const moved = game?.pf2eVisioner?.lastMovedTokenId || null;
+      if (!moved) return this._onClearAll();
+      const toRemove = this.invalidOverrides.filter(o => group === 'observer' ? o.observerId === moved : o.targetId === moved);
+      for (const override of toRemove) {
+        try {
+          const { default: AvsOverrideManager } = await import('../chat/services/infra/avs-override-manager.js');
+          await AvsOverrideManager.removeOverride(override.observerId, override.targetId);
+        } catch (err) {
+          console.error('PF2E Visioner | Error removing override:', err);
+        }
+      }
+
+      // Remove from local state and rerender
+      this.invalidOverrides = this.invalidOverrides.filter(o => !(group === 'observer' ? o.observerId === moved : o.targetId === moved));
+      await this.render(true);
+
+      ui.notifications.info(`Cleared ${toRemove.length} override(s) in ${group} table`);
+      if (!this.invalidOverrides.length) {
+        setTimeout(() => this.close(), 300);
+        try { const { default: indicator } = await import('./override-validation-indicator.js'); indicator.hide(); } catch {}
+      }
+    } catch (e) {
+      console.error('PF2E Visioner | Error during group clear:', e);
+      ui.notifications.error('Failed to clear overrides for this table');
+    }
   }
 
   async _onKeepIndividual(overrideId) {

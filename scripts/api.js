@@ -261,6 +261,18 @@ export class Pf2eVisionerApi {
         return false;
       }
 
+      // For manual calls (default), create AVS overrides so AVS won't fight manual edits
+      try {
+        if (!options?.isAutomatic) {
+          const AvsOverrideManager = (await import('./chat/services/infra/avs-override-manager.js')).default;
+          await AvsOverrideManager.applyOverrides(observerToken, { target: targetToken, state }, {
+            source: 'manual_action',
+          });
+        }
+      } catch (e) {
+        console.warn('PF2E Visioner API: Failed to set AVS overrides for manual visibility', e);
+      }
+
       // Set visibility using utility function
       await setVisibilityBetween(observerToken, targetToken, state, options);
       await updateTokenVisuals();

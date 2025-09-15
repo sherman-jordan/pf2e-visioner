@@ -1232,7 +1232,7 @@ export class EventDrivenVisibilitySystem {
 
     // If we found invalid overrides, show the validation dialog
     if (invalidOverrides.length > 0) {
-      await this.#showOverrideValidationDialog(invalidOverrides);
+      await this.#showOverrideValidationDialog(invalidOverrides, movedTokenId);
     }
   }
 
@@ -1397,7 +1397,7 @@ export class EventDrivenVisibilitySystem {
    * Show the override validation dialog for multiple invalid overrides
    * @param {Array} invalidOverrides - Array of invalid override objects
    */
-  async #showOverrideValidationDialog(invalidOverrides) {
+  async #showOverrideValidationDialog(invalidOverrides, movedTokenId = null) {
     if (invalidOverrides.length === 0) return;
 
     // Prepare the override data for the dialog
@@ -1426,13 +1426,23 @@ export class EventDrivenVisibilitySystem {
     });
 
     // Get the name of the token that moved (for context in dialog title)
-    const movedTokenName = invalidOverrides.length > 0 ? 
-      (canvas.tokens?.get(invalidOverrides[0].targetId)?.document?.name) : 'Unknown Token';
+    let movedTokenName = 'Unknown Token';
+    if (movedTokenId) {
+      movedTokenName = canvas.tokens?.get(movedTokenId)?.document?.name || movedTokenName;
+    } else if (invalidOverrides.length > 0) {
+      // Fallback: try to infer from the first invalid override by checking which side changed since last
+      // Prefer observer if available for sneak/manual cases, otherwise target
+      const first = invalidOverrides[0];
+      movedTokenName =
+        canvas.tokens?.get(first?.observerId)?.document?.name ||
+        canvas.tokens?.get(first?.targetId)?.document?.name ||
+        movedTokenName;
+    }
 
     // Non-obtrusive indicator instead of auto-opening dialog
     try {
-      const { default: indicator } = await import('../../ui/override-validation-indicator.js');
-      indicator.show(overrideData, movedTokenName);
+  const { default: indicator } = await import('../../ui/override-validation-indicator.js');
+  indicator.show(overrideData, movedTokenName, movedTokenId);
     } catch (err) {
       console.warn('PF2E Visioner | Failed to show indicator, falling back to dialog:', err);
       try {

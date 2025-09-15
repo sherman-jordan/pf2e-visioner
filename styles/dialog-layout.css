@@ -422,14 +422,170 @@
 /* ==============================
    Override Validation Dialog UI
    ============================== */
+.pf2e-visioner.override-validation-dialog .window-content,
 .pf2e-visioner .override-validation-dialog .window-content {
   padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0; /* allow children to shrink and scroll */
+  /* Bound the content area so inner flex children can create a scroll region */
+  overflow: hidden;
 }
 
+/* Inline template styles migrated from simple-override-validation.hbs */
+.pf2e-visioner
+  .override-validation-dialog
+  .override-validation-modern
+  .override-validation-table
+  thead
+  th {
+  padding: 10px 12px;
+}
+.pf2e-visioner .override-validation-dialog .override-validation-modern .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pf2e-visioner .override-validation-dialog .override-validation-modern .chip .chip-avatar {
+  width: 28px;
+  height: 28px;
+  /* border-radius intentionally omitted to defer to cell-specific avatar rules */
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pf2e-visioner.override-validation-dialog .override-validation-modern .tables-scroll-container,
+.pf2e-visioner .override-validation-dialog .override-validation-modern .tables-scroll-container {
+  flex: 1 1 0%;
+  min-height: 0; /* allow inner content to expand and scroll */
+  overflow-y: auto;
+  margin-top: 8px;
+  padding-right: 4px;
+  max-height: 100%;
+}
+.pf2e-visioner .override-validation-dialog .override-validation-modern .results-table-container {
+  margin-bottom: 8px;
+}
+
+/* Fallback: if some theme overrides the inner container, allow the whole modern container to scroll */
+.pf2e-visioner.override-validation-dialog .override-validation-modern,
+.pf2e-visioner .override-validation-dialog .override-validation-modern {
+  overflow: hidden; /* primary: inner container scrolls */
+}
+.pf2e-visioner.override-validation-dialog
+  .override-validation-modern:has(
+    .tables-scroll-container:not(:is([style*='overflow'], .no-scroll))
+  ) {
+  overflow: hidden;
+}
+.pf2e-visioner.override-validation-dialog
+  .override-validation-modern:not(:has(.tables-scroll-container)) {
+  overflow: auto; /* last-resort scroll if inner container missing */
+}
+.pf2e-visioner .override-validation-dialog .override-validation-modern .table-header {
+  display: grid;
+  grid-template-columns: 1fr auto; /* title expands, actions stick to right */
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px 0;
+  padding: 8px 12px; /* add horizontal padding to header */
+  width: 100%;
+  box-sizing: border-box;
+}
+/* Support when both classes are on the same root element (not nested) */
+.pf2e-visioner.override-validation-dialog .override-validation-modern .table-header {
+  display: grid;
+  grid-template-columns: 1fr auto; /* title expands, actions stick to right */
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px 0;
+  padding: 8px 12px; /* add horizontal padding to header */
+  width: 100%;
+  box-sizing: border-box;
+}
+.pf2e-visioner .override-validation-dialog .override-validation-modern .table-header h4 {
+  margin: 0;
+}
+.pf2e-visioner
+  .override-validation-dialog
+  .override-validation-modern
+  .table-header
+  .table-actions
+  .bulk-action-btn {
+  font-size: 12px;
+}
+
+/* Ensure the table actions container sits on the far right */
+.pf2e-visioner
+  .override-validation-dialog
+  .override-validation-modern
+  .table-header
+  .table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end; /* anchor at the far right */
+  width: auto;
+}
+/* Support combined-class root for actions alignment */
+.pf2e-visioner.override-validation-dialog .override-validation-modern .table-header .table-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end; /* anchor at the far right */
+  width: auto;
+}
+
+/* Add comfortable padding to table header cells */
+.override-validation-dialog .results-table-container table.override-validation-table thead th,
+.pf2e-visioner.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th,
+.pf2e-visioner
+  .override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th {
+  padding: 10px 12px;
+}
+
+/* Fallbacks: ensure alignment even if classes are applied on a single root or nesting differs */
+.pf2e-visioner .override-validation-modern .table-header,
+.pf2e-visioner.override-validation-dialog .override-validation-modern .table-header,
+.override-validation-dialog .override-validation-modern .table-header {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.pf2e-visioner .override-validation-modern .table-header .table-actions,
+.pf2e-visioner.override-validation-dialog .override-validation-modern .table-header .table-actions,
+.override-validation-dialog .override-validation-modern .table-header .table-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-self: end !important;
+}
+
+/* Ensure the column header row has left padding */
+.override-validation-table thead th,
+.pf2e-visioner .override-validation-table thead th,
+.override-validation-dialog .override-validation-table thead th {
+  padding-left: 12px !important;
+}
+
+.pf2e-visioner.override-validation-dialog .override-validation-modern,
 .pf2e-visioner .override-validation-dialog .override-validation-modern {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0; /* enable inner scroll regions to size properly */
 }
 
 /* Header */
@@ -448,9 +604,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: rgba(255, 179, 0, 0.12);
-  color: #ffb300;
-  border: 1px solid rgba(255, 179, 0, 0.3);
+  background: var(--visibility-concealed-bg, rgba(255, 179, 0, 0.12));
+  color: var(--visibility-concealed, #ffb300);
+  border: 1px solid var(--visibility-concealed-bg-strong, rgba(255, 179, 0, 0.3));
 }
 .pf2e-visioner .override-validation-dialog .validation-header h2 {
   margin: 0;
@@ -682,8 +838,8 @@
 }
 /* Force table container to grow and scroll */
 .results-table-container {
-  flex: 1 1 auto;
-  overflow-y: scroll !important;
+  flex: 0 0 auto; /* let the scroll parent control height; containers size to content */
+  overflow-y: visible;
   overflow-x: hidden;
   border: 1px solid var(--color-border-light-primary);
   margin-bottom: 10px;
@@ -733,6 +889,19 @@
   justify-content: space-between;
 }
 
+/* Override Validation footer (non-action dialog) */
+.override-validation-bulk-actions-header {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--color-border-light-primary);
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.override-validation-bulk-actions-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 /* Basic table styling */
 .visibility-table,
 .point-out-results-table,
@@ -743,6 +912,12 @@
 .consequences-results-table,
 .take-cover-results-table {
   width: 100%;
+}
+
+/* Remove default cell spacing so there's no visual gap between the sticky header and first row */
+.override-validation-dialog .results-table-container table.override-validation-table {
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
 /* Sticky headers */
@@ -759,6 +934,15 @@
   thead
   th.observer,
 .override-validation-dialog .results-table-container table.override-validation-table td.observer {
+  width: 34%;
+}
+/* In the observer-oriented table, the first column is 'target' — mirror width */
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.target,
+.override-validation-dialog .results-table-container table.override-validation-table td.target {
   width: 34%;
 }
 .override-validation-dialog
@@ -790,7 +974,6 @@
 /* Explicit alignment and spacing for Override Validation table */
 .override-validation-dialog .results-table-container table.override-validation-table th,
 .override-validation-dialog .results-table-container table.override-validation-table td {
-  padding: 8px 10px;
   vertical-align: middle;
 }
 
@@ -800,6 +983,16 @@
   thead
   th.observer,
 .override-validation-dialog .results-table-container table.override-validation-table td.observer {
+  text-align: left;
+}
+
+/* Target column should also be left-aligned (observer-oriented table) */
+.override-validation-dialog
+  .results-table-container
+  table.override-validation-table
+  thead
+  th.target,
+.override-validation-dialog .results-table-container table.override-validation-table td.target {
   text-align: left;
 }
 
@@ -818,6 +1011,27 @@
 }
 /* Safety net in case class is missing */
 .override-validation-dialog td.observer img {
+  max-width: 32px;
+  max-height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Target cell avatar sizing and layout (observer-oriented table) */
+.override-validation-dialog td.target .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.override-validation-dialog td.target img.chip-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
+/* Safety net for target cells */
+.override-validation-dialog td.target img {
   max-width: 32px;
   max-height: 32px;
   border-radius: 50%;
@@ -894,12 +1108,13 @@
   flex-direction: column;
 }
 .override-validation-dialog .status-icons .visioner-icon-btn {
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--color-border-light-primary);
-  border-radius: 4px;
-  background: var(--color-bg-option);
-  color: var(--color-text-primary);
+  /* Icon-only look: no box, no background */
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -914,15 +1129,73 @@
   color: var(--color-text-dark-secondary);
   opacity: 0.7;
 }
-/* Previous state icons now use full, actual state colors (no fade) */
+/* In the override dialog, render state indicators as plain icons (no pill background) */
+.pf2e-visioner .override-validation-dialog .status-icons i[class*='visibility-'],
+.pf2e-visioner .override-validation-dialog .status-icons i[class*='cover-'] {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.pf2e-visioner .override-validation-dialog .status-icons i[class*='visibility-'],
+.pf2e-visioner .override-validation-dialog .status-icons i[class*='cover-'] {
+  line-height: 1;
+}
+.pf2e-visioner .override-validation-dialog .status-icons .visioner-icon-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+/* Make sure the icon buttons themselves don't reintroduce borders/background via theme */
+.pf2e-visioner .override-validation-dialog .status-icons .visioner-icon-btn {
+  background: transparent !important;
+  border: none !important;
+}
+/* Make previous-state (left) icons slightly subdued */
+.override-validation-dialog .status-icons .prev-visibility i,
+.override-validation-dialog .status-icons .prev-cover i,
+.override-validation-dialog .status-icons i.prev-visibility,
+.override-validation-dialog .status-icons i.prev-cover {
+  opacity: 0.7;
+  font-size: medium;
+}
+
+/* Cover Effects */
+.override-validation-dialog .cover-effect,
+.no-effect.cover-none,
+.cover-lesser,
+.cover-standard,
+.cover-greater {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--color-text-dark-secondary);
+  padding: 1px 4px;
+  display: inline-flex;
+}
+
+/* Current-state (right) icons are emphasized with a gentle glow */
 .override-validation-dialog .status-icons .status-visibility i,
-.override-validation-dialog .status-icons .status-cover i {
-  text-shadow: 0 0 6px rgba(126, 255, 164, 0.5);
+.override-validation-dialog .status-icons .status-cover i,
+.override-validation-dialog .status-icons i.status-visibility,
+.override-validation-dialog .status-icons i.status-cover {
+  text-shadow: 0 0 8px color-mix(in srgb, currentColor 55%, transparent);
+  font-size: medium;
+  border: none !important;
+}
+
+/* Ensure all cover icons match perceived size of visibility icons; tweak weights if needed */
+/* Upscale all cover icons slightly to match visibility icon visual size */
+.pf2e-visioner .override-validation-dialog .status-icons i[class*='cover-'] {
+  font-size: 20px !important;
 }
 .override-validation-dialog .status-description {
   display: none; /* hide textual status until Keep/Clear updates it */
   margin-top: 4px;
 }
+
+/* No special-case scaling; all cover icons use the same size now */
 
 /* Name column word wrapping */
 .token-name strong {
@@ -1379,6 +1652,23 @@
   transition: all 0.2s ease;
   min-width: 100px;
   justify-content: center;
+}
+
+/* Header-scoped bulk button: make "Clear These" look like a real button */
+.override-validation-dialog .table-header .bulk-action-btn.btn-clear-observer,
+.override-validation-dialog .table-header .bulk-action-btn.btn-clear-target {
+  background: var(--color-bg-btn-secondary);
+  color: var(--color-text-light-primary);
+  border-color: var(--color-border-light-primary);
+  padding: 6px 12px; /* compact in header */
+  border-radius: 6px;
+  font-weight: 600;
+}
+.override-validation-dialog .table-header .bulk-action-btn.btn-clear-observer:hover,
+.override-validation-dialog .table-header .bulk-action-btn.btn-clear-target:hover {
+  background: var(--pf2e-visioner-danger);
+  border-color: var(--pf2e-visioner-danger-hover);
+  color: #fff;
 }
 
 .bulk-action-btn:hover {

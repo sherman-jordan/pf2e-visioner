@@ -1,5 +1,6 @@
 import { COVER_STATES, VISIBILITY_STATES } from '../constants.js';
 import { setCoverBetween, setVisibilityBetween } from '../utils.js';
+import AvsOverrideManager from '../chat/services/infra/avs-override-manager.js';
 
 export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
   static current = null;
@@ -188,6 +189,16 @@ export class VisionerQuickPanel extends foundry.applications.api.ApplicationV2 {
     }
     try {
       for (const [obs, tgt] of pairs) {
+        // First, set AVS overrides so auto-visibility won't fight manual edits
+        try {
+          await AvsOverrideManager.applyOverrides(obs, { target: tgt, state }, {
+            source: 'manual_action',
+          });
+        } catch (e) {
+          console.warn('[pf2e-visioner] quick panel: failed to set AVS overrides', e);
+        }
+
+        // Then, apply the immediate visibility change for responsiveness
         await setVisibilityBetween(obs, tgt, state);
       }
       ui.notifications?.info?.(`Applied ${state} to ${pairs.length} pair(s).`);

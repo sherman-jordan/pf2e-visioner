@@ -742,7 +742,6 @@ export class DualSystemIntegration {
    */
   _combineSystemStates(avsVisibility, coverState) {
     // If already hidden or undetected, cover doesn't change that
-    debugger;
     if (['hidden', 'undetected'].includes(avsVisibility)) {
       return avsVisibility;
     }

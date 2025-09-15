@@ -6,7 +6,7 @@ export function getDesiredOverrideStatesForAction(actionType) {
     case 'seek':
       return ['observed', 'hidden'];
     case 'hide':
-      return ['observed', 'concealed', 'hidden'];
+      return ['observed', 'hidden'];
     case 'sneak':
       return ['observed', 'hidden', 'undetected'];
     case 'create-a-diversion':

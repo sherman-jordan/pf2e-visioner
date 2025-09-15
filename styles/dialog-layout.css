@@ -697,6 +697,12 @@
   font-weight: 600;
   font-size: 12px;
 }
+.pf2e-visioner .override-validation-dialog .chip.chip--token,
+.pf2e-visioner .override-validation-dialog .chip.chip--token .chip-avatar,
+.pf2e-visioner .override-validation-dialog td.observer img.chip-avatar,
+.pf2e-visioner .override-validation-dialog td.target img.chip-avatar {
+  cursor: pointer !important;
+}
 .pf2e-visioner .override-validation-dialog .chip-avatar {
   width: 16px;
   height: 16px;
@@ -1008,6 +1014,7 @@
   border-radius: 50%;
   object-fit: cover;
   display: inline-block;
+  cursor: pointer;
 }
 /* Safety net in case class is missing */
 .override-validation-dialog td.observer img {
@@ -1029,6 +1036,7 @@
   border-radius: 50%;
   object-fit: cover;
   display: inline-block;
+  cursor: pointer;
 }
 /* Safety net for target cells */
 .override-validation-dialog td.target img {

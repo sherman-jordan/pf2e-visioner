@@ -7,7 +7,7 @@
  * - Drag to move; position persists in localStorage
  */
 
-import { VISIBILITY_STATES, COVER_STATES } from '../constants.js';
+import { COVER_STATES, VISIBILITY_STATES } from '../constants.js';
 
 class OverrideValidationIndicator {
   static #instance = null;
@@ -24,14 +24,15 @@ class OverrideValidationIndicator {
     this._drag = { active: false, start: { x: 0, y: 0 }, offset: { x: 0, y: 0 }, moved: false };
   }
 
-  show(overrideData, tokenName, movedTokenId = null) {
+  show(overrideData, tokenName, movedTokenId = null, options = {}) {
     // Ensure latest styles are injected or refreshed (hot-reload safe)
     this.#ensureStyles();
-    this._data = { overrides: Array.isArray(overrideData) ? overrideData : [], tokenName, movedTokenId };
+    const pulse = options?.pulse !== undefined ? !!options.pulse : true;
+    this._data = { overrides: Array.isArray(overrideData) ? overrideData : [], tokenName, movedTokenId, pulse };
     if (!this._el) this.#createElement();
     this.#updateBadge();
     this._el.classList.add('pf2e-visioner-override-indicator--visible');
-    this._el.classList.add('pulse');
+    this._el.classList.toggle('pulse', !!pulse);
   }
 
   hide() {
@@ -52,10 +53,10 @@ class OverrideValidationIndicator {
   async openDialog() {
     if (!this._data?.overrides?.length) return;
     try {
-  const { OverrideValidationDialog } = await import('./override-validation-dialog.js');
-  // Expose moved token id for grouping via a global scratch, then show dialog
-  try { game.pf2eVisioner = game.pf2eVisioner || {}; game.pf2eVisioner.lastMovedTokenId = this._data.movedTokenId || null; } catch {}
-  await OverrideValidationDialog.show(this._data.overrides, this._data.tokenName);
+      const { OverrideValidationDialog } = await import('./override-validation-dialog.js');
+      // Expose moved token id for grouping via a global scratch, then show dialog
+      try { game.pf2eVisioner = game.pf2eVisioner || {}; game.pf2eVisioner.lastMovedTokenId = this._data.movedTokenId || null; } catch { }
+      await OverrideValidationDialog.show(this._data.overrides, this._data.tokenName);
       // Keep indicator visible; user can minimize dialog back
     } catch (e) {
       console.error('PF2E Visioner | Failed to open OverrideValidationDialog from indicator:', e);
@@ -105,7 +106,7 @@ class OverrideValidationIndicator {
         if (pos?.left) el.style.left = pos.left;
         if (pos?.top) el.style.top = pos.top;
       }
-    } catch {}
+    } catch { }
 
     // Mouse handlers
     el.addEventListener('mousedown', (ev) => this.#onMouseDown(ev));
@@ -173,7 +174,7 @@ class OverrideValidationIndicator {
           'pf2e-visioner-override-indicator-pos',
           JSON.stringify({ left: this._el.style.left, top: this._el.style.top })
         );
-      } catch {}
+      } catch { }
       setTimeout(() => (this._drag.moved = false), 50);
     } else {
       this._drag.moved = false;
@@ -185,9 +186,9 @@ class OverrideValidationIndicator {
     const badge = this._el?.querySelector('.indicator-badge');
     if (badge) badge.textContent = String(count);
     this._el?.classList.toggle('has-items', count > 0);
-    // Ensure pulse animation reflects presence of items
-    if (count > 0) this._el?.classList.add('pulse');
-    else this._el?.classList.remove('pulse');
+    // Ensure pulse animation reflects desired mode
+    const pulse = !!this._data?.pulse && count > 0;
+    this._el?.classList.toggle('pulse', pulse);
   }
 
   #showTooltip() {
@@ -229,7 +230,7 @@ class OverrideValidationIndicator {
 
     const buildRow = (o) => {
       const prevVis = o.state || (o.hasConcealment ? 'concealed' : 'observed');
-      const prevCover = o.hasCover ? (o.expectedCover || 'standard') : 'none';
+      const prevCover = (o.expectedCover ?? (o.hasCover ? 'standard' : 'none'));
       const curVis = o.currentVisibility || 'observed';
       const curCover = o.currentCover || 'none';
       const reasons = (o.reasonIcons || []).map((r) => `<i class="${r.icon}" title="${r.text}"></i>`).join('');

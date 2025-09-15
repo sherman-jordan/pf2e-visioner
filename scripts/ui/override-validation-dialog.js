@@ -3,10 +3,10 @@
  * Shows when manual overrides become invalid due to position/lighting changes
  */
 
-import { VISIBILITY_STATES, COVER_STATES } from '../constants.js';
+import { COVER_STATES, VISIBILITY_STATES } from '../constants.js';
 
 export class OverrideValidationDialog extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
-  
+
   constructor(options = {}) {
     super(options);
     this.invalidOverrides = options.invalidOverrides || [];
@@ -43,9 +43,9 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
-    
+
     // Prepare invalid overrides data for display
-  const overrides = this.invalidOverrides.map(override => {
+    const overrides = this.invalidOverrides.map(override => {
       const src = String(override.source || 'manual_action');
       let badgeLabel = 'Manual Override';
       let badgeIcon = 'fa-user-secret';
@@ -90,21 +90,21 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       const observerImg = observerToken?.document?.texture?.src ?? observerToken?.texture?.src ?? observerToken?.document?.img ?? null;
       const targetImg = targetToken?.document?.texture?.src ?? targetToken?.texture?.src ?? targetToken?.document?.img ?? null;
 
-  // Pick analysis icons from actual current state when provided by validator
-  // Prefer current states provided by the validator/caller; fall back to safe defaults
-  const visibilityKey = override.currentVisibility || 'observed';
-  const coverKey = override.currentCover || 'none';
-  const prevVisibilityKey = override.state || (override.hasConcealment ? 'concealed' : 'observed');
-  // Previous/original cover must reflect what the override expected at apply-time,
-  // not what the currentCover is now. If we don't have a specific level, assume 'standard'.
-  const prevCoverKey = override.hasCover
-    ? (override.expectedCover || override.originalCover || 'standard')
-    : 'none';
+      // Pick analysis icons from actual current state when provided by validator
+      // Prefer current states provided by the validator/caller; fall back to safe defaults
+      const visibilityKey = override.currentVisibility || 'observed';
+      const coverKey = override.currentCover || 'none';
+      const prevVisibilityKey = override.state || (override.hasConcealment ? 'concealed' : 'observed');
+      // Previous/original cover must reflect what the override expected at apply-time,
+      // not what the currentCover is now. If we don't have a specific level, assume 'standard'.
+      const prevCoverKey = (override.expectedCover != null)
+        ? override.expectedCover
+        : (override.hasCover ? (override.originalCover || 'standard') : 'none');
 
-  const visCfg = (VISIBILITY_STATES && VISIBILITY_STATES[visibilityKey]) || { icon: 'fas fa-eye', color: '#4caf50', label: 'Observed' };
-  const coverCfg = (COVER_STATES && COVER_STATES[coverKey]) || { icon: 'fas fa-shield-slash', color: '#4caf50', label: 'No Cover' };
-  const prevVisCfg = (VISIBILITY_STATES && VISIBILITY_STATES[prevVisibilityKey]) || { icon: 'fas fa-eye', color: '#9e9e9e', label: 'Observed' };
-  const prevCoverCfg = (COVER_STATES && COVER_STATES[prevCoverKey]) || { icon: 'fas fa-shield', color: '#9e9e9e', label: 'Cover' };
+      const visCfg = (VISIBILITY_STATES && VISIBILITY_STATES[visibilityKey]) || { icon: 'fas fa-eye', color: '#4caf50', label: 'Observed' };
+      const coverCfg = (COVER_STATES && COVER_STATES[coverKey]) || { icon: 'fas fa-shield-slash', color: '#4caf50', label: 'No Cover' };
+      const prevVisCfg = (VISIBILITY_STATES && VISIBILITY_STATES[prevVisibilityKey]) || { icon: 'fas fa-eye', color: '#9e9e9e', label: 'Observed' };
+      const prevCoverCfg = (COVER_STATES && COVER_STATES[prevCoverKey]) || { icon: 'fas fa-shield', color: '#9e9e9e', label: 'Cover' };
 
       return {
         id: `${override.observerId}-${override.targetId}`,
@@ -152,24 +152,31 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     });
 
     // Group into observer- and target-oriented lists for separate tables
-  const observerOrientedOverrides = [];
+    const observerOrientedOverrides = [];
     const targetOrientedOverrides = [];
+    // Group relative to the actual mover when available; fallback to header-by-name, then lastMovedTokenId
+    let refTokenId = game?.pf2eVisioner?.lastMovedTokenId || null;
+    if (!refTokenId) {
+      try {
+        const headerTokenByName = canvas.tokens?.placeables?.find(t => t?.document?.name === this.tokenName);
+        refTokenId = headerTokenByName?.document?.id || headerTokenByName?.id || null;
+      } catch { }
+    }
+
     for (const o of overrides) {
-      // If moved token is the observer in the pair, it's observer-oriented; if target, target-oriented.
-      // Fallback: put into target-oriented if we can't resolve moved token.
-      const moved = game?.pf2eVisioner?.lastMovedTokenId || null;
-      if (moved) {
-        if (o.observerId === moved) observerOrientedOverrides.push(o);
-        else if (o.targetId === moved) targetOrientedOverrides.push(o);
-        else targetOrientedOverrides.push(o);
+      if (refTokenId) {
+        if (o.observerId === refTokenId) observerOrientedOverrides.push(o);
+        else if (o.targetId === refTokenId) targetOrientedOverrides.push(o);
+        else targetOrientedOverrides.push(o); // if unrelated, keep in target table for review
       } else {
+        // If we can’t resolve a reference token, default to target table
         targetOrientedOverrides.push(o);
       }
     }
 
     // Determine header info for target table. Prefer the moved token if available.
     let headerToken = null;
-    try { headerToken = canvas.tokens?.placeables?.find(t => t?.document?.name === this.tokenName) || null; } catch {}
+    try { headerToken = canvas.tokens?.placeables?.find(t => t?.document?.name === this.tokenName) || null; } catch { }
     const targetHeader = {
       name: this.tokenName,
       img: headerToken?.document?.texture?.src ?? headerToken?.texture?.src ?? headerToken?.document?.img ?? null
@@ -185,28 +192,28 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       hasManualOverrides: overrides.some(o => /manual/i.test(o.source)),
       targetHeader
     };
-    
-    
+
+
     return result;
   }
 
   _onRender(context, options) {
     super._onRender(context, options);
-    
+
     // Add event listeners for bulk action buttons
     const clearAllBtn = this.element.querySelector('.btn-clear-all');
     const keepAllBtn = this.element.querySelector('.btn-keep-all');
     const clearObserverBtn = this.element.querySelector('.btn-clear-observer');
     const clearTargetBtn = this.element.querySelector('.btn-clear-target');
-    
+
     // Add event listeners for individual action buttons
     const individualClearBtns = this.element.querySelectorAll('.btn-clear');
     const individualKeepBtns = this.element.querySelectorAll('.btn-keep');
-    
+
     if (clearAllBtn) {
       clearAllBtn.addEventListener('click', () => this._onClearAll());
     }
-    
+
     if (keepAllBtn) {
       keepAllBtn.addEventListener('click', () => this._onKeepAll());
     }
@@ -250,7 +257,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
           // Animate pan without altering scale
           await canvas.animatePan({ x: center.x, y: center.y, duration: 400 });
           // Select just this token
-          try { canvas?.tokens?.selectObjects?.([token], { releaseOthers: true, control: true }); } catch {}
+          try { canvas?.tokens?.selectObjects?.([token], { releaseOthers: true, control: true }); } catch { }
 
           // Highlight the corresponding row within the same table
           const row = chip.closest('tr.token-row');
@@ -288,7 +295,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       ui.notifications.info(`Cleared ${toRemove.length} override(s) in ${group} table`);
       if (!this.invalidOverrides.length) {
         setTimeout(() => this.close(), 300);
-        try { const { default: indicator } = await import('./override-validation-indicator.js'); indicator.hide(); } catch {}
+        try { const { default: indicator } = await import('./override-validation-indicator.js'); indicator.hide(); } catch { }
       }
     } catch (e) {
       console.error('PF2E Visioner | Error during group clear:', e);
@@ -297,19 +304,19 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
   }
 
   async _onKeepIndividual(overrideId) {
-    
-    
+
+
     // Find the override by ID
     const override = this.invalidOverrides.find(o => `${o.observerId}-${o.targetId}` === overrideId);
     if (!override) {
-      
+
       return;
     }
 
     try {
       // Remove from the dialog's data
       this.invalidOverrides = this.invalidOverrides.filter(o => `${o.observerId}-${o.targetId}` !== overrideId);
-      
+
       // Disable the row and update status text/icon in the new table-based UI
       const overrideElement = this.element.querySelector(`[data-override-id="${overrideId}"]`);
       if (overrideElement) {
@@ -328,16 +335,16 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
         if (icons) icons.style.display = 'none';
         if (desc) desc.style.display = 'inline-flex';
       }
-      
+
       // If no more overrides, close the dialog and hide indicator
       if (this.invalidOverrides.length === 0) {
         setTimeout(() => this.close(), 1000);
         try {
           const { default: indicator } = await import('./override-validation-indicator.js');
           indicator.hide();
-        } catch {}
+        } catch { }
       }
-      
+
       ui.notifications.info(`Kept override: ${override.observerName} → ${override.targetName}`);
     } catch (error) {
       console.error('PF2E Visioner | Error keeping individual override:', error);
@@ -346,26 +353,26 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
   }
 
   async _onClearIndividual(overrideId) {
-    
-    
+
+
     // Find the override by ID
     const override = this.invalidOverrides.find(o => `${o.observerId}-${o.targetId}` === overrideId);
     if (!override) {
-      
+
       return;
     }
 
     try {
-  const observer = canvas.tokens?.get(override.observerId);
+      const observer = canvas.tokens?.get(override.observerId);
       const target = canvas.tokens?.get(override.targetId);
-      
+
       if (observer && target) {
         const { default: AvsOverrideManager } = await import('../chat/services/infra/avs-override-manager.js');
         await AvsOverrideManager.removeOverride(override.observerId, override.targetId);
-        
+
         // Remove from the dialog's data
         this.invalidOverrides = this.invalidOverrides.filter(o => `${o.observerId}-${o.targetId}` !== overrideId);
-        
+
         // Disable the row and update status text/icon in the new table-based UI
         const overrideElement = this.element.querySelector(`[data-override-id="${overrideId}"]`);
         if (overrideElement) {
@@ -384,16 +391,16 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
           if (icons) icons.style.display = 'none';
           if (desc) desc.style.display = 'inline-flex';
         }
-        
+
         // If no more overrides, close the dialog and hide indicator
         if (this.invalidOverrides.length === 0) {
           setTimeout(() => this.close(), 1000);
           try {
             const { default: indicator } = await import('./override-validation-indicator.js');
             indicator.hide();
-          } catch {}
+          } catch { }
         }
-        
+
         ui.notifications.info(`Cleared override: ${override.observerName} → ${override.targetName}`);
       }
     } catch (error) {
@@ -403,11 +410,11 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
   }
 
   async _onClearAll() {
-    
-    
+
+
     // Close dialog first
     await this.close();
-    
+
     // Remove all invalid overrides
     for (const override of this.invalidOverrides) {
       try {
@@ -417,22 +424,22 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
         console.error('PF2E Visioner | Error removing override:', error);
       }
     }
-    
+
     ui.notifications.info(`Cleared ${this.invalidOverrides.length} invalid override(s)`);
     try {
       const { default: indicator } = await import('./override-validation-indicator.js');
       indicator.hide();
-    } catch {}
+    } catch { }
   }
 
   async _onKeepAll() {
-    
+
     await this.close();
     ui.notifications.info('Kept all current overrides');
     try {
       const { default: indicator } = await import('./override-validation-indicator.js');
       indicator.hide();
-    } catch {}
+    } catch { }
   }
 
   /**
@@ -446,7 +453,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       return null;
     }
 
-    
+
 
     const dialog = new OverrideValidationDialog({
       invalidOverrides,

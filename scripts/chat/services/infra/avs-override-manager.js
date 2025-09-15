@@ -8,8 +8,8 @@
  * - Provide clear helpers for both array-of-changes and Map<targetId, changeData> inputs
  */
 
-import { setVisibilityBetween as setVisibility } from '../../../utils.js';
 import { MODULE_ID } from '../../../constants.js';
+import { setVisibilityBetween as setVisibility } from '../../../utils.js';
 
 function asChangesByTarget(changesInput, defaultState = null) {
   // Accept Map<string, { target, state, hasCover?, hasConcealment?, expectedCover? }>
@@ -31,7 +31,7 @@ function asChangesByTarget(changesInput, defaultState = null) {
       : (expectedCover === 'standard' || expectedCover === 'greater');
     const hasConcealment = typeof ch.hasConcealment === 'boolean'
       ? ch.hasConcealment
-      : ['concealed', 'hidden', 'undetected'].includes(state);
+      : ['concealed'].includes(state);
 
     map.set(target.document.id, { target, state, hasCover, hasConcealment, expectedCover });
   }
@@ -43,7 +43,7 @@ export class AvsOverrideManager {
   static registerHooks() {
     try {
       Hooks.off('avsOverride', this.onAVSOverride); // ensure no dupes
-    } catch {}
+    } catch { }
     Hooks.on('avsOverride', this.onAVSOverride.bind(this));
   }
   /**
@@ -83,7 +83,8 @@ export class AvsOverrideManager {
           target,
           state,
           source: options.source || (isSneakAction ? 'sneak_action' : 'manual_action'),
-          hasCover: changeData.hasCover || false,
+          // Do not force a boolean default; allow inference in onAVSOverride
+          hasCover: (typeof changeData.hasCover === 'boolean') ? changeData.hasCover : undefined,
           hasConcealment: changeData.hasConcealment || false,
           expectedCover: changeData.expectedCover,
         };
@@ -104,13 +105,32 @@ export class AvsOverrideManager {
 
   // Core hook handler: persist override and apply immediately
   static async onAVSOverride(overrideData) {
-    const { observer, target, state, source, hasCover, hasConcealment, expectedCover } =
-      overrideData || {};
+    const { observer, target, state, source } = overrideData || {};
+    let { hasCover, hasConcealment, expectedCover } = overrideData || {};
     if (!observer?.document?.id || !target?.document?.id || !state) {
       console.warn('PF2E Visioner | Invalid AVS override data:', overrideData);
       return;
     }
     try {
+      // If expectedCover isn't provided, compute it once at apply-time ONLY for non-manual sources
+      if (!expectedCover && (source || '').toLowerCase() !== 'manual_action') {
+        try {
+          const { CoverDetector } = await import('../../../cover/auto-cover/CoverDetector.js');
+          const coverDetector = new CoverDetector();
+          const coverResult = coverDetector.detectBetweenTokens(observer, target);
+          // Only persist meaningful levels; ignore 'none' to avoid noise
+          if (coverResult === 'standard' || coverResult === 'greater' || coverResult === 'lesser') {
+            expectedCover = coverResult;
+          }
+        } catch {
+          // ignore cover computation errors; leave expectedCover undefined
+        }
+      }
+      // If hasCover not explicitly provided, infer from expectedCover only when we have a concrete level
+      if (typeof hasCover !== 'boolean' && expectedCover) {
+        hasCover = expectedCover !== 'none';
+      }
+      // Persist exactly what we resolved (manual preserves provided fields)
       await this.storeOverrideFlag(observer, target, {
         state,
         source: source || 'unknown',
@@ -146,7 +166,7 @@ export class AvsOverrideManager {
     await setVisibility(observer, target, state, { isAutomatic: true, source: 'avs_override' });
     try {
       Hooks.call('pf2e-visioner.visibilityChanged', observer.document.id, target.document.id, state);
-    } catch {}
+    } catch { }
   }
 
   // Remove a specific override (persistent flag-based)
@@ -162,7 +182,7 @@ export class AvsOverrideManager {
           const { eventDrivenVisibilitySystem } = await import('../../../visibility/auto-visibility/EventDrivenVisibilitySystem.js');
           // Recalc both sides to be thorough
           await eventDrivenVisibilitySystem.recalculateForTokens([observerId, targetId]);
-        } catch {}
+        } catch { }
         return true;
       }
     } catch (error) {
@@ -181,16 +201,16 @@ export class AvsOverrideManager {
           if (flagKey.startsWith('avs-override-from-')) {
             try {
               await token.document.unsetFlag(MODULE_ID, flagKey);
-            } catch {}
+            } catch { }
           }
         }
-      } catch {}
+      } catch { }
     }
     // Recalculate everyone once after bulk clear
     try {
       const { eventDrivenVisibilitySystem } = await import('../../../visibility/auto-visibility/EventDrivenVisibilitySystem.js');
       await eventDrivenVisibilitySystem.recalculateAllVisibility(true);
-    } catch {}
+    } catch { }
   }
   // Generic writer with explicit source tag
   static async applyOverrides(observer, changesInput, { source, ...options } = {}) {

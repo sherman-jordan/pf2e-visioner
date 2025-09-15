@@ -53,7 +53,6 @@ export class OptimizedTokenUpdateManager {
    * @returns {boolean} Whether an update was triggered
    */
   handleTokenUpdate(tokenDoc, changes) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
 
     // Check if position or light properties changed
     const positionChanged = changes.x !== undefined || changes.y !== undefined;

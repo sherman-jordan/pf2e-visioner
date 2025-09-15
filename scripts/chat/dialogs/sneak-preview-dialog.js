@@ -16,7 +16,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!sneakingToken) {
       throw new Error('SneakPreviewDialog: sneakingToken is required');
     }
-    
+
     super({
       id: `sneak-preview-${sneakingToken.id}`,
       title: `Sneak Results`,
@@ -42,7 +42,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     });
 
     this.sneakingToken = sneakingToken;
-    
+
     // Store the start states data for correct start position visibility
     this.startStates = sneakData?.startStates || {};
 
@@ -50,21 +50,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (Object.keys(this.startStates).length === 0) {
       this._retrieveStoredStartStates(sneakData?.message);
     }
-    
+
     // Filter out the sneaking token from outcomes - it should not appear as an observer
     const sneakingTokenId = sneakingToken.id;
     const sneakingActorId = sneakingToken.actor?.id;
-    
+
     this.outcomes = outcomes.filter(outcome => {
-      const isSneakingToken = outcome.token?.id === sneakingTokenId || 
-                             outcome.token?.actor?.id === sneakingActorId;
+      const isSneakingToken = outcome.token?.id === sneakingTokenId ||
+        outcome.token?.actor?.id === sneakingActorId;
       return !isSneakingToken;
     });
-    
+
     // Preserve original outcomes so live toggles can re-filter from a stable list
     try {
       this._originalOutcomes = Array.isArray(this.outcomes) ? [...this.outcomes] : [];
-    } catch (_) {
+    } catch {
       this._originalOutcomes = this.outcomes || [];
     }
     this.changes = changes;
@@ -98,35 +98,35 @@ export class SneakPreviewDialog extends BaseActionDialog {
         this.startStates = message.flags['pf2e-visioner'].startStates;
         return;
       }
-      
+
       // Search recent messages for start states (within last 10 messages)
       const recentMessages = game.messages.contents.slice(-10).reverse();
-      
+
       for (const msg of recentMessages) {
         const startStates = msg.flags?.['pf2e-visioner']?.startStates;
         if (startStates && Object.keys(startStates).length > 0) {
-          
+
           // Check if any start state is related to our sneaking session
           // Start states are typically keyed by observer ID, so check if they contain relevant data
-          const hasRelevantStates = Object.values(startStates).some(state => 
-            state && typeof state === 'object' && 
+          const hasRelevantStates = Object.values(startStates).some(state =>
+            state && typeof state === 'object' &&
             (state.observerName || state.visibility || state.cover !== undefined)
           );
-          
+
           if (hasRelevantStates) {
             this.startStates = startStates;
             return;
           }
         }
       }
-      
+
       // Try to get from sneaking token flags
       const tokenFlags = this.sneakingToken?.document?.flags?.['pf2e-visioner'];
       if (tokenFlags?.startStates) {
         this.startStates = tokenFlags.startStates;
         return;
       }
-      
+
     } catch (error) {
       console.error('PF2E Visioner | Error retrieving stored start states:', error);
     }
@@ -179,7 +179,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         this.ignoreAllies,
         'token',
       );
-    } catch (_) {}
+    } catch { }
 
     const cfg = (s) => this.visibilityConfig(s);
 
@@ -191,18 +191,10 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Check if we have position data and if positions don't qualify
       const positionTransition = outcome.positionTransition || this._getPositionTransitionForToken(outcome.token);
       if (positionTransition) {
-        // Calculate qualifications to see if we need to override
-        const { default: EnhancedSneakOutcome } = await import('../services/actions/enhanced-sneak-outcome.js');
-        const startQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
-          positionTransition.startPosition?.avsVisibility, 
-          true
-        );
-        const endQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
-          positionTransition.endPosition?.avsVisibility,
-          false,
-          positionTransition.endPosition?.coverState
-        );
-        
+        // Calculate qualifications to see if we need to override, honoring AVS overrides when present
+        const startQualifies = this._startPositionQualifiesForSneak(outcome.token, outcome);
+        const endQualifies = this._endPositionQualifiesForSneak(outcome.token, outcome);
+
         // Only override to observed if one or both positions don't qualify
         // If both qualify, preserve the original enhanced outcome
         if (!startQualifies || !endQualifies) {
@@ -330,7 +322,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
             })
             .catch(() => this.render({ force: true }));
         });
-    } catch (_) {}
+    } catch { }
   }
 
   /**
@@ -339,19 +331,19 @@ export class SneakPreviewDialog extends BaseActionDialog {
    * @private
    */
   async _recomputeOutcomesWithPositionData() {
-    
+
     // Start from original list if available so toggles can re-include allies
     const baseList = Array.isArray(this._originalOutcomes)
       ? this._originalOutcomes
       : this.outcomes || [];
-    
+
     // Filter outcomes with base helper and ally filtering
     let filteredOutcomes = this.applyEncounterFilter(
       baseList,
       'token',
       'No encounter observers found, showing all',
     );
-    
+
     // Apply ally filtering for display purposes
     try {
       const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
@@ -361,7 +353,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         this.ignoreAllies,
         'token',
       );
-    } catch (_) {}
+    } catch { }
 
     // Capture current end positions for all filtered outcomes
     await this._captureCurrentEndPositionsForOutcomes(filteredOutcomes);
@@ -377,7 +369,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         // Calculate qualifications to see if we need to override
         const { default: EnhancedSneakOutcome } = await import('../services/actions/enhanced-sneak-outcome.js');
         const startQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
-          positionTransition.startPosition?.avsVisibility, 
+          positionTransition.startPosition?.avsVisibility,
           true
         );
         const endQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
@@ -385,7 +377,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
           false,
           positionTransition.endPosition?.coverState
         );
-        
+
         // Only override to observed if one or both positions don't qualify
         // If both qualify, preserve the original enhanced outcome
         if (!startQualifies || !endQualifies) {
@@ -399,13 +391,13 @@ export class SneakPreviewDialog extends BaseActionDialog {
           const currentVis = outcome.oldVisibility || outcome.currentVisibility;
           const { getDefaultNewStateFor } = await import('../services/data/action-state-config.js');
           const basicCalculation = getDefaultNewStateFor('sneak', currentVis, outcome.outcome);
-          
+
           // If the current newVisibility matches the basic calculation, it might not be enhanced
           // Let's recalculate using enhanced logic
           if (outcome.newVisibility === basicCalculation) {
             await this._recalculateNewVisibilityForOutcome(outcome);
           }
-          
+
           // Clear any override state to ensure our calculation is used
           outcome.overrideState = null;
         }
@@ -492,7 +484,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
           if (currentEndPosition) {
             outcome.endCover = currentEndPosition.coverState;
             outcome.endVisibility = currentEndPosition.avsVisibility;
-            
+
             // Create a basic position transition object for newly included tokens
             if (!outcome.positionTransition) {
               // For newly included tokens, we need to determine the start position
@@ -501,7 +493,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
               const startState = this.startStates[outcome.token.id];
               const startVisibility = startState?.visibility || 'hidden';
               const startCover = startState?.cover || 'none';
-              
+
               outcome.positionTransition = {
                 hasChanged: startVisibility !== currentEndPosition.avsVisibility,
                 transitionType: startVisibility !== currentEndPosition.avsVisibility ? 'improved' : 'unchanged',
@@ -580,7 +572,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         transitionType: 'unknown',
         transitionClass: 'position-unknown',
         transitionIcon: 'fas fa-question',
-        
+
         // Start position display (fallback)
         startPosition: {
           visibility: 'unknown',
@@ -598,7 +590,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
           lightingIcon: 'fas fa-question-circle',
           qualifies: false, // Default to false when no data
         },
-        
+
         // End position display (fallback)
         endPosition: {
           visibility: 'unknown',
@@ -616,7 +608,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
           lightingIcon: 'fas fa-question-circle',
           qualifies: false, // Default to false when no data
         },
-        
+
         // Change indicators (all false for fallback)
         changes: {
           visibility: false,
@@ -834,9 +826,9 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     const config = configs[type]?.[value];
     if (!config) {
-      return property === 'label' ? (value || 'Unknown') : 
-             property === 'icon' ? 'fas fa-question-circle' : 
-             `${type}-unknown`;
+      return property === 'label' ? (value || 'Unknown') :
+        property === 'icon' ? 'fas fa-question-circle' :
+          `${type}-unknown`;
     }
     return config[property];
   }
@@ -862,17 +854,25 @@ export class SneakPreviewDialog extends BaseActionDialog {
    */
   _startPositionQualifiesForSneak(observerToken, outcome) {
     if (!observerToken || !this.sneakingToken) return false;
-    
+
     try {
-      // Priority 1: Use stored start states from when sneak was initiated
+      // Priority 0: AVS override flag (observer -> sneaking token)
       const observerId = observerToken.document?.id || observerToken.id;
+      const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
+      if (overrideFlag && overrideFlag.state) {
+        const s = overrideFlag.state;
+        if (s === 'hidden' || s === 'undetected') return true;
+        // concealed/observed do not satisfy start prerequisite
+      }
+
+      // Priority 1: Use stored start states from when sneak was initiated
       const startState = this.startStates[observerId];
-      
+
       if (startState && startState.visibility) {
         const startVisibility = startState.visibility;
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
-      
+
       // Priority 2: Use position transition data
       const positionTransition = this._getPositionTransitionForToken(observerToken);
       if (positionTransition && positionTransition.startPosition) {
@@ -889,7 +889,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Final fallback to current visibility check
       const { getVisibilityBetween } = game.modules.get('pf2e-visioner')?.api || {};
       if (!getVisibilityBetween) return false;
-      const visibility = getVisibilityBetween(this.sneakingToken, observerToken);
+      // Use the observer -> sneaking token perspective
+      const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
       return visibility === 'hidden' || visibility === 'undetected';
     } catch (error) {
       console.warn('PF2E Visioner | Error checking start position qualification:', error);
@@ -907,11 +908,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
    */
   _endPositionQualifiesForSneak(observerToken, outcome) {
     if (!observerToken || !this.sneakingToken) return false;
-    
+
     try {
+      // Priority 0: AVS override flag (observer -> sneaking token)
+      const observerId = observerToken.document?.id || observerToken.id;
+      const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
+      if (overrideFlag) {
+        // Qualify if override provides standard/greater cover or concealment
+        if (overrideFlag.hasCover || ['standard', 'greater'].includes(overrideFlag.expectedCover)) return true;
+        if (overrideFlag.state === 'concealed') return true;
+        // hidden/undetected do not satisfy end prerequisite
+      }
+
       // Get the position transition data for this observer
       const positionTransition = this._getPositionTransitionForToken(observerToken);
-      
+
       // Priority: Use fresh outcome data if available (from _captureCurrentEndPositions), 
       // otherwise fall back to position transition data
       if (outcome && (outcome.endCover || outcome.endVisibility)) {
@@ -924,38 +935,38 @@ export class SneakPreviewDialog extends BaseActionDialog {
         if (outcome.endVisibility === 'concealed') {
           return true;
         }
-        
+
         return false;
       }
-      
+
       if (positionTransition && positionTransition.endPosition) {
         // Use the actual end position data
         const endPosition = positionTransition.endPosition;
-        
+
         // Check if sneaker has standard or greater cover at end position
         if (endPosition.coverState && ['standard', 'greater'].includes(endPosition.coverState)) {
           return true;
         }
-        
+
         // Check if concealed at end position (not hidden/undetected)
         const endVisibility = endPosition.avsVisibility;
         if (endVisibility === 'concealed') {
           return true;
         }
-        
+
         return false;
       }
 
       // Final fallback to current position check if no position or outcome data available
       const { getCoverBetween, getVisibilityBetween } = game.modules.get('pf2e-visioner')?.api || {};
       if (!getCoverBetween || !getVisibilityBetween) return false;
-      
-      // Check for manual or auto cover
-      const coverState = getCoverBetween(this.sneakingToken, observerToken);
+
+      // Check for manual or auto cover (observer -> sneaking token)
+      const coverState = getCoverBetween(observerToken, this.sneakingToken);
       if (coverState && coverState !== 'none') return true;
-      
+
       // Check if concealed or better
-      const visibility = getVisibilityBetween(this.sneakingToken, observerToken);
+      const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
       return visibility === 'concealed';
     } catch (error) {
       console.warn('PF2E Visioner | Error checking end position qualification:', error);
@@ -1005,7 +1016,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!outcome || !outcome.hasPositionData) return;
 
     const position = positionType === 'start' ? outcome.positionDisplay.startPosition : outcome.positionDisplay.endPosition;
-    
+
     // Toggle the qualification status
     const currentQualifies = position.qualifies;
     position.qualifies = !currentQualifies;
@@ -1069,7 +1080,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Calculate qualifications from position transition data
       const { default: EnhancedSneakOutcome } = await import('../services/actions/enhanced-sneak-outcome.js');
       startQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
-        positionTransition.startPosition?.avsVisibility, 
+        positionTransition.startPosition?.avsVisibility,
         true
       );
       endQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
@@ -1097,7 +1108,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     // Update the outcome
     outcome.newVisibility = newVisibility;
-    
+
     // Clear any override state since we're recalculating based on position qualifications
     outcome.overrideState = null;
 
@@ -1111,7 +1122,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
    * @param {Object} outcome - Updated outcome object
    */
   async _updateOutcomeDisplayForToken(tokenId, outcome) {
-    
+
     const row = document.querySelector(`tr[data-token-id="${tokenId}"]`);
     if (!row) {
       return;
@@ -1130,7 +1141,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     // Update outcome CSS class
     if (outcomeCell) {
       outcomeCell.className = `outcome ${this.getOutcomeClass(outcome.outcome)}`;
-      
+
       // Also update the outcome-primary element class
       const outcomePrimary = outcomeCell.querySelector('.outcome-primary');
       if (outcomePrimary) {
@@ -1144,23 +1155,23 @@ export class SneakPreviewDialog extends BaseActionDialog {
     // Update actionable change status - compare against both old visibility AND initial AVS outcome
     const effectiveNewState = outcome.overrideState || outcome.newVisibility;
     const hasChangeFromOldVisibility = effectiveNewState !== outcome.oldVisibility;
-    
+
     // Show apply buttons only if the effective new state differs from old visibility
     // Manual override takes precedence - if user overrode to match old visibility, no change needed
     outcome.hasActionableChange = hasChangeFromOldVisibility;
-    
+
     // Show revert buttons if there are changes that can be reverted
     // This includes both unapplied changes and applied changes
-    const hasRevertableChange = hasChangeFromOldVisibility || 
+    const hasRevertableChange = hasChangeFromOldVisibility ||
       (outcome.oldVisibility !== outcome.currentVisibility && outcome.oldVisibility !== outcome.newVisibility);
     outcome.hasRevertableChange = hasRevertableChange;
-    
+
     this.updateActionButtonsForToken(tokenId, outcome.hasActionableChange);
 
     // Update apply button state and visibility
     let applyButton = row.querySelector('.apply-change');
     let revertButton = row.querySelector('.revert-change');
-    
+
     // Create apply button if it doesn't exist and we need it
     if (!applyButton && outcome.hasActionableChange) {
       const actionsCell = row.querySelector('.actions');
@@ -1170,7 +1181,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         if (noActionSpan) {
           noActionSpan.remove();
         }
-        
+
         // Create apply button
         applyButton = document.createElement('button');
         applyButton.type = 'button';
@@ -1182,7 +1193,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         actionsCell.appendChild(applyButton);
       }
     }
-    
+
     // Create revert button if it doesn't exist and we need it
     if (!revertButton && outcome.hasRevertableChange) {
       const actionsCell = row.querySelector('.actions');
@@ -1192,7 +1203,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         if (noActionSpan) {
           noActionSpan.remove();
         }
-        
+
         // Create revert button
         revertButton = document.createElement('button');
         revertButton.type = 'button';
@@ -1204,17 +1215,17 @@ export class SneakPreviewDialog extends BaseActionDialog {
         actionsCell.appendChild(revertButton);
       }
     }
-    
+
     if (applyButton) {
       applyButton.disabled = !outcome.hasActionableChange;
       applyButton.style.display = outcome.hasActionableChange ? 'inline-flex' : 'none';
     }
-    
+
     if (revertButton) {
       revertButton.disabled = !outcome.hasRevertableChange;
       revertButton.style.display = outcome.hasRevertableChange ? 'inline-flex' : 'none';
     }
-    
+
     // If no actionable change, show "No Change" span
     if (!outcome.hasActionableChange) {
       const actionsCell = row.querySelector('.actions');
@@ -1256,22 +1267,22 @@ export class SneakPreviewDialog extends BaseActionDialog {
     const rollTotalElement = row.querySelector('.roll-total');
     const baseTotal = parseInt(rollTotalElement.dataset.baseTotal, 10) || outcome.baseRollTotal || outcome.rollTotal;
     const newTotal = baseTotal + bonus;
-    
+
     // Store the base total if not already stored
     if (!rollTotalElement.dataset.baseTotal) {
       rollTotalElement.dataset.baseTotal = outcome.rollTotal;
     }
-    
+
     rollTotalElement.textContent = newTotal;
     outcome.rollTotal = newTotal;
 
     // Recalculate outcome based on new total
     const margin = newTotal - outcome.dc;
     const newOutcome = app._calculateOutcome(margin);
-    
+
     // Update outcome in the data structure
     outcome.outcome = newOutcome;
-    
+
     // Update outcome display
     const outcomeCell = row.querySelector('.outcome');
     const outcomeText = outcomeCell.querySelector('.outcome-text');
@@ -1279,18 +1290,18 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const outcomeLabel = app.getOutcomeLabel(newOutcome);
       outcomeText.textContent = outcomeLabel;
     }
-    
+
     // Update outcome CSS class
     if (outcomeCell) {
       outcomeCell.className = `outcome ${app.getOutcomeClass(newOutcome)}`;
-      
+
       // Also update the outcome-primary element class
       const outcomePrimary = outcomeCell.querySelector('.outcome-primary');
       if (outcomePrimary) {
         outcomePrimary.className = `outcome-primary sneak-result-${app.getOutcomeClass(newOutcome)}`;
       }
     }
-    
+
     // Recalculate newVisibility based on position qualifications and new outcome
     try {
       if (app && typeof app._recalculateNewVisibilityForOutcome === 'function') {
@@ -1301,7 +1312,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     } catch (error) {
       console.error('PF2E Visioner | Error recalculating newVisibility:', error);
     }
-    
+
     // Update visibility state indicators with the recalculated newVisibility
     app._updateVisibilityStateIndicators(row, outcome.newVisibility);
 
@@ -1346,36 +1357,36 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const rollTotalElement = row.querySelector('.roll-total');
       const baseTotal = parseInt(rollTotalElement.dataset.baseTotal, 10) || outcome.baseRollTotal || outcome.rollTotal;
       const newTotal = baseTotal + bonus;
-      
+
       if (!rollTotalElement.dataset.baseTotal) {
         rollTotalElement.dataset.baseTotal = outcome.rollTotal;
       }
-      
+
       rollTotalElement.textContent = newTotal;
       outcome.rollTotal = newTotal;
 
       // Recalculate outcome
       const margin = newTotal - outcome.dc;
       const newOutcome = app._calculateOutcome(margin);
-      
+
       // Update outcome display
       const outcomeCell = row.querySelector('.outcome');
       const outcomeText = outcomeCell.querySelector('.outcome-text');
       if (outcomeText) {
         outcomeText.textContent = app.getOutcomeLabel(newOutcome);
       }
-      
+
       // Update outcome CSS class
       if (outcomeCell) {
         outcomeCell.className = `outcome ${app.getOutcomeClass(newOutcome)}`;
-        
+
         // Also update the outcome-primary element class
         const outcomePrimary = outcomeCell.querySelector('.outcome-primary');
         if (outcomePrimary) {
           outcomePrimary.className = `outcome-primary sneak-result-${app.getOutcomeClass(newOutcome)}`;
         }
       }
-      
+
       // Recalculate newVisibility based on position qualifications and new outcome
       try {
         if (app && typeof app._recalculateNewVisibilityForOutcome === 'function') {
@@ -1386,7 +1397,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       } catch (error) {
         console.error('PF2E Visioner | Error recalculating newVisibility:', error);
       }
-      
+
       // Update visibility indicators with the recalculated newVisibility
       app._updateVisibilityStateIndicators(row, outcome.newVisibility);
 
@@ -1418,7 +1429,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         btn.classList.add('active');
       }
     });
-    
+
     // Reset apply all cover buttons (no default highlighting)
     const applyAllButtons = this.element.querySelectorAll('.apply-all-cover-btn');
     applyAllButtons.forEach(btn => btn.classList.remove('active'));
@@ -1456,16 +1467,16 @@ export class SneakPreviewDialog extends BaseActionDialog {
    * @param {string} outcome - New outcome
    */
   _updateVisibilityStateIndicators(row, visibilityState) {
-    
+
     const visibilityStates = row.querySelectorAll('.state-icon');
-    
+
     // Remove selected class from all state icons
     visibilityStates.forEach(state => state.classList.remove('selected'));
 
     // Find the state icon with the matching data-state attribute
     const targetElement = row.querySelector(`.state-icon[data-state="${visibilityState}"]`);
-    
-      if (targetElement) {
+
+    if (targetElement) {
       targetElement.classList.add('selected');
     }
   }
@@ -1520,7 +1531,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (app) {
       // Clear the sneak-active flag when dialog is closed
       await app._clearSneakActiveFlag();
-      
+
       app.close();
       currentSneakDialog = null; // Clear reference when closing
     }

@@ -642,6 +642,12 @@ export class EventDrivenVisibilitySystem {
             console.warn('PF2E Visioner | Failed to check visibility overrides:', overrideError);
           }
 
+          // Read current map values early for potential suppression logic later
+          const currentVisibility1 =
+            getVisibilityMap(changedToken)[otherToken.document.id] || 'observed';
+          const currentVisibility2 =
+            getVisibilityMap(otherToken)[changedToken.document.id] || 'observed';
+
           // Only calculate visibility if we don't have overrides
           if (!hasOverride1 || !hasOverride2) {
             const changedTokenPosition = this.#getTokenPosition(changedToken);
@@ -671,11 +677,38 @@ export class EventDrivenVisibilitySystem {
           }
 
 
+          // Suppress wall-only driven "hidden/undetected" changes: walls should grant cover, not change vision states
+          // If calculator suggests hidden/undetected solely due to an obstacle (e.g., wall), keep previous state
+          // We use CoverDetector and only suppress when target has greater cover (typical for solid walls)
+          if (!hasOverride1 && (effectiveVisibility1 === 'hidden' || effectiveVisibility1 === 'undetected')) {
+            try {
+              const { CoverDetector } = await import('../../cover/auto-cover/CoverDetector.js');
+              const coverDetector = new CoverDetector();
+              const coverResult = coverDetector.detectBetweenTokens(changedToken, otherToken);
+              if (coverResult === 'greater') {
+                // Keep existing state; do not downgrade to hidden/undetected because of walls
+                effectiveVisibility1 = currentVisibility1;
+              }
+            } catch {
+              // Best effort only; if cover calc fails, proceed without suppression
+            }
+          }
+
+          if (!hasOverride2 && (effectiveVisibility2 === 'hidden' || effectiveVisibility2 === 'undetected')) {
+            try {
+              const { CoverDetector } = await import('../../cover/auto-cover/CoverDetector.js');
+              const coverDetector = new CoverDetector();
+              const coverResult = coverDetector.detectBetweenTokens(otherToken, changedToken);
+              if (coverResult === 'greater') {
+                effectiveVisibility2 = currentVisibility2;
+              }
+            } catch {
+              // Best effort only
+            }
+          }
+
+
           // Only update if visibility changed
-          const currentVisibility1 =
-            getVisibilityMap(changedToken)[otherToken.document.id] || 'observed';
-          const currentVisibility2 =
-            getVisibilityMap(otherToken)[changedToken.document.id] || 'observed';
 
           // Removed debug log
 

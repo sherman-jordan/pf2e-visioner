@@ -1835,14 +1835,7 @@ export class EventDrivenVisibilitySystem {
               // "undetected" might be questionable for stealth
               // Note: We can't easily get lighting level without the debug info, so we'll be more conservative
               if (!visionCapabilities.hasDarkvision) {
-                if (override.source === 'sneak_action') {
-                  reasons.push({
-                    icon: 'fas fa-user-ninja',
-                    text: 'no concealment',
-                    type: 'stealth-failed',
-                    crossed: true
-                  });
-                } else {
+                if (override.source !== 'sneak_action') {
                   reasons.push({
                     icon: 'fas fa-eye',
                     text: 'clearly visible',
@@ -1856,15 +1849,18 @@ export class EventDrivenVisibilitySystem {
           }
         }
         
-        // Additional check for sneak actions: if moved to area with no cover
-        if (override.source === 'sneak_action' && !targetHasCoverFromObserver) {
-          reasons.push({
-            icon: 'fas fa-user-ninja',
-            text: 'no cover',
-            type: 'stealth-broken',
-            crossed: true
-          });
-        }
+        // Removed additional ninja reason icons; a single ninja tag will be added for UI separately
+      }
+
+      // Build reason icons for UI: only show the ninja source tag when from Sneak
+      // Hide eye/eye-slash/shield reason icons in the UI; keep them internal for logic
+      const reasonIconsForUi = [];
+      if (override.source === 'sneak_action') {
+        reasonIconsForUi.push({
+          icon: 'fas fa-user-ninja',
+          text: 'sneak',
+          type: 'sneak-source'
+        });
       }
 
       if (reasons.length > 0) {
@@ -1872,7 +1868,7 @@ export class EventDrivenVisibilitySystem {
         return {
           shouldRemove: true,
           reason: reasons.map(r => r.text).join(' and '), // Keep text for logging
-          reasonIcons: reasons, // Pass icon data for UI
+          reasonIcons: reasonIconsForUi, // Pass icon data for UI (with single ninja tag if applicable)
           currentVisibility: visibility,
           currentCover: coverResult
         };
@@ -1932,70 +1928,17 @@ export class EventDrivenVisibilitySystem {
     const movedTokenName = invalidOverrides.length > 0 ? 
       (canvas.tokens?.get(invalidOverrides[0].targetId)?.document?.name) : 'Unknown Token';
 
-    // Dynamically import the dialog
+    // Non-obtrusive indicator instead of auto-opening dialog
     try {
-      console.log('PF2E Visioner | Attempting to import OverrideValidationDialog...');
-      const { OverrideValidationDialog } = await import('../../ui/override-validation-dialog.js');
-      console.log('PF2E Visioner | Successfully imported OverrideValidationDialog');
-      
-      // Show the dialog and wait for the user's decision
-      const result = await OverrideValidationDialog.show(overrideData, movedTokenName);
-
-      // Handle the user's choice
-      if (result) {
-        switch (result.action) {
-          case 'clear-all':
-            // Remove all overrides
-            for (const { observerId, targetId } of invalidOverrides) {
-              this.removeOverride(observerId, targetId);
-            }
-            ui.notifications.info(`Cleared ${invalidOverrides.length} invalid override${invalidOverrides.length > 1 ? 's' : ''}`);
-            break;
-
-          case 'clear-manual': {
-            // Remove only manual overrides
-            let clearedCount = 0;
-            for (const { observerId, targetId, override } of invalidOverrides) {
-              if (override.source === 'manual_action') {
-                this.removeOverride(observerId, targetId);
-                clearedCount++;
-              }
-            }
-            if (clearedCount > 0) {
-              ui.notifications.info(`Cleared ${clearedCount} manual override${clearedCount > 1 ? 's' : ''}`);
-            }
-            break;
-          }
-
-          case 'keep':
-            // Do nothing - keep all overrides
-            ui.notifications.info('Kept all current overrides');
-            break;
-
-          default:
-            console.warn('PF2E Visioner | Unknown dialog action:', result.action);
-        }
-      }
-    } catch (error) {
-      console.error('PF2E Visioner | Error showing override validation dialog:', error);
-      // Fallback to simple confirmation for the first override
-      const first = invalidOverrides[0];
-      const observer = canvas.tokens?.get(first.observerId);
-      const target = canvas.tokens?.get(first.targetId);
-      
-      if (observer && target) {
-        const result = await Dialog.confirm({
-          title: "Override Validation",
-          content: `<p>The visibility override <strong>${observer.document.name} → ${target.document.name}</strong> may no longer be valid.</p><p><strong>Reason:</strong> ${first.reason}</p><p>Would you like to remove this override?</p>`,
-          yes: () => true,
-          no: () => false,
-          defaultYes: true
-        });
-
-        if (result) {
-          this.removeOverride(first.observerId, first.targetId);
-          ui.notifications.info(`Removed visibility override: ${observer.document.name} → ${target.document.name}`);
-          }
+      const { default: indicator } = await import('../../ui/override-validation-indicator.js');
+      indicator.show(overrideData, movedTokenName);
+    } catch (err) {
+      console.warn('PF2E Visioner | Failed to show indicator, falling back to dialog:', err);
+      try {
+        const { OverrideValidationDialog } = await import('../../ui/override-validation-dialog.js');
+        await OverrideValidationDialog.show(overrideData, movedTokenName);
+      } catch (error) {
+        console.error('PF2E Visioner | Error showing override validation dialog:', error);
       }
     }
   }

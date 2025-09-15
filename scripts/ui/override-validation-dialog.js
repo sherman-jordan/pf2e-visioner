@@ -22,16 +22,9 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       // Include module root class so shared styles apply consistently
       contentClasses: ["pf2e-visioner", "override-validation-dialog"],
       resizable: true,
-      controls: [
-        {
-          icon: "fas fa-times",
-          label: "Close",
-          action: "close"
-        }
-      ]
     },
     position: {
-      width: 720,
+      width: 500,
       height: "auto",
       left: null,
       top: null

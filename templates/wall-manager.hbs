@@ -96,22 +96,22 @@
             <div class="cover-override-buttons" style="display:flex; gap:2px; flex-wrap:wrap; justify-content:center;">
               <button type="button" class="visioner-icon-btn {{#unless w.coverOverride}}active{{/unless}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="auto" 
-                      data-tooltip="Automatic Detection - Wall provides cover based on coverage thresholds" title="Automatic Detection">
+                      data-tooltip="Automatic Detection - Wall provides cover based on coverage thresholds" data-tooltip="Automatic Detection">
                 <i class="fas fa-bolt-auto" style="color:#888"></i>
               </button>
               <button type="button" class="visioner-icon-btn {{#if (eq w.coverOverride 'none')}}active{{/if}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="none" 
-                      data-tooltip="No Cover - Wall never provides cover regardless of thresholds" title="No Cover">
+                      data-tooltip="No Cover - Wall never provides cover regardless of thresholds" data-tooltip="No Cover">
                 <i class="fas fa-shield-slash" style="color:var(--cover-none)"></i>
               </button>
               <button type="button" class="visioner-icon-btn {{#if (eq w.coverOverride 'standard')}}active{{/if}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="standard" 
-                      data-tooltip="Standard Cover Maximum - Wall provides up to standard cover based on thresholds" title="Standard Cover">
+                      data-tooltip="Standard Cover Maximum - Wall provides up to standard cover based on thresholds" data-tooltip="Standard Cover">
                 <i class="fas fa-shield-alt" style="color:var(--cover-standard)"></i>
               </button>
               <button type="button" class="visioner-icon-btn {{#if (eq w.coverOverride 'greater')}}active{{/if}}" 
                       data-action="setCoverOverride" data-wall-id="{{w.id}}" data-cover-override="greater" 
-                      data-tooltip="Greater Cover Maximum - Wall provides up to greater cover based on thresholds" title="Greater Cover">
+                      data-tooltip="Greater Cover Maximum - Wall provides up to greater cover based on thresholds" data-tooltip="Greater Cover">
                 <i class="fas fa-shield" style="color:var(--cover-greater)"></i>
               </button>
             </div>

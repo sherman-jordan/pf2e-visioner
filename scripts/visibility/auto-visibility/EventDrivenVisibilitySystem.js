@@ -143,17 +143,13 @@ export class EventDrivenVisibilitySystem {
   #onTokenUpdate(tokenDoc, changes) {
     if (!this.#enabled || !game.user.isGM) return;
 
-    // Skip if token is Foundry hidden (either before or after the update)
-    // Exception: Allow processing for sneaking tokens even when hidden
-    // const wasHidden = tokenDoc.hidden;
-    // const isHidden = changes.hidden !== undefined ? changes.hidden : tokenDoc.hidden;
-    const isSneaking = tokenDoc.getFlag('pf2e-visioner', 'sneak-active');
-
-    // Removed skip logic for Foundry hidden tokens to test if it's related to the issue
-    // if ((wasHidden || isHidden) && !isSneaking) {
-    //   console.log('PF2E Visioner | AVS Skipping hidden token (not sneaking):', tokenDoc.name);
-    //   return;
-    // }
+    // Strictly skip processing for excluded tokens
+    const isHidden = changes.hidden !== undefined ? changes.hidden : tokenDoc.hidden;
+    if (isHidden) return;
+    try {
+      const tok = canvas.tokens?.get?.(tokenDoc.id);
+      if (tok && this.#isExcludedToken(tok)) return;
+    } catch { /* ignore */ }
 
     // Check what actually changed
     const positionChanged = changes.x !== undefined || changes.y !== undefined;
@@ -168,18 +164,9 @@ export class EventDrivenVisibilitySystem {
     let shouldUpdate = false;
 
     if (positionChanged && updateOnMovement) {
-      // For sneaking tokens, always update regardless of distance
-      // For other tokens, only update if movement is significant
-      if (isSneaking) {
-        shouldUpdate = true;
-      } else {
-        const distance = this.#getMovementDistance(tokenDoc, changes);
-        const threshold = (canvas.grid?.size || 100) * 0.5;
-
-        if (distance >= threshold) {
-          shouldUpdate = true;
-        }
-      }
+      const distance = this.#getMovementDistance(tokenDoc, changes);
+      const threshold = (canvas.grid?.size || 100) * 0.5;
+      if (distance >= threshold) shouldUpdate = true;
     }
 
     if ((lightChanged || visionChanged) && updateOnLighting) {
@@ -205,9 +192,27 @@ export class EventDrivenVisibilitySystem {
       });
       this.#markTokenChangedImmediate(tokenDoc.id);
 
-      // Queue override validation if position changed
+      // Queue override validation for the moved token and all tokens with overrides involving it
       if (positionChanged) {
+        // Persist the actual mover for downstream UI (indicator/dialog) headers
+        try { globalThis.game = globalThis.game || {}; game.pf2eVisioner = game.pf2eVisioner || {}; game.pf2eVisioner.lastMovedTokenId = tokenDoc.id; } catch { }
         this.#queueOverrideValidation(tokenDoc.id);
+        try {
+          const allTokens = canvas.tokens?.placeables || [];
+          for (const t of allTokens) {
+            if (!t?.id || t.id === tokenDoc.id) continue;
+            // Check if t has an override where the mover is the observer (avs-override-from-<moverId> on t)
+            const tFlags = t.document.flags['pf2e-visioner'] || {};
+            if (tFlags[`avs-override-from-${tokenDoc.id}`]) {
+              this.#queueOverrideValidation(t.id);
+            }
+            // Check if the mover has an override where t is the observer (avs-override-from-<t.id> on mover)
+            const moverFlags = tokenDoc.flags?.['pf2e-visioner'] || {};
+            if (moverFlags[`avs-override-from-${t.id}`]) {
+              this.#queueOverrideValidation(t.id);
+            }
+          }
+        } catch { }
       }
     }
   }
@@ -217,10 +222,11 @@ export class EventDrivenVisibilitySystem {
    */
   #onTokenCreate(tokenDoc) {
     if (!this.#enabled || !game.user.isGM) return;
-
-
+    try {
+      const tok = canvas.tokens?.get?.(tokenDoc.id);
+      if (tok && this.#isExcludedToken(tok)) return;
+    } catch { /* ignore */ }
     // Removed debug log
-
     this.#markTokenChangedImmediate(tokenDoc.id);
   }
 
@@ -323,7 +329,7 @@ export class EventDrivenVisibilitySystem {
       changes.items !== undefined;
 
     if (hasConditionChanges) {
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && (!t.document.hidden || t.document.getFlag('pf2e-visioner', 'sneak-active'))) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !this.#isExcludedToken(t)) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -345,7 +351,7 @@ export class EventDrivenVisibilitySystem {
     }
 
     // Find tokens for this actor - skip hidden tokens
-    const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && (!t.document.hidden || t.document.getFlag('pf2e-visioner', 'sneak-active'))) || [];
+    const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !this.#isExcludedToken(t)) || [];
 
     if (tokens.length > 0) {
       // Removed debug log
@@ -453,7 +459,7 @@ export class EventDrivenVisibilitySystem {
 
     if (isVisibilityRelated && effect.parent?.documentName === 'Actor') {
       const actor = effect.parent;
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && (!t.document.hidden || t.document.getFlag('pf2e-visioner', 'sneak-active'))) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !this.#isExcludedToken(t)) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -499,7 +505,7 @@ export class EventDrivenVisibilitySystem {
 
     if (isRelevantType && isVisibilityRelated && item.parent?.documentName === 'Actor') {
       const actor = item.parent;
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && (!t.document.hidden || t.document.getFlag('pf2e-visioner', 'sneak-active'))) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !this.#isExcludedToken(t)) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -526,18 +532,9 @@ export class EventDrivenVisibilitySystem {
    */
   #markAllTokensChangedImmediate() {
     const tokens = canvas.tokens?.placeables || [];
-    const sneakingTokens = [];
-
     tokens.forEach((token) => {
-      if (token.actor && (!token.document.hidden || token.document.getFlag('pf2e-visioner', 'sneak-active'))) {
+      if (token.actor && !this.#isExcludedToken(token)) {
         this.#changedTokens.add(token.document.id);
-        if (token.document.getFlag('pf2e-visioner', 'sneak-active')) {
-          sneakingTokens.push({
-            id: token.document.id,
-            name: token.document.name,
-            hidden: token.document.hidden
-          });
-        }
       }
     });
 
@@ -570,18 +567,8 @@ export class EventDrivenVisibilitySystem {
       // const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
       // const startTime = performance.now();
 
-      // Always include sneaking tokens, even if they're hidden by Foundry
-      const allTokens = canvas.tokens?.placeables?.filter((t) => {
-        if (!t.actor) return false;
-
-        // Include visible tokens
-        if (!t.document.hidden) return true;
-
-        // Include sneaking tokens even if hidden
-        if (t.document.getFlag('pf2e-visioner', 'sneak-active')) return true;
-
-        return false;
-      }) || [];
+      // Only include tokens that are not excluded per policy
+      const allTokens = canvas.tokens?.placeables?.filter((t) => t.actor && !this.#isExcludedToken(t)) || [];
       const updates = [];
 
       // For each changed token, recalculate visibility with all other tokens
@@ -814,6 +801,45 @@ export class EventDrivenVisibilitySystem {
   }
 
   /**
+   * Check Foundry's visibility for a token's center point.
+   * Returns false if the token fails Foundry visibility checks (treated like Foundry-hidden for AVS purposes).
+   */
+  #passesFoundryVisibility(token) {
+    try {
+      const point = token?.center || null;
+      if (!point) return true; // default to include if we can't get center
+      if (canvas?.visibility?.testVisibility) {
+        return !!canvas.visibility.testVisibility(point, { object: token, tolerance: 0 });
+      }
+      // Fallback for older APIs
+      if (canvas?.sight?.testVisibility) {
+        return !!canvas.sight.testVisibility(point, { tolerance: 0 });
+      }
+    } catch {
+      // Best effort only
+    }
+    return true;
+  }
+
+  /**
+   * Central predicate: tokens excluded from AVS calculations
+   * - Foundry hidden
+   * - Sneak-active flag set
+   * - Do not pass Foundry's testVisibility
+   */
+  #isExcludedToken(token) {
+    try {
+      if (!token?.document) return true;
+      if (token.document.hidden) return true;
+      if (token.document.getFlag(MODULE_ID, 'sneak-active')) return true;
+      if (!this.#passesFoundryVisibility(token)) return true;
+    } catch {
+      // If in doubt, do not exclude
+    }
+    return false;
+  }
+
+  /**
    * Enable the system
    */
   enable() {
@@ -880,13 +906,11 @@ export class EventDrivenVisibilitySystem {
   async recalculateAllVisibility(force = false) {
     if (!this.#enabled && !force) return;
 
-    const tokens = canvas.tokens?.placeables || [];
+    const tokens = (canvas.tokens?.placeables || []).filter((t) => !this.#isExcludedToken(t));
     // Removed debug log
 
     // Process all tokens in a single batch
-    for (const token of tokens) {
-      this.#changedTokens.add(token.id);
-    }
+    for (const token of tokens) this.#changedTokens.add(token.id);
 
     await this.#processBatch();
   }
@@ -899,7 +923,7 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled) return;
 
     const sneakingTokens = canvas.tokens?.placeables?.filter((t) =>
-      t.actor && t.document.getFlag('pf2e-visioner', 'sneak-active')
+      t.actor && !this.#isExcludedToken(t) && t.document.getFlag('pf2e-visioner', 'sneak-active')
     ) || [];
 
     // Mark all sneaking tokens as changed
@@ -922,7 +946,10 @@ export class EventDrivenVisibilitySystem {
     if (!this.#enabled) return;
     const ids = Array.from(new Set((tokenIds || []).filter(Boolean)));
     if (ids.length === 0) return;
-    for (const id of ids) this.#changedTokens.add(id);
+    for (const id of ids) {
+      const tok = canvas.tokens?.get(id);
+      if (tok && !this.#isExcludedToken(tok)) this.#changedTokens.add(id);
+    }
     await this.#processBatch();
   }
 
@@ -934,6 +961,15 @@ export class EventDrivenVisibilitySystem {
    */
   async calculateVisibility(observer, target) {
     try {
+      // Short-circuit: AVS does not calculate for excluded participants (hidden, fails testVisibility, sneak-active)
+      if (observer && this.#isExcludedToken(observer)) {
+        const map = getVisibilityMap(observer || {});
+        return map?.[target?.document?.id] || 'observed';
+      }
+      if (target && this.#isExcludedToken(target)) {
+        const map = getVisibilityMap(observer || {});
+        return map?.[target?.document?.id] || 'observed';
+      }
       // Ensure we don't use stale cached vision capabilities when movement just happened
       const { VisionAnalyzer } = await import('./VisionAnalyzer.js');
       const visionAnalyzer = VisionAnalyzer.getInstance();
@@ -976,7 +1012,7 @@ export class EventDrivenVisibilitySystem {
 
     if (isVisionEquipment && item.parent?.documentName === 'Actor') {
       const actor = item.parent;
-      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && (!t.document.hidden || t.document.getFlag('pf2e-visioner', 'sneak-active'))) || [];
+      const tokens = canvas.tokens?.placeables.filter((t) => t.actor?.id === actor.id && !this.#isExcludedToken(t)) || [];
 
       if (tokens.length > 0) {
         // Removed debug log
@@ -1187,14 +1223,48 @@ export class EventDrivenVisibilitySystem {
 
     for (const tokenId of tokensToValidate) {
       const result = await this.#validateOverridesForToken(tokenId);
-      // If there are no invalid overrides, but overrides exist for this mover, show non-pulsing indicator for awareness
-      if (result && result.__showAwareness && Array.isArray(result.overrides) && result.overrides.length > 0) {
+      // If there are no invalid overrides, but awareness overrides exist, filter to only show changed details
+      if (result && result.__showAwareness && Array.isArray(result.overrides)) {
+        // Only surface the awareness indicator for the actual mover to keep the dataset mover-centric.
+        // Other tokens are validated (so maps stay correct) but won't overwrite the indicator UI.
         try {
-          const { default: indicator } = await import('../../ui/override-validation-indicator.js');
-          const moverName = canvas.tokens?.get(tokenId)?.document?.name || 'Token';
-          indicator.show(result.overrides, moverName, tokenId, { pulse: false });
-        } catch (e) {
-          console.warn('PF2E Visioner | Failed to show awareness indicator:', e);
+          const lastMovedId = (globalThis?.game?.pf2eVisioner?.lastMovedTokenId) || null;
+          if (lastMovedId && tokenId !== lastMovedId) {
+            // Skip displaying indicator for non-mover validations
+            continue;
+          }
+        } catch { /* best effort guard */ }
+        // Filter to only items where there is an actual change (visibility or cover)
+        const filtered = result.overrides.filter((o) => {
+          const prevVis = o.state || (o.hasConcealment ? 'concealed' : 'observed');
+          const prevCover = (o.expectedCover ?? (o.hasCover ? 'standard' : 'none'));
+          const curVis = o.currentVisibility || 'observed';
+          const curCover = o.currentCover || 'none';
+          return prevVis !== curVis || prevCover !== curCover;
+        });
+        // Debug trace: awareness counts
+        try {
+          const movedIdDbg = (globalThis?.game?.pf2eVisioner?.lastMovedTokenId) || tokenId;
+          console.debug('[PF2E Visioner] Awareness filter', {
+            tokenId,
+            movedId: movedIdDbg,
+            total: result.overrides.length,
+            filtered: filtered.length,
+          });
+        } catch { }
+        if (filtered.length > 0) {
+          try {
+            const { default: indicator } = await import('../../ui/override-validation-indicator.js');
+            const movedId = (globalThis?.game?.pf2eVisioner?.lastMovedTokenId) || tokenId;
+            const moverName = canvas.tokens?.get(movedId)?.document?.name || 'Token';
+            // Awareness is informational; don't pulse. Pass actual mover id for grouping and header.
+            indicator.show(filtered, moverName, movedId, { pulse: false });
+          } catch (e) {
+            console.warn('PF2E Visioner | Failed to show awareness indicator:', e);
+          }
+        } else {
+          // Debug when skipping display
+          try { console.debug('[PF2E Visioner] Awareness skipped: no changed items'); } catch { }
         }
       }
     }
@@ -1204,13 +1274,22 @@ export class EventDrivenVisibilitySystem {
    * Validate all overrides involving a specific token that just moved
    * @param {string} movedTokenId - ID of the token that moved
    */
+
   async #validateOverridesForToken(movedTokenId) {
     const movedToken = canvas.tokens?.get(movedTokenId);
+    const allFlags = movedToken?.document?.flags?.['pf2e-visioner'] || {};
+    const avsFlags = Object.entries(allFlags).filter(([k]) => k.startsWith('avs-override-from-'));
+    console.debug('[PF2E Visioner] #validateOverridesForToken called', { movedTokenId, movedTokenName: movedToken?.name, avsFlags });
     if (!movedToken) {
       return;
     }
+    // Skip validation for excluded tokens (hidden, fails testVisibility, sneak-active)
+    if (this.#isExcludedToken(movedToken)) {
+      return { overrides: [], __showAwareness: false };
+    }
 
     const overridesToCheck = [];
+
 
     // Persistent flag-based overrides scan
     // 1) Flags on the mover (mover is TARGET) -> should appear under "as Target"
@@ -1220,11 +1299,16 @@ export class EventDrivenVisibilitySystem {
         if (!flagKey.startsWith('avs-override-from-')) continue;
         const observerId = flagKey.replace('avs-override-from-', '');
         const targetId = movedToken.document.id;
+        // Always check overrides where the mover is the target, even if observer is missing
         const observerTok = canvas.tokens?.get(observerId) || null;
+        // If observer token is present and not excluded, use it; otherwise, use a minimal stub
+        const observer = (!observerTok || this.#isExcludedToken(observerTok))
+          ? { id: observerId, name: flagData.observerName || 'Unknown Observer' }
+          : observerTok;
         overridesToCheck.push({
           key: `${observerId}-${targetId}`,
           override: {
-            observer: observerTok,
+            observer,
             target: movedToken,
             state: flagData.state,
             source: flagData.source,
@@ -1233,7 +1317,7 @@ export class EventDrivenVisibilitySystem {
             expectedCover: flagData.expectedCover,
             observerId,
             targetId,
-            observerName: flagData.observerName || observerTok?.name,
+            observerName: flagData.observerName || observer?.name,
             targetName: flagData.targetName || movedToken.name
           },
           observerId,
@@ -1242,8 +1326,10 @@ export class EventDrivenVisibilitySystem {
           flagKey,
           token: movedToken
         });
+        // DEBUG: Print each flag key and data found on the mover
+        console.debug('[PF2E Visioner] OVERRIDE SCAN (as target)', { movedTokenId, flagKey, flagData });
       }
-    } catch { }
+    } catch (errTarget) { console.warn('[PF2E Visioner] OVERRIDE SCAN (as target) error', errTarget); }
 
     // 2) Flags on other tokens where mover is OBSERVER -> should appear under "as Observer"
     try {
@@ -1253,6 +1339,10 @@ export class EventDrivenVisibilitySystem {
         const flags = token.document.flags['pf2e-visioner'] || {};
         const flagKey = `avs-override-from-${movedTokenId}`;
         const flagData = flags[flagKey];
+        // DEBUG: Print each flag key and data found on other tokens
+        if (flagData) {
+          console.debug('[PF2E Visioner] OVERRIDE SCAN (as observer)', { movedTokenId, tokenId: token.id, flagKey, flagData });
+        }
         if (!flagData) continue;
         const observerId = movedTokenId;
         const targetId = token.document.id;
@@ -1278,7 +1368,15 @@ export class EventDrivenVisibilitySystem {
           token
         });
       }
-    } catch { }
+    } catch (errObserver) { console.warn('[PF2E Visioner] OVERRIDE SCAN (as observer) error', errObserver); }
+
+    console.debug('[PF2E Visioner] #validateOverridesForToken overridesToCheck', {
+      movedTokenId,
+      movedTokenName: movedToken?.name,
+      count: overridesToCheck.length,
+      keys: overridesToCheck.map(o => o.key),
+      details: overridesToCheck
+    });
 
     // Check each override for validity and collect invalid ones
     const invalidOverrides = [];
@@ -1317,6 +1415,28 @@ export class EventDrivenVisibilitySystem {
         if (!flagKey.startsWith('avs-override-from-')) continue;
         const observerId = flagKey.replace('avs-override-from-', '');
         const obs = canvas.tokens?.get(observerId);
+        if (!obs || obs.document?.hidden) continue;
+        // Calculate current visibility/cover for awareness (ignore manual overrides for comparison)
+        let currentVisibility = undefined;
+        let currentCover = undefined;
+        try {
+          let visibility;
+          try {
+            const { optimizedVisibilityCalculator } = await import('./VisibilityCalculator.js');
+            if (typeof optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides === 'function') {
+              visibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(obs, movedToken);
+            } else {
+              visibility = await this.calculateVisibility(obs, movedToken);
+            }
+          } catch {
+            visibility = await this.calculateVisibility(obs, movedToken);
+          }
+          currentVisibility = visibility;
+          const { CoverDetector } = await import('../../cover/auto-cover/CoverDetector.js');
+          const coverDetector = new CoverDetector();
+          const observerPos = this.#getTokenPosition(obs);
+          currentCover = coverDetector.detectFromPoint(observerPos, movedToken);
+        } catch { /* best effort */ }
         awareness.push({
           observerId,
           targetId: movedTokenId,
@@ -1325,16 +1445,40 @@ export class EventDrivenVisibilitySystem {
           state: flagData.state,
           hasCover: flagData.hasCover,
           hasConcealment: flagData.hasConcealment,
-          expectedCover: flagData.expectedCover
+          expectedCover: flagData.expectedCover,
+          currentVisibility,
+          currentCover
         });
       }
       // Collect mover-as-observer flags on others
       const allTokens = canvas.tokens?.placeables || [];
       for (const t of allTokens) {
         if (!t?.document || t.id === movedTokenId) continue;
+        if (t.document.hidden) continue;
         const fk = `avs-override-from-${movedTokenId}`;
         const fd = t.document.flags['pf2e-visioner']?.[fk];
         if (!fd) continue;
+        // Calculate current visibility/cover for awareness (ignore manual overrides for comparison)
+        let currentVisibility = undefined;
+        let currentCover = undefined;
+        try {
+          let visibility;
+          try {
+            const { optimizedVisibilityCalculator } = await import('./VisibilityCalculator.js');
+            if (typeof optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides === 'function') {
+              visibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(movedToken, t);
+            } else {
+              visibility = await this.calculateVisibility(movedToken, t);
+            }
+          } catch {
+            visibility = await this.calculateVisibility(movedToken, t);
+          }
+          currentVisibility = visibility;
+          const { CoverDetector } = await import('../../cover/auto-cover/CoverDetector.js');
+          const coverDetector = new CoverDetector();
+          const observerPos = this.#getTokenPosition(movedToken);
+          currentCover = coverDetector.detectFromPoint(observerPos, t);
+        } catch { }
         awareness.push({
           observerId: movedTokenId,
           targetId: t.id,
@@ -1343,7 +1487,9 @@ export class EventDrivenVisibilitySystem {
           state: fd.state,
           hasCover: fd.hasCover,
           hasConcealment: fd.hasConcealment,
-          expectedCover: fd.expectedCover
+          expectedCover: fd.expectedCover,
+          currentVisibility,
+          currentCover
         });
       }
     } catch { }
@@ -1365,8 +1511,56 @@ export class EventDrivenVisibilitySystem {
     if (!observer || !target) return null;
 
     try {
+
       // Calculate current visibility and get detailed information
-      const visibility = await this.calculateVisibility(observer, target);
+      // For override validation, always use the true AVS-calculated state (ignore manual overrides)
+      let visibility;
+      try {
+        const { optimizedVisibilityCalculator } = await import('./VisibilityCalculator.js');
+        // Use a special option or bypass to ignore overrides if supported
+        if (typeof optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides === 'function') {
+          visibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(observer, target);
+        } else {
+          // Fallback: temporarily remove override, calculate, then restore
+          const targetFlags = target?.document?.flags?.['pf2e-visioner'] || {};
+          const observerFlagKey = `avs-override-from-${observer?.document?.id}`;
+          let removedOverride = null;
+          if (targetFlags[observerFlagKey]) {
+            removedOverride = targetFlags[observerFlagKey];
+            // Remove override
+            delete target.document.flags['pf2e-visioner'][observerFlagKey];
+          }
+          visibility = await optimizedVisibilityCalculator.calculateVisibility(observer, target);
+          // Restore override
+          if (removedOverride) {
+            target.document.flags['pf2e-visioner'][observerFlagKey] = removedOverride;
+          }
+        }
+      } catch {
+        // Fallback to normal calculation if anything fails
+        visibility = await this.calculateVisibility(observer, target);
+      }
+      // DEBUG: Log both override state and AVS-calculated state for this pair
+      console.debug('[PF2E Visioner] OVERRIDE VALIDITY FINAL CHECK', {
+        observerId,
+        targetId,
+        observerName: observer?.name,
+        targetName: target?.name,
+        overrideState: override?.state,
+        avsCalculatedState: visibility,
+        override,
+      });
+
+      // DEBUG: Log override and AVS-calculated state for this pair
+      console.debug('[PF2E Visioner] OVERRIDE VALIDITY CHECK', {
+        observerId,
+        targetId,
+        observerName: observer?.name,
+        targetName: target?.name,
+        overrideState: override?.state,
+        avsCalculatedState: visibility,
+        override,
+      });
 
       // Get cover information using CoverDetector - checking if target has cover from observer
       // Only consider 'standard' and 'greater' cover as significant for override validation
@@ -1375,7 +1569,13 @@ export class EventDrivenVisibilitySystem {
       try {
         const { CoverDetector } = await import('../../cover/auto-cover/CoverDetector.js');
         const coverDetector = new CoverDetector();
-        coverResult = coverDetector.detectBetweenTokens(observer, target);
+        // Use freshest known positions to avoid stale center readings during/after movement
+        const observerPos = this.#getTokenPosition(observer);
+        const targetPos = this.#getTokenPosition(target);
+        // DEBUG: log positions used for cover validation
+        console.debug('[PF2E Visioner] Override Check cover positions', { observerId, targetId, observerPos, targetPos, expectedCover: override?.expectedCover });
+        // Use point-based detection to force the updated observer position
+        coverResult = coverDetector.detectFromPoint(observerPos, target);
 
         // Only standard and greater cover count as "having cover" for override purposes
         targetHasCoverFromObserver = coverResult === 'standard' || coverResult === 'greater';
@@ -1391,6 +1591,22 @@ export class EventDrivenVisibilitySystem {
       const targetIsVisibleToObserver = visibility === 'observed' || visibility === 'concealed';
 
       if (!visibility) return null;
+
+      // DEBUG LOGGING
+      console.debug('[PF2E Visioner] Override Check:', {
+        observerId,
+        targetId,
+        observerName: observer?.name,
+        targetName: target?.name,
+        override,
+        calculated: {
+          visibility,
+          coverResult,
+          targetHasCoverFromObserver,
+          targetHasConcealmentFromObserver,
+          targetIsVisibleToObserver
+        }
+      });
 
       const reasons = [];
       // Check if cover conditions have changed from what the override expected
@@ -1511,6 +1727,14 @@ export class EventDrivenVisibilitySystem {
   async #showOverrideValidationDialog(invalidOverrides, movedTokenId = null) {
     if (invalidOverrides.length === 0) return;
 
+    // Only surface the indicator for the actual mover to keep the dataset consistent.
+    try {
+      const lastMoved = (globalThis?.game?.pf2eVisioner?.lastMovedTokenId) || null;
+      if (lastMoved && movedTokenId && movedTokenId !== lastMoved) {
+        return; // skip non-mover validations for indicator; dialog can still be opened explicitly elsewhere
+      }
+    } catch { /* best-effort guard */ }
+
     // Prepare the override data for the dialog
     const overrideData = invalidOverrides.map(({ observerId, targetId, override, reason, reasonIcons, currentVisibility, currentCover }) => {
       const observer = canvas.tokens?.get(observerId);
@@ -1538,8 +1762,9 @@ export class EventDrivenVisibilitySystem {
 
     // Get the name of the token that moved (for context in dialog title)
     let movedTokenName = 'Unknown Token';
-    if (movedTokenId) {
-      movedTokenName = canvas.tokens?.get(movedTokenId)?.document?.name || movedTokenName;
+    const lastMoved = (globalThis?.game?.pf2eVisioner?.lastMovedTokenId) || movedTokenId || null;
+    if (lastMoved) {
+      movedTokenName = canvas.tokens?.get(lastMoved)?.document?.name || movedTokenName;
     } else if (invalidOverrides.length > 0) {
       // Fallback: infer from first invalid override participants
       const first = invalidOverrides[0];
@@ -1552,12 +1777,13 @@ export class EventDrivenVisibilitySystem {
     // Non-obtrusive indicator instead of auto-opening dialog
     try {
       const { default: indicator } = await import('../../ui/override-validation-indicator.js');
-      indicator.show(overrideData, movedTokenName, movedTokenId || null);
+      const headerId = lastMoved || movedTokenId || null;
+      indicator.show(overrideData, movedTokenName, headerId);
     } catch (err) {
       console.warn('PF2E Visioner | Failed to show indicator, falling back to dialog:', err);
       try {
         const { OverrideValidationDialog } = await import('../../ui/override-validation-dialog.js');
-        await OverrideValidationDialog.show(overrideData, movedTokenName);
+        await OverrideValidationDialog.show(overrideData, movedTokenName, lastMoved || movedTokenId || null);
       } catch (error) {
         console.error('PF2E Visioner | Error showing override validation dialog:', error);
       }

@@ -1,4 +1,4 @@
-import { COVER_STATES, MODULE_ID, VISIBILITY_STATES } from '../../../constants.js';
+import { COVER_STATES, VISIBILITY_STATES } from '../../../constants.js';
 import autoCoverSystem from '../../../cover/auto-cover/AutoCoverSystem.js';
 import stealthCheckUseCase from '../../../cover/auto-cover/usecases/StealthCheckUseCase.js';
 import { getCoverBetween } from '../../../utils.js';
@@ -29,7 +29,6 @@ export class HideActionHandler extends ActionHandlerBase {
     const tokens = canvas?.tokens?.placeables || [];
     const actorToken = actionData?.actor;
     const actorId = actorToken?.id || actorToken?.document?.id || null;
-    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
     const base = tokens
       .filter((t) => t && t.actor)
       .filter((t) => (actorId ? t.id !== actorId : t !== actorToken))
@@ -49,35 +48,7 @@ export class HideActionHandler extends ActionHandlerBase {
       // Hide should not list loot or hazards as observers
       .filter((t) => t.actor?.type !== 'loot' && t.actor?.type !== 'hazard');
 
-    if (!enforceRAW) return base;
-
-    // RAW filter: only observers that currently see the actor as Concealed
-    // OR (Observed AND actor has Standard or Greater cover) are relevant.
-    const { getVisibilityBetween, getCoverBetween } = await import('../../../utils.js');
-    return base.filter((observer) => {
-      try {
-        const vis = getVisibilityBetween(observer, actorToken);
-        if (vis === 'concealed') return true;
-        if (vis === 'observed') {
-          // Prefer live auto-cover for relevance (do not mutate state), then fall back to stored map
-          let cover = 'none';
-          if (this.autoCoverSystem.isEnabled()) {
-            try {
-              cover = this.stealthCheckUseCase._detectCover(actorToken, observer) || 'none';
-            } catch (_) {}
-          }
-          if (cover === 'none' || cover === 'lesser') {
-            try {
-              cover = getCoverBetween(observer, actorToken);
-            } catch (_) {
-              cover = 'none';
-            }
-          }
-          return cover === 'standard' || cover === 'greater';
-        }
-      } catch (_) {}
-      return false;
-    });
+    return base;
   }
   async analyzeOutcome(actionData, subject) {
     const { getVisibilityBetween } = await import('../../../utils.js');
@@ -220,8 +191,8 @@ export class HideActionHandler extends ActionHandlerBase {
     );
 
     const die = Number(
-      actionData?.roll?.dice?.[0]?.results?.[0]?.result ?? 
-      actionData?.roll?.dice?.[0]?.total ?? 
+      actionData?.roll?.dice?.[0]?.results?.[0]?.result ??
+      actionData?.roll?.dice?.[0]?.total ??
       actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const margin = total - adjustedDC;
@@ -253,6 +224,21 @@ export class HideActionHandler extends ActionHandlerBase {
     // Use centralized mapping for defaults
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
+
+    // Enforce end-position prerequisite like Sneak's end check: must be concealed OR have cover
+    try {
+      const { default: sneakPositionTracker } = await import('../position/SneakPositionTracker.js');
+      const endPos = await sneakPositionTracker._capturePositionState(
+        actionData.actor,
+        subject,
+        Date.now(),
+        { forceFresh: true, useCurrentPositionForCover: true }
+      );
+      const endQualifies = (endPos?.coverState === 'standard' || endPos?.coverState === 'greater') || endPos?.avsVisibility === 'concealed';
+      if (!endQualifies) {
+        newVisibility = 'observed';
+      }
+    } catch { /* non-fatal */ }
 
     // Calculate what the visibility change would have been with original outcome
     const originalNewVisibility = originalTotal

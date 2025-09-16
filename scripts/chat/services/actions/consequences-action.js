@@ -18,9 +18,6 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
     const tokens = canvas?.tokens?.placeables || [];
     const attacker = actionData?.actor || null;
 
-    // Apply RAW enforcement if enabled
-    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
-
     // Exclude attacker itself, hazards, and loot tokens from observers
     let potential = tokens.filter((t) => {
       try {
@@ -47,7 +44,6 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
     });
 
     // Apply RAW enforcement if enabled
-    if (enforceRAW) {
       const { getVisibilityBetween } = await import('../../../utils.js');
 
       // Filter to only include targets that the attacker is Hidden or Undetected from
@@ -71,7 +67,7 @@ export class ConsequencesActionHandler extends ActionHandlerBase {
           'No valid targets found for Attack Consequences. According to RAW, you can only see consequences from targets that you are Hidden or Undetected from.',
         );
       }
-    }
+    
 
     return potential;
   }

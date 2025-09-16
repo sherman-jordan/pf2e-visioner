@@ -24,6 +24,7 @@
   .consequences-preview-dialog .window-content,
   .take-cover-preview-dialog .window-content {
     height: 100%;
+    min-height: 0; /* allow inner flex children to shrink and scroll */
     padding: 10px;
     overflow: hidden;
   }
@@ -42,6 +43,20 @@
     overflow: hidden;
   }
 
+  /* Make the table area scroll within action dialogs (not override dialog) */
+  .point-out-preview-dialog .results-table-container,
+  .seek-preview-dialog .results-table-container,
+  .hide-preview-dialog .results-table-container,
+  .sneak-preview-dialog .results-table-container,
+  .create-a-diversion-preview-dialog .results-table-container,
+  .consequences-preview-dialog .results-table-container,
+  .take-cover-preview-dialog .results-table-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   /* Force header to not grow */
   .actor-info,
   .hider-info,
@@ -50,11 +65,15 @@
     flex: 0 0 auto;
   }
 
-  /* Enhanced Sneak Preview Dialog Styles */
+  /* Enhanced Sneak & Hide Preview Dialog Styles (shared position requirement buttons) */
   .sneak-preview-dialog,
   .sneak-preview-content,
+  .hide-preview-dialog,
+  .hide-preview-content,
   .pf2e-visioner .sneak-preview-dialog,
-  .pf2e-visioner .sneak-preview-content {
+  .pf2e-visioner .sneak-preview-content,
+  .pf2e-visioner .hide-preview-dialog,
+  .pf2e-visioner .hide-preview-content {
     /* Position requirement buttons - row layout with polish */
     .position-requirements-row {
       display: flex;
@@ -1179,18 +1198,22 @@
   gap: 4px;
   font-size: 10px;
   color: var(--color-text-dark-secondary);
-  padding: 1px 4px;
   display: inline-flex;
 }
 
 /* Current-state (right) icons are emphasized with a gentle glow */
 .override-validation-dialog .status-icons .status-visibility i,
+.override-validation-dialog .status-icons .prev-visibility i,
+.override-validation-dialog .status-icons i.prev-visibility,
+.override-validation-dialog .status-icons .prev-cover i,
+.override-validation-dialog .status-icons i.prev-cover,
 .override-validation-dialog .status-icons .status-cover i,
 .override-validation-dialog .status-icons i.status-visibility,
 .override-validation-dialog .status-icons i.status-cover {
   text-shadow: 0 0 8px color-mix(in srgb, currentColor 55%, transparent);
   font-size: medium;
   border: none !important;
+  padding: 0;
 }
 
 /* Ensure all cover icons match perceived size of visibility icons; tweak weights if needed */
@@ -1989,6 +2012,93 @@
     z-index: 999 !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
+
+/* ==========================================================
+   Scrollbars: enforce for action dialogs (flat selectors)
+   This section appears at the end to win the cascade.
+   Keeps Override Validation using its own scroll container.
+   ========================================================== */
+
+/* Ensure action dialog window-content can host inner scroll areas */
+.pf2e-visioner.point-out-preview-dialog .window-content,
+.pf2e-visioner .point-out-preview-dialog .window-content,
+.pf2e-visioner.seek-preview-dialog .window-content,
+.pf2e-visioner .seek-preview-dialog .window-content,
+.pf2e-visioner.hide-preview-dialog .window-content,
+.pf2e-visioner .hide-preview-dialog .window-content,
+.pf2e-visioner.sneak-preview-dialog .window-content,
+.pf2e-visioner .sneak-preview-dialog .window-content,
+.pf2e-visioner.create-a-diversion-preview-dialog .window-content,
+.pf2e-visioner .create-a-diversion-preview-dialog .window-content,
+.pf2e-visioner.consequences-preview-dialog .window-content,
+.pf2e-visioner .consequences-preview-dialog .window-content,
+.pf2e-visioner.take-cover-preview-dialog .window-content,
+.pf2e-visioner .take-cover-preview-dialog .window-content {
+  height: 100%;
+  min-height: 0; /* allow inner flex children to shrink and scroll */
+  padding: 10px;
+  overflow: hidden;
+}
+
+/* Content wrappers should be flex columns filling the dialog */
+.pf2e-visioner.point-out-preview-dialog .point-out-preview-content,
+.pf2e-visioner .point-out-preview-content,
+.pf2e-visioner.seek-preview-dialog .seek-preview-content,
+.pf2e-visioner .seek-preview-content,
+.pf2e-visioner.hide-preview-dialog .hide-preview-content,
+.pf2e-visioner .hide-preview-content,
+.pf2e-visioner.sneak-preview-dialog .sneak-preview-content,
+.pf2e-visioner .sneak-preview-content,
+.pf2e-visioner.create-a-diversion-preview-dialog .create-a-diversion-preview-content,
+.pf2e-visioner .create-a-diversion-preview-content,
+.pf2e-visioner.consequences-preview-dialog .consequences-preview-content,
+.pf2e-visioner .consequences-preview-content,
+.pf2e-visioner.take-cover-preview-dialog .take-cover-preview-content,
+.pf2e-visioner .take-cover-preview-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Scroll the results tables area within action dialogs */
+.pf2e-visioner.point-out-preview-dialog .results-table-container,
+.pf2e-visioner .point-out-preview-dialog .results-table-container,
+.pf2e-visioner.seek-preview-dialog .results-table-container,
+.pf2e-visioner .seek-preview-dialog .results-table-container,
+.pf2e-visioner.hide-preview-dialog .results-table-container,
+.pf2e-visioner .hide-preview-dialog .results-table-container,
+.pf2e-visioner.sneak-preview-dialog .results-table-container,
+.pf2e-visioner .sneak-preview-dialog .results-table-container,
+.pf2e-visioner.create-a-diversion-preview-dialog .results-table-container,
+.pf2e-visioner .create-a-diversion-preview-dialog .results-table-container,
+.pf2e-visioner.consequences-preview-dialog .results-table-container,
+.pf2e-visioner .consequences-preview-dialog .results-table-container,
+.pf2e-visioner.take-cover-preview-dialog .results-table-container,
+.pf2e-visioner .take-cover-preview-dialog .results-table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Give action dialogs a reliable fixed height so inner scrollbars can appear (wins over inline height:auto) */
+.pf2e-visioner.point-out-preview-dialog,
+.pf2e-visioner.seek-preview-dialog,
+.pf2e-visioner.hide-preview-dialog,
+.pf2e-visioner.sneak-preview-dialog,
+.pf2e-visioner.create-a-diversion-preview-dialog,
+.pf2e-visioner.consequences-preview-dialog,
+.pf2e-visioner.take-cover-preview-dialog {
+  height: 600px !important;
+}
+
+/* Preserve Override Validation behavior: no nested scrollbars here */
+.pf2e-visioner .override-validation-dialog .results-table-container {
+  flex: 0 0 auto !important;
+  overflow-y: visible !important;
+}
 
   .sticky-header-table tbody td {
     padding: 6px 8px;

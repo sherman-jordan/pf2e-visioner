@@ -29,7 +29,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         minimizable: false,
       },
       position: {
-        width: 850, // Increased width for position display components
+        width: 900, // Increased width for position display components
         height: 'auto',
       },
       form: {
@@ -74,6 +74,12 @@ export class SneakPreviewDialog extends BaseActionDialog {
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
     this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
+    // Visual filter default from per-user setting
+    try {
+      this.hideFoundryHidden = game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+    } catch {
+      this.hideFoundryHidden = true;
+    }
 
     // Enhanced position tracking properties
     this.positionTracker = sneakPositionTracker;
@@ -216,7 +222,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     });
 
     // Process outcomes to add additional properties including position data
-    const processedOutcomes = filteredOutcomes.map((outcome) => {
+    let processedOutcomes = filteredOutcomes.map((outcome) => {
       // Get current visibility state - how this observer sees the sneaking token
       const currentVisibility =
         getVisibilityBetween(outcome.token, this.sneakingToken) ||
@@ -261,6 +267,15 @@ export class SneakPreviewDialog extends BaseActionDialog {
       };
     });
 
+    // Visual filtering: hide Foundry-hidden tokens from display if enabled
+    try {
+      if (this.hideFoundryHidden) {
+        processedOutcomes = processedOutcomes.filter((o) => {
+          try { return o?.token?.document?.hidden !== true; } catch { return true; }
+        });
+      }
+    } catch { }
+
     // Sort outcomes to prioritize qualifying positions (green checkmarks) at the top
     const sortedOutcomes = this._sortOutcomesByQualification(processedOutcomes);
 
@@ -282,6 +297,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     context.sneakingToken = this.sneakingToken;
     context.outcomes = sortedOutcomes;
     context.ignoreAllies = !!this.ignoreAllies;
+    context.hideFoundryHidden = !!this.hideFoundryHidden;
 
     // Enhanced context with position tracking data
     context.hasPositionData = this._hasPositionData;
@@ -322,6 +338,20 @@ export class SneakPreviewDialog extends BaseActionDialog {
             })
             .catch(() => this.render({ force: true }));
         });
+    } catch { }
+    // Wire Hide Foundry-hidden visual filter toggle
+    try {
+      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
+      if (cbh) {
+        cbh.addEventListener('change', async () => {
+          this.hideFoundryHidden = !!cbh.checked;
+          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
+          // Recompute outcomes to apply visual filter and keep positions updated
+          const list = await this._recomputeOutcomesWithPositionData();
+          if (Array.isArray(list)) this.outcomes = list;
+          this.render({ force: true });
+        });
+      }
     } catch { }
   }
 
@@ -405,7 +435,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     }
 
     // Process outcomes to add additional properties including position data
-    const processedOutcomes = filteredOutcomes.map((outcome) => {
+    let processedOutcomes = filteredOutcomes.map((outcome) => {
       // Get current visibility state - how this observer sees the sneaking token
       const currentVisibility =
         getVisibilityBetween(outcome.token, this.sneakingToken) ||
@@ -450,6 +480,14 @@ export class SneakPreviewDialog extends BaseActionDialog {
       };
     });
 
+    // Visual filtering: hide Foundry-hidden tokens from display if enabled
+    try {
+      if (this.hideFoundryHidden) {
+        processedOutcomes = processedOutcomes.filter((o) => {
+          try { return o?.token?.document?.hidden !== true; } catch { return true; }
+        });
+      }
+    } catch { }
     return processedOutcomes;
   }
 

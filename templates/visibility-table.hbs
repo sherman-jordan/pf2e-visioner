@@ -34,9 +34,16 @@
   </thead>
   <tbody>
     {{#each tokens as |target|}}
-      <tr class="token-row {{sectionType}}-row {{#if target.dispositionClass}}{{target.dispositionClass}}-npc{{/if}}" data-token-id="{{target.id}}">
+      <tr class="token-row {{sectionType}}-row {{#if target.dispositionClass}}{{target.dispositionClass}}-npc{{/if}}" data-token-id="{{target.id}}" data-foundry-hidden="{{target.isFoundryHidden}}">
         <td class="token-image">
-          <img src="{{target.img}}" width="28" height="28" />
+          <div class="token-img-wrapper">
+            <img src="{{target.img}}" width="28" height="28" />
+            {{#if target.isFoundryHidden}}
+              <span class="foundry-hidden-indicator" data-tooltip="Foundry Hidden">
+                <i class="fas fa-eye-slash"></i>
+              </span>
+            {{/if}}
+          </div>
         </td>
         <td class="token-name">
           <strong>{{target.name}}</strong>

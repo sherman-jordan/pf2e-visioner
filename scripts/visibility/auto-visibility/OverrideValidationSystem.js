@@ -24,7 +24,7 @@ export class OverrideValidationSystem {
     if (OverrideValidationSystem.#instance) {
       return OverrideValidationSystem.#instance;
     }
-    
+
     this.#visibilitySystem = visibilitySystem;
     OverrideValidationSystem.#instance = this;
   }
@@ -87,7 +87,7 @@ export class OverrideValidationSystem {
    */
   async #processQueuedValidations() {
     if (!this.#enabled || !game.user.isGM) return;
-    
+
     const tokensToValidate = Array.from(this.#tokensQueuedForValidation);
     this.#tokensQueuedForValidation.clear();
     this.#validationTimeoutId = null;
@@ -113,7 +113,7 @@ export class OverrideValidationSystem {
     const activeOverrides = this.#visibilitySystem.getActiveOverrides();
     for (const [overrideKey, override] of activeOverrides.entries()) {
       const [observerId, targetId] = overrideKey.split('-');
-      
+
       if (observerId === movedTokenId || targetId === movedTokenId) {
         overridesToCheck.push({
           key: overrideKey,
@@ -129,18 +129,18 @@ export class OverrideValidationSystem {
     const allTokens = canvas.tokens?.placeables || [];
     for (const token of allTokens) {
       if (!token?.document) continue;
-      
+
       // Check all override flags on this token (target has flags FROM observers)
       const flags = token.document.flags['pf2e-visioner'] || {};
       for (const [flagKey, flagData] of Object.entries(flags)) {
         if (!flagKey.startsWith('avs-override-from-')) continue;
-        
+
         const observerId = flagKey.replace('avs-override-from-', '');
         const targetId = token.document.id;
-        
+
         // Skip if not involving the moved token
         if (observerId !== movedTokenId && targetId !== movedTokenId) continue;
-        
+
         overridesToCheck.push({
           key: `${observerId}-${targetId}`,
           override: {
@@ -170,7 +170,7 @@ export class OverrideValidationSystem {
     for (const checkData of overridesToCheck) {
       const { override, observerId, targetId, type, flagKey, token } = checkData;
       const shouldRemove = await this.#checkOverrideValidity(observerId, targetId, override);
-      
+
       if (shouldRemove) {
         // Attach current visibility/cover to the override for dialog rendering
         try {
@@ -205,14 +205,14 @@ export class OverrideValidationSystem {
   async #checkOverrideValidity(observerId, targetId, override) {
     const observer = canvas.tokens?.get(observerId);
     const target = canvas.tokens?.get(targetId);
-    
+
     if (!observer || !target) return null;
 
     try {
 
       // Calculate current visibility and cover using the auto-visibility system
       const visibility = await this.#visibilitySystem.calculateVisibility(observer, target);
-      
+
       if (!visibility) return null;
 
       const currentlyHasCover = visibility.cover !== 'none';
@@ -255,7 +255,7 @@ export class OverrideValidationSystem {
               const { VisionAnalyzer } = await import('./VisionAnalyzer.js');
               const visionAnalyzer = VisionAnalyzer.getInstance();
               const visionCapabilities = visionAnalyzer.getVisionCapabilities(observerToken.actor);
-              
+
               // If observer has normal vision and target is in bright light with no obstructions,
               // "undetected" might be questionable for stealth
               if (!visionCapabilities.hasDarkvision || visibility.lighting === 'bright') {
@@ -270,7 +270,7 @@ export class OverrideValidationSystem {
             }
           }
         }
-        
+
         // Additional check for sneak actions: if moved from concealing terrain to open bright light
         if (override.source === 'sneak_action' && visibility.lighting === 'bright' && !currentlyHasCover) {
           reasons.push('stealth broken: moved to bright open area');
@@ -304,7 +304,7 @@ export class OverrideValidationSystem {
     const overrideData = invalidOverrides.map(({ observerId, targetId, override, reason }) => {
       const observer = canvas.tokens?.get(observerId);
       const target = canvas.tokens?.get(targetId);
-      
+
       return {
         id: `${observerId}-${targetId}`,
         observerId,
@@ -326,9 +326,18 @@ export class OverrideValidationSystem {
     // Dynamically import the dialog
     try {
       const { OverrideValidationDialog } = await import('../../ui/override-validation-dialog.js');
-      
+
       // Show the dialog and wait for the user's decision
-      const result = await OverrideValidationDialog.show(overrideData, 'Token Movement');
+      // Try to provide moved token id/name when available
+      let movedTokenId = null;
+      let movedTokenName = 'Token Movement';
+      try {
+        movedTokenId = globalThis?.game?.pf2eVisioner?.lastMovedTokenId || null;
+        if (movedTokenId) {
+          movedTokenName = canvas.tokens?.get(movedTokenId)?.document?.name || movedTokenName;
+        }
+      } catch { }
+      const result = await OverrideValidationDialog.show(overrideData, movedTokenName, movedTokenId);
 
       // Handle the user's choice
       if (result) {
@@ -377,7 +386,7 @@ export class OverrideValidationSystem {
       const first = invalidOverrides[0];
       const observer = canvas.tokens?.get(first.observerId);
       const target = canvas.tokens?.get(first.targetId);
-      
+
       if (observer && target) {
         const result = await Dialog.confirm({
           title: "Override Validation",

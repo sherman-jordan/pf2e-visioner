@@ -78,7 +78,7 @@ export class ActionHandlerBase {
   }
 
   // Optional hooks for subclasses
-  async ensurePrerequisites() {}
+  async ensurePrerequisites() { }
   async discoverSubjects() {
     throw new Error('discoverSubjects must be implemented in subclass');
   }
@@ -150,7 +150,16 @@ export class ActionHandlerBase {
     try {
       await this.ensurePrerequisites(actionData);
 
-      const subjects = await this.discoverSubjects(actionData);
+      const discovered = (await this.discoverSubjects(actionData)) || [];
+      // Skip Foundry-hidden tokens from subjects (keep walls)
+      const subjects = discovered.filter((s) => {
+        try {
+          if (s && s._isWall) return true;
+          return s?.document?.hidden !== true;
+        } catch {
+          return true;
+        }
+      });
       const outcomes = [];
       for (const subject of subjects) {
         outcomes.push(await this.analyzeOutcome(actionData, subject));
@@ -166,7 +175,7 @@ export class ActionHandlerBase {
           const allowedIds = new Set(Object.keys(overrides));
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
-  } catch {}
+      } catch { }
       if (filtered.length === 0) {
         notify.info('No changes to apply');
         return 0;
@@ -177,7 +186,7 @@ export class ActionHandlerBase {
         if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
-  } catch {}
+      } catch { }
       const changes = filtered
         .map((o) => {
           const ch = this.outcomeToChange(actionData, o);
@@ -206,18 +215,27 @@ export class ActionHandlerBase {
     try {
       await this.ensurePrerequisites(actionData);
 
-      const subjects = await this.discoverSubjects(actionData);
+      const discovered = (await this.discoverSubjects(actionData)) || [];
+      // Skip Foundry-hidden tokens from subjects (keep walls)
+      const subjects = discovered.filter((s) => {
+        try {
+          if (s && s._isWall) return true;
+          return s?.document?.hidden !== true;
+        } catch {
+          return true;
+        }
+      });
       const outcomes = [];
       for (const subject of subjects) {
         outcomes.push(await this.analyzeOutcome(actionData, subject));
       }
-      
+
       // Apply overrides from the UI if provided
       this.applyOverrides(actionData, outcomes);
-      
+
       // Filter outcomes that need application
       let filtered = outcomes.filter((o) => o && o.changed);
-      
+
       // If overrides were provided, restrict application strictly to those ids
       try {
         const overrides = actionData?.overrides;
@@ -225,8 +243,8 @@ export class ActionHandlerBase {
           const allowedIds = new Set(Object.keys(overrides));
           filtered = filtered.filter((o) => allowedIds.has(this.getOutcomeTokenId(o)));
         }
-  } catch {}
-      
+      } catch { }
+
       if (filtered.length === 0) {
         notify.info('No changes to apply');
         return 0;
@@ -236,10 +254,10 @@ export class ActionHandlerBase {
       if (this.supportsDualSystemApplication && this.supportsDualSystemApplication()) {
         // Use dual system application for enhanced actions like sneak
         const { default: dualSystemApplication } = await import('../dual-system-result-application.js');
-        
+
         // Convert outcomes to sneak results format for dual system application
         const sneakResults = this.convertOutcomesToSneakResults(filtered, actionData);
-        
+
         // Apply using dual system with enhanced error handling and rollback
         const applicationResult = await dualSystemApplication.applySneakResults(sneakResults, {
           direction: this.getApplyDirection(),
@@ -256,13 +274,13 @@ export class ActionHandlerBase {
           // Handle application failure
           const errorMessage = applicationResult.errors.join('; ');
           notify.error(`Failed to apply changes: ${errorMessage}`);
-          
+
           // Attempt fallback to standard application if dual system fails
           if (applicationResult.errors.some(error => error.includes('fallback'))) {
             console.warn('PF2E Visioner | Dual system failed, attempting standard application');
             return await this.applyChangesWithFallback(filtered, actionData, button);
           }
-          
+
           return 0;
         }
       } else {
@@ -285,8 +303,8 @@ export class ActionHandlerBase {
         if (actionData?.overrides && typeof actionData.overrides === 'object') {
           overridesMap = new Map(Object.entries(actionData.overrides));
         }
-  } catch {}
-      
+      } catch { }
+
       const changes = filtered
         .map((o) => {
           const ch = this.outcomeToChange(actionData, o);
@@ -334,7 +352,7 @@ export class ActionHandlerBase {
     try {
       const cache = this.getCacheMap();
       if (!cache) return;
-      
+
       // Store dual system transaction ID for rollback
       const existing = cache.get(actionData.messageId) || [];
       const entry = {
@@ -343,7 +361,7 @@ export class ActionHandlerBase {
         timestamp: Date.now(),
         isDualSystem: true
       };
-      
+
       cache.set(actionData.messageId, existing.concat([entry]));
     } catch (error) {
       console.warn('PF2E Visioner | Failed to cache dual system results:', error);
@@ -353,10 +371,13 @@ export class ActionHandlerBase {
   async applyChangesInternal(changes) {
     const { applyVisibilityChanges } = await import('../infra/shared-utils.js');
     const direction = this.getApplyDirection();
-  const sourceTag = this.getSourceTag();
+    const sourceTag = this.getSourceTag();
     // Group by observer and apply batched
     const groups = this.groupChangesByObserver(changes);
     for (const group of groups) {
+      try {
+        if (group?.observer?.document?.hidden === true) continue; // Skip if observer is Foundry hidden
+      } catch { }
       await applyVisibilityChanges(
         group.observer,
         group.items.map((i) => ({ target: i.target, newVisibility: i.newVisibility })),
@@ -372,7 +393,7 @@ export class ActionHandlerBase {
       const existing = cache.get(actionData.messageId) || [];
       const entries = changes.map((c) => this.buildCacheEntryFromChange(c)).filter(Boolean);
       cache.set(actionData.messageId, existing.concat(entries));
-  } catch {}
+    } catch { }
   }
 
   updateButtonToRevert(button) {
@@ -381,7 +402,7 @@ export class ActionHandlerBase {
       button
         .html('<i class="fas fa-undo"></i> Revert Changes')
         .attr('data-action', this.getRevertActionName());
-  } catch {}
+    } catch { }
   }
 
   updateButtonToApply(button) {
@@ -390,7 +411,7 @@ export class ActionHandlerBase {
       button
         .html('<i class="fas fa-check-double"></i> Apply Changes')
         .attr('data-action', this.getApplyActionName());
-  } catch {}
+    } catch { }
   }
 
   // Revert logic
@@ -458,7 +479,7 @@ export class ActionHandlerBase {
   clearCache(actionData) {
     try {
       this.getCacheMap()?.delete(actionData.messageId);
-  } catch {}
+    } catch { }
   }
 
   removeFromCache(actionData, targetTokenId) {
@@ -478,7 +499,7 @@ export class ActionHandlerBase {
       } else {
         cache.set(actionData.messageId, filteredEntries);
       }
-  } catch {}
+    } catch { }
   }
 
   // Helpers

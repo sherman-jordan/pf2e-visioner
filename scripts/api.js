@@ -583,7 +583,7 @@ export class Pf2eVisionerApi {
       // 1.5) Additional safety: explicitly clear sneak flags
       try {
         await this.clearAllSneakFlags();
-      } catch (_) { }
+      } catch { }
 
       // 2) Clear scene-level caches used by the module
       try {
@@ -594,7 +594,7 @@ export class Pf2eVisionerApi {
           await scene.unsetFlag(MODULE_ID, 'partyTokenStateCache');
           await scene.unsetFlag(MODULE_ID, 'deferredPartyUpdates');
         }
-      } catch (_) { }
+      } catch { }
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
       try {
@@ -616,7 +616,7 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await actor.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch { }
           }
         }
 
@@ -640,17 +640,22 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await a.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch { }
           }
         }
-      } catch (_) { }
+      } catch { }
 
-      // 4) Clear AVS overrides from the new map-based system
+      // 4) Clear AVS overrides from the new map-based system and hide the override indicator
       try {
         const autoVis = autoVisibilitySystem;
         if (autoVis && typeof autoVis.clearAllOverrides === 'function') {
-          autoVis.clearAllOverrides();
+          await autoVis.clearAllOverrides();
         }
+        // Hide the override validation indicator if present
+        try {
+          const { default: indicator } = await import('./ui/override-validation-indicator.js');
+          if (indicator && typeof indicator.hide === 'function') indicator.hide(true);
+        } catch { }
       } catch (error) {
         console.warn('PF2E Visioner | Error clearing AVS overrides:', error);
       }
@@ -659,19 +664,19 @@ export class Pf2eVisionerApi {
       try {
         const { cleanupAllCoverEffects } = await import('./cover/ephemeral.js');
         await cleanupAllCoverEffects();
-      } catch (_) { }
+      } catch { }
 
       // 5) Rebuild effects and refresh visuals/perception
       // Removed effects-coordinator: bulk rebuild handled elsewhere
       try {
         await updateTokenVisuals();
-      } catch (_) { }
+      } catch { }
       try {
         refreshEveryonesPerception();
-      } catch (_) { }
+      } catch { }
       try {
         canvas.perception.update({ refreshVision: true });
-      } catch (_) { }
+      } catch { }
 
       ui.notifications.info('PF2E Visioner: Cleared all scene data.');
       return true;
@@ -792,7 +797,7 @@ export class Pf2eVisionerApi {
         if (sneakUpdates.length && scene.updateEmbeddedDocuments) {
           await scene.updateEmbeddedDocuments('Token', sneakUpdates, { diff: false });
         }
-      } catch (_) { }
+      } catch { }
 
       // 2) Clear scene-level caches used by the module (only if clearing all tokens)
       try {
@@ -803,7 +808,7 @@ export class Pf2eVisionerApi {
           await scene.unsetFlag(MODULE_ID, 'partyTokenStateCache');
           await scene.unsetFlag(MODULE_ID, 'deferredPartyUpdates');
         }
-      } catch (_) { }
+      } catch { }
 
       // 3) Remove module-created effects from all actors and token-actors (handles unlinked tokens)
       try {
@@ -853,7 +858,7 @@ export class Pf2eVisionerApi {
             } catch (_) { }
           }
         }
-      } catch (_) { }
+      } catch { }
 
       // 4) Clean up any remaining effects related to the selected tokens specifically
       try {
@@ -863,7 +868,7 @@ export class Pf2eVisionerApi {
           // Clean up this token from all other tokens' maps and effects
           await cleanupDeletedToken(token.document);
         }
-      } catch (_) { }
+      } catch { }
 
       // 5) Also remove the selected tokens from ALL other tokens' visibility/cover maps
       try {
@@ -885,7 +890,7 @@ export class Pf2eVisionerApi {
             await scene.updateEmbeddedDocuments('Token', updates, { diff: false });
           }
         }
-      } catch (_) { }
+      } catch { }
 
       // 5.5) Clean up AVS override flags that reference the purged tokens
       try {
@@ -913,9 +918,9 @@ export class Pf2eVisionerApi {
             await scene.updateEmbeddedDocuments('Token', [updates], { diff: false });
           }
         }
-      } catch (_) { }
+      } catch { }
 
-      // 5.5) Clear AVS overrides involving these tokens from the new map-based system
+      // 5.5) Clear AVS overrides involving these tokens from the new map-based system and hide the override indicator
       try {
         const autoVis = autoVisibilitySystem;
         if (autoVis && autoVis.removeOverride) {
@@ -929,6 +934,11 @@ export class Pf2eVisionerApi {
             }
           }
         }
+        // Hide the override validation indicator if present
+        try {
+          const { default: indicator } = await import('./ui/override-validation-indicator.js');
+          if (indicator && typeof indicator.hide === 'function') indicator.hide(true);
+        } catch { }
       } catch (error) {
         console.warn('PF2E Visioner | Error clearing AVS overrides for selected tokens:', error);
       }
@@ -936,7 +946,7 @@ export class Pf2eVisionerApi {
       // 6) Rebuild effects and refresh visuals/perception
       try {
         await updateTokenVisuals();
-      } catch (_) { }
+      } catch { }
       try {
         refreshEveryonesPerception();
       } catch (_) { }

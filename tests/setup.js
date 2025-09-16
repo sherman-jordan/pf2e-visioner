@@ -47,8 +47,6 @@ global.game = {
           coverFromUndetected: false,
           coverFromObserved: false,
           coverFromConcealed: false,
-          sneakRawEnforcement: false,
-          enforceRawRequirements: false,
         },
       };
       return defaults[moduleId]?.[settingId] ?? false;

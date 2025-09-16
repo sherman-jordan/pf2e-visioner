@@ -236,6 +236,16 @@ export const DEFAULT_SETTINGS = {
     type: Boolean,
     default: true,
   },
+  // Visual filter: hide Foundry-hidden tokens in UIs
+  hideFoundryHiddenTokens: {
+    name: 'PF2E_VISIONER.SETTINGS.HIDE_FOUNDRY_HIDDEN_TOKENS.name',
+    hint: 'PF2E_VISIONER.SETTINGS.HIDE_FOUNDRY_HIDDEN_TOKENS.hint',
+    scope: 'client',
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: true,
+  },
   // Token Filtering
   enableAllTokensVision: {
     name: 'PF2E_VISIONER.SETTINGS.ENABLE_ALL_TOKENS_VISION.name',
@@ -245,16 +255,6 @@ export const DEFAULT_SETTINGS = {
     restricted: true,
     type: Boolean,
     default: true,
-  },
-
-  sneakRawEnforcement: {
-    name: 'PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.name',
-    hint: 'PF2E_VISIONER.SETTINGS.SNEAK_RAW_ENFORCEMENT.hint',
-    scope: 'world',
-    config: true,
-    restricted: true,
-    type: Boolean,
-    default: false,
   },
 
   // Loot DCs
@@ -377,17 +377,6 @@ export const DEFAULT_SETTINGS = {
   blockPlayerTargetTooltips: {
     name: 'PF2E_VISIONER.SETTINGS.BLOCK_PLAYER_TARGET_TOOLTIPS.name',
     hint: 'PF2E_VISIONER.SETTINGS.BLOCK_PLAYER_TARGET_TOOLTIPS.hint',
-    scope: 'world',
-    config: true,
-    restricted: true,
-    type: Boolean,
-    default: false,
-  },
-
-  // RAW enforcement toggle
-  enforceRawRequirements: {
-    name: 'PF2E_VISIONER.SETTINGS.ENFORCE_RAW.name',
-    hint: 'PF2E_VISIONER.SETTINGS.ENFORCE_RAW.hint',
     scope: 'world',
     config: true,
     restricted: true,

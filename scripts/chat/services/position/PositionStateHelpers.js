@@ -5,8 +5,8 @@
  */
 
 import {
-    validatePositionState,
-    validatePositionTransition
+  validatePositionState,
+  validatePositionTransition
 } from './PositionStateModels.js';
 
 /**
@@ -19,12 +19,14 @@ import {
  * @returns {boolean} Whether the states are equal
  */
 export function comparePositionStates(state1, state2, options = {}) {
-  const { ignoreTimestamp = false, ignoreSystemErrors = false } = options;
-  
+  // By default, ignore timestamp differences because states are often captured at different moments
+  // Callers can opt-in to timestamp comparison by passing ignoreTimestamp: false
+  const { ignoreTimestamp = true, ignoreSystemErrors = false } = options;
+
   // Validate inputs
   const validation1 = validatePositionState(state1);
   const validation2 = validatePositionState(state2);
-  
+
   if (!validation1.isValid || !validation2.isValid) {
     console.warn('PF2E Visioner | Invalid position states in comparison:', {
       state1Errors: validation1.errors,
@@ -32,7 +34,7 @@ export function comparePositionStates(state1, state2, options = {}) {
     });
     return false;
   }
-  
+
   // Compare all fields except those optionally ignored
   const fieldsToCompare = [
     'avsVisibility',
@@ -48,31 +50,31 @@ export function comparePositionStates(state1, state2, options = {}) {
     'avsEnabled',
     'autoCoverEnabled'
   ];
-  
+
   if (!ignoreTimestamp) {
     fieldsToCompare.push('timestamp');
   }
-  
+
   // Compare basic fields
   for (const field of fieldsToCompare) {
     if (state1[field] !== state2[field]) {
       return false;
     }
   }
-  
+
   // Compare system errors array if not ignored
   if (!ignoreSystemErrors) {
     if (state1.systemErrors.length !== state2.systemErrors.length) {
       return false;
     }
-    
+
     for (let i = 0; i < state1.systemErrors.length; i++) {
       if (state1.systemErrors[i] !== state2.systemErrors[i]) {
         return false;
       }
     }
   }
-  
+
   return true;
 }
 
@@ -86,7 +88,7 @@ export function analyzeStealthImprovement(fromState, toState) {
   // Validate inputs
   const validation1 = validatePositionState(fromState);
   const validation2 = validatePositionState(toState);
-  
+
   if (!validation1.isValid || !validation2.isValid) {
     return {
       isImprovement: false,
@@ -97,7 +99,7 @@ export function analyzeStealthImprovement(fromState, toState) {
       }
     };
   }
-  
+
   const analysis = {
     isImprovement: false,
     reason: '',
@@ -108,14 +110,14 @@ export function analyzeStealthImprovement(fromState, toState) {
       overallImpact: 'neutral'
     }
   };
-  
+
   // Analyze visibility change
   const visibilityImprovement = analyzeVisibilityChange(
-    fromState.avsVisibility, 
+    fromState.avsVisibility,
     toState.avsVisibility
   );
   analysis.details.visibilityChange = visibilityImprovement;
-  
+
   // Analyze cover change
   const coverImprovement = analyzeCoverChange(
     fromState.coverState,
@@ -125,13 +127,13 @@ export function analyzeStealthImprovement(fromState, toState) {
   );
   analysis.details.coverChange = coverImprovement;
   analysis.details.stealthBonusChange = toState.stealthBonus - fromState.stealthBonus;
-  
+
   // Determine overall improvement
   const hasVisibilityImprovement = visibilityImprovement.isImprovement;
   const hasCoverImprovement = coverImprovement.isImprovement;
   const hasVisibilityWorsening = visibilityImprovement.isWorsening;
   const hasCoverWorsening = coverImprovement.isWorsening;
-  
+
   if (hasVisibilityImprovement || hasCoverImprovement) {
     if (hasVisibilityWorsening || hasCoverWorsening) {
       analysis.details.overallImpact = 'mixed';
@@ -148,7 +150,7 @@ export function analyzeStealthImprovement(fromState, toState) {
     analysis.details.overallImpact = 'unchanged';
     analysis.reason = 'No significant change in stealth position';
   }
-  
+
   return analysis;
 }
 
@@ -166,11 +168,11 @@ export function analyzeVisibilityChange(fromVisibility, toVisibility) {
     'hidden': 2,
     'undetected': 3
   };
-  
+
   const fromValue = stealthValues[fromVisibility] ?? 0;
   const toValue = stealthValues[toVisibility] ?? 0;
   const change = toValue - fromValue;
-  
+
   return {
     from: fromVisibility,
     to: toVisibility,
@@ -198,12 +200,12 @@ export function analyzeCoverChange(fromCover, toCover, fromBonus, toBonus) {
     'standard': 2,
     'greater': 3
   };
-  
+
   const fromValue = coverValues[fromCover] ?? 0;
   const toValue = coverValues[toCover] ?? 0;
   const coverChange = toValue - fromValue;
   const bonusChange = toBonus - fromBonus;
-  
+
   return {
     from: fromCover,
     to: toCover,
@@ -227,11 +229,11 @@ function getVisibilityChangeDescription(from, to, change) {
   if (change === 0) {
     return `Visibility unchanged (${from})`;
   }
-  
+
   if (change > 0) {
     return `Visibility improved from ${from} to ${to}`;
   }
-  
+
   return `Visibility worsened from ${from} to ${to}`;
 }
 
@@ -246,15 +248,15 @@ function getCoverChangeDescription(from, to, bonusChange) {
   if (from === to && bonusChange === 0) {
     return `Cover unchanged (${from})`;
   }
-  
+
   if (bonusChange > 0) {
     return `Cover improved from ${from} to ${to} (+${bonusChange} stealth bonus)`;
   }
-  
+
   if (bonusChange < 0) {
     return `Cover worsened from ${from} to ${to} (${bonusChange} stealth bonus)`;
   }
-  
+
   return `Cover changed from ${from} to ${to} (no bonus change)`;
 }
 
@@ -273,26 +275,26 @@ export function calculateDCModifier(positionState) {
       errors: validation.errors
     };
   }
-  
+
   let modifier = 0;
   const sources = [];
-  
+
   // Add stealth bonus from cover
   if (positionState.stealthBonus > 0) {
     modifier += positionState.stealthBonus;
     sources.push(`+${positionState.stealthBonus} from ${positionState.coverState} cover`);
   }
-  
+
   // Add visibility-based modifiers (if any specific rules apply)
   // This could be expanded based on specific game rules
-  
+
   // Add lighting condition modifiers (if any specific rules apply)
   // This could be expanded based on specific game rules
-  
+
   return {
     modifier,
     source: sources.length > 0 ? sources.join(', ') : 'none',
-    description: sources.length > 0 
+    description: sources.length > 0
       ? `DC modifier: ${modifier >= 0 ? '+' : ''}${modifier} (${sources.join(', ')})`
       : 'No DC modifiers apply',
     breakdown: sources
@@ -312,11 +314,11 @@ export function findBestPositionForStealth(positionStates) {
       reason: 'No position states provided'
     };
   }
-  
+
   // Validate all position states
   const validStates = [];
   const validIndices = [];
-  
+
   for (let i = 0; i < positionStates.length; i++) {
     const validation = validatePositionState(positionStates[i]);
     if (validation.isValid) {
@@ -324,7 +326,7 @@ export function findBestPositionForStealth(positionStates) {
       validIndices.push(i);
     }
   }
-  
+
   if (validStates.length === 0) {
     return {
       bestPosition: null,
@@ -332,23 +334,23 @@ export function findBestPositionForStealth(positionStates) {
       reason: 'No valid position states found'
     };
   }
-  
+
   // Score each position state for stealth effectiveness
   let bestScore = -Infinity;
   let bestIndex = -1;
   let bestPosition = null;
-  
+
   for (let i = 0; i < validStates.length; i++) {
     const state = validStates[i];
     const score = calculateStealthScore(state);
-    
+
     if (score > bestScore) {
       bestScore = score;
       bestIndex = validIndices[i];
       bestPosition = state;
     }
   }
-  
+
   return {
     bestPosition,
     bestIndex,
@@ -367,9 +369,9 @@ export function calculateStealthScore(positionState) {
   if (!validation.isValid) {
     return -Infinity;
   }
-  
+
   let score = 0;
-  
+
   // Visibility state scoring (higher is better for stealth)
   const visibilityScores = {
     'observed': 0,
@@ -378,7 +380,7 @@ export function calculateStealthScore(positionState) {
     'undetected': 30
   };
   score += visibilityScores[positionState.avsVisibility] || 0;
-  
+
   // Cover state scoring
   const coverScores = {
     'none': 0,
@@ -387,10 +389,10 @@ export function calculateStealthScore(positionState) {
     'greater': 15
   };
   score += coverScores[positionState.coverState] || 0;
-  
+
   // Stealth bonus scoring
   score += positionState.stealthBonus;
-  
+
   // Lighting condition scoring (darkness is better for stealth)
   const lightingScores = {
     'bright': -5,
@@ -399,23 +401,23 @@ export function calculateStealthScore(positionState) {
     'unknown': 0
   };
   score += lightingScores[positionState.lightingConditions] || 0;
-  
+
   // Distance scoring (closer is generally riskier, but this depends on context)
   // For now, we'll give a small bonus for reasonable distances
   if (positionState.distance >= 10 && positionState.distance <= 30) {
     score += 2;
   }
-  
+
   // Line of sight penalty (being seen is bad for stealth)
   if (positionState.hasLineOfSight) {
     score -= 3;
   }
-  
+
   // System error penalty
   if (positionState.systemErrors.length > 0) {
     score -= positionState.systemErrors.length * 2;
   }
-  
+
   return score;
 }
 
@@ -433,21 +435,21 @@ export function groupTransitionsByType(transitions) {
       invalid: []
     };
   }
-  
+
   const groups = {
     improved: [],
     worsened: [],
     unchanged: [],
     invalid: []
   };
-  
+
   for (const transition of transitions) {
     const validation = validatePositionTransition(transition);
     if (!validation.isValid) {
       groups.invalid.push(transition);
       continue;
     }
-    
+
     const type = transition.transitionType;
     if (groups[type]) {
       groups[type].push(transition);
@@ -455,7 +457,7 @@ export function groupTransitionsByType(transitions) {
       groups.invalid.push(transition);
     }
   }
-  
+
   return groups;
 }
 
@@ -476,29 +478,29 @@ export function summarizeTransitions(transitions) {
       averageImpactOnDC: 0
     };
   }
-  
+
   const groups = groupTransitionsByType(transitions);
   const validTransitions = [...groups.improved, ...groups.worsened, ...groups.unchanged];
-  
+
   let totalStealthBonusChange = 0;
   let totalImpactOnDC = 0;
-  
+
   for (const transition of validTransitions) {
     totalStealthBonusChange += transition.stealthBonusChange;
     totalImpactOnDC += transition.impactOnDC;
   }
-  
+
   return {
     total: transitions.length,
     improved: groups.improved.length,
     worsened: groups.worsened.length,
     unchanged: groups.unchanged.length,
     invalid: groups.invalid.length,
-    averageStealthBonusChange: validTransitions.length > 0 
-      ? totalStealthBonusChange / validTransitions.length 
+    averageStealthBonusChange: validTransitions.length > 0
+      ? totalStealthBonusChange / validTransitions.length
       : 0,
-    averageImpactOnDC: validTransitions.length > 0 
-      ? totalImpactOnDC / validTransitions.length 
+    averageImpactOnDC: validTransitions.length > 0
+      ? totalImpactOnDC / validTransitions.length
       : 0
   };
 }

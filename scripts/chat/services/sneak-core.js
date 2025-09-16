@@ -4,14 +4,11 @@
  * Eliminates duplication across SneakActionHandler, SneakPreviewDialog, DualSystemIntegration, and SneakPositionTracker
  */
 
-import { COVER_STATES, SNEAK_FLAGS, VISIBILITY_STATES } from '../../constants.js';
-import autoCoverSystem from '../../cover/auto-cover/AutoCoverSystem.js';
-import stealthCheckUseCase from '../../cover/auto-cover/usecases/StealthCheckUseCase.js';
+import { COVER_STATES } from '../../constants.js';
 import { getCoverBetween, getVisibilityBetween } from '../../utils.js';
-import { notify } from './infra/notifications.js';
-import { calculateStealthRollTotals, shouldFilterAlly } from './infra/shared-utils.js';
-import unifiedSystemIntegration from './unified-system-integration.js';
+import { shouldFilterAlly } from './infra/shared-utils.js';
 import simplifiedPositionTracker from './simplified-position-tracker.js';
+import unifiedSystemIntegration from './unified-system-integration.js';
 
 /**
  * Unified sneak state data structure
@@ -76,7 +73,7 @@ export class SneakCore {
     const timestamp = Date.now();
 
     // Filter observers based on ally settings
-    const filteredObservers = observers.filter(observer => 
+    const filteredObservers = observers.filter(observer =>
       !shouldFilterAlly(observer, sneakingToken)
     );
 
@@ -99,9 +96,11 @@ export class SneakCore {
     };
 
     this._activeStates.set(sessionId, sneakState);
-    
-    // Set sneak flag
-    await this._setSneakFlag(sneakingToken, true);
+
+    // Set sneak flag unless this is a preview-only session
+    if (!actionData?.previewOnly) {
+      await this._setSneakFlag(sneakingToken, true);
+    }
 
     console.debug('PF2E Visioner | Sneak session started:', sessionId);
     return sessionId;
@@ -123,11 +122,11 @@ export class SneakCore {
     // Capture end positions if movement occurred
     if (this._hasTokenMoved(state.sneakingToken, state.timestamp)) {
       state.endPositions = await this._capturePositions(
-        state.sneakingToken, 
-        state.observers, 
+        state.sneakingToken,
+        state.observers,
         { timestamp: Date.now(), forceFresh: true }
       );
-      
+
       // Analyze transitions
       state.transitions = this._analyzeTransitions(state.startPositions, state.endPositions);
     }
@@ -144,7 +143,7 @@ export class SneakCore {
    * @returns {Promise<Object>} Application result
    */
   async applyResults(sessionId, outcomes, options = {}) {
-    
+
     const state = this._activeStates.get(sessionId);
     if (!state) {
       console.error('PF2E Visioner | No active sneak state for session:', sessionId);
@@ -157,7 +156,7 @@ export class SneakCore {
 
       // Apply using dual system (only visibility changes for sneak)
       const { default: dualSystemApplication } = await import('./dual-system-result-application.js');
-      
+
       const result = await dualSystemApplication.applySneakResults(sneakResults, {
         direction: 'observer_to_target',
         skipCoverChanges: true, // Sneak only affects visibility
@@ -191,12 +190,12 @@ export class SneakCore {
     try {
       const { default: dualSystemApplication } = await import('./dual-system-result-application.js');
       const success = await dualSystemApplication.rollbackTransaction(cachedResult.transactionId);
-      
+
       if (success) {
         this._clearCachedResult(sessionId);
         console.debug('PF2E Visioner | Sneak results reverted successfully:', sessionId);
       }
-      
+
       return success;
     } catch (error) {
       console.error('PF2E Visioner | Failed to revert sneak results:', error);
@@ -211,13 +210,15 @@ export class SneakCore {
   async endSneakSession(sessionId) {
     const state = this._activeStates.get(sessionId);
     if (state) {
-      // Clear sneak flag
-      await this._setSneakFlag(state.sneakingToken, false);
-      
+      // Clear sneak flag unless this was a preview-only session
+      if (!state?.actionData?.previewOnly) {
+        await this._setSneakFlag(state.sneakingToken, false);
+      }
+
       // Cleanup state
       this._activeStates.delete(sessionId);
       this._clearCachedResult(sessionId);
-      
+
       console.debug('PF2E Visioner | Sneak session ended:', sessionId);
     }
   }
@@ -249,40 +250,6 @@ export class SneakCore {
   async _capturePositions(sneakingToken, observers, options = {}) {
     // Use simplified position tracker for batch processing
     return await this._positionTracker.capturePositions(sneakingToken, observers, options);
-  }
-
-  /**
-   * Capture position state for a single observer
-   * @private
-   */
-  async _capturePositionState(sneakingToken, observer, options = {}) {
-    try {
-      // Get combined system state using unified integration
-      const systemState = await this._systemIntegration.getCombinedState(
-        observer, 
-        sneakingToken, 
-        options
-      );
-
-      return {
-        visibility: systemState.visibility || 'observed',
-        coverState: systemState.coverState || 'none',
-        stealthBonus: systemState.stealthBonus || 0,
-        distance: this._calculateDistance(sneakingToken, observer),
-        calculated: systemState.calculated,
-        errors: systemState.warnings || []
-      };
-    } catch (error) {
-      // Fallback to manual detection
-      return {
-        visibility: getVisibilityBetween(observer, sneakingToken) || 'observed',
-        coverState: getCoverBetween(observer, sneakingToken) || 'none',
-        stealthBonus: this._getCoverBonus(getCoverBetween(observer, sneakingToken)),
-        distance: this._calculateDistance(sneakingToken, observer),
-        calculated: false,
-        errors: [error.message]
-      };
-    }
   }
 
   /**
@@ -330,16 +297,6 @@ export class SneakCore {
     }));
   }
 
-  /**
-   * Utility methods
-   * @private
-   */
-  _calculateDistance(token1, token2) {
-    if (!token1?.center || !token2?.center) return 0;
-    const dx = token1.center.x - token2.center.x;
-    const dy = token1.center.y - token2.center.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
 
   _getCoverBonus(coverState) {
     return COVER_STATES[coverState]?.bonusStealth || 0;

@@ -7,7 +7,7 @@ import { getCoverMap, getVisibilityMap } from '../../utils.js';
 
 import { MODULE_ID } from '../../constants.js';
 import { bindTokenManagerActions } from './actions/index.js';
-import { toggleIgnoreAllies, toggleIgnoreWalls } from './actions/ui.js';
+import { toggleHideFoundryHidden, toggleIgnoreAllies, toggleIgnoreWalls } from './actions/ui.js';
 import {
   addTokenBorder as addBorderUtil,
   removeTokenBorder as removeBorderUtil,
@@ -38,6 +38,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
       toggleEncounterFilter: VisionerTokenManager.toggleEncounterFilter,
       toggleIgnoreAllies: toggleIgnoreAllies,
       toggleIgnoreWalls: toggleIgnoreWalls,
+      toggleHideFoundryHidden: toggleHideFoundryHidden,
       toggleTab: VisionerTokenManager.toggleTab,
       bulkPCHidden: VisionerTokenManager.bulkSetVisibilityState,
       bulkPCUndetected: VisionerTokenManager.bulkSetVisibilityState,
@@ -88,6 +89,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
     // Per-manager ignore walls toggle (UI convenience only)
     this.ignoreWalls = false;
+    // Visual filter for Foundry-hidden tokens (per-user setting)
+    this.hideFoundryHidden = game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
 
     // Initialize storage for saved mode data
     this._savedModeData = {
@@ -97,7 +100,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
 
     // Set this as the current instance
     VisionerTokenManager.currentInstance = this;
-    
+
     // Set up auto-refresh when tokens move
     this._setupAutoRefresh();
   }
@@ -106,7 +109,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   static {
     try {
       bindTokenManagerActions(VisionerTokenManager);
-    } catch (_) {}
+    } catch (_) { }
   }
 
   /**
@@ -139,8 +142,8 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
     this._updateTokenHook = Hooks.on('updateToken', (tokenDoc, changes) => {
       if (this.rendered && this.observer) {
         // Check if the observer token moved or if any relevant token moved
-        if (tokenDoc.id === this.observer.id || 
-            (changes.x !== undefined || changes.y !== undefined)) {
+        if (tokenDoc.id === this.observer.id ||
+          (changes.x !== undefined || changes.y !== undefined)) {
           // Small delay to allow AVS to process the movement
           setTimeout(() => {
             if (this.rendered) {
@@ -324,23 +327,32 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
           this.setPosition({ width: minWidth });
         }
       }
-    } catch (_) {}
+    } catch (_) { }
     // No row→token hover anymore (to avoid conflict with canvas→row). Keep icon handlers.
     // Provided by managers/token-manager/actions.js via bindTokenManagerActions
     // Setup canvas selection → row highlighting and canvas hover → row
     try {
       // Bind per-row icon click handlers (visibility/cover selection)
       this.addIconClickHandlers?.();
-    } catch (_) {}
+    } catch (_) { }
     try {
       // Add token image click handlers for panning and selection
       this.addTokenImageClickHandlers?.();
-    } catch (_) {}
+    } catch (_) { }
     try {
-    } catch (_) {}
+    } catch (_) { }
     attachSelectionHandlers(this.constructor);
     attachCanvasHoverHandlers(this.constructor);
     applySelectionHighlight(this.constructor);
+
+    // Apply visual filter for Foundry-hidden tokens based on toggle
+    try {
+      const hide = this.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+      const rows = this.element?.querySelectorAll?.('tr.token-row[data-foundry-hidden="true"]') || [];
+      rows.forEach((r) => {
+        r.style.display = hide ? 'none' : '';
+      });
+    } catch (_) { }
   }
 
   /**
@@ -349,7 +361,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
   async close(options = {}) {
     // Clean up auto-refresh hooks
     this._cleanupAutoRefresh();
-    
+
     // Clean up any remaining token borders
     this.cleanupAllTokenBorders();
     // Remove selection/hover handlers and clear row highlights
@@ -361,7 +373,7 @@ export class VisionerTokenManager extends foundry.applications.api.ApplicationV2
           .querySelectorAll('tr.token-row.row-hover')
           ?.forEach((el) => el.classList.remove('row-hover'));
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Clear the current instance reference
     if (VisionerTokenManager.currentInstance === this) {

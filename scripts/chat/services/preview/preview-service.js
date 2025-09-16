@@ -43,7 +43,7 @@ export async function previewActionResults(actionData) {
           try {
             const { checkForValidTargets } = await import('../infra/target-checker.js');
             const canSeek = checkForValidTargets({ ...actionData, actionType: 'seek' });
-            if (!canSeek && game.settings.get(MODULE_ID, 'enforceRawRequirements')) {
+            if (!canSeek) {
               const { notify } = await import('../infra/notifications.js');
               notify.warn(
                 'No valid Seek targets found. According to RAW, you can only Seek targets that are Undetected or Hidden from you.',
@@ -115,7 +115,7 @@ export async function previewActionResults(actionData) {
         try {
           const { checkForValidTargets } = await import('../infra/target-checker.js');
           const canHide = checkForValidTargets({ ...actionData, actionType: 'hide' });
-          if (!canHide && game.settings.get(MODULE_ID, 'enforceRawRequirements')) {
+          if (!canHide) {
             const { notify } = await import('../infra/notifications.js');
             notify.warn(
               'The creature hiding should be Concealed from, or have Standard or Greater Cover from, at least one observed.',
@@ -156,7 +156,7 @@ export async function previewActionResults(actionData) {
         try {
           const { checkForValidTargets } = await import('../infra/target-checker.js');
           const canSneak = checkForValidTargets({ ...actionData, actionType: 'sneak' });
-          if (!canSneak && game.settings.get(MODULE_ID, 'enforceRawRequirements')) {
+          if (!canSneak) {
             const { notify } = await import('../infra/notifications.js');
             notify.warn(
               'You can attempt Sneak only against creatures you were Hidden or Undetected from at the start.',
@@ -243,7 +243,7 @@ export async function previewActionResults(actionData) {
             ...actionData,
             actionType: 'consequences',
           });
-          if (!canShowConsequences && game.settings.get(MODULE_ID, 'enforceRawRequirements')) {
+          if (!canShowConsequences) {
             const { notify } = await import('../infra/notifications.js');
             notify.warn(
               'No valid targets found for Attack Consequences. According to RAW, you can only see consequences from targets that you are Hidden or Undetected from.',

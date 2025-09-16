@@ -11,6 +11,8 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     super(options);
     this.invalidOverrides = options.invalidOverrides || [];
     this.tokenName = options.tokenName || 'Unknown Token';
+    // Prefer explicit moved token id when provided by caller
+    this.movedTokenId = options.movedTokenId || null;
   }
 
   static DEFAULT_OPTIONS = {
@@ -154,8 +156,8 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     // Group into observer- and target-oriented lists for separate tables
     const observerOrientedOverrides = [];
     const targetOrientedOverrides = [];
-    // Group relative to the actual mover when available; fallback to header-by-name, then lastMovedTokenId
-    let refTokenId = game?.pf2eVisioner?.lastMovedTokenId || null;
+    // Group relative to the actual mover when available; fallback to global, then header-by-name
+    let refTokenId = this.movedTokenId || game?.pf2eVisioner?.lastMovedTokenId || null;
     if (!refTokenId) {
       try {
         const headerTokenByName = canvas.tokens?.placeables?.find(t => t?.document?.name === this.tokenName);
@@ -446,9 +448,10 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
    * Static method to show the dialog with invalid overrides
    * @param {Array} invalidOverrides - Array of invalid override objects
    * @param {string} tokenName - Name of the token that moved
+   * @param {string|null} movedTokenId - Explicit id of the token that moved (for grouping)
    * @returns {Promise<OverrideValidationDialog>}
    */
-  static async show(invalidOverrides, tokenName) {
+  static async show(invalidOverrides, tokenName, movedTokenId = null) {
     if (!invalidOverrides?.length) {
       return null;
     }
@@ -457,7 +460,8 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
 
     const dialog = new OverrideValidationDialog({
       invalidOverrides,
-      tokenName
+      tokenName,
+      movedTokenId
     });
 
     await dialog.render(true);

@@ -21,31 +21,75 @@ class OverrideValidationIndicator {
     this._el = null;
     this._tooltipEl = null;
     this._data = null; // { overrides: [], tokenName }
+    // Keep the raw list passed in (unfiltered) so clearAll can remove overrides even when display filters hide them
+    this._rawOverrides = [];
     this._drag = { active: false, start: { x: 0, y: 0 }, offset: { x: 0, y: 0 }, moved: false };
+    // Guard against rapid show->hide flicker when recomputations settle to 0
+    this._lastShowAt = 0; // ms timestamp of last show() with non-empty items
+    this._lastCount = 0; // last shown count
+    this._minVisibleMs = 800; // minimum time to keep visible after a non-empty show
+  }
+
+  // Determine whether an override item represents a meaningful change to display
+  // We include differences in:
+  // - visibility state
+  // - cover level
+  // - concealment expectation vs current (concealed or hidden)
+  #hasDisplayChange(o) {
+    if (!o) return false;
+    const prevVis = o.state || (o.hasConcealment ? 'concealed' : 'observed');
+    const prevCover = (o.expectedCover ?? (o.hasCover ? 'standard' : 'none'));
+    const curVis = o.currentVisibility || 'observed';
+    const curCover = o.currentCover || 'none';
+    const prevCon = !!o.hasConcealment;
+    const curCon = curVis === 'concealed' || curVis === 'hidden';
+    return prevVis !== curVis || prevCover !== curCover || prevCon !== curCon;
   }
 
   show(overrideData, tokenName, movedTokenId = null, options = {}) {
+    // Keep a raw copy for clearAll regardless of display filters
+    const all = Array.isArray(overrideData) ? overrideData : [];
+    this._rawOverrides = all;
+    // Filter for display: show only entries that actually changed (visibility or cover)
+    const overrides = all.filter((o) => this.#hasDisplayChange(o));
+    // Do not show indicator if there are no override details
+    if (!overrides.length) {
+      // If we just showed with items, avoid immediate hide flicker; let caller decide to force-hide
+      if (Date.now() - this._lastShowAt < this._minVisibleMs) return;
+      this.hide(true);
+      return;
+    }
     // Ensure latest styles are injected or refreshed (hot-reload safe)
     this.#ensureStyles();
     const pulse = options?.pulse !== undefined ? !!options.pulse : true;
-    this._data = { overrides: Array.isArray(overrideData) ? overrideData : [], tokenName, movedTokenId, pulse };
+    this._data = { overrides, tokenName, movedTokenId, pulse };
     if (!this._el) this.#createElement();
     this.#updateBadge();
     this._el.classList.add('pf2e-visioner-override-indicator--visible');
     this._el.classList.toggle('pulse', !!pulse);
+    // Remember that we showed with N items now
+    this._lastShowAt = Date.now();
+    this._lastCount = overrides.length;
   }
 
-  hide() {
+  hide(force = false) {
     if (!this._el) return;
+    // Prevent hiding immediately after a show with items unless forced
+    if (!force && this._lastCount > 0 && Date.now() - this._lastShowAt < this._minVisibleMs) return;
     this._el.classList.remove('pf2e-visioner-override-indicator--visible');
     this._el.classList.remove('pulse');
     this.#hideTooltip();
+    this._lastCount = 0;
   }
 
   update(overrideData, tokenName) {
     // Ensure latest styles are applied (hot-reload safe)
     this.#ensureStyles();
-    this._data = { overrides: Array.isArray(overrideData) ? overrideData : [], tokenName };
+    const all = Array.isArray(overrideData) ? overrideData : [];
+    this._rawOverrides = all;
+    // Maintain the same filtering rule for display
+    const overrides = all.filter((o) => this.#hasDisplayChange(o));
+    this._data = { overrides, tokenName };
     this.#updateBadge();
     if (this._tooltipEl?.isConnected) this.#renderTooltipContents();
   }
@@ -56,7 +100,7 @@ class OverrideValidationIndicator {
       const { OverrideValidationDialog } = await import('./override-validation-dialog.js');
       // Expose moved token id for grouping via a global scratch, then show dialog
       try { game.pf2eVisioner = game.pf2eVisioner || {}; game.pf2eVisioner.lastMovedTokenId = this._data.movedTokenId || null; } catch { }
-      await OverrideValidationDialog.show(this._data.overrides, this._data.tokenName);
+      await OverrideValidationDialog.show(this._data.overrides, this._data.tokenName, this._data.movedTokenId || null);
       // Keep indicator visible; user can minimize dialog back
     } catch (e) {
       console.error('PF2E Visioner | Failed to open OverrideValidationDialog from indicator:', e);
@@ -64,14 +108,56 @@ class OverrideValidationIndicator {
   }
 
   async clearAll() {
-    if (!this._data?.overrides?.length) return;
+    // Prefer raw list for clearAll, so we remove all current overrides even if some are filtered out visually
+    const raw = Array.isArray(this._rawOverrides) ? this._rawOverrides : [];
+    if (!raw.length) return;
     try {
       const { default: AvsOverrideManager } = await import('../chat/services/infra/avs-override-manager.js');
-      for (const { observerId, targetId } of this._data.overrides) {
+      // Track pairs we clear to immediately recompute their natural AVS states
+      const affectedPairs = new Set(); // key: `${observerId}-${targetId}`
+      for (const { observerId, targetId } of raw) {
         await AvsOverrideManager.removeOverride(observerId, targetId);
+        if (observerId && targetId) affectedPairs.add(`${observerId}-${targetId}`);
       }
-      ui.notifications?.info?.(`Cleared ${this._data.overrides.length} invalid override(s)`);
+      ui.notifications?.info?.(`Cleared ${raw.length} invalid override(s)`);
       this.hide();
+
+      // Immediately recalculate AVS and refresh visuals/perception
+      try {
+        // 1) For the concrete pairs we just cleared, compute visibility now even if tokens are normally excluded
+        try {
+          const { optimizedVisibilityCalculator } = await import('../visibility/auto-visibility/index.js');
+          const { setVisibilityBetween } = await import('../stores/visibility-map.js');
+          for (const key of affectedPairs) {
+            const [observerId, targetId] = key.split('-');
+            const observer = canvas.tokens?.get?.(observerId);
+            const target = canvas.tokens?.get?.(targetId);
+            if (!observer || !target) continue;
+            try {
+              const visOT = await optimizedVisibilityCalculator.calculateVisibility(observer, target);
+              await setVisibilityBetween(observer, target, visOT, { isAutomatic: true });
+            } catch { /* per-pair best effort */ }
+            // Also update reverse direction to keep maps consistent
+            try {
+              const visTO = await optimizedVisibilityCalculator.calculateVisibility(target, observer);
+              await setVisibilityBetween(target, observer, visTO, { isAutomatic: true });
+            } catch { /* per-pair best effort */ }
+          }
+        } catch (pairErr) {
+          console.warn('PF2E Visioner | Immediate pair recomputation after override clear failed:', pairErr);
+        }
+
+        // 2) Force a full recalculation to settle remaining states without the cleared overrides
+        const apiModule = await import('../api.js');
+        // Force a full recalculation to settle states without the cleared overrides
+        try { await apiModule.autoVisibility.recalculateAll(true); } catch { /* noop */ }
+        // Refresh token visuals and client perception
+        try { await apiModule.api.updateTokenVisuals(); } catch { /* noop */ }
+        try { apiModule.api.refreshEveryonesPerception(); } catch { /* noop */ }
+        try { canvas?.perception?.update?.({ refreshVision: true }); } catch { /* noop */ }
+      } catch (e) {
+        console.warn('PF2E Visioner | Post-clear AVS refresh failed:', e);
+      }
     } catch (e) {
       console.error('PF2E Visioner | Failed to clear overrides from indicator:', e);
     }
@@ -212,6 +298,7 @@ class OverrideValidationIndicator {
 
   #renderTooltipContents() {
     if (!this._tooltipEl) return;
+    // Render the already-filtered display items to keep counts and grouping consistent
     const all = this._data?.overrides || [];
     const movedId = this._data?.movedTokenId ?? (globalThis?.game?.pf2eVisioner?.lastMovedTokenId ?? null);
 
@@ -237,9 +324,9 @@ class OverrideValidationIndicator {
       return `
         <div class="tip-row">
           <div class="who">${o.observerName} <i class="fas fa-arrow-right"></i> ${o.targetName}</div>
-          <div class="state-pair vis">${mkVis(prevVis)} <i class="fas fa-arrow-right"></i> ${mkVis(curVis)}</div>
-          <div class="state-pair cover">${mkCover(prevCover)} <i class="fas fa-arrow-right"></i> ${mkCover(curCover)}</div>
-          <div class="reasons">${reasons}</div>
+          ${prevVis !== curVis ? `<div class="state-pair vis">${mkVis(prevVis)} <i class="fas fa-arrow-right"></i> ${mkVis(curVis)}</div>` : ''}
+          ${prevCover !== curCover ? `<div class="state-pair cover">${mkCover(prevCover)} <i class="fas fa-arrow-right"></i> ${mkCover(curCover)}</div>` : ''}
+          ${reasons ? `<div class="reasons">${reasons}</div>` : ''}
         </div>
       `;
     };
@@ -285,8 +372,8 @@ class OverrideValidationIndicator {
       <div class="tip-footer">
         <div class="footer-bottom"><span>Left-click: open details</span></div>
         <div class="footer-right">
-          <span>Right-click: clear all</span>
-          <span>Shift+Right-click: keep all</span>
+          <span>Right-click: accept all</span>
+          <span>Shift+Right-click: reject all</span>
         </div>
       </div>
     `;
@@ -366,3 +453,4 @@ class OverrideValidationIndicator {
 const overrideValidationIndicator = OverrideValidationIndicator.getInstance();
 export default overrideValidationIndicator;
 export { OverrideValidationIndicator };
+

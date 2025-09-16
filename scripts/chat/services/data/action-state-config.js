@@ -1,5 +1,4 @@
 // Centralized mapping of desired override states per action type
-import { MODULE_ID } from '../../../constants.js';
 
 export function getDesiredOverrideStatesForAction(actionType) {
   switch (actionType) {
@@ -22,61 +21,32 @@ export function getDesiredOverrideStatesForAction(actionType) {
 // Keys are action types; per action, keys are old visibility; per old visibility,
 // keys are outcome levels mapped to the default new state.
 export function getDefaultOutcomeMapping() {
-  const sneakRawEnforcement = game.settings.get(MODULE_ID, 'sneakRawEnforcement');
-
-  const sneakMapping = sneakRawEnforcement
-    ? {
-        observed: {
-          'critical-success': 'observed',
-          success: 'observed',
-          failure: 'observed',
-          'critical-failure': 'observed',
-        },
-        concealed: {
-          'critical-success': 'concealed',
-          success: 'concealed',
-          failure: 'concealed',
-          'critical-failure': 'concealed',
-        },
-        hidden: {
-          'critical-success': 'undetected',
-          success: 'undetected',
-          failure: 'hidden',
-          'critical-failure': 'observed',
-        },
-        undetected: {
-          'critical-success': 'undetected',
-          success: 'undetected',
-          failure: 'hidden',
-          'critical-failure': 'observed',
-        },
-      }
-    : {
-        observed: {
-          'critical-success': 'undetected',
-          success: 'undetected',
-          failure: 'hidden',
-          'critical-failure': 'observed',
-        },
-        concealed: {
-          'critical-success': 'undetected',
-          success: 'undetected',
-          failure: 'hidden',
-          'critical-failure': 'concealed',
-        },
-        hidden: {
-          'critical-success': 'undetected',
-          success: 'undetected',
-          failure: 'hidden',
-          'critical-failure': 'observed',
-        },
-        undetected: {
-          'critical-success': 'undetected',
-          success: 'undetected',
-          failure: 'hidden',
-          'critical-failure': 'observed',
-        },
-      };
+  const sneakMapping = {
+    observed: {
+      'critical-success': 'undetected',
+      success: 'undetected',
+      failure: 'hidden',
+      'critical-failure': 'observed',
+    },
+    concealed: {
+      'critical-success': 'undetected',
+      success: 'undetected',
+      failure: 'hidden',
+      'critical-failure': 'concealed',
+    },
+    hidden: {
+      'critical-success': 'undetected',
+      success: 'undetected',
+      failure: 'hidden',
+      'critical-failure': 'observed',
+    },
+    undetected: {
+      'critical-success': 'undetected',
+      success: 'undetected',
+      failure: 'hidden',
+      'critical-failure': 'observed',
+    },
+  };
 
   return {
     seek: {

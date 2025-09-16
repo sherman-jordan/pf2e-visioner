@@ -127,7 +127,7 @@ export async function formHandler(event, form, formData) {
       if (!observerToken) continue;
       try {
         if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-      } catch (_) {}
+      } catch { }
       const current = getVisibilityMap(observerToken) || {};
       const currentState = current[app.observer.document.id];
       if (currentState === newVisibilityState) continue;
@@ -148,7 +148,7 @@ export async function formHandler(event, form, formData) {
         if (!observerToken) continue;
         try {
           if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-        } catch (_) {}
+        } catch { }
         observerUpdates.push({
           target: app.observer,
           state: newVisibilityState,
@@ -211,7 +211,7 @@ export async function formHandler(event, form, formData) {
           }
           continue;
         }
-      } catch (_) {}
+      } catch { }
       if (currentState === newCoverState && newCoverState !== 'none') continue;
       if (!perObserverCover.has(observerTokenId))
         perObserverCover.set(observerTokenId, { token: observerToken, map: current });
@@ -228,7 +228,7 @@ export async function formHandler(event, form, formData) {
         if (!observerToken) continue;
         try {
           if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-        } catch (_) {}
+        } catch { }
         observerUpdates.push({
           target: app.observer,
           state: newCoverState,
@@ -263,11 +263,11 @@ export async function formHandler(event, form, formData) {
       );
       try {
         await updateSpecificTokenPairs([]);
-      } catch (_) {}
+      } catch { }
       try {
         await updateWallVisuals();
-      } catch (_) {}
-    } catch (_) {}
+      } catch { }
+    } catch { }
   })();
   return app.render();
 }
@@ -275,6 +275,9 @@ export async function formHandler(event, form, formData) {
 export async function applyCurrent(event, button) {
   const app = this;
   const { runTasksWithProgress } = await import('../../progress.js');
+  // Touch params to satisfy linters in some environments
+  void event; // unused
+  void button; // unused
 
   try {
     const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
@@ -287,10 +290,15 @@ export async function applyCurrent(event, button) {
     if (!app._savedModeData[app.mode].cover) app._savedModeData[app.mode].cover = {};
     if (!app._savedModeData[app.mode].walls) app._savedModeData[app.mode].walls = {};
     visibilityInputs.forEach((input) => {
+      // Support unit tests where inputs are simple objects without DOM APIs
+      const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
+      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('visibility.', '');
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
     });
     coverInputs.forEach((input) => {
+      const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
+      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('cover.', '');
       app._savedModeData[app.mode].cover[tokenId] = input.value;
     });
@@ -384,7 +392,7 @@ export async function applyCurrent(event, button) {
           if (!observerToken) continue;
           try {
             if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
-          } catch {}
+          } catch { }
           const observerVisibilityData = getVisibilityMap(observerToken) || {};
           await setVisibilityMap(observerToken, {
             ...observerVisibilityData,
@@ -442,7 +450,7 @@ export async function applyCurrent(event, button) {
             });
           }
         }
-  } catch {}
+      } catch { }
     }
 
     if (isCover) {
@@ -491,7 +499,7 @@ export async function applyCurrent(event, button) {
           try {
             const t = observer.actor?.type;
             if (t === 'loot' || t === 'vehicle' || t === 'party') continue;
-          } catch {}
+          } catch { }
           allOperations.push(async () => {
             const { batchUpdateCoverEffects } = await import('../../../cover/ephemeral.js');
             await batchUpdateCoverEffects(observer, updates);
@@ -525,7 +533,7 @@ export async function applyCurrent(event, button) {
       // Refresh wall indicators for current observer
       try {
         await updateWallVisuals(app.observer?.id || null);
-  } catch {}
+      } catch { }
     }
   } catch (error) {
     console.error('Token Manager: Error applying current type for both modes:', error);
@@ -563,10 +571,14 @@ export async function applyBoth(_event, _button) {
     if (!app._savedModeData) app._savedModeData = {};
     if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
     visibilityInputs.forEach((input) => {
+      const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
+      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('visibility.', '');
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
     });
     coverInputs.forEach((input) => {
+      const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
+      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('cover.', '');
       app._savedModeData[app.mode].cover[tokenId] = input.value;
     });

@@ -20,7 +20,7 @@ function getTokenImage(token) {
 function svgDataUri(svg) {
   try {
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  } catch (_) {
+  } catch {
     return '';
   }
 }
@@ -63,7 +63,7 @@ export async function buildContext(app, options) {
   try {
     app.visibilityData = getVisibilityMap(app.observer) || {};
     app.coverData = getCoverMap(app.observer) || {};
-  } catch (_) {}
+  } catch { }
 
   const isLootObserver = app.observer?.actor?.type === 'loot';
   if (isLootObserver) {
@@ -83,6 +83,12 @@ export async function buildContext(app, options) {
   context.encounterOnly = app.encounterOnly;
   context.ignoreAllies = !!app.ignoreAllies;
   context.ignoreWalls = !!app.ignoreWalls;
+  // Visual filter flag: hide Foundry-hidden tokens (per-user)
+  try {
+    context.hideFoundryHidden = !!app.hideFoundryHidden;
+  } catch (_) {
+    context.hideFoundryHidden = false;
+  }
 
   const sceneTokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies);
 
@@ -99,6 +105,8 @@ export async function buildContext(app, options) {
       const currentCoverState = app.coverData[token.document.id] || 'none';
 
       const disposition = token.document.disposition || 0;
+      // Foundry hidden means the TokenDocument.hidden property is strictly true
+      const isFoundryHidden = token?.document?.hidden === true;
 
       const perceptionDC = extractPerceptionDC(token);
       const stealthDC = extractStealthDC(token);
@@ -143,6 +151,7 @@ export async function buildContext(app, options) {
         id: token.document.id,
         name: token.document.name,
         img: getTokenImage(token),
+        isFoundryHidden,
         isLoot: !!isRowLoot,
         currentVisibilityState: allowedVisKeys.includes(currentVisibilityState)
           ? currentVisibilityState
@@ -178,7 +187,9 @@ export async function buildContext(app, options) {
       const observerCoverData = getCoverMap(observerToken);
       let currentVisibilityState = observerVisibilityData[app.observer.document.id] || 'observed';
       const currentCoverState = observerCoverData[app.observer.document.id] || 'none';
-      
+      // Foundry hidden means the TokenDocument.hidden property is strictly true
+      const isFoundryHidden = observerToken?.document?.hidden === true;
+
       // For sneaking tokens, show the AVS internal state instead of the detection wrapper state
       if (app.observer.document.getFlag(MODULE_ID, 'sneak-active')) {
         // Read from the observer token's visibility map to see how it sees the sneaking token
@@ -232,6 +243,7 @@ export async function buildContext(app, options) {
         id: observerToken.document.id,
         name: observerToken.document.name,
         img: getTokenImage(observerToken),
+        isFoundryHidden,
         isLoot: !!(observerToken.actor?.type === 'loot'),
         currentVisibilityState: allowedVisKeys.includes(currentVisibilityState)
           ? currentVisibilityState
@@ -342,7 +354,7 @@ export async function buildContext(app, options) {
               showOutcome = true;
             }
           }
-        } catch (_) {}
+        } catch { }
         return {
           id: d.id,
           identifier: idf && String(idf).trim() ? String(idf) : fallback,
@@ -358,7 +370,7 @@ export async function buildContext(app, options) {
       });
       context.includeWalls = context.wallTargets.length > 0;
     }
-  } catch (_) {}
+  } catch { }
 
   context.visibilityStates = Object.entries(VISIBILITY_STATES).map(([key, config]) => ({
     key,
@@ -389,7 +401,7 @@ export async function buildContext(app, options) {
   context.includeWalls = context.includeWalls || false;
   try {
     context.showOutcomeColumn = game.settings.get(MODULE_ID, 'integrateRollOutcome');
-  } catch (_) {
+  } catch {
     context.showOutcomeColumn = false;
   }
 

@@ -78,43 +78,6 @@ export class SeekActionHandler extends ActionHandlerBase {
       console.error('Error processing walls in discoverSubjects:', error);
     }
 
-    // Apply RAW enforcement if enabled
-    const enforceRAW = game.settings.get(MODULE_ID, 'enforceRawRequirements');
-    if (enforceRAW) {
-      // Filter to only include targets that are Undetected or Hidden from the seeker
-      potential = potential.filter((subject) => {
-        try {
-          if (subject._isWall) {
-            // Hidden walls are always valid seek targets (they're hidden by definition)
-            return true;
-          }
-
-          if (subject?.actor?.type === 'hazard' || subject?.actor?.type === 'loot') {
-            // Hazards and loot are always valid seek targets
-            return true;
-          }
-
-          // For regular tokens, check visibility state
-          const visibility = getVisibilityBetween(actionData.actor, subject);
-          const isValidTarget = visibility === 'undetected' || visibility === 'hidden';
-
-          return isValidTarget;
-        } catch (error) {
-          console.warn('Error checking visibility for RAW enforcement:', error);
-          // If we can't determine visibility, exclude the target to be safe
-          return false;
-        }
-      });
-
-      // If no valid targets found after RAW filtering, notify the user
-      if (potential.length === 0) {
-        const { notify } = await import('../infra/notifications.js');
-        notify.warn(
-          'No valid Seek targets found. According to RAW, you can only Seek targets that are Undetected or Hidden from you.',
-        );
-      }
-    }
-
     // Optional distance limitation based on settings (combat vs out-of-combat)
     try {
       const inCombat = hasActiveEncounter();
@@ -134,7 +97,7 @@ export class SeekActionHandler extends ActionHandlerBase {
           });
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     // Do not pre-filter by encounter; the dialog applies encounter filter as needed
     return potential;
@@ -195,15 +158,15 @@ export class SeekActionHandler extends ActionHandlerBase {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       // For loot actors, use the custom Stealth DC flag configured on the token; otherwise use Perception DC
       dc = extractStealthDC(subject);
     }
     const total = Number(actionData?.roll?.total ?? 0);
     const die = Number(
-      actionData?.roll?.dice?.[0]?.results?.[0]?.result ?? 
-      actionData?.roll?.dice?.[0]?.total ?? 
+      actionData?.roll?.dice?.[0]?.results?.[0]?.result ??
+      actionData?.roll?.dice?.[0]?.total ??
       actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const outcome = determineOutcome(total, die, dc);
@@ -229,7 +192,7 @@ export class SeekActionHandler extends ActionHandlerBase {
           wallIdentifier: name,
           wallImg: img,
         };
-      } catch (_) {}
+      } catch (_) { }
     }
 
     const base = {
@@ -263,7 +226,7 @@ export class SeekActionHandler extends ActionHandlerBase {
             if (wallCenter) {
               const distance = Math.sqrt(
                 Math.pow(wallCenter.x - actionData.seekTemplateCenter.x, 2) +
-                  Math.pow(wallCenter.y - actionData.seekTemplateCenter.y, 2),
+                Math.pow(wallCenter.y - actionData.seekTemplateCenter.y, 2),
               );
               const radiusPixels = (actionData.seekTemplateRadiusFeet * canvas.scene.grid.size) / 5;
               inside = distance <= radiusPixels;
@@ -283,7 +246,7 @@ export class SeekActionHandler extends ActionHandlerBase {
 
         if (!inside) return { ...base, changed: false };
       }
-    } catch (_) {}
+    } catch (_) { }
 
     return base;
   }
@@ -325,7 +288,7 @@ export class SeekActionHandler extends ActionHandlerBase {
           oldVisibility: outcome?.oldVisibility || outcome?.currentVisibility || null,
         };
       }
-    } catch (_) {}
+    } catch (_) { }
     return super.outcomeToChange(actionData, outcome);
   }
 
@@ -403,7 +366,7 @@ export class SeekActionHandler extends ActionHandlerBase {
             try {
               const { updateWallVisuals } = await import('../../../services/visual-effects.js');
               await updateWallVisuals(observer.id);
-            } catch (_) {}
+            } catch (_) { }
           } catch (e) {
             /* ignore per-observer wall errors */
           }
@@ -446,7 +409,7 @@ export class SeekActionHandler extends ActionHandlerBase {
             return id ? tokenMap.has(id) : false;
           });
         }
-      } catch (_) {}
+      } catch (_) { }
 
       if (filtered.length === 0) {
         (await import('../infra/notifications.js')).notify.info('No changes to apply');

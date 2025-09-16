@@ -24,7 +24,7 @@ export class SneakActionHandler extends ActionHandlerBase {
   getOutcomeTokenId(outcome) {
     return outcome?.token?.id ?? outcome?.target?.id ?? null;
   }
-  
+
   /**
    * Get cached outcomes for the given actionData, or compute them if not cached
    * @param {Object} actionData - The action data
@@ -45,7 +45,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       return [];
     }
   }
-  
+
   async ensurePrerequisites(actionData) {
     try {
       const { ensureActionRoll } = await import('../infra/roll-utils.js');
@@ -96,7 +96,7 @@ export class SneakActionHandler extends ActionHandlerBase {
    */
   async _initializeSneakVisibility(actionData) {
     try {
-      
+
       // Get the sneaking token
       const sneakingToken = this._getSneakingToken(actionData);
       if (!sneakingToken) {
@@ -108,40 +108,42 @@ export class SneakActionHandler extends ActionHandlerBase {
       await sneakingToken.document.setFlag('pf2e-visioner', SNEAK_FLAGS.SNEAK_ACTIVE, true);
 
       // Get all observer tokens
-      const observerTokens = canvas.tokens.placeables.filter(t => 
-        t.id !== sneakingToken.id && t.actor
-      );
-      
+      const observerTokens = canvas.tokens.placeables
+        .filter(t => t && t.actor)
+        .filter(t => t.id !== sneakingToken.id)
+        // Skip Foundry-hidden observers entirely
+        .filter(t => !t?.document?.hidden);
+
 
       // Import the visibility calculator to get proper AVS calculations
-      
+
       let visibilityModule;
       let optimizedVisibilityCalculator;
-      
+
       try {
         visibilityModule = await import('../../../visibility/auto-visibility/index.js');
-        
+
         optimizedVisibilityCalculator = visibilityModule.optimizedVisibilityCalculator;
-        
+
         if (!optimizedVisibilityCalculator) {
           throw new Error('optimizedVisibilityCalculator is undefined');
         }
-        
+
       } catch (importError) {
         console.error('PF2E Visioner | Import error:', importError);
         throw importError;
       }
-      
+
       // Check if the calculator is properly initialized
       const status = optimizedVisibilityCalculator.getStatus();
-      
+
       if (!status.initialized) {
         throw new Error('Visibility calculator is not initialized');
       }
-      
+
       // Import visibility map utilities
-      const { getVisibilityMap, setVisibilityMap } = await import('../../../stores/visibility-map.js');
-      
+      const { getVisibilityMap } = await import('../../../stores/visibility-map.js');
+
       // Set visibility for sneak: ONLY affect how observers see the sneaking token, NOT how sneaking token sees observers
       for (const observer of observerTokens) {
         try {
@@ -156,7 +158,7 @@ export class SneakActionHandler extends ActionHandlerBase {
             y: observer.document.y,
             elevation: observer.document.elevation || 0
           };
-          
+
           // Calculate how the observer sees the sneaking token (this is what sneak affects)
           const observerToSneaking = await optimizedVisibilityCalculator.calculateVisibilityWithPosition(
             observer,
@@ -172,13 +174,12 @@ export class SneakActionHandler extends ActionHandlerBase {
           // Set how the observer sees the sneaking token (observer's visibility map)
           const observerVisibilityMap = getVisibilityMap(observer);
           observerVisibilityMap[sneakingToken.document.id] = observerToSneaking;
-          await setVisibilityMap(observer, observerVisibilityMap);
         } catch (observerError) {
           console.error('PF2E Visioner | Error processing observer:', observer.name, observerError);
         }
       }
 
-      
+
       // Manually trigger AVS to recalculate specifically for sneaking tokens
       // This ensures AVS processes the sneaking token even when it's hidden by Foundry
       try {
@@ -189,7 +190,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       } catch (avsError) {
         console.warn('PF2E Visioner | Failed to trigger AVS recalculation:', avsError);
       }
-      
+
     } catch (error) {
       console.error('PF2E Visioner | Error initializing sneak visibility:', error);
       console.error('PF2E Visioner | Error stack:', error.stack);
@@ -223,7 +224,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       } else {
         // Try to get stored position from message flags if not provided directly
         const message = actionData?.message || game.messages.get(actionData?.messageId);
-        
+
         // Check for sneakStartPosition first (from "Start Sneak" button), then rollTimePosition
         if (message?.flags?.['pf2e-visioner']?.sneakStartPosition) {
           actionData.storedStartPosition = message.flags['pf2e-visioner'].sneakStartPosition;
@@ -347,6 +348,8 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     const base = tokens
       .filter((t) => t && t.actor)
+      // Exclude Foundry-hidden tokens from observers
+      .filter((t) => !t?.document?.hidden)
       .filter((t) => (actorId ? t.actor.id !== actorId : t !== actionData.actor))
       // Use global ignoreAllies setting when not explicitly provided in actionData
       .filter(
@@ -361,22 +364,9 @@ export class SneakActionHandler extends ActionHandlerBase {
       // Exclude loot and hazards from observers list
       .filter((t) => t.actor?.type !== 'loot' && t.actor?.type !== 'hazard');
 
-    const enforceRAW = game.settings.get('pf2e-visioner', 'enforceRawRequirements');
-
-    if (!enforceRAW) return base;
-
-    const { getVisibilityBetween } = await import('../../../utils.js');
-    const final = base.filter((observer) => {
-      try {
-        const vis = getVisibilityBetween(observer, actionData.actor);
-        return vis === 'hidden' || vis === 'undetected';
-      } catch {
-        return false;
-      }
-    });
-
-    return final;
+    return base;
   }
+
   async analyzeOutcome(actionData, subject) {
 
     try {
@@ -399,7 +389,7 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     const { getVisibilityBetween } = await import('../../../utils.js');
     const { extractPerceptionDC, determineOutcome } = await import('../infra/shared-utils.js');
-    
+
     // Use fresh visibility calculation that accounts for darkvision instead of stored state
     let current;
     try {
@@ -548,8 +538,8 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     const dc = adjustedDC;
     const die = Number(
-      actionData?.roll?.dice?.[0]?.results?.[0]?.result ?? 
-      actionData?.roll?.dice?.[0]?.total ?? 
+      actionData?.roll?.dice?.[0]?.results?.[0]?.result ??
+      actionData?.roll?.dice?.[0]?.total ??
       actionData?.roll?.terms?.[0]?.total ?? 0,
     );
     const margin = total - dc;
@@ -583,12 +573,12 @@ export class SneakActionHandler extends ActionHandlerBase {
     try {
       // Get position transition for enhanced outcome determination
       const positionTransition = await this._getPositionTransitionForSubject(subject);
-      
+
       if (positionTransition?.startPosition && positionTransition?.endPosition) {
         console.debug('PF2E Visioner | Using enhanced outcome determination with position data');
-        
+
         const { default: EnhancedSneakOutcome } = await import('./enhanced-sneak-outcome.js');
-        
+
         enhancedOutcome = await EnhancedSneakOutcome.determineEnhancedOutcome({
           startVisibilityState: positionTransition.startPosition.avsVisibility,
           endVisibilityState: positionTransition.endPosition.avsVisibility,
@@ -601,9 +591,9 @@ export class SneakActionHandler extends ActionHandlerBase {
           sneakingToken: actionData.actor,
           positionTransition
         });
-        
+
         newVisibility = enhancedOutcome.newVisibility;
-        
+
         // For debugging comparison
         try {
           const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
@@ -639,7 +629,7 @@ export class SneakActionHandler extends ActionHandlerBase {
           // Use enhanced logic for original outcome too if available
           const { default: EnhancedSneakOutcome } = await import('./enhanced-sneak-outcome.js');
           const positionTransition = await this._getPositionTransitionForSubject(subject);
-          
+
           if (positionTransition?.startPosition && positionTransition?.endPosition) {
             const originalEnhanced = await EnhancedSneakOutcome.determineEnhancedOutcome({
               startVisibilityState: positionTransition.startPosition.avsVisibility,
@@ -707,7 +697,28 @@ export class SneakActionHandler extends ActionHandlerBase {
       originalNewVisibility,
       shouldShowOverride,
       currentVisibility: current,
-      oldVisibility: positionTransition?.startPosition?.avsVisibility || current,
+      // Precedence: AVS override > manual state > AVS calculation
+      oldVisibility: (() => {
+        // 1. AVS override (observer -> sneaker)
+        const observerId = subject.document?.id;
+        const sneakerDoc = actionData.actor?.document || actionData.actor;
+        let avsOverride = null;
+        if (sneakerDoc?.getFlag) {
+          const overrideFlag = sneakerDoc.getFlag('pf2e-visioner', `avs-override-from-${observerId}`);
+          if (overrideFlag && overrideFlag.state) {
+            avsOverride = overrideFlag.state;
+          }
+        }
+        if (avsOverride) return avsOverride;
+        // 2. Manual state (getVisibilityBetween)
+        let manualState = null;
+        try {
+          manualState = getVisibilityBetween(subject, actionData.actor);
+        } catch { }
+        if (manualState) return manualState;
+        // 3. AVS calculation (position tracker)
+        return positionTransition?.startPosition?.avsVisibility || current;
+      })(),
       oldVisibilityLabel: VISIBILITY_STATES[positionTransition?.startPosition?.avsVisibility || current]?.label || (positionTransition?.startPosition?.avsVisibility || current),
       newVisibility,
       changed: newVisibility !== current,
@@ -797,7 +808,7 @@ export class SneakActionHandler extends ActionHandlerBase {
 
       // Get processed outcomes from cache or process them
       const outcomes = await this.getCachedOutcomes(actionData) || [];
-      
+
       // Apply using SneakCore
       const result = await this.sneakCore.applyResults(this._currentSessionId, outcomes);
 

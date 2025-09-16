@@ -58,6 +58,38 @@ export class VisibilityCalculator {
   }
 
   /**
+   * Calculate visibility between observer and target tokens, IGNORING AVS override flags.
+   * This is used for override validation to get the "true" AVS-calculated state.
+   * @param {Token} observer
+   * @param {Token} target
+   * @returns {Promise<string>} Visibility state
+   */
+  async calculateVisibilityWithoutOverrides(observer, target) {
+    if (!observer?.actor || !target?.actor) {
+      return 'observed';
+    }
+    // Temporarily remove any AVS override flag for this observer-target pair
+    const targetFlags = target?.document?.flags?.['pf2e-visioner'] || {};
+    const observerFlagKey = `avs-override-from-${observer?.document?.id}`;
+    let removedOverride = null;
+    if (targetFlags[observerFlagKey]) {
+      removedOverride = targetFlags[observerFlagKey];
+      // Remove override
+      delete target.document.flags['pf2e-visioner'][observerFlagKey];
+    }
+    let result;
+    try {
+      result = await this.calculateVisibility(observer, target);
+    } finally {
+      // Restore override if it was present
+      if (removedOverride) {
+        target.document.flags['pf2e-visioner'][observerFlagKey] = removedOverride;
+      }
+    }
+    return result;
+  }
+
+  /**
    * Calculate visibility with position overrides - IMMEDIATE, NO THROTTLING
    * @param {Token} observer
    * @param {Token} target

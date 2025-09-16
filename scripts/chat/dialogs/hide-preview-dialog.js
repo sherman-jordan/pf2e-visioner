@@ -4,7 +4,7 @@
  */
 
 import { MODULE_ID, MODULE_TITLE } from '../../constants.js';
-import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
+import { getDefaultNewStateFor, getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
 import { getVisibilityStateConfig } from '../services/data/visibility-states.js';
 import { notify } from '../services/infra/notifications.js';
 import { hasActiveEncounter } from '../services/infra/shared-utils.js';
@@ -34,6 +34,9 @@ export class HidePreviewDialog extends BaseActionDialog {
       revertChange: HidePreviewDialog._onRevertChange,
       toggleEncounterFilter: HidePreviewDialog._onToggleEncounterFilter,
       overrideState: HidePreviewDialog._onOverrideState,
+      togglePrequisite: HidePreviewDialog._onTogglePrequisite,
+      bulkOverrideSet: HidePreviewDialog._onBulkOverrideSet,
+      bulkOverrideClear: HidePreviewDialog._onBulkOverrideClear,
     },
   };
 
@@ -58,7 +61,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     // Preserve an immutable base list for live filtering toggles
     try {
       this._originalOutcomes = Array.isArray(outcomes) ? [...outcomes] : [];
-    } catch (_) {
+    } catch {
       this._originalOutcomes = outcomes || [];
     }
     this.changes = changes || [];
@@ -66,6 +69,12 @@ export class HidePreviewDialog extends BaseActionDialog {
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
     this.bulkActionState = 'initial'; // Track bulk action state
+    // Visual filter default from per-user setting
+    try {
+      this.hideFoundryHidden = game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+    } catch {
+      this.hideFoundryHidden = true;
+    }
 
     // Store reference for singleton behavior
     currentHideDialog = this;
@@ -93,7 +102,18 @@ export class HidePreviewDialog extends BaseActionDialog {
             })
             .catch(() => this.render({ force: true }));
         });
-    } catch (_) {}
+    } catch { }
+    // Wire Hide Foundry-hidden visual filter toggle
+    try {
+      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
+      if (cbh) {
+        cbh.addEventListener('change', async () => {
+          this.hideFoundryHidden = !!cbh.checked;
+          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
+          this.render({ force: true });
+        });
+      }
+    } catch { }
   }
 
   /**
@@ -122,7 +142,51 @@ export class HidePreviewDialog extends BaseActionDialog {
         this.ignoreAllies,
         'target',
       );
-    } catch (_) {}
+    } catch { }
+
+    // Augment with end-position qualification like Sneak: concealed OR standard/greater cover qualifies
+    try {
+      // Compute lightweight position info on demand
+      const { default: sneakPositionTracker } = await import('../services/position/SneakPositionTracker.js');
+      const hider = this.actorToken;
+      for (const outcome of filteredOutcomes) {
+        try {
+          // Capture current end position from observer -> hider perspective
+          const endPos = await sneakPositionTracker._capturePositionState(
+            hider,
+            outcome.target,
+            Date.now(),
+            { forceFresh: true, useCurrentPositionForCover: true }
+          );
+          // Build minimal positionDisplay like Sneak
+          const qualifies = this._endPositionQualifiesForHide(endPos);
+
+          // Compute and store the base calculated new visibility (ignoring prereq gating)
+          const baseOldState = outcome.oldVisibility || outcome.currentVisibility;
+          const baseCalculated = getDefaultNewStateFor('hide', baseOldState, outcome.outcome) || baseOldState;
+          // Persist for later toggles
+          outcome._calculatedNewVisibility = baseCalculated;
+
+          outcome.positionDisplay = {
+            endPosition: {
+              visibility: endPos.avsVisibility,
+              cover: endPos.coverState,
+              qualifies,
+            },
+          };
+          outcome.hasPositionData = true;
+          outcome.positionTransition = { endPosition: { avsVisibility: endPos.avsVisibility, coverState: endPos.coverState } };
+          // Apply prereq gating: if end doesn't qualify → observed; else ensure the calculated outcome is used
+          if (!qualifies) {
+            outcome.newVisibility = 'observed';
+            outcome.overrideState = null;
+          } else {
+            // Use the calculated mapping when qualified
+            outcome.newVisibility = baseCalculated;
+          }
+        } catch { /* non-fatal */ }
+      }
+    } catch { /* optional */ }
 
     // Note: autoCover data is already calculated in hide-action.js and should be preserved
     // No need to call getCoverBetween here as it would overwrite the rich autoCover object
@@ -133,7 +197,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     }
 
     // Process outcomes to add additional properties needed by template
-    const processedOutcomes = filteredOutcomes.map((outcome) => {
+    let processedOutcomes = filteredOutcomes.map((outcome) => {
       const availableStates = this.getAvailableStatesForOutcome(outcome);
       const effectiveNewState = outcome.overrideState || outcome.newVisibility;
       const baseOldState = outcome.oldVisibility || outcome.currentVisibility;
@@ -142,6 +206,8 @@ export class HidePreviewDialog extends BaseActionDialog {
 
       return {
         ...outcome,
+        positionDisplay: outcome.positionDisplay,
+        hasPositionData: !!outcome.hasPositionData,
         availableStates,
         overrideState: effectiveNewState,
         hasActionableChange,
@@ -155,12 +221,24 @@ export class HidePreviewDialog extends BaseActionDialog {
       };
     });
 
+    // Visual filtering: hide Foundry-hidden tokens from display if enabled
+    try {
+      if (this.hideFoundryHidden) {
+        processedOutcomes = processedOutcomes.filter((o) => {
+          try { return o?._isWall || o?.target?.document?.hidden !== true; } catch { return true; }
+        });
+      }
+    } catch { }
+
     // Do not overwrite the original outcomes; keep them for live re-filtering
 
     // Calculate summary information
     context.actorToken = this.actorToken;
     context.outcomes = processedOutcomes;
     context.ignoreAllies = !!this.ignoreAllies;
+    context.hideFoundryHidden = !!this.hideFoundryHidden;
+    // Expose that we have position UI in template
+    context.hasPositionData = processedOutcomes.some(o => o.hasPositionData);
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
     return context;
@@ -184,7 +262,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       try {
         const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
         filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
-      } catch (_) {}
+      } catch { }
       if (!Array.isArray(filtered)) return [];
       // Preserve override selections and recompute actionability
       const merged = filtered.map((o) => {
@@ -197,12 +275,20 @@ export class HidePreviewDialog extends BaseActionDialog {
           const hasActionableChange =
             baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
           return { ...o, overrideState, hasActionableChange };
-        } catch (_) {
+        } catch {
           return { ...o };
         }
       });
+      // Visual filtering: hide Foundry-hidden tokens from display if enabled
+      try {
+        if (this.hideFoundryHidden) {
+          return merged.filter((o) => {
+            try { return o?._isWall || o?.target?.document?.hidden !== true; } catch { return true; }
+          });
+        }
+      } catch { }
       return merged;
-    } catch (_) {
+    } catch {
       return Array.isArray(this.outcomes) ? this.outcomes : [];
     }
   }
@@ -238,7 +324,7 @@ export class HidePreviewDialog extends BaseActionDialog {
   /**
    * Render the HTML for the application
    */
-  async _renderHTML(context, options) {
+  async _renderHTML(context) {
     const html = await foundry.applications.handlebars.renderTemplate(
       this.constructor.PARTS.content.template,
       context,
@@ -250,7 +336,7 @@ export class HidePreviewDialog extends BaseActionDialog {
   /**
    * Replace the HTML content of the application
    */
-  _replaceHTML(result, content, options) {
+  _replaceHTML(result, content) {
     content.innerHTML = result;
 
     return content;
@@ -269,20 +355,26 @@ export class HidePreviewDialog extends BaseActionDialog {
    */
   markInitialSelections() {
     this.outcomes.forEach((outcome) => {
-      // Set the initial override state to the calculated new visibility
-      outcome.overrideState = outcome.newVisibility;
-      // Mark the calculated outcome as selected in the UI
+      // Mark the effective state (override if present, otherwise calculated) as selected in the UI
+      const effectiveState = outcome.overrideState ?? outcome.newVisibility;
+      // Recompute actionable flag for UI buttons
+      try {
+        const oldState = outcome.oldVisibility ?? outcome.currentVisibility ?? null;
+        outcome.hasActionableChange =
+          oldState != null && effectiveState != null && effectiveState !== oldState;
+        const tokenId = outcome?.target?.id ?? null;
+        if (tokenId) this.updateActionButtonsForToken(tokenId, outcome.hasActionableChange);
+      } catch { }
       const row = this.element.querySelector(`tr[data-token-id="${outcome.target.id}"]`);
       if (row) {
         const container = row.querySelector('.override-icons');
         if (container) {
           container.querySelectorAll('.state-icon').forEach((i) => i.classList.remove('selected'));
-          const calculatedIcon = container.querySelector(
-            `.state-icon[data-state="${outcome.newVisibility}"]`,
-          );
-          if (calculatedIcon) {
-            calculatedIcon.classList.add('selected');
-          }
+          // Prefer the icon for the effective state; fall back to observed if not found
+          const iconEl =
+            container.querySelector(`.state-icon[data-state="${effectiveState}"]`) ||
+            container.querySelector('.state-icon[data-state="observed"]');
+          if (iconEl) iconEl.classList.add('selected');
         }
       }
     });
@@ -348,7 +440,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     app.render({ force: true });
   }
 
-  static async _onOverrideState(event, target) {
+  static async _onOverrideState() {
     // This is handled by the icon click handlers
     // Placeholder for future functionality if needed
   }
@@ -369,7 +461,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     return super._onClose?.(event, target);
   }
 
-  static async _onApplyAll(event, target) {
+  static async _onApplyAll() {
     const app = currentHideDialog;
 
     if (!app) {
@@ -416,7 +508,7 @@ export class HidePreviewDialog extends BaseActionDialog {
       await import('../services/index.js')
     ).applyNowHide(
       { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
-      { html: () => {}, attr: () => {} },
+      { html: () => { }, attr: () => { } },
     );
 
     // Update button states
@@ -429,7 +521,7 @@ export class HidePreviewDialog extends BaseActionDialog {
     );
   }
 
-  static async _onRevertAll(event, target) {
+  static async _onRevertAll() {
     const app = currentHideDialog;
 
     if (!app) {
@@ -453,9 +545,9 @@ export class HidePreviewDialog extends BaseActionDialog {
       const { revertNowHide } = await import('../services/index.js');
       await revertNowHide(
         { ...app.actionData, ignoreAllies: app.ignoreAllies },
-        { html: () => {}, attr: () => {} },
+        { html: () => { }, attr: () => { } },
       );
-    } catch (error) {}
+    } catch { }
 
     app.bulkActionState = 'reverted';
     app.updateBulkActionButtons();
@@ -499,12 +591,12 @@ export class HidePreviewDialog extends BaseActionDialog {
         await import('../services/index.js')
       ).applyNowHide(
         { ...app.actionData, ignoreAllies: app.ignoreAllies, overrides },
-        { html: () => {}, attr: () => {} },
+        { html: () => { }, attr: () => { } },
       );
 
       app.updateRowButtonsToApplied([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
-    } catch (error) {
+    } catch {
       notify.error(`${MODULE_TITLE}: Error applying change for ${outcome.target.name}`);
     }
   }
@@ -532,12 +624,199 @@ export class HidePreviewDialog extends BaseActionDialog {
         ignoreAllies: app.ignoreAllies,
         targetTokenId: tokenId,
       };
-      await revertNowHide(actionDataWithTarget, { html: () => {}, attr: () => {} });
+      await revertNowHide(actionDataWithTarget, { html: () => { }, attr: () => { } });
 
       app.updateRowButtonsToReverted([{ target: { id: tokenId }, hasActionableChange: true }]);
       app.updateChangesCount();
-    } catch (error) {
+    } catch {
       notify.error(`${MODULE_TITLE}: Error reverting change for ${outcome.target.name}`);
     }
+  }
+
+  /**
+   * Hide end-position prerequisite: concealed OR standard/greater cover
+   */
+  _endPositionQualifiesForHide(endPos) {
+    try {
+      if (!endPos) return false;
+      if (endPos.coverState && (endPos.coverState === 'standard' || endPos.coverState === 'greater')) return true;
+      if (endPos.avsVisibility === 'concealed') return true;
+      return false;
+    } catch { return false; }
+  }
+
+  /**
+   * Recalculates newVisibility for an outcome based on current position qualifications
+   * @param {Object} outcome - The outcome object to recalculate
+   */
+  async _recalculateNewVisibilityForOutcome(outcome) {
+    if (!outcome || !outcome.hasPositionData) {
+      return;
+    }
+
+    // Check if end position qualifies for hide
+    const endQualifies = outcome.positionDisplay?.endPosition?.qualifies ?? false;
+
+    const currentVisibility = outcome.oldVisibility || outcome.currentVisibility;
+    const rollOutcome = outcome.outcome;
+
+    let newVisibility;
+
+    // Apply the position qualification logic for hide
+    if (!endQualifies) {
+      // If end position doesn't qualify for hide -> observed (hide fails)
+      newVisibility = 'observed';
+    } else {
+      // If position qualifies -> use stored calculated outcome or recompute from mapping
+      const { getDefaultNewStateFor } = await import('../services/data/action-state-config.js');
+      newVisibility = outcome._calculatedNewVisibility ||
+        getDefaultNewStateFor('hide', currentVisibility, rollOutcome) ||
+        currentVisibility;
+    }
+
+    // Update the outcome
+    outcome.newVisibility = newVisibility;
+
+    // Update UI to reflect the change
+    const row = this.element?.querySelector(`tr[data-token-id="${outcome.target.id}"]`);
+    if (row) {
+      // Update visibility state indicators
+      const container = row.querySelector('.override-icons');
+      if (container) {
+        container.querySelectorAll('.state-icon').forEach((i) => i.classList.remove('selected'));
+        const iconEl = container.querySelector(`.state-icon[data-state="${newVisibility}"]`) ||
+          container.querySelector('.state-icon[data-state="observed"]');
+        if (iconEl) iconEl.classList.add('selected');
+      }
+
+      // Update action button states
+      const effectiveNew = outcome.overrideState || outcome.newVisibility;
+      const oldState = outcome.oldVisibility || outcome.currentVisibility;
+      outcome.hasActionableChange = effectiveNew != null && oldState != null && effectiveNew !== oldState;
+      this.updateActionButtonsForToken(outcome.target.id, outcome.hasActionableChange);
+    }
+  }
+
+  static async _onTogglePrequisite(event, target) {
+    const app = currentHideDialog;
+    if (!app) return;
+
+    const tokenId = target.dataset.tokenId;
+    if (!tokenId) return;
+    const outcome = app.outcomes.find(o => o.target.id === tokenId);
+    if (!outcome || !outcome.hasPositionData) return;
+
+    const position = outcome.positionDisplay?.endPosition;
+    if (!position) return;
+
+    // Toggle the qualification status
+    const currentQualifies = position.qualifies;
+    position.qualifies = !currentQualifies;
+
+    // Update button visual state
+    const icon = target.querySelector('i');
+    if (position.qualifies) {
+      target.className = 'position-requirement-btn position-check active';
+      if (icon) icon.className = 'fas fa-check';
+      target.setAttribute('data-tooltip', 'Prerequisite met');
+    } else {
+      target.className = 'position-requirement-btn position-x';
+      if (icon) icon.className = 'fas fa-times';
+      target.setAttribute('data-tooltip', 'Prerequisite not met');
+    }
+
+    // Recalculate visibility: if not qualified → observed; else restore calculated outcome
+    if (!position.qualifies) {
+      outcome.newVisibility = 'observed';
+      outcome.overrideState = null;
+    } else {
+      // Use stored calculated outcome or recompute from mapping
+      try {
+        const oldState = outcome.oldVisibility || outcome.currentVisibility;
+        const restored = outcome._calculatedNewVisibility || getDefaultNewStateFor('hide', oldState, outcome.outcome) || oldState;
+        outcome.newVisibility = restored;
+        // If there is no explicit override, sync override to calculated for UI selection
+        if (outcome.overrideState == null) {
+          outcome.overrideState = restored;
+        }
+      } catch {
+        // Fallback: keep whatever newVisibility was
+      }
+    }
+
+    // Update row state indicators and action buttons
+    try {
+      const row = app.element.querySelector(`tr[data-token-id="${tokenId}"]`);
+      if (row) {
+        const container = row.querySelector('.override-icons');
+        if (container) {
+          container.querySelectorAll('.state-icon').forEach((i) => i.classList.remove('selected'));
+          // Select the effective state icon for clarity
+          const effective = outcome.overrideState || outcome.newVisibility;
+          const iconEl = container.querySelector(`.state-icon[data-state="${effective}"]`) ||
+            container.querySelector('.state-icon[data-state="observed"]');
+          if (iconEl) iconEl.classList.add('selected');
+        }
+        const effectiveNew = outcome.overrideState || outcome.newVisibility;
+        const oldState = outcome.oldVisibility || outcome.currentVisibility;
+        outcome.hasActionableChange = effectiveNew != null && oldState != null && effectiveNew !== oldState;
+        app.updateActionButtonsForToken(tokenId, outcome.hasActionableChange);
+      }
+    } catch { }
+
+    // Recalculate newVisibility based on updated position qualifications
+    await app._recalculateNewVisibilityForOutcome(outcome);
+
+    // Apply the visibility change immediately for responsive feedback
+    try {
+      const effectiveVisibility = outcome.overrideState || outcome.newVisibility;
+      const hidingActor = app.actionData?.actor;
+      const observerToken = outcome.target;
+
+      if (hidingActor && observerToken && effectiveVisibility) {
+        // Import required modules
+        const { setVisibilityBetween } = await import('../../stores/visibility-map.js');
+        const AvsOverrideManager = (await import('../services/infra/avs-override-manager.js')).default;
+
+        // Find the hiding token
+        const hidingToken = canvas.tokens?.placeables?.find(t => t.actor?.id === hidingActor.id);
+
+        if (hidingToken) {
+          // Set AVS override to prevent automatic recalculation
+          try {
+            await AvsOverrideManager.applyOverrides(observerToken, {
+              target: hidingToken,
+              state: effectiveVisibility
+            }, {
+              source: 'hide_action',
+            });
+          } catch (avsError) {
+            console.warn('PF2E Visioner | Failed to set AVS override for hide prerequisite toggle:', avsError);
+          }
+
+          // Apply the immediate visibility change
+          await setVisibilityBetween(observerToken, hidingToken, effectiveVisibility);
+        }
+      }
+    } catch (applyError) {
+      console.warn('PF2E Visioner | Failed to apply immediate visibility change:', applyError);
+    }
+
+    notify.info(`${outcome.target.name}: ${position.qualifies ? 'prerequisite met' : 'prerequisite not met'}`);
+  }
+
+  // Bulk override action handlers
+  // eslint-disable-next-line no-unused-vars
+  static _onBulkOverrideSet(event, target) {
+    const app = currentHideDialog;
+    if (!app) return;
+    app._onBulkOverrideSet(event);
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  static _onBulkOverrideClear(event, target) {
+    const app = currentHideDialog;
+    if (!app) return;
+    app._onBulkOverrideClear();
   }
 }

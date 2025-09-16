@@ -58,6 +58,10 @@ export class AvsOverrideManager {
   static async setPairOverrides(observer, changesByTarget, options = {}) {
     try {
       const src = options.source || 'manual_action';
+      // Do not create overrides when the observer is Foundry-hidden
+      try {
+        if (observer?.document?.hidden === true) return false;
+      } catch { }
       // Only treat as sneak when explicitly requested by source; do not infer from token flags
       // Manual edits must remain symmetric even if the token is currently sneaking
       const isSneakAction = src === 'sneak_action';
@@ -95,6 +99,10 @@ export class AvsOverrideManager {
         } else {
           // Symmetric
           await this.onAVSOverride(payload);
+          // Skip reverse if the swapped observer (original target) is Foundry-hidden
+          try {
+            if (target?.document?.hidden === true) continue;
+          } catch { }
           await this.onAVSOverride({ ...payload, observer: target, target: observer });
         }
       }
@@ -214,6 +222,10 @@ export class AvsOverrideManager {
   }
   // Generic writer with explicit source tag
   static async applyOverrides(observer, changesInput, { source, ...options } = {}) {
+    // Do not create overrides when the observer is Foundry-hidden
+    try {
+      if (observer?.document?.hidden === true) return false;
+    } catch { }
     const map = asChangesByTarget(changesInput);
     if (map.size === 0 || !observer) return false;
     await this.setPairOverrides(observer, map, { source: source || 'manual_action', ...options });
@@ -311,7 +323,7 @@ export class AvsOverrideManager {
       try {
         const mod = await import('../../../ui/override-validation-indicator.js');
         if (typeof mod.hide === 'function') {
-          mod.hide();
+          mod.hide(true);
         }
       } catch { }
 

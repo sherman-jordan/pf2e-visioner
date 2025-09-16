@@ -52,6 +52,10 @@
           <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
           <span class="encounter-filter-label">Ignore allies</span>
         </label>
+        <label class="hide-foundry-hidden-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" {{#if hideFoundryHidden}}checked{{/if}} data-action="toggleHideFoundryHidden" data-tooltip="Visually hide tokens that are Foundry-hidden (document.hidden)" />
+          <span class="encounter-filter-label">Hide Foundry-hidden tokens</span>
+        </label>
         {{#if isObserverMode}}
           {{#if isVisibilityTab}}
             <label class="ignore-walls-filter-checkbox" style="display:flex; align-items:center; gap:8px;">

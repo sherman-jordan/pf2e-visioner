@@ -62,19 +62,23 @@
             <td class="status">
               <div class="status-icons column" role="group" aria-label="State change">
                 <div class="state-row">
-                  <button type="button" class="visioner-icon-btn prev-visibility" aria-label="{{prevVisibility.label}}" data-tooltip="{{prevVisibility.label}}">
-                    <i class="{{prevVisibility.icon}} visibility-{{prevVisibility.key}}" data-state="{{prevVisibility.key}}"></i>
-                  </button>
-                  <i class="fas fa-arrow-right state-arrow" aria-hidden="true"></i>
-                  <button type="button" class="visioner-icon-btn status-visibility" aria-label="{{statusVisibility.label}}" data-tooltip="{{statusVisibility.label}}">
-                    <i class="{{statusVisibility.icon}} visibility-{{statusVisibility.key}}" data-state="{{statusVisibility.key}}"></i>
-                  </button>
+                  {{#unless (eq prevVisibility.key statusVisibility.key)}}
+                    <button type="button" class="visioner-icon-btn prev-visibility" aria-label="{{prevVisibility.label}}" data-tooltip="{{prevVisibility.label}}">
+                      <i class="{{prevVisibility.icon}} visibility-{{prevVisibility.key}}" data-state="{{prevVisibility.key}}"></i>
+                    </button>
+                    <i class="fas fa-arrow-right state-arrow" aria-hidden="true"></i>
+                    <button type="button" class="visioner-icon-btn status-visibility" aria-label="{{statusVisibility.label}}" data-tooltip="{{statusVisibility.label}}">
+                      <i class="{{statusVisibility.icon}} visibility-{{statusVisibility.key}}" data-state="{{statusVisibility.key}}"></i>
+                    </button>
+                  {{/unless}}
                 </div>
         <div class="state-row">
-          <i class="prev-cover {{prevCover.icon}} cover-{{prevCover.key}}" data-state="{{prevCover.key}}"></i>
-                  <i class="fas fa-arrow-right state-arrow" aria-hidden="true"></i>
-                  <i class="status-cover {{statusCover.icon}} cover-{{statusCover.key}}" data-state="{{statusCover.key}}" aria-label="{{statusCover.label}}" data-tooltip="{{statusCover.label}}"></i>
-                </div>
+          {{#unless (eq prevCover.key statusCover.key)}}
+            <i class="prev-cover {{prevCover.icon}} cover-{{prevCover.key}}" data-state="{{prevCover.key}}" data-tooltip="{{prevCover.label}}"></i>
+            <i class="fas fa-arrow-right state-arrow" aria-hidden="true"></i>
+            <i class="status-cover {{statusCover.icon}} cover-{{statusCover.key}}" data-state="{{statusCover.key}}" aria-label="{{statusCover.label}}" data-tooltip="{{statusCover.label}}"></i>
+          {{/unless}}
+        </div>
               </div>
               <div class="status-description" data-tooltip="{{reason}}">
                 <i class="fas fa-info-circle"></i>
@@ -140,6 +144,7 @@
             <td class="status">
               <div class="status-icons column" role="group" aria-label="State change">
                 <div class="state-row">
+                  {{#unless (eq prevVisibility.key statusVisibility.key)}}
                   <button type="button" class="visioner-icon-btn prev-visibility" aria-label="{{prevVisibility.label}}" data-tooltip="{{prevVisibility.label}}">
                     <i class="{{prevVisibility.icon}} visibility-{{prevVisibility.key}}" data-state="{{prevVisibility.key}}"></i>
                   </button>
@@ -147,12 +152,15 @@
                   <button type="button" class="visioner-icon-btn status-visibility" aria-label="{{statusVisibility.label}}" data-tooltip="{{statusVisibility.label}}">
                     <i class="{{statusVisibility.icon}} visibility-{{statusVisibility.key}}" data-state="{{statusVisibility.key}}"></i>
                   </button>
+                  {{/unless}}
                 </div>
         <div class="state-row">
-          <i class="prev-cover {{prevCover.icon}} cover-{{prevCover.key}}" data-state="{{prevCover.key}}"></i>
-                  <i class="fas fa-arrow-right state-arrow" aria-hidden="true"></i>
-                  <i class="status-cover {{statusCover.icon}} cover-{{statusCover.key}}" data-state="{{statusCover.key}}" aria-label="{{statusCover.label}}" data-tooltip="{{statusCover.label}}"></i>
-                </div>
+          {{#unless (eq prevCover.key statusCover.key)}}
+            <i class="prev-cover {{prevCover.icon}} cover-{{prevCover.key}}" data-state="{{prevCover.key}}" data-tooltip="{{prevCover.label}}"></i>
+            <i class="fas fa-arrow-right state-arrow" aria-hidden="true"></i>
+            <i class="status-cover {{statusCover.icon}} cover-{{statusCover.key}}" data-state="{{statusCover.key}}" aria-label="{{statusCover.label}}" data-tooltip="{{statusCover.label}}"></i>
+          {{/unless}}
+        </div>
               </div>
               <div class="status-description" data-tooltip="{{reason}}">
                 <i class="fas fa-info-circle"></i>

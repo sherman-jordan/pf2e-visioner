@@ -3,6 +3,8 @@
  * All styles scoped to .pf2e-visioner to avoid conflicts
  */
 
+@import url('shared-ui-components.css');
+
 .pf2e-visioner {
   /* Force dialog to have a fixed height */
   .point-out-preview-dialog,
@@ -1756,7 +1758,9 @@
 
 .bulk-action-btn.apply-visibility-remove-overrides:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--pf2e-visioner-danger-light), 0 0 0 4px var(--pf2e-visioner-danger);
+  box-shadow:
+    0 0 0 2px var(--pf2e-visioner-danger-light),
+    0 0 0 4px var(--pf2e-visioner-danger);
 }
 
 .bulk-action-btn.apply-visibility-remove-overrides:disabled {
@@ -1774,7 +1778,7 @@
   padding: 6px 10px;
   margin: 6px 0 10px 0;
   border: 1px solid var(--color-border-light-primary);
-  background: var(--color-bg-option, rgba(0,0,0,0.15));
+  background: var(--color-bg-option, rgba(0, 0, 0, 0.15));
   border-radius: 6px;
   flex-wrap: wrap;
 }
@@ -1807,7 +1811,7 @@
   position: relative;
 }
 .bulk-override-bar .bulk-override-state-btn:hover {
-  background: var(--color-bg-option-active, rgba(255,255,255,0.08));
+  background: var(--color-bg-option-active, rgba(255, 255, 255, 0.08));
   transform: translateY(-1px);
 }
 .bulk-override-bar .bulk-override-actions {
@@ -1817,7 +1821,7 @@
 .bulk-override-bar .bulk-override-clear-btn {
   border: 1px solid var(--pf2e-visioner-danger, #f44336);
   color: var(--pf2e-visioner-danger, #f44336);
-  background: rgba(244,67,54,0.12);
+  background: rgba(244, 67, 54, 0.12);
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
@@ -1830,14 +1834,22 @@
 .bulk-override-bar .bulk-override-clear-btn:hover {
   background: var(--pf2e-visioner-danger, #f44336);
   color: #fff;
-  box-shadow: 0 2px 4px rgba(244,67,54,0.4);
+  box-shadow: 0 2px 4px rgba(244, 67, 54, 0.4);
 }
 
 /* Visibility state color tints on bulk buttons (reuse cssClass) */
-.bulk-override-state-btn.visibility-observed { color: var(--visibility-observed, #90caf9); }
-.bulk-override-state-btn.visibility-concealed { color: var(--visibility-concealed, #ffb300); }
-.bulk-override-state-btn.visibility-hidden { color: var(--visibility-hidden, #ff6600); }
-.bulk-override-state-btn.visibility-undetected { color: var(--visibility-undetected, #f44336); }
+.bulk-override-state-btn.visibility-observed {
+  color: var(--visibility-observed, #90caf9);
+}
+.bulk-override-state-btn.visibility-concealed {
+  color: var(--visibility-concealed, #ffb300);
+}
+.bulk-override-state-btn.visibility-hidden {
+  color: var(--visibility-hidden, #ff6600);
+}
+.bulk-override-state-btn.visibility-undetected {
+  color: var(--visibility-undetected, #f44336);
+}
 
 /* Row action buttons styling */
 .row-action-btn {
@@ -2013,92 +2025,92 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-/* ==========================================================
+  /* ==========================================================
    Scrollbars: enforce for action dialogs (flat selectors)
    This section appears at the end to win the cascade.
    Keeps Override Validation using its own scroll container.
    ========================================================== */
 
-/* Ensure action dialog window-content can host inner scroll areas */
-.pf2e-visioner.point-out-preview-dialog .window-content,
-.pf2e-visioner .point-out-preview-dialog .window-content,
-.pf2e-visioner.seek-preview-dialog .window-content,
-.pf2e-visioner .seek-preview-dialog .window-content,
-.pf2e-visioner.hide-preview-dialog .window-content,
-.pf2e-visioner .hide-preview-dialog .window-content,
-.pf2e-visioner.sneak-preview-dialog .window-content,
-.pf2e-visioner .sneak-preview-dialog .window-content,
-.pf2e-visioner.create-a-diversion-preview-dialog .window-content,
-.pf2e-visioner .create-a-diversion-preview-dialog .window-content,
-.pf2e-visioner.consequences-preview-dialog .window-content,
-.pf2e-visioner .consequences-preview-dialog .window-content,
-.pf2e-visioner.take-cover-preview-dialog .window-content,
-.pf2e-visioner .take-cover-preview-dialog .window-content {
-  height: 100%;
-  min-height: 0; /* allow inner flex children to shrink and scroll */
-  padding: 10px;
-  overflow: hidden;
-}
+  /* Ensure action dialog window-content can host inner scroll areas */
+  .pf2e-visioner.point-out-preview-dialog .window-content,
+  .pf2e-visioner .point-out-preview-dialog .window-content,
+  .pf2e-visioner.seek-preview-dialog .window-content,
+  .pf2e-visioner .seek-preview-dialog .window-content,
+  .pf2e-visioner.hide-preview-dialog .window-content,
+  .pf2e-visioner .hide-preview-dialog .window-content,
+  .pf2e-visioner.sneak-preview-dialog .window-content,
+  .pf2e-visioner .sneak-preview-dialog .window-content,
+  .pf2e-visioner.create-a-diversion-preview-dialog .window-content,
+  .pf2e-visioner .create-a-diversion-preview-dialog .window-content,
+  .pf2e-visioner.consequences-preview-dialog .window-content,
+  .pf2e-visioner .consequences-preview-dialog .window-content,
+  .pf2e-visioner.take-cover-preview-dialog .window-content,
+  .pf2e-visioner .take-cover-preview-dialog .window-content {
+    height: 100%;
+    min-height: 0; /* allow inner flex children to shrink and scroll */
+    padding: 10px;
+    overflow: hidden;
+  }
 
-/* Content wrappers should be flex columns filling the dialog */
-.pf2e-visioner.point-out-preview-dialog .point-out-preview-content,
-.pf2e-visioner .point-out-preview-content,
-.pf2e-visioner.seek-preview-dialog .seek-preview-content,
-.pf2e-visioner .seek-preview-content,
-.pf2e-visioner.hide-preview-dialog .hide-preview-content,
-.pf2e-visioner .hide-preview-content,
-.pf2e-visioner.sneak-preview-dialog .sneak-preview-content,
-.pf2e-visioner .sneak-preview-content,
-.pf2e-visioner.create-a-diversion-preview-dialog .create-a-diversion-preview-content,
-.pf2e-visioner .create-a-diversion-preview-content,
-.pf2e-visioner.consequences-preview-dialog .consequences-preview-content,
-.pf2e-visioner .consequences-preview-content,
-.pf2e-visioner.take-cover-preview-dialog .take-cover-preview-content,
-.pf2e-visioner .take-cover-preview-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
+  /* Content wrappers should be flex columns filling the dialog */
+  .pf2e-visioner.point-out-preview-dialog .point-out-preview-content,
+  .pf2e-visioner .point-out-preview-content,
+  .pf2e-visioner.seek-preview-dialog .seek-preview-content,
+  .pf2e-visioner .seek-preview-content,
+  .pf2e-visioner.hide-preview-dialog .hide-preview-content,
+  .pf2e-visioner .hide-preview-content,
+  .pf2e-visioner.sneak-preview-dialog .sneak-preview-content,
+  .pf2e-visioner .sneak-preview-content,
+  .pf2e-visioner.create-a-diversion-preview-dialog .create-a-diversion-preview-content,
+  .pf2e-visioner .create-a-diversion-preview-content,
+  .pf2e-visioner.consequences-preview-dialog .consequences-preview-content,
+  .pf2e-visioner .consequences-preview-content,
+  .pf2e-visioner.take-cover-preview-dialog .take-cover-preview-content,
+  .pf2e-visioner .take-cover-preview-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
 
-/* Scroll the results tables area within action dialogs */
-.pf2e-visioner.point-out-preview-dialog .results-table-container,
-.pf2e-visioner .point-out-preview-dialog .results-table-container,
-.pf2e-visioner.seek-preview-dialog .results-table-container,
-.pf2e-visioner .seek-preview-dialog .results-table-container,
-.pf2e-visioner.hide-preview-dialog .results-table-container,
-.pf2e-visioner .hide-preview-dialog .results-table-container,
-.pf2e-visioner.sneak-preview-dialog .results-table-container,
-.pf2e-visioner .sneak-preview-dialog .results-table-container,
-.pf2e-visioner.create-a-diversion-preview-dialog .results-table-container,
-.pf2e-visioner .create-a-diversion-preview-dialog .results-table-container,
-.pf2e-visioner.consequences-preview-dialog .results-table-container,
-.pf2e-visioner .consequences-preview-dialog .results-table-container,
-.pf2e-visioner.take-cover-preview-dialog .results-table-container,
-.pf2e-visioner .take-cover-preview-dialog .results-table-container {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: auto;
-}
+  /* Scroll the results tables area within action dialogs */
+  .pf2e-visioner.point-out-preview-dialog .results-table-container,
+  .pf2e-visioner .point-out-preview-dialog .results-table-container,
+  .pf2e-visioner.seek-preview-dialog .results-table-container,
+  .pf2e-visioner .seek-preview-dialog .results-table-container,
+  .pf2e-visioner.hide-preview-dialog .results-table-container,
+  .pf2e-visioner .hide-preview-dialog .results-table-container,
+  .pf2e-visioner.sneak-preview-dialog .results-table-container,
+  .pf2e-visioner .sneak-preview-dialog .results-table-container,
+  .pf2e-visioner.create-a-diversion-preview-dialog .results-table-container,
+  .pf2e-visioner .create-a-diversion-preview-dialog .results-table-container,
+  .pf2e-visioner.consequences-preview-dialog .results-table-container,
+  .pf2e-visioner .consequences-preview-dialog .results-table-container,
+  .pf2e-visioner.take-cover-preview-dialog .results-table-container,
+  .pf2e-visioner .take-cover-preview-dialog .results-table-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+  }
 
-/* Give action dialogs a reliable fixed height so inner scrollbars can appear (wins over inline height:auto) */
-.pf2e-visioner.point-out-preview-dialog,
-.pf2e-visioner.seek-preview-dialog,
-.pf2e-visioner.hide-preview-dialog,
-.pf2e-visioner.sneak-preview-dialog,
-.pf2e-visioner.create-a-diversion-preview-dialog,
-.pf2e-visioner.consequences-preview-dialog,
-.pf2e-visioner.take-cover-preview-dialog {
-  height: 600px !important;
-}
+  /* Give action dialogs a reliable fixed height so inner scrollbars can appear (wins over inline height:auto) */
+  .pf2e-visioner.point-out-preview-dialog,
+  .pf2e-visioner.seek-preview-dialog,
+  .pf2e-visioner.hide-preview-dialog,
+  .pf2e-visioner.sneak-preview-dialog,
+  .pf2e-visioner.create-a-diversion-preview-dialog,
+  .pf2e-visioner.consequences-preview-dialog,
+  .pf2e-visioner.take-cover-preview-dialog {
+    height: 600px !important;
+  }
 
-/* Preserve Override Validation behavior: no nested scrollbars here */
-.pf2e-visioner .override-validation-dialog .results-table-container {
-  flex: 0 0 auto !important;
-  overflow-y: visible !important;
-}
+  /* Preserve Override Validation behavior: no nested scrollbars here */
+  .pf2e-visioner .override-validation-dialog .results-table-container {
+    flex: 0 0 auto !important;
+    overflow-y: visible !important;
+  }
 
   .sticky-header-table tbody td {
     padding: 6px 8px;

@@ -83,8 +83,8 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    // Filter outcomes based on encounter filter
-    let filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
+  // Filter outcomes based on encounter filter
+  let filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
 
     // Apply ally filtering if ignore allies is enabled
     try {
@@ -468,6 +468,13 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
         app.ignoreAllies,
         'target',
       );
+    } catch { }
+
+    // Respect Hide Foundry-hidden toggle for Revert All (UI only)
+    try {
+      if (app.hideFoundryHidden) {
+        filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+      }
     } catch { }
 
     // Only revert changes to filtered outcomes that have actionable changes

@@ -553,8 +553,10 @@ export class HidePreviewDialog extends BaseActionDialog {
 
     app.bulkActionState = 'reverted';
     app.updateBulkActionButtons();
+    // Respect filters for UI row updates
+    const filtered = await app.getFilteredOutcomes();
     app.updateRowButtonsToReverted(
-      app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
+      filtered.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
     );
     app.updateChangesCount();
 

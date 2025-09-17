@@ -291,14 +291,31 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      // Build revert data internally in the service; no need to pre-filter here
+      // Build revert data internally in the service; no need to pre-filter payload here
       const { revertNowPointOut } = await import('../services/index.js');
       await revertNowPointOut(app.actionData, { html: () => {}, attr: () => {} });
+
+      // Respect Hide Foundry-hidden and other filters when updating UI
+      let filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
+      try {
+        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+        filteredOutcomes = filterOutcomesByAllies(
+          filteredOutcomes,
+          app.actorToken,
+          app.ignoreAllies,
+          'target',
+        );
+      } catch {}
+      try {
+        if (app.hideFoundryHidden) {
+          filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+        }
+      } catch {}
 
       app.bulkActionState = 'reverted';
       app.updateBulkActionButtons();
       app.updateRowButtonsToReverted(
-        app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
+        filteredOutcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
       );
       app.updateChangesCount();
     } catch (error) {

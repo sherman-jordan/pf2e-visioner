@@ -408,7 +408,7 @@ export class AutoCoverHooks {
       ctx.type === 'skill-check' &&
       Array.isArray(ctx.domains) &&
       ctx.domains.includes('stealth') &&
-      !ctx.options.includes("action:sneak")
+      !ctx?.options?.has("action:sneak")
     ) {
       return this.stealthCheckUseCase;
     }

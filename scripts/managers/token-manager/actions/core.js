@@ -16,14 +16,40 @@ export async function formHandler(event, form, formData) {
   const coverChanges = {};
   const wallVisibilityChanges = {};
 
+  // Respect UI filters: build a whitelist of token ids from actually visible table rows
+  let allowedTokenIds = null;
+  try {
+    const rows = Array.from(app.element?.querySelectorAll?.('tr.token-row') || []);
+    // If we have rows, compute allowed ids of rows that are not visually hidden
+    if (rows.length > 0) {
+      allowedTokenIds = new Set();
+      for (const row of rows) {
+        const id = row?.dataset?.tokenId;
+        if (!id) continue;
+        const isFoundryHidden = row?.dataset?.foundryHidden === 'true';
+        const isDisplayHidden = row?.style?.display === 'none';
+        // If the user chose to hide Foundry-hidden rows, skip those
+        if ((app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens')) && isFoundryHidden)
+          continue;
+        // Skip any row visually hidden by other filters
+        if (isDisplayHidden) continue;
+        // Also skip tokens not present on the canvas at all (off-table)
+        try {
+          if (!canvas.tokens.get(id)) continue;
+        } catch { }
+        allowedTokenIds.add(id);
+      }
+    }
+  } catch { }
+
   const formDataObj = formData.object || formData;
   for (const [key, value] of Object.entries(formDataObj)) {
     if (key.startsWith('visibility.')) {
       const tokenId = key.replace('visibility.', '');
-      visibilityChanges[tokenId] = value;
+      if (!allowedTokenIds || allowedTokenIds.has(tokenId)) visibilityChanges[tokenId] = value;
     } else if (key.startsWith('cover.')) {
       const tokenId = key.replace('cover.', '');
-      coverChanges[tokenId] = value;
+      if (!allowedTokenIds || allowedTokenIds.has(tokenId)) coverChanges[tokenId] = value;
     } else if (key.startsWith('walls.')) {
       const wallId = key.replace('walls.', '');
       wallVisibilityChanges[wallId] = value;
@@ -295,14 +321,25 @@ export async function applyCurrent(event, button) {
     visibilityInputs.forEach((input) => {
       // Support unit tests where inputs are simple objects without DOM APIs
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
-      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
+      // Respect UI filters: skip Foundry-hidden rows when hidden, visually hidden rows, and off-table tokens
       const tokenId = input.name.replace('visibility.', '');
+      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+      if (row) {
+        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
+        if (row.style && row.style.display === 'none') return;
+      }
+      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
     });
     coverInputs.forEach((input) => {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
-      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('cover.', '');
+      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+      if (row) {
+        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
+        if (row.style && row.style.display === 'none') return;
+      }
+      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
       app._savedModeData[app.mode].cover[tokenId] = input.value;
     });
     wallInputs.forEach((input) => {
@@ -580,14 +617,24 @@ export async function applyBoth(_event, _button) {
     if (!app._savedModeData[app.mode]) app._savedModeData[app.mode] = { visibility: {}, cover: {} };
     visibilityInputs.forEach((input) => {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
-      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('visibility.', '');
+      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+      if (row) {
+        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
+        if (row.style && row.style.display === 'none') return;
+      }
+      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
     });
     coverInputs.forEach((input) => {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
-      if (row && row.dataset && row.dataset.foundryHidden === 'true') return; // skip hidden tokens
       const tokenId = input.name.replace('cover.', '');
+      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+      if (row) {
+        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
+        if (row.style && row.style.display === 'none') return;
+      }
+      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
       app._savedModeData[app.mode].cover[tokenId] = input.value;
     });
   } catch (error) {

@@ -48,7 +48,7 @@ function buildSneakDistanceChipHTML(tokenOrActor) {
     return `
       <span class="sneak-max-distance-chip" 
             data-tooltip="${tooltip}"
-            style="margin-left:8px; padding:2px 8px; border-radius:12px; background: var(--color-border-light-2, #ddd); font-size: 11px; line-height: 18px; display: inline-flex; align-items: center; gap: 6px;">
+            style="padding:2px 8px; border-radius:12px; background: var(--color-border-light-2, #ddd); font-size: 11px; line-height: 18px; display: inline-flex; align-items: center; gap: 6px;">
         <i class="fas fa-ruler-horizontal" aria-hidden="true"></i>
         <span>Max Sneak Distance: <strong>${maxFeet} ft</strong></span>
       </span>`;
@@ -94,13 +94,16 @@ export function buildSneakPanel(actionData = {}, message = null) {
       const distanceChip = buildSneakDistanceChipHTML(actionData?.actor);
       
       actionButtonsHtml = `
-        <button type="button" 
-                class="visioner-btn ${buttonClass}" 
-                data-action="start-sneak"
-                data-tooltip="Start sneaking: capture current visibility and cover states">
-          <i class="fas fa-mask"></i> Start Sneak
-        </button>
-        ${distanceChip}`;
+        <div class="visioner-row-with-chip" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <button type="button" 
+                  class="visioner-btn ${buttonClass}" 
+                  data-action="start-sneak"
+                  data-tooltip="Start sneaking: capture current visibility and cover states"
+                  style="flex:1 1 auto; white-space: normal;">
+            <i class="fas fa-mask"></i> Start Sneak
+          </button>
+          ${distanceChip}
+        </div>`;
     }
   } else {
     // Players: Only allow "Start Sneak"; do not show results/apply buttons
@@ -111,14 +114,22 @@ export function buildSneakPanel(actionData = {}, message = null) {
     const buttonText = hasStartedSneak ? 'Let the GM know when your Sneak movement is complete' : 'Start Sneak';
     const distanceChip = buildSneakDistanceChipHTML(actionData?.actor);
 
+    // If sneak has started, stack the chip below the button to avoid squeezing text
+    const containerStyle = hasStartedSneak
+      ? 'display:flex; flex-direction:column; align-items:stretch; gap:8px;'
+      : 'display:flex; align-items:center; justify-content:space-between; gap:8px;';
+
     actionButtonsHtml = `
-      <button type="button" 
-              class="visioner-btn ${buttonClass}"
-              data-action="start-sneak"
-              ${disabledAttr}>
-        <i class="fas fa-mask"></i> ${buttonText}
-      </button>
-      ${distanceChip}`;
+      <div class="visioner-row-with-chip" style="${containerStyle}">
+        <button type="button" 
+                class="visioner-btn ${buttonClass}"
+                data-action="start-sneak"
+                ${disabledAttr}
+                style="flex:1 1 auto; white-space: normal;">
+          <i class="fas fa-mask"></i> ${buttonText}
+        </button>
+        ${distanceChip}
+      </div>`;
   }
 
   const hasStartedSneak = (message || actionData?.message || game.messages.get(actionData?.messageId))?.flags?.['pf2e-visioner']?.sneakStartStates;

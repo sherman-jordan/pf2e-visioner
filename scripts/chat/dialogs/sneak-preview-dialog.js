@@ -151,6 +151,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       toggleEndPosition: SneakPreviewDialog._onToggleEndPosition,
       setCoverBonus: SneakPreviewDialog._onSetCoverBonus,
       applyAllCover: SneakPreviewDialog._onApplyAllCover,
+      onClose: SneakPreviewDialog._onClose
     },
   };
 
@@ -1585,6 +1586,11 @@ export class SneakPreviewDialog extends BaseActionDialog {
       app: currentSneakDialog,
       actionType: 'Sneak'
     });
+  }
+
+  async close(options = {}) {
+    await this._clearSneakActiveFlag();
+    return super.close(options);
   }
 
 }

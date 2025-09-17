@@ -403,11 +403,12 @@ export class AutoCoverHooks {
       return this.savingThrowUseCase;
     }
 
-    // Check for stealth context
+    // Check for stealth context (exclude sneak checks)
     if (
       ctx.type === 'skill-check' &&
       Array.isArray(ctx.domains) &&
-      ctx.domains.includes('stealth')
+      ctx.domains.includes('stealth') &&
+      !ctx.options.includes("action:sneak")
     ) {
       return this.stealthCheckUseCase;
     }

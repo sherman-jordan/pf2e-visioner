@@ -574,6 +574,13 @@ export class SneakActionHandler extends ActionHandlerBase {
           positionTransition
         });
         newVisibility = enhancedOutcome.newVisibility;
+        // Enforce end-position prerequisite as a safety net: end must have Standard/Greater cover or be Concealed
+        try {
+          const endCover = positionTransition?.endPosition?.coverState;
+          const endVis = positionTransition?.endPosition?.avsVisibility;
+          const endQualifies = (endCover === 'standard' || endCover === 'greater') || endVis === 'concealed';
+          if (!endQualifies) newVisibility = 'observed';
+        } catch { }
         // Feat-based post visibility adjustments (e.g., Vanish into the Land)
         try {
           const { FeatsHandler } = await import('../feats-handler.js');
@@ -917,7 +924,8 @@ export class SneakActionHandler extends ActionHandlerBase {
     // PF2E Rules: Start position must be Hidden or Undetected to attempt Sneak
     // End position needs cover or concealment to maintain stealth
     let startQualifies = startPos.avsVisibility === 'hidden' || startPos.avsVisibility === 'undetected';
-    let endQualifies = endPos.coverState !== 'none' || endPos.avsVisibility === 'concealed';
+    // Only Standard or Greater cover qualifies (lesser is insufficient per PF2E rules)
+    let endQualifies = (endPos.coverState === 'standard' || endPos.coverState === 'greater') || endPos.avsVisibility === 'concealed';
     let bothQualify = startQualifies && endQualifies;
 
     let result = {

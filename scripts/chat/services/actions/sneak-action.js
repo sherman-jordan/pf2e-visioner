@@ -109,18 +109,16 @@ export class SneakActionHandler extends ActionHandlerBase {
 
       // Apply walk speed halving while sneaking
       try {
-      const { SneakSpeedService } = await import('../sneak-speed-service.js');
-      await SneakSpeedService.applySneakWalkSpeed(sneakingToken);
+        const { SneakSpeedService } = await import('../sneak-speed-service.js');
+        await SneakSpeedService.applySneakWalkSpeed(sneakingToken);
       } catch (speedErr) {
         console.warn('PF2E Visioner | Failed to apply sneak walk speed:', speedErr);
       }
 
-      // Get all observer tokens
+      // Get all observer tokens (include Foundry-hidden; UI checkbox controls visibility only)
       const observerTokens = canvas.tokens.placeables
         .filter(t => t && t.actor)
-        .filter(t => t.id !== sneakingToken.id)
-        // Skip Foundry-hidden observers entirely
-        .filter(t => !t?.document?.hidden);
+        .filter(t => t.id !== sneakingToken.id);
 
 
       // Import the visibility calculator to get proper AVS calculations
@@ -282,7 +280,7 @@ export class SneakActionHandler extends ActionHandlerBase {
       if (tokenByName) {
 
         return tokenByName;
-      } 
+      }
       token = canvas.tokens.placeables.find((t) => t.actor?.id === actionData.actor.id);
       if (token) {
         return token;
@@ -304,13 +302,15 @@ export class SneakActionHandler extends ActionHandlerBase {
   async discoverSubjects(actionData) {
     // Observers are all other tokens; dialog filters encounter as needed
     const tokens = canvas?.tokens?.placeables || [];
-    const actorId = actionData?.actor?.id || actionData?.actor?.document?.id || null;
+    // Resolve the actual sneaking token to exclude it reliably
+    const sneakingToken = this._getSneakingToken(actionData) || actionData?.actor || null;
+    const sneakingTokenId = sneakingToken?.document?.id || sneakingToken?.id || null;
 
     const base = tokens
       .filter((t) => t && t.actor)
-      // Exclude Foundry-hidden tokens from observers
-      .filter((t) => !t?.document?.hidden)
-      .filter((t) => (actorId ? t.actor.id !== actorId : t !== actionData.actor))
+      // Include Foundry-hidden tokens; visual filter handled in dialog
+      // Exclude the sneaking token itself
+      .filter((t) => (sneakingTokenId ? t.document?.id !== sneakingTokenId : t !== sneakingToken))
       // Use global ignoreAllies setting when not explicitly provided in actionData
       .filter(
         (t) =>
@@ -522,7 +522,7 @@ export class SneakActionHandler extends ActionHandlerBase {
           const lightInfo = lightingCalculator.getLightLevelAt(targetPosition);
           inDimOrDarker = ['dim', 'darkness'].includes(lightInfo?.level);
         }
-      } catch {}
+      } catch { }
 
       const { shift, notes } = FeatsHandler.getOutcomeAdjustment(actionData.actor, 'sneak', { inDimOrDarker });
       if (shift) {
@@ -574,6 +574,13 @@ export class SneakActionHandler extends ActionHandlerBase {
           positionTransition
         });
         newVisibility = enhancedOutcome.newVisibility;
+        // Enforce end-position prerequisite as a safety net: end must have Standard/Greater cover or be Concealed
+        try {
+          const endCover = positionTransition?.endPosition?.coverState;
+          const endVis = positionTransition?.endPosition?.avsVisibility;
+          const endQualifies = (endCover === 'standard' || endCover === 'greater') || endVis === 'concealed';
+          if (!endQualifies) newVisibility = 'observed';
+        } catch { }
         // Feat-based post visibility adjustments (e.g., Vanish into the Land)
         try {
           const { FeatsHandler } = await import('../feats-handler.js');
@@ -581,7 +588,7 @@ export class SneakActionHandler extends ActionHandlerBase {
             inNaturalTerrain: positionTransition?.endPosition?.terrainTag === 'natural',
             outcome: adjustedOutcome,
           });
-        } catch {}
+        } catch { }
       } else {
         // Fall back to standard outcome determination
         const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
@@ -593,7 +600,7 @@ export class SneakActionHandler extends ActionHandlerBase {
             inNaturalTerrain: positionTransition?.endPosition?.terrainTag === 'natural',
             outcome: adjustedOutcome,
           });
-        } catch {}
+        } catch { }
       }
     } catch (error) {
       console.warn('PF2E Visioner | Enhanced outcome determination failed, using standard logic:', error);
@@ -607,7 +614,7 @@ export class SneakActionHandler extends ActionHandlerBase {
           inNaturalTerrain: positionTransition?.endPosition?.terrainTag === 'natural',
           outcome: adjustedOutcome,
         });
-      } catch {}
+      } catch { }
     }
 
     // Calculate what the visibility change would have been with original outcome
@@ -616,7 +623,7 @@ export class SneakActionHandler extends ActionHandlerBase {
         if (enhancedOutcome) {
           // Use enhanced logic for original outcome too if available
           const { default: EnhancedSneakOutcome } = await import('./enhanced-sneak-outcome.js');
-        // positionTransition already computed above
+          // positionTransition already computed above
 
           if (positionTransition?.startPosition && positionTransition?.endPosition) {
             const originalEnhanced = await EnhancedSneakOutcome.determineEnhancedOutcome({
@@ -660,12 +667,12 @@ export class SneakActionHandler extends ActionHandlerBase {
     // positionTransition already computed above
 
     // Use the original DC and outcome without position-based adjustments
-  const finalDC = dc;
-  const finalOutcome = adjustedOutcome;
+    const finalDC = dc;
+    const finalOutcome = adjustedOutcome;
     const finalMargin = margin;
 
-  // Simple position qualification check
-  const positionQualifies = this._checkPositionQualification(positionTransition, actionData);
+    // Simple position qualification check
+    const positionQualifies = this._checkPositionQualification(positionTransition, actionData);
 
     return {
       token: subject,
@@ -677,13 +684,13 @@ export class SneakActionHandler extends ActionHandlerBase {
       adjustedMargin: finalMargin, // Internal adjusted margin for calculations
       originalMargin,
       baseMargin,
-  outcome: finalOutcome, // Use adjusted outcome (after feats)
+      outcome: finalOutcome, // Use adjusted outcome (after feats)
       originalOutcome,
       originalOutcomeLabel,
       originalNewVisibility,
       shouldShowOverride,
       currentVisibility: current,
-  // Precedence: AVS override > manual state > AVS calculation
+      // Precedence: AVS override > manual state > AVS calculation
       oldVisibility: (() => {
         // 1. AVS override (observer -> sneaker)
         const observerId = subject.document?.id;
@@ -703,9 +710,9 @@ export class SneakActionHandler extends ActionHandlerBase {
         } catch { }
         if (manualState) return manualState;
         // 3. AVS calculation (position tracker)
-  return positionTransition?.startPosition?.avsVisibility || current;
+        return positionTransition?.startPosition?.avsVisibility || current;
       })(),
-  oldVisibilityLabel: VISIBILITY_STATES[positionTransition?.startPosition?.avsVisibility || current]?.label || (positionTransition?.startPosition?.avsVisibility || current),
+      oldVisibilityLabel: VISIBILITY_STATES[positionTransition?.startPosition?.avsVisibility || current]?.label || (positionTransition?.startPosition?.avsVisibility || current),
       newVisibility,
       changed: newVisibility !== current,
       autoCover: result.autoCover, // Add auto-cover information
@@ -714,15 +721,15 @@ export class SneakActionHandler extends ActionHandlerBase {
       // Add base roll total for triple-bracket display
       baseRollTotal: baseRollTotal,
       // Enhanced position tracking data
-  positionTransition,
-  startPosition: positionTransition?.startPosition,
-  endPosition: positionTransition?.endPosition,
+      positionTransition,
+      startPosition: positionTransition?.startPosition,
+      endPosition: positionTransition?.endPosition,
       positionQualifies,
       // Enhanced outcome analysis
       dcAdjustment: finalDC !== dc ? finalDC - dc : 0,
       outcomeChanged: finalOutcome !== outcome,
       enhancedAnalysis: {
-  hasPositionData: !!positionTransition,
+        hasPositionData: !!positionTransition,
       },
       // Enhanced outcome determination data
       enhancedOutcomeData: enhancedOutcome ? {
@@ -917,7 +924,8 @@ export class SneakActionHandler extends ActionHandlerBase {
     // PF2E Rules: Start position must be Hidden or Undetected to attempt Sneak
     // End position needs cover or concealment to maintain stealth
     let startQualifies = startPos.avsVisibility === 'hidden' || startPos.avsVisibility === 'undetected';
-    let endQualifies = endPos.coverState !== 'none' || endPos.avsVisibility === 'concealed';
+    // Only Standard or Greater cover qualifies (lesser is insufficient per PF2E rules)
+    let endQualifies = (endPos.coverState === 'standard' || endPos.coverState === 'greater') || endPos.avsVisibility === 'concealed';
     let bothQualify = startQualifies && endQualifies;
 
     let result = {
@@ -931,7 +939,7 @@ export class SneakActionHandler extends ActionHandlerBase {
     try {
       const { FeatsHandler } = await import('../feats-handler.js');
       const acting = this._getSneakingToken?.(actionData) || actionData?.actor || null;
-      result = FeatsHandler.overrideSneakPrerequisites(acting, result, {
+      result = FeatsHandler.overridePrerequisites(acting, result, {
         startVisibility: startPos.avsVisibility,
         endVisibility: endPos.avsVisibility,
         endCoverState: endPos.coverState,

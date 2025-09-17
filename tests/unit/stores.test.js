@@ -3,12 +3,12 @@
  */
 
 import { getCoverBetween, setCoverBetween } from '../../scripts/stores/cover-map.js';
-import { 
-  getVisibilityBetween, 
-  setVisibilityBetween, 
-  getVisibilityMap, 
-  setVisibilityMap,
-  getVisibility 
+import {
+  getVisibility,
+  getVisibilityBetween,
+  getVisibilityMap,
+  setVisibilityBetween,
+  setVisibilityMap
 } from '../../scripts/stores/visibility-map.js';
 import { VisibilityOverrideManager } from '../../scripts/stores/visibility-override-manager.js';
 
@@ -65,7 +65,7 @@ describe('Visibility Map Functions', () => {
     test('should return existing visibility map', () => {
       const visibilityMap = { 'target1': 'hidden', 'target2': 'concealed' };
       mockObserver.document.getFlag.mockReturnValue(visibilityMap);
-      
+
       const result = getVisibilityMap(mockObserver);
       expect(result).toEqual(visibilityMap);
     });
@@ -86,9 +86,9 @@ describe('Visibility Map Functions', () => {
     test('should update visibility map for GM', async () => {
       global.game.user.isGM = true;
       const visibilityMap = { 'target1': 'hidden' };
-      
+
       await setVisibilityMap(mockObserver, visibilityMap);
-      
+
       expect(mockObserver.document.update).toHaveBeenCalledWith(
         { 'flags.pf2e-visioner.visibility': visibilityMap },
         { diff: false }
@@ -105,18 +105,18 @@ describe('Visibility Map Functions', () => {
 
     test('should skip update if state has not changed', async () => {
       mockObserver.document.getFlag.mockReturnValue({ 'target': 'hidden' });
-      
+
       await setVisibilityBetween(mockObserver, mockTarget, 'hidden');
-      
+
       expect(mockObserver.document.update).not.toHaveBeenCalled();
     });
 
     test('should update visibility map when state changes', async () => {
       global.game.user.isGM = true;
       mockObserver.document.getFlag.mockReturnValue({});
-      
+
       await setVisibilityBetween(mockObserver, mockTarget, 'hidden');
-      
+
       expect(mockObserver.document.update).toHaveBeenCalledWith(
         { 'flags.pf2e-visioner.visibility': { 'target': 'hidden' } },
         { diff: false }
@@ -126,21 +126,21 @@ describe('Visibility Map Functions', () => {
     test('should handle ephemeral update errors gracefully', async () => {
       global.game.user.isGM = true;
       mockObserver.document.getFlag.mockReturnValue({});
-      
+
       // Mock error in ephemeral effects - should not throw
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
       await setVisibilityBetween(mockObserver, mockTarget, 'hidden');
-      
+
       consoleSpy.mockRestore();
     });
 
     test('should skip ephemeral update when specified', async () => {
       global.game.user.isGM = true;
       mockObserver.document.getFlag.mockReturnValue({});
-      
+
       await setVisibilityBetween(mockObserver, mockTarget, 'hidden', { skipEphemeralUpdate: true });
-      
+
       expect(mockObserver.document.update).toHaveBeenCalled();
     });
   });
@@ -154,19 +154,19 @@ describe('Visibility Map Functions', () => {
       global.canvas.tokens.get
         .mockReturnValueOnce(mockObserver)
         .mockReturnValueOnce(mockTarget);
-      
+
       const result = getVisibility('observer', 'target');
       expect(result).toBe('observed');
     });
 
     test('should handle missing observer token', () => {
       global.canvas.tokens.get.mockReturnValue(null);
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+
       const result = getVisibility('missing-observer', 'target');
       expect(result).toBe('observed');
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Observer token'));
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -174,12 +174,12 @@ describe('Visibility Map Functions', () => {
       global.canvas.tokens.get
         .mockReturnValueOnce(mockObserver)
         .mockReturnValueOnce(null);
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+
       const result = getVisibility('observer', 'missing-target');
       expect(result).toBe('observed');
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Target token'));
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -190,11 +190,11 @@ describe('Visibility Map Functions', () => {
 
     test('should handle errors gracefully', () => {
       // Force an error by passing invalid tokens
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
       const result = getVisibility(undefined, undefined);
       expect(result).toBe('observed');
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -222,7 +222,7 @@ describe('VisibilityOverrideManager', () => {
     test('should generate key from token objects', () => {
       const token1 = { document: { id: 'token1' } };
       const token2 = { document: { id: 'token2' } };
-      
+
       const key = manager._generateKey(token1, token2);
       expect(key).toBe('token1->token2');
     });
@@ -235,7 +235,7 @@ describe('VisibilityOverrideManager', () => {
     test('should handle tokens with id property', () => {
       const token1 = { id: 'token1' };
       const token2 = { id: 'token2' };
-      
+
       const key = manager._generateKey(token1, token2);
       expect(key).toBe('token1->token2');
     });
@@ -249,7 +249,7 @@ describe('VisibilityOverrideManager', () => {
   describe('setVisibilityOverride', () => {
     test('should set override with default values', () => {
       manager.setVisibilityOverride('observer', 'target', 'hidden');
-      
+
       const override = manager.getVisibilityOverride('observer', 'target');
       expect(override).toBeDefined();
       expect(override.visibilityState).toBe('hidden');
@@ -260,7 +260,7 @@ describe('VisibilityOverrideManager', () => {
 
     test('should set override with custom values', () => {
       manager.setVisibilityOverride('observer', 'target', 'concealed', 10, 'sneak');
-      
+
       const override = manager.getVisibilityOverride('observer', 'target');
       expect(override.visibilityState).toBe('concealed');
       expect(override.source).toBe('sneak');
@@ -269,9 +269,9 @@ describe('VisibilityOverrideManager', () => {
     test('should handle token objects', () => {
       const observer = { document: { id: 'obs' } };
       const target = { id: 'tgt' };
-      
+
       manager.setVisibilityOverride(observer, target, 'hidden');
-      
+
       const override = manager.getVisibilityOverride('obs', 'tgt');
       expect(override).toBeDefined();
     });
@@ -285,7 +285,7 @@ describe('VisibilityOverrideManager', () => {
 
     test('should return existing override', () => {
       manager.setVisibilityOverride('observer', 'target', 'hidden');
-      
+
       const result = manager.getVisibilityOverride('observer', 'target');
       expect(result).toBeDefined();
       expect(result.visibilityState).toBe('hidden');
@@ -294,7 +294,7 @@ describe('VisibilityOverrideManager', () => {
     test('should remove and return null for expired override', () => {
       // Set override that expires immediately
       manager.setVisibilityOverride('observer', 'target', 'hidden', -1);
-      
+
       const result = manager.getVisibilityOverride('observer', 'target');
       expect(result).toBeNull();
       expect(manager.visibilityOverrides.size).toBe(0);
@@ -324,56 +324,56 @@ describe('VisibilityOverrideManager', () => {
     });
 
     test('should remove existing override and return true', () => {
-      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => { });
+
       manager.setVisibilityOverride('observer', 'target', 'hidden');
       const result = manager.removeVisibilityOverride('observer', 'target');
-      
+
       expect(result).toBe(true);
       expect(manager.hasVisibilityOverride('observer', 'target')).toBe(false);
-      
+
       consoleSpy.mockRestore();
     });
   });
 
   describe('removeAllOverridesInvolving', () => {
     test('should remove overrides involving specific token', () => {
-      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => { });
+
       manager.setVisibilityOverride('token1', 'token2', 'hidden');
       manager.setVisibilityOverride('token2', 'token3', 'concealed');
       manager.setVisibilityOverride('token3', 'token4', 'observed');
-      
+
       manager.removeAllOverridesInvolving('token2');
-      
+
       expect(manager.hasVisibilityOverride('token1', 'token2')).toBe(false);
       expect(manager.hasVisibilityOverride('token2', 'token3')).toBe(false);
       expect(manager.hasVisibilityOverride('token3', 'token4')).toBe(true);
-      
+
       consoleSpy.mockRestore();
     });
   });
 
   describe('cleanup', () => {
     test('should remove expired overrides', () => {
-      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => { });
+
       manager.setVisibilityOverride('observer1', 'target1', 'hidden', 5);
       manager.setVisibilityOverride('observer2', 'target2', 'concealed', -1);
-      
+
       manager.cleanup();
-      
+
       expect(manager.hasVisibilityOverride('observer1', 'target1')).toBe(true);
       expect(manager.hasVisibilityOverride('observer2', 'target2')).toBe(false);
-      
+
       consoleSpy.mockRestore();
     });
 
     test('should not log if no overrides to clean', () => {
-      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => { });
+
       manager.cleanup();
-      
+
       expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
@@ -381,59 +381,26 @@ describe('VisibilityOverrideManager', () => {
 
   describe('clearAll', () => {
     test('should clear all overrides', () => {
-      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-      
+      const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => { });
+
       manager.setVisibilityOverride('observer1', 'target1', 'hidden');
       manager.setVisibilityOverride('observer2', 'target2', 'concealed');
-      
+
       manager.clearAll();
-      
+
       expect(manager.visibilityOverrides.size).toBe(0);
-      
+
       consoleSpy.mockRestore();
     });
   });
 
-  describe('getDebugInfo', () => {
-    test('should return debug information', () => {
-      manager.setVisibilityOverride('observer', 'target', 'hidden', 5, 'manual');
-      
-      const debugInfo = manager.getDebugInfo();
-      
-      expect(debugInfo.totalOverrides).toBe(1);
-      expect(debugInfo.overrides).toHaveLength(1);
-      expect(debugInfo.overrides[0].key).toBe('observer->target');
-      expect(debugInfo.overrides[0].visibilityState).toBe('hidden');
-      expect(debugInfo.overrides[0].source).toBe('manual');
-      expect(typeof debugInfo.overrides[0].ageMinutes).toBe('number');
-      expect(typeof debugInfo.overrides[0].remainingMinutes).toBe('number');
-      expect(debugInfo.overrides[0].expired).toBe(false);
-    });
-
-    test('should mark expired overrides in debug info', () => {
-      manager.setVisibilityOverride('observer', 'target', 'hidden', -1);
-      
-      const debugInfo = manager.getDebugInfo();
-      
-      expect(debugInfo.overrides[0].expired).toBe(true);
-    });
-
-    test('should sort overrides by remaining time', () => {
-      manager.setVisibilityOverride('obs1', 'tgt1', 'hidden', 1);
-      manager.setVisibilityOverride('obs2', 'tgt2', 'concealed', 5);
-      
-      const debugInfo = manager.getDebugInfo();
-      
-      expect(debugInfo.overrides[0].remainingMinutes).toBeGreaterThan(debugInfo.overrides[1].remainingMinutes);
-    });
-  });
 
   describe('destroy', () => {
     test('should clear all overrides', () => {
       manager.setVisibilityOverride('observer', 'target', 'hidden');
-      
+
       manager.destroy();
-      
+
       expect(manager.visibilityOverrides.size).toBe(0);
     });
   });
@@ -449,45 +416,38 @@ describe('Global VisibilityOverrideManager functions', () => {
     // Re-import to trigger global setup
     delete require.cache[require.resolve('../../scripts/stores/visibility-override-manager.js')];
     require('../../scripts/stores/visibility-override-manager.js');
-    
-    // Check if global function was registered
-    expect(typeof globalThis.debugVisibilityOverrides).toBe('function');
-    
-    // Test the function works
-    const debugInfo = globalThis.debugVisibilityOverrides();
-    expect(debugInfo).toHaveProperty('totalOverrides');
-    expect(debugInfo).toHaveProperty('overrides');
+
   });
 
   test('should have working periodic cleanup function coverage', () => {
     // To get 100% function coverage, we need to make sure the arrow function
     // in the setInterval is executed. Let's do this by creating a fresh module 
     // import with mocked timers.
-    
+
     jest.useFakeTimers();
-    
+
     // Clear module cache and mock setInterval before importing
     delete require.cache[require.resolve('../../scripts/stores/visibility-override-manager.js')];
-    
+
     // Import the module - this will execute the setInterval setup
     const module = require('../../scripts/stores/visibility-override-manager.js');
     const defaultManager = module.default;
-    
+
     // Add test data
     defaultManager.setVisibilityOverride('expired1', 'expired2', 'hidden', -1);
     defaultManager.setVisibilityOverride('valid1', 'valid2', 'concealed', 5);
-    
+
     expect(defaultManager.visibilityOverrides.size).toBe(2);
-    
-    const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
-    
+
+    const consoleSpy = jest.spyOn(console, 'debug').mockImplementation(() => { });
+
     // Advance time to trigger the setInterval callback
     jest.advanceTimersByTime(2 * 60 * 1000 + 100); // 2 minutes + buffer
-    
+
     // Check that cleanup occurred
     expect(defaultManager.hasVisibilityOverride('expired1', 'expired2')).toBe(false);
     expect(defaultManager.hasVisibilityOverride('valid1', 'valid2')).toBe(true);
-    
+
     consoleSpy.mockRestore();
     jest.useRealTimers();
   });
@@ -504,24 +464,24 @@ describe('Cover Map Functions with Ephemeral Effects', () => {
   describe('getCoverMap', () => {
     test('should return empty object for token without cover flags', () => {
       const { getCoverMap } = require('../../scripts/stores/cover-map.js');
-      
+
       const result = getCoverMap(mockObserver);
       expect(result).toEqual({});
     });
 
     test('should handle null token', () => {
       const { getCoverMap } = require('../../scripts/stores/cover-map.js');
-      
+
       const result = getCoverMap(null);
       expect(result).toEqual({});
     });
 
     test('should return existing cover map', () => {
       const { getCoverMap } = require('../../scripts/stores/cover-map.js');
-      
+
       const coverMap = { 'target1': 'standard', 'target2': 'greater' };
       mockObserver.document.getFlag.mockReturnValue(coverMap);
-      
+
       const result = getCoverMap(mockObserver);
       expect(result).toEqual(coverMap);
     });
@@ -530,14 +490,14 @@ describe('Cover Map Functions with Ephemeral Effects', () => {
   describe('setCoverMap', () => {
     test('should not update if token is null', async () => {
       const { setCoverMap } = require('../../scripts/stores/cover-map.js');
-      
+
       const result = await setCoverMap(null, {});
       expect(result).toBeUndefined();
     });
 
     test('should not update if user is not GM', async () => {
       const { setCoverMap } = require('../../scripts/stores/cover-map.js');
-      
+
       global.game.user.isGM = false;
       const result = await setCoverMap(mockObserver, {});
       expect(result).toBeUndefined();
@@ -545,12 +505,12 @@ describe('Cover Map Functions with Ephemeral Effects', () => {
 
     test('should update cover map for GM', async () => {
       const { setCoverMap } = require('../../scripts/stores/cover-map.js');
-      
+
       global.game.user.isGM = true;
       const coverMap = { 'target1': 'standard' };
-      
+
       await setCoverMap(mockObserver, coverMap);
-      
+
       expect(mockObserver.document.update).toHaveBeenCalledWith(
         { 'flags.pf2e-visioner.cover': coverMap },
         { diff: false, render: false, animate: false }
@@ -560,36 +520,36 @@ describe('Cover Map Functions with Ephemeral Effects', () => {
 
   test('should handle same state without ephemeral update', async () => {
     const { setCoverBetween, getCoverMap } = await import('../../scripts/stores/cover-map.js');
-    
+
     mockObserver.document.getFlag.mockReturnValue({ 'target': 'standard' });
-    
+
     await setCoverBetween(mockObserver, mockTarget, 'standard');
-    
+
     // Should not call update since state is the same
     expect(mockObserver.document.update).not.toHaveBeenCalled();
   });
 
   test('should handle ephemeral update with skipEphemeralUpdate option', async () => {
     const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-    
+
     global.game.user.isGM = true;
     mockObserver.document.getFlag.mockReturnValue({});
-    
+
     await setCoverBetween(mockObserver, mockTarget, 'standard', { skipEphemeralUpdate: true });
-    
+
     expect(mockObserver.document.update).toHaveBeenCalled();
   });
 
   test('should handle ephemeral effects error gracefully', async () => {
     const { setCoverBetween } = await import('../../scripts/stores/cover-map.js');
-    
+
     global.game.user.isGM = true;
     mockObserver.document.getFlag.mockReturnValue({});
-    
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
+
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
     await setCoverBetween(mockObserver, mockTarget, 'standard');
-    
+
     consoleSpy.mockRestore();
   });
 });

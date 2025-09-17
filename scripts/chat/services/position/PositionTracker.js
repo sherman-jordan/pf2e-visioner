@@ -47,7 +47,7 @@ import positionCacheManager from './PositionCacheManager.js';
  * @property {Object} coverTransition - Cover-specific transition data
  */
 
-export class SneakPositionTracker {
+export class PositionTracker {
   constructor() {
     this._initialized = false;
   }
@@ -477,4 +477,4 @@ export class SneakPositionTracker {
 }
 
 // Export singleton instance
-export default new SneakPositionTracker();
+export default new PositionTracker();

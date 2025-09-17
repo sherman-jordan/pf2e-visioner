@@ -186,48 +186,6 @@ export class VisibilityCalculator {
   }
 
   /**
-   * Get debug information for visibility calculation - IMMEDIATE
-   * @param {Token} observer
-   * @param {Token} target
-   * @returns {Promise<Object>}
-   */
-  async getVisibilityDebugInfo(observer, target) {
-    if (!observer || !target) {
-      return { error: 'Observer and target tokens required' };
-    }
-
-    // Calculate center position manually from document to avoid cached center issues
-    const targetPosition = {
-      x: target.document.x + (target.document.width * canvas.grid.size) / 2,
-      y: target.document.y + (target.document.height * canvas.grid.size) / 2,
-    };
-    const lightLevel = this.#lightingCalculator.getLightLevelAt(targetPosition);
-    const vision = this.#visionAnalyzer.getVisionCapabilities(observer);
-    const hasLineOfSight = this.#visionAnalyzer.hasLineOfSight(observer, target);
-    const canDetectWithoutSight = this.#visionAnalyzer.canDetectWithoutSight(observer, target);
-    const isInvisible = this.#conditionManager.isInvisibleTo(observer, target);
-    const calculatedVisibility = await this.calculateVisibility(observer, target);
-
-    return {
-      observer: observer.name,
-      target: target.name,
-      lightLevel,
-      vision,
-      hasLineOfSight,
-      canDetectWithoutSight,
-      isInvisible,
-      calculatedVisibility,
-      optimized: true,
-      processingTime: 'immediate',
-      components: {
-        lighting: this.#lightingCalculator.getDebugInfo(targetPosition),
-        vision: this.#visionAnalyzer.getDebugInfo(observer),
-        invisibility: this.#conditionManager.getDebugInfo(observer, target),
-      },
-    };
-  }
-
-  /**
    * Get component instances for direct access if needed
    * @returns {Object}
    */

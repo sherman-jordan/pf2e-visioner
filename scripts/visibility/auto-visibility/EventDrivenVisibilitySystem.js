@@ -1002,16 +1002,6 @@ export class EventDrivenVisibilitySystem {
   }
 
   /**
-   * Get visibility debug information between two tokens
-   * @param {Token} observer - The observing token
-   * @param {Token} target - The target token
-   * @returns {Promise<Object>} Debug information
-   */
-  async getVisibilityDebugInfo(observer, target) {
-    return await optimizedVisibilityCalculator.getDebugInfo(observer, target);
-  }
-
-  /**
    * Handle equipment changes that might affect vision capabilities
    */
   #onEquipmentChange(item, changes) {

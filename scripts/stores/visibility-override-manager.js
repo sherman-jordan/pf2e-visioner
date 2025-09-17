@@ -18,11 +18,11 @@ export class VisibilityOverrideManager {
   _generateKey(token1, token2) {
     const id1 = typeof token1 === 'string' ? token1 : token1?.document?.id || token1?.id;
     const id2 = typeof token2 === 'string' ? token2 : token2?.document?.id || token2?.id;
-    
+
     if (!id1 || !id2) {
       throw new Error('Invalid tokens provided to visibility override manager');
     }
-    
+
     return `${id1}->${id2}`;
   }
 
@@ -37,10 +37,10 @@ export class VisibilityOverrideManager {
   setVisibilityOverride(observer, target, visibilityState, durationMinutes = 5, source = 'manual') {
     const key = this._generateKey(observer, target);
     const expiryTime = Date.now() + (durationMinutes * 60 * 1000);
-    
+
     const observerId = typeof observer === 'string' ? observer : observer?.document?.id || observer?.id;
     const targetId = typeof target === 'string' ? target : target?.document?.id || target?.id;
-    
+
     this.visibilityOverrides.set(key, {
       observerId,
       targetId,
@@ -60,17 +60,17 @@ export class VisibilityOverrideManager {
   getVisibilityOverride(observer, target) {
     const key = this._generateKey(observer, target);
     const override = this.visibilityOverrides.get(key);
-    
+
     if (!override) {
       return null;
     }
-    
+
     // Check if override has expired
     if (Date.now() > override.expiryTime) {
       this.visibilityOverrides.delete(key);
       return null;
     }
-    
+
     return override;
   }
 
@@ -93,11 +93,11 @@ export class VisibilityOverrideManager {
   removeVisibilityOverride(observer, target) {
     const key = this._generateKey(observer, target);
     const existed = this.visibilityOverrides.has(key);
-    
+
     if (existed) {
       this.visibilityOverrides.delete(key);
     }
-    
+
     return existed;
   }
 
@@ -107,13 +107,13 @@ export class VisibilityOverrideManager {
    */
   removeAllOverridesInvolving(tokenId) {
     const keysToRemove = [];
-    
+
     for (const [key, override] of this.visibilityOverrides.entries()) {
       if (override.observerId === tokenId || override.targetId === tokenId) {
         keysToRemove.push(key);
       }
     }
-    
+
     for (const key of keysToRemove) {
       this.visibilityOverrides.delete(key);
     }
@@ -125,13 +125,13 @@ export class VisibilityOverrideManager {
   cleanup() {
     const now = Date.now();
     const keysToRemove = [];
-    
+
     for (const [key, override] of this.visibilityOverrides.entries()) {
       if (now > override.expiryTime) {
         keysToRemove.push(key);
       }
     }
-    
+
     for (const key of keysToRemove) {
       this.visibilityOverrides.delete(key);
     }
@@ -142,33 +142,6 @@ export class VisibilityOverrideManager {
    */
   clearAll() {
     this.visibilityOverrides.clear();
-  }
-
-  /**
-   * Get debug information about current overrides
-   * @returns {Object}
-   */
-  getDebugInfo() {
-    const overrides = [];
-    const now = Date.now();
-    
-    for (const [key, override] of this.visibilityOverrides.entries()) {
-      overrides.push({
-        key,
-        observerId: override.observerId,
-        targetId: override.targetId,
-        visibilityState: override.visibilityState,
-        source: override.source,
-        ageMinutes: Math.round((now - override.timestamp) / (1000 * 60)),
-        remainingMinutes: Math.round((override.expiryTime - now) / (1000 * 60)),
-        expired: now > override.expiryTime
-      });
-    }
-    
-    return {
-      totalOverrides: this.visibilityOverrides.size,
-      overrides: overrides.sort((a, b) => b.remainingMinutes - a.remainingMinutes)
-    };
   }
 
   /**
@@ -186,11 +159,5 @@ setInterval(() => {
   visibilityOverrideManager.cleanup();
 }, 2 * 60 * 1000);
 
-// Add global debug helper
-if (typeof globalThis !== 'undefined') {
-  globalThis.debugVisibilityOverrides = () => {
-    return visibilityOverrideManager.getDebugInfo();
-  };
-}
 
 export default visibilityOverrideManager;

@@ -57,29 +57,4 @@ describe('API.autoVisibility facade', () => {
     warnSpy.mockRestore();
     if (originalUpdate) realMod.autoVisibilitySystem.updateVisibilityForTokens = originalUpdate;
   });
-
-  test('calculateVisibility and getDebugInfo delegate to system', async () => {
-    const modulePath = '../../scripts/visibility/auto-visibility/index.js';
-    const realMod = await import(modulePath);
-    const calcSpy = jest
-      .spyOn(realMod.autoVisibilitySystem, 'calculateVisibility')
-      .mockResolvedValue('observed');
-    const debugSpy = jest
-      .spyOn(realMod.autoVisibilitySystem, 'getVisibilityDebugInfo')
-      .mockReturnValue({ ok: true });
-
-    const api = await import('../../scripts/api.js');
-    const obs = global.createMockToken({ id: 'o1' });
-    const tgt = global.createMockToken({ id: 't1' });
-    const v = await api.autoVisibility.calculateVisibility(obs, tgt);
-    const dbg = api.autoVisibility.getDebugInfo(obs, tgt);
-
-    expect(calcSpy).toHaveBeenCalledWith(obs, tgt);
-    expect(debugSpy).toHaveBeenCalledWith(obs, tgt);
-    expect(v).toBe('observed');
-    expect(dbg).toEqual({ ok: true });
-
-    calcSpy.mockRestore();
-    debugSpy.mockRestore();
-  });
 });

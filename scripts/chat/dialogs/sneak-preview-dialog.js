@@ -1,11 +1,12 @@
 import { MODULE_ID } from '../../constants.js';
-import { getVisibilityBetween, getCoverBetween } from '../../utils.js';
+import autoCoverSystem from '../../cover/auto-cover/AutoCoverSystem.js';
+import { getCoverBetween, getVisibilityBetween } from '../../utils.js';
 import { optimizedVisibilityCalculator } from '../../visibility/auto-visibility/index.js';
 import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
-import { notify } from '../services/infra/notifications.js';
-import sneakPositionTracker from '../services/position/SneakPositionTracker.js';
-import { BaseActionDialog } from './base-action-dialog.js';
 import { FeatsHandler } from '../services/feats-handler.js';
+import { notify } from '../services/infra/notifications.js';
+import sneakPositionTracker from '../services/position/PositionTracker.js';
+import { BaseActionDialog } from './base-action-dialog.js';
 
 // Store reference to current sneak dialog
 let currentSneakDialog = null;
@@ -218,7 +219,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
           this.sneakingToken,
         );
         outcome.liveEndVisibility = liveEndVis;
-      } catch {}
+      } catch { }
       if (positionTransition) {
         // Calculate raw qualifications
         const rawStart = this._startPositionQualifiesForSneak(outcome.token, outcome);
@@ -229,7 +230,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         try {
           const sp = positionTransition.startPosition || {};
           const ep = positionTransition.endPosition || {};
-          effective = FeatsHandler.overrideSneakPrerequisites(this.sneakingToken, effective, {
+          effective = FeatsHandler.overridePrerequisites(this.sneakingToken, effective, {
             startVisibility: sp.avsVisibility,
             endVisibility: ep.avsVisibility,
             endCoverState: ep.coverState,
@@ -238,7 +239,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
             inNaturalTerrain: ep.terrainTag === 'natural',
             impreciseOnly: outcome?.impreciseOnly || false,
           });
-        } catch {}
+        } catch { }
         // Stash for UI rendering
         outcome._featPositionOverride = effective;
 
@@ -349,8 +350,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
     context.hasPositionData = this._hasPositionData;
     context.positionDisplayMode = this._positionDisplayMode;
 
-  // Preserve original outcomes separate from processed
-  this.outcomes = processedOutcomes;
+    // Preserve original outcomes separate from processed
+    this.outcomes = processedOutcomes;
 
     // Compute and expose Max Sneak Distance indicator data
     try {
@@ -362,9 +363,9 @@ export class SneakPreviewDialog extends BaseActionDialog {
       try {
         const flagVal = this.sneakingToken?.actor?.getFlag?.(MODULE_ID, 'sneak-original-walk-speed');
         if (Number.isFinite(Number(flagVal)) && Number(flagVal) > 0) originalSpeed = Number(flagVal);
-      } catch {}
+      } catch { }
 
-  const maxFeet = await SneakSpeedService.getSneakMaxDistanceFeet(this.sneakingToken);
+      const maxFeet = await SneakSpeedService.getSneakMaxDistanceFeet(this.sneakingToken);
 
       // Also compute multiplier and bonus for tooltip details
       let multiplier = 0.5;
@@ -372,7 +373,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       try {
         multiplier = FeatsHandler.getSneakSpeedMultiplier(this.sneakingToken) ?? 0.5;
         bonusFeet = FeatsHandler.getSneakDistanceBonusFeet(this.sneakingToken) ?? 0;
-      } catch {}
+      } catch { }
 
       const explanations = [];
       explanations.push(`Base Speed: ${originalSpeed} ft`);
@@ -391,7 +392,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         bonusFeet,
         tooltip: explanations.join('\n'),
       };
-    } catch {}
+    } catch { }
 
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
@@ -406,7 +407,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
   async _buildSneakDiagnostics() {
     const now = new Date().toISOString();
 
-  const observers = await Promise.all((this.outcomes || []).map(async (o) => {
+    const observers = await Promise.all((this.outcomes || []).map(async (o) => {
       const token = o.token;
       const obsId = token?.id;
       const observerName = token?.name;
@@ -417,13 +418,13 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const endPos = positionTransition?.endPosition || {};
 
       // Live checks
-  let liveCover = undefined;
-  let liveVisibility = undefined;
-  try { liveCover = getCoverBetween(token, this.sneakingToken); } catch {}
-  try {
-    // Use real-time calculator that ignores override flags and bypasses sneak detection wrapper
-    liveVisibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(token, this.sneakingToken);
-  } catch {}
+      let liveCover = undefined;
+      let liveVisibility = undefined;
+      try { liveCover = getCoverBetween(token, this.sneakingToken); } catch { }
+      try {
+        // Use real-time calculator that ignores override flags and bypasses sneak detection wrapper
+        liveVisibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(token, this.sneakingToken);
+      } catch { }
 
       // Overrides from observer -> sneaker
       const observerId = token?.document?.id || obsId;
@@ -460,8 +461,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
           // - standard/greater cover (snapshot or outcome)
           // - concealed per snapshot (endPosition.avsVisibility)
           // - concealed per live calculator (liveVisibility)
-          qualifies: (['standard','greater'].includes(endPos.coverState)) ||
-            (['standard','greater'].includes(o?.endCover)) ||
+          qualifies: (['standard', 'greater'].includes(endPos.coverState)) ||
+            (['standard', 'greater'].includes(o?.endCover)) ||
             (endPos.avsVisibility === 'concealed') ||
             (liveVisibility === 'concealed'),
         },
@@ -507,7 +508,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     try {
       await navigator.clipboard.writeText(text);
       copied = true;
-    } catch {}
+    } catch { }
 
     if (!copied) {
       try {
@@ -520,7 +521,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         document.execCommand('copy');
         document.body.removeChild(ta);
         copied = true;
-      } catch {}
+      } catch { }
     }
 
     if (copied) notify.info('Sneak diagnostics copied to clipboard');
@@ -533,7 +534,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
             close: { icon: 'fas fa-times', label: 'Close' },
           },
         }).render(true);
-      } catch {}
+      } catch { }
       notify.warn('Clipboard copy failed. Opened diagnostics in a dialog.');
     }
   }
@@ -642,7 +643,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         try {
           const sp = positionTransition.startPosition || {};
           const ep = positionTransition.endPosition || {};
-          effective = FeatsHandler.overrideSneakPrerequisites(this.sneakingToken, effective, {
+          effective = FeatsHandler.overridePrerequisites(this.sneakingToken, effective, {
             startVisibility: sp.avsVisibility,
             endVisibility: ep.avsVisibility,
             endCoverState: ep.coverState,
@@ -651,7 +652,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
             inNaturalTerrain: ep.terrainTag === 'natural',
             impreciseOnly: outcome?.impreciseOnly || false,
           });
-        } catch {}
+        } catch { }
         outcome._featPositionOverride = effective;
 
         // Only override to observed if one or both positions don't qualify AFTER overrides
@@ -772,7 +773,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
                 outcome.token,
                 this.sneakingToken,
               );
-            } catch {}
+            } catch { }
 
             // Create a basic position transition object for newly included tokens
             if (!outcome.positionTransition) {
@@ -918,7 +919,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       transitionClass: this._getTransitionClass(positionTransition.transitionType),
       transitionIcon: this._getTransitionIcon(positionTransition.transitionType),
 
-  // Start position display
+      // Start position display
       startPosition: {
         visibility: startPos.avsVisibility,
         visibilityLabel: this._getVisibilityLabel(startPos.avsVisibility),
@@ -1156,7 +1157,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
       if (overrideFlag && overrideFlag.state) {
         const s = overrideFlag.state;
-        
+
         if (s === 'hidden' || s === 'undetected') return true;
         // concealed/observed do not satisfy start prerequisite
       }
@@ -1166,7 +1167,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
       if (startState && startState.visibility) {
         const startVisibility = startState.visibility;
-        
+
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
 
@@ -1174,21 +1175,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const positionTransition = this._getPositionTransitionForToken(observerToken);
       if (positionTransition && positionTransition.startPosition) {
         const startVisibility = positionTransition.startPosition.avsVisibility;
-        
+
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
 
       // Priority 3: Use outcome start state data
       if (outcome && (outcome.startVisibility || outcome.startState)) {
         const startVisibility = outcome.startVisibility || outcome.startState?.visibility;
-        
+
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
 
       // Final fallback to current visibility check
       // Use the observer -> sneaking token perspective
       const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
-      
+
       return visibility === 'hidden' || visibility === 'undetected';
     } catch (error) {
       console.warn('PF2E Visioner | Error checking start position qualification:', error);
@@ -1209,12 +1210,12 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
     try {
 
-      
+
       // Priority 0: AVS override flag (observer -> sneaking token)
       const observerId = observerToken.document?.id || observerToken.id;
       const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
       if (overrideFlag) {
-        
+
         // Qualify if override provides standard/greater cover or concealment
         if (overrideFlag.hasCover || ['standard', 'greater'].includes(overrideFlag.expectedCover)) return true;
         if (overrideFlag.state === 'concealed') return true;
@@ -1235,7 +1236,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         // Otherwise, continue to check positionTransition and live visibility below
       }
 
-  if (positionTransition && positionTransition.endPosition) {
+      if (positionTransition && positionTransition.endPosition) {
         // Use the actual end position data
         const endPosition = positionTransition.endPosition;
 
@@ -1257,14 +1258,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
       }
 
       // Final fallback to current position check if no position or outcome data available
-      // Check for manual or auto cover (observer -> sneaking token)
-  const coverState = getCoverBetween(observerToken, this.sneakingToken);
-      
-  if (coverState === 'standard' || coverState === 'greater') return true;
+      // Prefer live auto-cover detection; if unavailable, fall back to stored map
+      let coverState = null;
+      try {
+        if (autoCoverSystem?.isEnabled?.()) {
+          coverState = autoCoverSystem.detectCoverBetweenTokens(observerToken, this.sneakingToken) || 'none';
+        }
+      } catch { }
+      if (!coverState) {
+        try { coverState = getCoverBetween(observerToken, this.sneakingToken); } catch { coverState = 'none'; }
+      }
+      if (coverState === 'standard' || coverState === 'greater') return true;
 
-  // Live check last: qualify if currently concealed from this observer
-  // (dim light and similar lighting effects are captured here)
-  const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
+      // Live check last: qualify if currently concealed from this observer
+      // (dim light and similar lighting effects are captured here)
+      const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
       const qualifies = visibility === 'concealed';
       return qualifies;
     } catch (error) {

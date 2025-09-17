@@ -46,7 +46,7 @@ export class SneakDialogService {
           notify.warn("You don't have permission to start Sneak for this token.");
           return;
         }
-  } catch {}
+      } catch { }
 
       // Get message and messageId from actionData
       const messageId = actionData.messageId || actionData.message?.id;
@@ -59,9 +59,9 @@ export class SneakDialogService {
       // Capture current visibility and cover states from all observer tokens
       const startStates = {};
 
-      // Get all potential observer tokens (non-allied tokens)
+      // Get all potential observer tokens (non-allied tokens). Include Foundry-hidden; UI handles visual filtering.
       const observerTokens = canvas.tokens.placeables.filter(t =>
-        t.id !== token.id && t.actor && !t.document.hidden
+        t.id !== token.id && t.actor
       );
 
       // Capture state from each observer's perspective

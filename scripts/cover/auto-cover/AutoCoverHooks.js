@@ -393,6 +393,8 @@ export class AutoCoverHooks {
       return null;
     }
 
+    const options = Array.from(context.options);
+
     // Check for attack context
     if (this._isAttackContext(ctx)) {
       return this.attackRollUseCase;
@@ -408,7 +410,7 @@ export class AutoCoverHooks {
       ctx.type === 'skill-check' &&
       Array.isArray(ctx.domains) &&
       ctx.domains.includes('stealth') &&
-      !ctx?.options?.has("action:sneak")
+      !options?.includes("action:sneak")
     ) {
       return this.stealthCheckUseCase;
     }

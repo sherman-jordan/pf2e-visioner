@@ -1,12 +1,12 @@
 /**
  * Sneak Speed Service
- * - Halves walking speed when Sneak starts
- * - Restores original walking speed when Sneak ends
+ * - Applies a label-only "Sneaking" effect when Sneak starts (no speed change)
+ * - Removes that effect when Sneak ends
+ * - Provides a helper to compute max Sneak distance (floor(base*multiplier) + bonuses, capped at Speed)
  *
  * Notes:
- * - Only the primary walk speed is affected (system.attributes.speed.value)
- * - Other movement types (fly, swim, climb, burrow) are left unchanged
- * - Original speed is stored on the Actor as a module flag and restored later
+ * - We no longer change system.attributes.speed.value during Sneak
+ * - A legacy flag (sneak-original-walk-speed) may exist from previous versions and is cleared on restore
  */
 
 const MODULE_ID = 'pf2e-visioner';
@@ -41,18 +41,6 @@ export class SneakSpeedService {
     try {
       const actor = SneakSpeedService.resolveActor(tokenOrActor);
       if (!actor) return;
-
-      // Check feats for speed multiplier and flat distance bonus (for display only)
-      let multiplier = 0.5;
-      let bonusFeet = 0;
-      try {
-        const { FeatsHandler } = await import('./feats-handler.js');
-        multiplier = FeatsHandler.getSneakSpeedMultiplier(actor) ?? 0.5;
-        bonusFeet = FeatsHandler.getSneakDistanceBonusFeet(actor) ?? 0;
-      } catch {
-        // ignore and keep default
-      }
-
       // If already applied effect, do nothing
       const existingEffectId = actor.getFlag?.(MODULE_ID, EFFECT_ID_FLAG);
       if (existingEffectId) return;
@@ -64,17 +52,15 @@ export class SneakSpeedService {
       try {
         if (typeof actor.createEmbeddedDocuments === 'function') {
           // Build a helpful label that communicates the estimated max distance for this Sneak action
-          const base = current;
-          const raw = Math.floor(base * multiplier) + (Number.isFinite(bonusFeet) ? bonusFeet : 0);
-          const maxFeet = Math.min(base, raw);
-          const label = `Sneaking · Max ${maxFeet} ft${bonusFeet > 0 ? ` (+${bonusFeet} ft feat bonus)` : ''}`;
+          const label = 'Sneaking';
           const effectData = {
             name: label,
             type: 'effect',
             img: 'icons/creatures/mammals/cat-hunched-glowing-red.webp',
             system: {
               rules: [],
-              tokenIcon: { show: false },
+              tokenIcon: { show: true },
+              unidentified: false,
               // Keep duration flexible; we’ll remove explicitly on restore
               duration: { unit: 'unlimited' },
             },
@@ -153,7 +139,10 @@ export class SneakSpeedService {
 
     const raw = Math.floor(baseSpeed * multiplier) + bonusFeet;
     // Cannot exceed base Speed as per Very Sneaky text
-    return Math.min(baseSpeed, raw);
+    const capped = Math.min(baseSpeed, raw);
+    // Round down to nearest 5 feet per PF2e grid conventions
+    const roundedDown5 = Math.floor(capped / 5) * 5;
+    return roundedDown5;
   }
 }
 

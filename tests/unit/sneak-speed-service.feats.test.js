@@ -39,7 +39,7 @@ describe('SneakSpeedService feat interactions', () => {
     expect(FeatsHandler.getSneakDistanceBonusFeet(a2)).toBe(5);
   });
 
-  test('getSneakMaxDistanceFeet: halved rounding + bonus, capped at base speed', async () => {
+  test('getSneakMaxDistanceFeet: halved rounding + bonus, capped and rounded down to 5 ft', async () => {
     const service = await importService();
 
     // Base: 30 ft speed, no feats -> 15
@@ -58,9 +58,9 @@ describe('SneakSpeedService feat interactions', () => {
     const a4 = actorWithSpeedAndFeats(30, ['swift-sneak', 'very-sneaky']);
     expect(await service.SneakSpeedService.getSneakMaxDistanceFeet(a4)).toBe(30);
 
-    // Non-integer: 25 speed -> floor(12.5)=12 +5 =17 (cap 25)
+    // Non-integer: 25 speed -> floor(12.5)=12 +5 =17; cap 25; then round down to nearest 5 -> 15
     const a5 = actorWithSpeedAndFeats(25, ['very-sneaky']);
-    expect(await service.SneakSpeedService.getSneakMaxDistanceFeet(a5)).toBe(17);
+    expect(await service.SneakSpeedService.getSneakMaxDistanceFeet(a5)).toBe(15);
   });
 
   test('applySneakWalkSpeed skips effect/flags when multiplier is 1.0', async () => {

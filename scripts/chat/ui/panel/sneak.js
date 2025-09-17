@@ -10,8 +10,9 @@ function buildSneakDistanceChipHTML(tokenOrActor) {
     const multiplier = Number(FeatsHandler.getSneakSpeedMultiplier(actor) ?? 0.5);
     const bonusFeet = Number(FeatsHandler.getSneakDistanceBonusFeet(actor) ?? 0);
 
-    const raw = Math.floor(baseSpeed * multiplier) + bonusFeet;
-    const maxFeet = Math.min(baseSpeed, raw);
+  const raw = Math.floor(baseSpeed * multiplier) + bonusFeet;
+  const capped = Math.min(baseSpeed, raw);
+  const maxFeet = Math.floor(capped / 5) * 5;
 
   // Collect feat names for tooltip clarity
     const hasSwiftSneak = FeatsHandler.hasFeat(actor, 'swift-sneak');

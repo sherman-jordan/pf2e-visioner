@@ -12,6 +12,14 @@
     <div class="sneaker-details">
       <h3 class="sneaker-name">{{sneaker.name}}</h3>
       <p class="hint">{{sneaker.actionLabel}}</p>
+      {{#if sneakDistance}}
+        <div class="sneak-distance-indicator" style="margin-top: 6px; display: flex; gap: 8px; align-items: center;">
+          <span class="distance-chip" data-tooltip="{{sneakDistance.tooltip}}" style="display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius: 12px; background: var(--color-border); color: var(--color-text); font-size: 0.9em;">
+            <i class="fas fa-shoe-prints"></i>
+            <span>Max Sneak Distance: <strong>{{sneakDistance.maxFeet}} ft</strong></span>
+          </span>
+        </div>
+      {{/if}}
     </div>
   </div>
 

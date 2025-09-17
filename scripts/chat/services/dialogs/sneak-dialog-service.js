@@ -122,10 +122,20 @@ export class SneakDialogService {
       }
 
       // Store states in message flags instead of position
-      await message.setFlag('pf2e-visioner', 'sneakStartStates', startStates);
+      if (message) {
+        await message.setFlag('pf2e-visioner', 'sneakStartStates', startStates);
+      }
 
       // Set sneak flag on the token to indicate it's currently sneaking
       await token.document.setFlag('pf2e-visioner', SNEAK_FLAGS.SNEAK_ACTIVE, true);
+
+      // Apply speed halving while sneaking
+      try {
+        const { SneakSpeedService } = await import('../sneak-speed-service.js');
+        await SneakSpeedService.applySneakWalkSpeed(token);
+      } catch (speedErr) {
+        console.warn('PF2E Visioner | Failed to apply sneak walk speed:', speedErr);
+      }
 
       // Store start states in message flags for persistence
       if (message) {
@@ -138,7 +148,8 @@ export class SneakDialogService {
 
       // Refresh the UI to show "Open Results" button instead of "Start Sneak"
       try {
-        const parent = _button?.closest('.automation-content');
+        // Panel container class is 'pf2e-visioner-automation-panel'
+        const parent = _button?.closest?.('.pf2e-visioner-automation-panel');
         if (parent && messageId) {
           const message = game.messages.get(messageId);
           if (message) {

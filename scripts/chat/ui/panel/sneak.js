@@ -1,3 +1,62 @@
+import { FeatsHandler } from '../../services/feats-handler.js';
+
+function buildSneakDistanceChipHTML(tokenOrActor) {
+  try {
+    const actor = tokenOrActor?.actor || tokenOrActor?.document?.actor || tokenOrActor;
+    const baseFromFlag = actor?.getFlag?.('pf2e-visioner', 'sneak-original-walk-speed');
+    const baseSpeed = Number(baseFromFlag ?? actor?.system?.attributes?.speed?.value ?? 0) || 0;
+    if (!actor || baseSpeed <= 0) return '';
+
+    const multiplier = Number(FeatsHandler.getSneakSpeedMultiplier(actor) ?? 0.5);
+    const bonusFeet = Number(FeatsHandler.getSneakDistanceBonusFeet(actor) ?? 0);
+
+    const raw = Math.floor(baseSpeed * multiplier) + bonusFeet;
+    const maxFeet = Math.min(baseSpeed, raw);
+
+  // Collect feat names for tooltip clarity
+    const hasSwiftSneak = FeatsHandler.hasFeat(actor, 'swift-sneak');
+    const hasLegendarySneak = FeatsHandler.hasFeat(actor, 'legendary-sneak');
+    const hasVeryVerySneaky = FeatsHandler.hasFeat(actor, 'very-very-sneaky');
+    const hasVerySneaky = FeatsHandler.hasFeat(actor, 'very-sneaky');
+
+    const fullSpeedFeats = [];
+    if (hasSwiftSneak) fullSpeedFeats.push('Swift Sneak');
+    if (hasLegendarySneak) fullSpeedFeats.push('Legendary Sneak');
+    if (hasVeryVerySneaky) fullSpeedFeats.push('Very, Very Sneaky');
+
+    const tooltipLines = [
+      `Base Speed: ${baseSpeed} ft`,
+    ];
+    if (Number.isFinite(multiplier)) {
+      if (multiplier === 1) {
+        tooltipLines.push(`Sneak multiplier: ×1.0${fullSpeedFeats.length ? ` (feats: ${fullSpeedFeats.join(', ')})` : ''}`);
+      } else {
+        tooltipLines.push(`Sneak multiplier: ×${multiplier}`);
+      }
+    }
+    if (bonusFeet > 0) {
+      tooltipLines.push(`Feat bonus: +${bonusFeet} ft${hasVerySneaky ? ' (Very Sneaky)' : ''}`);
+    }
+    if (raw > baseSpeed) {
+      tooltipLines.push(`Capped at base Speed (${baseSpeed} ft)`);
+    }
+    tooltipLines.push(`Est. max this action: ${maxFeet} ft`);
+
+    const tooltip = tooltipLines.join('\n');
+
+    return `
+      <span class="sneak-max-distance-chip" 
+            data-tooltip="${tooltip}"
+            style="margin-left:8px; padding:2px 8px; border-radius:12px; background: var(--color-border-light-2, #ddd); font-size: 11px; line-height: 18px; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fas fa-ruler-horizontal" aria-hidden="true"></i>
+        <span>Max Sneak Distance: <strong>${maxFeet} ft</strong></span>
+      </span>`;
+  } catch (e) {
+    console.debug('PF2E Visioner | Failed to build Sneak distance chip:', e);
+    return '';
+  }
+}
+
 export function buildSneakPanel(actionData = {}, message = null) {
   const panelClass = 'sneak-panel';
 
@@ -31,6 +90,7 @@ export function buildSneakPanel(actionData = {}, message = null) {
     } else {
       // Show "Start Sneak" if sneak hasn't been started yet
       const buttonClass = 'visioner-btn-sneak';
+      const distanceChip = buildSneakDistanceChipHTML(actionData?.actor);
       
       actionButtonsHtml = `
         <button type="button" 
@@ -38,7 +98,8 @@ export function buildSneakPanel(actionData = {}, message = null) {
                 data-action="start-sneak"
                 data-tooltip="Start sneaking: capture current visibility and cover states">
           <i class="fas fa-mask"></i> Start Sneak
-        </button>`;
+        </button>
+        ${distanceChip}`;
     }
   } else {
     // Players: Only allow "Start Sneak"; do not show results/apply buttons
@@ -47,6 +108,7 @@ export function buildSneakPanel(actionData = {}, message = null) {
     const buttonClass = 'visioner-btn-sneak';
     const disabledAttr = hasStartedSneak ? 'disabled' : '';
     const buttonText = hasStartedSneak ? 'Let the GM know when your Sneak movement is complete' : 'Start Sneak';
+    const distanceChip = buildSneakDistanceChipHTML(actionData?.actor);
 
     actionButtonsHtml = `
       <button type="button" 
@@ -54,7 +116,8 @@ export function buildSneakPanel(actionData = {}, message = null) {
               data-action="start-sneak"
               ${disabledAttr}>
         <i class="fas fa-mask"></i> ${buttonText}
-      </button>`;
+      </button>
+      ${distanceChip}`;
   }
 
   const hasStartedSneak = (message || actionData?.message || game.messages.get(actionData?.messageId))?.flags?.['pf2e-visioner']?.sneakStartStates;

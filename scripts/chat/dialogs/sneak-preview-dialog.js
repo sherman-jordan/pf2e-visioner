@@ -5,6 +5,7 @@ import { getDesiredOverrideStatesForAction } from '../services/data/action-state
 import { notify } from '../services/infra/notifications.js';
 import sneakPositionTracker from '../services/position/SneakPositionTracker.js';
 import { BaseActionDialog } from './base-action-dialog.js';
+import { FeatsHandler } from '../services/feats-handler.js';
 
 // Store reference to current sneak dialog
 let currentSneakDialog = null;
@@ -219,15 +220,31 @@ export class SneakPreviewDialog extends BaseActionDialog {
         outcome.liveEndVisibility = liveEndVis;
       } catch {}
       if (positionTransition) {
-        // Calculate qualifications to see if we need to override, honoring AVS overrides when present
-        const startQualifies = this._startPositionQualifiesForSneak(outcome.token, outcome);
-        const endQualifies = this._endPositionQualifiesForSneak(outcome.token, outcome);
+        // Calculate raw qualifications
+        const rawStart = this._startPositionQualifiesForSneak(outcome.token, outcome);
+        const rawEnd = this._endPositionQualifiesForSneak(outcome.token, outcome);
 
-        // Only override to observed if one or both positions don't qualify
-        // If both qualify, preserve the original enhanced outcome
-        if (!startQualifies || !endQualifies) {
+        // Apply feat-based overrides to prerequisites
+        let effective = { startQualifies: rawStart, endQualifies: rawEnd, bothQualify: rawStart && rawEnd };
+        try {
+          const sp = positionTransition.startPosition || {};
+          const ep = positionTransition.endPosition || {};
+          effective = FeatsHandler.overrideSneakPrerequisites(this.sneakingToken, effective, {
+            startVisibility: sp.avsVisibility,
+            endVisibility: ep.avsVisibility,
+            endCoverState: ep.coverState,
+            startTerrainTag: sp.terrainTag,
+            endTerrainTag: ep.terrainTag,
+            inNaturalTerrain: ep.terrainTag === 'natural',
+            impreciseOnly: outcome?.impreciseOnly || false,
+          });
+        } catch {}
+        // Stash for UI rendering
+        outcome._featPositionOverride = effective;
+
+        // Only override to observed if one or both positions don't qualify AFTER overrides
+        if (!effective.startQualifies || !effective.endQualifies) {
           outcome.newVisibility = 'observed';
-
         }
       }
     }
@@ -334,6 +351,47 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
   // Preserve original outcomes separate from processed
   this.outcomes = processedOutcomes;
+
+    // Compute and expose Max Sneak Distance indicator data
+    try {
+      const { SneakSpeedService } = await import('../services/sneak-speed-service.js');
+      const actor = this.sneakingToken?.actor || this.sneakingToken;
+      const baseSpeed = Number(actor?.system?.attributes?.speed?.value ?? 0) || 0;
+      // Prefer original speed flag if present (effect applied), otherwise current value
+      let originalSpeed = baseSpeed;
+      try {
+        const flagVal = this.sneakingToken?.actor?.getFlag?.(MODULE_ID, 'sneak-original-walk-speed');
+        if (Number.isFinite(Number(flagVal)) && Number(flagVal) > 0) originalSpeed = Number(flagVal);
+      } catch {}
+
+  const maxFeet = await SneakSpeedService.getSneakMaxDistanceFeet(this.sneakingToken);
+
+      // Also compute multiplier and bonus for tooltip details
+      let multiplier = 0.5;
+      let bonusFeet = 0;
+      try {
+        multiplier = FeatsHandler.getSneakSpeedMultiplier(this.sneakingToken) ?? 0.5;
+        bonusFeet = FeatsHandler.getSneakDistanceBonusFeet(this.sneakingToken) ?? 0;
+      } catch {}
+
+      const explanations = [];
+      explanations.push(`Base Speed: ${originalSpeed} ft`);
+      explanations.push(`Sneak Multiplier: x${multiplier}`);
+      if (bonusFeet) explanations.push(`Feat Bonus: +${bonusFeet} ft`);
+      // Determine whether clamping occurred by comparing raw vs base
+      const rawTotal = Math.floor(originalSpeed * multiplier) + (bonusFeet || 0);
+      if (rawTotal > originalSpeed) {
+        explanations.push(`Capped at base Speed (${originalSpeed} ft)`);
+      }
+
+      context.sneakDistance = {
+        maxFeet,
+        baseSpeed: originalSpeed,
+        multiplier,
+        bonusFeet,
+        tooltip: explanations.join('\n'),
+      };
+    } catch {}
 
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
@@ -575,25 +633,31 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Check if we have position data and if positions don't qualify
       const positionTransition = outcome.positionTransition || this._getPositionTransitionForToken(outcome.token);
       if (positionTransition) {
-        // Calculate qualifications to see if we need to override
-        const { default: EnhancedSneakOutcome } = await import('../services/actions/enhanced-sneak-outcome.js');
-        const startQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
-          positionTransition.startPosition?.avsVisibility,
-          true
-        );
-        const endQualifies = EnhancedSneakOutcome.doesPositionQualifyForSneak(
-          positionTransition.endPosition?.avsVisibility,
-          false,
-          positionTransition.endPosition?.coverState
-        );
+        // Calculate raw qualifications
+        const startQualifies = this._startPositionQualifiesForSneak(outcome.token, outcome);
+        const endQualifies = this._endPositionQualifiesForSneak(outcome.token, outcome);
 
-        // Only override to observed if one or both positions don't qualify
-        // If both qualify, preserve the original enhanced outcome
-        if (!startQualifies || !endQualifies) {
+        // Apply feat-based overrides
+        let effective = { startQualifies, endQualifies, bothQualify: startQualifies && endQualifies };
+        try {
+          const sp = positionTransition.startPosition || {};
+          const ep = positionTransition.endPosition || {};
+          effective = FeatsHandler.overrideSneakPrerequisites(this.sneakingToken, effective, {
+            startVisibility: sp.avsVisibility,
+            endVisibility: ep.avsVisibility,
+            endCoverState: ep.coverState,
+            startTerrainTag: sp.terrainTag,
+            endTerrainTag: ep.terrainTag,
+            inNaturalTerrain: ep.terrainTag === 'natural',
+            impreciseOnly: outcome?.impreciseOnly || false,
+          });
+        } catch {}
+        outcome._featPositionOverride = effective;
+
+        // Only override to observed if one or both positions don't qualify AFTER overrides
+        if (!effective.startQualifies || !effective.endQualifies) {
           outcome.newVisibility = 'observed';
-          // Clear any override state since we're setting based on position qualification
           outcome.overrideState = null;
-
         } else {
           // Both positions qualify - ensure we have proper enhanced calculation
           // Check if the current newVisibility looks like it might be from basic calculation
@@ -854,7 +918,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       transitionClass: this._getTransitionClass(positionTransition.transitionType),
       transitionIcon: this._getTransitionIcon(positionTransition.transitionType),
 
-      // Start position display
+  // Start position display
       startPosition: {
         visibility: startPos.avsVisibility,
         visibilityLabel: this._getVisibilityLabel(startPos.avsVisibility),
@@ -869,7 +933,10 @@ export class SneakPreviewDialog extends BaseActionDialog {
         lighting: startPos.lightingConditions,
         lightingLabel: this._getLightingLabel(startPos.lightingConditions),
         lightingIcon: this._getLightingIcon(startPos.lightingConditions),
-        qualifies: this._startPositionQualifiesForSneak(observerToken, outcome),
+        qualifies: (() => {
+          if (outcome?._featPositionOverride) return !!outcome._featPositionOverride.startQualifies;
+          return this._startPositionQualifiesForSneak(observerToken, outcome);
+        })(),
       },
 
       // End position display
@@ -887,7 +954,10 @@ export class SneakPreviewDialog extends BaseActionDialog {
         lighting: endPos.lightingConditions,
         lightingLabel: this._getLightingLabel(endPos.lightingConditions),
         lightingIcon: this._getLightingIcon(endPos.lightingConditions),
-        qualifies: this._endPositionQualifiesForSneak(observerToken, outcome),
+        qualifies: (() => {
+          if (outcome?._featPositionOverride) return !!outcome._featPositionOverride.endQualifies;
+          return this._endPositionQualifiesForSneak(observerToken, outcome);
+        })(),
       },
 
       // Change indicators
@@ -1684,6 +1754,12 @@ export class SneakPreviewDialog extends BaseActionDialog {
     try {
       if (this.sneakingToken) {
         await this.sneakingToken.document.unsetFlag('pf2e-visioner', 'sneak-active');
+        try {
+          const { SneakSpeedService } = await import('../services/sneak-speed-service.js');
+          await SneakSpeedService.restoreSneakWalkSpeed(this.sneakingToken);
+        } catch (speedErr) {
+          console.warn('PF2E Visioner | Failed to restore sneak walk speed:', speedErr);
+        }
       }
     } catch (error) {
       console.warn('PF2E Visioner | Failed to clear sneak-active flag:', error);

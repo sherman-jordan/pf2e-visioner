@@ -224,6 +224,14 @@ export class HideActionHandler extends ActionHandlerBase {
     // Use centralized mapping for defaults
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
     let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
+    // Feat-based post visibility adjustments
+    try {
+      const { FeatsHandler } = await import('../feats-handler.js');
+      newVisibility = FeatsHandler.adjustVisibility('hide', actionData.actor, current, newVisibility, {
+        inNaturalTerrain: false,
+        outcome,
+      });
+    } catch {}
 
     // Enforce end-position prerequisite like Sneak's end check: must be concealed OR have cover
     try {
@@ -241,9 +249,18 @@ export class HideActionHandler extends ActionHandlerBase {
     } catch { /* non-fatal */ }
 
     // Calculate what the visibility change would have been with original outcome
-    const originalNewVisibility = originalTotal
+    let originalNewVisibility = originalTotal
       ? getDefaultNewStateFor('hide', current, originalOutcome) || current
       : newVisibility;
+    if (originalTotal) {
+      try {
+        const { FeatsHandler } = await import('../feats-handler.js');
+        originalNewVisibility = FeatsHandler.adjustVisibility('hide', actionData.actor, current, originalNewVisibility, {
+          inNaturalTerrain: false,
+          outcome: originalOutcome,
+        });
+      } catch {}
+    }
 
     // Check if we should show override displays (only if there's a meaningful difference)
     const shouldShowOverride =

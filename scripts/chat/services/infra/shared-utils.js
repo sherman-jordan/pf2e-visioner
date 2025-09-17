@@ -147,8 +147,13 @@ export function isTokenInEncounter(token) {
     const isFamiliar = actor?.type === 'familiar';
     const isEidolon = actor?.type === 'eidolon' || actor?.isOfType?.('eidolon');
 
-    // Always include familiars regardless of encounter filter
-    if (isFamiliar) return true;
+    // Check if familiar's master is in the encounter
+    if (isFamiliar) {
+      const masterId = actor?.system?.master?.id;
+      if (masterId && game.combat.combatants.some((c) => c.actorId === masterId)) {
+        return true;
+      }
+    }
 
     // Try PF2e master linkage on eidolon
     const master = isEidolon ? actor?.system?.eidolon?.master : null;

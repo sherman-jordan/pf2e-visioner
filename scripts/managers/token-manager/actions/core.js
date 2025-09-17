@@ -5,7 +5,27 @@
 
 import { MODULE_ID } from '../../../constants.js';
 import { refreshEveryonesPerception } from '../../../services/socket.js';
-import { getCoverMap, getVisibilityMap, setCoverMap, setVisibilityMap } from '../../../utils.js';
+import { getCoverMap, getVisibilityMap, setCoverMap, setVisibilityMap, getSceneTargets } from '../../../utils.js';
+
+// Helper: compute allowed token IDs according to current filters
+function computeAllowedTokenIds(app) {
+  try {
+    const tokens = getSceneTargets(app.observer, app.encounterOnly, app.ignoreAllies) || [];
+    const hideFoundryHidden = app?.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+    const ids = new Set();
+    for (const t of tokens) {
+      const id = t?.document?.id;
+      if (!id) continue;
+      if (hideFoundryHidden && t?.document?.hidden === true) continue;
+      // off-table safety: ensure present on canvas
+      try { if (!canvas.tokens.get(id)) continue; } catch { }
+      ids.add(id);
+    }
+    return ids;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * ApplicationV2 form handler
@@ -16,31 +36,8 @@ export async function formHandler(event, form, formData) {
   const coverChanges = {};
   const wallVisibilityChanges = {};
 
-  // Respect UI filters: build a whitelist of token ids from actually visible table rows
-  let allowedTokenIds = null;
-  try {
-    const rows = Array.from(app.element?.querySelectorAll?.('tr.token-row') || []);
-    // If we have rows, compute allowed ids of rows that are not visually hidden
-    if (rows.length > 0) {
-      allowedTokenIds = new Set();
-      for (const row of rows) {
-        const id = row?.dataset?.tokenId;
-        if (!id) continue;
-        const isFoundryHidden = row?.dataset?.foundryHidden === 'true';
-        const isDisplayHidden = row?.style?.display === 'none';
-        // If the user chose to hide Foundry-hidden rows, skip those
-        if ((app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens')) && isFoundryHidden)
-          continue;
-        // Skip any row visually hidden by other filters
-        if (isDisplayHidden) continue;
-        // Also skip tokens not present on the canvas at all (off-table)
-        try {
-          if (!canvas.tokens.get(id)) continue;
-        } catch { }
-        allowedTokenIds.add(id);
-      }
-    }
-  } catch { }
+  // Respect all filters using scene-level computation
+  const allowedTokenIds = computeAllowedTokenIds(app);
 
   const formDataObj = formData.object || formData;
   for (const [key, value] of Object.entries(formDataObj)) {
@@ -309,6 +306,7 @@ export async function applyCurrent(event, button) {
   void button; // unused
 
   try {
+    const allowedTokenIds = computeAllowedTokenIds(app);
     const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
     const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
     const wallInputs = app.element.querySelectorAll('input[name^="walls."]');
@@ -323,23 +321,14 @@ export async function applyCurrent(event, button) {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
       // Respect UI filters: skip Foundry-hidden rows when hidden, visually hidden rows, and off-table tokens
       const tokenId = input.name.replace('visibility.', '');
-      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
-      if (row) {
-        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
-        if (row.style && row.style.display === 'none') return;
-      }
-      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
+      // Strong whitelist by filters
+      if (allowedTokenIds && !allowedTokenIds.has(tokenId)) return;
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
     });
     coverInputs.forEach((input) => {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
       const tokenId = input.name.replace('cover.', '');
-      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
-      if (row) {
-        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
-        if (row.style && row.style.display === 'none') return;
-      }
-      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
+      if (allowedTokenIds && !allowedTokenIds.has(tokenId)) return;
       app._savedModeData[app.mode].cover[tokenId] = input.value;
     });
     wallInputs.forEach((input) => {
@@ -372,7 +361,12 @@ export async function applyCurrent(event, button) {
     const visualUpdatePairs = [];
 
     if (isVisibility) {
-      const obsVis = app._savedModeData.observer?.visibility || {};
+      const allowedIds = computeAllowedTokenIds(app);
+      // Apply BOTH observer and target mode saved changes
+      const allObsVis = app._savedModeData.observer?.visibility || {};
+      const obsVis = allowedIds
+        ? Object.fromEntries(Object.entries(allObsVis).filter(([id]) => allowedIds.has(id)))
+        : allObsVis;
       if (Object.keys(obsVis).length > 0) {
         const currentMap = getVisibilityMap(app.observer) || {};
         await setVisibilityMap(app.observer, { ...currentMap, ...obsVis });
@@ -381,8 +375,9 @@ export async function applyCurrent(event, button) {
           const changes = new Map();
           for (const [tokenId, newState] of Object.entries(obsVis)) {
             const targetToken = canvas.tokens.get(tokenId);
-            // Only create override if visibility actually changes
-            if (targetToken && currentMap?.[tokenId] !== newState) {
+            // Only create override if visibility actually changes (treat undefined as 'observed')
+            const prev = currentMap?.[tokenId] ?? 'observed';
+            if (targetToken && prev !== newState) {
               const expectedCover = app._savedModeData.observer?.cover?.[tokenId];
               changes.set(tokenId, {
                 target: targetToken,
@@ -402,8 +397,9 @@ export async function applyCurrent(event, button) {
         const targetUpdates = [];
         for (const [tokenId, newState] of Object.entries(obsVis)) {
           const targetToken = canvas.tokens.get(tokenId);
-          // Only push updates for actual changes
-          if (targetToken && currentMap?.[tokenId] !== newState)
+          // Only push updates for actual changes (treat undefined as 'observed')
+          const prev = currentMap?.[tokenId] ?? 'observed';
+          if (targetToken && prev !== newState)
             targetUpdates.push({ target: targetToken, state: newState });
         }
         if (targetUpdates.length > 0) {
@@ -422,7 +418,10 @@ export async function applyCurrent(event, button) {
         }
       }
 
-      const tgtVis = app._savedModeData.target?.visibility || {};
+      const allTgtVis = app._savedModeData.target?.visibility || {};
+      const tgtVis = allowedIds
+        ? Object.fromEntries(Object.entries(allTgtVis).filter(([id]) => allowedIds.has(id)))
+        : allTgtVis;
       if (Object.keys(tgtVis).length > 0) {
         const updatesByObserver = new Map();
         for (const [observerTokenId, newState] of Object.entries(tgtVis)) {
@@ -437,8 +436,9 @@ export async function applyCurrent(event, button) {
             if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
           } catch { }
           const observerVisibilityData = getVisibilityMap(observerToken) || {};
-          // Skip if no actual change
-          if (observerVisibilityData?.[app.observer.document.id] === newState) continue;
+          // Skip if no actual change (treat undefined as 'observed')
+          const prev = observerVisibilityData?.[app.observer.document.id] ?? 'observed';
+          if (prev === newState) continue;
           await setVisibilityMap(observerToken, {
             ...observerVisibilityData,
             [app.observer.document.id]: newState,
@@ -611,6 +611,7 @@ export async function applyBoth(_event, _button) {
   ]);
 
   try {
+    const allowedTokenIds = computeAllowedTokenIds(app);
     const visibilityInputs = app.element.querySelectorAll('input[name^="visibility."]');
     const coverInputs = app.element.querySelectorAll('input[name^="cover."]');
     if (!app._savedModeData) app._savedModeData = {};
@@ -618,23 +619,13 @@ export async function applyBoth(_event, _button) {
     visibilityInputs.forEach((input) => {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
       const tokenId = input.name.replace('visibility.', '');
-      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
-      if (row) {
-        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
-        if (row.style && row.style.display === 'none') return;
-      }
-      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
+      if (allowedTokenIds && !allowedTokenIds.has(tokenId)) return;
       app._savedModeData[app.mode].visibility[tokenId] = input.value;
     });
     coverInputs.forEach((input) => {
       const row = typeof input?.closest === 'function' ? input.closest('tr.token-row') : null;
       const tokenId = input.name.replace('cover.', '');
-      const hideFoundryHidden = app.hideFoundryHidden ?? game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
-      if (row) {
-        if (hideFoundryHidden && row.dataset && row.dataset.foundryHidden === 'true') return;
-        if (row.style && row.style.display === 'none') return;
-      }
-      try { if (!canvas.tokens.get(tokenId)) return; } catch { }
+      if (allowedTokenIds && !allowedTokenIds.has(tokenId)) return;
       app._savedModeData[app.mode].cover[tokenId] = input.value;
     });
   } catch (error) {

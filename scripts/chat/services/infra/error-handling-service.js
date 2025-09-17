@@ -4,8 +4,8 @@
  * for system failures in the enhanced sneak workflow.
  */
 
-import { MODULE_ID, MODULE_TITLE } from '../../../constants.js';
-import { notify, log } from './notifications.js';
+import { MODULE_ID } from '../../../constants.js';
+import { log, notify } from './notifications.js';
 
 /**
  * Error severity levels
@@ -108,7 +108,7 @@ export class ErrorHandlingService {
       // Fallback 1: Use basic line of sight calculation
       if (observer && target && canvas?.walls) {
         const ray = new foundry.canvas.geometry.Ray(observer.center, target.center);
-        
+
         // FoundryVTT v13+ API: Use testCollision or similar method
         let hasLineOfSight = true;
         try {
@@ -204,7 +204,7 @@ export class ErrorHandlingService {
       // Fallback 1: Use basic wall collision detection
       if (observer && target && canvas?.walls) {
         const ray = new foundry.canvas.geometry.Ray(observer.center, target.center);
-        
+
         // FoundryVTT v13+ API: Use testCollision or similar method
         let hasWallCollision = false;
         try {
@@ -699,7 +699,7 @@ export class ErrorHandlingService {
   async _recoverPositionTracker(context) {
     try {
       // Try to re-initialize position tracker
-      const positionTrackerModule = await import('../position/SneakPositionTracker.js');
+      const positionTrackerModule = await import('../position/PositionTracker.js');
       const positionTracker = positionTrackerModule.default;
 
       // Test basic functionality

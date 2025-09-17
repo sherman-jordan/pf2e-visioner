@@ -5,7 +5,7 @@ import { optimizedVisibilityCalculator } from '../../visibility/auto-visibility/
 import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
 import { FeatsHandler } from '../services/feats-handler.js';
 import { notify } from '../services/infra/notifications.js';
-import sneakPositionTracker from '../services/position/SneakPositionTracker.js';
+import sneakPositionTracker from '../services/position/PositionTracker.js';
 import { BaseActionDialog } from './base-action-dialog.js';
 
 // Store reference to current sneak dialog

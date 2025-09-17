@@ -998,7 +998,6 @@ export const autoVisibility = {
     console.warn('updateTokens method not available in refactored system'),
   calculateVisibility: (observer, target) =>
     autoVisibilitySystem.calculateVisibility(observer, target),
-  getDebugInfo: (observer, target) => autoVisibilitySystem.getVisibilityDebugInfo(observer, target),
 
   // Debug helpers
   testLighting: () => {

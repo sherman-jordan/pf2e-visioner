@@ -234,33 +234,6 @@ export class ConditionManager {
   }
 
   /**
-   * Get debug information about invisibility state
-   * @param {Token} observer
-   * @param {Token} target
-   * @returns {Object} Debug information
-   */
-  getDebugInfo(observer, target) {
-    if (!observer?.actor || !target?.actor) {
-      return { error: 'Missing observer or target actor' };
-    }
-
-    const isInvisible = this.isInvisibleTo(observer, target);
-    const invisibilityFlags = target.document.flags?.['pf2e-visioner']?.invisibility || {};
-    const observerId = observer.document.id;
-    const wasVisibleWhenInvisible = invisibilityFlags[observerId]?.wasVisible;
-
-    return {
-      observer: observer.name,
-      target: target.name,
-      isInvisible,
-      wasVisibleWhenInvisible,
-      invisibilityFlags,
-      targetHasInvisibilityCondition: target.actor.hasCondition?.('invisible'),
-      observerHasSeeInvisibility: observer.actor.perception?.senses?.has?.('see-invisibility'),
-    };
-  }
-
-  /**
    * Clear all invisibility flags for a token (utility method)
    * @param {Token} token
    */

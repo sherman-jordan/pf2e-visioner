@@ -387,32 +387,4 @@ export class VisionAnalyzer {
       return false;
     }
   }
-
-  /**
-   * Get debug information about a token's vision
-   * @param {Token} token
-   * @returns {Object} Debug information
-   */
-  getDebugInfo(token) {
-    if (!token?.actor) {
-      return { error: 'No token or actor provided' };
-    }
-
-    const capabilities = this.getVisionCapabilities(token);
-    const cacheInfo = {
-      cached: this.#visionCapabilitiesCache.has(token.document.id),
-      cacheTime: this.#visionCacheTimestamp.get(token.document.id),
-      cacheAge: this.#visionCacheTimestamp.has(token.document.id)
-        ? Date.now() - this.#visionCacheTimestamp.get(token.document.id)
-        : null,
-    };
-
-    return {
-      tokenName: token.name,
-      actorName: token.actor.name,
-      capabilities,
-      cacheInfo,
-      rawSenses: token.actor.system?.perception?.senses || token.actor.perception?.senses,
-    };
-  }
 }

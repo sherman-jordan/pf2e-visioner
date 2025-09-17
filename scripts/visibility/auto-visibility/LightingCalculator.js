@@ -42,7 +42,6 @@ export class LightingCalculator {
    * @returns {Object} Light level information
    */
   getLightLevelAt(position) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
 
     const sceneDarkness = canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0;
 
@@ -256,29 +255,5 @@ export class LightingCalculator {
    */
   clearLightCache() {
     this.invalidateLightCache();
-  }
-
-  /**
-   * Get debug information about lights at a position
-   * @param {Object} position - {x, y} coordinates
-   * @returns {Object} Debug information
-   */
-  getDebugInfo(position) {
-    const lightLevel = this.getLightLevelAt(position);
-    const lightSources = canvas.lighting?.placeables || [];
-    const lightEmittingTokens = this.#getLightEmittingTokens();
-
-    return {
-      position,
-      lightLevel,
-      sceneDarkness: canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0,
-  globalLight: canvas.scene?.environment?.globalLight?.enabled ?? false,
-  hasGlobalIllumination: canvas.scene?.environment?.globalLight?.enabled ?? canvas.scene?.hasGlobalIllumination ?? false,
-  ambientLight: canvas.scene?.environment?.globalLight?.darknessThreshold ?? false,
-  globalIllumination: canvas.scene?.environment?.globalLight?.enabled ?? false,
-      dedicatedLightSources: lightSources.length,
-      lightEmittingTokens: lightEmittingTokens.length,
-      lightEmittingTokensDetails: lightEmittingTokens,
-    };
   }
 }

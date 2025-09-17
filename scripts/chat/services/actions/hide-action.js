@@ -231,11 +231,11 @@ export class HideActionHandler extends ActionHandlerBase {
         inNaturalTerrain: false,
         outcome,
       });
-    } catch {}
+    } catch { }
 
     // Enforce end-position prerequisite like Sneak's end check: must be concealed OR have cover
     try {
-      const { default: sneakPositionTracker } = await import('../position/SneakPositionTracker.js');
+      const { default: sneakPositionTracker } = await import('../position/PositionTracker.js');
       const endPos = await sneakPositionTracker._capturePositionState(
         actionData.actor,
         subject,
@@ -259,7 +259,7 @@ export class HideActionHandler extends ActionHandlerBase {
           inNaturalTerrain: false,
           outcome: originalOutcome,
         });
-      } catch {}
+      } catch { }
     }
 
     // Check if we should show override displays (only if there's a meaningful difference)

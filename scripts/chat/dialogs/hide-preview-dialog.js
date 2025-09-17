@@ -136,12 +136,12 @@ export class HidePreviewDialog extends BaseActionDialog {
     // Augment with end-position qualification like Sneak: concealed OR standard/greater cover qualifies
     try {
       // Compute lightweight position info on demand
-      const { default: sneakPositionTracker } = await import('../services/position/SneakPositionTracker.js');
+      const { default: positionTracker } = await import('../services/position/PositionTracker.js');
       const hider = this.actorToken;
       for (const outcome of filteredOutcomes) {
         try {
           // Capture current end position from observer -> hider perspective
-          const endPos = await sneakPositionTracker._capturePositionState(
+          const endPos = await positionTracker._capturePositionState(
             hider,
             outcome.target,
             Date.now(),
@@ -236,9 +236,9 @@ export class HidePreviewDialog extends BaseActionDialog {
       }
     } catch { }
 
-  // Keep the immutable original list in _originalOutcomes for live re-filtering,
-  // but set the current outcomes to the processed list so UI buttons use up-to-date flags
-  this.outcomes = processedOutcomes;
+    // Keep the immutable original list in _originalOutcomes for live re-filtering,
+    // but set the current outcomes to the processed list so UI buttons use up-to-date flags
+    this.outcomes = processedOutcomes;
 
     // Calculate summary information
     context.actorToken = this.actorToken;
@@ -668,6 +668,7 @@ export class HidePreviewDialog extends BaseActionDialog {
    */
   _endPositionQualifiesForHide(endPos) {
     try {
+      debugger;
       if (!endPos) return false;
       if (endPos.coverState && (endPos.coverState === 'standard' || endPos.coverState === 'greater')) return true;
       if (endPos.avsVisibility === 'concealed') return true;

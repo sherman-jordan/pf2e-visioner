@@ -172,22 +172,6 @@ export class DualSystemIntegration {
       return result;
     }
 
-    // Check if Auto-Cover system is available
-    if (!this._isAutoCoverSystemAvailable()) {
-      const error = new Error('Auto-Cover system is not available');
-      const errorResult = await errorHandlingService.handleSystemError(
-        SYSTEM_TYPES.AUTO_COVER,
-        error,
-        { observer, target, options },
-      );
-
-      result.error = error.message;
-      result.data = errorResult.fallbackData || { state: 'none', bonus: 0 };
-      result.fallbackUsed = errorResult.fallbackApplied;
-      result.success = errorResult.fallbackApplied;
-      return result;
-    }
-
     try {
       await this.initialize();
 
@@ -203,6 +187,7 @@ export class DualSystemIntegration {
 
       // Use Auto-Cover system detection with v13 wall and geometry APIs
       const coverState = await this._detectAutoCover(observer, target, options);
+      debugger
       const bonus = this._calculateCoverBonus(coverState);
 
       result.success = true;
@@ -249,6 +234,7 @@ export class DualSystemIntegration {
       }
 
       try {
+        debugger;
         coverResult = await this.getAutoCoverState(observerToken, targetToken, options);
       } catch (autoCoverError) {
         console.warn('PF2E Visioner: Auto-Cover failed, using fallback', autoCoverError);

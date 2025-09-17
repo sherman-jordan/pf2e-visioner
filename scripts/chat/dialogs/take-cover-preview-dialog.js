@@ -35,6 +35,7 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
     this.changes = Array.isArray(changes) ? changes : [];
     this.actionData = { ...(actionData || {}), actionType: 'take-cover' };
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
     // Per-user default: visually hide Foundry-hidden tokens
     try {
       this.hideFoundryHidden = !!game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
@@ -70,6 +71,13 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
         }
       } catch {}
 
+      // Apply show-only-changes visual filter
+      try {
+        if (this.showOnlyChanges) {
+          filtered = filtered.filter((o) => !!o.hasActionableChange);
+        }
+      } catch {}
+
       return filtered;
     } catch {
       return Array.isArray(this.outcomes) ? this.outcomes : [];
@@ -85,6 +93,16 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
       'target',
       'No encounter observers found for this action',
     );
+    // Apply ally filtering for display purposes
+    try {
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filteredOutcomes = filterOutcomesByAllies(
+        filteredOutcomes,
+        this.actorToken,
+        this.ignoreAllies,
+        'target',
+      );
+    } catch { }
     try {
       if (this.hideFoundryHidden) {
         filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
@@ -135,6 +153,10 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
         newCoverCfg: coverCfg(effectiveNew),
         availableStates,
         overrideState: effectiveNew,
+        // Compatibility fields so base handlers work with cover like visibility
+        oldVisibility: baseOld,
+        currentVisibility: baseOld,
+        newVisibility: effectiveNew,
         hasActionableChange,
       };
     });
@@ -188,12 +210,17 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
       }
     }
 
+    // Keep full processed list for logic, but filter display based on showOnlyChanges
     this.outcomes = processed;
+    const displayOutcomes = this.showOnlyChanges
+      ? processed.filter((o) => !!o.hasActionableChange)
+      : processed;
     context.actorToken = this.actorToken;
-    context.outcomes = processed;
-    Object.assign(context, this.buildCommonContext(processed));
+    context.outcomes = displayOutcomes;
+    Object.assign(context, this.buildCommonContext(displayOutcomes));
     // Expose UI flags
     context.hideFoundryHidden = !!this.hideFoundryHidden;
+    context.ignoreAllies = !!this.ignoreAllies;
     return context;
   }
 
@@ -233,6 +260,19 @@ export class TakeCoverPreviewDialog extends BaseActionDialog {
         });
       }
   } catch {}
+
+    // Wire up Ignore Allies checkbox
+    try {
+      const cba = this.element.querySelector('input[data-action="toggleIgnoreAllies"]');
+      if (cba) {
+        cba.onchange = null;
+        cba.addEventListener('change', () => {
+          this.ignoreAllies = !!cba.checked;
+          this.bulkActionState = 'initial';
+          this.render({ force: true });
+        });
+      }
+    } catch {}
   }
 
   getChangesCounterClass() {

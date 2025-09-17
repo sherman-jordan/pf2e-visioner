@@ -141,6 +141,18 @@ export class SeekPreviewDialog extends BaseActionDialog {
     // Prepare visibility states using centralized config
     const cfg = (s) => this.visibilityConfig(s);
 
+    // Preserve any GM override selections from the previously displayed list
+    try {
+      const previous = Array.isArray(this.outcomes) ? this.outcomes : [];
+      filteredOutcomes = filteredOutcomes.map((o) => {
+        const existing = o?._isWall && o?.wallId
+          ? previous.find((x) => x?._isWall && x?.wallId === o.wallId)
+          : previous.find((x) => x?.target?.id === o?.target?.id);
+        const overrideState = existing?.overrideState ?? o?.overrideState ?? null;
+        return { ...o, overrideState };
+      });
+    } catch { }
+
     // Prepare outcomes for template
     let processedOutcomes = await Promise.all(
       filteredOutcomes.map(async (outcome) => {
@@ -214,9 +226,9 @@ export class SeekPreviewDialog extends BaseActionDialog {
         const desired = getDesiredOverrideStatesForAction('seek');
         const availableStates = this.buildOverrideStates(desired, outcome);
 
-        const effectiveNewState =
-          outcome.overrideState || outcome.newVisibility || currentVisibility;
-        const baseOldState = currentVisibility != null ? currentVisibility : outcome.oldVisibility;
+        const effectiveNewState = outcome.overrideState || outcome.newVisibility || currentVisibility;
+        // Prefer the recorded oldVisibility as the baseline; fall back to current live mapping
+        const baseOldState = outcome.oldVisibility != null ? outcome.oldVisibility : currentVisibility;
         // Actionable if original differs from new or override
         const hasActionableChange =
           baseOldState != null && effectiveNewState != null && effectiveNewState !== baseOldState;
@@ -245,6 +257,13 @@ export class SeekPreviewDialog extends BaseActionDialog {
         processedOutcomes = processedOutcomes.filter((o) => {
           try { return o?._isWall || o?.target?.document?.hidden !== true; } catch { return true; }
         });
+      }
+    } catch { }
+
+    // Show-only-changes visual filter
+    try {
+      if (this.showOnlyChanges) {
+        processedOutcomes = processedOutcomes.filter((o) => !!o.hasActionableChange);
       }
     } catch { }
 
@@ -432,6 +451,12 @@ export class SeekPreviewDialog extends BaseActionDialog {
           visual = processed.filter((o) => {
             try { return o?._isWall || o?.target?.document?.hidden !== true; } catch { return true; }
           });
+        }
+      } catch { }
+      // Apply show-only-changes filter for both UI and Apply All
+      try {
+        if (this.showOnlyChanges) {
+          visual = visual.filter((o) => !!o.hasActionableChange);
         }
       } catch { }
       return visual;

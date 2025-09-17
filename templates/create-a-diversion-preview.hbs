@@ -31,6 +31,10 @@
       <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
       <span class="encounter-filter-label">Ignore allies</span>
     </label>
+    <label class="show-only-changes-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if showOnlyChanges}}checked{{/if}} data-action="toggleShowOnlyChanges" data-tooltip="Show only rows with visibility changes" />
+      <span class="encounter-filter-label">Show only changes</span>
+    </label>
   </div>
 
   {{!-- Results Table --}}

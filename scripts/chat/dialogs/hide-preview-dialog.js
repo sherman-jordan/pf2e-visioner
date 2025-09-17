@@ -185,6 +185,16 @@ export class HidePreviewDialog extends BaseActionDialog {
       notify.info(`${MODULE_TITLE}: No encounter observers found for this action`);
     }
 
+    // Preserve any previously chosen overrides across re-renders
+    try {
+      const previous = Array.isArray(this.outcomes) ? this.outcomes : [];
+      filteredOutcomes = filteredOutcomes.map((o) => {
+        const existing = previous.find((x) => x?.target?.id === o?.target?.id);
+        const overrideState = existing?.overrideState ?? o?.overrideState ?? null;
+        return { ...o, overrideState };
+      });
+    } catch { }
+
     // Process outcomes to add additional properties needed by template
     let processedOutcomes = filteredOutcomes.map((outcome) => {
       const availableStates = this.getAvailableStatesForOutcome(outcome);
@@ -219,7 +229,16 @@ export class HidePreviewDialog extends BaseActionDialog {
       }
     } catch { }
 
-    // Do not overwrite the original outcomes; keep them for live re-filtering
+    // Show-only-changes visual filter
+    try {
+      if (this.showOnlyChanges) {
+        processedOutcomes = processedOutcomes.filter((o) => !!o.hasActionableChange);
+      }
+    } catch { }
+
+  // Keep the immutable original list in _originalOutcomes for live re-filtering,
+  // but set the current outcomes to the processed list so UI buttons use up-to-date flags
+  this.outcomes = processedOutcomes;
 
     // Calculate summary information
     context.actorToken = this.actorToken;
@@ -269,14 +288,21 @@ export class HidePreviewDialog extends BaseActionDialog {
         }
       });
       // Visual filtering: hide Foundry-hidden tokens from display if enabled
+      let visual = merged;
       try {
         if (this.hideFoundryHidden) {
-          return merged.filter((o) => {
+          visual = visual.filter((o) => {
             try { return o?._isWall || o?.target?.document?.hidden !== true; } catch { return true; }
           });
         }
       } catch { }
-      return merged;
+      // Apply show-only-changes if enabled
+      try {
+        if (this.showOnlyChanges) {
+          visual = visual.filter((o) => !!o.hasActionableChange);
+        }
+      } catch { }
+      return visual;
     } catch {
       return Array.isArray(this.outcomes) ? this.outcomes : [];
     }

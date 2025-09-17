@@ -31,6 +31,10 @@
       <input type="checkbox" {{#if hideFoundryHidden}}checked{{/if}} data-action="toggleHideFoundryHidden" data-tooltip="Visually hide tokens that are Foundry-hidden (document.hidden)" />
       <span class="encounter-filter-label">Hide Foundry-hidden tokens</span>
     </label>
+    <label class="show-only-changes-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if showOnlyChanges}}checked{{/if}} data-action="toggleShowOnlyChanges" data-tooltip="Show only rows with visibility changes" />
+      <span class="encounter-filter-label">Show only changes</span>
+    </label>
   </div>
 
   {{!-- Apply All Cover Section - Above Table --}}

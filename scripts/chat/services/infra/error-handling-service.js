@@ -277,8 +277,6 @@ export class ErrorHandlingService {
    * @returns {Promise<boolean>} Whether recovery was successful
    */
   async attemptSystemRecovery(systemType, context = {}) {
-    const recoveryKey = `${systemType}-${Date.now()}`;
-
     try {
       log.warn(`Attempting recovery for ${systemType} system`);
 
@@ -312,7 +310,6 @@ export class ErrorHandlingService {
 
       if (recoveryResult) {
         this._updateSystemStatus(systemType, true);
-        this._notifyUserOfRecovery(systemType);
         log.warn(`Successfully recovered ${systemType} system`);
       } else {
         log.warn(`Failed to recover ${systemType} system`);
@@ -628,7 +625,6 @@ export class ErrorHandlingService {
     if (this._notificationCount >= this._userNotificationSettings.maxNotificationsPerSession)
       return;
 
-    notify.info(`${systemType} system has been recovered and is now available.`);
     this._notificationCount++;
   }
 

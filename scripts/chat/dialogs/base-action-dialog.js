@@ -9,6 +9,8 @@ export class BaseActionDialog extends BasePreviewDialog {
   constructor(options = {}) {
     super(options);
     this.bulkActionState = this.bulkActionState ?? 'initial';
+    // Per-dialog visual filter: show only rows with actionable changes
+    if (typeof this.showOnlyChanges === 'undefined') this.showOnlyChanges = false;
   }
 
   getApplyDirection() {
@@ -82,6 +84,20 @@ export class BaseActionDialog extends BasePreviewDialog {
     // Ensure bulk override buttons get listeners
     try { this._attachBulkOverrideHandlers(); } catch { }
 
+    // Wire up Show Only Changes checkbox
+    try {
+      const cbSoc = this.element.querySelector('input[data-action="toggleShowOnlyChanges"]');
+      if (cbSoc) {
+        // Prevent duplicate handlers on re-render
+        cbSoc.onchange = null;
+        cbSoc.addEventListener('change', () => {
+          this.showOnlyChanges = !!cbSoc.checked;
+          // Reset bulk state visual; filtering doesn’t change data
+          this.render({ force: true });
+        });
+      }
+    } catch { }
+
   }
 
   buildCommonContext(outcomes) {
@@ -95,6 +111,8 @@ export class BaseActionDialog extends BasePreviewDialog {
       encounterOnly: !!this.encounterOnly,
       // Per-dialog ignore-allies checkbox state (defaults from global setting)
       ignoreAllies: this.ignoreAllies,
+      // Visual filter checkbox state
+      showOnlyChanges: !!this.showOnlyChanges,
       bulkActionState: this.bulkActionState ?? 'initial',
       bulkOverrideStates: this._deriveBulkStatesFromOutcomes?.(outcomes) || this._buildBulkOverrideStates?.() || [],
     };
@@ -160,6 +178,8 @@ export class BaseActionDialog extends BasePreviewDialog {
       this.markInitialSelections();
       this.updateChangesCount();
       this.updateBulkActionButtons();
+      // If filtering to show only changes, re-render so rows reflect new effective states
+      if (this.showOnlyChanges) this.render({ force: true });
     } catch (e) {
       console.warn('PF2E Visioner | Bulk override set failed', e);
     }
@@ -178,6 +198,8 @@ export class BaseActionDialog extends BasePreviewDialog {
       this.markInitialSelections();
       this.updateChangesCount();
       this.updateBulkActionButtons();
+      // If filtering to show only changes, re-render so rows reflect recalculated actionability
+      if (this.showOnlyChanges) this.render({ force: true });
     } catch (e) {
       console.warn('PF2E Visioner | Bulk override clear failed', e);
     }
@@ -446,6 +468,8 @@ export class BaseActionDialog extends BasePreviewDialog {
           } catch { }
         }
         this.updateChangesCount();
+        // If "Show only changes" is active, re-render so filtering reflects override adjustments
+        try { if (this.showOnlyChanges) this.render({ force: true }); } catch { }
       });
     });
   }
@@ -620,8 +644,20 @@ export class BaseActionDialog extends BasePreviewDialog {
       return;
     }
 
+    // Prefer dialog-provided filtered outcomes (respects encounter/ally/visual filters)
+    let sourceOutcomes = [];
+    try {
+      if (typeof app.getFilteredOutcomes === 'function') {
+        sourceOutcomes = await app.getFilteredOutcomes();
+      } else {
+        sourceOutcomes = Array.isArray(app.outcomes) ? app.outcomes : [];
+      }
+    } catch {
+      sourceOutcomes = Array.isArray(app.outcomes) ? app.outcomes : [];
+    }
+
     // Get all outcomes that have actionable changes
-    const outcomesWithChanges = app.outcomes.filter(o => o.hasActionableChange);
+    const outcomesWithChanges = sourceOutcomes.filter(o => o.hasActionableChange);
 
     if (outcomesWithChanges.length === 0) {
       notify.warn(`${MODULE_TITLE}: No changes to apply`);

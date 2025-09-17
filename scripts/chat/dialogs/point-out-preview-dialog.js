@@ -105,6 +105,13 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       }
     } catch { }
 
+    // Show-only-changes visual filter
+    try {
+      if (this.showOnlyChanges) {
+        processedOutcomes = processedOutcomes.filter((o) => !!o.hasActionableChange);
+      }
+    } catch { }
+
     // Update original outcomes with hasActionableChange for Apply All button logic
     processedOutcomes.forEach((processedOutcome, index) => {
       if (this.outcomes[index]) {
@@ -195,6 +202,41 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     return outcome?.target?.id ?? null;
   }
 
+  /**
+   * Return outcomes filtered according to current visual and encounter filters,
+   * including: encounterOnly, ignoreAllies, hideFoundryHidden, and showOnlyChanges.
+   */
+  async getFilteredOutcomes() {
+    // Start from full outcomes list for Point Out
+    let filtered = filterOutcomesByEncounter(this.outcomes, this.encounterOnly, 'target');
+
+    // Allies filter
+    try {
+      const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
+      filtered = filterOutcomesByAllies(filtered, this.actorToken, this.ignoreAllies, 'target');
+    } catch {}
+
+    // Hide Foundry hidden tokens
+    try {
+      if (this.hideFoundryHidden) {
+        filtered = filtered.filter((o) => o?.target?.document?.hidden !== true);
+      }
+    } catch {}
+
+    // Show only actionable visibility changes
+    try {
+      if (this.showOnlyChanges) {
+        filtered = filtered.filter((o) => {
+          const effectiveNew = o?.overrideState ?? o?.newVisibility;
+          const baseOld = o?.oldVisibility ?? o?.currentVisibility;
+          return baseOld != null && effectiveNew != null && effectiveNew !== baseOld;
+        });
+      }
+    } catch {}
+
+    return filtered;
+  }
+
   // Point Out specific action methods
   static async _onClose() {
     const app = currentPointOutDialog;
@@ -215,31 +257,21 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      // Filter outcomes based on encounter filter using shared helper
-      let filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
+      // Use dialog's filtered outcomes which respects encounter, allies, hidden and showOnlyChanges
+      let filteredOutcomes = [];
+      if (typeof app.getFilteredOutcomes === 'function') {
+        filteredOutcomes = await app.getFilteredOutcomes();
+      } else {
+        // Fallback to original pathway (should rarely happen)
+        filteredOutcomes = filterOutcomesByEncounter(app.outcomes, app.encounterOnly, 'target');
+      }
 
-      // Apply ally filtering if ignore allies is enabled
-      try {
-        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
-        filteredOutcomes = filterOutcomesByAllies(
-          filteredOutcomes,
-          app.actorToken,
-          app.ignoreAllies,
-          'target',
-        );
-      } catch { }
-
-      // Respect Hide Foundry-hidden toggle for Apply All
-      try {
-        if (app.hideFoundryHidden) {
-          filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
-        }
-      } catch { }
-
-      // Only apply changes to filtered outcomes
-      const changedOutcomes = filteredOutcomes.filter(
-        (change) => change.hasActionableChange !== false,
-      );
+      // Restrict to actionable changes to be safe even when showOnlyChanges is off
+      const changedOutcomes = filteredOutcomes.filter((o) => {
+        const effectiveNew = o?.overrideState ?? o?.newVisibility;
+        const baseOld = o?.oldVisibility ?? o?.currentVisibility;
+        return baseOld != null && effectiveNew != null && effectiveNew !== baseOld;
+      });
 
       // Make sure each outcome has the targetToken property
       const processedOutcomes = changedOutcomes.map((outcome) => {
@@ -265,8 +297,9 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
       app.bulkActionState = 'applied';
       app.updateBulkActionButtons();
+      // Update only the rows we actually applied
       app.updateRowButtonsToApplied(
-        app.outcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
+        processedOutcomes.map((o) => ({ target: { id: o.target.id }, hasActionableChange: true })),
       );
       app.updateChangesCount();
 

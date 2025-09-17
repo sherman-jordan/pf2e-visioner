@@ -92,6 +92,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
     currentSneakDialog = this;
   }
 
+
   /**
    * Attempt to retrieve start states from stored data (token flags or message flags)
    * @param {ChatMessage} message - The message that might contain start states
@@ -187,6 +188,16 @@ export class SneakPreviewDialog extends BaseActionDialog {
         this.ignoreAllies,
         'token',
       );
+    } catch { }
+
+    // Preserve any overrides the GM selected in the previous render
+    try {
+      const previous = Array.isArray(this.outcomes) ? this.outcomes : [];
+      filteredOutcomes = filteredOutcomes.map((o) => {
+        const existing = previous.find((x) => x?.token?.id === o?.token?.id);
+        const overrideState = existing?.overrideState ?? o?.overrideState ?? null;
+        return { ...o, overrideState };
+      });
     } catch { }
 
     const cfg = (s) => this.visibilityConfig(s);
@@ -288,7 +299,14 @@ export class SneakPreviewDialog extends BaseActionDialog {
     } catch { }
 
     // Sort outcomes to prioritize qualifying positions (green checkmarks) at the top
-    const sortedOutcomes = this._sortOutcomesByQualification(processedOutcomes);
+    let sortedOutcomes = this._sortOutcomesByQualification(processedOutcomes);
+
+    // Show-only-changes visual filter
+    try {
+      if (this.showOnlyChanges) {
+        sortedOutcomes = sortedOutcomes.filter((o) => !!o.hasActionableChange);
+      }
+    } catch { }
 
     // Update original outcomes with hasActionableChange for Apply All button logic
     sortedOutcomes.forEach((processedOutcome, index) => {
@@ -314,8 +332,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
     context.hasPositionData = this._hasPositionData;
     context.positionDisplayMode = this._positionDisplayMode;
 
-    // Preserve original outcomes separate from processed
-    this.outcomes = processedOutcomes;
+  // Preserve original outcomes separate from processed
+  this.outcomes = processedOutcomes;
 
     Object.assign(context, this.buildCommonContext(processedOutcomes));
 
@@ -667,10 +685,6 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!outcomes?.length || !this.sneakingToken) return;
 
     try {
-      const debugMode = (game?.settings?.get?.('pf2e-visioner', 'autoVisibilityDebugMode') ||
-        game?.settings?.get?.('pf2e-visioner', 'debug'))
-        ? true
-        : false;
       for (const outcome of outcomes) {
         if (!outcome.token?.document?.id) continue;
 

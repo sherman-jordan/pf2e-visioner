@@ -615,19 +615,6 @@ export class ErrorHandlingService {
     }, delay);
   }
 
-  /**
-   * Notifies user of successful recovery
-   * @param {string} systemType - System type
-   * @private
-   */
-  _notifyUserOfRecovery(systemType) {
-    if (!this._userNotificationSettings.showRecoveryNotifications) return;
-    if (this._notificationCount >= this._userNotificationSettings.maxNotificationsPerSession)
-      return;
-
-    this._notificationCount++;
-  }
-
   // Recovery methods for specific systems
 
   /**

@@ -76,6 +76,7 @@ const SNEAK_FEAT_ADJUSTERS = {
 const HIDE_FEAT_ADJUSTERS = {
   'terrain-stalker': (ctx) => (ctx.terrainMatches ? +1 : 0),
   'foil-senses': () => +1,
+  'very-very-sneaky': () => +1,
   'vanish-into-the-land': (ctx) => (ctx.inNaturalTerrain ? +1 : 0),
   'legendary-sneak': () => +1,
   'forest-stealth': (ctx) => (ctx.terrainTag === 'forest' ? +1 : 0),
@@ -282,7 +283,7 @@ export class FeatsHandler {
    * @param {{ startQualifies: boolean, endQualifies: boolean, bothQualify: boolean, reason?: string }} base
    * @param {{ startVisibility?: string, endVisibility?: string, endCoverState?: string }} [extra]
    */
-  static overrideSneakPrerequisites(tokenOrActor, base, extra = {}) {
+  static overridePrerequisites(tokenOrActor, base, extra = {}) {
     const actor = FeatsHandlerInternal.resolveActor(tokenOrActor);
     if (!actor) return base;
     const feats = getActorFeatSlugs(actor);

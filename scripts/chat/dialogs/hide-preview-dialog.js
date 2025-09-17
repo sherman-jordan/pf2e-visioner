@@ -148,7 +148,29 @@ export class HidePreviewDialog extends BaseActionDialog {
             { forceFresh: true, useCurrentPositionForCover: true }
           );
           // Build minimal positionDisplay like Sneak
-          const qualifies = this._endPositionQualifiesForHide(endPos);
+          let qualifies = this._endPositionQualifiesForHide(endPos);
+          // Apply feat-based prerequisite overrides (Very Very Sneaky, Legendary Sneak, etc.)
+          try {
+            const { FeatsHandler } = await import('../services/feats-handler.js');
+            const startVisibility = outcome.oldVisibility || outcome.currentVisibility || 'observed';
+            const endVisibility = endPos?.avsVisibility || startVisibility;
+            const endCoverState = endPos?.coverState || 'none';
+            // Construct a base prerequisite object (start: need cover/concealment unless feats)
+            let base = {
+              startQualifies: (startVisibility === 'hidden' || startVisibility === 'undetected' || startVisibility === 'concealed'),
+              endQualifies: qualifies,
+              bothQualify: false,
+              reason: 'Hide (dialog) prerequisites'
+            };
+            base.bothQualify = base.startQualifies && base.endQualifies;
+            const overridden = FeatsHandler.overridePrerequisites(hider, base, { startVisibility, endVisibility, endCoverState });
+            // If feats grant endQualifies, reflect in UI gating
+            if (overridden.endQualifies && !qualifies) {
+              qualifies = true;
+            }
+            // Store for UI (optional future use)
+            outcome.positionQualification = overridden;
+          } catch { /* feat override non-fatal */ }
 
           // Compute and store the base calculated new visibility (ignoring prereq gating)
           const baseOldState = outcome.oldVisibility || outcome.currentVisibility;

@@ -198,10 +198,35 @@ export class HideActionHandler extends ActionHandlerBase {
     const margin = total - adjustedDC;
     const originalMargin = originalTotal ? originalTotal - adjustedDC : margin;
     const baseMargin = baseRollTotal ? baseRollTotal - adjustedDC : margin;
-    const outcome = determineOutcome(total, die, adjustedDC);
+    let outcome = determineOutcome(total, die, adjustedDC);
     const originalOutcome = originalTotal
       ? determineOutcome(originalTotal, die, adjustedDC)
       : outcome;
+
+    // Feat-based outcome shift (parallel to Sneak)
+    let adjustedOutcome = outcome;
+    let featNotes = [];
+    try {
+      const { FeatsHandler } = await import('../feats-handler.js');
+      // Basic lighting context similar to sneak (dim/dark advantages)
+      let inDimOrDarker = false;
+      try {
+        const { LightingCalculator } = await import('../../../visibility/auto-visibility/LightingCalculator.js');
+        const lightingCalculator = LightingCalculator.getInstance();
+        const targetPosition = actionData.actor?.center || actionData.actor?.document?.center || actionData.actor?.object?.center || actionData.actor?.token?.object?.center || null;
+        if (targetPosition && lightingCalculator) {
+          const lightInfo = lightingCalculator.getLightLevelAt(targetPosition);
+          inDimOrDarker = ['dim', 'darkness'].includes(lightInfo?.level);
+        }
+      } catch { /* non-fatal lighting */ }
+      const { shift, notes } = FeatsHandler.getOutcomeAdjustment(actionData.actor, 'hide', { inDimOrDarker });
+      if (shift) {
+        adjustedOutcome = FeatsHandler.applyOutcomeShift(outcome, shift);
+        featNotes = notes;
+      }
+    } catch (e) {
+      console.warn('PF2E Visioner | Hide feats adjustment failed:', e);
+    }
 
     // Generate outcome labels
     const getOutcomeLabel = (outcomeValue) => {
@@ -223,30 +248,40 @@ export class HideActionHandler extends ActionHandlerBase {
     // Maintain previous behavior for visibility change while enriching display fields
     // Use centralized mapping for defaults
     const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
-    let newVisibility = getDefaultNewStateFor('hide', current, outcome) || current;
+    let newVisibility = getDefaultNewStateFor('hide', current, adjustedOutcome) || current;
     // Feat-based post visibility adjustments
     try {
       const { FeatsHandler } = await import('../feats-handler.js');
       newVisibility = FeatsHandler.adjustVisibility('hide', actionData.actor, current, newVisibility, {
         inNaturalTerrain: false,
-        outcome,
+        outcome: adjustedOutcome,
       });
     } catch { }
 
-    // Enforce end-position prerequisite like Sneak's end check: must be concealed OR have cover
+    // Prerequisite qualification similar to Sneak (start + end with feat overrides)
+    let positionQualification = null;
     try {
-      const { default: sneakPositionTracker } = await import('../position/PositionTracker.js');
-      const endPos = await sneakPositionTracker._capturePositionState(
+      const { default: positionTracker } = await import('../position/PositionTracker.js');
+      const endSnapshot = await positionTracker._capturePositionState(
         actionData.actor,
         subject,
         Date.now(),
         { forceFresh: true, useCurrentPositionForCover: true }
       );
-      const endQualifies = (endPos?.coverState === 'standard' || endPos?.coverState === 'greater') || endPos?.avsVisibility === 'concealed';
-      if (!endQualifies) {
-        newVisibility = 'observed';
-      }
-    } catch { /* non-fatal */ }
+      const startVisibility = current;
+      const endVisibility = endSnapshot?.avsVisibility || current;
+      const endCoverState = endSnapshot?.coverState || 'none';
+      // Hide: you must have cover or concealment now to attempt (observed without either disqualifies unless feats)
+      const startQualifies = (startVisibility === 'hidden' || startVisibility === 'undetected' || startVisibility === 'concealed') || (endCoverState === 'standard' || endCoverState === 'greater');
+      const endQualifies = (endCoverState === 'standard' || endCoverState === 'greater') || endVisibility === 'concealed';
+      let qualification = { startQualifies, endQualifies, bothQualify: startQualifies && endQualifies, reason: 'Hide prerequisites evaluated' };
+      try {
+        const { FeatsHandler } = await import('../feats-handler.js');
+        qualification = FeatsHandler.overridePrerequisites(actionData.actor, qualification, { startVisibility, endVisibility, endCoverState });
+      } catch { }
+      positionQualification = qualification;
+      if (!qualification.endQualifies) newVisibility = 'observed';
+    } catch { /* non-fatal prereq */ }
 
     // Calculate what the visibility change would have been with original outcome
     let originalNewVisibility = originalTotal
@@ -278,7 +313,7 @@ export class HideActionHandler extends ActionHandlerBase {
       margin,
       originalMargin,
       baseMargin,
-      outcome,
+      outcome: adjustedOutcome,
       originalOutcome,
       originalOutcomeLabel,
       originalNewVisibility,
@@ -293,6 +328,8 @@ export class HideActionHandler extends ActionHandlerBase {
       originalRollTotal: originalTotal,
       // Add base roll total for triple-bracket display
       baseRollTotal: baseRollTotal,
+      featNotes,
+      positionQualification,
     };
   }
   outcomeToChange(actionData, outcome) {

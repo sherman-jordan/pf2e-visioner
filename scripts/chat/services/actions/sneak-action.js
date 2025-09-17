@@ -939,7 +939,7 @@ export class SneakActionHandler extends ActionHandlerBase {
     try {
       const { FeatsHandler } = await import('../feats-handler.js');
       const acting = this._getSneakingToken?.(actionData) || actionData?.actor || null;
-      result = FeatsHandler.overrideSneakPrerequisites(acting, result, {
+      result = FeatsHandler.overridePrerequisites(acting, result, {
         startVisibility: startPos.avsVisibility,
         endVisibility: endPos.avsVisibility,
         endCoverState: endPos.coverState,

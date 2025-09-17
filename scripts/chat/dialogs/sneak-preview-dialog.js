@@ -230,7 +230,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         try {
           const sp = positionTransition.startPosition || {};
           const ep = positionTransition.endPosition || {};
-          effective = FeatsHandler.overrideSneakPrerequisites(this.sneakingToken, effective, {
+          effective = FeatsHandler.overridePrerequisites(this.sneakingToken, effective, {
             startVisibility: sp.avsVisibility,
             endVisibility: ep.avsVisibility,
             endCoverState: ep.coverState,
@@ -643,7 +643,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         try {
           const sp = positionTransition.startPosition || {};
           const ep = positionTransition.endPosition || {};
-          effective = FeatsHandler.overrideSneakPrerequisites(this.sneakingToken, effective, {
+          effective = FeatsHandler.overridePrerequisites(this.sneakingToken, effective, {
             startVisibility: sp.avsVisibility,
             endVisibility: ep.avsVisibility,
             endCoverState: ep.coverState,

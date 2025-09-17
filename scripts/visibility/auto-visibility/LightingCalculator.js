@@ -54,24 +54,44 @@ export class LightingCalculator {
       canvas.scene?.hasGlobalIllumination ??
       false;
 
-    // Start with base illumination only when global illumination is active.
-    // In bright daylight (darkness = 0), base illumination is 1 (bright)
-    // In complete darkness (darkness = 1), base illumination is 0
-    let baseIllumination = hasGlobalIllumination ? Math.max(0, 1 - sceneDarkness) : 0;
+    // Start with base illumination only when global illumination is active
+    // Foundry determines dark to be 75% or higher darkness
+    // Addition of global dim lighting requires addtion of a scene-wide setting.
+    // This also doesn't take darkness regions into consideration.
+    const DARK = 0;
+    const DIM = 1;
+    const BRIGHT = 2;
+    const FOUNDRY_DARK = 0.25;
+    const baseIllumination = hasGlobalIllumination ? 1.0 - sceneDarkness : 0.0;
+
+    function makeIlluminationResult(illumination) { 
+      const LIGHT_LEVELS = ['darkness','dim','bright' ];
+      const LIGHT_THRESHOLDS = [0.0, 0.5, 1.0];
+      return {
+        level: LIGHT_LEVELS[illumination],
+        illumination,
+        sceneDarkness,
+        baseIllumination,
+        lightIllumination: LIGHT_THRESHOLDS[illumination],
+      };
+    }
+    let illumination = baseIllumination > FOUNDRY_DARK ? BRIGHT : DARK;
 
     // Check if position is illuminated by any light sources OR light-emitting tokens
     const lightSources = canvas.lighting?.placeables || [];
 
-    let maxLightIllumination = 0;
-    let darknessReduction = 0; // Track darkness sources
+    // Convert light radii from scene units (feet) to pixels for distance comparison
+    const pixelsPerGridSquare = canvas.grid?.size || 100;
+    const unitsPerGridSquare = canvas.scene?.grid?.distance || 5;
+    const pixelsPerUnit = pixelsPerGridSquare / unitsPerGridSquare;
 
     // Check dedicated light sources first (including darkness sources)
     for (const light of lightSources) {
       // Check if this is a darkness source first before filtering
       const isDarknessSource = light.isDarknessSource || light.document?.config?.negative || false;
 
-      // Skip only if (hidden AND not a darkness source) OR (doesn't emit light AND isn't a darkness source)
-      if ((light.document.hidden && !isDarknessSource) || (!light.emitsLight && !isDarknessSource))
+      // Skip disabled lights
+      if (light.document.hidden || !light.emitsLight)
         continue;
 
       // Try multiple property paths for light radius FIRST
@@ -83,87 +103,52 @@ export class LightingCalculator {
       const lightX = light.x || light.document.x;
       const lightY = light.y || light.document.y;
 
-      const distance = Math.sqrt(
-        Math.pow(position.x - lightX, 2) + Math.pow(position.y - lightY, 2),
-      );
+      // Calculated distances are in squared pixel units
+      const distanceSquared = 
+        Math.pow(position.x - lightX, 2) + Math.pow(position.y - lightY, 2) ;
+      const brightRadiusSquared = Math.pow(brightRadius * pixelsPerUnit, 2);
+      const dimRadiusSquared = Math.pow(dimRadius * pixelsPerUnit, 2);
 
-      // Convert light radii from scene units (feet) to pixels for distance comparison
-      const pixelsPerGridSquare = canvas.grid?.size || 100;
-      const feetPerGridSquare = canvas.scene?.grid?.distance || 5;
-      const pixelsPerFoot = pixelsPerGridSquare / feetPerGridSquare;
-
-      const brightRadiusPixels = Math.abs(brightRadius) * pixelsPerFoot;
-      const dimRadiusPixels = Math.abs(dimRadius) * pixelsPerFoot;
-
-      // isDarknessSource already detected above for filtering
-
+      // Handle darkness sources (they eliminate illumination)
+      // For darkness sources, both bright and dim areas provide full darkness
       if (isDarknessSource) {
-
-        // Handle darkness sources (they reduce illumination) - use pixel-converted radii
-        // For darkness sources, both bright and dim areas provide full darkness
-        if (distance <= brightRadiusPixels) {
-          darknessReduction = Math.max(darknessReduction, 1); // Full darkness
-        } else if (distance <= dimRadiusPixels) {
-          darknessReduction = Math.max(darknessReduction, 1); // Full darkness (same as bright)
+        if (distanceSquared <= brightRadiusSquared || distanceSquared <= dimRadiusSquared) {
+          return makeIlluminationResult(DARK);
         }
       } else {
         // Handle normal light sources (they increase illumination) - use pixel-converted radii
-        if (distance <= brightRadiusPixels) {
-          maxLightIllumination = Math.max(maxLightIllumination, 1); // Bright light
-        } else if (distance <= dimRadiusPixels) {
-          maxLightIllumination = Math.max(maxLightIllumination, 0.5); // Dim light
+        if (distanceSquared <= brightRadiusSquared) {
+          // can't return right away because darkness source trumps this
+          illumination = BRIGHT;
+        } else if (distanceSquared <= dimRadiusSquared) {
+          illumination = Math.max(illumination, DIM); // Dim light
         }
       }
     }
 
+    // If we were in a darkness source then we've already returned DARK
+    // If we find ourselves in BRIGHT illumination we can return immediately
+    if (illumination === BRIGHT) 
+      return makeIlluminationResult(BRIGHT);
+
     // Check light-emitting tokens using cached results
     const lightEmittingTokens = this.#getLightEmittingTokens();
-
     for (const tokenInfo of lightEmittingTokens) {
-      const distance = Math.sqrt(
-        Math.pow(position.x - tokenInfo.x, 2) + Math.pow(position.y - tokenInfo.y, 2),
-      );
+      const distanceSquared = 
+        Math.pow(position.x - tokenInfo.x, 2) + Math.pow(position.y - tokenInfo.y, 2) ;
 
-      // Convert token radii from scene units to pixels (same as dedicated light sources)
-      const pixelsPerGridSquare = canvas.grid?.size || 100;
-      const feetPerGridSquare = canvas.scene?.grid?.distance || 5;
-      const pixelsPerFoot = pixelsPerGridSquare / feetPerGridSquare;
+      const brightRadiusSquared = Math.pow(brightRadius * pixelsPerUnit, 2);
+      const dimRadiusSquared = Math.pow(dimRadius * pixelsPerUnit, 2);
 
-      const brightRadiusPixels = tokenInfo.brightRadius * pixelsPerFoot;
-      const dimRadiusPixels = tokenInfo.dimRadius * pixelsPerFoot;
-
-      if (distance <= brightRadiusPixels) {
-        maxLightIllumination = Math.max(maxLightIllumination, 1); // Bright light
-      } else if (distance <= dimRadiusPixels) {
-        maxLightIllumination = Math.max(maxLightIllumination, 0.5); // Dim light
+      if (distanceSquared <= brightRadiusSquared) {
+        return makeIlluminationResult(BRIGHT);
+      } else if (distanceSquared <= dimRadiusSquared) {
+        // no need for max here since BRIGHT case already returned
+        illumination = DIM;
       }
     }
 
-  // Final illumination is the maximum of base and light sources, reduced by darkness sources
-    let finalIllumination = Math.max(baseIllumination, maxLightIllumination);
-
-    // Apply darkness reduction (darkness sources reduce illumination)
-    finalIllumination = Math.max(0, finalIllumination - darknessReduction);
-
-    // Determine light level category
-    let lightLevel;
-    if (finalIllumination >= 1) {
-      lightLevel = 'bright';
-    } else if (finalIllumination >= 0.5) {
-      lightLevel = 'dim';
-    } else {
-      lightLevel = 'darkness';
-    }
-
-    const result = {
-      level: lightLevel,
-      illumination: finalIllumination,
-      sceneDarkness,
-      baseIllumination,
-      lightIllumination: maxLightIllumination,
-    };
-
-    return result;
+    return makeIlluminationResult(illumination);
   }
 
   /**

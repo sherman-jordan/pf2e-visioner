@@ -42,7 +42,7 @@ export class SneakSpeedService {
       const actor = SneakSpeedService.resolveActor(tokenOrActor);
       if (!actor) return;
 
-      // Check feats for speed multiplier and flat distance bonus
+      // Check feats for speed multiplier and flat distance bonus (for display only)
       let multiplier = 0.5;
       let bonusFeet = 0;
       try {
@@ -53,43 +53,27 @@ export class SneakSpeedService {
         // ignore and keep default
       }
 
-  // If already applied (either flag or effect), do nothing
-      const alreadyStored = actor.getFlag?.(MODULE_ID, ORIGINAL_SPEED_FLAG);
+      // If already applied effect, do nothing
       const existingEffectId = actor.getFlag?.(MODULE_ID, EFFECT_ID_FLAG);
-      if ((alreadyStored !== undefined && alreadyStored !== null) || existingEffectId) return;
+      if (existingEffectId) return;
 
       const current = Number(actor.system?.attributes?.speed?.value ?? 0);
       if (!Number.isFinite(current) || current <= 0) return;
 
-  // If multiplier is 1.0 (full speed), do not create effect or change speed
-  if (multiplier === 1.0) return;
-
-  // Store original current value for safe restoration
-      await actor.setFlag(MODULE_ID, ORIGINAL_SPEED_FLAG, current);
-
       // Try to use a PF2e effect with ActiveEffectLike to multiply base speed by the calculated multiplier
       try {
         if (typeof actor.createEmbeddedDocuments === 'function') {
-          // Build a helpful label that also communicates the estimated max distance this action
+          // Build a helpful label that communicates the estimated max distance for this Sneak action
           const base = current;
           const raw = Math.floor(base * multiplier) + (Number.isFinite(bonusFeet) ? bonusFeet : 0);
           const maxFeet = Math.min(base, raw);
-          const baseLabel = multiplier === 0.5 ? 'Sneaking (Halved Speed)' : `Sneaking (Speed x${multiplier})`;
-          const extra = maxFeet > 0 ? ` · Max ${maxFeet} ft${bonusFeet > 0 ? ` (+${bonusFeet} ft feat bonus)` : ''}` : '';
-          const label = `${baseLabel}${extra}`;
+          const label = `Sneaking · Max ${maxFeet} ft${bonusFeet > 0 ? ` (+${bonusFeet} ft feat bonus)` : ''}`;
           const effectData = {
             name: label,
             type: 'effect',
             img: 'icons/creatures/mammals/cat-hunched-glowing-red.webp',
             system: {
-              rules: [
-                {
-                  key: 'ActiveEffectLike',
-                  path: 'system.attributes.speed.value',
-                  mode: 'multiply',
-                  value: multiplier,
-                },
-              ],
+              rules: [],
               tokenIcon: { show: false },
               // Keep duration flexible; we’ll remove explicitly on restore
               duration: { unit: 'unlimited' },
@@ -104,13 +88,8 @@ export class SneakSpeedService {
           }
         }
       } catch (effectErr) {
-        // Fall through to direct update
-        console.debug('PF2E Visioner | Could not create effect, falling back to direct speed update:', effectErr);
+        console.error('PF2E Visioner | Could not create Sneak effect (continuing):', effectErr);
       }
-
-      // Fallback: directly update the base speed (minimum 5 ft)
-      const newSpeed = Math.max(5, Math.floor(current * multiplier));
-      await actor.update({ 'system.attributes.speed.value': newSpeed });
     } catch (error) {
       console.warn('PF2E Visioner | Failed to apply sneak walk speed:', error);
     }
@@ -139,16 +118,9 @@ export class SneakSpeedService {
       } catch (e) {
         console.debug('PF2E Visioner | Failed removing sneak speed effect (continuing):', e);
       }
-
-      // Restore original speed if we directly modified it
+      // Clear legacy original speed flag if present (backward compatibility)
       const original = actor.getFlag?.(MODULE_ID, ORIGINAL_SPEED_FLAG);
       if (original !== undefined && original !== null) {
-        try {
-          await actor.update({ 'system.attributes.speed.value': original });
-        } catch (e) {
-          // If update fails, at least clear the flag to avoid stale state
-          console.debug('PF2E Visioner | Failed to restore speed directly (may be effect-driven):', e);
-        }
         await actor.unsetFlag(MODULE_ID, ORIGINAL_SPEED_FLAG);
       }
     } catch (error) {

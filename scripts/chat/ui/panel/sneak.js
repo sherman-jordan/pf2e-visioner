@@ -46,15 +46,14 @@ export function buildSneakPanel(actionData = {}, message = null) {
     const hasStartedSneak = chatMessage?.flags?.['pf2e-visioner']?.sneakStartStates;
     const buttonClass = 'visioner-btn-sneak';
     const disabledAttr = hasStartedSneak ? 'disabled' : '';
-    const tooltip = hasStartedSneak
-      ? 'Sneak already started. Waiting for GM to open results.'
-      : 'Start sneaking: capture current visibility and cover states';
+    const buttonText = hasStartedSneak ? 'Let the GM know when your Sneak movement is complete' : 'Start Sneak';
+
     actionButtonsHtml = `
       <button type="button" 
               class="visioner-btn ${buttonClass}"
               data-action="start-sneak"
-              data-tooltip="${tooltip}" ${disabledAttr}>
-        <i class="fas fa-mask"></i> Start Sneak
+              ${disabledAttr}>
+        <i class="fas fa-mask"></i> ${buttonText}
       </button>`;
   }
 

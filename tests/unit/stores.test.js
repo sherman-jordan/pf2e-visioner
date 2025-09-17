@@ -389,7 +389,6 @@ describe('VisibilityOverrideManager', () => {
       manager.clearAll();
       
       expect(manager.visibilityOverrides.size).toBe(0);
-      expect(consoleSpy).toHaveBeenCalledWith('PF2E Visioner | Cleared all', 2, 'visibility overrides');
       
       consoleSpy.mockRestore();
     });

@@ -145,10 +145,31 @@ export class EventDrivenVisibilitySystem {
 
     // Strictly skip processing for excluded tokens
     const isHidden = changes.hidden !== undefined ? changes.hidden : tokenDoc.hidden;
-    if (isHidden) return;
+    if (isHidden) {
+      // Carve-out: if this token is currently sneaking and moved, still queue override validation
+      try {
+        const tokHidden = canvas.tokens?.get?.(tokenDoc.id);
+        const positionChangedHidden = changes.x !== undefined || changes.y !== undefined;
+        const isSneakingHidden = tokHidden?.document?.getFlag?.(MODULE_ID, 'sneak-active');
+        if (isSneakingHidden && positionChangedHidden) {
+          try { globalThis.game = globalThis.game || {}; game.pf2eVisioner = game.pf2eVisioner || {}; game.pf2eVisioner.lastMovedTokenId = tokenDoc.id; } catch { }
+          this.#queueOverrideValidation(tokenDoc.id);
+        }
+      } catch { /* best-effort */ }
+      return;
+    }
     try {
       const tok = canvas.tokens?.get?.(tokenDoc.id);
-      if (tok && this.#isExcludedToken(tok)) return;
+      if (tok && this.#isExcludedToken(tok)) {
+        // Carve-out: if token is excluded due to sneaking, still queue override validation on movement
+        const positionChangedExcluded = changes.x !== undefined || changes.y !== undefined;
+        const isSneakingExcluded = tok?.document?.getFlag?.(MODULE_ID, 'sneak-active');
+        if (isSneakingExcluded && positionChangedExcluded) {
+          try { globalThis.game = globalThis.game || {}; game.pf2eVisioner = game.pf2eVisioner || {}; game.pf2eVisioner.lastMovedTokenId = tokenDoc.id; } catch { }
+          this.#queueOverrideValidation(tokenDoc.id);
+        }
+        return;
+      }
     } catch { /* ignore */ }
 
     // Check what actually changed
@@ -1284,8 +1305,69 @@ export class EventDrivenVisibilitySystem {
       return;
     }
     // Skip validation for excluded tokens (hidden, fails testVisibility, sneak-active)
+    // Special handling: if the token is sneak-active, we still want to surface awareness for
+    // observer-side AVS overrides (i.e., where the sneaking token is the observer), but we do not
+    // show any target-side overrides for the sneaking token.
     if (this.#isExcludedToken(movedToken)) {
-      return { overrides: [], __showAwareness: false };
+      let isSneaking = false;
+      try {
+        isSneaking = !!movedToken.document.getFlag(MODULE_ID, 'sneak-active');
+      } catch { /* noop */ }
+
+      if (!isSneaking) {
+        return { overrides: [], __showAwareness: false };
+      }
+
+      // Build awareness from flags on other tokens where mover is OBSERVER -> "as Observer" only
+      const awareness = [];
+      try {
+        const allTokens = canvas.tokens?.placeables || [];
+        for (const t of allTokens) {
+          if (!t?.document || t.id === movedTokenId) continue;
+          // Exclude Foundry-hidden tokens for awareness, but do not require full inclusion tests here
+          if (t.document.hidden) continue;
+          const fk = `avs-override-from-${movedTokenId}`;
+          const fd = t.document.flags['pf2e-visioner']?.[fk];
+          if (!fd) continue;
+
+          // Best-effort compute current states ignoring overrides; if unavailable, let defaults apply
+          let currentVisibility = undefined;
+          let currentCover = undefined;
+          try {
+            let visibility;
+            try {
+              const { optimizedVisibilityCalculator } = await import('./VisibilityCalculator.js');
+              if (typeof optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides === 'function') {
+                visibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(movedToken, t);
+              } else {
+                visibility = await this.calculateVisibility(movedToken, t);
+              }
+            } catch {
+              visibility = await this.calculateVisibility(movedToken, t);
+            }
+            currentVisibility = visibility;
+            const { CoverDetector } = await import('../../cover/auto-cover/CoverDetector.js');
+            const coverDetector = new CoverDetector();
+            const observerPos = this.#getTokenPosition(movedToken);
+            currentCover = coverDetector.detectFromPoint(observerPos, t);
+          } catch { /* best effort only */ }
+
+          awareness.push({
+            observerId: movedTokenId,
+            targetId: t.id,
+            observerName: movedToken.name,
+            targetName: t.name,
+            state: fd.state,
+            hasCover: fd.hasCover,
+            hasConcealment: fd.hasConcealment,
+            expectedCover: fd.expectedCover,
+            currentVisibility,
+            currentCover,
+          });
+        }
+      } catch { /* noop */ }
+
+      return { overrides: awareness, __showAwareness: awareness.length > 0 };
     }
 
     const overridesToCheck = [];

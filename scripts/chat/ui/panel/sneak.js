@@ -40,6 +40,22 @@ export function buildSneakPanel(actionData = {}, message = null) {
           <i class="fas fa-mask"></i> Start Sneak
         </button>`;
     }
+  } else {
+    // Players: Only allow "Start Sneak"; do not show results/apply buttons
+    const chatMessage = message || actionData?.message || game.messages.get(actionData?.messageId);
+    const hasStartedSneak = chatMessage?.flags?.['pf2e-visioner']?.sneakStartStates;
+    const buttonClass = 'visioner-btn-sneak';
+    const disabledAttr = hasStartedSneak ? 'disabled' : '';
+    const tooltip = hasStartedSneak
+      ? 'Sneak already started. Waiting for GM to open results.'
+      : 'Start sneaking: capture current visibility and cover states';
+    actionButtonsHtml = `
+      <button type="button" 
+              class="visioner-btn ${buttonClass}"
+              data-action="start-sneak"
+              data-tooltip="${tooltip}" ${disabledAttr}>
+        <i class="fas fa-mask"></i> Start Sneak
+      </button>`;
   }
 
   const hasStartedSneak = (message || actionData?.message || game.messages.get(actionData?.messageId))?.flags?.['pf2e-visioner']?.sneakStartStates;

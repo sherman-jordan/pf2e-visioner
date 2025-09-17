@@ -38,6 +38,16 @@ export class SneakDialogService {
         return;
       }
 
+      // Permission: Only the GM or the token's owner can start sneak
+      try {
+        const isOwner = !!token?.isOwner || !!token?.actor?.ownership?.[game.userId] || !!token?.document?.isOwner;
+        if (!game.user.isGM && !isOwner) {
+          const { notify } = await import('../infra/notifications.js');
+          notify.warn("You don't have permission to start Sneak for this token.");
+          return;
+        }
+  } catch {}
+
       // Get message and messageId from actionData
       const messageId = actionData.messageId || actionData.message?.id;
       const message = messageId ? game.messages.get(messageId) : null;

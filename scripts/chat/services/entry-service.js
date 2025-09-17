@@ -28,7 +28,7 @@ export async function handleRenderChatMessage(message, html) {
       // Always prefer explicit PF2e target flag from the player's message; then their current target; then context
       try {
         targetId = message?.flags?.pf2e?.target?.token || null;
-      } catch (_) {}
+  } catch {}
       if (!targetId && game.user.targets?.size)
         targetId = Array.from(game.user.targets)[0]?.id || null;
       if (!targetId) targetId = actionData.context?.target?.token || null;
@@ -53,7 +53,7 @@ export async function handleRenderChatMessage(message, html) {
               import('../infra/notifications.js').then(({ notify }) =>
                 notify?.warn?.('Point Out requires a selected target token.'),
               );
-            } catch (_) {}
+            } catch {}
           }
         }
       } else {
@@ -65,7 +65,7 @@ export async function handleRenderChatMessage(message, html) {
     } catch (e) {
       try {
         console.warn('[PF2E Visioner] Failed to auto-forward Point Out to GM:', e);
-      } catch (_) {}
+  } catch {}
     }
     processedMessages.add(message.id);
     return;
@@ -78,7 +78,7 @@ export async function handleRenderChatMessage(message, html) {
       // Check for target using same logic as player messages
       try {
         targetId = message?.flags?.pf2e?.target?.token || null;
-      } catch (_) {}
+  } catch {}
       if (!targetId && game.user.targets?.size)
         targetId = Array.from(game.user.targets)[0]?.id || null;
       if (!targetId) targetId = actionData.context?.target?.token || null;
@@ -95,12 +95,12 @@ export async function handleRenderChatMessage(message, html) {
               showPointOutWarningDialog(false); // Pass isGM = false since it's for the GM's own action (show player-style message)
             },
           );
-        } catch (_) {
+  } catch {
           try {
             import('../services/infra/notifications.js').then(({ notify }) =>
               notify?.warn?.('Point Out requires a selected target token.'),
             );
-          } catch (_) {}
+          } catch {}
         }
       } else if (targetId) {
         // GM has a valid target - set up message flags for button display (replicate socket handler logic)
@@ -128,7 +128,7 @@ export async function handleRenderChatMessage(message, html) {
                 return vis === 'hidden' || vis === 'undetected';
               });
               hasTargets = cannotSee.length > 0;
-            } catch (_) {}
+            } catch {}
 
             // Update message flags to enable button display (match socket handler structure)
             await message.update({
@@ -143,7 +143,7 @@ export async function handleRenderChatMessage(message, html) {
             // Re-render the message to show the automation buttons
             try {
               await message.render(true);
-            } catch (_) {}
+            } catch {}
           }
         } catch (e) {
           console.warn('[PF2E Visioner] Failed to set up GM Point Out flags:', e);
@@ -168,7 +168,7 @@ export async function handleRenderChatMessage(message, html) {
         if (!hasValidTarget && message?.flags?.['pf2e-visioner']?.pointOut?.targetTokenId) {
           hasValidTarget = true;
         }
-      } catch (_) {}
+  } catch {}
 
       // Check message age to only show warning for recent messages
       const messageAge = Date.now() - (message.timestamp || 0);
@@ -186,7 +186,7 @@ export async function handleRenderChatMessage(message, html) {
               updatedMessage?.flags?.pf2e?.target?.token ||
               updatedMessage?.flags?.['pf2e-visioner']?.pointOut?.targetTokenId
             );
-          } catch (_) {}
+          } catch {}
 
           if (stillNoTarget) {
             try {
@@ -201,7 +201,7 @@ export async function handleRenderChatMessage(message, html) {
                 import('../services/infra/notifications.js').then(({ notify }) =>
                   notify?.warn?.('Player used Point Out without selecting a target.'),
                 );
-              } catch (_) {}
+              } catch {}
             }
           }
         }, 1000); // Wait 1 second for socket processing
@@ -221,7 +221,18 @@ export async function handleRenderChatMessage(message, html) {
     actionData.actionType === 'seek' &&
     game.settings.get('pf2e-visioner', 'seekUseTemplate') &&
     message.author?.id === game.user.id;
-  if (!game.user.isGM && !isSeekTemplatePlayer) return;
+
+  // New: allow player-authored Sneak OR token owners to display the panel (for Start Sneak)
+  const isSneakPlayerAuthor =
+    !game.user.isGM && actionData.actionType === 'sneak' && message.author?.id === game.user.id;
+  const isSneakTokenOwner =
+    !game.user.isGM &&
+    actionData.actionType === 'sneak' &&
+    !!actionData.actor &&
+    (actionData.actor.isOwner || actionData.actor?.document?.isOwner);
+
+  if (!game.user.isGM && !isSeekTemplatePlayer && !isSneakPlayerAuthor && !isSneakTokenOwner)
+    return;
 
   if (processedMessages.has(message.id)) {
     if (
@@ -231,7 +242,7 @@ export async function handleRenderChatMessage(message, html) {
     ) {
       try {
         processedMessages.delete(message.id);
-      } catch (_) {}
+  } catch {}
     } else {
       // Check if Visioner UI still exists in the DOM - if not, we need to re-inject it
       // This handles cases where message updates remove our injected panels
@@ -242,7 +253,7 @@ export async function handleRenderChatMessage(message, html) {
       // UI was removed by message update, allow re-injection
       try {
         processedMessages.delete(message.id);
-      } catch (_) {}
+  } catch {}
     }
   }
 

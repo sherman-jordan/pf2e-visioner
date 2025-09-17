@@ -143,7 +143,10 @@ export async function formHandler(event, form, formData) {
       const observerUpdates = [];
       // Prepare AVS overrides per observer
       const overridesByObserver = new Map();
+      // Only include tokens that actually changed
+      const changedIds = new Set(perObserverChanges.keys());
       for (const [observerTokenId, newVisibilityState] of Object.entries(visibilityChanges)) {
+        if (!changedIds.has(observerTokenId)) continue;
         const observerToken = canvas.tokens.get(observerTokenId);
         if (!observerToken) continue;
         try {
@@ -341,7 +344,8 @@ export async function applyCurrent(event, button) {
           const changes = new Map();
           for (const [tokenId, newState] of Object.entries(obsVis)) {
             const targetToken = canvas.tokens.get(tokenId);
-            if (targetToken) {
+            // Only create override if visibility actually changes
+            if (targetToken && currentMap?.[tokenId] !== newState) {
               const expectedCover = app._savedModeData.observer?.cover?.[tokenId];
               changes.set(tokenId, {
                 target: targetToken,
@@ -361,7 +365,9 @@ export async function applyCurrent(event, button) {
         const targetUpdates = [];
         for (const [tokenId, newState] of Object.entries(obsVis)) {
           const targetToken = canvas.tokens.get(tokenId);
-          if (targetToken) targetUpdates.push({ target: targetToken, state: newState });
+          // Only push updates for actual changes
+          if (targetToken && currentMap?.[tokenId] !== newState)
+            targetUpdates.push({ target: targetToken, state: newState });
         }
         if (targetUpdates.length > 0) {
           allOperations.push(async () => {
@@ -394,6 +400,8 @@ export async function applyCurrent(event, button) {
             if (['loot', 'vehicle', 'party'].includes(observerToken?.actor?.type)) continue;
           } catch { }
           const observerVisibilityData = getVisibilityMap(observerToken) || {};
+          // Skip if no actual change
+          if (observerVisibilityData?.[app.observer.document.id] === newState) continue;
           await setVisibilityMap(observerToken, {
             ...observerVisibilityData,
             [app.observer.document.id]: newState,
@@ -606,6 +614,8 @@ export async function applyBoth(_event, _button) {
         for (const [tokenId, newState] of Object.entries(vis)) {
           const targetToken = canvas.tokens.get(tokenId);
           if (!targetToken) continue;
+          // Only create override if visibility actually changes
+          if (currentMap?.[tokenId] === newState) continue;
           const expectedCover = app._savedModeData.observer?.cover?.[tokenId];
           map.set(tokenId, {
             target: targetToken,
@@ -620,7 +630,8 @@ export async function applyBoth(_event, _button) {
       }
       for (const [tokenId, newState] of Object.entries(vis)) {
         const targetToken = canvas.tokens.get(tokenId);
-        if (targetToken) {
+        // Only push updates for actual changes
+        if (targetToken && currentMap?.[tokenId] !== newState) {
           observerVisUpdates.push({ target: targetToken, state: newState });
           visualUpdatePairs.push({
             observerId: app.observer.id,
@@ -656,6 +667,10 @@ export async function applyBoth(_event, _button) {
       const observerToken = canvas.tokens.get(observerTokenId);
       if (observerToken) {
         const observerVisibilityData = getVisibilityMap(observerToken) || {};
+        // Skip if no actual change
+        if (observerVisibilityData?.[app.observer.document.id] === newState) {
+          continue;
+        }
         await setVisibilityMap(observerToken, {
           ...observerVisibilityData,
           [app.observer.document.id]: newState,

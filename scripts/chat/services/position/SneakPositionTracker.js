@@ -59,12 +59,9 @@ export class SneakPositionTracker {
   async _initialize() {
     if (this._initialized) return;
 
-    console.debug('PF2E Visioner | Initializing SneakPositionTracker...');
 
     try {
       // Initialize dual system integration
-      const initResult = await dualSystemIntegration.initialize();
-      console.debug('PF2E Visioner | DualSystemIntegration init result:', initResult);
       this._initialized = true;
     } catch (error) {
       console.warn('PF2E Visioner | Failed to initialize SneakPositionTracker:', error);
@@ -82,12 +79,6 @@ export class SneakPositionTracker {
    */
   async captureStartPositions(sneakingToken, targets, storedStartPosition = null, options = {}) {
     await this._initialize();
-
-    console.debug('PF2E Visioner | captureStartPositions called:', {
-      sneakingToken: sneakingToken?.name,
-      targetCount: targets?.length,
-      initialized: this._initialized,
-    });
 
     if (!sneakingToken || !Array.isArray(targets)) {
       const error = new Error('Invalid parameters for captureStartPositions');
@@ -116,12 +107,10 @@ export class SneakPositionTracker {
     const positionStates = new Map();
     const timestamp = Date.now();
 
-    console.debug('PF2E Visioner | Processing', targets.length, 'targets for position capture');
 
     for (const target of targets) {
       if (!target?.document?.id) continue;
 
-      console.debug('PF2E Visioner | Processing target:', target.name);
 
       try {
         // Pass stored position data for historical distance calculation
@@ -136,7 +125,6 @@ export class SneakPositionTracker {
           captureOptions
         );
         positionStates.set(target.document.id, positionState);
-        console.debug('PF2E Visioner | Position state captured for:', target.name);
       } catch (error) {
         const errorResult = await errorHandlingService.handleSystemError(
           SYSTEM_TYPES.POSITION_TRACKER,
@@ -152,12 +140,6 @@ export class SneakPositionTracker {
         positionStates.set(target.document.id, errorState);
       }
     }
-
-    console.debug(
-      'PF2E Visioner | Position capture complete. Captured',
-      positionStates.size,
-      'position states',
-    );
     return positionStates;
   }
 
@@ -183,17 +165,6 @@ export class SneakPositionTracker {
         }
       }
 
-      // Debug logging
-      console.debug('PF2E Visioner | Capturing position state for:', {
-        sneaking: sneakingToken?.name,
-        observer: observerToken?.name,
-        initialized: this._initialized,
-        usingStoredPosition: !!options.storedSneakingPosition,
-        storedCoordinates: options.storedSneakingPosition ? 
-          `(${options.storedSneakingPosition.x}, ${options.storedSneakingPosition.y})` : 'none',
-        currentCoordinates: `(${sneakingToken?.x}, ${sneakingToken?.y})`,
-      });
-
       // Use dual system integration for safe system calls
       // Pass stored position information for accurate calculations
       const integrationOptions = {
@@ -207,7 +178,6 @@ export class SneakPositionTracker {
         integrationOptions,
       );
 
-      console.debug('PF2E Visioner | Combined state result:', combinedState);
 
       // Calculate additional position data (cached separately for performance)
       let distance = 0;
@@ -221,10 +191,8 @@ export class SneakPositionTracker {
             options.storedSneakingPosition, 
             observerToken
           );
-          console.debug('PF2E Visioner | Distance calculated using stored position:', distance);
         } else {
           distance = this._calculateDistance(sneakingToken, observerToken);
-          console.debug('PF2E Visioner | Distance calculated:', distance);
         }
       } catch (error) {
         console.warn('PF2E Visioner | Distance calculation failed:', error);
@@ -232,14 +200,12 @@ export class SneakPositionTracker {
 
       try {
         hasLineOfSight = this._hasLineOfSight(sneakingToken, observerToken);
-        console.debug('PF2E Visioner | Line of sight calculated:', hasLineOfSight);
       } catch (error) {
         console.warn('PF2E Visioner | Line of sight calculation failed:', error);
       }
 
       try {
         lightingConditions = this._getLightingConditions(sneakingToken, observerToken);
-        console.debug('PF2E Visioner | Lighting conditions calculated:', lightingConditions);
       } catch (error) {
         console.warn('PF2E Visioner | Lighting calculation failed:', error);
       }
@@ -278,8 +244,6 @@ export class SneakPositionTracker {
         systemErrors: combinedState.warnings,
       };
 
-      console.debug('PF2E Visioner | Position state created:', positionState);
-
       // Cache the result with appropriate importance
       const importance = this._determinePositionImportance(positionState);
       positionCacheManager.cacheWithImportance(
@@ -289,7 +253,6 @@ export class SneakPositionTracker {
         { ttl: options.cacheTTL || 30000 },
       );
 
-      console.debug('PF2E Visioner | Position state cached and returning');
       return positionState;
     } catch (error) {
       console.warn('PF2E Visioner | Failed to capture position state:', error);

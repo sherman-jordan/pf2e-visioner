@@ -829,23 +829,7 @@ function injectPF2eVisionerBox(app, root) {
   else if (app?.object && (app.object.documentName === 'Actor' || tokenDoc?.documentName === 'Actor'))
     actor = app.object || tokenDoc; // actor sheet or prototype where document is the actor
 
-  // Diagnostic logging to help debug PrototypeTokenConfigPF2e injection issues
-  try {
-    console.debug('[pf2e-visioner] injectPF2eVisionerBox called', {
-      appConstructor: app?.constructor?.name,
-      appObjectPresent: !!app?.object,
-      documentName: app?.document?.documentName,
-      tokenDocPresent: !!tokenDoc,
-      tokenDocDocumentName: tokenDoc?.documentName,
-      actorId: actor?.id,
-      actorType: actor?.type,
-      actorHasPrototypeToken: !!actor?.prototypeToken,
-      prototypeFlagsPresent: !!actor?.prototypeToken?.flags?.[MODULE_ID],
-    });
-  } catch (_) {}
-
   if (!actor) {
-    try { console.debug('[pf2e-visioner] injectPF2eVisionerBox: no actor resolved', { app, tokenDoc }); } catch(_) {}
     return;
   }
 

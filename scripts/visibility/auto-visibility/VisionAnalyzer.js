@@ -158,7 +158,7 @@ export class VisionAnalyzer {
         hasLowLightVision = true;
         lowLightRange = flags['low-light-vision'].range || Infinity;
       }
-    } catch (error) {
+  } catch {
     }
 
     const result = {
@@ -180,10 +180,15 @@ export class VisionAnalyzer {
    * @param {Token} target
    * @returns {boolean}
    */
-  hasLineOfSight(observer, target) {
+  hasLineOfSight(observer, target, raw = false) {
     if (!observer || !target) return false;
 
     try {
+      if (raw) {
+        const res = this.#hasDirectLineOfSight(observer, target);
+
+        return res;
+      }
       // Special handling for sneaking tokens - bypass Foundry's detection system
       // to avoid interference from detection wrapper
       const isTargetSneaking = target.document.getFlag('pf2e-visioner', 'sneak-active');
@@ -196,10 +201,12 @@ export class VisionAnalyzer {
       }
       
       // For normal tokens, use FoundryVTT's built-in visibility testing
-      return canvas.visibility.testVisibility(target.center, {
+      const result = canvas.visibility.testVisibility(target.center, {
         tolerance: 0,
         object: target,
       });
+
+      return result;
     } catch (error) {
       console.warn(`${MODULE_ID} | Error testing line of sight:`, error);
       return false;
@@ -215,47 +222,12 @@ export class VisionAnalyzer {
    */
   #hasDirectLineOfSight(observer, target) {
     try {
-      // For sneaking tokens, we need to be more careful about line of sight
-      // Let's use a more comprehensive approach that mimics Foundry's testVisibility
-      // but without the detection mode interference
-      
-      // First, check if the target is within the observer's vision range
-      const distance = Math.hypot(
-        target.center.x - observer.center.x,
-        target.center.y - observer.center.y
-      );
-      
-      // Get observer's vision capabilities
-      const observerVision = this.getVisionCapabilities(observer);
-      
-      // Check if target is within vision range
-      let maxRange = Infinity;
-      if (observerVision.hasDarkvision) {
-        maxRange = Math.min(maxRange, observerVision.darkvisionRange * canvas.grid.size);
-      }
-      if (observerVision.hasLowLightVision) {
-        maxRange = Math.min(maxRange, observerVision.lowLightRange * canvas.grid.size);
-      }
-      
-      if (distance > maxRange) {
-        return false; // Target is too far away
-      }
-      
-      // Use Foundry's core ray casting for walls, but bypass detection modes
-      const ray = new foundry.canvas.geometry.Ray(observer.center, target.center);
-      const walls = canvas.walls?.placeables || [];
-      
-      // Check if the ray intersects any walls that would block vision
-      for (const wall of walls) {
-        if (wall.document.door === CONST.WALL_DOOR_TYPES.NONE && 
-            wall.document.type === CONST.WALL_TYPES.NORMAL) {
-          if (ray.intersectSegment(wall.coords)) {
-            return false; // Wall blocks line of sight
-          }
-        }
-      }
-      
-      return true; // No walls block the line of sight
+      // Use Foundry's walls collision test for sight. This checks only topology (walls),
+      // bypassing detection modes/wrappers that affect canvas.visibility.testVisibility.
+  const RayClass = foundry?.canvas?.geometry?.Ray || foundry?.utils?.Ray;
+      const ray = new RayClass(observer.center, target.center);
+      const blocked = canvas.walls?.checkCollision?.(ray, { type: 'sight' }) ?? false;
+      return !blocked;
     } catch (error) {
       console.warn(`${MODULE_ID} | Error in direct line of sight check:`, error);
       // Fallback to Foundry's method if direct check fails
@@ -296,7 +268,6 @@ export class VisionAnalyzer {
    * @returns {string} Visibility state
    */
   determineVisibilityFromLighting(lightLevel, observerVision, target = null) {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
 
     // Blinded: Can't see anything (handled by hasVision = false)
     if (!observerVision.hasVision) {
@@ -312,27 +283,33 @@ export class VisionAnalyzer {
       return 'concealed';
     }
 
+    let result;
     switch (lightLevel.level) {
       case 'bright':
-        return 'observed';
+        result = 'observed';
+        break;
 
       case 'dim':
         if (observerVision.hasLowLightVision || observerVision.hasDarkvision) {
-          return 'observed';
+          result = 'observed';
         } else {
-          return 'concealed';
+          result = 'concealed';
         }
+        break;
 
       case 'darkness':
         if (observerVision.hasDarkvision) {
-          return 'observed';
+          result = 'observed';
         } else {
-          return 'hidden';
+          result = 'hidden';
         }
+        break;
 
       default:
-        return 'observed';
+        result = 'observed';
     }
+
+    return result;
   }
 
   /**
@@ -396,7 +373,7 @@ export class VisionAnalyzer {
           return actor.conditions.some(
             (condition) => condition.slug === conditionSlug || condition.key === conditionSlug,
           );
-        } catch (e) {
+        } catch {
           // Ignore iteration errors
         }
       }

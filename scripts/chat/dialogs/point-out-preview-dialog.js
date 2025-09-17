@@ -50,6 +50,12 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     this.actionData = actionData;
     this.bulkActionState = 'initial';
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
+    // Visual filter default from per-user setting
+    try {
+      this.hideFoundryHidden = game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+    } catch {
+      this.hideFoundryHidden = true;
+    }
 
     // Set global reference
     currentPointOutDialog = this;
@@ -72,7 +78,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
 
     const cfg = (s) => this.visibilityConfig(s);
 
-    const processedOutcomes = filteredOutcomes.map((outcome) => {
+  let processedOutcomes = filteredOutcomes.map((outcome) => {
       const desired = getDesiredOverrideStatesForAction('point-out');
       const availableStates = { hidden: this.buildOverrideStates(desired, outcome)[0] };
 
@@ -92,6 +98,13 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       };
     });
 
+    // Visual filtering: hide Foundry-hidden tokens from display if enabled
+    try {
+      if (this.hideFoundryHidden) {
+        processedOutcomes = processedOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+      }
+    } catch { }
+
     // Update original outcomes with hasActionableChange for Apply All button logic
     processedOutcomes.forEach((processedOutcome, index) => {
       if (this.outcomes[index]) {
@@ -103,6 +116,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     context.actorImage = this.resolveTokenImage(this.actorToken);
     context.outcomes = processedOutcomes;
     context.changes = this.changes;
+  context.hideFoundryHidden = !!this.hideFoundryHidden;
     Object.assign(context, this.buildCommonContext(this.outcomes));
 
     // Add target name and DC if all outcomes point to the same target
@@ -120,14 +134,14 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     return context;
   }
 
-  async _renderHTML(context, options) {
+  async _renderHTML(context) {
     return await foundry.applications.handlebars.renderTemplate(
       this.constructor.PARTS.content.template,
       context,
     );
   }
 
-  _replaceHTML(result, content, options) {
+  _replaceHTML(result, content) {
     content.innerHTML = result;
     return content;
   }
@@ -137,6 +151,19 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     this.updateBulkActionButtons();
     this.addIconClickHandlers();
     this.markInitialSelections();
+
+    // Wire Hide Foundry-hidden visual filter toggle
+    try {
+      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
+      if (cbh) {
+        cbh.onchange = null;
+        cbh.addEventListener('change', async () => {
+          this.hideFoundryHidden = !!cbh.checked;
+          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
+          this.render({ force: true });
+        });
+      }
+    } catch { }
 
     // Ping the exact token pointed at in the chat message (speaker's target), if available
     try {
@@ -156,11 +183,11 @@ export class PointOutPreviewDialog extends BaseActionDialog {
           import('../services/gm-ping.js').then(({ pingTokenCenter }) => {
             try {
               pingTokenCenter(token, 'Point Out Target');
-            } catch (_) {}
+            } catch { }
           });
         }
       }
-    } catch (_) {}
+  } catch { }
   }
 
   // Token id in Point Out outcomes is under `target`
@@ -169,14 +196,14 @@ export class PointOutPreviewDialog extends BaseActionDialog {
   }
 
   // Point Out specific action methods
-  static async _onClose(event, button) {
+  static async _onClose() {
     const app = currentPointOutDialog;
     if (app) {
       app.close();
     }
   }
 
-  static async _onApplyAll(event, button) {
+  static async _onApplyAll() {
     const app = currentPointOutDialog;
     if (!app || app.bulkActionState === 'applied') {
       if (app.bulkActionState === 'applied') {
@@ -200,7 +227,14 @@ export class PointOutPreviewDialog extends BaseActionDialog {
           app.ignoreAllies,
           'target',
         );
-      } catch (_) {}
+      } catch { }
+
+      // Respect Hide Foundry-hidden toggle for Apply All
+      try {
+        if (app.hideFoundryHidden) {
+          filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+        }
+      } catch { }
 
       // Only apply changes to filtered outcomes
       const changedOutcomes = filteredOutcomes.filter(
@@ -245,8 +279,8 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     }
   }
 
-  static async _onRevertAll(event, button) {
-    const app = currentPointOutDialog;
+  static async _onRevertAll() {
+  const app = currentPointOutDialog;
     if (!app || app.bulkActionState === 'reverted') {
       if (app.bulkActionState === 'reverted') {
         notify.warn(
@@ -257,31 +291,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     }
 
     try {
-      // Filter outcomes based on encounter filter using shared helper
-      let filteredOutcomes = filterOutcomesByEncounter(app.changes, app.encounterOnly, 'target');
-
-      // Apply ally filtering if ignore allies is enabled
-      try {
-        const { filterOutcomesByAllies } = await import('../services/infra/shared-utils.js');
-        filteredOutcomes = filterOutcomesByAllies(
-          filteredOutcomes,
-          app.actorToken,
-          app.ignoreAllies,
-          'target',
-        );
-      } catch (_) {}
-
-      // Only revert changes to filtered outcomes
-      const changedOutcomes = filteredOutcomes.map((change) => {
-        // Make sure to include targetToken in the change
-        const originalOutcome = app.outcomes.find((o) => o.target.id === change.target.id);
-        return {
-          ...change,
-          targetToken: originalOutcome?.targetToken || change.targetToken,
-          newVisibility: change.oldVisibility || change.currentVisibility, // Revert to original state
-        };
-      });
-
+      // Build revert data internally in the service; no need to pre-filter here
       const { revertNowPointOut } = await import('../services/index.js');
       await revertNowPointOut(app.actionData, { html: () => {}, attr: () => {} });
 
@@ -297,7 +307,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     }
   }
 
-  static async _onToggleEncounterFilter(event, button) {
+  static async _onToggleEncounterFilter() {
     const app = currentPointOutDialog;
     if (!app) return;
 
@@ -356,12 +366,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
       return;
     }
 
-    const revertChange = {
-      target: outcome.target,
-      targetToken: outcome.targetToken, // Include the targetToken for Point Out
-      newVisibility: outcome.oldVisibility || outcome.currentVisibility,
-      changed: true,
-    };
+    // Service will infer the original state; no local revert payload needed here
 
     try {
       const { revertNowPointOut } = await import('../services/index.js');
@@ -385,7 +390,7 @@ export class PointOutPreviewDialog extends BaseActionDialog {
     if (this._selectionHookId) {
       try {
         Hooks.off('controlToken', this._selectionHookId);
-      } catch (_) {}
+  } catch { }
       this._selectionHookId = null;
     }
     currentPointOutDialog = null;

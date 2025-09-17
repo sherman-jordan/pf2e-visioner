@@ -49,10 +49,6 @@ export class UnifiedSystemIntegration {
       this._autoCoverAvailable = autoCoverSystem?.isEnabled?.() || false;
       
       this._initialized = true;
-      console.debug('PF2E Visioner | UnifiedSystemIntegration initialized:', {
-        avs: this._avsAvailable,
-        autoCover: this._autoCoverAvailable
-      });
       
       return true;
     } catch (error) {
@@ -227,7 +223,7 @@ export class UnifiedSystemIntegration {
 
       return null;
     } catch (error) {
-      console.debug('PF2E Visioner | AVS detection failed:', error);
+      console.error('PF2E Visioner | AVS detection failed:', error);
       return null;
     }
   }
@@ -258,7 +254,7 @@ export class UnifiedSystemIntegration {
 
       return null;
     } catch (error) {
-      console.debug('PF2E Visioner | Auto-Cover detection failed:', error);
+      console.error('PF2E Visioner | Auto-Cover detection failed:', error);
       return null;
     }
   }
@@ -286,7 +282,7 @@ export class UnifiedSystemIntegration {
       
       return visibility;
     } catch (error) {
-      console.debug('PF2E Visioner | Stored position visibility detection failed:', error);
+      console.error('PF2E Visioner | Stored position visibility detection failed:', error);
       return null;
     }
   }
@@ -314,7 +310,7 @@ export class UnifiedSystemIntegration {
       
       return cover;
     } catch (error) {
-      console.debug('PF2E Visioner | Stored position cover detection failed:', error);
+      console.error('PF2E Visioner | Stored position cover detection failed:', error);
       return null;
     }
   }

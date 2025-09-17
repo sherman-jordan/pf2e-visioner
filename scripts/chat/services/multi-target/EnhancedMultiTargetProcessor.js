@@ -111,10 +111,7 @@ export class EnhancedMultiTargetProcessor {
       await this._cacheResults(sneakingToken, targets, enhancedOutcomes);
       
       await this._updateProgress(progressTracker, 100, 'Complete');
-      
-      const processingTime = Date.now() - startTime;
-      console.debug(`PF2E Visioner | Multi-target processing completed in ${processingTime}ms for ${targets.length} targets`);
-      
+            
       return enhancedOutcomes;
       
     } catch (error) {
@@ -142,7 +139,6 @@ export class EnhancedMultiTargetProcessor {
       const cacheKey = this._generateCacheKey(sneakingToken, targets);
       const cached = this._getFromCache(cacheKey);
       if (cached) {
-        console.debug('PF2E Visioner | Using cached position states');
         await this._updateProgress(progressTracker, 25, 'Using cached positions');
         return cached.positions;
       }
@@ -542,7 +538,7 @@ export class EnhancedMultiTargetProcessor {
       }
     } catch (error) {
       // Fallback to console logging if UI progress fails
-      console.debug(`PF2E Visioner | Progress [${progressId}]: ${progressData.percentage}% - ${progressData.message}`);
+      console.error(`PF2E Visioner | Progress [${progressId}]: ${progressData.percentage}% - ${progressData.message}`);
     }
   }
 
@@ -595,10 +591,6 @@ export class EnhancedMultiTargetProcessor {
     
     for (const key of toDelete) {
       this._positionCache.delete(key);
-    }
-    
-    if (toDelete.length > 0) {
-      console.debug(`PF2E Visioner | Cleaned up ${toDelete.length} expired cache entries`);
     }
   }
 
@@ -835,7 +827,6 @@ export class EnhancedMultiTargetProcessor {
    */
   clearCache() {
     this._positionCache.clear();
-    console.debug('PF2E Visioner | Multi-target processor cache cleared');
   }
 
   /**
@@ -866,8 +857,6 @@ export class EnhancedMultiTargetProcessor {
     if (typeof config.maxCacheSize === 'number' && config.maxCacheSize > 0) {
       this._maxCacheSize = config.maxCacheSize;
     }
-    
-    console.debug('PF2E Visioner | Multi-target processor configuration updated:', config);
   }
 }
 

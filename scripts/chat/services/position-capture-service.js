@@ -26,11 +26,8 @@ export async function captureRollTimePosition(message) {
     // Get the sneaking token
     const sneakingToken = actionData.actor;
     if (!sneakingToken) {
-      console.debug('PF2E Visioner | No sneaking token found for position capture');
       return;
     }
-
-    console.debug('PF2E Visioner | Capturing roll-time position for:', sneakingToken.name);
 
     // Capture current position and store it in the message flags
     const rollTimePosition = {
@@ -50,7 +47,6 @@ export async function captureRollTimePosition(message) {
     if (!message.flags['pf2e-visioner']) message.flags['pf2e-visioner'] = {};
     message.flags['pf2e-visioner'].rollTimePosition = rollTimePosition;
 
-    console.debug('PF2E Visioner | Roll-time position captured and stored in flags:', rollTimePosition);
   } catch (error) {
     console.warn('PF2E Visioner | Error capturing roll-time position:', error);
   }

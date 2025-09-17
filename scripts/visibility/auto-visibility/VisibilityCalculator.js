@@ -3,6 +3,8 @@
  * Bypasses all throttling and circuit breaking for immediate processing
  */
 
+import { MODULE_ID } from '../../constants.js';
+
 
 export class VisibilityCalculator {
   /** @type {VisibilityCalculator} */
@@ -54,7 +56,7 @@ export class VisibilityCalculator {
    * @returns {Promise<string>} Visibility state
    */
   async calculateVisibility(observer, target) {
-    return this.calculateVisibilityWithPosition(observer, target, null, null);
+    return this.calculateVisibilityWithPosition(observer, target, null, null, false);
   }
 
   /**
@@ -68,6 +70,7 @@ export class VisibilityCalculator {
     if (!observer?.actor || !target?.actor) {
       return 'observed';
     }
+
     // Temporarily remove any AVS override flag for this observer-target pair
     const targetFlags = target?.document?.flags?.['pf2e-visioner'] || {};
     const observerFlagKey = `avs-override-from-${observer?.document?.id}`;
@@ -79,13 +82,15 @@ export class VisibilityCalculator {
     }
     let result;
     try {
-      result = await this.calculateVisibility(observer, target);
+      // Use raw LoS to bypass detection wrappers for the override-free calculation
+      result = await this.calculateVisibilityWithPosition(observer, target, null, null, true);
     } finally {
       // Restore override if it was present
       if (removedOverride) {
         target.document.flags['pf2e-visioner'][observerFlagKey] = removedOverride;
       }
     }
+    
     return result;
   }
 
@@ -102,12 +107,16 @@ export class VisibilityCalculator {
     target,
     _observerPositionOverride = null,
     targetPositionOverride = null,
+    useRawLoS = false,
   ) {
     if (!observer?.actor || !target?.actor) {
       return 'observed';
     }
 
     try {
+      // Touch unused parameter to satisfy linter while preserving API
+      void _observerPositionOverride;
+
       // Step 1: Check if observer is blinded (cannot see anything)
       const isBlinded = this.#conditionManager.isBlinded(observer);
       if (isBlinded) {
@@ -128,15 +137,9 @@ export class VisibilityCalculator {
         return 'concealed';
       }
 
-      // Step 4: Check line of sight
-      const hasLineOfSight = this.#visionAnalyzer.hasLineOfSight(observer, target);
-      if (!hasLineOfSight) {
-        // No line of sight - check if observer has special senses
-        if (this.#visionAnalyzer.canDetectWithoutSight(observer, target)) {
-          return 'hidden'; // Can detect but not see clearly
-        }
-        return 'hidden'; // Cannot see at all
-      }
+      // Step 4: Check line of sight (informational only). No-LoS should not grant 'hidden' by itself.
+      // When called from calculateVisibilityWithoutOverrides, overrides are cleared but
+      // Foundry detection wrappers can still bias LoS. Use raw=true for direct LoS.
 
       // Step 5: Check lighting conditions at target's position
       // Use position override if provided, otherwise calculate from document
@@ -156,6 +159,7 @@ export class VisibilityCalculator {
 
       return result;
     } catch (error) {
+      try { console.warn('PF2E Visioner | calcVis: error, default observed', error); } catch {}
       return 'observed'; // Default fallback
     }
   }

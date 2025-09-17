@@ -245,13 +245,6 @@ export class SneakActionHandler extends ActionHandlerBase {
    * @private
    */
   _getSneakingToken(actionData) {
-    console.debug('PF2E Visioner | _getSneakingToken called for:', actionData.actor?.name);
-    console.debug('PF2E Visioner | Actor data:', {
-      id: actionData.actor?.id,
-      name: actionData.actor?.name,
-      hasToken: !!actionData.actor?.token,
-      hasGetActiveTokens: !!actionData.actor?.getActiveTokens,
-    });
 
     // Try multiple ways to get the token, compatible with v13 APIs
     let token = null;
@@ -259,16 +252,11 @@ export class SneakActionHandler extends ActionHandlerBase {
     // Direct token references
     token = actionData.actorToken || actionData.sneakingToken;
     if (token) {
-      console.debug('PF2E Visioner | Found token via direct reference:', token.name);
       return token;
     }
 
     // From actor's token object
     if (actionData.actor?.token?.object) {
-      console.debug(
-        'PF2E Visioner | Found token via actor.token.object:',
-        actionData.actor.token.object.name,
-      );
       return actionData.actor.token.object;
     }
 
@@ -276,46 +264,20 @@ export class SneakActionHandler extends ActionHandlerBase {
     if (actionData.actor?.getActiveTokens) {
       const activeTokens = actionData.actor.getActiveTokens();
       if (activeTokens.length > 0) {
-        console.debug('PF2E Visioner | Found token via getActiveTokens:', activeTokens[0].name);
         return activeTokens[0];
       }
     }
 
     // Search canvas tokens by actor ID
     if (actionData.actor?.id && canvas?.tokens?.placeables) {
-      console.debug('PF2E Visioner | Searching canvas tokens for actor ID:', actionData.actor.id);
-      const availableTokens = canvas.tokens.placeables.map((t) => ({
-        id: t.id,
-        name: t.name,
-        actorId: t.actor?.id,
-      }));
-      console.debug('PF2E Visioner | Available tokens:', availableTokens);
-
-      // Check if any token has the name we expect
-      console.debug('PF2E Visioner | Looking for token with name:', actionData.actor?.name);
-      console.debug(
-        'PF2E Visioner | Available token names:',
-        canvas.tokens.placeables.map((t) => t.name),
-      );
-
       const tokenByName = canvas.tokens.placeables.find((t) => t.name === actionData.actor?.name);
       if (tokenByName) {
-        console.debug('PF2E Visioner | Found token by name instead:', {
-          name: tokenByName.name,
-          actorId: tokenByName.actor?.id,
-          expectedActorId: actionData.actor.id,
-        });
-        return tokenByName;
-      } else {
-        console.debug('PF2E Visioner | No token found with exact name match');
-      }
 
+        return tokenByName;
+      } 
       token = canvas.tokens.placeables.find((t) => t.actor?.id === actionData.actor.id);
       if (token) {
-        console.debug('PF2E Visioner | Found token via canvas search:', token.name);
         return token;
-      } else {
-        console.debug('PF2E Visioner | No token found with actor ID:', actionData.actor.id);
       }
     }
 
@@ -324,19 +286,9 @@ export class SneakActionHandler extends ActionHandlerBase {
       const tokenId = actionData.message.speaker.token;
       token = canvas?.tokens?.placeables?.find((t) => t.id === tokenId);
       if (token) {
-        console.debug('PF2E Visioner | Found token via message speaker:', token.name);
         return token;
       }
     }
-
-    console.warn('PF2E Visioner | Could not find sneaking token for action data:', {
-      hasActorToken: !!actionData.actorToken,
-      hasSneakingToken: !!actionData.sneakingToken,
-      hasActor: !!actionData.actor,
-      actorId: actionData.actor?.id,
-      hasCanvas: !!canvas?.tokens?.placeables,
-      tokenCount: canvas?.tokens?.placeables?.length || 0,
-    });
 
     return null;
   }
@@ -395,7 +347,6 @@ export class SneakActionHandler extends ActionHandlerBase {
     try {
       const { optimizedVisibilityCalculator } = await import('../../../visibility/auto-visibility/index.js');
       current = await optimizedVisibilityCalculator.calculateVisibility(subject, actionData.actor);
-      console.debug('PF2E Visioner | Fresh visibility calculation for', subject.name, '→', actionData.actor.name, ':', current);
     } catch (error) {
       console.warn('PF2E Visioner | Failed to calculate fresh visibility, using stored state:', error);
       current = getVisibilityBetween(subject, actionData.actor);
@@ -575,7 +526,6 @@ export class SneakActionHandler extends ActionHandlerBase {
       const positionTransition = await this._getPositionTransitionForSubject(subject);
 
       if (positionTransition?.startPosition && positionTransition?.endPosition) {
-        console.debug('PF2E Visioner | Using enhanced outcome determination with position data');
 
         const { default: EnhancedSneakOutcome } = await import('./enhanced-sneak-outcome.js');
 
@@ -593,24 +543,7 @@ export class SneakActionHandler extends ActionHandlerBase {
         });
 
         newVisibility = enhancedOutcome.newVisibility;
-
-        // For debugging comparison
-        try {
-          const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
-          const standardOutcome = getDefaultNewStateFor('sneak', current, outcome);
-          console.debug('PF2E Visioner | Enhanced outcome determined:', {
-            standard: standardOutcome,
-            enhanced: newVisibility,
-            reason: enhancedOutcome.outcomeReason
-          });
-        } catch {
-          console.debug('PF2E Visioner | Enhanced outcome determined:', {
-            enhanced: newVisibility,
-            reason: enhancedOutcome.outcomeReason
-          });
-        }
       } else {
-        console.debug('PF2E Visioner | No position data available, using standard outcome determination');
         // Fall back to standard outcome determination
         const { getDefaultNewStateFor } = await import('../data/action-state-config.js');
         newVisibility = getDefaultNewStateFor('sneak', current, outcome) || current;
@@ -671,7 +604,6 @@ export class SneakActionHandler extends ActionHandlerBase {
 
     // Get position transition data if available
     const positionTransition = await this._getPositionTransitionForSubject(subject);
-    console.debug('PF2E Visioner | Position transition for', subject.name, ':', positionTransition);
 
     // Use the original DC and outcome without position-based adjustments
     const finalDC = dc;

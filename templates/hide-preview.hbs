@@ -55,7 +55,12 @@
         {{#each outcomes as |outcome|}}
           <tr class="token-row" data-token-id="{{outcome.target.id}}">
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" alt="{{outcome.target.name}}" width="28" height="28" />
+              <span class="token-img-wrapper">
+                <img src="{{outcome.tokenImage}}" alt="{{outcome.target.name}}" width="28" height="28" />
+                {{#if outcome.target.document.hidden}}
+                  <span class="foundry-hidden-indicator" data-tooltip="Foundry Hidden"><i class="fas fa-eye-slash"></i></span>
+                {{/if}}
+              </span>
             </td>
             <td class="token-name">
               <strong data-tooltip="{{outcome.target.name}}">{{outcome.target.name}}</strong>

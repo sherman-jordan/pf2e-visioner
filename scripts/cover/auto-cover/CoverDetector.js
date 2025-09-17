@@ -70,25 +70,9 @@ export class CoverDetector {
       const p1 = attacker.center ?? attacker.getCenter();
       const p2 = target.center ?? target.getCenter();
 
-      // DEBUG: Log the coordinates used for cover calculation
-      console.debug('[PF2E Visioner] CoverDetector.detectBetweenTokens', {
-        attackerId: attacker.id,
-        targetId: target.id,
-        attackerName: attacker.name,
-        targetName: target.name,
-        attackerCenter: p1,
-        targetCenter: p2
-      });
-
       // Check if there's any blocking terrain (walls) in the way
       const segmentAnalysis = this._analyzeSegmentObstructions(p1, p2);
       const hasWallsInTheWay = segmentAnalysis.hasBlockingTerrain;
-
-      // DEBUG: Log wall analysis result
-      console.debug('[PF2E Visioner] CoverDetector.detectBetweenTokens wall analysis', {
-        hasWallsInTheWay,
-        segmentAnalysis
-      });
 
       // NEW LOGIC: Priority based on wall presence
       if (!hasWallsInTheWay) {
@@ -117,10 +101,6 @@ export class CoverDetector {
       } else {
         // Case 2: There IS a wall in the way - use new wall cover rules
         const wallCover = this._evaluateWallsCover(p1, p2);
-        // DEBUG: Log wall cover result
-        console.debug('[PF2E Visioner] CoverDetector.detectBetweenTokens wall cover result', {
-          wallCover
-        });
         return wallCover;
       }
     } catch (error) {

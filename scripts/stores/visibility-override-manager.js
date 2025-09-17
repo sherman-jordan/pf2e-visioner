@@ -96,7 +96,6 @@ export class VisibilityOverrideManager {
     
     if (existed) {
       this.visibilityOverrides.delete(key);
-      console.debug('PF2E Visioner | Removed visibility override:', key);
     }
     
     return existed;
@@ -118,8 +117,6 @@ export class VisibilityOverrideManager {
     for (const key of keysToRemove) {
       this.visibilityOverrides.delete(key);
     }
-    
-    console.debug('PF2E Visioner | Removed', keysToRemove.length, 'visibility overrides involving token:', tokenId);
   }
 
   /**
@@ -138,19 +135,13 @@ export class VisibilityOverrideManager {
     for (const key of keysToRemove) {
       this.visibilityOverrides.delete(key);
     }
-    
-    if (keysToRemove.length > 0) {
-      console.debug('PF2E Visioner | Cleaned up', keysToRemove.length, 'expired visibility overrides');
-    }
   }
 
   /**
    * Clear all overrides
    */
   clearAll() {
-    const count = this.visibilityOverrides.size;
     this.visibilityOverrides.clear();
-    console.debug('PF2E Visioner | Cleared all', count, 'visibility overrides');
   }
 
   /**

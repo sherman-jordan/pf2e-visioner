@@ -15,14 +15,18 @@
     </div>
 
     <!-- Encounter Filter Section -->
-    {{#if showEncounterFilter}}
     <div class="encounter-filter-section">
+        {{#if showEncounterFilter}}
         <label class="encounter-filter-checkbox">
             <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
             <span class="encounter-filter-label">{{localize "PF2E_VISIONER.SEEK_AUTOMATION.ENCOUNTER_ONLY"}}</span>
         </label>
+        {{/if}}
+        <label class="hide-foundry-hidden-filter-checkbox">
+            <input type="checkbox" {{#if hideFoundryHidden}}checked{{/if}} data-action="toggleHideFoundryHidden" data-tooltip="Visually hide tokens that are Foundry-hidden (document.hidden)" />
+            <span class="encounter-filter-label">Hide Foundry-hidden tokens</span>
+        </label>
     </div>
-    {{/if}}
 
         <!-- Bulk Override Bar -->
         {{#if bulkOverrideStates}}
@@ -42,13 +46,18 @@
             <tbody>
                 {{#each outcomes}}
                 <tr data-token-id="{{target.id}}" class="{{#if hasActionableChange}}actionable{{else}}no-change{{/if}}">
-                    <td class="token-image">
-                        {{#if tokenImage}}
-                        <img src="{{tokenImage}}" alt="{{target.name}}" />
-                        {{else}}
-                        <i class="fas fa-user"></i>
-                        {{/if}}
-                    </td>
+                                        <td class="token-image">
+                                                {{#if tokenImage}}
+                                                <span class="token-img-wrapper">
+                                                    <img src="{{tokenImage}}" alt="{{target.name}}" />
+                                                    {{#if target.document.hidden}}
+                                                        <span class="foundry-hidden-indicator" data-tooltip="Foundry Hidden"><i class="fas fa-eye-slash"></i></span>
+                                                    {{/if}}
+                                                </span>
+                                                {{else}}
+                                                <i class="fas fa-user"></i>
+                                                {{/if}}
+                                        </td>
                     <td class="token-name">
                         <strong data-tooltip="{{target.name}}">{{target.name}}</strong>
                     </td>

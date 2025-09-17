@@ -75,7 +75,12 @@
               data-outcome="{{outcome.outcome}}"
               data-result-type="{{outcome.outcome}}">
             <td class="token-image">
-              <img src="{{outcome.tokenImage}}" width="28" height="28" />
+              <span class="token-img-wrapper">
+                <img src="{{outcome.tokenImage}}" width="28" height="28" />
+                {{#if outcome.token.document.hidden}}
+                  <span class="foundry-hidden-indicator" data-tooltip="Foundry Hidden"><i class="fas fa-eye-slash"></i></span>
+                {{/if}}
+              </span>
             </td>
             <td class="token-name">
               <strong data-tooltip="{{outcome.token.name}}">{{outcome.token.name}}</strong>
@@ -221,6 +226,9 @@
       </button>
       <button type="button" class="bulk-action-btn revert-all" data-action="revertAll" data-tooltip="Revert all changes to original state">
         <i class="fas fa-undo"></i> Revert All
+      </button>
+      <button type="button" class="bulk-action-btn" data-action="copyDiagnostics" data-tooltip="Copy Sneak diagnostics to clipboard (JSON)">
+        <i class="fas fa-clipboard"></i> Copy Diagnostics
       </button>
     </div>
   </div>

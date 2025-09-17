@@ -49,7 +49,6 @@ export class SneakCore {
     try {
       await this._systemIntegration.initialize();
       this._initialized = true;
-      console.debug('PF2E Visioner | SneakCore initialized successfully');
       return true;
     } catch (error) {
       console.warn('PF2E Visioner | SneakCore initialization failed:', error);
@@ -100,7 +99,6 @@ export class SneakCore {
       await this._setSneakFlag(sneakingToken, true);
     }
 
-    console.debug('PF2E Visioner | Sneak session started:', sessionId);
     return sessionId;
   }
 
@@ -163,7 +161,6 @@ export class SneakCore {
 
       if (success) {
         this._clearCachedResult(sessionId);
-        console.debug('PF2E Visioner | Sneak results reverted successfully:', sessionId);
       }
 
       return success;

@@ -103,17 +103,6 @@ export class HidePreviewDialog extends BaseActionDialog {
             .catch(() => this.render({ force: true }));
         });
     } catch { }
-    // Wire Hide Foundry-hidden visual filter toggle
-    try {
-      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
-      if (cbh) {
-        cbh.addEventListener('change', async () => {
-          this.hideFoundryHidden = !!cbh.checked;
-          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
-          this.render({ force: true });
-        });
-      }
-    } catch { }
   }
 
   /**
@@ -348,6 +337,19 @@ export class HidePreviewDialog extends BaseActionDialog {
     this.markInitialSelections();
     this.updateBulkActionButtons();
     this.updateChangesCount();
+
+    // Wire Hide Foundry-hidden visual filter toggle on every render so it persists after re-render
+    try {
+      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
+      if (cbh) {
+        cbh.onchange = null; // prevent duplicate handlers on subsequent renders
+        cbh.addEventListener('change', async () => {
+          this.hideFoundryHidden = !!cbh.checked;
+          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
+          this.render({ force: true });
+        });
+      }
+    } catch { }
   }
 
   /**

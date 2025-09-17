@@ -198,6 +198,15 @@ export class SneakPreviewDialog extends BaseActionDialog {
     for (const outcome of filteredOutcomes) {
       // Check if we have position data and if positions don't qualify
       const positionTransition = outcome.positionTransition || this._getPositionTransitionForToken(outcome.token);
+      // Also compute a wrapper-free live end visibility for accurate concealment checks
+      // This bypasses the sneaking detection wrapper that temporarily forces 'hidden'
+      try {
+        const liveEndVis = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(
+          outcome.token,
+          this.sneakingToken,
+        );
+        outcome.liveEndVisibility = liveEndVis;
+      } catch {}
       if (positionTransition) {
         // Calculate qualifications to see if we need to override, honoring AVS overrides when present
         const startQualifies = this._startPositionQualifiesForSneak(outcome.token, outcome);
@@ -318,15 +327,150 @@ export class SneakPreviewDialog extends BaseActionDialog {
    * @returns {Object} Diagnostics payload
    * @private
    */
-  // Diagnostics builder removed per request
+  async _buildSneakDiagnostics() {
+    const now = new Date().toISOString();
+
+  const observers = await Promise.all((this.outcomes || []).map(async (o) => {
+      const token = o.token;
+      const obsId = token?.id;
+      const observerName = token?.name;
+      const positionTransition = o.positionTransition || this._getPositionTransitionForToken(token);
+
+      // Gather transition fields safely
+      const startPos = positionTransition?.startPosition || {};
+      const endPos = positionTransition?.endPosition || {};
+
+      // Live checks
+  let liveCover = undefined;
+  let liveVisibility = undefined;
+  try { liveCover = getCoverBetween(token, this.sneakingToken); } catch {}
+  try {
+    // Use real-time calculator that ignores override flags and bypasses sneak detection wrapper
+    liveVisibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(token, this.sneakingToken);
+  } catch {}
+
+      // Overrides from observer -> sneaker
+      const observerId = token?.document?.id || obsId;
+      const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
+
+      return {
+        observerId: obsId,
+        observerName,
+        outcome: {
+          rollOutcome: o.outcome,
+          dc: o.dc,
+          rollTotal: o.rollTotal,
+          margin: o.margin,
+          oldVisibility: o.oldVisibility || o.currentVisibility,
+          newVisibility: o.newVisibility,
+          overrideState: o.overrideState ?? null,
+          endCover: o.endCover ?? null,
+          endVisibility: o.endVisibility ?? null,
+          hasActionableChange: !!o.hasActionableChange,
+        },
+        startPosition: {
+          avsVisibility: startPos.avsVisibility ?? null,
+          coverState: startPos.coverState ?? null,
+          distance: startPos.distance ?? null,
+          lighting: startPos.lightingConditions ?? null,
+          qualifies: this._startPositionQualifiesForSneak(token, o),
+        },
+        endPosition: {
+          avsVisibility: endPos.avsVisibility ?? null,
+          coverState: endPos.coverState ?? null,
+          distance: endPos.distance ?? null,
+          lighting: endPos.lightingConditions ?? null,
+          // Qualify on:
+          // - standard/greater cover (snapshot or outcome)
+          // - concealed per snapshot (endPosition.avsVisibility)
+          // - concealed per live calculator (liveVisibility)
+          qualifies: (['standard','greater'].includes(endPos.coverState)) ||
+            (['standard','greater'].includes(o?.endCover)) ||
+            (endPos.avsVisibility === 'concealed') ||
+            (liveVisibility === 'concealed'),
+        },
+        transition: positionTransition ? {
+          hasChanged: !!positionTransition.hasChanged,
+          transitionType: positionTransition.transitionType || 'unknown',
+          avsVisibilityChanged: !!positionTransition.avsVisibilityChanged,
+          coverStateChanged: !!positionTransition.coverStateChanged,
+        } : null,
+        override: overrideFlag || null,
+        liveChecks: {
+          cover: liveCover ?? null,
+          visibility: liveVisibility ?? null,
+        },
+      };
+    }));
+
+    return {
+      type: 'pf2e-visioner:sneak-diagnostics',
+      version: game.modules.get('pf2e-visioner')?.version || null,
+      timestamp: now,
+      scene: { id: canvas?.scene?.id || null, name: canvas?.scene?.name || null },
+      sneaker: { id: this.sneakingToken?.id || null, name: this.sneakingToken?.name || null },
+      settings: {
+        debug: game.settings.get(MODULE_ID, 'debug'),
+        autoVisibilityDebugMode: game.settings.get(MODULE_ID, 'autoVisibilityDebugMode'),
+        ignoreAllies: this.ignoreAllies,
+        defaultEncounterFilter: this.encounterOnly,
+        hideFoundryHiddenTokens: this.hideFoundryHidden,
+      },
+      observers,
+    };
+  }
 
   /**
    * Copy sneak diagnostics to clipboard (JSON string), with fallback to a dialog
    * @private
    */
-  // Diagnostics copy helper removed per request
+  async _copySneakDiagnostics() {
+    const payload = await this._buildSneakDiagnostics();
+    const text = JSON.stringify(payload, null, 2);
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch {}
 
-  // Diagnostics action handler removed per request
+    if (!copied) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-1000px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copied = true;
+      } catch {}
+    }
+
+    if (copied) notify.info('Sneak diagnostics copied to clipboard');
+    else {
+      try {
+        new Dialog({
+          title: 'Sneak Diagnostics',
+          content: `<textarea style="width:100%;height:300px;">${text.replaceAll('<', '&lt;')}</textarea>`,
+          buttons: {
+            close: { icon: 'fas fa-times', label: 'Close' },
+          },
+        }).render(true);
+      } catch {}
+      notify.warn('Clipboard copy failed. Opened diagnostics in a dialog.');
+    }
+  }
+
+  static async _onCopyDiagnostics() {
+    const app = currentSneakDialog;
+    if (!app) return;
+    try {
+      await app._copySneakDiagnostics();
+    } catch (e) {
+      console.warn('PF2E Visioner | Failed to copy diagnostics', e);
+    }
+  }
 
   // Use BaseActionDialog outcome helpers
   // Token id in Sneak outcomes is under `token`
@@ -523,6 +667,10 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!outcomes?.length || !this.sneakingToken) return;
 
     try {
+      const debugMode = (game?.settings?.get?.('pf2e-visioner', 'autoVisibilityDebugMode') ||
+        game?.settings?.get?.('pf2e-visioner', 'debug'))
+        ? true
+        : false;
       for (const outcome of outcomes) {
         if (!outcome.token?.document?.id) continue;
 
@@ -540,7 +688,6 @@ export class SneakPreviewDialog extends BaseActionDialog {
             outcome.endCover = currentEndPosition.coverState;
             outcome.endVisibility = currentEndPosition.avsVisibility;
 
-            
             // Also compute a live end visibility ignoring overrides for higher-fidelity dim/dark checks
             try {
               outcome.liveEndVisibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(
@@ -580,8 +727,6 @@ export class SneakPreviewDialog extends BaseActionDialog {
                   lightingConditions: currentEndPosition.lightingConditions || 'bright'
                 }
               };
-
-              
             }
           }
         } catch (error) {
@@ -927,6 +1072,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
       if (overrideFlag && overrideFlag.state) {
         const s = overrideFlag.state;
+        
         if (s === 'hidden' || s === 'undetected') return true;
         // concealed/observed do not satisfy start prerequisite
       }
@@ -936,6 +1082,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
       if (startState && startState.visibility) {
         const startVisibility = startState.visibility;
+        
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
 
@@ -943,18 +1090,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
       const positionTransition = this._getPositionTransitionForToken(observerToken);
       if (positionTransition && positionTransition.startPosition) {
         const startVisibility = positionTransition.startPosition.avsVisibility;
+        
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
 
       // Priority 3: Use outcome start state data
       if (outcome && (outcome.startVisibility || outcome.startState)) {
         const startVisibility = outcome.startVisibility || outcome.startState?.visibility;
+        
         return startVisibility === 'hidden' || startVisibility === 'undetected';
       }
 
       // Final fallback to current visibility check
       // Use the observer -> sneaking token perspective
       const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
+      
       return visibility === 'hidden' || visibility === 'undetected';
     } catch (error) {
       console.warn('PF2E Visioner | Error checking start position qualification:', error);
@@ -974,10 +1124,13 @@ export class SneakPreviewDialog extends BaseActionDialog {
     if (!observerToken || !this.sneakingToken) return false;
 
     try {
+
+      
       // Priority 0: AVS override flag (observer -> sneaking token)
       const observerId = observerToken.document?.id || observerToken.id;
       const overrideFlag = this.sneakingToken?.document?.getFlag?.(MODULE_ID, `avs-override-from-${observerId}`);
       if (overrideFlag) {
+        
         // Qualify if override provides standard/greater cover or concealment
         if (overrideFlag.hasCover || ['standard', 'greater'].includes(overrideFlag.expectedCover)) return true;
         if (overrideFlag.state === 'concealed') return true;
@@ -998,7 +1151,7 @@ export class SneakPreviewDialog extends BaseActionDialog {
         // Otherwise, continue to check positionTransition and live visibility below
       }
 
-      if (positionTransition && positionTransition.endPosition) {
+  if (positionTransition && positionTransition.endPosition) {
         // Use the actual end position data
         const endPosition = positionTransition.endPosition;
 
@@ -1021,12 +1174,13 @@ export class SneakPreviewDialog extends BaseActionDialog {
 
       // Final fallback to current position check if no position or outcome data available
       // Check for manual or auto cover (observer -> sneaking token)
-      const coverState = getCoverBetween(observerToken, this.sneakingToken);
-      if (coverState === 'standard' || coverState === 'greater') return true;
+  const coverState = getCoverBetween(observerToken, this.sneakingToken);
+      
+  if (coverState === 'standard' || coverState === 'greater') return true;
 
-      // Live check last: qualify if currently concealed from this observer
-      // (dim light and similar lighting effects are captured here)
-      const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
+  // Live check last: qualify if currently concealed from this observer
+  // (dim light and similar lighting effects are captured here)
+  const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
       const qualifies = visibility === 'concealed';
       return qualifies;
     } catch (error) {

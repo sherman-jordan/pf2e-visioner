@@ -189,7 +189,7 @@ export async function previewActionResults(actionData) {
             startStates = token.document.flags['pf2e-visioner'].startStates;
           }
         } catch (error) {
-          console.debug('PF2E Visioner | Could not retrieve start states in preview service:', error);
+          console.error('PF2E Visioner | Could not retrieve start states in preview service:', error);
         }
         
         // Create dialog with start states included

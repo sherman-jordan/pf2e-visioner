@@ -60,7 +60,12 @@
               {{#if outcome._isWall}}
                 <img src="{{outcome.wallImg}}" data-tooltip="{{outcome.wallIdentifier}}" width="28" height="28" />
               {{else}}
-                <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+                <span class="token-img-wrapper">
+                  <img src="{{outcome.tokenImage}}" data-tooltip="{{outcome.target.name}}" width="28" height="28" />
+                  {{#if outcome.target.document.hidden}}
+                    <span class="foundry-hidden-indicator" data-tooltip="Foundry Hidden"><i class="fas fa-eye-slash"></i></span>
+                  {{/if}}
+                </span>
               {{/if}}
             </td>
             <td class="token-name">

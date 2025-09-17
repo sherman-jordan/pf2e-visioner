@@ -54,12 +54,6 @@ export class PositionAwareStateTransitions {
     } = params;
 
     try {
-      console.debug('PF2E Visioner | Initiating position-aware state transition:', {
-        observer: observerToken.name,
-        target: targetToken.name,
-        newState,
-        reason: transitionReason
-      });
 
       // Validate transition parameters
       const validationResult = await this._validateTransition(params);
@@ -192,10 +186,6 @@ export class PositionAwareStateTransitions {
 
       // If user provided a modified state, update the transition
       if (modifiedState && modifiedState !== stateTransition.toState) {
-        console.debug('PF2E Visioner | User modified transition state:', {
-          original: stateTransition.toState,
-          modified: modifiedState
-        });
         
         stateTransition.toState = modifiedState;
         stateTransition.reason += ' (user modified)';
@@ -240,7 +230,6 @@ export class PositionAwareStateTransitions {
         return false;
       }
 
-      console.debug('PF2E Visioner | Rolling back state transition:', transitionId);
 
       // Apply reverse transition (back to original state)
       const rollbackResult = await this._applyStateChange(
@@ -252,7 +241,6 @@ export class PositionAwareStateTransitions {
       if (rollbackResult) {
         // Remove from completed transitions
         this._completedTransitions.delete(transitionId);
-        console.debug('PF2E Visioner | Successfully rolled back transition:', transitionId);
       }
 
       return rollbackResult;

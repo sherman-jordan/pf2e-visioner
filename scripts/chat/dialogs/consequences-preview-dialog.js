@@ -30,6 +30,12 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     // Per-dialog ignore-allies (defaults to global setting, can be toggled in-dialog)
     this.ignoreAllies = options?.ignoreAllies ?? game.settings.get(MODULE_ID, 'ignoreAllies');
+    // Visual filter default from per-user setting
+    try {
+      this.hideFoundryHidden = game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+    } catch {
+      this.hideFoundryHidden = true;
+    }
     this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
 
     // Set global reference
@@ -89,6 +95,13 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
         app.ignoreAllies,
         'target',
       );
+    } catch { }
+
+    // Respect Hide Foundry-hidden toggle for Apply All
+    try {
+      if (app.hideFoundryHidden) {
+        filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+      }
     } catch { }
 
     // Get all observer tokens
@@ -166,6 +179,13 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
       };
     });
 
+    // Visual filtering: hide Foundry-hidden tokens from display if enabled
+    try {
+      if (this.hideFoundryHidden) {
+        processedOutcomes = processedOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+      }
+    } catch { }
+
     // Prepare attacking token with proper image path
     context.attackingToken = {
       ...this.attackingToken,
@@ -173,6 +193,7 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
     };
     context.outcomes = processedOutcomes;
     context.ignoreAllies = !!this.ignoreAllies;
+    context.hideFoundryHidden = !!this.hideFoundryHidden; // Added context for hideFoundryHidden
 
     // Keep internal outcomes annotated where relevant (e.g., hasActionableChange)
     try {
@@ -256,6 +277,18 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
         cb.addEventListener('change', () => {
           this.ignoreAllies = !!cb.checked;
           this.bulkActionState = 'initial';
+          this.render({ force: true });
+        });
+      }
+    } catch { }
+    // Wire Hide Foundry-hidden visual filter toggle
+    try {
+      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
+      if (cbh) {
+        cbh.onchange = null;
+        cbh.addEventListener('change', async () => {
+          this.hideFoundryHidden = !!cbh.checked;
+          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
           this.render({ force: true });
         });
       }
@@ -353,6 +386,13 @@ export class ConsequencesPreviewDialog extends BaseActionDialog {
         app.ignoreAllies,
         'target',
       );
+    } catch { }
+
+    // Respect Hide Foundry-hidden toggle for Revert All
+    try {
+      if (app.hideFoundryHidden) {
+        filteredOutcomes = filteredOutcomes.filter((o) => o?.target?.document?.hidden !== true);
+      }
     } catch { }
 
     // Only apply changes to filtered outcomes that have actionable changes

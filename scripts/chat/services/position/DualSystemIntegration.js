@@ -45,21 +45,13 @@ export class DualSystemIntegration {
   async initialize() {
     if (this._initialized) return true;
 
-    console.debug(`${MODULE_ID} | Initializing DualSystemIntegration...`);
-
     try {
       // Initialize Auto-Cover system
       await this._initializeAutoCoverSystem();
-      console.debug(
-        `${MODULE_ID} | Auto-Cover system initialized:`,
-        this._systemStatus.autoCover.available,
-      );
 
       await this._initializeAVSService();
-      console.debug(`${MODULE_ID} | AVS service initialized:`, this._systemStatus.avs.available);
 
       this._initialized = true;
-      console.debug(`${MODULE_ID} | DualSystemIntegration initialization complete`);
       return true;
     } catch (error) {
       console.warn(`${MODULE_ID} | Failed to initialize DualSystemIntegration:`, error);
@@ -201,10 +193,8 @@ export class DualSystemIntegration {
 
       // First check for manual cover overrides using v13 flag APIs
       const manualCover = await this._getManualCoverState(observer, target);
-      console.debug('PF2E Visioner | Manual cover check:', { manualCover });
       if (manualCover && manualCover !== 'none') {
         const bonus = this._calculateCoverBonus(manualCover);
-        console.debug('PF2E Visioner | Using manual cover:', { state: manualCover, bonus });
         result.success = true;
         result.data = { state: manualCover, bonus };
         result.source = 'manual';
@@ -214,7 +204,6 @@ export class DualSystemIntegration {
       // Use Auto-Cover system detection with v13 wall and geometry APIs
       const coverState = await this._detectAutoCover(observer, target, options);
       const bonus = this._calculateCoverBonus(coverState);
-      console.debug('PF2E Visioner | Auto-cover detection result:', { coverState, bonus });
 
       result.success = true;
       result.data = { state: coverState, bonus };
@@ -581,15 +570,6 @@ export class DualSystemIntegration {
       // Basic visibility determination
       const visibilityState = hasLineOfSight ? 'observed' : 'hidden';
 
-      console.debug('PF2E Visioner | Visibility detection with stored position:', {
-        observer: observer.name,
-        storedSneakingPosition: `(${storedPosition.x}, ${storedPosition.y})`,
-        storedSneakingCenter: storedSneakingCenter,
-        observerCenter: observerCenter,
-        hasLineOfSight,
-        visibilityState,
-      });
-
       return visibilityState;
     } catch (error) {
       console.warn(`${MODULE_ID} | Stored position visibility detection failed:`, error);
@@ -624,15 +604,8 @@ export class DualSystemIntegration {
    */
   async _detectAutoCover(observer, target, options) {
     try {
-      console.debug('PF2E Visioner | _detectAutoCover called:', {
-        observerName: observer?.name,
-        targetName: target?.name,
-        autoCoverEnabled: this._autoCoverSystem?.isEnabled(),
-        hasStoredPosition: !!options?.storedSneakingPosition,
-      });
 
       if (!this._autoCoverSystem?.isEnabled()) {
-        console.debug('PF2E Visioner | Auto-Cover system disabled, returning none');
         return 'none';
       }
 
@@ -642,8 +615,7 @@ export class DualSystemIntegration {
       // If we have stored positions and we're not explicitly requesting current position for cover,
       // use fallback collision detection with custom coordinates
       if (storedSneakingPosition && target && !options?.useCurrentPositionForCover) {
-        console.debug('PF2E Visioner | Using stored position cover detection');
-        return await this._detectCoverWithStoredPosition(
+        return this._detectCoverWithStoredPosition(
           observer,
           target,
           storedSneakingPosition,
@@ -652,10 +624,8 @@ export class DualSystemIntegration {
       }
 
       // Use Auto-Cover system detection with v13 wall and geometry APIs (current position)
-      console.debug('PF2E Visioner | Using current position cover detection');
       const detectedCover =
         this._autoCoverSystem.detectCoverBetweenTokens(observer, target, options) || 'none';
-      console.debug('PF2E Visioner | Auto-Cover system result:', detectedCover);
       return detectedCover;
     } catch (error) {
       console.warn(`${MODULE_ID} | Auto-Cover detection failed:`, error);
@@ -702,14 +672,6 @@ export class DualSystemIntegration {
 
       // Return basic cover state based on wall collision
       const coverState = hasWallCollision ? 'standard' : 'none';
-      console.debug('PF2E Visioner | Cover detection with stored position:', {
-        observer: observer.name,
-        storedSneakingPosition: `(${storedPosition.x}, ${storedPosition.y})`,
-        storedSneakingCenter: storedSneakingCenter,
-        observerCenter: observerCenter,
-        hasWallCollision,
-        coverState,
-      });
 
       return coverState;
     } catch (error) {

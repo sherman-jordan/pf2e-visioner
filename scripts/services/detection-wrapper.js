@@ -88,7 +88,6 @@ function detectionModeTestVisibility(visionSource, mode, config = {}) {
   // This prevents other tokens from seeing the sneaking token
   const isSneaking = config.object?.document?.getFlag(MODULE_ID, 'sneak-active');
   if (isSneaking) {
-    console.debug('PF2E Visioner | Target is sneaking, forcing hidden visibility for detection wrapper');
     return false;
   }
 

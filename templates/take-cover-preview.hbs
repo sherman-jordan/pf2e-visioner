@@ -9,14 +9,18 @@
     </div>
   </div>
 
-  {{#if showEncounterFilter}}
-  <div class="encounter-filter-section">
-    <label class="encounter-filter-checkbox">
+  <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
+    {{#if showEncounterFilter}}
+    <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
       <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
       <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
     </label>
+    {{/if}}
+    <label class="hide-foundry-hidden-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" {{#if hideFoundryHidden}}checked{{/if}} data-action="toggleHideFoundryHidden" data-tooltip="Visually hide tokens that are Foundry-hidden (document.hidden)" />
+      <span class="encounter-filter-label">Hide Foundry-hidden tokens</span>
+    </label>
   </div>
-  {{/if}}
 
   {{!-- (No visibility bulk override bar for cover mechanic) --}}
   <div class="results-table-container">
@@ -32,7 +36,14 @@
       <tbody>
         {{#each outcomes as |o|}}
         <tr class="token-row" data-token-id="{{o.target.id}}">
-          <td class="token-image"><img src="{{o.tokenImage}}" alt="{{o.target.name}}" width="28" height="28" /></td>
+          <td class="token-image">
+            <span class="token-img-wrapper">
+              <img src="{{o.tokenImage}}" alt="{{o.target.name}}" width="28" height="28" />
+              {{#if o.target.document.hidden}}
+                <span class="foundry-hidden-indicator" data-tooltip="Foundry Hidden"><i class="fas fa-eye-slash"></i></span>
+              {{/if}}
+            </span>
+          </td>
           <td class="token-name"><strong data-tooltip="{{o.target.name}}">{{o.target.name}}</strong></td>
           <td class="visibility-change" style="text-align:center;">
             <div class="visibility-change-inline">

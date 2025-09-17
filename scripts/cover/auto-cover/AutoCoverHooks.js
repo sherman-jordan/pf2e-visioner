@@ -393,7 +393,7 @@ export class AutoCoverHooks {
       return null;
     }
 
-    const options = Array.from(context.options);
+    const options = Array.from(ctx.options || []);
 
     // Check for attack context
     if (this._isAttackContext(ctx)) {

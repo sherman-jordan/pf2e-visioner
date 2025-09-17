@@ -62,27 +62,10 @@ export class EnhancedSneakOutcome {
       positionTransition
     } = params;
 
-    console.debug('PF2E Visioner | Enhanced outcome determination:', {
-      startVisibility: startVisibilityState,
-      endVisibility: endVisibilityState,
-      currentVisibility: currentVisibilityState,
-      rollOutcome,
-      rollTotal,
-      perceptionDC
-    });
-
     // Check position qualifications
     const startQualifies = this.doesPositionQualifyForSneak(startVisibilityState, true);
     const endCoverState = positionTransition?.endPosition?.coverState;
     const endQualifies = this.doesPositionQualifyForSneak(endVisibilityState, false, endCoverState);
-
-    console.debug('PF2E Visioner | Position qualifications:', {
-      startQualifies,
-      endQualifies,
-      startState: startVisibilityState,
-      endState: endVisibilityState,
-      endCoverState
-    });
 
     let finalOutcome = {
       newVisibility: currentVisibilityState,
@@ -95,7 +78,6 @@ export class EnhancedSneakOutcome {
     // Case 1: Start OR end position doesn't qualify for sneak
     // -> Set newVisibility to 'observed' (sneak fails)
     if (!startQualifies || !endQualifies) {
-      console.debug('PF2E Visioner | Case 1: Start or end position doesn\'t qualify - sneak fails, setting to observed');
       
       finalOutcome.newVisibility = 'observed';
       finalOutcome.outcomeReason = !startQualifies && !endQualifies 
@@ -109,7 +91,6 @@ export class EnhancedSneakOutcome {
     // Case 2: Both start and end positions qualify for sneak
     // -> Use regular calculation from action-state-config.js
     } else {
-      console.debug('PF2E Visioner | Case 2: Both positions qualify - using standard outcome calculation');
       
       // Use the standard outcome determination from action-state-config.js
       const standardOutcome = getDefaultNewStateFor('sneak', currentVisibilityState, rollOutcome);
@@ -166,7 +147,6 @@ export class EnhancedSneakOutcome {
       }
     }
 
-    console.debug('PF2E Visioner | Final enhanced outcome:', finalOutcome);
     return finalOutcome;
   }
 

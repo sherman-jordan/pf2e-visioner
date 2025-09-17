@@ -27,6 +27,12 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     };
     this.encounterOnly = game.settings.get(MODULE_ID, 'defaultEncounterFilter');
     this.ignoreAllies = game.settings.get(MODULE_ID, 'ignoreAllies');
+    // Visual filter default from per-user setting
+    try {
+      this.hideFoundryHidden = game.settings.get(MODULE_ID, 'hideFoundryHiddenTokens');
+    } catch {
+      this.hideFoundryHidden = true;
+    }
     this.bulkActionState = 'initial'; // 'initial', 'applied', 'reverted'
 
     // Set global reference
@@ -89,7 +95,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
       );
     } catch (_) {}
 
-    // Prepare outcomes with additional UI data
+  // Prepare outcomes with additional UI data
     processedOutcomes = processedOutcomes.map((outcome) => {
       const desired = getDesiredOverrideStatesForAction('create-a-diversion');
       const availableStates = this.buildOverrideStates(desired, outcome).map((s) => ({
@@ -119,6 +125,13 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
       };
     });
 
+    // Visual filtering: hide Foundry-hidden tokens from display if enabled
+    try {
+      if (this.hideFoundryHidden) {
+        processedOutcomes = processedOutcomes.filter((o) => o?.observer?.document?.hidden !== true);
+      }
+    } catch { }
+
     // Prepare diverting token with proper image path
     context.divertingToken = {
       ...this.divertingToken,
@@ -126,6 +139,7 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     };
     context.outcomes = processedOutcomes;
     context.ignoreAllies = !!this.ignoreAllies;
+  context.hideFoundryHidden = !!this.hideFoundryHidden;
 
     // Store processed outcomes in instance for Apply All to use
     this.processedOutcomes = processedOutcomes;
@@ -206,6 +220,18 @@ export class CreateADiversionPreviewDialog extends BaseActionDialog {
     if (encounterFilter) {
       encounterFilter.checked = this.encounterOnly;
     }
+
+    try {
+      const cbh = this.element.querySelector('input[data-action="toggleHideFoundryHidden"]');
+      if (cbh) {
+        cbh.onchange = null;
+        cbh.addEventListener('change', async () => {
+          this.hideFoundryHidden = !!cbh.checked;
+          try { await game.settings.set(MODULE_ID, 'hideFoundryHiddenTokens', this.hideFoundryHidden); } catch { }
+          this.render({ force: true });
+        });
+      }
+    } catch { }
 
     // Wire ignore-allies checkbox if present
     try {

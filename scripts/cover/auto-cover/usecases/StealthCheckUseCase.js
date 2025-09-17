@@ -348,8 +348,6 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
                 this._applyDialogCoverModifier(dialog, newBonus, getCoverLabel(chosen), {
                   keepWhenZero: true,
                 });
-              } else {
-                console.debug('PF2E Visioner | Skipping cover modifier for sneak action in dialog');
               }
               // Apply cover state between tokens (for both attacks and saves)
               if (hider && target && detectedState !== 'none') {
@@ -412,18 +410,12 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
     try {
       // CRITICAL: Capture start positions for movement tracking when stealth check begins
       try {
-        console.debug('PF2E Visioner | Capturing start positions during stealth check roll');
         
         // Resolve the hider (actor making the stealth check)
         let hider = context?.actor?.getActiveTokens?.()?.[0] || context?.token?.object || null;
         if (!hider) hider = this._resolveStealtherFromCtx(context);
         
         if (hider && (hider.isOwner || game.user.isGM)) {
-          console.debug('PF2E Visioner | START position - Token coordinates:', {
-            sneakingTokenX: hider.x,
-            sneakingTokenY: hider.y,
-            sneakingTokenCenter: hider.center,
-          });
           
           // Store the current position coordinates for historical tracking
           const storedStartPosition = {
@@ -435,7 +427,6 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
             timestamp: Date.now(),
           };
           
-          console.debug('PF2E Visioner | Roll-time position captured and stored in flags:', storedStartPosition);
           
           // Import sneak action service to capture positions
           const { SneakActionHandler } = await import('../../../chat/services/actions/sneak-action.js');
@@ -452,7 +443,6 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
           // Capture start positions immediately when stealth check begins, using stored coordinates
           await sneakActionService._captureStartPositions(actionData, storedStartPosition);
           
-          console.debug('PF2E Visioner | Start position capture completed for stealth check roll');
         }
       } catch (error) {
         console.warn('PF2E Visioner | Failed to capture start positions during stealth check:', error);
@@ -592,14 +582,6 @@ class StealthCheckUseCase extends BaseAutoCoverUseCase {
       
       // Check if this is a Sneak action (not Hide) to skip cover bonus
       const isSneakAction = this._isSneakAction(context);
-      
-      console.debug('PF2E Visioner | Cover bonus decision:', {
-        bonus,
-        isSneakAction,
-        willApplyCover: bonus > 1 && !isSneakAction,
-        checkModifiers: check?.modifiers?.length || 0,
-        existingCoverModifier: check?.modifiers?.some(m => m?.slug === 'pf2e-visioner-cover')
-      });
       
       if (bonus > 1 && !isSneakAction) {
         const state = coverInfo?.state ?? 'standard';

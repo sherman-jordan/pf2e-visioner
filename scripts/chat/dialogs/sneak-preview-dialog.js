@@ -1,5 +1,6 @@
 import { MODULE_ID } from '../../constants.js';
-import { getVisibilityBetween } from '../../utils.js';
+import { getVisibilityBetween, getCoverBetween } from '../../utils.js';
+import { optimizedVisibilityCalculator } from '../../visibility/auto-visibility/index.js';
 import { getDesiredOverrideStatesForAction } from '../services/data/action-state-config.js';
 import { notify } from '../services/infra/notifications.js';
 import sneakPositionTracker from '../services/position/SneakPositionTracker.js';
@@ -312,6 +313,21 @@ export class SneakPreviewDialog extends BaseActionDialog {
     return context;
   }
 
+  /**
+   * Build a diagnostics object capturing sneak-related data for all outcomes
+   * @returns {Object} Diagnostics payload
+   * @private
+   */
+  // Diagnostics builder removed per request
+
+  /**
+   * Copy sneak diagnostics to clipboard (JSON string), with fallback to a dialog
+   * @private
+   */
+  // Diagnostics copy helper removed per request
+
+  // Diagnostics action handler removed per request
+
   // Use BaseActionDialog outcome helpers
   // Token id in Sneak outcomes is under `token`
   getOutcomeTokenId(outcome) {
@@ -524,6 +540,15 @@ export class SneakPreviewDialog extends BaseActionDialog {
             outcome.endCover = currentEndPosition.coverState;
             outcome.endVisibility = currentEndPosition.avsVisibility;
 
+            
+            // Also compute a live end visibility ignoring overrides for higher-fidelity dim/dark checks
+            try {
+              outcome.liveEndVisibility = await optimizedVisibilityCalculator.calculateVisibilityWithoutOverrides(
+                outcome.token,
+                this.sneakingToken,
+              );
+            } catch {}
+
             // Create a basic position transition object for newly included tokens
             if (!outcome.positionTransition) {
               // For newly included tokens, we need to determine the start position
@@ -555,6 +580,8 @@ export class SneakPreviewDialog extends BaseActionDialog {
                   lightingConditions: currentEndPosition.lightingConditions || 'bright'
                 }
               };
+
+              
             }
           }
         } catch (error) {
@@ -926,8 +953,6 @@ export class SneakPreviewDialog extends BaseActionDialog {
       }
 
       // Final fallback to current visibility check
-      const { getVisibilityBetween } = game.modules.get('pf2e-visioner')?.api || {};
-      if (!getVisibilityBetween) return false;
       // Use the observer -> sneaking token perspective
       const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
       return visibility === 'hidden' || visibility === 'undetected';
@@ -962,51 +987,48 @@ export class SneakPreviewDialog extends BaseActionDialog {
       // Get the position transition data for this observer
       const positionTransition = this._getPositionTransitionForToken(observerToken);
 
-      // Priority: Use fresh outcome data if available (from _captureCurrentEndPositions), 
-      // otherwise fall back to position transition data
+      // Priority: Use fresh outcome data if available (from _captureCurrentEndPositions).
+      // Treat these as positive signals only; do not early-return false so we can still run
+      // a real-time visibility check (fixes cases like dim light where cached fields lag).
       if (outcome && (outcome.endCover || outcome.endVisibility)) {
-        // Check if end cover indicates standard or greater cover was detected
-        if (outcome.endCover && ['standard', 'greater'].includes(outcome.endCover)) {
-          return true;
-        }
-
-        // Check outcome end visibility states - only concealed qualifies (not hidden/undetected)
-        if (outcome.endVisibility === 'concealed') {
-          return true;
-        }
-
-        return false;
+        // Qualify if end cover indicates standard or greater
+        if (outcome.endCover && ['standard', 'greater'].includes(outcome.endCover)) return true;
+        // Qualify if outcome reports concealed at end
+        if (outcome.endVisibility === 'concealed') return true;
+        // Otherwise, continue to check positionTransition and live visibility below
       }
 
       if (positionTransition && positionTransition.endPosition) {
         // Use the actual end position data
         const endPosition = positionTransition.endPosition;
 
-        // Check if sneaker has standard or greater cover at end position
+        // Qualify if standard/greater cover at end
         if (endPosition.coverState && ['standard', 'greater'].includes(endPosition.coverState)) {
           return true;
         }
 
-        // Check if concealed at end position (not hidden/undetected)
+        // Qualify if concealed at end (not hidden/undetected)
         const endVisibility = endPosition.avsVisibility;
         if (endVisibility === 'concealed') {
           return true;
         }
-
-        return false;
+        // Additionally, if we calculated a live end visibility and it's concealed, qualify
+        if (outcome?.liveEndVisibility === 'concealed') {
+          return true;
+        }
+        // Otherwise, fall through to live visibility check below
       }
 
       // Final fallback to current position check if no position or outcome data available
-      const { getCoverBetween, getVisibilityBetween } = game.modules.get('pf2e-visioner')?.api || {};
-      if (!getCoverBetween || !getVisibilityBetween) return false;
-
       // Check for manual or auto cover (observer -> sneaking token)
       const coverState = getCoverBetween(observerToken, this.sneakingToken);
-      if (coverState && coverState !== 'none') return true;
+      if (coverState === 'standard' || coverState === 'greater') return true;
 
-      // Check if concealed or better
+      // Live check last: qualify if currently concealed from this observer
+      // (dim light and similar lighting effects are captured here)
       const visibility = getVisibilityBetween(observerToken, this.sneakingToken);
-      return visibility === 'concealed';
+      const qualifies = visibility === 'concealed';
+      return qualifies;
     } catch (error) {
       console.warn('PF2E Visioner | Error checking end position qualification:', error);
       return false;

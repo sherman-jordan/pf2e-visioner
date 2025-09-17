@@ -4,8 +4,6 @@
  * Eliminates duplication across SneakActionHandler, SneakPreviewDialog, DualSystemIntegration, and SneakPositionTracker
  */
 
-import { COVER_STATES } from '../../constants.js';
-import { getCoverBetween, getVisibilityBetween } from '../../utils.js';
 import { shouldFilterAlly } from './infra/shared-utils.js';
 import simplifiedPositionTracker from './simplified-position-tracker.js';
 import unifiedSystemIntegration from './unified-system-integration.js';
@@ -106,34 +104,6 @@ export class SneakCore {
     return sessionId;
   }
 
-  /**
-   * Process sneak outcomes for a session
-   * @param {string} sessionId - Session ID
-   * @param {Array<Object>} rawOutcomes - Raw outcomes from action processing
-   * @returns {Promise<Array<Object>>} Processed outcomes with position data
-   */
-  async processOutcomes(sessionId, rawOutcomes) {
-    const state = this._activeStates.get(sessionId);
-    if (!state) {
-      console.warn('PF2E Visioner | No active sneak state for session:', sessionId);
-      return rawOutcomes;
-    }
-
-    // Capture end positions if movement occurred
-    if (this._hasTokenMoved(state.sneakingToken, state.timestamp)) {
-      state.endPositions = await this._capturePositions(
-        state.sneakingToken,
-        state.observers,
-        { timestamp: Date.now(), forceFresh: true }
-      );
-
-      // Analyze transitions
-      state.transitions = this._analyzeTransitions(state.startPositions, state.endPositions);
-    }
-
-    // Enhance outcomes with position data
-    return this._enhanceOutcomes(rawOutcomes, state);
-  }
 
   /**
    * Apply sneak results using unified system
@@ -203,25 +173,6 @@ export class SneakCore {
     }
   }
 
-  /**
-   * End a sneak session and cleanup
-   * @param {string} sessionId - Session ID
-   */
-  async endSneakSession(sessionId) {
-    const state = this._activeStates.get(sessionId);
-    if (state) {
-      // Clear sneak flag unless this was a preview-only session
-      if (!state?.actionData?.previewOnly) {
-        await this._setSneakFlag(state.sneakingToken, false);
-      }
-
-      // Cleanup state
-      this._activeStates.delete(sessionId);
-      this._clearCachedResult(sessionId);
-
-      console.debug('PF2E Visioner | Sneak session ended:', sessionId);
-    }
-  }
 
   /**
    * Get current sneak state for a session
@@ -230,15 +181,6 @@ export class SneakCore {
    */
   getSneakState(sessionId) {
     return this._activeStates.get(sessionId) || null;
-  }
-
-  /**
-   * Check if a token is currently sneaking
-   * @param {Token} token - Token to check
-   * @returns {boolean} Whether token is sneaking
-   */
-  isSneaking(token) {
-    return token?.document?.getFlag('pf2e-visioner', 'sneak-active') || false;
   }
 
   // Private methods
@@ -250,36 +192,6 @@ export class SneakCore {
   async _capturePositions(sneakingToken, observers, options = {}) {
     // Use simplified position tracker for batch processing
     return await this._positionTracker.capturePositions(sneakingToken, observers, options);
-  }
-
-  /**
-   * Analyze position transitions
-   * @private
-   */
-  _analyzeTransitions(startPositions, endPositions) {
-    // Use simplified position tracker for transition analysis
-    return this._positionTracker.analyzeTransitions(startPositions, endPositions);
-  }
-
-  /**
-   * Enhance outcomes with position data
-   * @private
-   */
-  _enhanceOutcomes(outcomes, state) {
-    return outcomes.map(outcome => {
-      const observerId = outcome.token?.document?.id;
-      const startPos = state.startPositions.get(observerId);
-      const endPos = state.endPositions.get(observerId);
-      const transition = state.transitions.get(observerId);
-
-      return {
-        ...outcome,
-        startPosition: startPos,
-        endPosition: endPos,
-        positionTransition: transition,
-        hasPositionData: !!transition
-      };
-    });
   }
 
   /**
@@ -295,18 +207,6 @@ export class SneakCore {
       positionTransition: outcome.positionTransition,
       overrideState: outcome.overrideState
     }));
-  }
-
-
-  _getCoverBonus(coverState) {
-    return COVER_STATES[coverState]?.bonusStealth || 0;
-  }
-
-  // Removed _isVisibilityImproved - now handled by simplified position tracker
-
-  _hasTokenMoved(token, since) {
-    // Use simplified position tracker for movement detection
-    return this._positionTracker.hasTokenMoved(token, since);
   }
 
   async _setSneakFlag(token, active) {

@@ -136,8 +136,8 @@ export class LightingCalculator {
       const distanceSquared = 
         Math.pow(position.x - tokenInfo.x, 2) + Math.pow(position.y - tokenInfo.y, 2) ;
 
-      const brightRadiusSquared = Math.pow(brightRadius * pixelsPerUnit, 2);
-      const dimRadiusSquared = Math.pow(dimRadius * pixelsPerUnit, 2);
+      const brightRadiusSquared = Math.pow(tokenInfo.brightRadius * pixelsPerUnit, 2);
+      const dimRadiusSquared = Math.pow(tokenInfo.dimRadius * pixelsPerUnit, 2);
 
       if (distanceSquared <= brightRadiusSquared) {
         return makeIlluminationResult(BRIGHT);

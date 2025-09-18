@@ -6,7 +6,7 @@
 > You may reach out to the [pf2e Visioner thread on discord](https://discord.com/channels/880968862240239708/1400679723427823626) if you have questions or concerns 
 
 # Overview
-PF2e Visioner is a comprehensive suite of tools that provides GMs and players a high level of control over relative vision and cover in the Pathfinder 2e system for Foundry. Visioner is designed to greatly improve the quality of life for GMs and players who interact with stealth and cover mechanics to a high degree. In addition to tracking degrees of observation and cover between individual tokens, the module introduces powerful automated systems for both cover and vision to significantly streamline the process of applying effects that interact with the PF2e system.
+PF2e Visioner is a comprehensive suite of tools that provides GMs and players a high level of control over relational vision and cover in the Pathfinder 2e system for Foundry. Visioner is designed to greatly improve the quality of life for GMs and players who interact with stealth and cover mechanics to a high degree. In addition to tracking degrees of observation and cover between individual tokens, the module introduces powerful automated systems for both cover and vision to significantly streamline the process of applying effects that interact with the PF2e system.
 
 ## Important Note Regarding Automation:
 PF2e Visioner's fully automated subsystems use information hard-coded into the world, such as walls and lighting on a scene, as well as actor traits and effects, to determine vision states and cover for tokens as their positions and ambient conditions change.

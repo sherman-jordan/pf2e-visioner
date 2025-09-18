@@ -77,6 +77,9 @@ Discoverable loot tokens with DC left blank will use a default DC that may be ad
 ## Seeking for Hidden Walls and Secret Doors
 Visioner adds the ability to flag segments of hidden walls or doors with a DC for the seek template.
 
+> [!NOTE]
+> Please see [Wall Settings](wall-settings.md) for more information regarding setting up walls and secret doors for discovery using Sneak.
+
 # Sneak
 Sneak undoubtedly has the most complex workflow of the actions enhanced by Visioner. 
 

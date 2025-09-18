@@ -607,10 +607,10 @@ export function registerSettings() {
       game.settings.registerMenu(MODULE_ID, 'groupedSettings', {
         name: 'PF2E Visioner Settings',
         label: 'Open',
-        hint: 'Grouped settings by category (General, Visibility & Hover, Seek & Range, Auto Cover, Advanced)',
+        hint: 'Grouped settings by category',
         icon: 'fas fa-sliders-h',
         type: VisionerSettingsForm,
-        restricted: false,
+        restricted: true,
       });
     } catch (_) { }
   } catch (error) {

@@ -173,6 +173,7 @@ export class LightingCalculator {
     // Check light-emitting tokens using cached results
     const lightEmittingTokens = this.#getLightEmittingTokens();
     for (const tokenInfo of lightEmittingTokens) {
+      
       const distanceSquared = 
         Math.pow(position.x - tokenInfo.x, 2) + Math.pow(position.y - tokenInfo.y, 2) ;
 
@@ -337,7 +338,7 @@ export class LightingCalculator {
 
     this.#lightEmittingTokensCache = tokens
       .filter((token) => {
-        if (!token?.document) return false;
+        if (!token?.document || token.document.hidden) return false;
 
         // Check multiple property paths for light emission
         const brightRadius =

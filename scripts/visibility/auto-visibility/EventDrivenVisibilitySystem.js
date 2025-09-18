@@ -11,6 +11,33 @@ import { getVisibilityMap, setVisibilityBetween } from '../../stores/visibility-
 import { optimizedPerceptionManager } from './PerceptionManager.js';
 import { optimizedVisibilityCalculator } from './VisibilityCalculator.js';
 
+// Exported helper for unit tests and potential external reuse
+export function isDefeatedOrUnconscious(token) {
+  try {
+    const actor = token?.actor;
+    if (!actor) return false;
+    const hpValue = actor.hitPoints?.value ?? actor.system?.attributes?.hp?.value;
+    if (typeof hpValue === 'number' && hpValue <= 0) return true;
+    const conditionSlugs = new Set();
+    if (Array.isArray(actor.itemTypes?.condition)) {
+      for (const c of actor.itemTypes.condition) {
+        if (c?.slug) conditionSlugs.add(c.slug);
+        else if (typeof c?.name === 'string') conditionSlugs.add(c.name.toLowerCase());
+      }
+    }
+    if (Array.isArray(actor.conditions)) {
+      for (const c of actor.conditions) {
+        if (c?.slug) conditionSlugs.add(c.slug);
+        else if (typeof c?.name === 'string') conditionSlugs.add(c.name.toLowerCase());
+      }
+    }
+    for (const slug of ['unconscious', 'dead', 'dying']) {
+      if (conditionSlugs.has(slug)) return true;
+    }
+  } catch { /* ignore */ }
+  return false;
+}
+
 export class EventDrivenVisibilitySystem {
   /** @type {EventDrivenVisibilitySystem} */
   static #instance = null;
@@ -142,9 +169,16 @@ export class EventDrivenVisibilitySystem {
    */
   #onTokenUpdate(tokenDoc, changes) {
     if (!this.#enabled || !game.user.isGM) return;
+    // Simplified hidden handling: if hidden flag toggled, recalc everyone and exit.
+    if (Object.prototype.hasOwnProperty.call(changes, 'hidden')) {
+      try {
+        const ids = canvas.tokens?.placeables?.map(t => t.document.id) || [];
+        this.recalculateForTokens(ids);
+      } catch { /* ignore */ }
+      return;
+    }
 
-    // Strictly skip processing for excluded tokens
-    const isHidden = changes.hidden !== undefined ? changes.hidden : tokenDoc.hidden;
+    const isHidden = tokenDoc.hidden === true;
     if (isHidden) {
       // Carve-out: if this token is currently sneaking and moved, still queue override validation
       try {
@@ -257,43 +291,29 @@ export class EventDrivenVisibilitySystem {
 
     // Clean up any pending changes for this token
     this.#changedTokens.delete(tokenDoc.id);
-
-    // Removed debug log
   }
 
   /**
-   * Light source changed - affects visibility for all tokens
+   * Light source updated - affects visibility for all tokens
    */
-  #onLightUpdate(lightDoc, changes) {
+  #onLightUpdate() {
     if (!this.#enabled || !game.user.isGM) return;
-
-    // Check what changed about the light
-    const significantChange =
-      changes.config !== undefined ||
-      changes.x !== undefined ||
-      changes.y !== undefined ||
-      changes.disabled !== undefined ||
-      changes.hidden !== undefined;
-
-    if (significantChange) {
-      // Removed debug log
-      this.#markAllTokensChangedImmediate();
-    }
-  }
-
-  #onLightCreate() {
-    if (!this.#enabled || !game.user.isGM) return;
-
-    // Removed debug log
-
     this.#markAllTokensChangedImmediate();
   }
 
+  /**
+   * Light source created
+   */
+  #onLightCreate() {
+    if (!this.#enabled || !game.user.isGM) return;
+    this.#markAllTokensChangedImmediate();
+  }
+
+  /**
+   * Light source deleted
+   */
   #onLightDelete() {
     if (!this.#enabled || !game.user.isGM) return;
-
-    // Removed debug log
-
     this.#markAllTokensChangedImmediate();
   }
 
@@ -849,6 +869,37 @@ export class EventDrivenVisibilitySystem {
       if (token.document.hidden) return true;
       if (token.document.getFlag(MODULE_ID, 'sneak-active')) return true;
       if (!this.#passesFoundryVisibility(token)) return true;
+      // Skip defeated / unconscious / dead tokens: they can't currently observe others
+      try {
+        const actor = token.actor;
+        if (actor) {
+          // HP based check (covers 0 or negative)
+            const hpValue = actor.hitPoints?.value ?? actor.system?.attributes?.hp?.value;
+            if (typeof hpValue === 'number' && hpValue <= 0) return true;
+
+          // Condition-based check (PF2e conditions use itemTypes.condition or conditions array)
+          const conditionSlugs = new Set();
+          if (Array.isArray(actor.itemTypes?.condition)) {
+            for (const c of actor.itemTypes.condition) {
+              if (c?.slug) conditionSlugs.add(c.slug);
+              else if (typeof c?.name === 'string') conditionSlugs.add(c.name.toLowerCase());
+            }
+          }
+          if (Array.isArray(actor.conditions)) {
+            for (const c of actor.conditions) {
+              if (c?.slug) conditionSlugs.add(c.slug);
+              else if (typeof c?.name === 'string') conditionSlugs.add(c.name.toLowerCase());
+            }
+          }
+
+          const defeatedSlugs = ['unconscious', 'dead', 'dying'];
+          for (const ds of defeatedSlugs) {
+            if (conditionSlugs.has(ds)) return true;
+          }
+        }
+      } catch {
+        // Non-fatal; ignore and proceed
+      }
     } catch {
       // If in doubt, do not exclude
     }

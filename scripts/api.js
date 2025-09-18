@@ -183,6 +183,8 @@ export class Pf2eVisionerApi {
    */
   static async bulkSetVisibility(updates, options = {}) {
     const { batchUpdateVisibilityEffects } = await import('./visibility/ephemeral.js');
+    // Also import override manager lazily only if we will create overrides
+    let AvsOverrideManager = null;
     const groups = new Map();
     if (updates instanceof Map) {
       for (const [observerId, arr] of updates.entries()) {
@@ -208,6 +210,19 @@ export class Pf2eVisionerApi {
       }
     }
     for (const { observer, prepared } of groups.values()) {
+      // Create AVS overrides first so automatic systems won't immediately revert manual intention
+      try {
+        if (!options?.isAutomatic && prepared.length) {
+          if (!AvsOverrideManager) {
+            AvsOverrideManager = (await import('./chat/services/infra/avs-override-manager.js')).default;
+          }
+          // Build changes map expected by applyOverrides: array of { target, state }
+            // Source tagged as manual_action for consistency with single setVisibility
+          await AvsOverrideManager.applyOverrides(observer, prepared.map(p => ({ target: p.target, state: p.state })), { source: 'manual_action' });
+        }
+      } catch (e) {
+        console.warn('PF2E Visioner API: Failed to apply AVS overrides during bulkSetVisibility', e);
+      }
       await batchUpdateVisibilityEffects(observer, prepared, options);
     }
   }
@@ -516,17 +531,7 @@ export class Pf2eVisionerApi {
       const tokens = canvas.tokens?.placeables ?? [];
 
       // Count AVS override flags before removal for logging
-      let avsOverrideCount = 0;
-      const avsOverrideFlags = [];
-      tokens.forEach(t => {
-        const flags = t.document.flags?.[MODULE_ID] || {};
-        Object.keys(flags).forEach(key => {
-          if (key.startsWith('avs-override-')) {
-            avsOverrideCount++;
-            avsOverrideFlags.push({ tokenName: t.name, flagKey: key });
-          }
-        });
-      });
+      // (Optional logging of existing AVS override flags removed to reduce noise)
 
       // First, try to remove the entire flag namespace
       const updates = tokens.map((t) => ({
@@ -830,7 +835,7 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await actor.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch { }
           }
         }
 
@@ -855,7 +860,7 @@ export class Pf2eVisionerApi {
           if (toDelete.length) {
             try {
               await a.deleteEmbeddedDocuments('Item', toDelete);
-            } catch (_) { }
+            } catch { }
           }
         }
       } catch { }
@@ -949,10 +954,10 @@ export class Pf2eVisionerApi {
       } catch { }
       try {
         refreshEveryonesPerception();
-      } catch (_) { }
+  } catch { }
       try {
         canvas.perception.update({ refreshVision: true });
-      } catch (_) { }
+  } catch { }
 
       ui.notifications.info(
         `PF2E Visioner: Cleared all data for ${tokens.length} selected token${tokens.length === 1 ? '' : 's'}.`,

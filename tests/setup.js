@@ -266,6 +266,51 @@ global.console = {
   debug: jest.fn(),
 };
 
+// Track timers to ensure clean Jest shutdown (avoid open handle warnings)
+(() => {
+  const activeTimeouts = new Set();
+  const activeIntervals = new Set();
+  const originalSetTimeout = global.setTimeout;
+  const originalSetInterval = global.setInterval;
+  const originalClearTimeout = global.clearTimeout;
+  const originalClearInterval = global.clearInterval;
+
+  global.setTimeout = function (fn, ms, ...args) {
+    const id = originalSetTimeout(() => {
+      try { fn?.(...args); } finally { activeTimeouts.delete(id); }
+    }, ms);
+    activeTimeouts.add(id);
+    return id;
+  };
+
+  global.setInterval = function (fn, ms, ...args) {
+    const id = originalSetInterval(fn, ms, ...args);
+    activeIntervals.add(id);
+    return id;
+  };
+
+  global.clearTimeout = function (id) {
+    activeTimeouts.delete(id);
+    return originalClearTimeout(id);
+  };
+  global.clearInterval = function (id) {
+    activeIntervals.delete(id);
+    return originalClearInterval(id);
+  };
+
+  afterEach(() => {
+    // Clear any leftover timers
+    for (const t of Array.from(activeTimeouts)) {
+      try { originalClearTimeout(t); } catch { }
+      activeTimeouts.delete(t);
+    }
+    for (const i of Array.from(activeIntervals)) {
+      try { originalClearInterval(i); } catch { }
+      activeIntervals.delete(i);
+    }
+  });
+})();
+
 // Mock DOM elements with a safe Canvas mock to avoid OOM
 // Use the real document for non-canvas elements, and return a lightweight canvas for 'canvas'.
 (() => {

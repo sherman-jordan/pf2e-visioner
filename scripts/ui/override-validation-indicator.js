@@ -177,8 +177,9 @@ class OverrideValidationIndicator {
   #createElement() {
     this.#ensureStyles();
 
-    const el = document.createElement('div');
-    el.className = 'pf2e-visioner-override-indicator';
+  const el = document.createElement('div');
+      // Use only component class; rely on body-level custom properties (colorblind modes set vars globally)
+      el.className = 'pf2e-visioner-override-indicator';
     el.innerHTML = `
       <div class="indicator-icon"><i class="fas fa-exclamation-triangle"></i></div>
       <div class="indicator-badge">0</div>
@@ -280,7 +281,8 @@ class OverrideValidationIndicator {
   #showTooltip() {
     if (!this._data?.overrides?.length) return;
     if (this._tooltipEl?.isConnected) return;
-    const tip = document.createElement('div');
+  const tip = document.createElement('div');
+    // Tooltip similarly avoids pf2e-visioner to prevent unintended global styling overrides
     tip.className = 'pf2e-visioner-override-tooltip';
     this._tooltipEl = tip;
     this.#renderTooltipContents();
@@ -306,13 +308,13 @@ class OverrideValidationIndicator {
       const cfg = VISIBILITY_STATES?.[key] || { icon: 'fas fa-eye', label: 'Observed', cssClass: 'visibility-observed' };
       const label = game?.i18n?.localize?.(cfg.label) || cfg.label || '';
       const cls = cfg.cssClass || `visibility-${key}`;
-      return `<i class="${cfg.icon} state-indicator ${cls}" data-state="${key}" title="${label}"></i>`;
+      return `<i class="${cfg.icon} state-indicator ${cls}" data-kind="visibility" data-state="${key}" title="${label}"></i>`;
     };
     const mkCover = (key) => {
       const cfg = COVER_STATES?.[key] || { icon: 'fas fa-shield', label: 'Cover', cssClass: 'cover-none' };
       const label = game?.i18n?.localize?.(cfg.label) || cfg.label || '';
       const cls = cfg.cssClass || `cover-${key}`;
-      return `<i class="${cfg.icon} state-indicator ${cls}" data-state="${key}" title="${label}"></i>`;
+      return `<i class="${cfg.icon} state-indicator ${cls}" data-kind="cover" data-state="${key}" title="${label}"></i>`;
     };
 
     const buildRow = (o) => {
@@ -377,6 +379,115 @@ class OverrideValidationIndicator {
         </div>
       </div>
     `;
+
+    // After HTML injection, enforce per-state colors inline to defeat any external cascading !important rules.
+    this.#applyInlineStateColors();
+  }
+
+  #applyInlineStateColors() {
+    if (!this._tooltipEl) return;
+    let mode = 'none';
+    try { mode = game.settings.get('pf2e-visioner', 'colorblindMode') || 'none'; } catch { /* noop */ }
+
+    // Internal explicit per-mode palette (kept consistent with hover-tooltips & cover visualization)
+    const palettes = {
+      protanopia: {
+        visibility: {
+          observed: '#0072b2', // blue replacing green
+          concealed: '#f0e442', // yellow
+          hidden: '#cc79a7', // pink/magenta
+          undetected: '#d55e00', // dark orange
+        },
+        cover: {
+          none: '#0072b2',
+          lesser: '#f0e442',
+          standard: '#cc79a7',
+          greater: '#9467bd',
+        },
+      },
+      deuteranopia: {
+        visibility: {
+          observed: '#0072b2',
+          concealed: '#f0e442',
+          hidden: '#ff8c00',
+          undetected: '#d946ef',
+        },
+        cover: {
+          none: '#0072b2',
+          lesser: '#f0e442',
+          standard: '#ff8c00',
+          greater: '#d946ef',
+        },
+      },
+      tritanopia: {
+        visibility: {
+          observed: '#00b050',
+          concealed: '#ffd700',
+          hidden: '#ff6600',
+          undetected: '#dc143c',
+        },
+        cover: {
+          none: '#00b050',
+          lesser: '#ffd700',
+          standard: '#ff6600',
+          greater: '#dc143c',
+        },
+      },
+      achromatopsia: {
+        visibility: {
+          observed: '#ffffff',
+          concealed: '#cccccc',
+          hidden: '#888888',
+          undetected: '#333333',
+        },
+        cover: {
+          none: '#ffffff',
+          lesser: '#cccccc',
+          standard: '#888888',
+          greater: '#333333',
+        },
+      },
+    };
+
+    // Fallback variable-based approach (original) in case mode is none or a future mode not in palettes
+    const bodyStyle = getComputedStyle(document.body);
+    const variableFallbacks = {
+      visibility: {
+        observed: ['--visibility-observed','--visibility-observed-color','#4caf50'],
+        concealed: ['--visibility-concealed','--visibility-concealed-color','#ffc107'],
+        hidden: ['--visibility-hidden','--visibility-hidden-color','#ff9800'],
+        undetected: ['--visibility-undetected','--visibility-undetected-color','#f44336'],
+      },
+      cover: {
+        none: ['--cover-none','--cover-none-color','#4caf50'],
+        lesser: ['--cover-lesser','--cover-lesser-color','#ffc107'],
+        standard: ['--cover-standard','--cover-standard-color','#ff6600'],
+        greater: ['--cover-greater','--cover-greater-color','#f44336'],
+      }
+    };
+
+    const resolveColor = (kind, state) => {
+      // If a supported colorblind mode is active, prefer explicit palette
+      if (mode !== 'none' && palettes[mode]?.[kind]?.[state]) {
+        return palettes[mode][kind][state];
+      }
+      // Variable chain fallback
+      const chain = variableFallbacks[kind]?.[state] || [];
+      for (const v of chain) {
+        const val = bodyStyle.getPropertyValue(v).trim();
+        if (val) return val;
+      }
+      return '#4caf50';
+    };
+
+    this._tooltipEl.querySelectorAll('.state-indicator').forEach(el => {
+      const kind = el.getAttribute('data-kind');
+      const state = el.getAttribute('data-state');
+      if (!kind || !state) return;
+      const color = resolveColor(kind, state);
+      // Inline with !important via setProperty priority (not widely supported until CSSOM Level 2, so also append style attribute fallback)
+      try { el.style.setProperty('color', color, 'important'); } catch { el.style.color = color; }
+    });
   }
 
   #ensureStyles() {
@@ -408,15 +519,16 @@ class OverrideValidationIndicator {
   }
 
       .pf2e-visioner-override-tooltip { position: fixed; min-width: 280px; max-width: 400px; background: rgba(30,30,30,0.98); color: var(--color-text-light-primary, #fff); border: 1px solid var(--color-border-light-primary, #555); border-radius: 8px; padding: 6px; z-index: 1002; font-size: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.45); backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-      /* Explicit state colors for tooltip icons to ensure colorblind palettes apply correctly */
-  .pf2e-visioner-override-tooltip .state-indicator.visibility-observed { color: var(--visibility-observed) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.visibility-concealed { color: var(--visibility-concealed) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.visibility-hidden { color: var(--visibility-hidden) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.visibility-undetected { color: var(--visibility-undetected) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.cover-none { color: var(--cover-none) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.cover-lesser { color: var(--cover-lesser) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.cover-standard { color: var(--cover-standard) !important; }
-  .pf2e-visioner-override-tooltip .state-indicator.cover-greater { color: var(--cover-greater) !important; }
+    /* State indicator colors: rely on global variable mappings so colorblind overrides propagate */
+  /* Force per-state colors inside tooltip (override any external .state-indicator !important rules) */
+  .pf2e-visioner-override-tooltip .state-indicator.visibility-observed { color: var(--visibility-observed, var(--visibility-observed-color, #4caf50)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.visibility-concealed { color: var(--visibility-concealed, var(--visibility-concealed-color, #ffc107)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.visibility-hidden { color: var(--visibility-hidden, var(--visibility-hidden-color, #ff9800)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.visibility-undetected { color: var(--visibility-undetected, var(--visibility-undetected-color, #f44336)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.cover-none { color: var(--cover-none, var(--cover-none-color, #4caf50)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.cover-lesser { color: var(--cover-lesser, var(--cover-lesser-color, #ffc107)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.cover-standard { color: var(--cover-standard, var(--cover-standard-color, #ff6600)) !important; }
+  .pf2e-visioner-override-tooltip .state-indicator.cover-greater { color: var(--cover-greater, var(--cover-greater-color, #f44336)) !important; }
     /* Normalize cover icon visual size vs visibility */
     .pf2e-visioner-override-tooltip .state-indicator[class*='cover-'] { font-size: 1.08em; }
     .pf2e-visioner-override-tooltip .tip-header { font-weight: 600; margin-bottom: 6px; color: var(--pf2e-visioner-warning); }
@@ -432,6 +544,18 @@ class OverrideValidationIndicator {
   .pf2e-visioner-override-tooltip .state-pair + .state-pair { margin-left: 10px; }
     .pf2e-visioner-override-tooltip .state-pair i.fas.fa-arrow-right { color: #999; }
     .pf2e-visioner-override-tooltip .state-pair i.state-indicator { margin: 0; }
+    /* Tooltip-specific reset: ensure icons remain simple (no background boxes) regardless of global .state-indicator styling */
+    .pf2e-visioner-override-tooltip .state-indicator {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      height: auto;
+    }
     .pf2e-visioner-override-tooltip .reasons { display: inline-flex; align-items: center; gap: 4px; color: var(--pf2e-visioner-info, #90caf9); }
     .pf2e-visioner-override-tooltip .reasons i { font-size: 11px; }
     .pf2e-visioner-override-tooltip .tip-footer { display: flex; flex-direction: row; align-items: flex-end; justify-content: space-between; margin-top: 6px; color: #bbb; gap: 12px; }

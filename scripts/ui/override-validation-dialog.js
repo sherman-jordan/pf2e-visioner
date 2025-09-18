@@ -19,7 +19,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     id: "override-validation-dialog",
     tag: "div",
     window: {
-      title: "Override Validation",
+      title: "Change Validation",
       icon: "fas fa-exclamation-triangle",
       // Include module root class so shared styles apply consistently
       contentClasses: ["pf2e-visioner", "override-validation-dialog"],
@@ -213,25 +213,25 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     const individualKeepBtns = this.element.querySelectorAll('.btn-keep');
 
     if (clearAllBtn) {
-      clearAllBtn.addEventListener('click', () => this._onClearAll());
+      clearAllBtn.addEventListener('click', () => this._onAcceptAll());
     }
 
     if (keepAllBtn) {
-      keepAllBtn.addEventListener('click', () => this._onKeepAll());
+      keepAllBtn.addEventListener('click', () => this._onRejectAll());
     }
 
     if (clearObserverBtn) {
-      clearObserverBtn.addEventListener('click', () => this._onClearByGroup('observer'));
+      clearObserverBtn.addEventListener('click', () => this._onAcceptByGroup('observer'));
     }
     if (clearTargetBtn) {
-      clearTargetBtn.addEventListener('click', () => this._onClearByGroup('target'));
+      clearTargetBtn.addEventListener('click', () => this._onAcceptByGroup('target'));
     }
 
     // Add listeners for individual clear buttons
     individualClearBtns.forEach(btn => {
       btn.addEventListener('click', (event) => {
         const overrideId = event.currentTarget.dataset.overrideId;
-        this._onClearIndividual(overrideId);
+        this._onAcceptIndividual(overrideId);
       });
     });
 
@@ -239,7 +239,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     individualKeepBtns.forEach(btn => {
       btn.addEventListener('click', (event) => {
         const overrideId = event.currentTarget.dataset.overrideId;
-        this._onKeepIndividual(overrideId);
+        this._onRejectIndividual(overrideId);
       });
     });
 
@@ -276,10 +276,10 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
 
   }
 
-  async _onClearByGroup(group) {
+  async _onAcceptByGroup(group) {
     try {
       const moved = game?.pf2eVisioner?.lastMovedTokenId || null;
-      if (!moved) return this._onClearAll();
+      if (!moved) return this._onAcceptAll();
       const toRemove = this.invalidOverrides.filter(o => group === 'observer' ? o.observerId === moved : o.targetId === moved);
       for (const override of toRemove) {
         try {
@@ -294,7 +294,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       this.invalidOverrides = this.invalidOverrides.filter(o => !(group === 'observer' ? o.observerId === moved : o.targetId === moved));
       await this.render(true);
 
-      ui.notifications.info(`Cleared ${toRemove.length} override(s) in ${group} table`);
+      ui.notifications.info(`Accepted ${toRemove.length} change(s) in ${group} table`);
       if (!this.invalidOverrides.length) {
         setTimeout(() => this.close(), 300);
         try { const { default: indicator } = await import('./override-validation-indicator.js'); indicator.hide(); } catch { }
@@ -305,7 +305,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
     }
   }
 
-  async _onKeepIndividual(overrideId) {
+  async _onRejectIndividual(overrideId) {
 
 
     // Find the override by ID
@@ -325,12 +325,12 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
         overrideElement.style.opacity = '0.6';
         overrideElement.style.pointerEvents = 'none';
         const statusSpan = overrideElement.querySelector('.status-description span');
-        if (statusSpan) statusSpan.textContent = 'Kept as manual override';
+        if (statusSpan) statusSpan.textContent = 'Rejected';
         const statusIcon = overrideElement.querySelector('.status-description i');
         if (statusIcon) {
-          statusIcon.classList.remove('fa-info-circle');
-          statusIcon.classList.add('fa-check-circle');
-          statusIcon.style.color = '#198754';
+          statusIcon.classList.remove('fa-check-circle');
+          statusIcon.classList.add('fa-info-circle');
+          statusIcon.style.color = '#dc3545';
         }
         const icons = overrideElement.querySelector('.status-icons');
         const desc = overrideElement.querySelector('.status-description');
@@ -347,14 +347,14 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
         } catch { }
       }
 
-      ui.notifications.info(`Kept override: ${override.observerName} → ${override.targetName}`);
+      ui.notifications.info(`Rejected AVS change: ${override.observerName} → ${override.targetName}`);
     } catch (error) {
       console.error('PF2E Visioner | Error keeping individual override:', error);
       ui.notifications.error('Failed to keep override');
     }
   }
 
-  async _onClearIndividual(overrideId) {
+  async _onAcceptIndividual(overrideId) {
 
 
     // Find the override by ID
@@ -381,12 +381,12 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
           overrideElement.style.opacity = '0.6';
           overrideElement.style.pointerEvents = 'none';
           const statusSpan = overrideElement.querySelector('.status-description span');
-          if (statusSpan) statusSpan.textContent = 'Cleared';
+          if (statusSpan) statusSpan.textContent = 'Accepted';
           const statusIcon = overrideElement.querySelector('.status-description i');
           if (statusIcon) {
             statusIcon.classList.remove('fa-info-circle');
-            statusIcon.classList.add('fa-times-circle');
-            statusIcon.style.color = '#dc3545';
+            statusIcon.classList.add('fa-check-circle');
+            statusIcon.style.color = '#198754';
           }
           const icons = overrideElement.querySelector('.status-icons');
           const desc = overrideElement.querySelector('.status-description');
@@ -403,16 +403,15 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
           } catch { }
         }
 
-        ui.notifications.info(`Cleared override: ${override.observerName} → ${override.targetName}`);
+        ui.notifications.info(`Accepted AVS change: ${override.observerName} → ${override.targetName}`);
       }
     } catch (error) {
       console.error('PF2E Visioner | Error removing individual override:', error);
-      ui.notifications.error('Failed to clear override');
+      ui.notifications.error('Failed to accept AVS change');
     }
   }
 
-  async _onClearAll() {
-
+  async _onAcceptAll() {
 
     // Close dialog first
     await this.close();
@@ -427,17 +426,17 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
       }
     }
 
-    ui.notifications.info(`Cleared ${this.invalidOverrides.length} invalid override(s)`);
+    ui.notifications.info(`Accepted ${this.invalidOverrides.length} change(s)`);
     try {
       const { default: indicator } = await import('./override-validation-indicator.js');
       indicator.hide();
     } catch { }
   }
 
-  async _onKeepAll() {
+  async _onRejectAll() {
 
     await this.close();
-    ui.notifications.info('Kept all current overrides');
+    ui.notifications.info('Rejected all AVS changes');
     try {
       const { default: indicator } = await import('./override-validation-indicator.js');
       indicator.hide();

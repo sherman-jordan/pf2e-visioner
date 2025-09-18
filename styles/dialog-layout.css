@@ -842,12 +842,13 @@
   justify-content: flex-start;
 }
 .pf2e-visioner .override-validation-dialog .btn.btn-clear-all {
-  border-color: rgba(244, 67, 54, 0.35);
-}
-.pf2e-visioner .override-validation-dialog .btn.btn-keep-all {
   background: #2e7d32;
   color: #e8f5e9;
   border-color: #2e7d32;
+}
+.pf2e-visioner .override-validation-dialog .btn.btn-keep-all {
+  border-color: rgba(244, 67, 54, 0.35);
+
 }
 
 /* Responsive */
@@ -1690,7 +1691,8 @@
 /* Header-scoped bulk button: make "Clear These" look like a real button */
 .override-validation-dialog .table-header .bulk-action-btn.btn-clear-observer,
 .override-validation-dialog .table-header .bulk-action-btn.btn-clear-target {
-  background: var(--color-bg-btn-secondary);
+  background: var(--pf2e-visioner-success);
+  border-color: var(--pf2e-visioner-success-hover);
   color: var(--color-text-light-primary);
   border-color: var(--color-border-light-primary);
   padding: 6px 12px; /* compact in header */
@@ -1699,8 +1701,8 @@
 }
 .override-validation-dialog .table-header .bulk-action-btn.btn-clear-observer:hover,
 .override-validation-dialog .table-header .bulk-action-btn.btn-clear-target:hover {
-  background: var(--pf2e-visioner-danger);
-  border-color: var(--pf2e-visioner-danger-hover);
+  background: var(--pf2e-visioner-success);
+  border-color: var(--pf2e-visioner-success-hover);
   color: #fff;
 }
 

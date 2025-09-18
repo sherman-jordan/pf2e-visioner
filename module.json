@@ -45,6 +45,9 @@
     },
     {
       "src": "styles/enhanced-position-tracking.css"
+    },
+    {
+      "src": "styles/templates-inline.css"
     }
   ],
   "languages": [

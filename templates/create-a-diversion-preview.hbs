@@ -16,22 +16,22 @@
   </div>
 
   {{!-- Encounter Filter + Ignore Allies --}}
-  <div class="encounter-filter-section" style="display:flex; gap:16px; align-items:center;">
+  <div class="encounter-filter-section">
     {{#if showEncounterFilter}}
-    <label class="encounter-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+    <label class="encounter-filter-checkbox">
       <input type="checkbox" {{#if encounterOnly}}checked{{/if}} data-action="toggleEncounterFilter" data-tooltip="Only show tokens in the current encounter" />
       <span class="encounter-filter-label">{{localize "PF2E_VISIONER.UI.ENCOUNTER_FILTER_TEXT"}}</span>
     </label>
     {{/if}}
-    <label class="hide-foundry-hidden-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+    <label class="hide-foundry-hidden-filter-checkbox">
       <input type="checkbox" {{#if hideFoundryHidden}}checked{{/if}} data-action="toggleHideFoundryHidden" data-tooltip="Visually hide tokens that are Foundry-hidden (document.hidden)" />
       <span class="encounter-filter-label">Hide Foundry-hidden tokens</span>
     </label>
-    <label class="ignore-allies-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+    <label class="ignore-allies-filter-checkbox">
       <input type="checkbox" {{#if ignoreAllies}}checked{{/if}} data-action="toggleIgnoreAllies" data-tooltip="Hide allies from the results list" />
       <span class="encounter-filter-label">Ignore allies</span>
     </label>
-    <label class="show-only-changes-filter-checkbox" style="display:flex; align-items:center; gap:8px;">
+    <label class="show-only-changes-filter-checkbox">
       <input type="checkbox" {{#if showOnlyChanges}}checked{{/if}} data-action="toggleShowOnlyChanges" data-tooltip="Show only rows with visibility changes" />
       <span class="encounter-filter-label">Show only changes</span>
     </label>
@@ -81,10 +81,10 @@
               {{outcome.outcomeLabel}}
             </td>
             <td class="visibility-change">
-              <div class="visibility-change-with-override" style="display: flex; align-items: center; gap: 6px;">
+              <div class="visibility-change-with-override">
                 {{{visibilityIcon outcome.currentVisibility}}}
                 <i class="fas fa-arrow-right visibility-arrow"></i>
-                <div class="override-icons" data-token-id="{{outcome.observer.id}}" style="display: flex; gap: 6px;">
+                <div class="override-icons" data-token-id="{{outcome.observer.id}}">
                   {{#each outcome.availableStates}}
                     <button type="button" 
                             class="state-icon {{#if selected}}selected{{/if}} {{#if calculatedOutcome}}calculated-outcome{{/if}}"

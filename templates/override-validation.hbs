@@ -4,16 +4,9 @@
   <div class="validation-header">
     <div class="header-content">
       <p class="subtitle">
-        Token <strong>{{tokenName}}</strong> has moved. <strong>{{overrideCount}}</strong> override{{#unless (eq overrideCount 1)}}s{{/unless}} may no longer be valid and require your attention.
+        Token <strong>{{tokenName}}</strong> has moved. AVS wants to make <strong>{{overrideCount}}</strong> change{{#unless (eq overrideCount 1)}}s{{/unless}}.
+        <i class="fas fa-info-circle" data-tooltip="Movement or lighting changes can invalidate previously set visibility overrides. Review each AVS change below to decide whether to accept or reject it."></i>
       </p>
-    </div>
-  </div>
-
-  <!-- Info Card -->
-  <div class="info-card">
-    <div class="info-content">
-      <h4>What happened?</h4>
-      <p>Movement or lighting changes can invalidate previously set visibility overrides. Review each override below to decide whether to keep or clear it.</p>
     </div>
   </div>
 
@@ -24,10 +17,10 @@
   {{#if observerOrientedOverrides.length}}
   <div class="results-table-container observer-table">
     <div class="table-header">
-      <h4>Overrides as Observer</h4>
+      <h4>Changes as Observer</h4>
       <div class="table-actions">
-        <button type="button" class="bulk-action-btn btn-clear-observer" data-tooltip="Remove all overrides in this table">
-          <i class="fas fa-times-circle"></i> Accept
+        <button type="button" class="bulk-action-btn btn-clear-observer" data-tooltip="Accept all changes in this table">
+          <i class="fas fa-check"></i> Accept
         </button>
       </div>
     </div>
@@ -86,12 +79,12 @@
               </div>
             </td>
             <td class="actions">
-              <div class="actions-section" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
-                <button type="button" class="row-action-btn revert-change btn btn-clear" data-override-id="{{id}}" data-tooltip="Clear this override">
-                  <i class="fas fa-times"></i>
-                </button>
-                <button type="button" class="row-action-btn apply-change btn btn-keep" data-override-id="{{id}}" data-tooltip="Keep this override">
+              <div class="actions-section pv-u-flex pv-u-align-center pv-u-gap-8 pv-u-justify-end">
+                <button type="button" class="row-action-btn apply-change btn btn-clear" data-override-id="{{id}}" data-tooltip="Accept this change">
                   <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change btn btn-keep" data-override-id="{{id}}" data-tooltip="Reject this change">
+                  <i class="fas fa-times"></i>
                 </button>
               </div>
             </td>
@@ -106,10 +99,10 @@
   {{#if targetOrientedOverrides.length}}
   <div class="results-table-container target-table">
     <div class="table-header">
-      <h4>Overrides as Target</h4>
+      <h4>Changes as Target</h4>
       <div class="table-actions">
-        <button type="button" class="bulk-action-btn btn-clear-target" data-tooltip="Remove all overrides in this table">
-          <i class="fas fa-times-circle"></i> Accept
+        <button type="button" class="bulk-action-btn btn-clear-target" data-tooltip="Accept all changes in this table">
+          <i class="fas fa-check"></i> Accept
         </button>
       </div>
     </div>
@@ -168,12 +161,12 @@
               </div>
             </td>
             <td class="actions">
-              <div class="actions-section" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
-                <button type="button" class="row-action-btn revert-change btn btn-clear" data-override-id="{{id}}" data-tooltip="Clear this override">
-                  <i class="fas fa-times"></i>
-                </button>
-                <button type="button" class="row-action-btn apply-change btn btn-keep" data-override-id="{{id}}" data-tooltip="Keep this override">
+              <div class="actions-section pv-u-flex pv-u-align-center pv-u-gap-8 pv-u-justify-end">
+                <button type="button" class="row-action-btn apply-change btn btn-clear" data-override-id="{{id}}" data-tooltip="Accept this change">
                   <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="row-action-btn revert-change btn btn-keep" data-override-id="{{id}}" data-tooltip="Reject this change">
+                  <i class="fas fa-times"></i>
                 </button>
               </div>
             </td>
@@ -188,13 +181,13 @@
 
   <!-- Bulk Actions -->
   <div class="override-validation-bulk-actions-header">
-    <div class="override-validation-bulk-actions-info">Apply action to all overrides at once</div>
+    <div class="override-validation-bulk-actions-info">Apply action to all changes at once</div>
     <div class="override-validation-bulk-actions-buttons">
-      <button type="button" class="bulk-action-btn revert-all btn-clear-all" data-tooltip="Remove all overrides">
-        <i class="fas fa-times-circle"></i> Accept All
+      <button type="button" class="bulk-action-btn apply-all btn-clear-all" data-tooltip="Accept all changes">
+        <i class="fas fa-check-circle"></i> Accept All
       </button>
-      <button type="button" class="bulk-action-btn apply-all btn-keep-all" data-tooltip="Preserve all overrides">
-        <i class="fas fa-check-circle"></i> Reject All
+      <button type="button" class="bulk-action-btn revert-all btn-keep-all" data-tooltip="Reject all changes">
+        <i class="fas fa-times-circle"></i> Reject All
       </button>
     </div>
   </div>

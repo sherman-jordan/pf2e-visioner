@@ -7,6 +7,7 @@
  * - Drag to move; position persists in localStorage
  */
 
+
 import { COVER_STATES, VISIBILITY_STATES } from '../constants.js';
 
 class OverrideValidationIndicator {
@@ -177,9 +178,9 @@ class OverrideValidationIndicator {
   #createElement() {
     this.#ensureStyles();
 
-  const el = document.createElement('div');
-      // Use only component class; rely on body-level custom properties (colorblind modes set vars globally)
-      el.className = 'pf2e-visioner-override-indicator';
+    const el = document.createElement('div');
+    // Use only component class; rely on body-level custom properties (colorblind modes set vars globally)
+    el.className = 'pf2e-visioner-override-indicator';
     el.innerHTML = `
       <div class="indicator-icon"><i class="fas fa-exclamation-triangle"></i></div>
       <div class="indicator-badge">0</div>
@@ -281,7 +282,7 @@ class OverrideValidationIndicator {
   #showTooltip() {
     if (!this._data?.overrides?.length) return;
     if (this._tooltipEl?.isConnected) return;
-  const tip = document.createElement('div');
+    const tip = document.createElement('div');
     // Tooltip similarly avoids pf2e-visioner to prevent unintended global styling overrides
     tip.className = 'pf2e-visioner-override-tooltip';
     this._tooltipEl = tip;
@@ -361,7 +362,7 @@ class OverrideValidationIndicator {
       const observerRows = [...firstSlice, ...obsExtra];
       const targetRows = [...secondSlice, ...tgtExtra];
 
-      contentHTML = section('Overrides as observer', observerRows, 'observer') + section('Overrides as target', targetRows, 'target');
+      contentHTML = section('Changes as observer', observerRows, 'observer') + section('Changes as target', targetRows, 'target');
       if (!contentHTML) contentHTML = '<div class="tip-empty">No details available</div>';
     } else {
       const items = all.slice(0, 6);
@@ -369,7 +370,7 @@ class OverrideValidationIndicator {
     }
 
     this._tooltipEl.innerHTML = `
-      <div class="tip-header"><i class="fas fa-exclamation-triangle"></i> ${this._data?.overrides?.length || 0} override(s) to validate</div>
+      <div class="tip-header"><i class="fas fa-exclamation-triangle"></i> ${this._data?.overrides?.length || 0} change(s) to validate</div>
       ${contentHTML}
       <div class="tip-footer">
         <div class="footer-bottom"><span>Left-click: open details</span></div>
@@ -453,16 +454,16 @@ class OverrideValidationIndicator {
     const bodyStyle = getComputedStyle(document.body);
     const variableFallbacks = {
       visibility: {
-        observed: ['--visibility-observed','--visibility-observed-color','#4caf50'],
-        concealed: ['--visibility-concealed','--visibility-concealed-color','#ffc107'],
-        hidden: ['--visibility-hidden','--visibility-hidden-color','#ff9800'],
-        undetected: ['--visibility-undetected','--visibility-undetected-color','#f44336'],
+        observed: ['--visibility-observed', '--visibility-observed-color', '#4caf50'],
+        concealed: ['--visibility-concealed', '--visibility-concealed-color', '#ffc107'],
+        hidden: ['--visibility-hidden', '--visibility-hidden-color', '#ff9800'],
+        undetected: ['--visibility-undetected', '--visibility-undetected-color', '#f44336'],
       },
       cover: {
-        none: ['--cover-none','--cover-none-color','#4caf50'],
-        lesser: ['--cover-lesser','--cover-lesser-color','#ffc107'],
-        standard: ['--cover-standard','--cover-standard-color','#ff6600'],
-        greater: ['--cover-greater','--cover-greater-color','#f44336'],
+        none: ['--cover-none', '--cover-none-color', '#4caf50'],
+        lesser: ['--cover-lesser', '--cover-lesser-color', '#ffc107'],
+        standard: ['--cover-standard', '--cover-standard-color', '#ff6600'],
+        greater: ['--cover-greater', '--cover-greater-color', '#f44336'],
       }
     };
 

@@ -91,11 +91,18 @@ export class LightingCalculator {
 
     // Check dedicated light sources first (including darkness sources)
     for (const light of lightSources) {
-      // Check if this is a darkness source first before filtering
-      const isDarknessSource = light.isDarknessSource || light.document?.config?.negative || false;
+      // Determine if this light is a "darkness" (negative) source. Support multiple possible paths for robustness across Foundry versions.
+      const isDarknessSource = !!(
+        light.isDarknessSource ||
+        light.document?.config?.negative ||
+        light.document?.config?.darkness?.negative ||
+        light.document?.negative ||
+        light.config?.negative
+      );
 
-      // Skip disabled lights
-      if (light.document.hidden || !light.emitsLight)
+      // Skip if the light is hidden. For non-darkness lights also skip if they do not emit light.
+      // Darkness sources often report emitsLight=false, but we still need to process them so they can impose darkness.
+      if (light.document.hidden || (!isDarknessSource && !light.emitsLight))
         continue;
 
       // Check if position is inside the light polygon first

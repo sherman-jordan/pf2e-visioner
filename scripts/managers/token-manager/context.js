@@ -146,6 +146,14 @@ export async function buildContext(app, options) {
         cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
+        // Determine if an AVS override exists for this pair (observer -> target) in observer mode
+        let hasAvsOverride = false;
+        try {
+          hasAvsOverride = !!token.document.getFlag(
+            MODULE_ID,
+            `avs-override-from-${app.observer.document.id}`,
+          );
+        } catch { /* ignore */ }
 
       return {
         id: token.document.id,
@@ -179,6 +187,7 @@ export async function buildContext(app, options) {
         showOutcome,
         outcomeLabel,
         outcomeClass,
+        hasAvsOverride,
       };
     });
   } else {
@@ -238,6 +247,14 @@ export async function buildContext(app, options) {
         cssClass: VISIBILITY_STATES[key].cssClass,
       }));
 
+      // In target mode, overrides are stored on the target (app.observer) with key from row observer id
+      let hasAvsOverride = false;
+      try {
+        hasAvsOverride = !!app.observer.document.getFlag(
+          MODULE_ID,
+          `avs-override-from-${observerToken.document.id}`,
+        );
+      } catch { /* ignore */ }
 
       return {
         id: observerToken.document.id,
@@ -271,6 +288,7 @@ export async function buildContext(app, options) {
         showOutcome,
         outcomeLabel,
         outcomeClass,
+        hasAvsOverride,
       };
     });
   }

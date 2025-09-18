@@ -49,6 +49,26 @@
     color: var(--pf2e-visioner-danger);
     border: 1px solid var(--visibility-undetected);
   }
+  /* Override removal column */
+  .visioner-token-manager .override-column {
+    text-align: center;
+    width: 30px;
+  }
+  .visioner-token-manager button.remove-override {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--pf2e-visioner-danger, #c92a2a);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .visioner-token-manager button.remove-override:hover {
+    background: rgba(255, 0, 0, 0.15);
+    border-color: rgba(255, 0, 0, 0.4);
+    color: #ff4d4f;
+  }
   /* Foundry-hidden token indicator */
   .visioner-token-manager .token-image .token-img-wrapper {
     position: relative;

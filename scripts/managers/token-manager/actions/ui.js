@@ -432,6 +432,73 @@ export function bindDomIconHandlers(TokenManagerClass) {
         if (hiddenInput) hiddenInput.value = newState;
       });
     });
+
+    // Attach remove override handlers
+    const removeButtons = element.querySelectorAll('button.remove-override[data-action="removeAvsOverride"]');
+    removeButtons.forEach((btn) => {
+      btn.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const rowTokenId = btn.dataset.tokenId;
+        if (!rowTokenId) return;
+        try {
+          const { default: AvsOverrideManager } = await import('../../../chat/services/infra/avs-override-manager.js');
+          const app = this; // VisionerTokenManager instance
+          if (!app?.observer) return;
+          if (app.mode === 'observer') {
+            // Remove override observer -> row token
+            await AvsOverrideManager.removeOverride(app.observer.document.id, rowTokenId);
+          } else {
+            // Target mode: override stored on observed (app.observer) from row token id
+            await AvsOverrideManager.removeOverride(rowTokenId, app.observer.document.id);
+          }
+
+          // Attempt to refresh override indicator badge count immediately
+          try {
+            const { default: indicator } = await import('../../../ui/override-validation-indicator.js');
+            // Recompute remaining overrides affecting observer or row token
+            const allTokens = canvas.tokens?.placeables || [];
+            const remaining = [];
+            for (const t of allTokens) {
+              const flags = t.document?.flags?.['pf2e-visioner'] || {};
+              for (const [k, v] of Object.entries(flags)) {
+                if (!k.startsWith('avs-override-from-')) continue;
+                const observerId = k.replace('avs-override-from-', '');
+                if (!v || typeof v !== 'object') continue;
+                const targetId = t.document.id;
+                // Basic shape expected by indicator (subset)
+                remaining.push({
+                  observerId,
+                  targetId,
+                  observerName: v.observerName || observerId,
+                  targetName: v.targetName || t.document.name,
+                  state: v.state,
+                  hasCover: v.hasCover,
+                  hasConcealment: v.hasConcealment,
+                  expectedCover: v.expectedCover,
+                  currentVisibility: null,
+                  currentCover: null,
+                });
+              }
+            }
+            if (remaining.length === 0) {
+              indicator.hide(true);
+              indicator.update([], '');
+            } else {
+              // Provide a generic tokenName context
+              indicator.update(remaining, 'Overrides');
+            }
+          } catch (indErr) {
+            console.warn('Token Manager: override indicator refresh failed:', indErr);
+          }
+          // Re-render to update button visibility
+          this.render({ force: true });
+        } catch (e) {
+          console.warn('Token Manager: failed to remove AVS override:', e);
+          ui.notifications?.warn?.('PF2E Visioner: Failed to remove AVS override');
+        }
+      });
+    });
   };
 
   TokenManagerClass.prototype.addTokenImageClickHandlers =

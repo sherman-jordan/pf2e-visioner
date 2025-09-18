@@ -234,7 +234,7 @@ export async function previewActionResults(actionData) {
           if (!canShowConsequences) {
             const { notify } = await import('../infra/notifications.js');
             notify.warn(
-              'No valid targets found for Attack Consequences. According to RAW, you can only see consequences from targets that you are Hidden or Undetected from.',
+              'No valid targets found for Attack Consequences. you can only see consequences if you are Hidden or Undetected from at least one observer.',
             );
             return;
           }

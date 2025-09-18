@@ -92,7 +92,7 @@
       "SETTING_HINT": "Ajoute automatiquement les boutons Chercher aux messages de la conversation pour appliquer les changements de visibilité",
       "OUT_OF_RANGE": "Hors de portée",
       "RANGE_LIMIT_ACTIVE": "La limite de portée est active : Montre seulement les cibles dans un rayon de 9 mètres",
-      "RANGE_LIMIT_ACTIVE_CUSTOM": "Limite de portée active : Montre seumlement les cibles dans les {distance} pieds ",
+      "RANGE_LIMIT_ACTIVE_CUSTOM": "Limite de portée active : Montre seumement les cibles dans les {distance} pieds ",
       "NO_TARGETS_IN_RANGE": "PAs de cibles valides dans la portée de 9 mètres",
       "NO_TARGETS_IN_RANGE_CUSTOM": "Pas de cibles valides dans la portée de {distance} pieds"
     },
@@ -187,8 +187,12 @@
         }
       },
       "IGNORE_ALLIES_DEFAULT": {
-        "name": "Ignorer les alliés",
-        "hint": "S'il est activé, les PNJ ne verront que les membres du groupe dans les dialogues et les joeuurs ne verront que les PNJ. Ceci simplifie la gestion de la visibilité en cachant les relations interalliées."
+        "name": "Ignorer les alliés (défaut)",
+        "hint": "Définit l'état par défaut de la case 'Ignorer les alliés' dans les dialogues Visioner et le gestionnaire de jetons. Modifiable à la volée dans chaque dialogue."
+      },
+      "HIDE_FOUNDRY_HIDDEN_TOKENS": {
+        "name": "Masquer les jetons cachés Foundry dans l'UI",
+        "hint": "Si activé, les jetons marqués cachés via le drapeau natif Foundry sont filtrés des dialogues/gestionnaires Visioner (sauf besoins explicites). Filtre visuel côté client uniquement."
       },
       "ENABLE_ALL_TOKENS_VISION": {
         "name": "Activer Vision pour tous les jetons",

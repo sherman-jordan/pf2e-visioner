@@ -33,9 +33,6 @@ const SETTINGS_GROUPS = {
   ],
   'Auto-Visibility': [
     'autoVisibilityEnabled',
-    'autoVisibilityUpdateOnMovement',
-    'autoVisibilityUpdateOnLighting',
-    'autoVisibilityThrottleDelay',
     'autoVisibilityDebugMode',
   ],
   'Seek & Range': [
@@ -326,10 +323,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       };
 
       const autoVisibilityDependents = [
-        'autoVisibilityThrottleDelay',
         'autoVisibilityDebugMode',
-        'autoVisibilityUpdateOnMovement',
-        'autoVisibilityUpdateOnLighting',
       ];
 
       const autoVisibilityToggle = content.querySelector('[name="settings.autoVisibilityEnabled"]');

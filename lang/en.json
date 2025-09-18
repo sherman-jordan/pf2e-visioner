@@ -218,10 +218,6 @@
         "name": "Auto-Visibility Debug Mode",
         "hint": "Enable detailed console logging for the auto-visibility system. Useful for troubleshooting visibility calculations."
       },
-      "AUTO_VISIBILITY_THROTTLE_DELAY": {
-        "name": "Auto-Visibility Update Delay (ms)",
-        "hint": "Delay in milliseconds before processing visibility updates after token movement. Higher values reduce lag but make updates less responsive. Recommended: 500ms for normal scenes, 1000ms+ for scenes with many tokens."
-      },
       "AUTO_VISIBILITY_RESPECT_MANUAL_ACTIONS": {
         "name": "Respect Manual Visibility Actions",
         "hint": "When enabled, auto-visibility will not override visibility states set by manual actions like Seek, Hide, Sneak, or Point Out. Disable to allow auto-visibility to always recalculate based on lighting and senses."
@@ -240,6 +236,10 @@
       "IGNORE_ALLIES_DEFAULT": {
         "name": "Ignore Allies (default)",
         "hint": "Sets the default state of the 'Ignore allies' checkbox in Visioner dialogs and the Token Manager. You can toggle it live per dialog to filter results in real time."
+      },
+      "HIDE_FOUNDRY_HIDDEN_TOKENS": {
+        "name": "Hide Foundry-Hidden Tokens in UI",
+        "hint": "When enabled, tokens that are hidden using Foundry's core hidden flag will be filtered out of Visioner dialogs and managers (except where explicitly needed)."
       },
       "ENABLE_ALL_TOKENS_VISION": {
         "name": "Enable Vision for All Tokens",

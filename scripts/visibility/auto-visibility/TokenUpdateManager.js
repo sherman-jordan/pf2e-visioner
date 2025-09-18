@@ -60,17 +60,15 @@ export class OptimizedTokenUpdateManager {
     const actorChanged = changes.actorId !== undefined || changes.actorData !== undefined;
 
     // Handle movement updates (gated by movement setting)
-    const updateOnMovement = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnMovement');
-    const updateOnLighting = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting');
 
     let significantPositionChange = false;
-    if (positionChanged && updateOnMovement) {
+    if (positionChanged) {
       significantPositionChange = this.#isSignificantPositionChange(tokenDoc, changes);
     }
-    const shouldUpdateForLighting = lightChanged && updateOnLighting;
+    const shouldUpdateForLighting = lightChanged;
 
     // Handle actor changes (always processed if movement updates are enabled)
-    const shouldUpdateForActor = actorChanged && updateOnMovement;
+    const shouldUpdateForActor = actorChanged;
 
     if (significantPositionChange || shouldUpdateForLighting || shouldUpdateForActor) {
 

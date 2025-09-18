@@ -179,18 +179,16 @@ export class EventDrivenVisibilitySystem {
     const effectsChanged =
       changes.actorData?.effects !== undefined || changes.actorData !== undefined;
 
-    const updateOnMovement = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnMovement');
-    const updateOnLighting = game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting');
 
     let shouldUpdate = false;
 
-    if (positionChanged && updateOnMovement) {
+    if (positionChanged) {
       const distance = this.#getMovementDistance(tokenDoc, changes);
       const threshold = (canvas.grid?.size || 100) * 0.5;
       if (distance >= threshold) shouldUpdate = true;
     }
 
-    if ((lightChanged || visionChanged) && updateOnLighting) {
+    if ((lightChanged || visionChanged)) {
       shouldUpdate = true;
       // Removed debug log
     }
@@ -268,7 +266,6 @@ export class EventDrivenVisibilitySystem {
    */
   #onLightUpdate(lightDoc, changes) {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Check what changed about the light
     const significantChange =
@@ -286,7 +283,6 @@ export class EventDrivenVisibilitySystem {
 
   #onLightCreate() {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Removed debug log
 
@@ -295,7 +291,6 @@ export class EventDrivenVisibilitySystem {
 
   #onLightDelete() {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Removed debug log
 
@@ -307,7 +302,6 @@ export class EventDrivenVisibilitySystem {
    */
   #onWallUpdate() {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Removed debug log
 
@@ -316,7 +310,6 @@ export class EventDrivenVisibilitySystem {
 
   #onWallCreate() {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Removed debug log
 
@@ -325,7 +318,6 @@ export class EventDrivenVisibilitySystem {
 
   #onWallDelete() {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Removed debug log
 
@@ -1099,25 +1091,6 @@ export class EventDrivenVisibilitySystem {
     await AvsOverrideManager.clearAllOverrides();
   }
 
-  /**
-   * Debug method to create a test override
-   * @param {string} observerId - Observer token ID
-   * @param {string} targetId - Target token ID  
-   * @param {boolean} hasCover - Whether override claims cover
-   * @param {boolean} hasConcealment - Whether override claims concealment
-   */
-  debugCreateOverride(observerId, targetId, hasCover = true, hasConcealment = false) {
-    const overrideKey = `${observerId}-${targetId}`;
-    this.#activeOverrides.set(overrideKey, {
-      state: 'active',
-      source: 'debug-test',
-      targetId,
-      targetName: canvas.tokens?.get(targetId)?.name || 'Unknown',
-      hasCover,
-      hasConcealment
-    });
-  }
-
   // ==========================================
   // TEMPLATE EVENTS
   // ==========================================
@@ -1127,7 +1100,6 @@ export class EventDrivenVisibilitySystem {
    */
   #onTemplateCreate(template) {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Check if this template might affect visibility (light spells, darkness, etc.)
     const templateName = template.flags?.pf2e?.item?.name?.toLowerCase() || '';
@@ -1147,7 +1119,6 @@ export class EventDrivenVisibilitySystem {
    */
   #onTemplateUpdate(template, changes) {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     // Check if position or configuration changed
     const significantChange =
@@ -1175,7 +1146,6 @@ export class EventDrivenVisibilitySystem {
    */
   #onTemplateDelete(template) {
     if (!this.#enabled || !game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, 'autoVisibilityUpdateOnLighting')) return;
 
     const templateName = template.flags?.pf2e?.item?.name?.toLowerCase() || '';
     const isLightTemplate =

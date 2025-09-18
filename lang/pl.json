@@ -193,7 +193,11 @@
       },
       "IGNORE_ALLIES_DEFAULT": {
         "name": "Ignoruj sojuszników (domyślnie)",
-        "hint": "Ustawia domyślny stan pola wyboru „Ignoruj sojuszników” w oknach dialogowych Visioner i Menedżerze tokenów. Można przełączać tę opcję na żywo w każdym oknie dialogowym, aby filtrować wyniki w czasie rzeczywistym."
+        "hint": "Ustawia domyślny stan pola 'Ignoruj sojuszników' w oknach Visioner i Menedżerze Tokenów. Można zmienić na bieżąco w każdym dialogu."
+      },
+      "HIDE_FOUNDRY_HIDDEN_TOKENS": {
+        "name": "Ukryj ukryte w Foundry tokeny w UI",
+        "hint": "Gdy włączone, tokeny oznaczone jako ukryte (core Foundry) są filtrowane z okien/dialogów Visioner (poza przypadkami specjalnymi). Tylko filtr wizualny po stronie klienta."
       },
       "ENABLE_ALL_TOKENS_VISION": {
         "name": "Włącz wizję dla wszystkich tokenów",

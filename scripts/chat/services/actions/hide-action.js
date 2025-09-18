@@ -214,6 +214,7 @@ export class HideActionHandler extends ActionHandlerBase {
         const { LightingCalculator } = await import('../../../visibility/auto-visibility/LightingCalculator.js');
         const lightingCalculator = LightingCalculator.getInstance();
         const targetPosition = actionData.actor?.center || actionData.actor?.document?.center || actionData.actor?.object?.center || actionData.actor?.token?.object?.center || null;
+        targetPosition.elevation = actionData.actor?.document?.elevation || actionData.actor?.elevation || actionData.actor?.token?.object?.document?.elevation || 0;
         if (targetPosition && lightingCalculator) {
           const lightInfo = lightingCalculator.getLightLevelAt(targetPosition);
           inDimOrDarker = ['dim', 'darkness'].includes(lightInfo?.level);

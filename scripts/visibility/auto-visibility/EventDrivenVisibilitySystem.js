@@ -796,6 +796,7 @@ export class EventDrivenVisibilitySystem {
       const position = {
         x: updatedDoc.x + (updatedDoc.width * canvas.grid.size) / 2,
         y: updatedDoc.y + (updatedDoc.height * canvas.grid.size) / 2,
+        elevation: updatedDoc.elevation || 0,
       };
 
       return position;
@@ -807,6 +808,7 @@ export class EventDrivenVisibilitySystem {
       const position = {
         x: canvasToken.document.x + (canvasToken.document.width * canvas.grid.size) / 2,
         y: canvasToken.document.y + (canvasToken.document.height * canvas.grid.size) / 2,
+        elevation: canvasToken.document.elevation || 0,
       };
 
       return position;
@@ -816,6 +818,7 @@ export class EventDrivenVisibilitySystem {
     const position = {
       x: token.document.x + (token.document.width * canvas.grid.size) / 2,
       y: token.document.y + (token.document.height * canvas.grid.size) / 2,
+      elevation: token.document.elevation || 0,
     };
 
     return position;

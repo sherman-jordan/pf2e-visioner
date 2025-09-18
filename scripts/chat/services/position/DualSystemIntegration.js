@@ -187,7 +187,6 @@ export class DualSystemIntegration {
 
       // Use Auto-Cover system detection with v13 wall and geometry APIs
       const coverState = await this._detectAutoCover(observer, target, options);
-      debugger
       const bonus = this._calculateCoverBonus(coverState);
 
       result.success = true;
@@ -234,7 +233,6 @@ export class DualSystemIntegration {
       }
 
       try {
-        debugger;
         coverResult = await this.getAutoCoverState(observerToken, targetToken, options);
       } catch (autoCoverError) {
         console.warn('PF2E Visioner: Auto-Cover failed, using fallback', autoCoverError);

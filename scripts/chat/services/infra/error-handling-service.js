@@ -148,6 +148,7 @@ export class ErrorHandlingService {
           const targetPosition = {
             x: target.center.x,
             y: target.center.y,
+            elevation: target.document.elevation || 0,
           };
 
           const lightLevelInfo = lightingCalculator.getLightLevelAt(targetPosition);

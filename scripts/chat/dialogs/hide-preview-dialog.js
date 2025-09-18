@@ -690,7 +690,6 @@ export class HidePreviewDialog extends BaseActionDialog {
    */
   _endPositionQualifiesForHide(endPos) {
     try {
-      debugger;
       if (!endPos) return false;
       if (endPos.coverState && (endPos.coverState === 'standard' || endPos.coverState === 'greater')) return true;
       if (endPos.avsVisibility === 'concealed') return true;

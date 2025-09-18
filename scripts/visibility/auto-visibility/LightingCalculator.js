@@ -61,7 +61,12 @@ export class LightingCalculator {
     const DIM = 1;
     const BRIGHT = 2;
     const FOUNDRY_DARK = 0.25;
-    const baseIllumination = hasGlobalIllumination ? 1.0 - sceneDarkness : 0.0;
+    
+    // Check for region-specific darkness level
+    const regionDarkness = this.#getRegionDarknessAt(position);
+    const effectiveDarkness = regionDarkness !== null ? regionDarkness : sceneDarkness;
+    
+    const baseIllumination = hasGlobalIllumination ? 1.0 - effectiveDarkness : 0.0;
 
     function makeIlluminationResult(illumination) { 
       const LIGHT_LEVELS = ['darkness','dim','bright' ];
@@ -93,6 +98,14 @@ export class LightingCalculator {
       if (light.document.hidden || !light.emitsLight)
         continue;
 
+      // Check if position is inside the light polygon first
+      const isInPolygon = this.#isPositionInLightPolygon(position, light);
+      
+      // If polygon check is available and position is outside, skip this light
+      if (isInPolygon === false) {
+        continue;
+      }
+
       // Try multiple property paths for light radius FIRST
       const brightRadius =
         light.document.config?.bright || light.document.bright || light.config?.bright || 0;
@@ -102,25 +115,45 @@ export class LightingCalculator {
       const lightX = light.x || light.document.x;
       const lightY = light.y || light.document.y;
 
-      // Calculated distances are in squared pixel units
-      const distanceSquared = 
-        Math.pow(position.x - lightX, 2) + Math.pow(position.y - lightY, 2) ;
-      const brightRadiusSquared = Math.pow(brightRadius * pixelsPerUnit, 2);
-      const dimRadiusSquared = Math.pow(dimRadius * pixelsPerUnit, 2);
+      // Only do distance calculation if polygon check is not available or position is inside polygon
+      if (isInPolygon === null) {
+        // Calculated distances are in squared pixel units
+        const distanceSquared = 
+          Math.pow(position.x - lightX, 2) + Math.pow(position.y - lightY, 2) ;
+        const brightRadiusSquared = Math.pow(brightRadius * pixelsPerUnit, 2);
+        const dimRadiusSquared = Math.pow(dimRadius * pixelsPerUnit, 2);
 
-      // Handle darkness sources (they eliminate illumination)
-      // For darkness sources, both bright and dim areas provide full darkness
-      if (isDarknessSource) {
-        if (distanceSquared <= brightRadiusSquared || distanceSquared <= dimRadiusSquared) {
-          return makeIlluminationResult(DARK);
+        // Handle darkness sources (they eliminate illumination)
+        // For darkness sources, both bright and dim areas provide full darkness
+        if (isDarknessSource) {
+          if (distanceSquared <= brightRadiusSquared || distanceSquared <= dimRadiusSquared) {
+            return makeIlluminationResult(DARK);
+          }
+        } else {
+          // Handle normal light sources (they increase illumination) - use pixel-converted radii
+          if (distanceSquared <= brightRadiusSquared) {
+            // can't return right away because darkness source trumps this
+            illumination = BRIGHT;
+          } else if (distanceSquared <= dimRadiusSquared) {
+            illumination = Math.max(illumination, DIM); // Dim light
+          }
         }
       } else {
-        // Handle normal light sources (they increase illumination) - use pixel-converted radii
-        if (distanceSquared <= brightRadiusSquared) {
-          // can't return right away because darkness source trumps this
-          illumination = BRIGHT;
-        } else if (distanceSquared <= dimRadiusSquared) {
-          illumination = Math.max(illumination, DIM); // Dim light
+        // Position is inside the light polygon, determine if it's bright or dim
+        // This requires checking if it's within the bright radius or just the dim radius
+        const distanceSquared = 
+          Math.pow(position.x - lightX, 2) + Math.pow(position.y - lightY, 2) ;
+        const brightRadiusSquared = Math.pow(brightRadius * pixelsPerUnit, 2);
+        
+        if (isDarknessSource) {
+          return makeIlluminationResult(DARK);
+        } else {
+          // Within polygon - check if it's bright or dim illumination
+          if (distanceSquared <= brightRadiusSquared) {
+            illumination = BRIGHT;
+          } else {
+            illumination = Math.max(illumination, DIM);
+          }
         }
       }
     }
@@ -151,30 +184,148 @@ export class LightingCalculator {
   }
 
   /**
+   * Get darkness level from scene regions at a specific position
+   * @param {Object} position - {x, y} coordinates
+   * @returns {number|null} Region darkness level or null if no region affects this position
+   */
+  #getRegionDarknessAt(position) {
+    // Check if scene regions exist (v12+)
+    if (!canvas.scene?.regions || !canvas.regions?.placeables) {
+      return null;
+    }
+
+    // Check each region to see if the position is within it
+    for (const region of canvas.regions.placeables) {
+      if (!region.document || region.document.hidden) {
+        continue;
+      }
+
+      // Check if position is within this region's bounds
+      if (this.#isPositionInRegion(position, region)) {
+        // Look for darkness behaviors (support legacy 'environment' and new 'adjustDarknessLevel')
+        const behaviors = region.document.behaviors || [];
+        for (const behavior of behaviors) {
+          if (behavior?.type === 'adjustDarknessLevel') {
+            const mode = behavior.system?.mode; // 0=set, 1=add, 2=mult (assumed semantics)
+            const modifier = Number(behavior.system?.modifier ?? 0);
+            const base = canvas.scene?.environment?.darknessLevel ?? canvas.scene?.darkness ?? 0;
+            let value = base;
+            switch (mode) {
+              case 0: // set
+                value = modifier; break;
+              case 1: // add
+                value = base + modifier; break;
+              case 2: // multiply
+                value = base * modifier; break;
+              default:
+                value = base + modifier; // fallback treat as additive
+            }
+            // Clamp between 0 and 1
+            value = Math.min(1, Math.max(0, value));
+            return value;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if a position is within a region
+   * @param {Object} position - {x, y} coordinates
+   * @param {Object} region - The region object
+   * @returns {boolean} True if position is within the region
+   */
+  #isPositionInRegion(position, region) {
+    try {
+      // Use Foundry's built-in method if available
+      if (region.testPoint) {
+        return region.testPoint(position);
+      }
+
+      // Fallback: check against region bounds
+      const bounds = region.bounds || region.document.bounds;
+      if (bounds) {
+        return position.x >= bounds.x && 
+               position.x <= bounds.x + bounds.width &&
+               position.y >= bounds.y && 
+               position.y <= bounds.y + bounds.height;
+      }
+
+      return false;
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Error checking region bounds:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if a position is within a light source's polygon
+   * @param {Object} position - {x, y} coordinates
+   * @param {Object} light - The light source object
+   * @returns {boolean} True if position is within the light polygon
+   */
+  #isPositionInLightPolygon(position, light) {
+    try {
+      const shape = light.shape || light.lightSource?.shape || light.source?.shape || null;
+
+      const testPoly = (poly) => {
+        if (!poly) return null;
+        // Built-in contains
+        if (typeof poly.contains === 'function') {
+          try { return !!poly.contains(position.x, position.y); } catch { return null; }
+        }
+        // Manual ray-cast on point array (x0,y0,x1,y1,...)
+        if (Array.isArray(poly.points) && poly.points.length >= 6) {
+          const pts = poly.points;
+            const b = poly.bounds || poly.boundingBox;
+          if (b) {
+            if (position.x < b.x || position.x > b.x + b.width || position.y < b.y || position.y > b.y + b.height) {
+              return false; // outside bounds
+            }
+          }
+          let inside = false;
+          for (let i = 0, j = pts.length - 2; i < pts.length; i += 2) {
+            const xi = pts[i];
+            const yi = pts[i + 1];
+            const xj = pts[j];
+            const yj = pts[j + 1];
+            const intersects = ((yi > position.y) !== (yj > position.y)) &&
+              (position.x < (xj - xi) * (position.y - yi) / ((yj - yi) || 1e-9) + xi);
+            if (intersects) inside = !inside;
+            j = i;
+          }
+          return inside;
+        }
+        return null; // insufficient data
+      };
+
+      const shapeResult = testPoly(shape);
+      if (shapeResult !== null) return shapeResult; // true/false inside/outside
+      return null; // fallback to distance
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Get cached light-emitting tokens or refresh cache if expired
    * @returns {Array} Array of light-emitting token information
    */
   #getLightEmittingTokens() {
     const now = Date.now();
-
-    // Return cached results if still valid
-    if (
-      this.#lightEmittingTokensCache &&
-      now - this.#lightCacheTimestamp < this.#lightCacheTimeout
-    ) {
+    if (this.#lightEmittingTokensCache && (now - this.#lightCacheTimestamp) < this.#lightCacheTimeout) {
       return this.#lightEmittingTokensCache;
     }
-
-    // Refresh cache
     this.#refreshLightEmittingTokensCache();
     return this.#lightEmittingTokensCache || [];
   }
-
   /**
    * Refresh the cache of light-emitting tokens
    */
   #refreshLightEmittingTokensCache() {
-    const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode');
+  // const debugMode = game.settings.get(MODULE_ID, 'autoVisibilityDebugMode'); // currently unused
     const tokens = canvas.tokens?.placeables || [];
 
     this.#lightEmittingTokensCache = tokens

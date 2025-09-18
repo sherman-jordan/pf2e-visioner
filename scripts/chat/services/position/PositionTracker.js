@@ -378,6 +378,7 @@ export class PositionTracker {
       const targetPosition = {
         x: token2.center.x,
         y: token2.center.y,
+        elevation: token2.document.elevation || 0,
       };
 
       const lightLevelInfo = lightingCalculator.getLightLevelAt(targetPosition);

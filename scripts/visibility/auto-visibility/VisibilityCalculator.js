@@ -107,7 +107,6 @@ export class VisibilityCalculator {
     target,
     _observerPositionOverride = null,
     targetPositionOverride = null,
-    useRawLoS = false,
   ) {
     if (!observer?.actor || !target?.actor) {
       return 'observed';
@@ -146,6 +145,7 @@ export class VisibilityCalculator {
       const targetPosition = targetPositionOverride || {
         x: target.document.x + (target.document.width * canvas.grid.size) / 2,
         y: target.document.y + (target.document.height * canvas.grid.size) / 2,
+        elevation: target.document.elevation || 0,
       };
       const lightLevel = this.#lightingCalculator.getLightLevelAt(targetPosition);
       const observerVision = this.#visionAnalyzer.getVisionCapabilities(observer);

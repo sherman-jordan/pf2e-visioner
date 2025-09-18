@@ -59,6 +59,27 @@ export class SneakDialogService {
       // Capture current visibility and cover states from all observer tokens
       const startStates = {};
 
+      // Remove waiting-for-sneak-start effect (if present) and unlock token before proceeding
+      try {
+        const actor = token?.actor;
+        if (actor) {
+          const waiting = actor.itemTypes?.effect?.find?.(e => e?.system?.slug === 'waiting-for-sneak-start');
+            if (waiting) {
+              try { await actor.deleteEmbeddedDocuments('Item', [waiting.id]); } catch (e) {
+                console.warn('PF2E Visioner | Failed to remove waiting-for-sneak-start effect:', e);
+              }
+            }
+        }
+        try {
+          const tokenObj = canvas.tokens.get(token.id);
+          if (tokenObj) tokenObj.locked = false;
+        } catch {}
+        // Clear waiting flag so movement is allowed
+        try { await token.document.unsetFlag('pf2e-visioner', 'waitingSneak'); } catch {}
+      } catch (cleanupErr) {
+        console.warn('PF2E Visioner | Cleanup waiting effect failed:', cleanupErr);
+      }
+
       // Get all potential observer tokens (non-allied tokens). Include Foundry-hidden; UI handles visual filtering.
       const observerTokens = canvas.tokens.placeables.filter(t =>
         t.id !== token.id && t.actor

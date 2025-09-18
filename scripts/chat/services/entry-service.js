@@ -231,6 +231,91 @@ export async function handleRenderChatMessage(message, html) {
     !!actionData.actor &&
     (actionData.actor.isOwner || actionData.actor?.document?.isOwner);
 
+  // If this is a player-authored Sneak action (not GM) and sneak has not started yet for this message, add a waiting effect and lock movement
+  try {
+    if (actionData.actionType === 'sneak') {
+      // Only apply waiting logic for non-GM authored Sneak rolls to avoid duplicating effects when GMs test or roll on behalf of players.
+      const isGMAuthor = game.users?.get(message.author?.id || message.user)?.isGM;
+      if (isGMAuthor) {
+        // Ensure no stale waiting flag remains if GM previously forced a sneak
+        try {
+          const actorToken = actionData.actor;
+          if (actorToken?.document?.getFlag('pf2e-visioner', 'waitingSneak')) {
+            await actorToken.document.unsetFlag('pf2e-visioner', 'waitingSneak');
+          }
+        } catch {}
+        // Skip effect creation entirely for GM-authored messages
+        throw 'skip-waiting-effect';
+      }
+
+      const hasStartedSneak = message?.flags?.['pf2e-visioner']?.sneakStartStates;
+      const actorToken = actionData.actor;
+      const actor = actorToken?.actor || actorToken?.document?.actor || null;
+      // Only the message author client should create the effect to prevent duplicates across connected players
+      const isMessageAuthorClient = message.author?.id === game.user.id;
+      if (actor && !hasStartedSneak && isMessageAuthorClient) {
+        // Check for existing waiting effect by slug
+        const existing = actor.itemTypes?.effect?.find?.(e => e?.system?.slug === 'waiting-for-sneak-start');
+        if (!existing) {
+          // Build minimal effect data (PF2E system requires certain fields)
+          const effectData = {
+            type: 'effect',
+            name: 'Waiting to Start Sneak',
+            system: {
+              slug: 'waiting-for-sneak-start',
+              tokenIcon: { show: true },
+              duration: { value: -1, unit: 'unlimited', expiry: null, sustained: false },
+              start: { value: game.time.worldTime },
+              description: { value: 'Movement locked until Start Sneak is pressed or GM removes this effect.' },
+              rules: [],
+              level: { value: 0 },
+              traits: { rarity: 'common', value: [] },
+              // Mark as visioner generated
+              source: { value: 'pf2e-visioner' },
+            },
+            flags: { core: { sourceId: null }, 'pf2e-visioner': { waitingSneak: true } },
+          };
+          try {
+            await actor.createEmbeddedDocuments('Item', [effectData]);
+          } catch (e) {
+            console.warn('PF2E Visioner | Failed to create waiting-for-sneak-start effect:', e);
+          }
+          // Set token flag to make detection reliable across clients
+          try {
+            if (actorToken?.document) {
+              await actorToken.document.setFlag('pf2e-visioner', 'waitingSneak', true);
+            }
+          } catch (e) {
+            console.warn('PF2E Visioner | Failed to set waitingSneak flag on token:', e);
+          }
+          // Lock token movement client-side immediately (visual cue). Persistence is enforced by preUpdateToken hook.
+          try {
+            if (actorToken?.document?.id) {
+              const tokenObj = canvas.tokens.get(actorToken.id);
+              if (tokenObj) tokenObj.locked = true;
+            }
+          } catch {}
+        } else {
+          // Ensure token.locked reflects waiting state
+            try {
+              const tokenObj = canvas.tokens.get(actorToken.id);
+              if (tokenObj) tokenObj.locked = true;
+            } catch {}
+          // Ensure flag exists if effect already did
+          try {
+            if (actorToken?.document && !actorToken.document.getFlag('pf2e-visioner', 'waitingSneak')) {
+              await actorToken.document.setFlag('pf2e-visioner', 'waitingSneak', true);
+            }
+          } catch {}
+        }
+      }
+    }
+  } catch (e) {
+    if (e !== 'skip-waiting-effect') {
+      console.warn('PF2E Visioner | Error handling waiting-for-sneak-start effect:', e);
+    }
+  }
+
   if (!game.user.isGM && !isSeekTemplatePlayer && !isSneakPlayerAuthor && !isSneakTokenOwner)
     return;
 

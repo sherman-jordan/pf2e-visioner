@@ -47,7 +47,7 @@ export async function registerHooks() {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+    } catch {}
   });
   Hooks.on('updateWall', async (doc, changes) => {
     try {
@@ -136,7 +136,7 @@ export async function registerHooks() {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+    } catch {}
   });
   Hooks.on('deleteWall', async (wallDocument) => {
     try {
@@ -148,7 +148,7 @@ export async function registerHooks() {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+    } catch {}
   });
 
   // Debounced token selection handler to prevent jittering
@@ -182,25 +182,70 @@ export async function registerHooks() {
       await updateWallVisuals(id);
     } catch (_) {}
   });
+
+  // Prevent movement while awaiting Start Sneak confirmation
+  Hooks.on('preUpdateToken', (tokenDoc, changes, options, userId) => {
+    try {
+      // Only care about positional movement
+      if (!('x' in changes || 'y' in changes)) return;
+      // Allow GMs to always move
+      if (game.users?.get(userId)?.isGM) return;
+      const actor = tokenDoc?.actor;
+      if (!actor) return;
+      // Determine waiting state either via our custom token flag or effect slug.
+      const hasWaitingFlag = tokenDoc.getFlag?.(MODULE_ID, 'waitingSneak');
+      let waitingEffect = null;
+      // Only search effects if we don't already have the flag (cheap boolean first)
+      if (!hasWaitingFlag) {
+        waitingEffect = actor.itemTypes?.effect?.find?.(e => e?.system?.slug === 'waiting-for-sneak-start');
+      }
+      if (!hasWaitingFlag && !waitingEffect) return;
+      // Block movement for non-GM users
+      ui.notifications?.warn?.('You cannot move until Sneak has started.');
+      return false; // Cancel update
+    } catch (e) {
+      console.warn('PF2E Visioner | preUpdateToken movement block failed:', e);
+    }
+  });
   Hooks.on('createToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+    } catch {}
   });
   Hooks.on('deleteToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+    } catch {}
   });
   Hooks.on('refreshToken', async () => {
     try {
       const { updateWallVisuals } = await import('../services/visual-effects.js');
       const id = canvas.tokens.controlled?.[0]?.id || null;
       await updateWallVisuals(id);
-    } catch (_) {}
+    } catch {}
+  });
+
+  // If the waiting-for-sneak-start effect is manually removed, clear the token flag so movement becomes allowed.
+  Hooks.on('deleteItem', async (item) => {
+    try {
+      if (item?.type !== 'effect') return;
+      if (item?.system?.slug !== 'waiting-for-sneak-start') return;
+      const actor = item?.parent;
+      if (!actor) return;
+      // Find any active tokens for this actor on the current scene
+  const tokens = canvas.tokens?.placeables?.filter(t => t.actor?.id === actor.id) || [];
+      for (const t of tokens) {
+        if (t.document.getFlag('pf2e-visioner', 'waitingSneak')) {
+          try { await t.document.unsetFlag('pf2e-visioner', 'waitingSneak'); } catch {}
+          try { if (t.locked) t.locked = false; } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn('PF2E Visioner | deleteItem cleanup failed:', e);
+    }
   });
 }

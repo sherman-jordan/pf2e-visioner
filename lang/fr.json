@@ -160,6 +160,76 @@
         "name": "Activer les infobulles au survol",
         "hint": "Montre les infobulles du statut de visibilité au survol des jetons (nécessite un redémarrage)"
       },
+      "TOKEN_HUD_BUTTON": {
+        "name": "(FR) Bouton HUD du jeton",
+        "hint": "(FR) Affiche un bouton Visioner dans le HUD du jeton"
+      },
+      "VISIONER_SCENE_CONTROLS": {
+        "name": "(FR) Contrôles de scène Visioner",
+        "hint": "(FR) Affiche les boutons Visioner dans les barres d'outils Scènes"
+      },
+      "REMOVE_PLAYER_TARGET_TOOLTIPS": {
+        "name": "(FR) Retirer les infobulles de cible des joueurs",
+        "hint": "(FR) Empêche les joueurs de voir les infobulles de cible"
+      },
+      "MANAGER_ROLL_COMPARISON": {
+        "name": "(FR) Comparaison des jets dans le gestionnaire",
+        "hint": "(FR) Affiche la dernière comparaison jet vs DD"
+      },
+      "TOKEN_INTERSECTION_MODE": {
+        "name": "(FR) Mode d'intersection des jetons",
+        "hint": "(FR) Comment évaluer les bloqueurs de jetons",
+        "CHOICES": {
+          "any": "(FR) N'importe lequel",
+          "length10": "(FR) 10%",
+          "coverage": "(FR) Couverture latérale",
+          "tactical": "(FR) Tactique"
+        }
+      },
+      "AUTO_COVER_IGNORE_UNDETECTED": {
+        "name": "(FR) Ignorer les jetons non détectés",
+        "hint": "(FR) Les jetons non détectés ne bloquent pas l'abri"
+      },
+      "AUTO_COVER_VISUALIZATION_COMBAT_ONLY": {
+        "name": "(FR) Visualisation d'abri seulement en combat",
+        "hint": "(FR) N'afficher l'abri automatique qu'en combat"
+      },
+      "AUTO_COVER_GM_RESPECT_FOG": {
+        "name": "(FR) Le MJ respecte le brouillard pour l'abri",
+        "hint": "(FR) Le MJ voit l'abri comme les joueurs (respect du brouillard)"
+      },
+      "AUTO_COVER_IGNORE_DEAD": {
+        "name": "(FR) Ignorer les jetons morts",
+        "hint": "(FR) Les jetons à 0 PV ne bloquent pas l'abri"
+      },
+      "AUTO_COVER_IGNORE_ALLIES": {
+        "name": "(FR) Ignorer les alliés pour l'abri",
+        "hint": "(FR) Les alliés ne bloquent pas l'abri"
+      },
+      "WALL_STANDARD_THRESHOLD": {
+        "name": "(FR) Seuil standard d'abri par mur (%)",
+        "hint": "(FR) Pourcentage de blocage pour obtenir un abri standard"
+      },
+      "WALL_GREATER_THRESHOLD": {
+        "name": "(FR) Seuil supérieur d'abri par mur (%)",
+        "hint": "(FR) Pourcentage de blocage pour obtenir un abri supérieur"
+      },
+      "WALLS_ALLOW_GREATER": {
+        "name": "(FR) Les murs peuvent donner un abri supérieur",
+        "hint": "(FR) Quand désactivé, les murs ne donnent jamais un abri supérieur"
+      },
+      "IGNORE_PRONE_TOKENS": {
+        "name": "(FR) Ignorer les jetons à terre",
+        "hint": "(FR) Les jetons à terre ne bloquent pas l'abri"
+      },
+      "KEYBIND_OPEN_MANAGER_TARGET_MODE": {
+        "name": "(FR) Raccourci ouvre le gestionnaire en mode Cible",
+        "hint": "(FR) Ouvrir par défaut en mode Cible"
+      },
+      "VISIONER_QUICK_EDIT_TOOL": {
+        "name": "(FR) Outil d'édition rapide Visioner",
+        "hint": "(FR) Affiche l'outil d'édition rapide sur la barre"
+      },
       "ALLOW_PLAYER_TOOLTIPS": {
         "name": "Permet les infobulles pour les joueurs",
         "hint": "Lorsque c'est activé, les joueurs euvent vois les indications de visibilité de leur perspective au survol des jetons (nécessite un redémarrage)"
@@ -299,6 +369,10 @@
         "name": "Ouvrir le gestionnaire du jeton",
         "hint": "Ouvre le gestionnaire du jeton pour les jetons sélectionnés"
       },
+      "OPEN_QUICK_PANEL": {
+        "name": "(FR) Ouvrir le panneau rapide Visioner",
+        "hint": "(FR) Ouvre le panneau d'édition rapide compact"
+      },
       "OPEN_VISIBILITY_MANAGER": {
         "name": "Ouvrir le gestionnaire de visibilité du jeton",
         "hint": "Ouvre le gestionnaire de visibilité pour les jetons sélectionnés"
@@ -310,7 +384,46 @@
       "TOGGLE_OBSERVER_MODE": {
         "name": "Activer/Désactiver le mode observateur pour les infobulles au survol",
         "hint": "Maintenir enfoncé cette clé pour passer de l'infobulle au survol au mode observateur (comment le jeton survolé voit les autres)"
+      },
+      "SHOW_AUTO_COVER_OVERLAY": {
+        "name": "(FR) Afficher la superposition d'abri auto",
+        "hint": "(FR) Maintenir pour afficher les badges d'abri automatique"
+      },
+      "HOLD_COVER_VISUALIZATION": {
+        "name": "(FR) Maintenir pour la visualisation d'abri",
+        "hint": "(FR) Maintenir pour visualiser les zones d'abri"
+      },
+      "OPEN_WALL_MANAGER": {
+        "name": "(FR) Ouvrir le gestionnaire de murs",
+        "hint": "(FR) Ouvre la boîte de gestion des murs Visioner"
       }
+    },
+    "AVS_OVERRIDE_DIALOG": {
+      "NO_OVERRIDES": "(FR TODO) No AVS overrides are currently active for this token.",
+      "CLOSE": "(FR TODO) Close",
+      "CLEAR_ALL": "(FR TODO) Clear All Overrides",
+      "CLEAR_ALL_CONFIRM_TITLE": "(FR TODO) Clear All AVS Overrides",
+      "OVERRIDE_REMOVED": "(FR TODO) AVS override removed: {observer} → {target}",
+      "ALL_OVERRIDES_CLEARED": "(FR TODO) All AVS overrides cleared for {token}",
+      "ERROR_REMOVING_OVERRIDE": "(FR TODO) Error removing AVS override",
+      "ERROR_CLEARING_OVERRIDES": "(FR TODO) Error clearing AVS overrides"
+    },
+    "REGION_BEHAVIOR": {
+      "TYPE_LABEL": "(FR TODO) PF2e Visioner Visibility",
+      "VISIBILITY_STATE": {
+        "label": "(FR TODO) Visibility State",
+        "hint": "(FR TODO) The visibility state to apply between tokens inside and outside the region"
+      },
+      "APPLY_TO_INSIDE_TOKENS": {
+        "label": "(FR TODO) Apply to Inside Tokens",
+        "hint": "(FR TODO) If enabled, tokens inside the region will have the visibility state applied to other tokens inside the region as well"
+      },
+      "TWO_WAY_REGION": {
+        "label": "(FR TODO) Two-Way Region",
+        "hint": "(FR TODO) If enabled, tokens outside the region will also have the visibility state applied to tokens inside the region"
+      },
+      "VISIBILITY_UPDATED": "(FR TODO) Region visibility updated for {count} token relationships",
+      "UPDATE_ERROR": "(FR TODO) Failed to update region visibility relationships"
     }
   }
 }

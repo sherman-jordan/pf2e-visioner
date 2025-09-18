@@ -39,7 +39,7 @@ export class OverrideValidationDialog extends foundry.applications.api.Handlebar
 
   static PARTS = {
     content: {
-      template: "modules/pf2e-visioner/templates/simple-override-validation.hbs"
+      template: "modules/pf2e-visioner/templates/override-validation.hbs"
     }
   };
 

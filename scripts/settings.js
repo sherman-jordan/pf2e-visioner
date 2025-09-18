@@ -5,64 +5,69 @@
 import { reinjectChatAutomationStyles } from './chat/chat-automation-styles.js';
 import { DEFAULT_SETTINGS, KEYBINDINGS, MODULE_ID } from './constants.js';
 
-// Define grouped settings sections to declutter the native list.
-// All keys listed here will be hidden from the default module settings UI
-// and rendered inside our custom grouped settings form instead.
+// Grouped layout per redesign spec.
+// Each category contains an ordered list of group objects with a title & keys.
+// Outside-of-dialog groups (Target Hover Tooltips, Debug Mode etc.) remain native.
 const SETTINGS_GROUPS = {
   General: [
-    'defaultEncounterFilter',
-    'ignoreAllies',
-    'hideFoundryHiddenTokens',
-    'includeLootActors',
-    'lootStealthDC',
-    'useHudButton',
-    'hideVisionerSceneTools',
-    'hideQuickEditTool',
-    'integrateRollOutcome',
-    'keybindingOpensTMInTargetMode',
-    'enableAllTokensVision',
+    { title: 'General UI', keys: ['useHudButton', 'hideVisionerSceneTools', 'hideQuickEditTool'] },
+    {
+      title: 'Visioner Manager Settings',
+      keys: ['integrateRollOutcome', 'defaultEncounterFilter', 'ignoreAllies', 'hideFoundryHiddenTokens'],
+    },
   ],
-  'Visibility & Hover': [
-    'enableHoverTooltips',
-    'allowPlayerTooltips',
-    'blockPlayerTargetTooltips',
-    'tooltipFontSize',
-    'colorblindMode',
-    'hiddenWallsEnabled',
-    'wallStealthDC',
+  Vision: [
+    { title: 'Vision', keys: ['enableAllTokensVision'] },
+    { title: 'Hidden Loot Actors', keys: ['includeLootActors', 'lootStealthDC'] },
+    { title: 'Hidden Walls', keys: ['hiddenWallsEnabled', 'wallStealthDC'] },
+    {
+      title: 'Advanced Seek Options',
+      keys: [
+        'seekUseTemplate',
+        'limitSeekRangeInCombat',
+        'customSeekDistance',
+        'limitSeekRangeOutOfCombat',
+        'customSeekDistanceOutOfCombat',
+      ],
+    },
   ],
-  'Auto-Visibility': [
-    'autoVisibilityEnabled',
-    'autoVisibilityDebugMode',
+  Cover: [
+    {
+      title: 'Cover',
+      // First item acts as parent (Enable Auto-Cover) others depend visually/logic on it
+      keys: ['autoCover', 'autoCoverVisualizationOnlyInEncounter', 'autoCoverVisualizationRespectFogForGM'],
+    },
+    {
+      title: 'Token Auto Cover Settings',
+      keys: [
+        'autoCoverTokenIntersectionMode',
+        'autoCoverIgnoreUndetected',
+        'autoCoverIgnoreDead',
+        'autoCoverAllowProneBlockers',
+        'autoCoverIgnoreAllies',
+      ],
+    },
+    {
+      title: 'Wall Auto Cover Settings',
+      keys: ['wallCoverStandardThreshold', 'wallCoverAllowGreater', 'wallCoverGreaterThreshold'],
+    },
   ],
-  'Seek & Range': [
-    'seekUseTemplate',
-    'limitSeekRangeInCombat',
-    'limitSeekRangeOutOfCombat',
-    'customSeekDistance',
-    'customSeekDistanceOutOfCombat',
+  'A.V.S. Settings': [
+    { title: 'A.V.S. Settings', keys: ['autoVisibilityEnabled', 'autoVisibilityDebugMode'] },
   ],
-  'Auto-cover': [
-    'autoCover',
-    'autoCoverTokenIntersectionMode',
-    'autoCoverCoverageStandardPct',
-    'autoCoverCoverageGreaterPct',
-    'autoCoverIgnoreUndetected',
-    'autoCoverVisualizationOnlyInEncounter',
-    'autoCoverIgnoreDead',
-    'autoCoverIgnoreAllies',
-    'autoCoverRespectIgnoreFlag',
-    'autoCoverAllowProneBlockers',
-    'autoCoverVisualizationRespectFogForGM',
-    'wallCoverAllowGreater',
-    'wallCoverStandardThreshold',
-    'wallCoverGreaterThreshold',
+  Advanced: [
+    { title: 'Advanced', keys: ['keybindingOpensTMInTargetMode'] },
   ],
-  Advanced: ['debug'],
 };
 
+function allGroupedKeys() {
+  return Object.values(SETTINGS_GROUPS)
+    .flat()
+    .flatMap((g) => g.keys);
+}
+
 function isGroupedKey(key) {
-  return Object.values(SETTINGS_GROUPS).some((arr) => arr.includes(key));
+  return allGroupedKeys().includes(key);
 }
 
 let currentVisionerSettingsApp = null;
@@ -108,7 +113,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
 
     // Only show categories (tabs) that have at least one visible item
     const visibleCategoryKeys = Object.keys(SETTINGS_GROUPS).filter((cat) =>
-      (SETTINGS_GROUPS[cat] || []).some((k) => keyVisible(k)),
+      (SETTINGS_GROUPS[cat] || []).some((group) => group.keys.some((k) => keyVisible(k))),
     );
 
     // If current active group has no visible items, switch to the first visible group
@@ -122,49 +127,103 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
       active: k === this.activeGroupKey,
     }));
     const groups = [];
-    const activeKeys = (SETTINGS_GROUPS[this.activeGroupKey] || []).filter((k) => keyVisible(k));
-    const items = [];
-    for (const key of activeKeys) {
-      const cfg = DEFAULT_SETTINGS[key];
-      if (!cfg) continue;
-      // Prefer pending (unsaved) value if user edited in another tab visit
-      const pendingRaw = this?._pendingChanges?.[`settings.${key}`];
-      const saved = game.settings.get(MODULE_ID, key);
-      let current = saved;
-      if (pendingRaw !== undefined) {
-        if (cfg.type === Boolean) current = !!pendingRaw;
-        else if (cfg.type === Number)
-          current = pendingRaw !== '' && pendingRaw != null ? Number(pendingRaw) : saved;
-        else current = String(pendingRaw);
-      }
-      let inputType = 'text';
-      let choicesList = null;
-      if (cfg.choices && typeof cfg.choices === 'object') {
-        inputType = 'select';
-        try {
-          choicesList = Object.entries(cfg.choices).map(([val, label]) => ({
-            value: val,
-            label,
-            selected: String(current) === String(val),
-          }));
-        } catch (_) {
-          choicesList = null;
+    const categoryGroups = SETTINGS_GROUPS[this.activeGroupKey] || [];
+
+    // Pre-compute dependency map for indentation (parent -> children)
+    const flatDependencyMap = new Map();
+    // We'll extend this with the runtime dependency map defined later; replicate keys here for depth calc
+    const dependencyPairs = [
+      ['includeLootActors', ['lootStealthDC']],
+      ['hiddenWallsEnabled', ['wallStealthDC']],
+      ['limitSeekRangeInCombat', ['customSeekDistance']],
+      ['limitSeekRangeOutOfCombat', ['customSeekDistanceOutOfCombat']],
+      ['wallCoverAllowGreater', ['wallCoverGreaterThreshold']],
+      ['autoVisibilityEnabled', ['autoVisibilityDebugMode']],
+      [
+        'autoCover',
+        [
+          'autoCoverVisualizationOnlyInEncounter',
+          'autoCoverVisualizationRespectFogForGM',
+          'autoCoverTokenIntersectionMode',
+          'autoCoverIgnoreUndetected',
+          'autoCoverIgnoreDead',
+          'autoCoverAllowProneBlockers',
+          'autoCoverIgnoreAllies',
+          'wallCoverStandardThreshold',
+          'wallCoverAllowGreater',
+          'wallCoverGreaterThreshold',
+        ],
+      ],
+    ];
+    dependencyPairs.forEach(([p, children]) => flatDependencyMap.set(p, children));
+
+    for (const group of categoryGroups) {
+      const visibleKeys = group.keys.filter((k) => keyVisible(k));
+      if (!visibleKeys.length) continue;
+      const items = [];
+      for (const key of visibleKeys) {
+        const cfg = DEFAULT_SETTINGS[key];
+        if (!cfg) continue;
+        const pendingRaw = this?._pendingChanges?.[`settings.${key}`];
+        const saved = game.settings.get(MODULE_ID, key);
+        let current = saved;
+        if (pendingRaw !== undefined) {
+          if (cfg.type === Boolean) current = !!pendingRaw;
+          else if (cfg.type === Number)
+            current = pendingRaw !== '' && pendingRaw != null ? Number(pendingRaw) : saved;
+          else current = String(pendingRaw);
         }
-      } else if (cfg.type === Boolean) inputType = 'checkbox';
-      else if (cfg.type === Number) inputType = 'number';
-      items.push({
-        key,
-        name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
-        hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ''),
-        value: current,
-        inputType,
-        choices: choicesList,
-        min: cfg.min ?? null,
-        max: cfg.max ?? null,
-        step: cfg.step ?? 1,
-      });
+        let inputType = 'text';
+        let choicesList = null;
+        if (cfg.choices && typeof cfg.choices === 'object') {
+          inputType = 'select';
+          try {
+            choicesList = Object.entries(cfg.choices).map(([val, label]) => ({
+              value: val,
+              label,
+              selected: String(current) === String(val),
+            }));
+          } catch (_) {
+            choicesList = null;
+          }
+        } else if (cfg.type === Boolean) inputType = 'checkbox';
+        else if (cfg.type === Number) inputType = 'number';
+
+        // Determine depth (indentation) if this key is a child of some earlier parent in the same category
+        let depth = 0;
+        for (const [parent, children] of flatDependencyMap.entries()) {
+          if (children.includes(key)) {
+            // ensure parent appears earlier in any group of the same category
+            const parentAppearsEarlier = categoryGroups.some((g) => {
+              if (!g.keys.includes(parent)) return false;
+              // if same group, parent index < key index
+              if (g === group && g.keys.indexOf(parent) > -1 && g.keys.indexOf(parent) < g.keys.indexOf(key)) return true;
+              // if different group, ensure group's index is earlier
+              const catIndexParent = categoryGroups.indexOf(
+                categoryGroups.find((cg) => cg.keys.includes(parent)),
+              );
+              const catIndexChild = categoryGroups.indexOf(group);
+              return catIndexParent > -1 && catIndexParent < catIndexChild;
+            });
+            if (parentAppearsEarlier) depth = 1;
+          }
+        }
+
+        items.push({
+          key,
+          name: game.i18n?.localize?.(cfg.name) ?? cfg.name,
+          hint: game.i18n?.localize?.(cfg.hint) ?? (cfg.hint || ''),
+            value: current,
+          inputType,
+          choices: choicesList,
+          min: cfg.min ?? null,
+          max: cfg.max ?? null,
+          step: cfg.step ?? 1,
+          depth,
+        });
+      }
+      if (items.length) groups.push({ title: group.title, items });
     }
-    if (items.length) groups.push({ title: this.activeGroupKey, items });
     return { groups, categories };
   }
 
@@ -204,146 +263,70 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
         } catch (_) { }
       };
 
-      // Coverage thresholds visible only when mode === 'coverage'
-      const modeSel = content.querySelector('[name="settings.autoCoverTokenIntersectionMode"]');
-      const applyCoverageModeVisibility = () => {
-        /* thresholds are fixed; keep them hidden */
+      // Generic dependency system per redesign
+      const dependencyMap = {
+        autoCover: [
+          'autoCoverVisualizationOnlyInEncounter',
+          'autoCoverVisualizationRespectFogForGM',
+          'autoCoverTokenIntersectionMode',
+          'autoCoverIgnoreUndetected',
+          'autoCoverIgnoreDead',
+          'autoCoverAllowProneBlockers',
+          'autoCoverIgnoreAllies',
+          'wallCoverStandardThreshold',
+          'wallCoverAllowGreater',
+          'wallCoverGreaterThreshold',
+        ],
+        includeLootActors: ['lootStealthDC'],
+        hiddenWallsEnabled: ['wallStealthDC'],
+        limitSeekRangeInCombat: ['customSeekDistance'],
+        limitSeekRangeOutOfCombat: ['customSeekDistanceOutOfCombat'],
+        wallCoverAllowGreater: ['wallCoverGreaterThreshold'],
+        autoVisibilityEnabled: ['autoVisibilityDebugMode'],
       };
-      if (modeSel) {
-        modeSel.addEventListener('change', applyCoverageModeVisibility);
-        applyCoverageModeVisibility();
-      }
 
-      // Seek distances visible only when their limit toggles are enabled
-      const inCombatToggle = content.querySelector('[name="settings.limitSeekRangeInCombat"]');
-      const outCombatToggle = content.querySelector('[name="settings.limitSeekRangeOutOfCombat"]');
-      const useTemplateToggle = content.querySelector('[name="settings.seekUseTemplate"]');
-      const applySeekVisibility = () => {
-        const templateOn = !!useTemplateToggle?.checked;
+      // Additional logic: if seekUseTemplate is ON, hide range limit toggles & their children
+      const seekTemplateToggle = content.querySelector('[name="settings.seekUseTemplate"]');
+
+      const applyDependencies = () => {
+        // First apply parent->child visibility
+        for (const [parent, children] of Object.entries(dependencyMap)) {
+          const parentEl = content.querySelector(`[name="settings.${parent}"]`);
+            const active = !!parentEl?.checked;
+            for (const child of children) {
+              // Seek template special handling below
+              if (parent.startsWith('limitSeekRange') && seekTemplateToggle?.checked) {
+                toggleSettingVisibility(child, false);
+              } else {
+                toggleSettingVisibility(child, active);
+              }
+            }
+        }
+        // Seek template case: hide limit toggles and distance inputs when template used
+        const templateOn = !!seekTemplateToggle?.checked;
         if (templateOn) {
-          // When template is used, hide both distance fields regardless of toggles
+          toggleSettingVisibility('limitSeekRangeInCombat', false);
+          toggleSettingVisibility('limitSeekRangeOutOfCombat', false);
           toggleSettingVisibility('customSeekDistance', false);
           toggleSettingVisibility('customSeekDistanceOutOfCombat', false);
-          return;
-        }
-        const inOn = !!inCombatToggle?.checked;
-        const outOn = !!outCombatToggle?.checked;
-        toggleSettingVisibility('customSeekDistance', inOn);
-        toggleSettingVisibility('customSeekDistanceOutOfCombat', outOn);
-      };
-      if (inCombatToggle) inCombatToggle.addEventListener('change', applySeekVisibility);
-      if (outCombatToggle) outCombatToggle.addEventListener('change', applySeekVisibility);
-      if (useTemplateToggle) useTemplateToggle.addEventListener('change', applySeekVisibility);
-      applySeekVisibility();
-
-      // Hide the seek range limitation checkboxes entirely when using template
-      const applySeekTemplateVisibility = () => {
-        const templateOn = !!useTemplateToggle?.checked;
-        toggleSettingVisibility('limitSeekRangeInCombat', !templateOn);
-        toggleSettingVisibility('limitSeekRangeOutOfCombat', !templateOn);
-        // Re-apply distances visibility after checkbox hide/show decision
-        applySeekVisibility();
-      };
-      if (useTemplateToggle)
-        useTemplateToggle.addEventListener('change', applySeekTemplateVisibility);
-      applySeekTemplateVisibility();
-
-      // Hide "Block Player Target Tooltips" unless "Allow Player Tooltips" is enabled
-      const allowPlayerTooltipsToggle = content.querySelector(
-        '[name="settings.allowPlayerTooltips"]',
-      );
-      const applyPlayerTooltipVisibility = () => {
-        const on = !!allowPlayerTooltipsToggle?.checked;
-        toggleSettingVisibility('blockPlayerTargetTooltips', on);
-      };
-      if (allowPlayerTooltipsToggle) {
-        allowPlayerTooltipsToggle.addEventListener('change', applyPlayerTooltipVisibility);
-      }
-      applyPlayerTooltipVisibility();
-
-      // Hide tooltip size unless hover tooltips are enabled
-      const enableHoverTooltipsToggle = content.querySelector(
-        '[name="settings.enableHoverTooltips"]',
-      );
-      const applyHoverTooltipVisibility = () => {
-        // If the GM-only toggle isn't present (e.g., for players), base visibility
-        // on both global enablement and whether players are allowed to see tooltips.
-        let on;
-        try {
-          if (enableHoverTooltipsToggle) {
-            // In GM view, use the checkbox state directly
-            on = !!enableHoverTooltipsToggle.checked;
-          } else {
-            const globallyEnabled = !!game.settings.get(MODULE_ID, 'enableHoverTooltips');
-            const playersAllowed = !!game.settings.get(MODULE_ID, 'allowPlayerTooltips');
-            on = globallyEnabled && playersAllowed;
-          }
-        } catch (_) {
-          on = !!enableHoverTooltipsToggle?.checked;
-        }
-        toggleSettingVisibility('tooltipFontSize', on);
-      };
-      if (enableHoverTooltipsToggle)
-        enableHoverTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
-      // Also react to Allow Player Tooltips changes (GM view) so preview updates
-      if (allowPlayerTooltipsToggle)
-        allowPlayerTooltipsToggle.addEventListener('change', applyHoverTooltipVisibility);
-      applyHoverTooltipVisibility();
-
-      // Hide all Auto-cover settings unless the main toggle is on
-      const autoCoverToggle = content.querySelector('[name="settings.autoCover"]');
-      const wallsGreaterCoverToggle = content.querySelector(
-        '[name="settings.wallCoverAllowGreater"]',
-      );
-
-      const autoCoverDependents = [
-        'autoCoverTokenIntersectionMode',
-        'autoCoverCoverageStandardPct',
-        'autoCoverCoverageGreaterPct',
-        'autoCoverIgnoreUndetected',
-        'autoCoverVisualizationOnlyInEncounter',
-        'autoCoverIgnoreDead',
-        'autoCoverIgnoreAllies',
-        'autoCoverRespectIgnoreFlag',
-        'autoCoverAllowProneBlockers',
-        'autoCoverVisualizationRespectFogForGM',
-        'wallCoverAllowGreater',
-        'wallCoverStandardThreshold',
-        'wallCoverGreaterThreshold',
-      ];
-      const applyAutoCoverVisibility = () => {
-        const on = !!autoCoverToggle?.checked;
-        for (const key of autoCoverDependents) toggleSettingVisibility(key, on);
-        // Re-apply coverage sub-visibility if turning on
-        if (on) {
-          try {
-            applyCoverageModeVisibility();
-          } catch (_) { }
+        } else {
+          // Ensure limit toggles visible
+          toggleSettingVisibility('limitSeekRangeInCombat', true);
+          toggleSettingVisibility('limitSeekRangeOutOfCombat', true);
+          // Distance inputs re-evaluated by parent dependency pass above
         }
       };
 
-      const autoVisibilityDependents = [
-        'autoVisibilityDebugMode',
-      ];
+      // Bind listeners for all parents in dependencyMap plus seek template
+      const parentKeys = new Set([...Object.keys(dependencyMap), 'seekUseTemplate']);
+      parentKeys.forEach((key) => {
+        const el = content.querySelector(`[name="settings.${key}"]`);
+        if (el) el.addEventListener('change', applyDependencies);
+      });
+      applyDependencies();
 
-      const autoVisibilityToggle = content.querySelector('[name="settings.autoVisibilityEnabled"]');
-      const applyAutoVisibilityVisibility = () => {
-        const on = !!autoVisibilityToggle?.checked;
-        for (const key of autoVisibilityDependents) toggleSettingVisibility(key, on);
-      };
-      if (autoVisibilityToggle)
-        autoVisibilityToggle.addEventListener('change', applyAutoVisibilityVisibility);
-      applyAutoVisibilityVisibility();
-
-      const applyWallCoverVisibility = () => {
-        const on = !!wallsGreaterCoverToggle?.checked;
-        toggleSettingVisibility('wallCoverGreaterThreshold', on);
-      };
-      if (autoCoverToggle) autoCoverToggle.addEventListener('change', applyAutoCoverVisibility);
-      if (wallsGreaterCoverToggle)
-        wallsGreaterCoverToggle.addEventListener('change', applyWallCoverVisibility);
-      applyAutoCoverVisibility();
-      applyWallCoverVisibility();
+      // Hide deprecated auto-cover coverage settings entirely
+      ['autoCoverCoverageStandardPct', 'autoCoverCoverageGreaterPct', 'autoCoverRespectIgnoreFlag'].forEach((k) => toggleSettingVisibility(k, false));
     } catch (_) { }
     return content;
   }
@@ -365,7 +348,7 @@ class VisionerSettingsForm extends foundry.applications.api.ApplicationV2 {
           if (!(name in rawMap)) rawMap[name] = value;
         }
       }
-      const allKeys = Object.values(SETTINGS_GROUPS).flat();
+  const allKeys = allGroupedKeys();
       for (const key of allKeys) {
         const cfg = DEFAULT_SETTINGS[key];
         if (!cfg) continue;

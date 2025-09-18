@@ -5,7 +5,7 @@
     </div>
     <div class="pv-hero-copy" style="display:flex; flex-direction:column; gap:2px;">
       <div style="font-weight:700; font-size:15px;">PF2E Visioner</div>
-      <div style="opacity:0.9;">Streamlined perception and <strong>Auto‑Cover</strong> tools for PF2e. Configure settings below.</div>
+      <div style="opacity:0.9;">Configure settings below.</div>
     </div>
   </section>
 
@@ -19,8 +19,9 @@
     <fieldset style="margin-top:10px; border-radius:8px; padding:8px;">
       <legend style="font-weight:700; letter-spacing:.2px; padding:0 4px;">{{group.title}}</legend>
       {{#each group.items as |item|}}
+        {{!-- compute indentation padding based on depth (0 parent, 1 child) --}}
         {{#if (eq item.inputType "checkbox")}}
-          <div class="pv-form-row" style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div class="pv-form-row" data-depth="{{item.depth}}" style="--pv-depth: {{item.depth}}; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
             <div style="flex:1 1 auto;">
               <label>{{item.name}}</label>
               {{#if item.hint}}<div class="notes" style="opacity:.8;">{{item.hint}}</div>{{/if}}
@@ -30,7 +31,7 @@
             </div>
           </div>
         {{else}}
-          <div class="pv-form-row" style="margin-bottom: 10px;">
+          <div class="pv-form-row" data-depth="{{item.depth}}" style="--pv-depth: {{item.depth}}; margin-bottom:10px;">
             <label>{{item.name}}</label>
             {{#if item.hint}}<div class="notes" style="opacity:.8;">{{item.hint}}</div>{{/if}}
             {{#if (eq item.inputType "number")}}

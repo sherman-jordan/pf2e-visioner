@@ -16,4 +16,4 @@ The Quick edit dialog is a lightweight version of the Vision Manager which provi
 
 Alternatively, a hotkey may be assigned. You must select at least one token and one target.
 
-Unlike the Token Manager, the Quick Edit Dialog cannot make different individual adjustments between different pairs of tokens. A single vision or cover state is set between all selected tokens and all tokens that are targeted by the user in Foundry. This makes the dialog useful primarily for either batch changes (e.g. blanket application of concealment due to some circumstance determined by the GM,) or for quickly processing a change in vision or cover between a single pair of tokens.
+Unlike the Visioner Manager, the Quick Edit Dialog cannot make different individual adjustments between different pairs of tokens. A single vision or cover state is set between all selected tokens and all tokens that are targeted by the user in Foundry. This makes the dialog useful primarily for either batch changes (e.g. blanket application of concealment due to some circumstance determined by the GM,) or for quickly processing a change in vision or cover between a single pair of tokens.

@@ -36,8 +36,8 @@ The following internal terminology may prove useful to advanced users:
 
 - **Target:** Within a token-pair, the target is the token being observed. This is not to be confused with a targeted token within Foundry, or the target of an action within pf2e. When Foundry or gameplay targets are spoken of in the wiki, we may say visibility-target or cover-target for the purpose of disambiguation.
 
-- **Token Manager:** Main UI Dialog that can be called up by GM-role users at any time. It shows and manages booth visibility and cover token-pair relationships.  
-
 - **Token-Pair:** A single conditional relationship between two tokens with regard to visibility or cover.
+
+- **Visioner Manager:** Main UI Dialog that can be called up by GM-role users at any time. It shows and manages booth visibility and cover token-pair relationships.  
 
 - **Quick Edit:** Streamlined dialog used to quickly manage vision and cover for a single token pair between a selected token and a targeted token in Foundry.

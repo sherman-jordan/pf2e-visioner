@@ -6,7 +6,7 @@ Actions that produce a "Results" dialog, which allows the GM to exert discretion
 A description of the normal flow for each of these actions follows below; for information regarding how Pathfinder 2e feats and features modify some of the functionality described here, you may read about the feats we have hardcoded support for [here.](feats-features.md)
 
 ## Filters:
-Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. Token pairs that are filtered out from view are ***not*** acted upon when changes are applied. Filters include:
+Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. **Token pairs that are filtered out from view are** ***not*** **acted upon when changes are applied.** Filters include:
 
 | Filter | Description |
 | --- | --- |

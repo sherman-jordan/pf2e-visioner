@@ -1,6 +1,6 @@
 # Wall Settings
 
-Wall segments opened using Foundry Wall Controls are granted a new Visioner-specific menu allowing you to set flags, such as making the wall hidden (discoverable through the [Seek action](actions.md#seeking-for-hidden-walls-and-secret-doors),) setting a stealth DC, and specifying what degree of [cover](auto-cover.md#walls-and-cover) the wall grants.
+Wall segments opened using Foundry Wall Controls are granted a new Visioner-specific menu allowing you to set flags, such as making the wall hidden (discoverable through the [Seek action](Actions.md#seeking-for-hidden-walls-and-secret-doors),) setting a stealth DC, and specifying what degree of [cover](Auto‐Cover.md#walls-and-cover) the wall grants.
 
 
 | Wall Settings | Description |

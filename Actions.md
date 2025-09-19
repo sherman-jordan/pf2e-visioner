@@ -3,7 +3,7 @@ PF2e Visioner adds functionality to the chat cards of several roll types and act
 
 Actions that produce a "Results" dialog, which allows the GM to exert discretion over recommended vision state changes, also generate an `Apply Changes` button, which accepts recommendations sight-unseen.
 
-A description of the normal flow for each of these actions follows below; for information regarding how Pathfinder 2e feats and features modify some of the functionality described here, you may read about the feats we have hardcoded support for [here.](feats-features.md)
+A description of the normal flow for each of these actions follows below; for information regarding how Pathfinder 2e feats and features modify some of the functionality described here, you may read about the feats we have hardcoded support for [here.](Feats-and-Features.md)
 
 ## Filters:
 Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. **Token pairs that are filtered out from view are** ***not*** **acted upon when changes are applied.** Filters include:
@@ -74,13 +74,14 @@ Any token with a Stealth DC is potentially interactable with the Visioner Seek i
 1. Foundry visibility needs to be toggled on
 2. In order to make the tokens not visible to players, Visioner visibility will need to be set to `unobserved` for all player owned tokens
 
-Discoverable loot tokens with DC left blank will use a default DC that may be adjusted in settings.
+- Discoverable tokens with DC left blank will use a default DC that may be adjusted in settings.
+- Both Loot and Hazard tokens have an optional Minimum Proficiency field, which may be used to restrict discovery to characters with a certain level of proficiency in Perception. This is particularly useful for hazards, as it allows you to set a minimum proficiency rank required to notice the hazard.
 
 ## Seeking for Hidden Walls and Secret Doors
 Visioner adds the ability to flag segments of hidden walls or doors with a DC for the seek template.
 
 > [!NOTE]
-> Please see [Wall Settings](wall-settings.md) for more information regarding setting up walls and secret doors for discovery using Seek.
+> Please see [Wall Settings](Wall-Settings.md) for more information regarding setting up walls and secret doors for discovery using Seek.
 
 # Sneak
 Sneak undoubtedly has the most complex workflow of the actions enhanced by Visioner. 
@@ -111,4 +112,4 @@ Visioner determines that movement has ended when the GM uses `Open Sneak Results
 - Cover bonus should be applied to the roll if a degree of cover is maintained over the course of the entire movement, by RAW. Due to technical limitations and the likelihood that player paths may confuse the automation, cover bonus is currently manually applied by the GM.
 
 > [!IMPORTANT]
-> For AVS users: While a token is moving under Sneak, [AVS Override Manager](override-manager.md) treats that token as unobservable and will not prompt to remove overrides affecting it. Other tokens remain subject to AVS prompts as normal. If the sneaking token gains full line of sight to a hidden or unobserved token while moving, AVS Override Manager will still prompt the GM to decide whether the token should be revealed.
+> For AVS users: While a token is moving under Sneak, [Change Validation Manager](Change-Validation-Manager.md) treats that token as unobservable and will not prompt to remove overrides affecting it. Other tokens remain subject to AVS prompts as normal. If the sneaking token gains full line of sight to a hidden or unobserved token while moving, Change Validation Manager will still prompt the GM to decide whether the token should be revealed.

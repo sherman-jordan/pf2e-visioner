@@ -1,12 +1,12 @@
 # Overview
-PF2e Visioner adds additional functionality into the chat cards of several roll types and actions, tying the vision state manager in with the system. With the exception of Sneak and Seek, chat card callouts are exclusively visible to GM and Assistant GM user types.
+PF2e Visioner adds functionality to the chat cards of several roll types and actions, tying vision state management in with the system. With the exception of Sneak and Seek, chat card callouts are exclusively visible to GM and Assistant GM user types.
 
-For those actions which produce a "Results" dialog, allowing the GM to exert some discretion over recommended vision state changes, there will also exist an `Apply Changes` button, which accepts recommendations sight-unseen.
+Actions that produce a "Results" dialog, which allows the GM to exert discretion over recommended vision state changes, also generate an `Apply Changes` button, which accepts recommendations sight-unseen.
 
 A description of the normal flow for each of these actions follows below; for information regarding how Pathfinder 2e feats and features modify some of the functionality described here, you may read about the feats we have hardcoded support for [here.](feats-features.md)
 
 ## Filters:
-Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. Token pairs that are filtered out from view are ***not*** acted upon when changes are applied. Common filter descriptions are as follows:
+Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. Token pairs that are filtered out from view are ***not*** acted upon when changes are applied. Filters include:
 
 | Filter | Description |
 | --- | --- |
@@ -17,12 +17,14 @@ Each action dialog is able to filter results based on a number of criteria repre
 | **Ignore Walls** ***(seek only)*** | Filter hidden walls and doors from seek results, and prevent the action from causing them to be discovered by the seeker. |
 
 # Attack Consequences
-When an actor `hidden` to or `undetected` by a target token attacks, they lose their advantageous visibility state by RAW. When such a token makes an attack, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust visibility accordingly: 
+When an actor `hidden` to or `undetected` by a target token attacks, they lose their advantageous visibility state by RAW. When a token makes an attack, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust visibility accordingly: 
 
 
 ![Attack Consequences Chat](images/actions/attack_consequences_chat.png) 
 
 `Apply Changes` applies the default recommendations without opening the dialog. For most actions, that would mean accepting the visibility changes recommended based on RAW and auto-detected conditions. For Attack Consequences, the default behavior (with AVS turned on) would remove any forced visibility state like `hidden` or `undetected` and allow AVS to decide based on environmental conditions on the scene.
+
+**Attack Consequences Dialog:**
 
 ![Attack Consequences Dialog](images/actions/attack_consequences_dialog.png)
 
@@ -58,7 +60,7 @@ The Seek action will function slightly differently depending on the state of rel
 
     ![Seek Results Buttons](images/actions/seek_range_chat.png)
 
-Opening the dialog yields a results window similar to those of other actions:
+**Opening the dialog yields a results window similar to those of other actions:**
 
 ![Seek Results](images/actions/seek_results_dialog.png)
 
@@ -83,26 +85,25 @@ Visioner adds the ability to flag segments of hidden walls or doors with a DC fo
 # Sneak
 Sneak undoubtedly has the most complex workflow of the actions enhanced by Visioner. 
 
-When a sneak action is rolled, the chat card will be injected will a callout as follows:
+When a sneak action is rolled, the chat card will be injected with a callout. This callout is visible to both the GM and the player, and includes a button for the player to click to begin their sneak movement, as well as a reminder of the maximum distance they may move while sneaking:
 
 | Game Master View | Player View |
 | --- | --- |
 | ![Sneak GM Callout](images/actions/sneak_gm_chat.png) | ![Sneak Player Callout](images/actions/sneak_player_chat.png) |
-
-> [!NOTE]
-> Max sneak distance is not enforced - the distance is merely stated for both GM and player in the callout as a reminder. Max sneak distance is determined by using half the token's actor's speed rounded down by default. This number may be modified by feats and features as described in the [wiki entry](feats-features.md) on the subject.
 
 > [!IMPORTANT]
 > Once a player rolls sneak, their movement is locked in place by an effect until `Start Sneak` is clicked to begin movement. If the action needs to be cancelled (e.g. because of a mis-click) the effect may be removed manually by the GM or the player.
 
 Once the `Start Sneak` button is clicked, the player may move their token. While the sneak movement is in progress, an effect on the token informs the player and GM that the token is Foundry-Invisible to all other players. This applies both to allies and opposition. Once the sneak is completely resolved the token will reappear to players according to its Visioner visibility state.
 
-The Visioner callout disappears to the player, but changes for the GM as follows:
+**The Visioner callout disappears to the player, but changes for the GM as follows:**
 
 ![Modified Sneak GM Callout](images/actions/sneak_gm_chat_2.png)
 
-> [!NOTE]
-> Visioner determines that movement has ended when the GM uses `Open Sneak Results` or `Apply Changes` on the sneak chat card.
+
+Visioner determines that movement has ended when the GM uses `Open Sneak Results` or `Apply Changes` on the sneak chat card.
+
+**Sneak Results Dialog:**
 
 ![Sneak Results](images/actions/sneak_results.png)
 

@@ -66,10 +66,10 @@ The Seek action will function slightly differently depending on the state of rel
 
 The Seek results dialog differs in that the visibility states column changes how the acting token *perceives* the tokens listed, instead of affecting how they are perceived by them. 
 
-In addition, Seek is particularly interesting because in addition to seeking to improve visibility on character tokens, Visioner provides using Seek on Loot Tokens and Hazards with a stealth DC, and even adds properties to hidden walls and doors to allow players to discover them with the sneak action. 
+In addition, Seek is particularly interesting because in addition to seeking to improve visibility on character tokens, Visioner provides using Seek on Loot Tokens and Hazards with a stealth DC, and even adds properties to hidden walls and doors to allow players to discover them with the Seek action. 
 
 ## Seeking for Loot and Hazard Tokens
-Any token with a Stealth DC is potentially interactable with the Visioner Sneak interface. Due to the technical limitations of needing to respect Foundry-Hidden tokens, loot actor tokens and hazards you wish to make discoverable through the action will need to be set up in advance:
+Any token with a Stealth DC is potentially interactable with the Visioner Seek interface. Due to the technical limitations of needing to respect Foundry-Hidden tokens, loot actor tokens and hazards you wish to make discoverable through the action will need to be set up in advance:
 
 1. Foundry visibility needs to be toggled on
 2. In order to make the tokens not visible to players, Visioner visibility will need to be set to `unobserved` for all player owned tokens
@@ -80,7 +80,7 @@ Discoverable loot tokens with DC left blank will use a default DC that may be ad
 Visioner adds the ability to flag segments of hidden walls or doors with a DC for the seek template.
 
 > [!NOTE]
-> Please see [Wall Settings](wall-settings.md) for more information regarding setting up walls and secret doors for discovery using Sneak.
+> Please see [Wall Settings](wall-settings.md) for more information regarding setting up walls and secret doors for discovery using Seek.
 
 # Sneak
 Sneak undoubtedly has the most complex workflow of the actions enhanced by Visioner. 

@@ -5,11 +5,20 @@ Actions that produce a "Results" dialog, which allows the GM to exert discretion
 
 A description of the normal flow for each of these actions follows below; for information regarding how Pathfinder 2e feats and features modify some of the functionality described here, you may read about the feats we have hardcoded support for [here.](Feats-and-Features.md)
 
+# Results Dialogs:
+Visioner adds a results dialog to actions allowing GMs to easily alter the visibility state of tokens affected by the action. These each resemble the Visioner Manager interface in that they list token pairs, the current visibility state between them, and the recommended visibility state based on the action taken.
+
+> [!NOTE]
+> The token avatars in these dialogs are interactive. Clicking on them will pan the canvas to center on the token represented.
+
 ## Filters:
-Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. **Token pairs that are filtered out from view are** ***not*** **acted upon when changes are applied.** Filters include:
+Each action dialog is able to filter results based on a number of criteria represented by checkboxes in the header of the window. Token pairs that are filtered out from view are ***not*** acted upon when changes are applied.
+
+**Filters include:**
 
 | Filter | Description |
 | --- | --- |
+|**Filter by Detectable** | Tokens that are not detectable by the acting token (e.g. due to distance, or being in a different elevation layer) are filtered out of the results. This is particularly useful on large maps with many tokens.|
 |**Hide Foundry-Hidden Tokens** | Tokens that have their visibility state toggled off by Foundry core are generally precluded from Visioner consideration in auto-cover and AVS, and may also be filtered from dialog boxes. This is particularly helpful on large maps with many tokens placed as Foundry-Hidden for setup.|
 | **Ignore Allies** | Do not view or manipulate visibility states between allies (e.g. sneaking and becoming undetected by fellow party members.) |
 | **Show Only Changes** | Filter out token-pair rows in the table in which the visibility state does not change. |
@@ -68,6 +77,10 @@ The Seek results dialog differs in that the visibility states column changes how
 
 In addition, Seek is particularly interesting because in addition to seeking to improve visibility on character tokens, Visioner provides using Seek on Loot Tokens and Hazards with a stealth DC, and even adds properties to hidden walls and doors to allow players to discover them with the Seek action. 
 
+**Because Seek is not limited to the sense of sight alone, a chip in the header can be hovered over to show what precise and imprecise senses are available to the actor performing the action, as well as which sense was used for the results:**
+
+![Seek Results Sense Chip](images/actions/seek_results_senses.png)
+
 ## Seeking for Loot and Hazard Tokens
 Any token with a Stealth DC is potentially interactable with the Visioner Seek interface. Due to the technical limitations of needing to respect Foundry-Hidden tokens, loot actor tokens and hazards you wish to make discoverable through the action will need to be set up in advance:
 
@@ -108,7 +121,8 @@ Visioner determines that movement has ended when the GM uses `Open Sneak Results
 
 ![Sneak Results](images/actions/sneak_results.png)
 
-- Both start and end positions are tested for Sneak action requirements being met by AVS and Auto-Cover, if they are turned on. If either test fails, sneak cannot be performed against that token and the visibility state recommendation will be `observed`.
+- An information chip in the header will call out the max distance the token was allowed to move while sneaking given the type of movement taken. Additional information for the GM to consider regarding feats and class features may also be found in this area. 
+- If AVS and Auto-Cover are enabled, Visioner uses them to test that prerequisites for the Sneak action are met at the start and end positions of the movement. If either test fails, sneak cannot be performed against that token and the visibility state recommendation will be `observed`. The GM may override this detection by clicking the large green or red button in the appropriate column, and recommended results will adjust accordingly.
 - Cover bonus should be applied to the roll if a degree of cover is maintained over the course of the entire movement, by RAW. Due to technical limitations and the likelihood that player paths may confuse the automation, cover bonus is currently manually applied by the GM.
 
 > [!IMPORTANT]

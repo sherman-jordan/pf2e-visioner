@@ -90,6 +90,10 @@ Any token with a Stealth DC is potentially interactable with the Visioner Seek i
 - Discoverable tokens with DC left blank will use a default DC that may be adjusted in settings.
 - Both Loot and Hazard tokens have an optional Minimum Proficiency field, which may be used to restrict discovery to characters with a certain level of proficiency in Perception. This is particularly useful for hazards, as it allows you to set a minimum proficiency rank required to notice the hazard.
 
+![Loot Token Config](images/actions/loot_token.png)
+
+DC and Minimum Proficiency are set on the token configuration window, under PF2E Visioner.
+
 ## Seeking for Hidden Walls and Secret Doors
 Visioner adds the ability to flag segments of hidden walls or doors with a DC for the seek template.
 
@@ -110,7 +114,7 @@ When a sneak action is rolled, the chat card will be injected with a callout. Th
 
 Once the `Start Sneak` button is clicked, the player may move their token. While the sneak movement is in progress, an effect on the token informs the player and GM that the token is Foundry-Invisible to all other players. This applies both to allies and opposition. Once the sneak is completely resolved the token will reappear to players according to its Visioner visibility state.
 
-**The Visioner callout disappears to the player, but changes for the GM as follows:**
+**Once the player clicks `Begin Sneak`, their callout changes to remind them to tell the GM when their movement is complete. For the GM, the callout changes as follows:**
 
 ![Modified Sneak GM Callout](images/actions/sneak_gm_chat_2.png)
 

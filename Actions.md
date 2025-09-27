@@ -41,6 +41,11 @@ When an actor `hidden` to or `undetected` by a target token attacks, they lose t
 > The Remove Overrides button displayed above exists conditionally when AVS is turned on. It is intended this is the default when playing with AVS, as it will remove visibility states from the target token. This means instead of forcing a visibility state of `observed` as a consequence of attacking, lighting conditions etc. Will still apply.
 > In the absence of AVS, the recommendation will default to `observed` and the GM will need to account for ambient conditions manually before accepting* 
 
+# Create a Diversion
+When a player uses the Create a Diversion action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust visibility accordingly:
+
+![Create Diversion Results](images/actions/create_diversion_results_dialog.png)
+
 # Hide
 The Hide results dialog includes columns that break down how visibility change recommendations are derived: 
 
@@ -131,3 +136,8 @@ Visioner determines that movement has ended when the GM uses `Open Sneak Results
 
 > [!IMPORTANT]
 > For AVS users: While a token is moving under Sneak, [Change Validation Manager](Change-Validation-Manager.md) treats that token as unobservable and will not prompt to remove overrides affecting it. Other tokens remain subject to AVS prompts as normal. If the sneaking token gains full line of sight to a hidden or unobserved token while moving, Change Validation Manager will still prompt the GM to decide whether the token should be revealed.
+
+# Take Cover
+When a player uses the Take Cover action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust cover accordingly:
+
+![Take Cover Results](images/actions/take_cover_results_dialog.png)

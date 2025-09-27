@@ -1,9 +1,13 @@
 # Currently Supported Feats & Features
-PF2e Visioner hardcodes accommodations to Pathfinder 2e feats and features that modify the way certain stealth actions work. Below is a running list of those which are currently supported, with a brief description of how module behavior is adjusted. 
+PF2e Visioner hardcodes accommodations for Pathfinder 2e feats and features that modify the way certain stealth actions work. Below is a running list of those which are currently supported, along with a brief description of how module behavior is adjusted. For a full description of how a given feat works within the context of Pathfinder 2e RAW, please refer to the official books or to [AoN Pathfinder 2e SRD](https://2e.aonprd.com/Feats.aspx).
 
 Homebrew feats may eventually receive support for similar functionality through the use of custom Rule Elements at later stages of development.
 
-PF2e Visioner does not attempt to enforce movement limits, but does add a reminder of max movement when taking the Sneak action.
+
+> [!IMPORTANT]
+> Feats that require or upgrade other feats as prerequisites are marked as such to make them easier to follow. However, the module does not enforce prerequisites being met for feats to function.
+>
+> PF2e Visioner does not attempt to enforce movement limits, but does add a reminder of max movement when taking the Sneak action.
 
 ### Ceaseless Shadows
 Requires [Distracting Shadows](#distracting-shadows)

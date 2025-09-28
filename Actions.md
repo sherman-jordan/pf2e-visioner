@@ -1,9 +1,9 @@
 # Overview
 PF2e Visioner adds functionality to the chat cards of several roll types and actions, tying vision state management in with the system. With the exception of Sneak and Seek, chat card callouts are exclusively visible to GM and Assistant GM user types.
 
-Actions that produce a "Results" dialog, which allows the GM to exert discretion over recommended vision state changes, also generate an `Apply Changes` button, which accepts recommendations sight-unseen.
+Actions that produce a Results Dialog, (which allows the GM to exert discretion over recommended vision state changes) also generate an `Apply Changes` button (which accepts all auto-generated recommendations, sight-unseen.)
 
-A description of the normal flow for each of these actions follows below; for information regarding how Pathfinder 2e feats and features modify some of the functionality described here, you may read about the feats we have hardcoded support for [here.](Feats-and-Features.md)
+A description of the *standard* flow for each of these actions follows below. Visioner may make some modifications to some of the workflows described when the actor taking the action has a [feat or class feature](Feats-and-Features.md) that affects the way the action works for them.
 
 # Results Dialogs:
 Visioner adds a results dialog to actions allowing GMs to easily alter the visibility state of tokens affected by the action. These each resemble the Visioner Manager interface in that they list token pairs, the current visibility state between them, and the recommended visibility state based on the action taken.

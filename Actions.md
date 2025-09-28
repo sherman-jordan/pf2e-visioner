@@ -108,7 +108,7 @@ Visioner adds the ability to flag segments of hidden walls or doors with a DC fo
 # Sneak
 Sneak undoubtedly has the most complex workflow of the actions enhanced by Visioner. 
 
-When a sneak action is rolled, the chat card will be injected with a callout. This callout is visible to both the GM and the player, and includes a button for the player to click to begin their sneak movement, as well as a reminder of the maximum distance they may move while sneaking:
+When a Sneak action is rolled, the chat card will be injected with a callout. This callout is visible to both the GM and the player, and includes a button for the player to click to begin their sneak movement, as well as a reminder of the maximum distance they may move while sneaking:
 
 | Game Master View | Player View |
 | --- | --- |
@@ -119,7 +119,7 @@ When a sneak action is rolled, the chat card will be injected with a callout. Th
 
 Once the `Start Sneak` button is clicked, the player may move their token. While the sneak movement is in progress, an effect on the token informs the player and GM that the token is Foundry-Invisible to all other players. This applies both to allies and opposition. Once the sneak is completely resolved the token will reappear to players according to its Visioner visibility state.
 
-**Once the player clicks `Begin Sneak`, their callout changes to remind them to tell the GM when their movement is complete. For the GM, the callout changes as follows:**
+**Once the player clicks `Start Sneak`, their callout changes, reminding them to tell the GM when their movement is complete. For the GM, the callout changes to the familiar GM prompt to open the Results Dialog or Apply Changes, as follows:**
 
 ![Modified Sneak GM Callout](images/actions/sneak_gm_chat_2.png)
 
@@ -130,9 +130,9 @@ Visioner determines that movement has ended when the GM uses `Open Sneak Results
 
 ![Sneak Results](images/actions/sneak_results.png)
 
-- An information chip in the header will call out the max distance the token was allowed to move while sneaking given the type of movement taken. Additional information for the GM to consider regarding feats and class features may also be found in this area. 
-- If AVS and Auto-Cover are enabled, Visioner uses them to test that prerequisites for the Sneak action are met at the start and end positions of the movement. If either test fails, sneak cannot be performed against that token and the visibility state recommendation will be `observed`. The GM may override this detection by clicking the large green or red button in the appropriate column, and recommended results will adjust accordingly.
-- Cover bonus should be applied to the roll if a degree of cover is maintained over the course of the entire movement, by RAW. Due to technical limitations and the likelihood that player paths may confuse the automation, cover bonus is currently manually applied by the GM.
+- An information chip in the header will call out the max distance the token was allowed to move while sneaking given the type of movement taken. Additional information for the GM to consider regarding [feats and class features](Feats-and-Features.md) may also be found in the header area. 
+- If AVS and Auto-Cover are enabled, Visioner uses them to test that the prerequisites for the Sneak action are met at the start and end positions of the movement. If either test fails, sneak cannot be performed against that token and the visibility state recommendation will default to `observed`. The GM may override this detection by clicking the large green or red button in the appropriate column, and recommended results will adjust accordingly.
+- Cover bonus should be applied to the roll if a degree of cover is maintained over the course of the entire movement, by RAW. Due to technical limitations and the likelihood that player paths may confuse the automation, cover bonuses for Sneak must currently be manually applied by the GM.
 
 > [!IMPORTANT]
 > For AVS users: While a token is moving under Sneak, [Change Validation Manager](Change-Validation-Manager.md) treats that token as unobservable and will not prompt to remove overrides affecting it. Other tokens remain subject to AVS prompts as normal. If the sneaking token gains full line of sight to a hidden or unobserved token while moving, Change Validation Manager will still prompt the GM to decide whether the token should be revealed.

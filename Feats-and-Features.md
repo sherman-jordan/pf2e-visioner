@@ -4,8 +4,8 @@ PF2e Visioner hardcodes accommodations for Pathfinder 2e feats and features that
 Homebrew feats may eventually receive support for similar functionality through the use of custom Rule Elements at later stages of development.
 
 
-> [!IMPORTANT]
-> Feats that require or upgrade other feats as prerequisites are marked as such to make them easier to follow. However, the module does not enforce prerequisites being met for feats to function.
+> [!NOTE]
+> Feats that require or upgrade other feats as prerequisites are marked as such to make them easier to follow; however, the module does not enforce these prerequisites.
 >
 > PF2e Visioner does not attempt to enforce movement limits, but does add a reminder of max movement when taking the Sneak action.
 
@@ -27,13 +27,14 @@ Requires [Swift Sneak](#swift-sneak)
 
 ## Sneaky
 - Maximum movement in the Start Sneak callout and Sneak Results chip are adjusted up by 5 ft.
-- 
+- A new row of buttons is added to the Sneak Results Dialog, allowing the GM to defer End Position validation. This enables multiple Sneak actions that are taken in sequence to ignore the concealment or cover requirement for end position, until the final Sneak action / end of turn.
+- A new dialog box for end-of-turn position validation is added, allowing the Gm to validate the movement end prerequisites for a chain of Sneak actions taken in a turn.
 
 ### Swift Sneak
 - Maximum movement in the Start Sneak callout and Sneak Results chip are adjusted to full movement speed.
 
 ### Terrain Stalker
-Trigger: Token must begin a Sneak within difficult terrain matching their chosen type according to the following chart:
+Trigger: Token begins a Sneak within difficult terrain matching their chosen type according to the following chart:
 
 | Scene or Region Environment    | Difficult Terrain Type|
 | ------------------------------ | --------------------- |
@@ -52,7 +53,8 @@ Requires/ improves [Terrain Stalker](#terrain-stalker).
 
 ### Very Sneaky
 - Maximum movement in the Start Sneak callout and Sneak Results chip are adjusted up by 5 ft.
-
+- A new row of buttons is added to the Sneak Results Dialog, allowing the GM to defer End Position validation. This enables multiple Sneak actions that are taken in sequence to ignore the concealment or cover requirement for end position, until the final Sneak action / end of turn.
+- A new dialog box for end-of-turn position validation is added, allowing the Gm to validate the movement end prerequisites for a chain of Sneak actions taken in a turn.
 
 ### Very Very Sneaky
 Requires/ improves [Very Sneaky](#very-sneaky)

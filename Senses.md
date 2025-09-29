@@ -1,0 +1,1 @@
+This pages should describe how Visioner modifies default system visibility behaviors based on precise and imprecise senses e.g. precise sense other than vision being able to detect invisible creatures, enhancements to how the rendering works in response to blindness or deafness, etc.

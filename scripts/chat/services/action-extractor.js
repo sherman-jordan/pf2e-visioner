@@ -64,7 +64,7 @@ export async function extractActionData(message) {
       (message.flavor?.toLowerCase?.().includes?.('hide') &&
         !message.flavor?.toLowerCase?.().includes?.('create a diversion') &&
         !message.flavor?.toLowerCase?.().includes?.('sneak attack') &&
-        !message.flavor?.toLowerCase?.().includes?.('Saving Throw'))) &&
+        !message.flavor?.toLowerCase?.().includes?.('saving throw'))) &&
     !message.flavor?.toLowerCase?.().includes?.('sneak');
 
   const isAttackRoll =

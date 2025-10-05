@@ -4,10 +4,14 @@ PF2e Visioner hardcodes accommodations for Pathfinder 2e feats and features that
 Homebrew feats may eventually receive support for similar functionality through the use of custom Rule Elements at later stages of development.
 
 
-> [!NOTE]
+> [!IMPORTANT]
 > Feats that require or upgrade other feats as prerequisites are marked as such to make them easier to follow; however, the module does not enforce these prerequisites.
 >
 > PF2e Visioner does not attempt to enforce movement limits, but does add a reminder of max movement when taking the Sneak action.
+
+### Camouflage
+- Informative text added to Hide and Sneak Results dialogs informing GM validation may be modified by feat
+- Within Results dialogs: prerequisites for Hide, End Position prerequisites for Sneak, are ignored for the purpose of validating the roll result.
 
 ### Ceaseless Shadows
 Requires [Distracting Shadows](#distracting-shadows)
@@ -19,6 +23,10 @@ Requires [Distracting Shadows](#distracting-shadows)
 ### Distracting Shadows
 - Chip added to Hide and Sneak Results dialog informing GM requirements may be modified by feat
 - Within Hide and Sneak results dialogs: for the purposes of requirements, lesser cover granted by creatures at least one size larger satisfy the requirement
+
+### Keen Eyes
+- Adds a +2 bonus to Seek results made against targets that have Hidden or Undetected Visioner states vs the Seeker
+- pf2e system has an RE for this, but it only works against targets that have the blanket condition
 
 ### Legendary Sneak
 Requires [Swift Sneak](#swift-sneak)
@@ -45,6 +53,12 @@ Trigger: Token begins a Sneak within difficult terrain matching their chosen typ
 - Callout for Start Sneak adjusted to remind player that they will automatically succeed their Sneak so long as they follow the feat prerequisites.
 - If feat prerequisites are met, a chip is added to the Sneak Results dialog reminding the GM the recommendations may have changed due to the feat.
 - If feat prerequisites are met, recommendations are set to Undetected so long as Start and End Position requirements are met, regardless of Degree of Success.
+
+### That's Odd
+>> [NOTE!]
+>> We may be revising or removing the way this feat functions if we determine it doesn't quite fit the spirit of the Paizo description as written
+
+- All Seek Actions performed within range of an anomaly (Loot Token, Trap Token, or Visioner Hidden Wall) are treated as success
 
 ### Vanish into the Land
 Requires/ improves [Terrain Stalker](#terrain-stalker). 

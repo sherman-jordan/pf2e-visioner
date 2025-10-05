@@ -18,7 +18,7 @@ Each action dialog is able to filter results based on a number of criteria repre
 
 | Filter | Description |
 | --- | --- |
-|**Filter by Detectable** | Tokens that are not detectable by the acting token (e.g. due to distance, or being in a different elevation layer) are filtered out of the results. This is particularly useful on large maps with many tokens.|
+|**Filter by Viewport** | Only tokens that are within the visible range of the GM's screen will be shown in the dialog and acted upon. This prevents tokens that are not Foundry-hidden but well outside of the immediate "action" from impacting workflow and performance. |
 |**Hide Foundry-Hidden Tokens** | Tokens that have their visibility state toggled off by Foundry core are generally precluded from Visioner consideration in auto-cover and AVS, and may also be filtered from dialog boxes. This is particularly helpful on large maps with many tokens placed as Foundry-Hidden for setup.|
 | **Ignore Allies** | Do not view or manipulate visibility states between allies (e.g. sneaking and becoming undetected by fellow party members.) |
 | **Show Only Changes** | Filter out token-pair rows in the table in which the visibility state does not change. |
@@ -31,15 +31,11 @@ When an actor `hidden` to or `undetected` by a target token attacks, they lose t
 
 ![Attack Consequences Chat](images/actions/attack_consequences_chat.png) 
 
-`Apply Changes` applies the default recommendations without opening the dialog. For most actions, that would mean accepting the visibility changes recommended based on RAW and auto-detected conditions. For Attack Consequences, the default behavior (with AVS turned on) would remove any forced visibility state like `hidden` or `undetected` and allow AVS to decide based on environmental conditions on the scene.
+`Apply Changes` applies the default recommendations without opening the dialog. For most actions, that would mean accepting the visibility changes recommended based on RAW and auto-detected conditions. For Attack Consequences, the default behavior (with AVS turned on) would remove any forced visibility state like `hidden` or `undetected` and allow AVS to decide observation states based on environmental conditions on the scene.
 
 **Attack Consequences Dialog:**
 
 ![Attack Consequences Dialog](images/actions/attack_consequences_dialog.png)
-
-> [!IMPORTANT]
-> The Remove Overrides button displayed above exists conditionally when AVS is turned on. It is intended this is the default when playing with AVS, as it will remove visibility states from the target token. This means instead of forcing a visibility state of `observed` as a consequence of attacking, lighting conditions etc. Will still apply.
-> In the absence of AVS, the recommendation will default to `observed` and the GM will need to account for ambient conditions manually before accepting* 
 
 # Create a Diversion
 When a player uses the Create a Diversion action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust visibility accordingly:
@@ -141,3 +137,8 @@ Visioner determines that movement has ended when the GM uses `Open Sneak Results
 When a player uses the Take Cover action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust cover accordingly:
 
 ![Take Cover Results](images/actions/take_cover_results_dialog.png)
+
+>> [!NOTE]
+>> We try to reduce the amount of adjustments needed to help the module run smoothly to a bare minimum; however, it may prove beneficial to remove the self-applied pf2e system cover condition from the action granted to player characters.
+>> 
+>> This will prevent the system from applying a blanket cover effect when Visioner's relational cover is more accurate.

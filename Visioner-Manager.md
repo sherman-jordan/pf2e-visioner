@@ -4,15 +4,16 @@ The Visioner Manager provides a centralized location for GMs to manage token vis
 
 Both visibility and cover states may be viewed and manipulated, and each of those either as the Observer or as the Target.
 
-![Vision Token Manager](images/token-manager/token_manager.png)
+![Visioner Manager](images/visioner-manager/visioner-manager.png)
+
 
 # Quick Edit
 
-![Quick Edit Dialog](images/token-manager/quick_edit.png)
+![Quick Edit Dialog](images/visioner-manager/quick_edit.png)
 
 The Quick edit dialog is a lightweight version of the Visioner Manager which provides for making rapid manual adjustments to vision or cover states. The dialog may be brought up using a UI button injected into the Token Controls of the Foundry sidebar: 
 
-![UI Button](images/token-manager/quick_edit_ui_button.png)
+![UI Button](images/visioner-manager/quick_edit_ui_button.png)
 
 Alternatively, a hotkey may be assigned. You must select at least one token and one target.
 

@@ -40,7 +40,8 @@ When an actor `hidden` to or `undetected` by a target token attacks, they lose t
 # Create a Diversion
 When a player uses the Create a Diversion action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust visibility accordingly:
 
-![Create Diversion Results](images/actions/create_diversion_results_dialog.png)
+<img width="744" height="723" alt="image" src="https://github.com/user-attachments/assets/51e3a498-2343-4961-aa30-f2b3db789cf2" />
+
 
 # Hide
 The Hide results dialog includes columns that break down how visibility change recommendations are derived: 

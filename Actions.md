@@ -40,14 +40,15 @@ When an actor `hidden` to or `undetected` by a target token attacks, they lose t
 # Create a Diversion
 When a player uses the Create a Diversion action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust visibility accordingly:
 
-![Create Diversion Results](images/actions/create_diversion_results_dialog.png)
+<img width="744" height="723" alt="image" src="https://github.com/user-attachments/assets/51e3a498-2343-4961-aa30-f2b3db789cf2" />
+
 
 # Hide
 The Hide results dialog includes columns that break down how visibility change recommendations are derived: 
 
 ![Hide Results](images/actions/hide-results.png)
 
-- The level of cover between the token and each observer determines if a Stealth bonus is applied to the roll for that token pair. Cover is determined by the Auto-Cover system, through manually setting a value before the roll, or through a blanket override on the roll dialog for the action.
+- The level of cover between the token and each observer determines if a Stealth bonus is applied to the roll for that token pair. Cover is determined by the Auto-Cover system, by using the best found cover bonus, through manually setting a value before the roll, or through a blanket override on the roll dialog for the action.
 - Cover is also one factor in determining if the Hide action meets its RAW requirement of being performed with cover or concealment. If the action is taken with either standard cover or better, or while concealed from the observing token, the action "passes" this prerequisite. Visioner bases this off of cover and vision mappings on the token, or off of AVS and Auto Cover. GMs are able to manually toggle action prerequisites by clicking on the large green or red button. This will immediately qualify (or disqualify) the action and affect the recommended visibility change.
 - Each token pair displayed will show the roll breakdown on its own line, as well as its own degree of success, as bonuses from cover may vary from token to token.
 - In all action dialogs, visibility state changes are pre-highlighted with the system recommended value, but that value may be reassigned by the GM before accepting. 
@@ -86,10 +87,13 @@ In addition, Seek is particularly interesting because in addition to seeking to 
 Any token with a Stealth DC is potentially interactable with the Visioner Seek interface. Due to the technical limitations of needing to respect Foundry-Hidden tokens, loot actor tokens and hazards you wish to make discoverable through the action will need to be set up in advance:
 
 1. Foundry visibility needs to be toggled on
-2. In order to make the tokens not visible to players, Visioner visibility will need to be set to `unobserved` for all player owned tokens
+2. In order to make the tokens not visible to players, Visioner visibility will need to be set to `hidden` for all player owned tokens
 
 - Discoverable tokens with DC left blank will use a default DC that may be adjusted in settings.
 - Both Loot and Hazard tokens have an optional Minimum Proficiency field, which may be used to restrict discovery to characters with a certain level of proficiency in Perception. This is particularly useful for hazards, as it allows you to set a minimum proficiency rank required to notice the hazard.
+
+<img width="701" height="73" alt="image" src="https://github.com/user-attachments/assets/1a1bada1-7fc7-4948-a80f-828a6167bd8e" />
+
 
 ![Loot Token Config](images/actions/loot_token.png)
 

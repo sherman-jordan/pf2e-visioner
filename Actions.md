@@ -134,11 +134,8 @@ Visioner determines that movement has ended when the GM uses `Open Sneak Results
 > For AVS users: While a token is moving under Sneak, [Change Validation Manager](Change-Validation-Manager.md) treats that token as unobservable and will not prompt to remove overrides affecting it. Other tokens remain subject to AVS prompts as normal. If the sneaking token gains full line of sight to a hidden or unobserved token while moving, Change Validation Manager will still prompt the GM to decide whether the token should be revealed.
 
 # Take Cover
-When a player uses the Take Cover action, Visioner injects a callout into the associated chat card so the GM is able to quickly adjust cover accordingly:
+When a player uses the Take Cover action, the system will prompt for level of cover. Because the conditions applied are blanket conditions affecting all interacting tokens,Visioner will take over, injecting a callout into the associated chat card and providing another Dialog to manage cover on a token-pair level:
 
 ![Take Cover Results](images/actions/take_cover_results_dialog.png)
 
->> [!NOTE]
->> We try to reduce the amount of adjustments needed to help the module run smoothly to a bare minimum; however, it may prove beneficial to remove the self-applied pf2e system cover condition from the action granted to player characters.
->> 
->> This will prevent the system from applying a blanket cover effect when Visioner's relational cover is more accurate.
+The dialog uses the user selection as the baseline level of coverage applied, but allows the GM to select cover between tokens on a pair-by pair basis. When the results are applied, Visioner removes the system condition, so it does not interfere with the module's handling of coverage or confuse the user.

@@ -27,3 +27,9 @@ In Roll Dialog cover overrides, the cover level calculated by the system will be
 **Reminder:**
 - For actions taken (such as attacks) where the cover of the target from the origin token impacts its AC, overriding to a greater level of cover will benefit the target.
 - For actions taken (such as Hide) where the cover of the origin token from its targets impacts a bonus to the action roll, overriding to a greater level of cover will benefit the origin token.
+
+## Cycle Token Cover
+
+![Cycle Token Cover](images/cover/cycle-cover-button.png)  ![Cycle Cover None](images/cover/cycle-cover-none.png)  ![Cycle Cover Lesser](images/cover/cycle-cover-lesser.png)  ![Cycle Cover Std](images/cover/cycle-cover-standard.png)  ![Cycle Cover Greater](images/cover/cycle-cover-greater.png)
+
+The cycle token cover button on the Token Controls is a quick way of overriding the level of cover an actor token ***grants.*** Auto cover is sophisticated enough to apply RAW regarding large tokens granting more cover than smaller tokens but this feature provides a way of accounting for GM fiat for particular tokens.

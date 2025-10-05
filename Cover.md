@@ -21,14 +21,17 @@ A cover tab exists in the [Visioner Manger](Visioner-Manager.md) allowing manual
 When making a roll where cover factors into a calculated bonus, the ability to quickly adjust cover appears on the roll dialog as follows:
 
 ![Roll Cover Override](images/cover/cover-override-roll.png)
-<img width="478" height="396" alt="image" src="https://github.com/user-attachments/assets/2222656f-94fa-4b7f-b24e-d581fecf2441" />
-
 
 In Roll Dialog cover overrides, the cover level calculated by the system will be preselected, but clicking on a different button overrides the cover passed to the system for the purpose of bonuses.
 
 **Reminder:**
 - For actions taken (such as attacks) where the cover of the target from the origin token impacts its AC, overriding to a greater level of cover will benefit the target.
 - For actions taken (such as Hide) where the cover of the origin token from its targets impacts a bonus to the action roll, overriding to a greater level of cover will benefit the origin token.
+
+>> [!IMPORTANT]
+>> When cover is overridden manually, the cover override buttons will be removed from roll dialogs.
+
+![Cover Override Removed](images/cover/cover-override-removed.png)
 
 ## Cycle Token Cover
 

@@ -21,6 +21,8 @@ A cover tab exists in the [Visioner Manger](Visioner-Manager.md) allowing manual
 When making a roll where cover factors into a calculated bonus, the ability to quickly adjust cover appears on the roll dialog as follows:
 
 ![Roll Cover Override](images/cover/cover-override-roll.png)
+<img width="478" height="396" alt="image" src="https://github.com/user-attachments/assets/2222656f-94fa-4b7f-b24e-d581fecf2441" />
+
 
 In Roll Dialog cover overrides, the cover level calculated by the system will be preselected, but clicking on a different button overrides the cover passed to the system for the purpose of bonuses.
 

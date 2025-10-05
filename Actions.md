@@ -87,10 +87,13 @@ In addition, Seek is particularly interesting because in addition to seeking to 
 Any token with a Stealth DC is potentially interactable with the Visioner Seek interface. Due to the technical limitations of needing to respect Foundry-Hidden tokens, loot actor tokens and hazards you wish to make discoverable through the action will need to be set up in advance:
 
 1. Foundry visibility needs to be toggled on
-2. In order to make the tokens not visible to players, Visioner visibility will need to be set to `unobserved` for all player owned tokens
+2. In order to make the tokens not visible to players, Visioner visibility will need to be set to `hidden` for all player owned tokens
 
 - Discoverable tokens with DC left blank will use a default DC that may be adjusted in settings.
 - Both Loot and Hazard tokens have an optional Minimum Proficiency field, which may be used to restrict discovery to characters with a certain level of proficiency in Perception. This is particularly useful for hazards, as it allows you to set a minimum proficiency rank required to notice the hazard.
+
+<img width="701" height="73" alt="image" src="https://github.com/user-attachments/assets/1a1bada1-7fc7-4948-a80f-828a6167bd8e" />
+
 
 ![Loot Token Config](images/actions/loot_token.png)
 

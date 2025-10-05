@@ -9,7 +9,6 @@ Both visibility and cover states may be viewed and manipulated, and each of thos
 
 # Quick Edit
 
-![Quick Edit Dialog]
 <img width="414" height="227" alt="image" src="https://github.com/user-attachments/assets/b2c466f0-d753-407e-9c1c-beb6da014c40" />
 
 

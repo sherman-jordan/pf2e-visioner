@@ -9,7 +9,7 @@ Both visibility and cover states may be viewed and manipulated, and each of thos
 
 # Quick Edit
 
-<img width="414" height="227" alt="image" src="https://github.com/user-attachments/assets/b2c466f0-d753-407e-9c1c-beb6da014c40" />
+![Quick Edit](images/visioner-manager/quick_edit.png)
 
 
 The Quick edit dialog is a lightweight version of the Visioner Manager which provides for making rapid manual adjustments to vision or cover states. The dialog may be brought up using a UI button injected into the Token Controls of the Foundry sidebar: 

@@ -48,7 +48,7 @@ The Hide results dialog includes columns that break down how visibility change r
 
 ![Hide Results](images/actions/hide-results.png)
 
-- The level of cover between the token and each observer determines if a Stealth bonus is applied to the roll for that token pair. Cover is determined by the Auto-Cover system, through manually setting a value before the roll, or through a blanket override on the roll dialog for the action.
+- The level of cover between the token and each observer determines if a Stealth bonus is applied to the roll for that token pair. Cover is determined by the Auto-Cover system, by using the best found cover bonus, through manually setting a value before the roll, or through a blanket override on the roll dialog for the action.
 - Cover is also one factor in determining if the Hide action meets its RAW requirement of being performed with cover or concealment. If the action is taken with either standard cover or better, or while concealed from the observing token, the action "passes" this prerequisite. Visioner bases this off of cover and vision mappings on the token, or off of AVS and Auto Cover. GMs are able to manually toggle action prerequisites by clicking on the large green or red button. This will immediately qualify (or disqualify) the action and affect the recommended visibility change.
 - Each token pair displayed will show the roll breakdown on its own line, as well as its own degree of success, as bonuses from cover may vary from token to token.
 - In all action dialogs, visibility state changes are pre-highlighted with the system recommended value, but that value may be reassigned by the GM before accepting. 
